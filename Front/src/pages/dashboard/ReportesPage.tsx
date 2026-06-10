@@ -1,0 +1,341 @@
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
+} from "recharts";
+import { Download, TrendingUp, Calendar, DollarSign, CheckCircle } from "lucide-react";
+import { reportesApi, type FiltrosReporteCitas } from "../../api/reportes";
+import { empleadosApi } from "../../api/empleados";
+import { serviciosApi } from "../../api/servicios";
+import EstadoBadge from "../../components/ui/EstadoBadge";
+import { SkeletonTableRows } from "../../components/ui/Skeleton";
+
+type Tab = "citas" | "ingresos";
+
+const ESTADOS_OPCIONES = [
+  { valor: 1, texto: "Pendiente" },
+  { valor: 2, texto: "Confirmada" },
+  { valor: 3, texto: "Completada" },
+  { valor: 4, texto: "Cancelada" },
+  { valor: 5, texto: "Inasistencia" },
+];
+
+const COLORES_GRAFICA = ["#C8A961", "#a88b45", "#e8d4a0", "#7a6530", "#d4bc80"];
+
+function formatPrecio(n: number) {
+  return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(n);
+}
+
+function formatFecha(iso: string) {
+  return new Date(iso).toLocaleString("es-MX", {
+    day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hour12: true,
+  });
+}
+
+function hoy() {
+  return new Date().toISOString().split("T")[0];
+}
+
+function inicioMes() {
+  const d = new Date();
+  return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split("T")[0];
+}
+
+interface TarjetaProps { label: string; valor: string; subvalor?: string; icono: React.ReactNode }
+function Tarjeta({ label, valor, subvalor, icono }: TarjetaProps) {
+  return (
+    <div className="bg-white rounded-xl border border-gray-100 p-5 flex items-center gap-4">
+      <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center text-primary shrink-0">
+        {icono}
+      </div>
+      <div>
+        <p className="text-xs text-gray-500 font-medium">{label}</p>
+        <p className="text-xl font-bold text-gray-900">{valor}</p>
+        {subvalor && <p className="text-xs text-gray-400">{subvalor}</p>}
+      </div>
+    </div>
+  );
+}
+
+export default function ReportesPage() {
+  const [tab, setTab] = useState<Tab>("citas");
+  const [desde, setDesde] = useState(inicioMes());
+  const [hasta, setHasta] = useState(hoy());
+  const [empleadoId, setEmpleadoId] = useState("");
+  const [servicioId, setServicioId] = useState("");
+  const [estado, setEstado] = useState("");
+  const [exportando, setExportando] = useState(false);
+
+  const filtros: FiltrosReporteCitas = {
+    desde,
+    hasta,
+    empleadoId: empleadoId || undefined,
+    servicioId: servicioId || undefined,
+    estado: estado ? Number(estado) : undefined,
+  };
+
+  const { data: empleados = [] } = useQuery({
+    queryKey: ["empleados-reporte"],
+    queryFn: empleadosApi.obtenerTodos,
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const { data: servicios = [] } = useQuery({
+    queryKey: ["servicios-reporte"],
+    queryFn: serviciosApi.obtenerTodos,
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const { data: reporteCitas, isLoading: cargandoCitas } = useQuery({
+    queryKey: ["reporte-citas", filtros],
+    queryFn: () => reportesApi.obtenerCitas(filtros),
+    enabled: tab === "citas",
+  });
+
+  const { data: reporteIngresos, isLoading: cargandoIngresos } = useQuery({
+    queryKey: ["reporte-ingresos", desde, hasta],
+    queryFn: () => reportesApi.obtenerIngresos(desde, hasta),
+    enabled: tab === "ingresos",
+  });
+
+  const handleExportar = async () => {
+    setExportando(true);
+    try {
+      await reportesApi.exportarCitasCsv(filtros);
+    } finally {
+      setExportando(false);
+    }
+  };
+
+  const inputCls = "px-3 py-2 text-sm rounded-lg border border-gray-200 outline-none focus:border-primary bg-white";
+
+  return (
+    <div className="p-6 max-w-7xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Reportes</h1>
+          <p className="text-sm text-gray-500 mt-0.5">Análisis de citas e ingresos</p>
+        </div>
+        {tab === "citas" && (
+          <button
+            onClick={handleExportar}
+            disabled={exportando || !reporteCitas?.citas.length}
+            className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-dark disabled:opacity-40 text-white text-sm font-semibold rounded-lg transition"
+          >
+            <Download size={15} />
+            {exportando ? "Exportando..." : "Exportar CSV"}
+          </button>
+        )}
+      </div>
+
+      {/* Filtros */}
+      <div className="bg-white rounded-xl border border-gray-100 p-4 flex flex-wrap gap-3 items-end">
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-medium text-gray-600">Desde</label>
+          <input type="date" value={desde} onChange={(e) => setDesde(e.target.value)} className={inputCls} />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-medium text-gray-600">Hasta</label>
+          <input type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} className={inputCls} />
+        </div>
+        {tab === "citas" && (
+          <>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-gray-600">Empleado</label>
+              <select value={empleadoId} onChange={(e) => setEmpleadoId(e.target.value)} className={inputCls}>
+                <option value="">Todos</option>
+                {empleados.map((e) => (
+                  <option key={e.id} value={e.id}>{e.nombre}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-gray-600">Servicio</label>
+              <select value={servicioId} onChange={(e) => setServicioId(e.target.value)} className={inputCls}>
+                <option value="">Todos</option>
+                {servicios.map((s) => (
+                  <option key={s.id} value={s.id}>{s.nombre}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-gray-600">Estado</label>
+              <select value={estado} onChange={(e) => setEstado(e.target.value)} className={inputCls}>
+                <option value="">Todos</option>
+                {ESTADOS_OPCIONES.map((o) => (
+                  <option key={o.valor} value={o.valor}>{o.texto}</option>
+                ))}
+              </select>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
+        {(["citas", "ingresos"] as Tab[]).map((t) => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${
+              tab === t ? "bg-white shadow text-gray-900" : "text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            {t === "citas" ? "Citas" : "Ingresos"}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Tab: Citas ── */}
+      {tab === "citas" && (
+        <>
+          {/* Tarjetas resumen */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <Tarjeta label="Total citas" valor={String(reporteCitas?.totalCitas ?? "—")} icono={<Calendar size={18} />} />
+            <Tarjeta label="Completadas" valor={String(reporteCitas?.totalCompletadas ?? "—")}
+              subvalor={reporteCitas ? `${reporteCitas.totalCanceladas} canceladas` : undefined}
+              icono={<CheckCircle size={18} />} />
+            <Tarjeta label="Ingresos totales" valor={reporteCitas ? formatPrecio(reporteCitas.totalIngresos) : "—"} icono={<DollarSign size={18} />} />
+            <Tarjeta label="Inasistencias" valor={String(reporteCitas?.totalInasistencias ?? "—")}
+              subvalor={reporteCitas ? `${reporteCitas.totalPendientes} pendientes` : undefined}
+              icono={<TrendingUp size={18} />} />
+          </div>
+
+          {/* Tabla */}
+          <div className="bg-white rounded-xl border border-gray-100 overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-100">
+                  {["Código", "Cliente", "Servicio", "Empleado", "Fecha", "Precio", "Pagada", "Estado"].map((h) => (
+                    <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {cargandoCitas ? (
+                  <SkeletonTableRows filas={8} columnas={8} />
+                ) : !reporteCitas?.citas.length ? (
+                  <tr>
+                    <td colSpan={8} className="px-4 py-10 text-center text-gray-400 text-sm">
+                      No hay citas en el rango seleccionado.
+                    </td>
+                  </tr>
+                ) : (
+                  reporteCitas.citas.map((c) => (
+                    <tr key={c.id} className="border-b border-gray-50 hover:bg-gray-50 transition">
+                      <td className="px-4 py-3 font-mono text-xs text-gray-400">{c.codigoConfirmacion}</td>
+                      <td className="px-4 py-3 font-medium text-gray-900 whitespace-nowrap">{c.nombreCliente}</td>
+                      <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{c.nombreServicio}</td>
+                      <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{c.nombreEmpleado}</td>
+                      <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{formatFecha(c.inicioEn)}</td>
+                      <td className="px-4 py-3 font-semibold text-gray-900 whitespace-nowrap">{formatPrecio(c.precio)}</td>
+                      <td className="px-4 py-3 text-center">
+                        {c.pagada
+                          ? <span className="text-green-600 font-semibold text-xs">{c.metodoPago ?? "Sí"}</span>
+                          : <span className="text-gray-300 text-xs">—</span>}
+                      </td>
+                      <td className="px-4 py-3">
+                        <EstadoBadge estadoTexto={c.estadoTexto} />
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+
+      {/* ── Tab: Ingresos ── */}
+      {tab === "ingresos" && (
+        <>
+          {/* Tarjetas */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <Tarjeta label="Ingresos totales" valor={reporteIngresos ? formatPrecio(reporteIngresos.totalIngresos) : "—"} icono={<DollarSign size={18} />} />
+            <Tarjeta label="Citas completadas" valor={String(reporteIngresos?.totalCitasCompletadas ?? "—")} icono={<CheckCircle size={18} />} />
+            <Tarjeta label="Ticket promedio" valor={reporteIngresos ? formatPrecio(reporteIngresos.ticketPromedio) : "—"} icono={<TrendingUp size={18} />} />
+          </div>
+
+          {cargandoIngresos ? (
+            <div className="bg-white rounded-xl border border-gray-100 p-8 flex items-center justify-center">
+              <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full" />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Ingresos por servicio */}
+              <div className="bg-white rounded-xl border border-gray-100 p-5">
+                <h2 className="text-sm font-semibold text-gray-700 mb-4">Ingresos por servicio</h2>
+                {!reporteIngresos?.porServicio.length ? (
+                  <p className="text-sm text-gray-400 text-center py-6">Sin datos</p>
+                ) : (
+                  <ResponsiveContainer width="100%" height={220}>
+                    <BarChart data={reporteIngresos.porServicio} layout="vertical" margin={{ left: 8, right: 24 }}>
+                      <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                      <XAxis type="number" tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 11 }} />
+                      <YAxis type="category" dataKey="nombreServicio" width={110} tick={{ fontSize: 11 }} />
+                      <Tooltip formatter={(v: number) => formatPrecio(v)} />
+                      <Bar dataKey="totalIngresos" radius={[0, 4, 4, 0]}>
+                        {reporteIngresos.porServicio.map((_, i) => (
+                          <Cell key={i} fill={COLORES_GRAFICA[i % COLORES_GRAFICA.length]} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+
+              {/* Ingresos por día */}
+              <div className="bg-white rounded-xl border border-gray-100 p-5">
+                <h2 className="text-sm font-semibold text-gray-700 mb-4">Ingresos por día</h2>
+                {!reporteIngresos?.porDia.length ? (
+                  <p className="text-sm text-gray-400 text-center py-6">Sin datos</p>
+                ) : (
+                  <ResponsiveContainer width="100%" height={220}>
+                    <BarChart data={reporteIngresos.porDia} margin={{ right: 8 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <XAxis dataKey="fecha" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
+                      <YAxis tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 11 }} />
+                      <Tooltip formatter={(v: number) => formatPrecio(v)} />
+                      <Bar dataKey="totalIngresos" fill="#C8A961" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+
+              {/* Tabla por empleado */}
+              <div className="bg-white rounded-xl border border-gray-100 overflow-hidden lg:col-span-2">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-100">
+                      <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Empleado</th>
+                      <th className="px-5 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Citas</th>
+                      <th className="px-5 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Ingresos</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {!reporteIngresos?.porEmpleado.length ? (
+                      <tr>
+                        <td colSpan={3} className="px-5 py-8 text-center text-gray-400 text-sm">Sin datos</td>
+                      </tr>
+                    ) : (
+                      reporteIngresos.porEmpleado.map((e) => (
+                        <tr key={e.empleadoId} className="border-b border-gray-50 last:border-0">
+                          <td className="px-5 py-3 font-medium text-gray-900">{e.nombreEmpleado}</td>
+                          <td className="px-5 py-3 text-right text-gray-600">{e.totalCitas}</td>
+                          <td className="px-5 py-3 text-right font-semibold text-gray-900">{formatPrecio(e.totalIngresos)}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}

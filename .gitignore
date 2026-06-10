@@ -1,0 +1,21 @@
+# ── .NET Backend ─────────────────────────────────────────────────────────────
+Back/**/bin/
+Back/**/obj/
+Back/**/*.user
+Back/**/.vs/
+Back/**/logs/
+Back/**/wwwroot/uploads/
+*.suo
+.vs/
+
+# ── Frontend ──────────────────────────────────────────────────────────────────
+Front/node_modules/
+Front/dist/
+Front/dist-ssr/
+Front/*.local
+
+# ── OS / Editor ──────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

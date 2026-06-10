@@ -1,0 +1,632 @@
+import { useEffect, useRef, useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Eye, EyeOff, Copy, Check } from "lucide-react";
+import { Tooltip } from "../../components/ui/Tooltip";
+import { negociosApi } from "../../api/negocios";
+import { authApi } from "../../api/auth";
+import { useToastStore } from "../../store/toastStore";
+import type { ActualizarNegocioDto, HorarioDto } from "../../types";
+
+const ZONAS_HORARIAS = [
+  { valor: "America/Mexico_City",     texto: "Ciudad de México (CST/CDT)" },
+  { valor: "America/Monterrey",       texto: "Monterrey (CST/CDT)" },
+  { valor: "America/Tijuana",         texto: "Tijuana (PST/PDT)" },
+  { valor: "America/Hermosillo",      texto: "Hermosillo (MST)" },
+  { valor: "America/Cancun",          texto: "Cancún (EST)" },
+  { valor: "America/Bogota",          texto: "Bogotá (COT)" },
+  { valor: "America/Lima",            texto: "Lima (PET)" },
+  { valor: "America/Santiago",        texto: "Santiago (CLT/CLST)" },
+  { valor: "America/Buenos_Aires",    texto: "Buenos Aires (ART)" },
+  { valor: "America/New_York",        texto: "Nueva York (EST/EDT)" },
+  { valor: "America/Los_Angeles",     texto: "Los Ángeles (PST/PDT)" },
+  { valor: "UTC",                     texto: "UTC" },
+];
+
+const DIAS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+
+const schemaPassword = z
+  .object({
+    passwordActual: z.string().min(1, "Requerido"),
+    passwordNuevo: z.string().min(6, "Mínimo 6 caracteres"),
+    confirmar: z.string(),
+  })
+  .refine((v) => v.passwordNuevo === v.confirmar, {
+    message: "Las contraseñas no coinciden",
+    path: ["confirmar"],
+  });
+type PasswordForm = z.infer<typeof schemaPassword>;
+
+const HORAS_RECORDATORIO = [
+  { valor: 2,  texto: "2 horas antes" },
+  { valor: 4,  texto: "4 horas antes" },
+  { valor: 12, texto: "12 horas antes" },
+  { valor: 24, texto: "24 horas antes (1 día)" },
+  { valor: 48, texto: "48 horas antes (2 días)" },
+];
+
+const HORAS_CANCELACION = [
+  { valor: 0,  texto: "Sin restricción" },
+  { valor: 1,  texto: "1 hora antes" },
+  { valor: 2,  texto: "2 horas antes" },
+  { valor: 4,  texto: "4 horas antes" },
+  { valor: 12, texto: "12 horas antes" },
+  { valor: 24, texto: "24 horas antes (1 día)" },
+  { valor: 48, texto: "48 horas antes (2 días)" },
+];
+
+const schema = z.object({
+  nombre: z.string().min(2, "Nombre requerido"),
+  telefono: z.string().optional(),
+  email: z.string().email("Correo inválido").optional().or(z.literal("")),
+  direccion: z.string().optional(),
+  descripcion: z.string().max(500).optional(),
+  zonaHoraria: z.string().optional(),
+  horasRecordatorio: z.coerce.number().optional(),
+  horasCancelacion: z.coerce.number().optional(),
+});
+type PerfilForm = z.infer<typeof schema>;
+
+export default function PerfilPage() {
+  const qc = useQueryClient();
+  const { toast } = useToastStore();
+  const logoRef = useRef<HTMLInputElement>(null);
+  const portadaRef = useRef<HTMLInputElement>(null);
+
+  const { data: negocio, isLoading } = useQuery({
+    queryKey: ["negocio-perfil"],
+    queryFn: negociosApi.obtenerPerfil,
+  });
+
+  const { register, handleSubmit, reset, watch, formState: { errors, isSubmitting, isDirty } } = useForm<PerfilForm>({
+    resolver: zodResolver(schema),
+  });
+
+  useEffect(() => {
+    if (negocio) {
+      reset({
+        nombre: negocio.nombre, telefono: negocio.telefono ?? "",
+        email: negocio.email ?? "", direccion: negocio.direccion ?? "",
+        descripcion: negocio.descripcion ?? "", zonaHoraria: negocio.zonaHoraria ?? "",
+        horasRecordatorio: negocio.horasRecordatorio ?? 24,
+        horasCancelacion: negocio.horasCancelacion ?? 0,
+      });
+    }
+  }, [negocio, reset]);
+
+  const { mutate: guardar } = useMutation({
+    mutationFn: (dto: ActualizarNegocioDto) => negociosApi.actualizarPerfil(dto),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["negocio-perfil"] }); toast("Cambios guardados"); },
+  });
+
+  const { mutate: subirLogo, isPending: subiendoLogo } = useMutation({
+    mutationFn: (file: File) => negociosApi.subirLogo(file),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["negocio-perfil"] }); toast("Logo actualizado"); },
+  });
+
+  const { mutate: subirPortada, isPending: subiendoPortada } = useMutation({
+    mutationFn: (file: File) => negociosApi.subirPortada(file),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["negocio-perfil"] }); toast("Portada actualizada"); },
+  });
+
+  const onSubmit = (data: PerfilForm) => {
+    guardar({ ...data, email: data.email || undefined, telefono: data.telefono || undefined });
+  };
+
+  const [urlCopiada, setUrlCopiada] = useState(false);
+  const [colorPrimario, setColorPrimario] = useState("#C8A961");
+  const [colorSecundario, setColorSecundario] = useState("#a88b45");
+
+  useEffect(() => {
+    if (negocio) {
+      setColorPrimario(negocio.colorPrimario ?? "#C8A961");
+      setColorSecundario(negocio.colorSecundario ?? "#a88b45");
+    }
+  }, [negocio]);
+
+  const { mutate: guardarColores, isPending: guardandoColores } = useMutation({
+    mutationFn: () => negociosApi.actualizarColores(colorPrimario, colorSecundario),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["negocio-perfil"] });
+      qc.invalidateQueries({ queryKey: ["negocio-perfil-layout"] });
+      toast("Colores guardados");
+    },
+  });
+
+  const [horarios, setHorarios] = useState<HorarioDto[]>([]);
+  const [horariosDirty, setHorariosDirty] = useState(false);
+
+  const { data: horariosData } = useQuery({
+    queryKey: ["horarios-negocio"],
+    queryFn: negociosApi.obtenerHorarios,
+    enabled: !!negocio,
+  });
+
+  useEffect(() => {
+    if (horariosData) {
+      setHorarios(horariosData);
+      setHorariosDirty(false);
+    }
+  }, [horariosData]);
+
+  const { mutate: guardarHorarios, isPending: guardandoHorarios } = useMutation({
+    mutationFn: () => negociosApi.actualizarHorarios(horarios),
+    onSuccess: (data) => {
+      setHorarios(data);
+      setHorariosDirty(false);
+      qc.invalidateQueries({ queryKey: ["horarios-negocio"] });
+      toast("Horarios guardados");
+    },
+  });
+
+  const actualizarHorario = (dia: number, campo: keyof HorarioDto, valor: string | boolean) => {
+    setHorarios(prev => prev.map(h => h.diaSemana === dia ? { ...h, [campo]: valor } : h));
+    setHorariosDirty(true);
+  };
+
+  const bookingUrl = negocio ? `${window.location.origin}/b/${negocio.slug}` : "";
+
+  const copiarUrl = () => {
+    navigator.clipboard.writeText(bookingUrl);
+    setUrlCopiada(true);
+    setTimeout(() => setUrlCopiada(false), 2000);
+  };
+
+  // ── Días bloqueados ───────────────────────────────────────────────────────
+  const [nuevaFecha, setNuevaFecha] = useState("");
+  const [nuevoMotivo, setNuevoMotivo] = useState("");
+
+  const { data: diasBloqueados = [] } = useQuery({
+    queryKey: ["dias-bloqueados"],
+    queryFn: negociosApi.obtenerDiasBloqueados,
+    enabled: !!negocio,
+  });
+
+  const { mutate: bloquearDia, isPending: bloqueando } = useMutation({
+    mutationFn: () => negociosApi.bloquearDia(nuevaFecha, nuevoMotivo || undefined),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["dias-bloqueados"] });
+      setNuevaFecha("");
+      setNuevoMotivo("");
+      toast("Día bloqueado");
+    },
+    onError: () => toast("Ese día ya está bloqueado"),
+  });
+
+  const { mutate: desbloquear } = useMutation({
+    mutationFn: (id: string) => negociosApi.desbloquearDia(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["dias-bloqueados"] });
+      toast("Día desbloqueado");
+    },
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────
+  const [mostrarActual, setMostrarActual] = useState(false);
+  const [mostrarNueva, setMostrarNueva] = useState(false);
+  const [mensajePassword, setMensajePassword] = useState<{ tipo: "ok" | "error"; texto: string } | null>(null);
+
+  const formPassword = useForm<PasswordForm>({ resolver: zodResolver(schemaPassword) });
+
+  const { mutate: cambiarPassword, isPending: cambiandoPassword } = useMutation({
+    mutationFn: (d: PasswordForm) => authApi.cambiarPassword(d.passwordActual, d.passwordNuevo),
+    onSuccess: (resp) => {
+      setMensajePassword({ tipo: "ok", texto: resp.mensaje });
+      formPassword.reset();
+    },
+    onError: (err: unknown) => {
+      const msg = (err as { response?: { data?: { errores?: string[] } } })?.response?.data?.errores?.[0]
+        ?? "No se pudo cambiar la contraseña.";
+      setMensajePassword({ tipo: "error", texto: msg });
+    },
+  });
+
+  if (isLoading) return <div className="p-4 sm:p-8 text-gray-400">Cargando...</div>;
+
+  return (
+    <div className="p-4 sm:p-8">
+      <h1 className="text-2xl font-bold text-gray-900 mb-8">Mi negocio</h1>
+
+      {/* Enlace de reservas */}
+      {negocio && (
+        <div className="bg-white rounded-xl border border-gray-100 p-5 mb-6">
+          <h2 className="text-sm font-semibold text-gray-700 mb-3">Tu página de reservas</h2>
+          <div className="flex items-center gap-2">
+            <a
+              href={bookingUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="flex-1 px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 text-sm text-primary font-mono truncate hover:underline"
+            >
+              {bookingUrl}
+            </a>
+            <button
+              onClick={copiarUrl}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition whitespace-nowrap"
+            >
+              {urlCopiada ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
+              {urlCopiada ? "¡Copiado!" : "Copiar"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Imágenes */}
+      <div className="bg-white rounded-xl border border-gray-100 p-5 mb-6">
+        <h2 className="text-sm font-semibold text-gray-700 mb-4">Imágenes</h2>
+        <div className="flex gap-6 flex-wrap">
+          {/* Logo */}
+          <div className="text-center">
+            <div className="w-20 h-20 rounded-xl bg-gray-100 overflow-hidden mb-2 mx-auto flex items-center justify-center">
+              {negocio?.logoUrl
+                ? <img src={negocio.logoUrl} alt="Logo" className="w-full h-full object-cover" />
+                : <span className="text-2xl font-bold text-gray-300">{negocio?.nombre?.charAt(0)}</span>
+              }
+            </div>
+            <input ref={logoRef} type="file" accept="image/*" className="hidden"
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) subirLogo(f); }} />
+            <button onClick={() => logoRef.current?.click()} disabled={subiendoLogo}
+              className="text-xs text-primary hover:underline disabled:opacity-50">
+              {subiendoLogo ? "Subiendo..." : "Cambiar logo"}
+            </button>
+          </div>
+
+          {/* Portada */}
+          <div className="text-center">
+            <div className="w-40 h-20 rounded-xl bg-gray-100 overflow-hidden mb-2 mx-auto flex items-center justify-center">
+              {negocio?.portadaUrl
+                ? <img src={negocio.portadaUrl} alt="Portada" className="w-full h-full object-cover" />
+                : <span className="text-xs text-gray-400">Sin portada</span>
+              }
+            </div>
+            <input ref={portadaRef} type="file" accept="image/*" className="hidden"
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) subirPortada(f); }} />
+            <button onClick={() => portadaRef.current?.click()} disabled={subiendoPortada}
+              className="text-xs text-primary hover:underline disabled:opacity-50">
+              {subiendoPortada ? "Subiendo..." : "Cambiar portada"}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Formulario */}
+      <form onSubmit={handleSubmit(onSubmit)} className="bg-white rounded-xl border border-gray-100 p-5 space-y-4">
+        <h2 className="text-sm font-semibold text-gray-700">Información del negocio</h2>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="sm:col-span-2 lg:col-span-3">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Nombre del negocio *</label>
+            <input {...register("nombre")}
+              className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-primary
+                ${errors.nombre ? "border-red-400 bg-red-50" : "border-gray-200"}`} />
+            {errors.nombre && <p className="text-red-500 text-xs mt-1">{errors.nombre.message}</p>}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+            <input {...register("telefono")}
+              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary" />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Correo de contacto</label>
+            <input type="email" {...register("email")}
+              className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-primary
+                ${errors.email ? "border-red-400 bg-red-50" : "border-gray-200"}`} />
+          </div>
+
+          <div className="sm:col-span-2 lg:col-span-3">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Dirección</label>
+            <input {...register("direccion")}
+              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary" />
+          </div>
+
+          <div className="sm:col-span-2 lg:col-span-3">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+            <textarea rows={3} maxLength={500} {...register("descripcion")}
+              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary resize-none" />
+            <p className="text-xs text-gray-400 text-right mt-0.5">{(watch("descripcion") ?? "").length}/500</p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Zona horaria</label>
+            <select {...register("zonaHoraria")}
+              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary bg-white">
+              <option value="">Seleccionar...</option>
+              {ZONAS_HORARIAS.map((z) => (
+                <option key={z.valor} value={z.valor}>{z.texto}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Recordatorio al cliente</label>
+            <select {...register("horasRecordatorio")}
+              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary bg-white">
+              {HORAS_RECORDATORIO.map((h) => (
+                <option key={h.valor} value={h.valor}>{h.texto}</option>
+              ))}
+            </select>
+            <p className="text-xs text-gray-400 mt-1">Cuánto tiempo antes se envía el recordatorio por email.</p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Política de cancelación</label>
+            <select {...register("horasCancelacion")}
+              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary bg-white">
+              {HORAS_CANCELACION.map((h) => (
+                <option key={h.valor} value={h.valor}>{h.texto}</option>
+              ))}
+            </select>
+            <p className="text-xs text-gray-400 mt-1">Tiempo mínimo de anticipación para cancelar una cita.</p>
+          </div>
+
+          {negocio?.planNombre && (
+            <div className="sm:col-span-2 lg:col-span-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Plan activo</label>
+              <p className="px-3 py-2 rounded-lg bg-gray-50 text-sm text-gray-600">{negocio.planNombre}</p>
+            </div>
+          )}
+        </div>
+
+        <button type="submit" disabled={isSubmitting || !isDirty}
+          className="bg-primary hover:bg-primary-dark disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-xl transition text-sm">
+          {isSubmitting ? "Guardando..." : "Guardar cambios"}
+        </button>
+      </form>
+
+      {/* Personalización de colores */}
+      <div className="bg-white rounded-xl border border-gray-100 p-5 mt-6">
+        <h2 className="text-sm font-semibold text-gray-700 mb-1">Personalización</h2>
+        <p className="text-xs text-gray-400 mb-4">Los colores se aplican en tu página pública de reservas.</p>
+        <div className="flex flex-wrap gap-6 items-end">
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-2">Color principal</label>
+            <div className="flex items-center gap-3">
+              <input
+                type="color"
+                value={colorPrimario}
+                onChange={(e) => setColorPrimario(e.target.value)}
+                className="w-10 h-10 rounded-lg border border-gray-200 cursor-pointer p-0.5"
+              />
+              <input
+                type="text"
+                value={colorPrimario}
+                onChange={(e) => setColorPrimario(e.target.value)}
+                maxLength={7}
+                className="w-24 px-2 py-1.5 rounded-lg border border-gray-200 text-sm font-mono outline-none focus:border-primary uppercase"
+              />
+              <div className="w-8 h-8 rounded-lg border border-gray-100 shadow-sm" style={{ backgroundColor: colorPrimario }} />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-2">Color secundario</label>
+            <div className="flex items-center gap-3">
+              <input
+                type="color"
+                value={colorSecundario}
+                onChange={(e) => setColorSecundario(e.target.value)}
+                className="w-10 h-10 rounded-lg border border-gray-200 cursor-pointer p-0.5"
+              />
+              <input
+                type="text"
+                value={colorSecundario}
+                onChange={(e) => setColorSecundario(e.target.value)}
+                maxLength={7}
+                className="w-24 px-2 py-1.5 rounded-lg border border-gray-200 text-sm font-mono outline-none focus:border-primary uppercase"
+              />
+              <div className="w-8 h-8 rounded-lg border border-gray-100 shadow-sm" style={{ backgroundColor: colorSecundario }} />
+            </div>
+          </div>
+          <button
+            onClick={() => guardarColores()}
+            disabled={guardandoColores}
+            className="px-5 py-2.5 bg-primary hover:bg-primary-dark disabled:opacity-40 text-white text-sm font-semibold rounded-xl transition"
+          >
+            {guardandoColores ? "Guardando..." : "Guardar colores"}
+          </button>
+        </div>
+      </div>
+
+      {/* Horarios de atención */}
+      <div className="bg-white rounded-xl border border-gray-100 p-5 mt-6">
+        <h2 className="text-sm font-semibold text-gray-700 mb-4">Horarios de atención</h2>
+        <div className="space-y-2">
+          {horarios.map((h) => (
+            <div key={h.diaSemana} className="flex items-center gap-3">
+              <div className="w-24 shrink-0">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <div
+                    onClick={() => actualizarHorario(h.diaSemana!, "activo", !h.activo)}
+                    className={`w-9 h-5 rounded-full transition relative cursor-pointer ${h.activo ? "bg-primary" : "bg-gray-300"}`}
+                  >
+                    <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${h.activo ? "left-4" : "left-0.5"}`} />
+                  </div>
+                  <span className="text-sm text-gray-700">{DIAS[h.diaSemana ?? 0]}</span>
+                </label>
+              </div>
+              {h.activo ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="time"
+                    value={h.horaInicio}
+                    onChange={(e) => actualizarHorario(h.diaSemana!, "horaInicio", e.target.value)}
+                    className="px-2 py-1 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary"
+                  />
+                  <span className="text-gray-400 text-sm">—</span>
+                  <input
+                    type="time"
+                    value={h.horaFin}
+                    onChange={(e) => actualizarHorario(h.diaSemana!, "horaFin", e.target.value)}
+                    className="px-2 py-1 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary"
+                  />
+                </div>
+              ) : (
+                <span className="text-sm text-gray-400">Cerrado</span>
+              )}
+            </div>
+          ))}
+        </div>
+        <button
+          onClick={() => guardarHorarios()}
+          disabled={guardandoHorarios || !horariosDirty}
+          className="mt-4 bg-primary hover:bg-primary-dark disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-xl transition text-sm"
+        >
+          {guardandoHorarios ? "Guardando..." : "Guardar horarios"}
+        </button>
+      </div>
+
+      {/* Días bloqueados */}
+      <div className="bg-white rounded-xl border border-gray-100 p-5 mt-6">
+        <h2 className="text-sm font-semibold text-gray-700 mb-1">Días sin atención</h2>
+        <p className="text-xs text-gray-400 mb-4">Bloquea días donde el negocio no trabajará (feriados, vacaciones). Los clientes no podrán reservar esos días.</p>
+
+        <div className="flex gap-2 mb-4 flex-wrap items-end">
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Fecha</label>
+            <input
+              type="date"
+              value={nuevaFecha}
+              min={new Date().toISOString().split("T")[0]}
+              onChange={(e) => setNuevaFecha(e.target.value)}
+              className="px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary"
+            />
+          </div>
+          <div className="flex-1 min-w-[180px]">
+            <label className="block text-xs text-gray-500 mb-1">Motivo <span className="text-gray-400">(opcional)</span></label>
+            <input
+              type="text"
+              value={nuevoMotivo}
+              onChange={(e) => setNuevoMotivo(e.target.value)}
+              placeholder="Ej: Día festivo, Vacaciones..."
+              maxLength={100}
+              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary"
+            />
+          </div>
+          <button
+            onClick={() => nuevaFecha && bloquearDia()}
+            disabled={!nuevaFecha || bloqueando}
+            className="px-4 py-2 bg-gray-800 hover:bg-gray-700 disabled:opacity-40 text-white text-sm font-medium rounded-lg transition"
+          >
+            {bloqueando ? "Guardando..." : "+ Bloquear día"}
+          </button>
+        </div>
+
+        {diasBloqueados.length === 0 ? (
+          <p className="text-sm text-gray-400">No hay días bloqueados próximos.</p>
+        ) : (
+          <div className="space-y-2">
+            {diasBloqueados.map((b) => {
+              const fecha = new Date(b.fecha + "T12:00:00");
+              return (
+                <div key={b.id} className="flex items-center justify-between px-3 py-2 bg-red-50 border border-red-100 rounded-lg">
+                  <div>
+                    <span className="text-sm font-medium text-red-700 capitalize">
+                      {fecha.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" })}
+                    </span>
+                    {b.motivo && <span className="text-xs text-red-500 ml-2">— {b.motivo}</span>}
+                  </div>
+                  <button
+                    onClick={() => desbloquear(b.id)}
+                    className="text-xs text-red-400 hover:text-red-600 transition"
+                  >
+                    Quitar
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Cambiar contraseña */}
+      <form
+        onSubmit={formPassword.handleSubmit((d) => { setMensajePassword(null); cambiarPassword(d); })}
+        className="bg-white rounded-xl border border-gray-100 p-5 space-y-4 mt-6"
+      >
+        <h2 className="text-sm font-semibold text-gray-700">Cambiar contraseña</h2>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {/* Contraseña actual */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña actual</label>
+            <div className="relative">
+              <input
+                type={mostrarActual ? "text" : "password"}
+                {...formPassword.register("passwordActual")}
+                className={`w-full px-3 py-2 pr-10 rounded-lg border text-sm outline-none focus:border-primary
+                  ${formPassword.formState.errors.passwordActual ? "border-red-400 bg-red-50" : "border-gray-200"}`}
+              />
+              <Tooltip text={mostrarActual ? "Ocultar contraseña" : "Mostrar contraseña"}>
+                <button type="button" onClick={() => setMostrarActual(v => !v)}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" tabIndex={-1}>
+                  {mostrarActual ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </Tooltip>
+            </div>
+            {formPassword.formState.errors.passwordActual && (
+              <p className="text-red-500 text-xs mt-1">{formPassword.formState.errors.passwordActual.message}</p>
+            )}
+          </div>
+
+          {/* Nueva contraseña */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Nueva contraseña</label>
+            <div className="relative">
+              <input
+                type={mostrarNueva ? "text" : "password"}
+                {...formPassword.register("passwordNuevo")}
+                className={`w-full px-3 py-2 pr-10 rounded-lg border text-sm outline-none focus:border-primary
+                  ${formPassword.formState.errors.passwordNuevo ? "border-red-400 bg-red-50" : "border-gray-200"}`}
+                placeholder="Mínimo 6 caracteres"
+              />
+              <Tooltip text={mostrarNueva ? "Ocultar contraseña" : "Mostrar contraseña"}>
+                <button type="button" onClick={() => setMostrarNueva(v => !v)}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" tabIndex={-1}>
+                  {mostrarNueva ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </Tooltip>
+            </div>
+            {formPassword.formState.errors.passwordNuevo && (
+              <p className="text-red-500 text-xs mt-1">{formPassword.formState.errors.passwordNuevo.message}</p>
+            )}
+          </div>
+
+          {/* Confirmar */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Confirmar contraseña</label>
+            <input
+              type="password"
+              {...formPassword.register("confirmar")}
+              className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-primary
+                ${formPassword.formState.errors.confirmar ? "border-red-400 bg-red-50" : "border-gray-200"}`}
+            />
+            {formPassword.formState.errors.confirmar && (
+              <p className="text-red-500 text-xs mt-1">{formPassword.formState.errors.confirmar.message}</p>
+            )}
+          </div>
+        </div>
+
+        {mensajePassword && (
+          <div className={`text-sm rounded-lg px-4 py-3 ${
+            mensajePassword.tipo === "ok"
+              ? "bg-green-50 border border-green-200 text-green-700"
+              : "bg-red-50 border border-red-200 text-red-600"
+          }`}>
+            {mensajePassword.texto}
+          </div>
+        )}
+
+        <button
+          type="submit"
+          disabled={cambiandoPassword}
+          className="bg-gray-800 hover:bg-gray-700 disabled:opacity-40 text-white font-semibold px-6 py-2.5 rounded-xl transition text-sm"
+        >
+          {cambiandoPassword ? "Actualizando..." : "Cambiar contraseña"}
+        </button>
+      </form>
+    </div>
+  );
+}

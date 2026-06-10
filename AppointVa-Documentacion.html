@@ -1,0 +1,1463 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AppointVa — Documentación del Sistema</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; color: #1f2937; background: #fff; font-size: 13px; line-height: 1.6; }
+  .page-break { page-break-before: always; }
+
+  /* Cover */
+  .cover { background: linear-gradient(135deg, #1f2937 0%, #374151 100%); color: #fff; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 60px 40px; }
+  .cover .logo { width: 72px; height: 72px; background: #C8A961; border-radius: 18px; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; font-size: 32px; font-weight: 900; }
+  .cover h1 { font-size: 42px; font-weight: 900; letter-spacing: -1px; margin-bottom: 8px; }
+  .cover .subtitle { font-size: 18px; color: #C8A961; font-weight: 600; margin-bottom: 4px; }
+  .cover .date { font-size: 14px; color: #9ca3af; margin-top: 40px; }
+  .cover .badge { display: inline-block; background: rgba(200,169,97,0.2); border: 1px solid #C8A961; color: #C8A961; padding: 6px 18px; border-radius: 999px; font-size: 12px; font-weight: 600; margin-top: 16px; }
+
+  /* Layout */
+  .container { max-width: 900px; margin: 0 auto; padding: 48px 40px; }
+  h2 { font-size: 22px; font-weight: 800; color: #111827; border-bottom: 3px solid #C8A961; padding-bottom: 10px; margin-bottom: 24px; margin-top: 48px; }
+  h2:first-child { margin-top: 0; }
+  h3 { font-size: 15px; font-weight: 700; color: #374151; margin-bottom: 12px; margin-top: 28px; }
+  h4 { font-size: 13px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; margin-top: 20px; }
+  p { color: #4b5563; margin-bottom: 10px; }
+
+  /* Cards */
+  .card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+  .card-blue { background: #eff6ff; border-color: #bfdbfe; }
+  .card-green { background: #f0fdf4; border-color: #bbf7d0; }
+  .card-gold { background: #fffbeb; border-color: #fde68a; }
+  .card-purple { background: #f5f3ff; border-color: #ddd6fe; }
+  .card-red { background: #fef2f2; border-color: #fecaca; }
+
+  /* URL pills */
+  .url-list { display: flex; flex-direction: column; gap: 10px; }
+  .url-item { display: flex; align-items: center; gap: 12px; background: #1f2937; border-radius: 10px; padding: 12px 16px; }
+  .url-badge { background: #C8A961; color: #fff; font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 999px; white-space: nowrap; min-width: 60px; text-align: center; text-transform: uppercase; }
+  .url-badge.post { background: #10b981; }
+  .url-badge.delete { background: #ef4444; }
+  .url-badge.patch { background: #8b5cf6; }
+  .url-path { font-family: 'Courier New', monospace; font-size: 13px; color: #e5e7eb; flex: 1; }
+  .url-desc { font-size: 11px; color: #9ca3af; }
+
+  /* Table */
+  table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+  th { background: #1f2937; color: #fff; padding: 10px 14px; text-align: left; font-size: 12px; font-weight: 600; }
+  td { padding: 9px 14px; border-bottom: 1px solid #e5e7eb; font-size: 12px; vertical-align: top; }
+  tr:nth-child(even) td { background: #f9fafb; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 10px; font-weight: 600; }
+  .tag-new { background: #dcfce7; color: #166534; }
+  .tag-mod { background: #dbeafe; color: #1e40af; }
+  .tag-del { background: #fee2e2; color: #991b1b; }
+  .tag-fix { background: #fef3c7; color: #92400e; }
+
+  /* Sequence diagram */
+  .seq { font-family: 'Courier New', monospace; font-size: 11px; background: #0f172a; color: #e2e8f0; border-radius: 12px; padding: 24px; line-height: 1.8; overflow-x: auto; margin-bottom: 20px; }
+  .seq .actor { color: #C8A961; font-weight: bold; }
+  .seq .arrow { color: #60a5fa; }
+  .seq .note { color: #4ade80; }
+  .seq .step { color: #f472b6; }
+
+  /* Screens */
+  .screen { border: 2px solid #e5e7eb; border-radius: 12px; overflow: hidden; margin-bottom: 20px; }
+  .screen-bar { background: #e5e7eb; padding: 8px 14px; display: flex; align-items: center; gap: 8px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .screen-url { font-family: monospace; font-size: 11px; color: #6b7280; flex: 1; text-align: center; }
+  .screen-body { background: #f9fafb; }
+
+  /* Sidebar mock */
+  .mock-layout { display: flex; height: 340px; }
+  .mock-sidebar { width: 180px; background: #fff; border-right: 1px solid #e5e7eb; padding: 16px 12px; display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; }
+  .mock-sidebar .logo-area { font-weight: 800; font-size: 14px; color: #1f2937; padding: 8px 4px 16px; border-bottom: 1px solid #e5e7eb; margin-bottom: 8px; }
+  .nav-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; font-size: 11px; color: #6b7280; }
+  .nav-item.active { background: #C8A961; color: #fff; font-weight: 600; }
+  .nav-dot { width: 12px; height: 12px; border-radius: 2px; background: currentColor; opacity: 0.6; }
+  .mock-content { flex: 1; padding: 20px; overflow: hidden; }
+
+  /* Booking mock */
+  .booking-step { border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px 14px; margin-bottom: 8px; background: #fff; }
+  .booking-step.done { background: #f0fdf4; border-color: #bbf7d0; }
+  .booking-step .step-label { font-size: 10px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px; }
+  .booking-step .step-value { font-size: 12px; font-weight: 600; color: #1f2937; margin-top: 2px; }
+
+  /* User cards */
+  .user-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .user-card { border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; }
+  .user-role { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding: 3px 10px; border-radius: 999px; display: inline-block; margin-bottom: 12px; }
+  .role-admin { background: #fef3c7; color: #92400e; }
+  .role-owner { background: #dbeafe; color: #1e40af; }
+  .role-employee { background: #dcfce7; color: #166534; }
+  .cred-row { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
+  .cred-label { font-size: 10px; color: #9ca3af; font-weight: 600; text-transform: uppercase; }
+  .cred-value { font-family: 'Courier New', monospace; font-size: 12px; background: #1f2937; color: #e5e7eb; padding: 6px 10px; border-radius: 6px; }
+
+  /* Change log */
+  .change-item { display: flex; gap: 14px; padding: 14px 0; border-bottom: 1px solid #f3f4f6; align-items: flex-start; }
+  .change-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 16px; }
+  .change-title { font-weight: 700; font-size: 13px; color: #111827; margin-bottom: 3px; }
+  .change-desc { font-size: 12px; color: #6b7280; }
+  .change-files { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+  .file-chip { font-family: monospace; font-size: 10px; background: #1f2937; color: #e5e7eb; padding: 2px 8px; border-radius: 4px; }
+
+  /* Print */
+  @media print {
+    .page-break { page-break-before: always; }
+    .cover { min-height: auto; padding: 40px; page-break-after: always; }
+    body { font-size: 12px; }
+    .container { padding: 32px 30px; }
+    h2 { margin-top: 32px; }
+    .user-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════ PORTADA ══════════════════ -->
+<div class="cover">
+  <div class="logo">A</div>
+  <h1>AppointVa</h1>
+  <div class="subtitle">Documentación del Sistema</div>
+  <p style="color:#9ca3af;margin-top:16px;max-width:500px;">
+    Sistema de reservas online para negocios de servicios — Backend .NET 8 + PostgreSQL, Frontend React + Vite
+  </p>
+  <div class="badge">Versión de desarrollo — Junio 2026</div>
+  <div class="date">Actualizado el 10 de junio de 2026 — v2.2</div>
+</div>
+
+<!-- ══════════════════ SECCIÓN 1: URLs ══════════════════ -->
+<div class="container page-break">
+  <h2>1. URLs del Sistema (Entorno Local)</h2>
+
+  <h3>Frontend — Dashboard (requiere login)</h3>
+  <div class="url-list">
+    <div class="url-item">
+      <span class="url-badge">GET</span>
+      <span class="url-path">http://localhost:5173/login</span>
+      <span class="url-desc">Inicio de sesión (soporta flujo 2FA)</span>
+    </div>
+    <div class="url-item">
+      <span class="url-badge">GET</span>
+      <span class="url-path">http://localhost:5173/registro</span>
+      <span class="url-desc">Auto-registro de nuevo negocio</span>
+    </div>
+    <div class="url-item">
+      <span class="url-badge">GET</span>
+      <span class="url-path">http://localhost:5173/dashboard</span>
+      <span class="url-desc">Dashboard — Inicio con gráficas y resumen</span>
+    </div>
+    <div class="url-item">
+      <span class="url-badge">GET</span>
+      <span class="url-path">http://localhost:5173/dashboard/citas</span>
+      <span class="url-desc">Gestión de citas con modal de nueva cita</span>
+    </div>
+    <div class="url-item">
+      <span class="url-badge">GET</span>
+      <span class="url-path">http://localhost:5173/dashboard/empleados</span>
+      <span class="url-desc">Gestión de empleados (con búsqueda)</span>
+    </div>
+    <div class="url-item">
+      <span class="url-badge">GET</span>
+      <span class="url-path">http://localhost:5173/dashboard/servicios</span>
+      <span class="url-desc">Gestión de servicios y categorías</span>
+    </div>
+    <div class="url-item">
+      <span class="url-badge">GET</span>
+      <span class="url-path">http://localhost:5173/dashboard/clientes</span>
+      <span class="url-desc">Directorio de clientes</span>
+    </div>
+    <div class="url-item">
+      <span class="url-badge">GET</span>
+      <span class="url-path">http://localhost:5173/dashboard/perfil</span>
+      <span class="url-desc">Mi negocio — datos, colores, zona horaria, horarios, días bloqueados</span>
+    </div>
+    <div class="url-item">
+      <span class="url-badge">GET</span>
+      <span class="url-path">http://localhost:5173/dashboard/reportes</span>
+      <span class="url-desc">✨ NUEVO — Reportes de citas e ingresos con exportación CSV</span>
+    </div>
+    <div class="url-item">
+      <span class="url-badge">GET</span>
+      <span class="url-path">http://localhost:5173/dashboard/seguridad</span>
+      <span class="url-desc">✨ NUEVO — Configurar / desactivar 2FA (autenticación en dos pasos)</span>
+    </div>
+    <div class="url-item">
+      <span class="url-badge">GET</span>
+      <span class="url-path">http://localhost:5173/admin</span>
+      <span class="url-desc">Panel SuperAdmin — gestión de negocios</span>
+    </div>
+  </div>
+
+  <h3 style="margin-top:28px;">Frontend — Autenticación</h3>
+  <div class="url-list">
+    <div class="url-item">
+      <span class="url-badge">GET</span>
+      <span class="url-path">http://localhost:5173/registro</span>
+      <span class="url-desc">✨ ACTUALIZADO — Muestra pantalla de "verifica tu correo" tras el registro (con reenvío)</span>
+    </div>
+    <div class="url-item">
+      <span class="url-badge">GET</span>
+      <span class="url-path">http://localhost:5173/verificar-email?userId=&amp;token=</span>
+      <span class="url-desc">✨ NUEVO — Página de verificación de email (enlace del correo)</span>
+    </div>
+    <div class="url-item">
+      <span class="url-badge">GET</span>
+      <span class="url-path">http://localhost:5173/login</span>
+      <span class="url-desc">✨ ACTUALIZADO — Muestra banner si el email no está verificado con botón "Reenviar verificación"</span>
+    </div>
+  </div>
+
+  <h3 style="margin-top:28px;">Frontend — Páginas Públicas (clientes, sin login)</h3>
+  <div class="url-list">
+    <div class="url-item">
+      <span class="url-badge">GET</span>
+      <span class="url-path">http://localhost:5173/b/<em style="color:#C8A961">slug</em></span>
+      <span class="url-desc">Booking público del negocio (flujo 4 pasos)</span>
+    </div>
+    <div class="url-item">
+      <span class="url-badge">GET</span>
+      <span class="url-path">http://localhost:5173/b/barberia-luis</span>
+      <span class="url-desc">Ejemplo — Barbería Luis</span>
+    </div>
+    <div class="url-item">
+      <span class="url-badge">GET</span>
+      <span class="url-path">http://localhost:5173/b/salon-aramis</span>
+      <span class="url-desc">Ejemplo — Salón Aramis</span>
+    </div>
+    <div class="url-item">
+      <span class="url-badge">GET</span>
+      <span class="url-path">http://localhost:5173/cita/<em style="color:#C8A961">CODIGO</em></span>
+      <span class="url-desc">Acceso directo a cita por código permanente</span>
+    </div>
+    <div class="url-item">
+      <span class="url-badge">GET</span>
+      <span class="url-path">http://localhost:5173/b/<em style="color:#C8A961">slug</em>/mis-citas</span>
+      <span class="url-desc">Consulta de mis citas (requiere email + teléfono)</span>
+    </div>
+  </div>
+
+  <h3 style="margin-top:28px;">Backend API — Endpoints principales</h3>
+  <div class="url-list">
+    <div class="url-item">
+      <span class="url-badge">GET</span>
+      <span class="url-path">http://localhost:5048/swagger</span>
+      <span class="url-desc">Documentación interactiva de la API</span>
+    </div>
+    <div class="url-item">
+      <span class="url-badge">GET</span>
+      <span class="url-path">http://localhost:5048/hangfire</span>
+      <span class="url-desc">Panel de tareas programadas (recordatorios)</span>
+    </div>
+    <div class="url-item">
+      <span class="url-badge">GET</span>
+      <span class="url-path">http://localhost:5048/health</span>
+      <span class="url-desc">✨ NUEVO — Health check con estado de la DB (JSON: {estado, checks[]})</span>
+    </div>
+    <div class="url-item">
+      <span class="url-badge post">POST</span>
+      <span class="url-path">http://localhost:5048/api/auth/login</span>
+      <span class="url-desc">Login — retorna JWT o challenge token si 2FA está activo</span>
+    </div>
+    <div class="url-item">
+      <span class="url-badge post">POST</span>
+      <span class="url-path">http://localhost:5048/api/auth/2fa/verificar</span>
+      <span class="url-desc">✨ NUEVO — Segundo factor: valida código TOTP, retorna JWT completo</span>
+    </div>
+    <div class="url-item">
+      <span class="url-badge">GET</span>
+      <span class="url-path">http://localhost:5048/api/auth/2fa/estado</span>
+      <span class="url-desc">✨ NUEVO — Estado del 2FA del usuario autenticado</span>
+    </div>
+    <div class="url-item">
+      <span class="url-badge post">POST</span>
+      <span class="url-path">http://localhost:5048/api/auth/2fa/configurar</span>
+      <span class="url-desc">✨ NUEVO — Genera clave TOTP y devuelve URI para QR</span>
+    </div>
+    <div class="url-item">
+      <span class="url-badge post">POST</span>
+      <span class="url-path">http://localhost:5048/api/auth/2fa/activar</span>
+      <span class="url-desc">✨ NUEVO — Verifica código TOTP y habilita 2FA</span>
+    </div>
+    <div class="url-item">
+      <span class="url-badge post">POST</span>
+      <span class="url-path">http://localhost:5048/api/auth/2fa/desactivar</span>
+      <span class="url-desc">✨ NUEVO — Verifica código y deshabilita 2FA</span>
+    </div>
+    <div class="url-item">
+      <span class="url-badge">GET</span>
+      <span class="url-path">http://localhost:5048/api/reportes/citas</span>
+      <span class="url-desc">✨ NUEVO — Reporte de citas con filtros (fecha, empleado, servicio, estado)</span>
+    </div>
+    <div class="url-item">
+      <span class="url-badge">GET</span>
+      <span class="url-path">http://localhost:5048/api/reportes/citas/exportar</span>
+      <span class="url-desc">✨ NUEVO — Descarga CSV con BOM UTF-8 (compatible Excel)</span>
+    </div>
+    <div class="url-item">
+      <span class="url-badge">GET</span>
+      <span class="url-path">http://localhost:5048/api/reportes/ingresos</span>
+      <span class="url-desc">✨ NUEVO — Ingresos por servicio, empleado y día</span>
+    </div>
+    <div class="url-item">
+      <span class="url-badge patch">PATCH</span>
+      <span class="url-path">http://localhost:5048/api/negocios/perfil/colores</span>
+      <span class="url-desc">✨ NUEVO — El propietario actualiza sus propios colores</span>
+    </div>
+    <div class="url-item">
+      <span class="url-badge patch">PATCH</span>
+      <span class="url-path">http://localhost:5048/api/negocios/<em style="color:#C8A961">id</em>/colores</span>
+      <span class="url-desc">SuperAdmin actualiza colores de cualquier negocio</span>
+    </div>
+    <div class="url-item">
+      <span class="url-badge post">POST</span>
+      <span class="url-path">http://localhost:5048/api/publico/citas</span>
+      <span class="url-desc">Crear cita pública — respuesta incluye webcalUrl</span>
+    </div>
+    <div class="url-item">
+      <span class="url-badge">GET</span>
+      <span class="url-path">http://localhost:5048/api/publico/citas/<em style="color:#C8A961">CODIGO</em>/ical</span>
+      <span class="url-desc">Descarga .ics con alarma 1h antes, LOCATION y ORGANIZER</span>
+    </div>
+    <div class="url-item">
+      <span class="url-badge">GET</span>
+      <span class="url-path">http://localhost:5048/api/publico/verificar-email?userId=&amp;token=</span>
+      <span class="url-desc">✨ NUEVO — Verifica el token de confirmación de email del propietario</span>
+    </div>
+    <div class="url-item">
+      <span class="url-badge post">POST</span>
+      <span class="url-path">http://localhost:5048/api/publico/reenviar-verificacion</span>
+      <span class="url-desc">✨ NUEVO — Reenvía el email de verificación (body: {email})</span>
+    </div>
+    <div class="url-item">
+      <span class="url-badge">GET</span>
+      <span class="url-path">http://localhost:5048/api/publico/mis-citas?slug=&amp;email=&amp;telefono=&amp;pagina=1&amp;tamano=10</span>
+      <span class="url-desc">✨ ACTUALIZADO — Paginación real con header X-Total-Count (máx 50 por página)</span>
+    </div>
+  </div>
+
+  <div class="card card-gold" style="margin-top:24px;">
+    <h4 style="margin-top:0;color:#92400e;">Base de datos PostgreSQL</h4>
+    <p style="margin:0;font-family:monospace;font-size:12px;color:#78350f;">Host=localhost; Port=5433; Database=appointva; Username=postgres; Password=postgres</p>
+    <p style="margin-top:6px;font-size:11px;color:#92400e;">Contenedor Docker: <strong>postgres-appointva</strong></p>
+  </div>
+</div>
+
+<!-- ══════════════════ SECCIÓN 2: USUARIOS ══════════════════ -->
+<div class="container page-break">
+  <h2>2. Usuarios para Iniciar Sesión</h2>
+  <p>Todos los usuarios son creados automáticamente por el <strong>DataSeeder</strong> al iniciar la API por primera vez.</p>
+
+  <div class="user-grid">
+
+    <div class="user-card" style="border-color:#fde68a;grid-column:1/-1;">
+      <span class="user-role role-admin">SuperAdmin</span>
+      <div style="font-size:15px;font-weight:800;color:#111827;margin-bottom:12px;">Super Administrador</div>
+      <div class="cred-row">
+        <span class="cred-label">Email</span>
+        <span class="cred-value">admin@appointva.com</span>
+      </div>
+      <div class="cred-row">
+        <span class="cred-label">Contraseña</span>
+        <span class="cred-value">Admin123!</span>
+      </div>
+      <p style="margin-top:12px;font-size:12px;color:#6b7280;">
+        Acceso a <code>/admin</code> — puede crear negocios, propietarios y asignar colores personalizados a cada negocio.
+      </p>
+    </div>
+
+    <div class="user-card" style="border-color:#bfdbfe;">
+      <span class="user-role role-owner">Propietario</span>
+      <div style="font-size:14px;font-weight:800;color:#111827;margin-bottom:4px;">Luis Ramírez</div>
+      <div style="font-size:11px;color:#6b7280;margin-bottom:12px;">Barbería Luis</div>
+      <div class="cred-row">
+        <span class="cred-label">Email</span>
+        <span class="cred-value">luis@barberia-luis.com</span>
+      </div>
+      <div class="cred-row">
+        <span class="cred-label">Contraseña</span>
+        <span class="cred-value">Luis123!</span>
+      </div>
+      <p style="margin-top:10px;font-size:11px;color:#6b7280;">Dashboard completo. Acceso a Reportes, Seguridad (2FA), Personalización de colores y zona horaria.</p>
+    </div>
+
+    <div class="user-card" style="border-color:#bbf7d0;">
+      <span class="user-role role-employee">Empleado</span>
+      <div style="font-size:14px;font-weight:800;color:#111827;margin-bottom:4px;">Carlos Méndez</div>
+      <div style="font-size:11px;color:#6b7280;margin-bottom:12px;">Barbería Luis</div>
+      <div class="cred-row">
+        <span class="cred-label">Email</span>
+        <span class="cred-value">carlos@barberia-luis.com</span>
+      </div>
+      <div class="cred-row">
+        <span class="cred-label">Contraseña</span>
+        <span class="cred-value">Carlos123!</span>
+      </div>
+      <p style="margin-top:10px;font-size:11px;color:#6b7280;">Vista reducida: solo Inicio y Mis citas.</p>
+    </div>
+
+    <div class="user-card" style="border-color:#bfdbfe;">
+      <span class="user-role role-owner">Propietario</span>
+      <div style="font-size:14px;font-weight:800;color:#111827;margin-bottom:4px;">Aramis García</div>
+      <div style="font-size:11px;color:#6b7280;margin-bottom:12px;">Salón Aramis</div>
+      <div class="cred-row">
+        <span class="cred-label">Email</span>
+        <span class="cred-value">aramis@salon-aramis.com</span>
+      </div>
+      <div class="cred-row">
+        <span class="cred-label">Contraseña</span>
+        <span class="cred-value">Aramis123!</span>
+      </div>
+      <p style="margin-top:10px;font-size:11px;color:#6b7280;">Dashboard con datos demo: 8 clientes, 25+ citas históricas, 8 servicios.</p>
+    </div>
+
+    <div class="user-card" style="border-color:#bbf7d0;">
+      <span class="user-role role-employee">Empleado</span>
+      <div style="font-size:14px;font-weight:800;color:#111827;margin-bottom:4px;">Sofía Hernández</div>
+      <div style="font-size:11px;color:#6b7280;margin-bottom:12px;">Salón Aramis</div>
+      <div class="cred-row">
+        <span class="cred-label">Email</span>
+        <span class="cred-value">sofia@salon-aramis.com</span>
+      </div>
+      <div class="cred-row">
+        <span class="cred-label">Contraseña</span>
+        <span class="cred-value">Sofia123!</span>
+      </div>
+    </div>
+
+    <div class="user-card" style="border-color:#bbf7d0;">
+      <span class="user-role role-employee">Empleado</span>
+      <div style="font-size:14px;font-weight:800;color:#111827;margin-bottom:4px;">Valentina Cruz</div>
+      <div style="font-size:11px;color:#6b7280;margin-bottom:12px;">Salón Aramis</div>
+      <div class="cred-row">
+        <span class="cred-label">Email</span>
+        <span class="cred-value">valentina@salon-aramis.com</span>
+      </div>
+      <div class="cred-row">
+        <span class="cred-label">Contraseña</span>
+        <span class="cred-value">Valentina123!</span>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="card card-blue" style="margin-top:16px;">
+    <h4 style="margin-top:0;">URL de booking público (sin login)</h4>
+    <table style="margin:0;">
+      <tr><th>Negocio</th><th>URL</th></tr>
+      <tr><td>Barbería Luis</td><td><code>http://localhost:5173/b/barberia-luis</code></td></tr>
+      <tr><td>Salón Aramis</td><td><code>http://localhost:5173/b/salon-aramis</code></td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════════════ SECCIÓN 3: DIAGRAMAS ══════════════════ -->
+<div class="container page-break">
+  <h2>3. Diagramas de Flujo y Secuencia</h2>
+
+  <h3>3.1 Flujo de Reserva del Cliente (Booking Público)</h3>
+  <div class="seq">
+<span class="actor">CLIENTE</span>                    <span class="actor">BOOKING PAGE</span>               <span class="actor">API</span>
+
+  │                               │                          │
+  │── Visita /b/salon-aramis ────►│                          │
+  │                               │── GET /publico/negocios/salon-aramis ──►│
+  │                               │◄── {servicios, empleados, colores} ─────│
+  │                               │                          │
+  │◄── Paso 1: Elegir Servicio ───│                          │
+  │    (tarjetas con precio/duración)                        │
+  │── Selecciona "Corte de dama" ►│                          │
+  │◄── Paso 2: Elegir Empleado ───│                          │
+  │    [Sin preferencia | Aramis | Sofía | Valentina]        │
+  │── Selecciona empleado ───────►│                          │
+  │◄── Paso 3: Elegir Fecha/Hora ─│                          │
+  │                               │── GET /publico/disponibilidad?... ──────►│
+  │                               │◄── [{horaTexto, inicio, fin}] ──────────│
+  │── Selecciona slot ───────────►│                          │
+  │◄── Paso 4: Datos del cliente ─│                          │
+  │── Confirmar ─────────────────►│── POST /publico/citas ──►│
+  │                               │                          │── Valida disponibilidad
+  │                               │                          │── Crea cita en DB
+  │                               │                          │── Envía email + agenda recordatorio 24h
+  │                               │◄── {codigo, icalUrl, webcalUrl, googleCalUrl} ──│
+  │◄── Página de Confirmación ────│                          │
+  │    [Código | Link | WhatsApp | Apple Cal | Google Cal]   │
+  </div>
+
+  <h3>3.2 Flujo de Login con 2FA</h3>
+  <div class="seq">
+<span class="actor">USUARIO</span>                    <span class="actor">LOGIN PAGE</span>                <span class="actor">API</span>
+
+  │                               │                          │
+  │── Email + Password ──────────►│── POST /auth/login ─────►│
+  │                               │                          │── Valida credenciales
+  │                               │                          │
+  │   ┌── Si 2FA NO está activo: ──────────────────────────────────────────┐
+  │   │                          │◄── {token, refreshToken, usuario} ─────│
+  │   │◄── Redirige al dashboard ─│                          │             │
+  │   └────────────────────────────────────────────────────────────────────┘
+  │                               │                          │
+  │   ┌── Si 2FA SÍ está activo: ──────────────────────────────────────────┐
+  │   │                          │◄── {requiere2FA: true, challengeToken} ─│
+  │   │◄── Pantalla de código ────│  (challenge válido 5 minutos)          │
+  │   │── Ingresa código TOTP ───►│── POST /auth/2fa/verificar ───────────►│
+  │   │                          │         {challengeToken, codigo}        │── Valida TOTP
+  │   │                          │◄── {token, refreshToken, usuario} ─────│
+  │   │◄── Redirige al dashboard ─│                          │             │
+  │   └────────────────────────────────────────────────────────────────────┘
+  </div>
+
+  <h3>3.3 Flujo de Reportes</h3>
+  <div class="seq">
+<span class="actor">PROPIETARIO</span>               <span class="actor">REPORTES PAGE</span>             <span class="actor">API</span>
+
+  │                               │                          │
+  │── Clic "Reportes" en sidebar ►│                          │
+  │                               │── GET /empleados ───────►│ (para filtro)
+  │                               │── GET /servicios ───────►│ (para filtro)
+  │◄── Página cargada con filtros ─│                          │
+  │    [Desde: 01/06 | Hasta: hoy | Todos los empleados]     │
+  │                               │                          │
+  │                               │── GET /reportes/citas?desde=&hasta= ───►│
+  │                               │◄── {totalCitas, totalIngresos, citas[]} │
+  │◄── Tabla + tarjetas resumen ──│                          │
+  │                               │                          │
+  │── Cambia tab a "Ingresos" ───►│── GET /reportes/ingresos ──────────────►│
+  │                               │◄── {porServicio[], porEmpleado[], porDia[]} │
+  │◄── Gráficas de barras ────────│                          │
+  │                               │                          │
+  │── Clic "Exportar CSV" ───────►│── GET /reportes/citas/exportar ────────►│
+  │                               │◄── archivo.csv (BOM UTF-8)              │
+  │◄── Descarga automática ───────│                          │
+  </div>
+
+  <h3>3.4 Flujo Propietario — Activar 2FA</h3>
+  <div class="seq">
+<span class="actor">PROPIETARIO</span>               <span class="actor">SEGURIDAD PAGE</span>            <span class="actor">API</span>
+
+  │                               │                          │
+  │── Clic "Seguridad" en sidebar►│── GET /auth/2fa/estado ─►│
+  │                               │◄── {habilitado: false} ──│
+  │◄── Panel con botón Activar ───│                          │
+  │                               │                          │
+  │── Clic "Activar 2FA" ────────►│── POST /auth/2fa/configurar ──────────►│
+  │                               │◄── {uri: "otpauth://...", llave: "XXXX XXXX..."} │
+  │◄── Código QR + llave manual ──│                          │
+  │    (escanea con Google Auth)  │                          │
+  │                               │                          │
+  │── Ingresa código 6 dígitos ──►│── POST /auth/2fa/activar ──────────────►│
+  │                               │         {codigo: "123456"}              │── Verifica TOTP
+  │                               │◄── {mensaje: "2FA activado"} ───────────│
+  │◄── Mensaje de éxito ──────────│                          │
+  │    (próximo login pedirá QR)  │                          │
+  </div>
+</div>
+
+<!-- ══════════════════ SECCIÓN 4: PANTALLAS ══════════════════ -->
+<div class="container page-break">
+  <h2>4. Pantallas del Sistema</h2>
+
+  <h3>4.1 Dashboard — Sidebar completo (propietario)</h3>
+  <div class="screen">
+    <div class="screen-bar">
+      <div class="dot" style="background:#ff5f57;"></div>
+      <div class="dot" style="background:#febc2e;"></div>
+      <div class="dot" style="background:#28c840;"></div>
+      <div class="screen-url">localhost:5173/dashboard/reportes</div>
+    </div>
+    <div class="screen-body">
+      <div class="mock-layout">
+        <div class="mock-sidebar">
+          <div class="logo-area">AppointVa</div>
+          <div class="nav-item"><div class="nav-dot"></div> Inicio</div>
+          <div class="nav-item" style="justify-content:space-between;">
+            <div style="display:flex;align-items:center;gap:8px;"><div class="nav-dot"></div> Citas</div>
+            <div style="background:#ef4444;color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:999px;">3</div>
+          </div>
+          <div class="nav-item"><div class="nav-dot"></div> Empleados</div>
+          <div class="nav-item"><div class="nav-dot"></div> Servicios</div>
+          <div class="nav-item"><div class="nav-dot"></div> Clientes</div>
+          <div class="nav-item"><div class="nav-dot"></div> Mi negocio</div>
+          <div class="nav-item active"><div class="nav-dot"></div> Reportes</div>
+          <div class="nav-item"><div class="nav-dot"></div> Seguridad</div>
+          <div style="margin-top:auto;padding:8px 0;border-top:1px solid #f3f4f6;">
+            <div style="display:flex;align-items:center;gap:6px;padding:6px 8px;border:1px solid #e5e7eb;border-radius:6px;font-size:10px;color:#9ca3af;">
+              🔗 Copiar enlace de reservas
+            </div>
+          </div>
+        </div>
+        <div class="mock-content">
+          <div style="font-size:14px;font-weight:800;margin-bottom:4px;">Reportes</div>
+          <div style="font-size:11px;color:#9ca3af;margin-bottom:14px;">Análisis de citas e ingresos</div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;">
+            <div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:10px;display:flex;align-items:center;gap:8px;">
+              <div style="width:28px;height:28px;background:#fffbeb;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;">📅</div>
+              <div><div style="font-size:9px;color:#9ca3af;">Total citas</div><div style="font-size:16px;font-weight:800;">48</div></div>
+            </div>
+            <div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:10px;display:flex;align-items:center;gap:8px;">
+              <div style="width:28px;height:28px;background:#f0fdf4;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;">✅</div>
+              <div><div style="font-size:9px;color:#9ca3af;">Completadas</div><div style="font-size:16px;font-weight:800;">35</div></div>
+            </div>
+            <div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:10px;display:flex;align-items:center;gap:8px;">
+              <div style="width:28px;height:28px;background:#fffbeb;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;">💰</div>
+              <div><div style="font-size:9px;color:#9ca3af;">Ingresos</div><div style="font-size:13px;font-weight:800;color:#C8A961;">$12,450</div></div>
+            </div>
+            <div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:10px;display:flex;align-items:center;gap:8px;">
+              <div style="width:28px;height:28px;background:#fef2f2;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;">📊</div>
+              <div><div style="font-size:9px;color:#9ca3af;">Inasistencias</div><div style="font-size:16px;font-weight:800;">4</div></div>
+            </div>
+          </div>
+          <div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;">
+            <table style="margin:0;font-size:10px;">
+              <tr><th>Código</th><th>Cliente</th><th>Servicio</th><th>Empleado</th><th>Precio</th><th>Estado</th></tr>
+              <tr><td style="font-family:monospace;color:#9ca3af;">4D959D88</td><td>Ana Gómez</td><td>Corte de dama</td><td>Aramis G.</td><td style="font-weight:700;">$280</td><td><span style="background:#dcfce7;color:#166534;padding:1px 6px;border-radius:999px;font-size:9px;">Completada</span></td></tr>
+              <tr><td style="font-family:monospace;color:#9ca3af;">B2C14E77</td><td>María L.</td><td>Keratina</td><td>Sofía H.</td><td style="font-weight:700;">$1,500</td><td><span style="background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:999px;font-size:9px;">Pendiente</span></td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3>4.2 Seguridad — Configurar 2FA con QR</h3>
+  <div class="screen">
+    <div class="screen-bar">
+      <div class="dot" style="background:#ff5f57;"></div>
+      <div class="dot" style="background:#febc2e;"></div>
+      <div class="dot" style="background:#28c840;"></div>
+      <div class="screen-url">localhost:5173/dashboard/seguridad</div>
+    </div>
+    <div class="screen-body" style="padding:20px;">
+      <div style="max-width:420px;margin:0 auto;">
+        <div style="font-size:16px;font-weight:800;margin-bottom:4px;">Seguridad</div>
+        <div style="font-size:11px;color:#9ca3af;margin-bottom:16px;">Autenticación de dos factores (2FA)</div>
+        <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:14px;display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+          <div style="width:36px;height:36px;background:#e5e7eb;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;">🛡️</div>
+          <div>
+            <div style="font-weight:700;font-size:13px;">2FA desactivado</div>
+            <div style="font-size:11px;color:#9ca3af;">Activa 2FA para mayor seguridad.</div>
+          </div>
+        </div>
+        <div style="background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:16px;">
+          <div style="font-weight:700;font-size:13px;margin-bottom:12px;">Escanea el código QR</div>
+          <div style="display:flex;justify-content:center;margin-bottom:12px;">
+            <div style="width:120px;height:120px;border:2px solid #e5e7eb;border-radius:8px;background:repeating-conic-gradient(#1f2937 0% 25%, white 0% 50%) 0 0 / 8px 8px;"></div>
+          </div>
+          <div style="text-align:center;font-size:10px;color:#9ca3af;margin-bottom:8px;">Clave manual:</div>
+          <div style="text-align:center;font-family:monospace;font-size:12px;font-weight:700;background:#f9fafb;border-radius:6px;padding:8px;letter-spacing:4px;margin-bottom:12px;">JBSW Y3DP EBZW Y3DP</div>
+          <input type="text" placeholder="000000" style="width:100%;text-align:center;font-family:monospace;font-size:20px;letter-spacing:8px;border:1px solid #e5e7eb;border-radius:8px;padding:10px;outline:none;" readonly />
+          <div style="display:flex;gap:8px;margin-top:12px;">
+            <div style="flex:1;padding:10px;border:2px solid #e5e7eb;border-radius:8px;text-align:center;font-size:12px;color:#6b7280;font-weight:600;">Cancelar</div>
+            <div style="flex:1;padding:10px;background:#C8A961;border-radius:8px;text-align:center;font-size:12px;color:#fff;font-weight:700;">Confirmar activación</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3>4.3 Login — Paso de verificación 2FA</h3>
+  <div class="screen">
+    <div class="screen-bar">
+      <div class="dot" style="background:#ff5f57;"></div>
+      <div class="dot" style="background:#febc2e;"></div>
+      <div class="dot" style="background:#28c840;"></div>
+      <div class="screen-url">localhost:5173/login</div>
+    </div>
+    <div class="screen-body" style="padding:30px 20px;">
+      <div style="max-width:360px;margin:0 auto;text-align:center;">
+        <div style="width:48px;height:48px;background:#fffbeb;border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:24px;">🔐</div>
+        <div style="font-size:16px;font-weight:800;margin-bottom:4px;">Verificación en dos pasos</div>
+        <div style="font-size:11px;color:#9ca3af;margin-bottom:20px;">Ingresa el código de 6 dígitos de tu app autenticadora</div>
+        <input type="text" placeholder="0 0 0 0 0 0" style="width:100%;text-align:center;font-family:monospace;font-size:28px;letter-spacing:10px;border:1px solid #e5e7eb;border-radius:10px;padding:14px;outline:none;" readonly />
+        <div style="margin-top:12px;background:#C8A961;color:#fff;padding:12px;border-radius:10px;font-weight:700;font-size:14px;">Verificar</div>
+        <div style="margin-top:10px;font-size:11px;color:#9ca3af;">← Volver al inicio de sesión</div>
+      </div>
+    </div>
+  </div>
+
+  <h3>4.4 Mi negocio — Personalización de colores</h3>
+  <div class="screen">
+    <div class="screen-bar">
+      <div class="dot" style="background:#ff5f57;"></div>
+      <div class="dot" style="background:#febc2e;"></div>
+      <div class="dot" style="background:#28c840;"></div>
+      <div class="screen-url">localhost:5173/dashboard/perfil</div>
+    </div>
+    <div class="screen-body" style="padding:20px;">
+      <div style="max-width:500px;">
+        <div style="font-size:13px;font-weight:700;margin-bottom:4px;">Personalización</div>
+        <div style="font-size:11px;color:#9ca3af;margin-bottom:14px;">Los colores se aplican en tu página pública de reservas.</div>
+        <div style="display:flex;gap:24px;align-items:flex-end;flex-wrap:wrap;">
+          <div>
+            <div style="font-size:11px;font-weight:600;color:#6b7280;margin-bottom:8px;">Color principal</div>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="width:36px;height:36px;background:#C8A961;border-radius:8px;border:2px solid #e5e7eb;"></div>
+              <div style="width:80px;font-family:monospace;font-size:12px;border:1px solid #e5e7eb;border-radius:6px;padding:6px 8px;font-weight:700;">#C8A961</div>
+              <div style="width:28px;height:28px;border-radius:6px;background:#C8A961;border:1px solid #e5e7eb;"></div>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:600;color:#6b7280;margin-bottom:8px;">Color secundario</div>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="width:36px;height:36px;background:#a88b45;border-radius:8px;border:2px solid #e5e7eb;"></div>
+              <div style="width:80px;font-family:monospace;font-size:12px;border:1px solid #e5e7eb;border-radius:6px;padding:6px 8px;font-weight:700;">#a88b45</div>
+              <div style="width:28px;height:28px;border-radius:6px;background:#a88b45;border:1px solid #e5e7eb;"></div>
+            </div>
+          </div>
+          <div style="background:#C8A961;color:#fff;padding:10px 20px;border-radius:10px;font-size:12px;font-weight:700;">Guardar colores</div>
+        </div>
+        <div style="margin-top:16px;">
+          <div style="font-size:11px;font-weight:600;color:#6b7280;margin-bottom:6px;">Zona horaria</div>
+          <select style="padding:8px 12px;border:1px solid #e5e7eb;border-radius:8px;font-size:12px;width:280px;">
+            <option>Ciudad de México (CST/CDT)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ SECCIÓN 5: CAMBIOS ══════════════════ -->
+<div class="container page-break">
+  <h2>5. Registro de Cambios — Sesión Actual (Junio 2026)</h2>
+
+  <!-- ── v2.2 ── -->
+  <h3>v2.2 — Observabilidad, rendimiento y política de cancelación</h3>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#dcfce7;">🏥</div>
+    <div>
+      <div class="change-title">Health check endpoint en /health</div>
+      <div class="change-desc">
+        Endpoint <code>GET /health</code> que verifica la conexión a la base de datos (EF Core DbContext check). Responde con JSON estructurado:<br>
+        <code>{ "estado": "Healthy", "checks": [{ "nombre": "base-de-datos", "estado": "Healthy" }] }</code><br>
+        Necesario para Railway, Render, Azure App Service y cualquier orquestador que requiera readiness probe.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">Program.cs</span>
+        <span class="file-chip">Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore 8.0.10</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#dbeafe;">📝</div>
+    <div>
+      <div class="change-title">Serilog — logging estructurado persistente</div>
+      <div class="change-desc">
+        Reemplaza el logger genérico de .NET por Serilog con doble sink: consola (formato legible) y archivo con rolling diario en <code>logs/appointva-YYYYMMDD.log</code>. Configurado con nivel mínimo <code>Warning</code> para no saturar el disco con ruido del framework, capturando todos los errores de la aplicación.<br>
+        • Rotación automática diaria, retención de últimos 30 archivos.<br>
+        • Se resolvió conflicto de nombre <code>Resend.Log</code> vs <code>Serilog.Log</code> usando el namespace completo <code>Serilog.Log.Logger = ...</code>
+      </div>
+      <div class="change-files">
+        <span class="file-chip">Program.cs</span>
+        <span class="file-chip">Serilog.AspNetCore 8.0.3</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#f3e8ff;">⚡</div>
+    <div>
+      <div class="change-title">Output cache en GET /publico/negocios/{slug}</div>
+      <div class="change-desc">
+        El endpoint más golpeado del sistema (se llama cada vez que un cliente abre la página de booking) ahora se cachea 5 minutos con <code>[OutputCache(Duration = 300)]</code> nativo de .NET 8. Incluye empleados, servicios, categorías y colores — datos que cambian muy poco.<br>
+        <strong>Impacto:</strong> 50 visitas/hora → 1 query a DB cada 5 min en lugar de 50.<br>
+        <code>app.UseOutputCache()</code> agregado al pipeline HTTP.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">Program.cs</span>
+        <span class="file-chip">PublicoController.cs</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#fee2e2;">⏱️</div>
+    <div>
+      <div class="change-title">Política de cancelación configurable</div>
+      <div class="change-desc">
+        Los negocios ahora pueden definir cuántas horas de anticipación mínima requieren para cancelar una cita.<br>
+        <strong>Backend:</strong><br>
+        • Campo <code>HorasCancelacion int</code> (default 0 = sin restricción) añadido al modelo <code>Negocio</code>.<br>
+        • Migración EF Core <code>PoliticaCancelacion</code> generada.<br>
+        • <code>PUT /api/negocios/perfil</code> acepta y persiste el nuevo campo (<code>ActualizarNegocioDto</code>).<br>
+        • <code>DELETE /publico/citas/{codigo}</code> valida que <code>cita.InicioEn - UtcNow &gt; HorasCancelacion</code> antes de cancelar. Retorna <code>400</code> con mensaje legible si se viola la política.<br>
+        • <code>GET /publico/citas/{codigo}</code> devuelve <code>horasCancelacion</code> en el DTO.<br>
+        <strong>Frontend:</strong><br>
+        • <code>PerfilPage</code>: nuevo select "Política de cancelación" con opciones 0h–48h.<br>
+        • <code>ConfirmacionPage</code>: muestra aviso de política, oculta el botón "Cancelar cita" si ya no es posible cancelar según el tiempo restante. Calcula en cliente para feedback inmediato.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">Negocio.cs</span>
+        <span class="file-chip">NegocioDto.cs</span>
+        <span class="file-chip">ActualizarNegocioDto.cs</span>
+        <span class="file-chip">ConfirmacionCitaDto.cs</span>
+        <span class="file-chip">NegociosController.cs</span>
+        <span class="file-chip">PublicoController.cs</span>
+        <span class="file-chip">Migrations/PoliticaCancelacion</span>
+        <span class="file-chip">types/index.ts</span>
+        <span class="file-chip">PerfilPage.tsx</span>
+        <span class="file-chip">ConfirmacionPage.tsx</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#f0fdf4;">💬</div>
+    <div>
+      <div class="change-title">Botón "Compartir por WhatsApp" en ConfirmacionPage</div>
+      <div class="change-desc">
+        La página de confirmación de cita incluye un botón verde que genera un enlace <code>https://wa.me/?text=...</code> con el resumen de la cita prearmado (negocio, servicio, empleado, fecha, link de la cita). Sin API externa, cero costo. Disponible en todas las plataformas (móvil y escritorio).
+      </div>
+      <div class="change-files">
+        <span class="file-chip">ConfirmacionPage.tsx</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── v2.1 ── -->
+  <h3>v2.1 — Recordatorio al empleado, verificación de email, paginación y pulido</h3>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#dcfce7;">📧</div>
+    <div>
+      <div class="change-title">Verificación de email al registrar negocio</div>
+      <div class="change-desc">
+        <code>RegistrarNegocio</code> envía email de verificación y crea el usuario con <code>EmailConfirmed = false</code>. El login bloquea usuarios no verificados con <code>403 codigoError: "EMAIL_NO_VERIFICADO"</code>.<br>
+        <strong>Nuevos endpoints:</strong> <code>GET /publico/verificar-email</code> y <code>POST /publico/reenviar-verificacion</code>.<br>
+        <strong>Frontend:</strong> <code>RegistroNegocioPage</code> muestra pantalla de confirmación con reenvío. <code>LoginPage</code> detecta el código de error y muestra banner ámbar con botón de reenvío. Nueva página <code>VerificarEmailPage</code> en <code>/verificar-email</code>.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">PublicoController.cs</span>
+        <span class="file-chip">AutenticacionController.cs</span>
+        <span class="file-chip">IEmailService.cs</span>
+        <span class="file-chip">EmailService.cs</span>
+        <span class="file-chip">ReenviarVerificacionDto.cs (NUEVO)</span>
+        <span class="file-chip">RegistroNegocioPage.tsx</span>
+        <span class="file-chip">LoginPage.tsx</span>
+        <span class="file-chip">VerificarEmailPage.tsx (NUEVO)</span>
+        <span class="file-chip">App.tsx</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#dbeafe;">🔔</div>
+    <div>
+      <div class="change-title">Recordatorio de cita también al empleado</div>
+      <div class="change-desc">
+        <code>RecordatorioService</code> ahora notifica al empleado además del cliente. Si el empleado no tiene email configurado, se omite gracefully sin lanzar excepción. Nuevo template HTML <code>PlantillaRecordatorioEmpleado</code> en <code>EmailService</code>.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">RecordatorioService.cs</span>
+        <span class="file-chip">IEmailService.cs</span>
+        <span class="file-chip">EmailService.cs</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#f3e8ff;">📋</div>
+    <div>
+      <div class="change-title">Paginación en ClientesPage</div>
+      <div class="change-desc">
+        El backend <code>ClientesController</code> ya devolvía <code>X-Total-Count</code>. El frontend ahora lo aprovecha: estado <code>pagina</code>, botones Anterior/numerados/Siguiente (igual que <code>CitasPage</code>). Buscar y limpiar resetean a página 1.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">ClientesPage.tsx</span>
+        <span class="file-chip">api/clientes.ts</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#fee2e2;">🔒</div>
+    <div>
+      <div class="change-title">Transacciones Serializables en reservas (anti race condition)</div>
+      <div class="change-desc">
+        Tanto <code>CitasController.Crear</code> como <code>PublicoController.CrearCita</code> envuelven el check de solapamiento + inserción en una transacción <code>IsolationLevel.Serializable</code>. Si dos reservas concurrentes chocan, PostgreSQL lanza el error <code>40001</code> y se retorna <code>409 Conflict</code>. Helper estático <code>EsConflictoSerializacion</code> detecta el tipo de excepción de Npgsql sin depender del tipo concreto.<br>
+        Además se valida que el empleado pertenezca al negocio antes de crear la cita, evitando booking cross-business.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">CitasController.cs</span>
+        <span class="file-chip">PublicoController.cs</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#fffbeb;">🔄</div>
+    <div>
+      <div class="change-title">Interceptor 401 — no redirige en endpoints de auth</div>
+      <div class="change-desc">
+        El interceptor de axios redirigía a <code>/login</code> en CUALQUIER 401, incluyendo el propio endpoint de login, lo que generaba un bucle. Ahora verifica la URL del request: si incluye <code>/auth/login</code>, <code>/auth/refresh</code> o <code>/auth/2fa</code>, deja pasar el error sin redirigir.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">api/axios.ts</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#f0fdf4;">⚡</div>
+    <div>
+      <div class="change-title">Ronda 3 — Eliminación de N+1 queries y aggregates en SQL</div>
+      <div class="change-desc">
+        <strong>EmpleadosController:</strong> el loop <code>foreach + ObtenerServicioIdsAsync</code> que hacía 1 query por empleado fue reemplazado por <code>ObtenerServicioIdsBatchAsync</code> — una sola query que retorna un <code>Dictionary&lt;Guid, List&lt;Guid&gt;&gt;</code>.<br>
+        <strong>PublicoController.ObtenerNegocio:</strong> empleados + relaciones de servicios unificados en una query proyectada con subquery inline.<br>
+        <strong>ReportesController.ReporteIngresos:</strong> COUNT, SUM y GroupBy se ejecutan en SQL. Solo se bajan a memoria los puntos <code>(fecha, precio)</code> para agrupar por día (DateTrunc requiere extensión que no se cargó; se resolvió en memoria con datos mínimos).
+      </div>
+      <div class="change-files">
+        <span class="file-chip">IEmpleadoRepository.cs</span>
+        <span class="file-chip">EmpleadoRepository.cs</span>
+        <span class="file-chip">EmpleadosController.cs</span>
+        <span class="file-chip">PublicoController.cs</span>
+        <span class="file-chip">ReportesController.cs</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#dbeafe;">🛡️</div>
+    <div>
+      <div class="change-title">Rutas del dashboard restringidas por rol en el enrutador</div>
+      <div class="change-desc">
+        Antes solo el sidebar ocultaba las opciones de Propietario al empleado, pero la URL podía accederse directamente. Ahora <code>App.tsx</code> anida un segundo <code>RutaProtegida roles={["Propietario"]}</code> que protege <code>/dashboard/empleados</code>, <code>/servicios</code>, <code>/clientes</code>, <code>/perfil</code> y <code>/reportes</code>. El empleado es redirigido a <code>/dashboard</code> si intenta acceder.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">App.tsx</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#f3e8ff;">📄</div>
+    <div>
+      <div class="change-title">Paginación real en MisCitasPage</div>
+      <div class="change-desc">
+        El endpoint <code>GET /publico/mis-citas</code> ahora acepta <code>pagina</code> y <code>tamano</code> (máx 50, default 10) y devuelve el total en <code>X-Total-Count</code>. El <code>Take(30)</code> hardcodeado fue eliminado. El frontend muestra controles Anterior/numerados/Siguiente con ellipsis para rangos largos.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">PublicoController.cs</span>
+        <span class="file-chip">MisCitasPage.tsx</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#fef3c7;">🔁</div>
+    <div>
+      <div class="change-title">Resiliencia frontend — retry, errores y feedback</div>
+      <div class="change-desc">
+        <code>PasoFechaHora</code>: query con <code>retry: 2, retryDelay: 1000</code> y UI de error con spinner + botón "Intentar de nuevo".<br>
+        <code>CitasPage</code>: <code>onError</code> en mutations de reagendar, marcar pagada y cambiar estado — muestra toast con el mensaje del backend.<br>
+        <code>RegistrarNegocio</code>: wrapped en transacción DB real para evitar estado inconsistente (negocio creado sin usuario o viceversa).
+      </div>
+      <div class="change-files">
+        <span class="file-chip">PasoFechaHora.tsx</span>
+        <span class="file-chip">CitasPage.tsx</span>
+        <span class="file-chip">PublicoController.cs</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Separador secciones anteriores ── -->
+  <h3 style="margin-top:40px;border-top:2px solid #e5e7eb;padding-top:24px;">v2.0 — Reportes, 2FA, Personalización y Performance (sesión anterior)</h3>
+
+  <h3>Limpieza y calidad de código</h3>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#fee2e2;">🗑️</div>
+    <div>
+      <div class="change-title">Eliminado HorariosController (stub)</div>
+      <div class="change-desc">El controlador era un stub generado automáticamente que solo retornaba <code>View()</code>. Los endpoints de horarios ya estaban implementados en <code>NegociosController</code> y <code>EmpleadosController</code>.</div>
+      <div class="change-files">
+        <span class="file-chip">HorariosController.cs (ELIMINADO)</span>
+      </div>
+    </div>
+  </div>
+
+  <h3 style="margin-top:28px;">Reportes — Backend</h3>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#dcfce7;">📊</div>
+    <div>
+      <div class="change-title">Nuevo ReportesController con 3 endpoints</div>
+      <div class="change-desc">
+        Solo para rol <code>Propietario</code>. Los tres endpoints:<br>
+        • <code>GET /api/reportes/citas</code> — filtros por fecha, empleado, servicio y estado. Retorna totales (completadas, canceladas, inasistencias, ingresos desglosados por método de pago) + lista de citas.<br>
+        • <code>GET /api/reportes/citas/exportar</code> — descarga CSV con BOM UTF-8 (compatible con Excel en español). Token JWT se envía en header Authorization, no en URL.<br>
+        • <code>GET /api/reportes/ingresos</code> — ingresos por servicio (con porcentaje), por empleado y por día. Incluye ticket promedio.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">ReportesController.cs (NUEVO)</span>
+        <span class="file-chip">Dtos/Reportes/ReporteCitasDto.cs (NUEVO)</span>
+        <span class="file-chip">Dtos/Reportes/ReporteIngresosDto.cs (NUEVO)</span>
+      </div>
+    </div>
+  </div>
+
+  <h3 style="margin-top:28px;">Reportes — Frontend</h3>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#dbeafe;">📈</div>
+    <div>
+      <div class="change-title">Nueva página ReportesPage</div>
+      <div class="change-desc">
+        Tab "Citas": filtros interactivos (fecha, empleado, servicio, estado), 4 tarjetas de resumen, tabla completa con <code>SkeletonTableRows</code> durante carga, botón "Exportar CSV" (descarga con Bearer token via axios blob).<br>
+        Tab "Ingresos": 3 tarjetas, gráfica horizontal de barras por servicio (Recharts), gráfica vertical por día, tabla de ingresos por empleado.<br>
+        Nuevo ítem "Reportes" (BarChart2) en sidebar de propietario.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">ReportesPage.tsx (NUEVO)</span>
+        <span class="file-chip">api/reportes.ts (NUEVO)</span>
+        <span class="file-chip">DashboardLayout.tsx</span>
+        <span class="file-chip">App.tsx</span>
+      </div>
+    </div>
+  </div>
+
+  <h3 style="margin-top:28px;">Personalización — Backend</h3>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#f3e8ff;">🎨</div>
+    <div>
+      <div class="change-title">Endpoint de colores para el propietario</div>
+      <div class="change-desc">Nuevo endpoint <code>PATCH /api/negocios/perfil/colores</code> exclusivo para <code>Propietario</code> (el existente <code>PATCH /{id}/colores</code> sigue siendo solo para SuperAdmin). El propietario puede actualizar sus propios colores desde el dashboard sin necesitar que el administrador lo haga.</div>
+      <div class="change-files">
+        <span class="file-chip">NegociosController.cs</span>
+      </div>
+    </div>
+  </div>
+
+  <h3 style="margin-top:28px;">Personalización — Frontend</h3>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#fef3c7;">🖌️</div>
+    <div>
+      <div class="change-title">Color picker + zona horaria en PerfilPage</div>
+      <div class="change-desc">
+        Nueva sección "Personalización" en Mi negocio con:<br>
+        • Color picker nativo (<code>&lt;input type="color"&gt;</code>) + campo hex editable + preview en tiempo real para color primario y secundario.<br>
+        • Campo zona horaria cambiado de text libre a <code>&lt;select&gt;</code> con 12 opciones LATAM/USA (Ciudad de México, Monterrey, Tijuana, Bogotá, Buenos Aires, etc.).<br>
+        Llama a <code>PATCH /api/negocios/perfil/colores</code> e invalida la query del layout para que el sidebar actualice el color inmediatamente.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">PerfilPage.tsx</span>
+        <span class="file-chip">api/negocios.ts</span>
+      </div>
+    </div>
+  </div>
+
+  <h3 style="margin-top:28px;">2FA — Backend</h3>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#dcfce7;">🔐</div>
+    <div>
+      <div class="change-title">2FA con TOTP — 5 endpoints + login modificado</div>
+      <div class="change-desc">
+        Usa el soporte nativo de TOTP de ASP.NET Identity (sin paquetes externos).<br>
+        <strong>Login:</strong> si el usuario tiene 2FA activo, retorna <code>{requiere2FA: true, challengeToken}</code>. El challenge token es un JWT especial con claim <code>"2fa_challenge": "true"</code>, expira en 5 minutos.<br>
+        <strong>Nuevos endpoints:</strong><br>
+        • <code>GET /auth/2fa/estado</code> — <code>{habilitado, tieneConfiguracion}</code><br>
+        • <code>POST /auth/2fa/configurar</code> — genera/resetea la clave TOTP y retorna <code>{uri: "otpauth://...", llave: "JBSW Y3DP..."}</code><br>
+        • <code>POST /auth/2fa/activar</code> — verifica código TOTP y llama <code>SetTwoFactorEnabledAsync(true)</code><br>
+        • <code>POST /auth/2fa/desactivar</code> — verifica código y resetea la clave TOTP<br>
+        • <code>POST /auth/2fa/verificar</code> — valida challenge token + código TOTP, retorna JWT completo<br>
+        <strong>IJwtService:</strong> nuevos métodos <code>GenerarChallengeToken2FA</code> y <code>ValidarChallengeToken2FA</code>.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">AutenticacionController.cs</span>
+        <span class="file-chip">IJwtService.cs</span>
+        <span class="file-chip">JwtService.cs</span>
+        <span class="file-chip">Dtos/Autenticacion/DosFactoresDto.cs (NUEVO)</span>
+        <span class="file-chip">Dtos/Autenticacion/LoginRespuestaDto.cs</span>
+      </div>
+    </div>
+  </div>
+
+  <h3 style="margin-top:28px;">2FA — Frontend</h3>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#dbeafe;">🛡️</div>
+    <div>
+      <div class="change-title">Página DosFactoresPage + flujo de login 2FA</div>
+      <div class="change-desc">
+        <strong>LoginPage:</strong> detecta <code>requiere2FA: true</code> en la respuesta del login y muestra un segundo paso con input de 6 dígitos (font-mono, tracking wide). Botón "Volver al login" y manejo de errores de código incorrecto/expirado.<br>
+        <strong>DosFactoresPage</strong> (ruta <code>/dashboard/seguridad</code>):<br>
+        • Estado actual con badge verde/gris según si está activo.<br>
+        • Flujo de activación: instrucciones → genera QR → escanea → confirma con código.<br>
+        • Código QR renderizado con <code>qrcode.react</code> (paquete instalado).<br>
+        • Clave manual en formato grupos de 4 (JBSW Y3DP...) con <code>select-all</code>.<br>
+        • Sección de desactivación con verificación por código TOTP.<br>
+        Nuevo ítem "Seguridad" (ShieldCheck) en sidebar de propietario.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">DosFactoresPage.tsx (NUEVO)</span>
+        <span class="file-chip">LoginPage.tsx</span>
+        <span class="file-chip">api/auth.ts</span>
+        <span class="file-chip">types/index.ts</span>
+        <span class="file-chip">DashboardLayout.tsx</span>
+        <span class="file-chip">App.tsx</span>
+      </div>
+    </div>
+  </div>
+
+  <h3 style="margin-top:28px;">Calendarios</h3>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#f0fdf4;">📅</div>
+    <div>
+      <div class="change-title">iCal mejorado + webcal:// para Apple Calendar</div>
+      <div class="change-desc">
+        <strong>Backend:</strong> el archivo .ics ahora incluye: <code>LOCATION</code> (dirección del negocio si existe), <code>ORGANIZER</code> (email del negocio), <code>VALARM</code> con recordatorio 1 hora antes, y <code>SUMMARY</code> más descriptivo con nombre del empleado.<br>
+        <strong>ConfirmacionCitaDto:</strong> nuevo campo <code>WebcalUrl</code> (igual que <code>IcalUrl</code> pero con esquema <code>webcal://</code> en lugar de <code>https://</code>).<br>
+        <strong>Frontend:</strong> el botón "Apple Calendar" en la página de confirmación usa <code>webcalUrl</code> para que iOS/macOS abra la app Calendar directamente en lugar de descargar el archivo.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">PublicoController.cs</span>
+        <span class="file-chip">ConfirmacionCitaDto.cs</span>
+        <span class="file-chip">ConfirmacionPage.tsx</span>
+        <span class="file-chip">types/index.ts</span>
+      </div>
+    </div>
+  </div>
+
+  <h3 style="margin-top:28px;">Cambios anteriores (sesiones previas)</h3>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#dcfce7;">🐘</div>
+    <div>
+      <div class="change-title">Migración SQL Server → PostgreSQL</div>
+      <div class="change-desc">Cambio completo del proveedor de base de datos. Npgsql + Hangfire.PostgreSql. PostgreSQL corre en Docker puerto 5433.</div>
+      <div class="change-files">
+        <span class="file-chip">AppointVaAPI.csproj</span>
+        <span class="file-chip">Program.cs</span>
+        <span class="file-chip">appsettings.json</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#fef3c7;">🗂️</div>
+    <div>
+      <div class="change-title">Índices de base de datos (migración IndicesYMejoras)</div>
+      <div class="change-desc">Índices únicos en <code>CodigoConfirmacion</code> y <code>Slug</code>. Índices compuestos en <code>(NegocioId, InicioEn)</code>, <code>(EmpleadoId, InicioEn)</code>, <code>(NegocioId, Telefono)</code> y <code>(NegocioId, Email)</code>.</div>
+      <div class="change-files">
+        <span class="file-chip">ApplicationDbContext.cs</span>
+        <span class="file-chip">Migrations/IndicesYMejoras</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#dbeafe;">🛡️</div>
+    <div>
+      <div class="change-title">ExceptionHandlingMiddleware global</div>
+      <div class="change-desc">Captura cualquier excepción no controlada y retorna <code>500 {mensaje: "Ocurrió un error interno..."}</code> en lugar de stack trace.</div>
+      <div class="change-files">
+        <span class="file-chip">Middleware/ExceptionHandlingMiddleware.cs (NUEVO)</span>
+        <span class="file-chip">Program.cs</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#f3e8ff;">⚡</div>
+    <div>
+      <div class="change-title">DisponibilidadService optimizado (N+1 → batch)</div>
+      <div class="change-desc">Ruta "sin preferencia" cargaba horarios, citas y bloqueos de cada empleado en queries separadas. Ahora carga todos los empleados, horarios, citas y bloqueos del día en 5 queries totales y filtra en memoria.</div>
+      <div class="change-files">
+        <span class="file-chip">DisponibilidadService.cs</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#dcfce7;">♿</div>
+    <div>
+      <div class="change-title">Accesibilidad ARIA en Modal y Booking</div>
+      <div class="change-desc">Modal con <code>role="dialog"</code>, <code>aria-modal</code>, <code>aria-labelledby</code>, cierre con ESC. Botones de calendario con <code>aria-label</code>. Fallback de imagen rota con inicial del nombre en empleados y servicios.</div>
+      <div class="change-files">
+        <span class="file-chip">Modal.tsx</span>
+        <span class="file-chip">PasoFechaHora.tsx</span>
+        <span class="file-chip">PasoEmpleado.tsx</span>
+        <span class="file-chip">PasoServicio.tsx</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#fef3c7;">💀</div>
+    <div>
+      <div class="change-title">Skeleton loaders en CitasPage y EmpleadosPage</div>
+      <div class="change-desc">Componente <code>Skeleton.tsx</code> con variantes: <code>SkeletonTableRows</code>, <code>SkeletonCards</code>, <code>SkeletonList</code>. Reemplazan los textos "Cargando..." en CitasPage y EmpleadosPage. BookingPage con estado de error diferenciado.</div>
+      <div class="change-files">
+        <span class="file-chip">Skeleton.tsx (NUEVO)</span>
+        <span class="file-chip">CitasPage.tsx</span>
+        <span class="file-chip">EmpleadosPage.tsx</span>
+        <span class="file-chip">BookingPage.tsx</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#dbeafe;">🔔</div>
+    <div>
+      <div class="change-title">Polling de notificaciones en DashboardLayout</div>
+      <div class="change-desc">Query con <code>refetchInterval: 30_000</code> y <code>staleTime: 0</code>. Cuando el conteo de pendientes sube, muestra un toast "N nuevas citas pendientes". Badge rojo en sidebar y header móvil.</div>
+      <div class="change-files">
+        <span class="file-chip">DashboardLayout.tsx</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#f0fdf4;">🔒</div>
+    <div>
+      <div class="change-title">Endpoint /mis-citas protegido con email + teléfono</div>
+      <div class="change-desc">Antes solo pedía email. Ahora requiere email Y teléfono para prevenir enumeración. El frontend <code>MisCitasPage</code> tiene dos campos obligatorios y el formulario solo ejecuta la query cuando ambos están presentes.</div>
+      <div class="change-files">
+        <span class="file-chip">PublicoController.cs</span>
+        <span class="file-chip">MisCitasPage.tsx</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ SECCIÓN 6: DATOS DEMO ══════════════════ -->
+<div class="container page-break">
+  <h2>6. Datos Demo Precargados</h2>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+    <div>
+      <h3>Barbería Luis</h3>
+      <div class="card card-blue">
+        <h4 style="margin-top:0;">Empleados</h4>
+        <table style="margin:0;">
+          <tr><th>Nombre</th><th>Horario</th></tr>
+          <tr><td>Luis Ramírez</td><td>Lun-Sáb 9-19h</td></tr>
+          <tr><td>Carlos Méndez</td><td>Lun-Sáb 10-20h</td></tr>
+        </table>
+        <h4>Servicios</h4>
+        <table style="margin:0;">
+          <tr><th>Servicio</th><th>Precio</th><th>Dur.</th></tr>
+          <tr><td>Corte clásico</td><td>$250</td><td>30 min</td></tr>
+          <tr><td>Corte + Barba</td><td>$420</td><td>50 min</td></tr>
+          <tr><td>Diseño y degradado</td><td>$380</td><td>45 min</td></tr>
+          <tr><td>Tinte de cabello</td><td>$650</td><td>90 min</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div>
+      <h3>Salón Aramis</h3>
+      <div class="card card-purple">
+        <h4 style="margin-top:0;">Empleadas</h4>
+        <table style="margin:0;">
+          <tr><th>Nombre</th><th>Horario</th></tr>
+          <tr><td>Aramis García</td><td>Lun-Vie 9-19h, Sáb 9-17h</td></tr>
+          <tr><td>Sofía Hernández</td><td>Mar-Sáb 10-20h</td></tr>
+          <tr><td>Valentina Cruz</td><td>Lun-Vie 10-18h</td></tr>
+        </table>
+        <h4>Servicios</h4>
+        <table style="margin:0;">
+          <tr><th>Servicio</th><th>Precio</th></tr>
+          <tr><td>Corte de dama</td><td>$280</td></tr>
+          <tr><td>Corte con secado</td><td>$350</td></tr>
+          <tr><td>Brushing</td><td>$200</td></tr>
+          <tr><td>Tinte completo</td><td>$800</td></tr>
+          <tr><td>Mechas/Highlights</td><td>$1,100</td></tr>
+          <tr><td>Manicure</td><td>$180</td></tr>
+          <tr><td>Pedicure</td><td>$220</td></tr>
+          <tr><td>Keratina brasileña</td><td>$1,500</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <h3>Planes disponibles</h3>
+  <table>
+    <tr><th>Plan</th><th>Precio/mes</th><th>Empleados</th><th>Citas/mes</th></tr>
+    <tr><td>Básico</td><td>$199 MXN</td><td>3</td><td>200</td></tr>
+    <tr><td>Pro</td><td>$399 MXN</td><td>10</td><td>1,000</td></tr>
+    <tr><td>Premium</td><td>$799 MXN</td><td>50</td><td>10,000</td></tr>
+  </table>
+
+  <h2>7. Stack Tecnológico</h2>
+  <table>
+    <tr><th>Capa</th><th>Tecnología</th><th>Versión</th><th>Notas</th></tr>
+    <tr><td>Frontend</td><td>React + Vite + TypeScript</td><td>React 19 / Vite 6</td><td>—</td></tr>
+    <tr><td>Estilos</td><td>Tailwind CSS</td><td>v3</td><td>Token <code>primary: #C8A961</code></td></tr>
+    <tr><td>Estado/Fetching</td><td>TanStack Query v5 + Zustand</td><td>5.x</td><td>—</td></tr>
+    <tr><td>Formularios</td><td>React Hook Form + Zod</td><td>—</td><td>—</td></tr>
+    <tr><td>Gráficas</td><td>Recharts</td><td>—</td><td>AreaChart, BarChart</td></tr>
+    <tr><td>Íconos</td><td>lucide-react</td><td>—</td><td>—</td></tr>
+    <tr><td>QR Code</td><td>qrcode.react</td><td>—</td><td>✨ NUEVO — para 2FA</td></tr>
+    <tr><td>Backend</td><td>ASP.NET Core + Entity Framework Core</td><td>.NET 8 / EF 8.0.27</td><td>—</td></tr>
+    <tr><td>Base de datos</td><td>PostgreSQL</td><td>16 (Docker)</td><td>Puerto 5433</td></tr>
+    <tr><td>ORM provider</td><td>Npgsql.EntityFrameworkCore.PostgreSQL</td><td>8.0.11</td><td>—</td></tr>
+    <tr><td>Autenticación</td><td>JWT Bearer + ASP.NET Identity</td><td>—</td><td>TOTP 2FA nativo</td></tr>
+    <tr><td>Jobs</td><td>Hangfire + Hangfire.PostgreSql</td><td>1.8.23 / 1.20.10</td><td>Recordatorios 24h</td></tr>
+    <tr><td>Email</td><td>Resend SDK</td><td>0.5.1</td><td>Requiere API key</td></tr>
+    <tr><td>Imágenes</td><td>Cloudinary</td><td>1.29.1</td><td>Requiere credenciales</td></tr>
+    <tr><td>Rate Limiting</td><td>ASP.NET Core RateLimiter</td><td>nativo .NET 8</td><td>Auth + endpoints públicos</td></tr>
+    <tr><td>Output Cache</td><td>ASP.NET Core OutputCache</td><td>nativo .NET 8</td><td>✨ NUEVO — GET /publico/negocios/:slug, 5 min TTL</td></tr>
+    <tr><td>Logging</td><td>Serilog</td><td>8.0.3</td><td>✨ NUEVO — Console + rolling file diario, nivel Warning+</td></tr>
+    <tr><td>Health Checks</td><td>Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore</td><td>8.0.10</td><td>✨ NUEVO — GET /health verifica DB</td></tr>
+  </table>
+
+  <h2>8. Servicios Externos Pendientes de Configurar</h2>
+  <div class="card card-gold">
+    <h4 style="margin-top:0;color:#92400e;">Resend (Email)</h4>
+    <p style="margin:0;">Reemplazar en <code>appsettings.json</code>:</p>
+    <p style="font-family:monospace;font-size:12px;color:#78350f;margin-top:4px;">
+      "Email:ResendApiKey": "re_REEMPLAZAR_CON_TU_API_KEY"<br>
+      "Email:Origen": "AppointVa &lt;notificaciones@tudominio.com&gt;"<br>
+      "Email:Habilitado": true
+    </p>
+  </div>
+  <div class="card card-purple" style="margin-top:0;">
+    <h4 style="margin-top:0;color:#5b21b6;">Cloudinary (Imágenes)</h4>
+    <p style="margin:0;">Reemplazar en <code>appsettings.json</code>:</p>
+    <p style="font-family:monospace;font-size:12px;color:#4c1d95;margin-top:4px;">
+      "Cloudinary:CloudName": "REEMPLAZAR"<br>
+      "Cloudinary:ApiKey": "REEMPLAZAR"<br>
+      "Cloudinary:ApiSecret": "REEMPLAZAR"
+    </p>
+    <p style="font-size:11px;color:#6b7280;margin-top:8px;">Sin configurar, las imágenes se guardan en <code>wwwroot/uploads/</code> (modo desarrollo).</p>
+  </div>
+
+  <div class="card card-gold" style="margin-top:16px;">
+    <h4 style="margin-top:0;color:#92400e;">Cómo iniciar el sistema localmente</h4>
+    <p style="margin:0;"><strong>1. PostgreSQL:</strong> <code style="background:#1f2937;color:#e5e7eb;padding:2px 8px;border-radius:4px;">docker start postgres-appointva</code></p>
+    <p style="margin-top:8px;"><strong>2. Backend:</strong> <code style="background:#1f2937;color:#e5e7eb;padding:2px 8px;border-radius:4px;">cd AppointVaAPI &amp;&amp; dotnet run</code></p>
+    <p style="margin-top:8px;"><strong>3. Frontend:</strong> <code style="background:#1f2937;color:#e5e7eb;padding:2px 8px;border-radius:4px;">cd Front &amp;&amp; npm run dev</code></p>
+    <p style="margin-top:8px;font-size:11px;color:#92400e;">Las migraciones y el seed de datos se ejecutan automáticamente al iniciar el backend.</p>
+  </div>
+</div>
+
+<!-- ══════════════════ SECCIÓN 9: ROBUSTEZ Y MEJORAS ══════════════════ -->
+<div class="container page-break">
+  <h2>9. Robustez del Sistema y Mejoras Sugeridas</h2>
+
+  <h3>¿Qué tan robusto es para 10–20 negocios clientes?</h3>
+
+  <div class="card card-green">
+    <h4 style="margin-top:0;color:#166534;">Veredicto: Muy sólido para esta escala</h4>
+    <p>Un servidor .NET 8 puede manejar miles de solicitudes/segundo. Con 10-20 negocios, carga estimada: 20-100 usuarios simultáneos en hora pico, 500-4,000 reservas/mes totales, 40-80 requests/minuto de polling del dashboard. <strong>Márgenes muy amplios.</strong></p>
+    <p style="margin-bottom:0;">En v2.2 se implementaron 4 de las 7 mejoras prioritarias: Output cache, Serilog, Health check y Política de cancelación. El sistema está preparado para un deploy a producción real.</p>
+  </div>
+
+  <h3>Fortalezas actuales</h3>
+  <table>
+    <tr><th>Área</th><th>Implementación</th><th>Nivel</th></tr>
+    <tr><td>Race conditions en reservas</td><td>Transacciones Serializable + retry 409</td><td><span class="tag tag-new">Robusto</span></td></tr>
+    <tr><td>Autenticación</td><td>JWT + Refresh Token + 2FA TOTP + verificación email</td><td><span class="tag tag-new">Robusto</span></td></tr>
+    <tr><td>Control de acceso</td><td>Roles (SuperAdmin/Propietario/Empleado) + rutas protegidas en frontend y backend</td><td><span class="tag tag-new">Robusto</span></td></tr>
+    <tr><td>Abuse prevention</td><td>Rate limiting por política (Auth, Publico, TwoFA)</td><td><span class="tag tag-new">Robusto</span></td></tr>
+    <tr><td>Queries eficientes</td><td>Índices en NegocioId+InicioEn, batch queries, aggregates en SQL, AsNoTracking</td><td><span class="tag tag-new">Robusto</span></td></tr>
+    <tr><td>Jobs asíncronos</td><td>Hangfire + PostgreSQL storage (recordatorios a cliente y empleado)</td><td><span class="tag tag-new">Robusto</span></td></tr>
+    <tr><td>Errores globales</td><td>ExceptionHandlingMiddleware — nunca expone stack traces</td><td><span class="tag tag-new">Robusto</span></td></tr>
+    <tr><td>Paginación</td><td>Todas las listas: Citas, Clientes, MisCitas, con X-Total-Count</td><td><span class="tag tag-new">Completo</span></td></tr>
+    <tr><td>Observabilidad</td><td>Serilog rolling daily + nivel Warning. Health check en /health</td><td><span class="tag tag-new">✅ v2.2</span></td></tr>
+    <tr><td>Output cache</td><td>[OutputCache(Duration=300)] en GET /publico/negocios/:slug</td><td><span class="tag tag-new">✅ v2.2</span></td></tr>
+    <tr><td>Política cancelación</td><td>HorasCancelacion en Negocio, validación en CancelarCita, UI en PerfilPage</td><td><span class="tag tag-new">✅ v2.2</span></td></tr>
+    <tr><td>Emails</td><td>Confirmación, recordatorio (cliente + empleado), verificación, recuperación, cancelación</td><td><span class="tag tag-mod">Requiere Resend key</span></td></tr>
+    <tr><td>Imágenes</td><td>Cloudinary integrado, fallback local en dev</td><td><span class="tag tag-mod">Requiere credenciales</span></td></tr>
+  </table>
+
+  <h3>Mejoras recomendadas para escalar a 10-20 clientes en producción</h3>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#dbeafe;">⚡</div>
+    <div>
+      <div class="change-title">1. Output cache en la página pública de reservas <span class="tag tag-new" style="vertical-align:middle;">✅ Implementado v2.2</span></div>
+      <div class="change-desc">
+        <code>GET /api/publico/negocios/{slug}</code> se ejecuta cada vez que un cliente abre la página de booking. Incluye empleados, servicios y colores — datos que cambian poco. Un cache de 5 minutos con <code>[OutputCache(Duration = 300)]</code> (nativo en .NET 8) elimina prácticamente toda la carga de consulta en horas pico.<br>
+        <strong>Impacto:</strong> Si un negocio tiene 50 visitas/hora, reduce 50 queries/hora a 1.
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#f0fdf4;">📋</div>
+    <div>
+      <div class="change-title">2. Logging estructurado con Serilog <span class="tag tag-new" style="vertical-align:middle;">✅ Implementado v2.2</span></div>
+      <div class="change-desc">
+        Configurado con rolling file diario en <code>logs/</code>, retención 30 días, nivel Warning mínimo. Consola con template legible. Crítico para diagnóstico en producción cuando emails fallan o hay errores inesperados en reservas.
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#fef3c7;">🔁</div>
+    <div>
+      <div class="change-title">3. Retry en jobs de Hangfire si el email falla</div>
+      <div class="change-desc">
+        Hangfire ya tiene reintentos automáticos (10 por defecto con backoff exponencial). Pero si el proveedor Resend está caído en el momento del recordatorio, el job falla y ya no re-intenta cuando Resend vuelve.<br>
+        Solución: configurar <code>AutomaticRetryAttribute</code> con más reintentos y alertas para jobs que fallen definitivamente. También considerar <code>DisableConcurrentExecution</code> en el job de recordatorios para evitar duplicados.
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#f3e8ff;">💳</div>
+    <div>
+      <div class="change-title">4. Validación del límite de citas por plan</div>
+      <div class="change-desc">
+        El modelo de negocio define planes con límites (Básico: 200 citas/mes, Pro: 1,000, Premium: 10,000) pero <strong>ningún endpoint verifica si el negocio ha superado su límite</strong>. Un negocio en plan Básico puede crear citas ilimitadamente.<br>
+        Solución: al crear cita en <code>CitasController</code> y <code>PublicoController</code>, consultar <code>COUNT(*)</code> de citas del mes y comparar con <code>negocio.Plan.LimiteCitasMes</code>. Retornar <code>402 Payment Required</code> si se supera.
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#fee2e2;">⏱️</div>
+    <div>
+      <div class="change-title">5. Política de cancelación configurable <span class="tag tag-new" style="vertical-align:middle;">✅ Implementado v2.2</span></div>
+      <div class="change-desc">
+        Campo <code>HorasCancelacion</code> en <code>Negocio</code> (default 0 = sin restricción). <code>CancelarCita</code> valida que <code>InicioEn - UtcNow > HorasCancelacion</code>. Configurable desde PerfilPage. Frontend muestra aviso y oculta el botón de cancelar si ya venció la ventana.
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#dcfce7;">🏥</div>
+    <div>
+      <div class="change-title">6. Health check endpoint <span class="tag tag-new" style="vertical-align:middle;">✅ Implementado v2.2</span></div>
+      <div class="change-desc">
+        <code>GET /health</code> verifica la conexión a la DB y devuelve JSON estructurado. Necesario para Railway, Render, Azure App Service y cualquier orquestador que requiera readiness probe.
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#fffbeb;">📱</div>
+    <div>
+      <div class="change-title">7. Enlace de WhatsApp al confirmar cita <span class="tag tag-new" style="vertical-align:middle;">✅ Implementado</span></div>
+      <div class="change-desc">
+        Botón "Compartir por WhatsApp" en ConfirmacionPage con mensaje prearmado (negocio, servicio, empleado, fecha, link). Sin API externa — solo enlace <code>https://wa.me/?text=...</code>.
+      </div>
+    </div>
+  </div>
+
+  <h3>Resumen de estado — pendientes para producción</h3>
+  <table>
+    <tr><th>#</th><th>Mejora</th><th>Impacto</th><th>Estado</th></tr>
+    <tr><td>1</td><td>Configurar Resend + Cloudinary (credenciales reales)</td><td style="color:#166534;font-weight:700;">Bloqueante para producción</td><td><span class="tag tag-mod">Pendiente config</span></td></tr>
+    <tr><td>2</td><td>Health check endpoint /health</td><td style="color:#1e40af;font-weight:700;">Alto</td><td><span class="tag tag-new">✅ v2.2</span></td></tr>
+    <tr><td>3</td><td>Serilog logging estructurado</td><td style="color:#1e40af;font-weight:700;">Alto</td><td><span class="tag tag-new">✅ v2.2</span></td></tr>
+    <tr><td>4</td><td>Output cache en /publico/negocios/:slug</td><td style="color:#1e40af;font-weight:700;">Alto</td><td><span class="tag tag-new">✅ v2.2</span></td></tr>
+    <tr><td>5</td><td>Política de cancelación configurable</td><td style="color:#92400e;font-weight:700;">Medio</td><td><span class="tag tag-new">✅ v2.2</span></td></tr>
+    <tr><td>6</td><td>Botón WhatsApp en ConfirmacionPage</td><td style="color:#92400e;font-weight:700;">Medio</td><td><span class="tag tag-new">✅ Previo</span></td></tr>
+    <tr><td>7</td><td>Validación límite de citas por plan</td><td style="color:#92400e;font-weight:700;">Medio</td><td><span class="tag tag-fix">Pendiente</span></td></tr>
+    <tr><td>8</td><td>Retry mejorado en Hangfire jobs</td><td style="color:#6b7280;font-weight:700;">Bajo</td><td><span class="tag tag-fix">Pendiente</span></td></tr>
+  </table>
+
+</div>
+
+</body>
+</html>
