@@ -50,7 +50,8 @@
       "Bash(Out-String)",
       "PowerShell(cd \"c:\\\\Cursos\\\\AppointVa\\\\Back\\\\AppointVaAPI\\\\AppointVaAPI\"; Start-Process powershell -ArgumentList \"-NoExit\", \"-Command\", \"dotnet run\" -WindowStyle Normal)",
       "PowerShell(netstat -ano)",
-      "PowerShell(Get-ChildItem \"c:\\\\Cursos\\\\AppointVa\\\\Back\\\\AppointVaAPI\\\\AppointVaAPI\\\\logs\\\\\" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 3 | ForEach-Object { Write-Host \"=== $\\($_.Name\\) ===\"; Get-Content $_.FullName -Tail 20 })"
+      "PowerShell(Get-ChildItem \"c:\\\\Cursos\\\\AppointVa\\\\Back\\\\AppointVaAPI\\\\AppointVaAPI\\\\logs\\\\\" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 3 | ForEach-Object { Write-Host \"=== $\\($_.Name\\) ===\"; Get-Content $_.FullName -Tail 20 })",
+      "PowerShell(cd \"c:\\\\Cursos\\\\AppointVa\\\\Back\\\\AppointVaAPI\"; dotnet build AppointVaAPI.Tests/AppointVaAPI.Tests.csproj --no-dependencies 2>&1 | Where-Object { $_ -match \"error|warning|Compiled\" } | Select-Object -Last 20)"
     ],
     "additionalDirectories": [
       "C:\\Cursos\\AppointVa\\Back\\AppointVaAPI\\AppointVaAPI\\Migrations",
