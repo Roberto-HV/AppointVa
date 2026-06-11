@@ -51,7 +51,17 @@
       "PowerShell(cd \"c:\\\\Cursos\\\\AppointVa\\\\Back\\\\AppointVaAPI\\\\AppointVaAPI\"; Start-Process powershell -ArgumentList \"-NoExit\", \"-Command\", \"dotnet run\" -WindowStyle Normal)",
       "PowerShell(netstat -ano)",
       "PowerShell(Get-ChildItem \"c:\\\\Cursos\\\\AppointVa\\\\Back\\\\AppointVaAPI\\\\AppointVaAPI\\\\logs\\\\\" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 3 | ForEach-Object { Write-Host \"=== $\\($_.Name\\) ===\"; Get-Content $_.FullName -Tail 20 })",
-      "PowerShell(cd \"c:\\\\Cursos\\\\AppointVa\\\\Back\\\\AppointVaAPI\"; dotnet build AppointVaAPI.Tests/AppointVaAPI.Tests.csproj --no-dependencies 2>&1 | Where-Object { $_ -match \"error|warning|Compiled\" } | Select-Object -Last 20)"
+      "PowerShell(cd \"c:\\\\Cursos\\\\AppointVa\\\\Back\\\\AppointVaAPI\"; dotnet build AppointVaAPI.Tests/AppointVaAPI.Tests.csproj --no-dependencies 2>&1 | Where-Object { $_ -match \"error|warning|Compiled\" } | Select-Object -Last 20)",
+      "PowerShell(dotnet --version)",
+      "PowerShell(cd \"c:\\\\Cursos\\\\AppointVa\\\\Back\\\\AppointVaAPI\"; dotnet build AppointVaAPI.Tests/AppointVaAPI.Tests.csproj --no-dependencies 2>&1 | Where-Object { $_ -match \"error|warning CS|Compilación|Error\" } | Select-Object -Last 15)",
+      "PowerShell(cd \"c:\\\\Cursos\\\\AppointVa\\\\Back\\\\AppointVaAPI\"; dotnet build AppointVaAPI/AppointVaAPI.csproj 2>&1 | Where-Object { $_ -match \"error CS|warning CS|Compilación|ERROR al compilar\" } | Select-Object -Last 20)",
+      "PowerShell(cd \"c:\\\\Cursos\\\\AppointVa\\\\Back\\\\AppointVaAPI\"; dotnet build AppointVaAPI/AppointVaAPI.csproj 2>&1 | Where-Object { $_ -match \"error CS|Compilación correcta|ERROR al compilar\" } | Select-Object -Last 10)",
+      "PowerShell(cd \"c:\\\\Cursos\\\\AppointVa\\\\Front\"; Start-Process powershell -ArgumentList \"-NoExit\", \"-Command\", \"npm run dev\" -WindowStyle Normal)",
+      "PowerShell(Invoke-WebRequest -Uri \"http://localhost:5048/scalar/v1\" -UseBasicParsing -TimeoutSec 5)",
+      "PowerShell(Get-Process -Id 65056 -ErrorAction SilentlyContinue)",
+      "PowerShell(Get-Process dotnet -ErrorAction SilentlyContinue)",
+      "PowerShell(cd \"c:\\\\Cursos\\\\AppointVa\\\\Back\\\\AppointVaAPI\\\\AppointVaAPI\"; $proc = Start-Process dotnet -ArgumentList \"run\" -PassThru -RedirectStandardOutput \"$env:TEMP\\\\back_out.txt\" -RedirectStandardError \"$env:TEMP\\\\back_err.txt\" -WindowStyle Hidden; Start-Sleep 20; Get-Content \"$env:TEMP\\\\back_out.txt\" -ErrorAction SilentlyContinue; Get-Content \"$env:TEMP\\\\back_err.txt\" -ErrorAction SilentlyContinue)",
+      "PowerShell(Invoke-WebRequest -Uri \"http://localhost:5048/scalar/v1\" -UseBasicParsing -MaximumRedirection 0 -ErrorAction SilentlyContinue)"
     ],
     "additionalDirectories": [
       "C:\\Cursos\\AppointVa\\Back\\AppointVaAPI\\AppointVaAPI\\Migrations",
