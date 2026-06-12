@@ -23,8 +23,8 @@ interface Props {
 
 function formatFecha(iso: string) {
   return new Date(iso).toLocaleDateString("es-MX", {
-    weekday: "long", day: "numeric", month: "long",
-  });
+    weekday: "long", day: "numeric", month: "long", year: "numeric",
+  }).replace(/\bDe\b/g, "de");
 }
 
 function formatHora(iso: string) {

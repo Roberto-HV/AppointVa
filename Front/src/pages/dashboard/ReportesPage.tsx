@@ -28,8 +28,8 @@ function formatPrecio(n: number) {
 
 function formatFecha(iso: string) {
   return new Date(iso).toLocaleString("es-MX", {
-    day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hour12: true,
-  });
+    day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true,
+  }).replace(/\bDe\b/g, "de");
 }
 
 function hoy() {

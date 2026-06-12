@@ -29,9 +29,9 @@ const ESTADO_ESTILOS: Record<string, string> = {
 
 function formatFecha(iso: string) {
   return new Date(iso).toLocaleString("es-MX", {
-    weekday: "short", day: "numeric", month: "short",
+    weekday: "short", day: "numeric", month: "long", year: "numeric",
     hour: "2-digit", minute: "2-digit", hour12: true,
-  });
+  }).replace(/\bDe\b/g, "de");
 }
 
 function formatPrecio(n: number) {

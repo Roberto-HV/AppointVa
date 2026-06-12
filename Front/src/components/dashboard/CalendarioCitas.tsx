@@ -50,6 +50,7 @@ export default function CalendarioCitas({ empleadoId, onCitaClick }: Props) {
       hasta: hastaApi.toISOString().slice(0, 10),
       empleadoId: empleadoId || undefined,
     }),
+    select: (p) => p.datos,
   });
 
   const dias = Array.from({ length: 7 }, (_, i) => addDias(lunes, i));

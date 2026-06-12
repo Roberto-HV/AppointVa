@@ -459,7 +459,7 @@ export default function PerfilPage() {
                 <div key={b.id} className="flex items-center justify-between px-3 py-2 bg-red-50 border border-red-100 rounded-lg">
                   <div>
                     <span className="text-sm font-medium text-red-700 capitalize">
-                      {fecha.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" })}
+                      {fecha.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).replace(/\bDe\b/g, "de")}
                     </span>
                     {b.motivo && <span className="text-xs text-red-500 ml-2">— {b.motivo}</span>}
                   </div>

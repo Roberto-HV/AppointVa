@@ -7,15 +7,15 @@ import type { ClienteDto } from "../../types";
 
 function formatFecha(iso: string) {
   return new Date(iso).toLocaleDateString("es-MX", {
-    day: "2-digit", month: "short", year: "numeric",
-  });
+    day: "2-digit", month: "long", year: "numeric",
+  }).replace(/\bDe\b/g, "de");
 }
 
 function formatFechaHora(iso: string) {
   return new Date(iso).toLocaleString("es-MX", {
-    day: "2-digit", month: "short", year: "numeric",
+    day: "2-digit", month: "long", year: "numeric",
     hour: "2-digit", minute: "2-digit", hour12: true,
-  });
+  }).replace(/\bDe\b/g, "de");
 }
 
 function formatPrecio(n: number) {

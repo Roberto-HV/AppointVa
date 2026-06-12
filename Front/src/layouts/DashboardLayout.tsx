@@ -48,7 +48,7 @@ export default function DashboardLayout() {
     queryFn: () => citasApi.obtenerTodas({ desde: hoy }),
     staleTime: 0,
     refetchInterval: 30_000,
-    select: (citas) => citas.filter((c) => c.estado === ESTADOS.Pendiente),
+    select: (pagina) => pagina.datos.filter((c) => c.estado === ESTADOS.Pendiente),
   });
   const pendientesCnt = citasPendientes.length;
 

@@ -5,6 +5,8 @@ Back/**/*.user
 Back/**/.vs/
 Back/**/logs/
 Back/**/wwwroot/uploads/
+Back/**/appsettings.Development.json
+Back/**/appsettings.Production.json
 *.suo
 .vs/
 

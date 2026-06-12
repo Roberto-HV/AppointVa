@@ -14,9 +14,9 @@ function formatPrecio(n: number) {
 
 function formatFechaHora(iso: string) {
   return new Date(iso).toLocaleString("es-MX", {
-    weekday: "short", day: "numeric", month: "short",
+    weekday: "short", day: "numeric", month: "long", year: "numeric",
     hour: "2-digit", minute: "2-digit", hour12: true,
-  });
+  }).replace(/\bDe\b/g, "de");
 }
 
 interface TarjetaProps { label: string; valor: string | number; color?: string }
@@ -181,15 +181,18 @@ function VistaPropietario({ nombre }: { nombre: string }) {
 // ── Vista del empleado ────────────────────────────────────────────────────────
 function VistaEmpleado({ nombre }: { nombre: string }) {
   const hoy = new Date().toISOString().slice(0, 10);
+  const manana = new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().slice(0, 10);
 
   const { data: citasHoy = [], isLoading: cargandoHoy } = useQuery({
     queryKey: ["mis-citas-hoy"],
     queryFn: () => citasApi.obtenerTodas({ desde: hoy, hasta: hoy }),
+    select: (p) => p.datos,
   });
 
   const { data: citasProximas = [], isLoading: cargandoProximas } = useQuery({
     queryKey: ["mis-citas-proximas"],
-    queryFn: () => citasApi.obtenerTodas({ desde: hoy }),
+    queryFn: () => citasApi.obtenerTodas({ desde: manana }),
+    select: (p) => p.datos,
   });
 
   const pendientesOConfirmadas = citasProximas.filter(

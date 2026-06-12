@@ -14,8 +14,8 @@ import { Tooltip } from "../../components/ui/Tooltip";
 
 function formatFechaHora(iso: string) {
   return new Date(iso).toLocaleString("es-MX", {
-    day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: true,
-  });
+    day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true,
+  }).replace(/\bDe\b/g, "de");
 }
 
 function formatPrecio(n: number) {
@@ -139,6 +139,7 @@ export default function CitasPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["citas"] });
       qc.invalidateQueries({ queryKey: ["citas-cal"] });
+      qc.invalidateQueries({ queryKey: ["citas-badge"] });
       qc.invalidateQueries({ queryKey: ["dashboard-resumen"] });
       setCitaReag(null); setFechaReag(""); setSlotReag("");
       toast("Cita reagendada");
@@ -180,6 +181,7 @@ export default function CitasPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["citas"] });
       qc.invalidateQueries({ queryKey: ["citas-cal"] });
+      qc.invalidateQueries({ queryKey: ["citas-badge"] });
       qc.invalidateQueries({ queryKey: ["dashboard-resumen"] });
       qc.invalidateQueries({ queryKey: ["clientes"] });
       setModalNueva(false);
@@ -219,6 +221,7 @@ export default function CitasPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["citas"] });
       qc.invalidateQueries({ queryKey: ["citas-cal"] });
+      qc.invalidateQueries({ queryKey: ["citas-badge"] });
       qc.invalidateQueries({ queryKey: ["dashboard-resumen"] });
       setCitaSel(null); setNuevoEstado(null); setMotivo("");
       toast("Estado actualizado");
