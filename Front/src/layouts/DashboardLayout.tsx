@@ -142,7 +142,7 @@ export default function DashboardLayout() {
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 py-4 px-3 space-y-1">
+        <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
           {navItems.map((item) => {
             const Icon = item.icon;
             const esCitas = item.to === "/dashboard/citas";
@@ -188,7 +188,7 @@ export default function DashboardLayout() {
         )}
 
         {/* Usuario + logout */}
-        <div className="p-4 border-t border-gray-100">
+        <div className="p-4 border-t border-gray-100 shrink-0">
           <p className="text-xs font-medium text-gray-800 truncate">{usuario?.nombreCompleto}</p>
           <p className="text-xs text-gray-400 truncate mb-3">{usuario?.email}</p>
           <button

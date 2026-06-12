@@ -3,11 +3,11 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { Eye, EyeOff } from "lucide-react";
 import { empleadosApi } from "../../api/empleados";
 import { serviciosApi } from "../../api/servicios";
 import Modal from "../../components/ui/Modal";
 import { SkeletonCards } from "../../components/ui/Skeleton";
-import { Tooltip } from "../../components/ui/Tooltip";
 import { useToastStore } from "../../store/toastStore";
 import type { EmpleadoDto, HorarioDto } from "../../types";
 
@@ -59,6 +59,8 @@ export default function EmpleadosPage() {
   const [empleadoBloqueo, setEmpleadoBloqueo] = useState<EmpleadoDto | null>(null);
   const [horarioLocal, setHorarioLocal] = useState<HorarioDto[]>([]);
   const [errorInvitar, setErrorInvitar] = useState("");
+  const [mostrarPasswordInvitar, setMostrarPasswordInvitar] = useState(false);
+  const [empleadoEliminar, setEmpleadoEliminar] = useState<EmpleadoDto | null>(null);
   const fotoInputRef = useRef<HTMLInputElement>(null);
   const empleadoFotoIdRef = useRef<string | null>(null);
 
@@ -155,6 +157,7 @@ export default function EmpleadosPage() {
   const { mutate: guardarHorario, isPending: guardandoHorario } = useMutation({
     mutationFn: () => empleadosApi.actualizarHorario(empleadoHorario!.id, horarioLocal),
     onSuccess: () => { setModalHorario(false); toast("Horario guardado"); },
+    onError: () => toast("Error al guardar el horario. Intenta de nuevo."),
   });
 
   const { mutate: invitar, isPending: invitando } = useMutation({
@@ -277,31 +280,37 @@ export default function EmpleadosPage() {
                 {emp.telefono && <p className="text-xs text-gray-400">{emp.telefono}</p>}
                 <p className="text-xs text-gray-400 mt-1">{emp.servicioIds.length} servicios asignados</p>
 
-                <div className="flex gap-3 mt-3 flex-wrap">
-                  <Tooltip text="Editar datos del empleado">
-                    <button onClick={() => abrirEditar(emp)} className="text-xs text-primary hover:underline">Editar</button>
-                  </Tooltip>
-                  <Tooltip text="Configurar días y horas de trabajo">
-                    <button onClick={() => abrirHorario(emp)} className="text-xs text-indigo-500 hover:underline">
-                      Horarios
-                    </button>
-                  </Tooltip>
-                  <Tooltip text="Bloquear fechas u horas no disponibles">
-                    <button onClick={() => abrirBloqueo(emp)} className="text-xs text-orange-500 hover:underline">
-                      Bloqueos
-                    </button>
-                  </Tooltip>
-                  <Tooltip text="Enviar invitación de acceso al dashboard">
-                    <button onClick={() => abrirInvitar(emp)} className="text-xs text-blue-600 hover:underline">
-                      Invitar acceso
-                    </button>
-                  </Tooltip>
-                  <Tooltip text="Eliminar empleado permanentemente">
-                    <button onClick={() => { if (confirm(`¿Eliminar a ${emp.nombre}?`)) eliminar(emp.id); }}
-                      className="text-xs text-red-400 hover:underline">
-                      Eliminar
-                    </button>
-                  </Tooltip>
+                <div className="flex gap-2 mt-3 flex-wrap">
+                  <button
+                    onClick={() => abrirEditar(emp)}
+                    className="text-xs font-medium px-2.5 py-1 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition"
+                  >
+                    Editar
+                  </button>
+                  <button
+                    onClick={() => abrirHorario(emp)}
+                    className="text-xs font-medium px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition"
+                  >
+                    Horarios
+                  </button>
+                  <button
+                    onClick={() => abrirBloqueo(emp)}
+                    className="text-xs font-medium px-2.5 py-1 rounded-lg bg-orange-50 text-orange-600 hover:bg-orange-100 transition"
+                  >
+                    Bloqueos
+                  </button>
+                  <button
+                    onClick={() => abrirInvitar(emp)}
+                    className="text-xs font-medium px-2.5 py-1 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition"
+                  >
+                    Invitar acceso
+                  </button>
+                  <button
+                    onClick={() => setEmpleadoEliminar(emp)}
+                    className="text-xs font-medium px-2.5 py-1 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 transition"
+                  >
+                    Eliminar
+                  </button>
                 </div>
               </div>
             </div>
@@ -369,17 +378,17 @@ export default function EmpleadosPage() {
           {horarioLocal.map((h, i) => (
             <div key={h.diaSemana} className={`rounded-lg border p-3 transition ${h.activo ? "bg-white border-gray-200" : "bg-gray-50 border-gray-100"}`}>
               <div className="flex items-center justify-between mb-2">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={h.activo}
-                    onChange={(e) => {
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <div
+                    onClick={() => {
                       const updated = [...horarioLocal];
-                      updated[i] = { ...h, activo: e.target.checked };
+                      updated[i] = { ...h, activo: !h.activo };
                       setHorarioLocal(updated);
                     }}
-                    className="accent-primary w-4 h-4"
-                  />
+                    className={`w-9 h-5 rounded-full transition relative cursor-pointer shrink-0 ${h.activo ? "bg-primary" : "bg-gray-300"}`}
+                  >
+                    <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${h.activo ? "left-4" : "left-0.5"}`} />
+                  </div>
                   <span className={`text-sm font-medium ${h.activo ? "text-gray-800" : "text-gray-400"}`}>
                     {DIAS[h.diaSemana]}
                   </span>
@@ -516,6 +525,34 @@ export default function EmpleadosPage() {
         </div>
       </Modal>
 
+      {/* Modal confirmar eliminar empleado */}
+      <Modal abierto={!!empleadoEliminar} onCerrar={() => setEmpleadoEliminar(null)} titulo="Eliminar empleado" ancho="sm">
+        {empleadoEliminar && (
+          <div>
+            <p className="text-sm text-gray-600 mb-1">
+              ¿Seguro que deseas eliminar a <span className="font-semibold text-gray-900">{empleadoEliminar.nombre}</span>?
+            </p>
+            <p className="text-xs text-gray-400 mb-6">
+              El empleado dejará de aparecer y no podrá recibir nuevas citas. Esta acción no se puede deshacer.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setEmpleadoEliminar(null)}
+                className="flex-1 py-2.5 rounded-xl border-2 border-gray-200 text-sm font-medium text-gray-600 hover:border-gray-300 transition"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => { eliminar(empleadoEliminar.id); setEmpleadoEliminar(null); }}
+                className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-semibold transition"
+              >
+                Sí, eliminar
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
       {/* Input oculto para foto de empleado */}
       <input
         ref={fotoInputRef}
@@ -546,9 +583,22 @@ export default function EmpleadosPage() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña inicial *</label>
-            <input type="password" {...formInvitar.register("password")}
-              className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-primary
-                ${formInvitar.formState.errors.password ? "border-red-400 bg-red-50" : "border-gray-200"}`} />
+            <div className="relative">
+              <input
+                type={mostrarPasswordInvitar ? "text" : "password"}
+                {...formInvitar.register("password")}
+                className={`w-full px-3 py-2 pr-10 rounded-lg border text-sm outline-none focus:border-primary
+                  ${formInvitar.formState.errors.password ? "border-red-400 bg-red-50" : "border-gray-200"}`}
+              />
+              <button
+                type="button"
+                onClick={() => setMostrarPasswordInvitar((v) => !v)}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                tabIndex={-1}
+              >
+                {mostrarPasswordInvitar ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
             {formInvitar.formState.errors.password && (
               <p className="text-red-500 text-xs mt-1">{formInvitar.formState.errors.password.message}</p>
             )}

@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { Eye, EyeOff } from "lucide-react";
 import { adminApi } from "../../api/admin";
 import Modal from "../../components/ui/Modal";
 import { useToastStore } from "../../store/toastStore";
@@ -42,6 +43,7 @@ export default function NegociosAdminPage() {
   const [negocioSel, setNegocioSel] = useState<NegocioDto | null>(null);
   const [negocioEliminar, setNegocioEliminar] = useState<NegocioDto | null>(null);
   const [errorPropietario, setErrorPropietario] = useState("");
+  const [mostrarPasswordProp, setMostrarPasswordProp] = useState(false);
   const [busqueda, setBusqueda] = useState("");
   const [colorPrimario, setColorPrimario] = useState("#C8A961");
   const [colorSecundario, setColorSecundario] = useState("#a07830");
@@ -70,6 +72,7 @@ export default function NegociosAdminPage() {
       qc.invalidateQueries({ queryKey: ["admin-negocios"] });
       setModalNegocio(false);
       formNegocio.reset();
+      toast("Negocio creado correctamente");
     },
   });
 
@@ -222,22 +225,22 @@ export default function NegociosAdminPage() {
                     </span>
                   </td>
                   <td className="px-5 py-3">
-                    <div className="flex justify-end gap-3">
+                    <div className="flex justify-end gap-2 flex-wrap">
                       <button
                         onClick={() => abrirColores(neg)}
-                        className="text-xs text-purple-600 hover:underline"
+                        className="text-xs font-medium px-2.5 py-1 rounded-lg bg-purple-50 text-purple-600 hover:bg-purple-100 transition"
                       >
                         Colores
                       </button>
                       <button
                         onClick={() => abrirPropietario(neg)}
-                        className="text-xs text-blue-600 hover:underline"
+                        className="text-xs font-medium px-2.5 py-1 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition"
                       >
                         + Propietario
                       </button>
                       <button
                         onClick={() => toggleEstado(neg)}
-                        className={`text-xs hover:underline ${neg.activo ? "text-red-400" : "text-green-600"}`}
+                        className={`text-xs font-medium px-2.5 py-1 rounded-lg transition ${neg.activo ? "bg-red-50 text-red-500 hover:bg-red-100" : "bg-green-50 text-green-600 hover:bg-green-100"}`}
                       >
                         {neg.activo ? "Desactivar" : "Activar"}
                       </button>
@@ -245,13 +248,13 @@ export default function NegociosAdminPage() {
                         href={`/b/${neg.slug}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-xs text-gray-400 hover:underline"
+                        className="text-xs font-medium px-2.5 py-1 rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200 transition"
                       >
                         Ver booking
                       </a>
                       <button
                         onClick={() => setNegocioEliminar(neg)}
-                        className="text-xs text-red-400 hover:text-red-600 hover:underline"
+                        className="text-xs font-medium px-2.5 py-1 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 transition"
                       >
                         Eliminar
                       </button>
@@ -406,12 +409,22 @@ export default function NegociosAdminPage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña inicial *</label>
-            <input
-              type="password"
-              {...formPropietario.register("password")}
-              className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-primary
-                ${formPropietario.formState.errors.password ? "border-red-400 bg-red-50" : "border-gray-200"}`}
-            />
+            <div className="relative">
+              <input
+                type={mostrarPasswordProp ? "text" : "password"}
+                {...formPropietario.register("password")}
+                className={`w-full px-3 py-2 pr-10 rounded-lg border text-sm outline-none focus:border-primary
+                  ${formPropietario.formState.errors.password ? "border-red-400 bg-red-50" : "border-gray-200"}`}
+              />
+              <button
+                type="button"
+                onClick={() => setMostrarPasswordProp((v) => !v)}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                tabIndex={-1}
+              >
+                {mostrarPasswordProp ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
             {formPropietario.formState.errors.password && (
               <p className="text-red-500 text-xs mt-1">{formPropietario.formState.errors.password.message}</p>
             )}

@@ -44,6 +44,8 @@ export default function ServiciosPage() {
   // ── Estado categorías ─────────────────────────────────────────────────────
   const [categoriaEdit, setCategoriaEdit] = useState<CategoriaDto | null>(null);
   const [modalCategoria, setModalCategoria] = useState(false);
+  const [categoriaEliminar, setCategoriaEliminar] = useState<CategoriaDto | null>(null);
+  const [servicioEliminar, setServicioEliminar] = useState<ServicioDto | null>(null);
 
   // ── Queries ───────────────────────────────────────────────────────────────
   const { data: servicios = [], isLoading } = useQuery({
@@ -227,17 +229,17 @@ export default function ServiciosPage() {
             {Object.entries(grupos).map(([cat, items]) => (
               <div key={cat}>
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">{cat}</p>
-                <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+                <div className="bg-white rounded-xl border border-gray-100">
                   {items.map((s, i) => (
                     <div
                       key={s.id}
                       className={`flex items-center gap-3 px-4 py-3 ${i < items.length - 1 ? "border-b border-gray-50" : ""}`}
                     >
                       {/* Thumbnail imagen */}
-                      <Tooltip text="Haz clic para cambiar la imagen del servicio">
                       <div
                         className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center shrink-0 overflow-hidden relative group cursor-pointer"
                         onClick={() => { servicioImagenIdRef.current = s.id; imagenInputRef.current?.click(); }}
+                        title="Haz clic para cambiar la imagen del servicio"
                       >
                         {s.imagenUrl
                           ? <img src={s.imagenUrl} alt={s.nombre} className="w-full h-full object-cover" />
@@ -252,7 +254,6 @@ export default function ServiciosPage() {
                           </svg>
                         </div>
                       </div>
-                      </Tooltip>
 
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-gray-800">{s.nombre}</p>
@@ -261,20 +262,19 @@ export default function ServiciosPage() {
                       </div>
                       <div className="flex items-center gap-3 sm:gap-5 shrink-0">
                         <span className="font-semibold text-gray-800 text-sm">{formatPrecio(s.precio)}</span>
-                        <div className="flex gap-3">
-                          <Tooltip text="Editar nombre, precio y duración">
-                            <button onClick={() => abrirEditarServicio(s)} className="text-xs text-primary hover:underline">
-                              Editar
-                            </button>
-                          </Tooltip>
-                          <Tooltip text="Eliminar este servicio permanentemente">
-                            <button
-                              onClick={() => { if (confirm(`¿Eliminar "${s.nombre}"?`)) eliminarServicio(s.id); }}
-                              className="text-xs text-red-400 hover:underline"
-                            >
-                              Eliminar
-                            </button>
-                          </Tooltip>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => abrirEditarServicio(s)}
+                            className="text-xs font-medium px-2.5 py-1 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition"
+                          >
+                            Editar
+                          </button>
+                          <button
+                            onClick={() => setServicioEliminar(s)}
+                            className="text-xs font-medium px-2.5 py-1 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 transition"
+                          >
+                            Eliminar
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -340,21 +340,16 @@ export default function ServiciosPage() {
                         </span>
                       </td>
                       <td className="px-5 py-3 text-right">
-                        <div className="flex justify-end gap-3">
+                        <div className="flex justify-end gap-2">
                           <button
                             onClick={() => abrirEditarCategoria(c)}
-                            className="text-xs text-primary hover:underline"
+                            className="text-xs font-medium px-2.5 py-1 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition"
                           >
                             Editar
                           </button>
                           <button
-                            onClick={() => {
-                              const msg = count > 0
-                                ? `Esta categoría tiene ${count} servicio(s). ¿Eliminarla de todas formas? Los servicios quedarán sin categoría.`
-                                : `¿Eliminar la categoría "${c.nombre}"?`;
-                              if (confirm(msg)) eliminarCategoria(c.id);
-                            }}
-                            className="text-xs text-red-400 hover:underline"
+                            onClick={() => setCategoriaEliminar(c)}
+                            className="text-xs font-medium px-2.5 py-1 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 transition"
                           >
                             Eliminar
                           </button>
@@ -456,6 +451,63 @@ export default function ServiciosPage() {
             {guardandoServicio ? "Guardando..." : servicioEdit ? "Guardar cambios" : "Crear servicio"}
           </button>
         </form>
+      </Modal>
+
+      {/* Modal confirmar eliminar servicio */}
+      <Modal abierto={!!servicioEliminar} onCerrar={() => setServicioEliminar(null)} titulo="Eliminar servicio" ancho="sm">
+        {servicioEliminar && (
+          <div>
+            <p className="text-sm text-gray-600 mb-1">
+              ¿Seguro que deseas eliminar <span className="font-semibold text-gray-900">"{servicioEliminar.nombre}"</span>?
+            </p>
+            <p className="text-xs text-gray-400 mb-6">Esta acción no se puede deshacer.</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setServicioEliminar(null)}
+                className="flex-1 py-2.5 rounded-xl border-2 border-gray-200 text-sm font-medium text-gray-600 hover:border-gray-300 transition"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => { eliminarServicio(servicioEliminar.id); setServicioEliminar(null); }}
+                className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-semibold transition"
+              >
+                Sí, eliminar
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Modal confirmar eliminar categoría */}
+      <Modal abierto={!!categoriaEliminar} onCerrar={() => setCategoriaEliminar(null)} titulo="Eliminar categoría" ancho="sm">
+        {categoriaEliminar && (
+          <div>
+            <p className="text-sm text-gray-600 mb-1">
+              ¿Seguro que deseas eliminar <span className="font-semibold text-gray-900">"{categoriaEliminar.nombre}"</span>?
+            </p>
+            {serviciosPorCategoria(categoriaEliminar.id) > 0 && (
+              <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-3">
+                Esta categoría tiene {serviciosPorCategoria(categoriaEliminar.id)} servicio(s). Los servicios quedarán sin categoría.
+              </p>
+            )}
+            <p className="text-xs text-gray-400 mb-6">Esta acción no se puede deshacer.</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setCategoriaEliminar(null)}
+                className="flex-1 py-2.5 rounded-xl border-2 border-gray-200 text-sm font-medium text-gray-600 hover:border-gray-300 transition"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => { eliminarCategoria(categoriaEliminar.id); setCategoriaEliminar(null); }}
+                className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-semibold transition"
+              >
+                Sí, eliminar
+              </button>
+            </div>
+          </div>
+        )}
       </Modal>
 
       {/* Modal categoría */}

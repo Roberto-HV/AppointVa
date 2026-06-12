@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Eye, EyeOff, Copy, Check } from "lucide-react";
 import { Tooltip } from "../../components/ui/Tooltip";
+import Modal from "../../components/ui/Modal";
 import { negociosApi } from "../../api/negocios";
 import { authApi } from "../../api/auth";
 import { useToastStore } from "../../store/toastStore";
@@ -116,24 +117,7 @@ export default function PerfilPage() {
   };
 
   const [urlCopiada, setUrlCopiada] = useState(false);
-  const [colorPrimario, setColorPrimario] = useState("#C8A961");
-  const [colorSecundario, setColorSecundario] = useState("#a88b45");
-
-  useEffect(() => {
-    if (negocio) {
-      setColorPrimario(negocio.colorPrimario ?? "#C8A961");
-      setColorSecundario(negocio.colorSecundario ?? "#a88b45");
-    }
-  }, [negocio]);
-
-  const { mutate: guardarColores, isPending: guardandoColores } = useMutation({
-    mutationFn: () => negociosApi.actualizarColores(colorPrimario, colorSecundario),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["negocio-perfil"] });
-      qc.invalidateQueries({ queryKey: ["negocio-perfil-layout"] });
-      toast("Colores guardados");
-    },
-  });
+  const [modalConfirmarGuardar, setModalConfirmarGuardar] = useState(false);
 
   const [horarios, setHorarios] = useState<HorarioDto[]>([]);
   const [horariosDirty, setHorariosDirty] = useState(false);
@@ -371,64 +355,15 @@ export default function PerfilPage() {
           )}
         </div>
 
-        <button type="submit" disabled={isSubmitting || !isDirty}
-          className="bg-primary hover:bg-primary-dark disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-xl transition text-sm">
+        <button
+          type="button"
+          disabled={isSubmitting || !isDirty}
+          onClick={() => setModalConfirmarGuardar(true)}
+          className="bg-primary hover:bg-primary-dark disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-xl transition text-sm"
+        >
           {isSubmitting ? "Guardando..." : "Guardar cambios"}
         </button>
       </form>
-
-      {/* Personalización de colores */}
-      <div className="bg-white rounded-xl border border-gray-100 p-5 mt-6">
-        <h2 className="text-sm font-semibold text-gray-700 mb-1">Personalización</h2>
-        <p className="text-xs text-gray-400 mb-4">Los colores se aplican en tu página pública de reservas.</p>
-        <div className="flex flex-wrap gap-6 items-end">
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-2">Color principal</label>
-            <div className="flex items-center gap-3">
-              <input
-                type="color"
-                value={colorPrimario}
-                onChange={(e) => setColorPrimario(e.target.value)}
-                className="w-10 h-10 rounded-lg border border-gray-200 cursor-pointer p-0.5"
-              />
-              <input
-                type="text"
-                value={colorPrimario}
-                onChange={(e) => setColorPrimario(e.target.value)}
-                maxLength={7}
-                className="w-24 px-2 py-1.5 rounded-lg border border-gray-200 text-sm font-mono outline-none focus:border-primary uppercase"
-              />
-              <div className="w-8 h-8 rounded-lg border border-gray-100 shadow-sm" style={{ backgroundColor: colorPrimario }} />
-            </div>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-2">Color secundario</label>
-            <div className="flex items-center gap-3">
-              <input
-                type="color"
-                value={colorSecundario}
-                onChange={(e) => setColorSecundario(e.target.value)}
-                className="w-10 h-10 rounded-lg border border-gray-200 cursor-pointer p-0.5"
-              />
-              <input
-                type="text"
-                value={colorSecundario}
-                onChange={(e) => setColorSecundario(e.target.value)}
-                maxLength={7}
-                className="w-24 px-2 py-1.5 rounded-lg border border-gray-200 text-sm font-mono outline-none focus:border-primary uppercase"
-              />
-              <div className="w-8 h-8 rounded-lg border border-gray-100 shadow-sm" style={{ backgroundColor: colorSecundario }} />
-            </div>
-          </div>
-          <button
-            onClick={() => guardarColores()}
-            disabled={guardandoColores}
-            className="px-5 py-2.5 bg-primary hover:bg-primary-dark disabled:opacity-40 text-white text-sm font-semibold rounded-xl transition"
-          >
-            {guardandoColores ? "Guardando..." : "Guardar colores"}
-          </button>
-        </div>
-      </div>
 
       {/* Horarios de atención */}
       <div className="bg-white rounded-xl border border-gray-100 p-5 mt-6">
@@ -436,7 +371,7 @@ export default function PerfilPage() {
         <div className="space-y-2">
           {horarios.map((h) => (
             <div key={h.diaSemana} className="flex items-center gap-3">
-              <div className="w-24 shrink-0">
+              <div className="w-36 shrink-0">
                 <label className="flex items-center gap-2 cursor-pointer select-none">
                   <div
                     onClick={() => actualizarHorario(h.diaSemana!, "activo", !h.activo)}
@@ -627,6 +562,33 @@ export default function PerfilPage() {
           {cambiandoPassword ? "Actualizando..." : "Cambiar contraseña"}
         </button>
       </form>
+
+      {/* Modal confirmar guardar perfil */}
+      <Modal
+        abierto={modalConfirmarGuardar}
+        onCerrar={() => setModalConfirmarGuardar(false)}
+        titulo="Guardar cambios"
+        ancho="sm"
+      >
+        <p className="text-sm text-gray-600 mb-1">
+          ¿Estás seguro de que deseas guardar los cambios en tu perfil de negocio?
+        </p>
+        <p className="text-xs text-gray-400 mb-6">Esta acción actualizará la información visible para tus clientes.</p>
+        <div className="flex gap-3">
+          <button
+            onClick={() => setModalConfirmarGuardar(false)}
+            className="flex-1 py-2.5 rounded-xl border-2 border-gray-200 text-sm font-medium text-gray-600 hover:border-gray-300 transition"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={() => { setModalConfirmarGuardar(false); handleSubmit(onSubmit)(); }}
+            className="flex-1 py-2.5 rounded-xl bg-primary hover:bg-primary-dark text-white text-sm font-semibold transition"
+          >
+            Sí, guardar
+          </button>
+        </div>
+      </Modal>
     </div>
   );
 }
