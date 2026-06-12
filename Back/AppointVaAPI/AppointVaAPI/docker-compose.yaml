@@ -1,0 +1,61 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres-appointva
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: appointva
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d appointva"]
+      interval: 10s
+      retries: 10
+      start_period: 20s
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: appointva_api
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__ConexionSql: "Host=postgres;Port=5432;Database=appointva;Username=postgres;Password=postgres"
+      Jwt__Clave: "REEMPLAZAR_CON_CLAVE_SECRETA_MINIMO_32_CARACTERES"
+      Jwt__Emisor: "AppointVaAPI"
+      Jwt__Audiencia: "AppointVaClientes"
+      Cors__OrigenesPermitidos: "http://localhost:3000,http://localhost:5173"
+      Cloudinary__CloudName: "REEMPLAZAR"
+      Cloudinary__ApiKey: "REEMPLAZAR"
+      Cloudinary__ApiSecret: "REEMPLAZAR"
+      Email__ResendApiKey: "REEMPLAZAR"
+      Email__Origen: "AppointVa <notificaciones@tudominio.com>"
+      Email__Habilitado: "true"
+      FrontendUrl: "http://localhost:5173"
+      BackendUrl: "http://localhost:8080"
+    volumes:
+      - uploads_data:/app/wwwroot/uploads
+
+volumes:
+  pgdata:
+  uploads_data:
+
+# Comandos útiles:
+# Levantar todos los servicios:
+#   docker-compose up -d
+# Reconstruir la imagen de la API después de cambios:
+#   docker-compose up -d --build api
+# Ver logs de la API:
+#   docker-compose logs -f api
+# Apagar y eliminar contenedores (no borra volúmenes):
+#   docker-compose down

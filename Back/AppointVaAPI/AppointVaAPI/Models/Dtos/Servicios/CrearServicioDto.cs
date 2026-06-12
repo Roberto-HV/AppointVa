@@ -1,0 +1,26 @@
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace AppointVaAPI.Models.Dtos.Servicios
+{
+    public class CrearServicioDto
+    {
+        public Guid? CategoriaId { get; set; }
+
+        [Required(ErrorMessage = "El nombre es obligatorio")]
+        [MaxLength(150)]
+        public string Nombre { get; set; } = string.Empty;
+
+        [MaxLength(500)]
+        public string? Descripcion { get; set; }
+
+        [Required]
+        [Range(5, 480, ErrorMessage = "La duración debe ser entre 5 y 480 minutos")]
+        public int DuracionMinutos { get; set; }
+
+        [Required]
+        [Range(0, 9999999)]
+        public decimal Precio { get; set; }
+
+        public int Orden { get; set; }
+    }
+}

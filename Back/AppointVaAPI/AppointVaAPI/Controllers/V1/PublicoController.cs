@@ -1,0 +1,621 @@
+﻿using AppointVaAPI.Constants;
+using AppointVaAPI.Data;
+using AppointVaAPI.Models;
+using AppointVaAPI.Models.Dtos.Negocios;
+using AppointVaAPI.Models.Dtos.Publico;
+using AppointVaAPI.Repository.IRepository;
+using AppointVaAPI.Services;
+using AppointVaAPI.Services.IServices;
+using Hangfire;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.EntityFrameworkCore;
+using System.Data;
+using System.Security.Cryptography;
+using System.Text;
+
+namespace AppointVaAPI.Controllers.V1
+{
+    [ApiController]
+    [Route("api/publico")]
+    public class PublicoController : ControllerBase
+    {
+        private readonly ApplicationDbContext _db;
+        private readonly INegocioRepository _negocioRepo;
+        private readonly ICitaRepository _citaRepo;
+        private readonly IClienteRepository _clienteRepo;
+        private readonly IDisponibilidadService _disponibilidad;
+        private readonly IEmailService _email;
+        private readonly IConfiguration _config;
+        private readonly IBackgroundJobClient _jobClient;
+        private readonly UserManager<ApplicationUser> _userManager;
+
+        public PublicoController(
+            ApplicationDbContext db,
+            INegocioRepository negocioRepo,
+            ICitaRepository citaRepo,
+            IClienteRepository clienteRepo,
+            IDisponibilidadService disponibilidad,
+            IEmailService email,
+            IConfiguration config,
+            IBackgroundJobClient jobClient,
+            UserManager<ApplicationUser> userManager)
+        {
+            _db = db;
+            _negocioRepo = negocioRepo;
+            _citaRepo = citaRepo;
+            _clienteRepo = clienteRepo;
+            _disponibilidad = disponibilidad;
+            _email = email;
+            _config = config;
+            _jobClient = jobClient;
+            _userManager = userManager;
+        }
+
+        // GET api/publico/negocios/{slug}
+        [HttpGet("negocios/{slug}")]
+        [EnableRateLimiting("PublicoGeneral")]
+        [OutputCache(Duration = 300)]
+        public async Task<IActionResult> ObtenerNegocio(string slug)
+        {
+            var negocio = await _negocioRepo.ObtenerPorSlugAsync(slug);
+            if (negocio is null || negocio.Activo != 1)
+                return NotFound(new { mensaje = "Negocio no encontrado" });
+
+            var servicios = await _db.Servicios
+                .Include(s => s.Categoria)
+                .Where(s => s.NegocioId == negocio.Id && s.Activo == 1)
+                .OrderBy(s => s.Orden)
+                .ToListAsync();
+
+            var empleados = await _db.Empleados
+                .Where(e => e.NegocioId == negocio.Id && e.Activo == 1 && e.FechaEliminacion == null)
+                .Select(e => new
+                {
+                    e.Id, e.Nombre, e.FotoUrl, e.Biografia,
+                    ServicioIds = _db.EmpleadosServicios
+                        .Where(es => es.EmpleadoId == e.Id)
+                        .Select(es => es.ServicioId)
+                        .ToList()
+                })
+                .AsNoTracking()
+                .ToListAsync();
+
+            var dto = new NegocioPublicoDto
+            {
+                Id = negocio.Id,
+                Slug = negocio.Slug,
+                Nombre = negocio.Nombre,
+                Descripcion = negocio.Descripcion,
+                LogoUrl = negocio.LogoUrl,
+                PortadaUrl = negocio.PortadaUrl,
+                ColorPrimario = negocio.ColorPrimario,
+                ColorSecundario = negocio.ColorSecundario,
+                Telefono = negocio.Telefono,
+                Servicios = servicios.Select(s => new ServicioPublicoDto
+                {
+                    Id = s.Id,
+                    CategoriaId = s.CategoriaId,
+                    CategoriaNombre = s.Categoria?.Nombre,
+                    Nombre = s.Nombre,
+                    Descripcion = s.Descripcion,
+                    DuracionMinutos = s.DuracionMinutos,
+                    Precio = s.Precio,
+                    ImagenUrl = s.ImagenUrl,
+                    Orden = s.Orden
+                }).ToList(),
+                Empleados = empleados.Select(e => new EmpleadoPublicoDto
+                {
+                    Id = e.Id,
+                    Nombre = e.Nombre,
+                    FotoUrl = e.FotoUrl,
+                    Biografia = e.Biografia,
+                    ServicioIds = e.ServicioIds
+                }).ToList()
+            };
+
+            return Ok(dto);
+        }
+
+        // GET api/publico/disponibilidad?servicioId=...&empleadoId=...&fecha=yyyy-MM-dd
+        [HttpGet("disponibilidad")]
+        [EnableRateLimiting("PublicoGeneral")]
+        public async Task<IActionResult> ObtenerDisponibilidad(
+            [FromQuery] Guid servicioId,
+            [FromQuery] Guid? empleadoId,
+            [FromQuery] string fecha)
+        {
+            if (!DateOnly.TryParseExact(fecha, "yyyy-MM-dd", out var fechaFiltro))
+                return BadRequest(new { mensaje = "Formato de fecha inválido. Use yyyy-MM-dd" });
+
+            if (fechaFiltro < DateOnly.FromDateTime(DateTime.Today))
+                return BadRequest(new { mensaje = "No se pueden consultar fechas pasadas" });
+
+            var servicio = await _db.Servicios.FirstOrDefaultAsync(s => s.Id == servicioId && s.Activo == 1);
+            if (servicio is null)
+                return NotFound(new { mensaje = "Servicio no encontrado" });
+
+            var slots = await _disponibilidad.ObtenerSlotsDisponiblesAsync(
+                servicio.NegocioId, servicioId, empleadoId, fechaFiltro);
+
+            return Ok(slots);
+        }
+
+        // POST api/publico/citas
+        [HttpPost("citas")]
+        [EnableRateLimiting("PublicoEstricto")]
+        public async Task<IActionResult> CrearCita([FromBody] CrearCitaPublicaDto dto)
+        {
+            var negocio = await _negocioRepo.ObtenerPorSlugAsync(dto.NegocioSlug);
+            if (negocio is null || negocio.Activo != 1)
+                return NotFound(new { mensaje = "Negocio no encontrado" });
+
+            var servicio = await _db.Servicios
+                .FirstOrDefaultAsync(s => s.Id == dto.ServicioId && s.NegocioId == negocio.Id && s.Activo == 1);
+            if (servicio is null)
+                return BadRequest(new { mensaje = "Servicio no válido para este negocio" });
+
+            // Validar que el empleado pertenece a este negocio
+            var empleadoValido = await _db.Empleados
+                .AnyAsync(e => e.Id == dto.EmpleadoId && e.NegocioId == negocio.Id && e.FechaEliminacion == null && e.Activo == 1);
+            if (!empleadoValido)
+                return BadRequest(new { mensaje = "Empleado no válido para este negocio" });
+
+            var empleadoOfreceServicio = await _db.EmpleadosServicios
+                .AnyAsync(es => es.EmpleadoId == dto.EmpleadoId && es.ServicioId == dto.ServicioId);
+            if (!empleadoOfreceServicio)
+                return BadRequest(new { mensaje = "El empleado no ofrece este servicio" });
+
+            var finEn = dto.InicioEn.AddMinutes(servicio.DuracionMinutos);
+
+            // Transacción serializable: previene que dos reservas simultáneas ocupen el mismo slot
+            Cita cita;
+            Cliente cliente;
+            var codigo = GenerarCodigoConfirmacion();
+
+            using (var tx = await _db.Database.BeginTransactionAsync(IsolationLevel.Serializable))
+            {
+                try
+                {
+                    var haySolapamiento = await _citaRepo.ExisteSolapamientoAsync(dto.EmpleadoId, dto.InicioEn, finEn);
+                    if (haySolapamiento)
+                    {
+                        await tx.RollbackAsync();
+                        return Conflict(new { mensaje = "El horario seleccionado ya no está disponible" });
+                    }
+
+                    cliente = await _clienteRepo.ObtenerOCrearAsync(
+                        negocio.Id, dto.NombreCliente, dto.TelefonoCliente, dto.EmailCliente);
+
+                    cita = new Cita
+                    {
+                        Id = Guid.NewGuid(),
+                        NegocioId = negocio.Id,
+                        CodigoConfirmacion = codigo,
+                        ClienteId = cliente.Id,
+                        EmpleadoId = dto.EmpleadoId,
+                        ServicioId = dto.ServicioId,
+                        InicioEn = dto.InicioEn,
+                        FinEn = finEn,
+                        Estado = EstadosCitas.Confirmada,
+                        Precio = servicio.Precio,
+                        Notas = dto.Notas,
+                        FechaCreacion = DateTime.UtcNow,
+                        FechaActualizacion = DateTime.UtcNow
+                    };
+
+                    await _citaRepo.CrearAsync(cita);
+
+                    cliente.TotalCitas++;
+                    cliente.UltimaCitaEn = dto.InicioEn;
+                    cliente.FechaActualizacion = DateTime.UtcNow;
+                    await _clienteRepo.ActualizarAsync(cliente);
+
+                    await tx.CommitAsync();
+                }
+                catch (Exception ex) when (EsConflictoSerializacion(ex))
+                {
+                    await tx.RollbackAsync();
+                    return Conflict(new { mensaje = "El horario fue reservado en este momento. Por favor elige otro." });
+                }
+                catch
+                {
+                    await tx.RollbackAsync();
+                    throw;
+                }
+            }
+
+            var empleado = await _db.Empleados.FindAsync(dto.EmpleadoId);
+
+            var backendUrl = _config["BackendUrl"] ?? string.Empty;
+            var icalUrl = string.IsNullOrWhiteSpace(backendUrl) ? null : $"{backendUrl}/api/publico/citas/{codigo}/ical";
+            cita.Negocio = negocio;
+            cita.Servicio = servicio;
+            cita.Empleado = empleado;
+            cita.Cliente = cliente;
+            var googleCalUrl = GenerarGoogleCalendarUrl(cita);
+
+            var respuesta = new ConfirmacionCitaDto
+            {
+                Id = cita.Id,
+                CodigoConfirmacion = codigo,
+                NombreNegocio = negocio.Nombre,
+                NegocioSlug = negocio.Slug,
+                NombreServicio = servicio.Nombre,
+                NombreEmpleado = empleado?.Nombre ?? string.Empty,
+                NombreCliente = cliente.NombreCompleto,
+                InicioEn = cita.InicioEn,
+                FinEn = cita.FinEn,
+                Precio = cita.Precio,
+                Estado = cita.Estado,
+                EstadoTexto = ObtenerEstadoTexto(cita.Estado),
+                Notas = cita.Notas,
+                IcalUrl = icalUrl,
+                WebcalUrl = icalUrl?.Replace("https://", "webcal://").Replace("http://", "webcal://"),
+                GoogleCalUrl = googleCalUrl
+            };
+
+            // Enviar email de confirmación si el cliente tiene correo
+            if (!string.IsNullOrWhiteSpace(dto.EmailCliente))
+            {
+                var frontendUrl = _config["FrontendUrl"] ?? "http://localhost:5173";
+                var urlCita = $"{frontendUrl}/b/{negocio.Slug}/confirmacion/{codigo}";
+                _ = Task.Run(() => _email.EnviarConfirmacionCitaAsync(cita, dto.EmailCliente, cliente.NombreCompleto, urlCita, icalUrl, googleCalUrl));
+            }
+
+            // Notificar al propietario del negocio
+            if (!string.IsNullOrWhiteSpace(negocio.Email))
+                _ = Task.Run(() => _email.EnviarNuevaCitaPropietarioAsync(cita, negocio.Email));
+
+            // Notificar al empleado asignado (si tiene email distinto al del negocio)
+            if (!string.IsNullOrWhiteSpace(empleado?.Email) && empleado.Email != negocio.Email)
+                _ = Task.Run(() => _email.EnviarNuevaCitaPropietarioAsync(cita, empleado.Email));
+
+            // Agendar recordatorio configurable antes de la cita si el cliente tiene correo
+            if (!string.IsNullOrWhiteSpace(dto.EmailCliente))
+            {
+                var horas = negocio.HorasRecordatorio > 0 ? negocio.HorasRecordatorio : 24;
+                var horaRecordatorio = cita.InicioEn.AddHours(-horas);
+                if (horaRecordatorio > DateTime.UtcNow)
+                    _jobClient.Schedule<IRecordatorioService>(s => s.EnviarRecordatorioCitaAsync(cita.Id), horaRecordatorio);
+            }
+
+            return CreatedAtAction(nameof(ObtenerCita), new { codigo }, respuesta);
+        }
+
+        // GET api/publico/citas/{codigo}
+        [HttpGet("citas/{codigo}")]
+        [EnableRateLimiting("PublicoEstricto")]
+        public async Task<IActionResult> ObtenerCita(string codigo)
+        {
+            var cita = await _citaRepo.ObtenerPorCodigoAsync(codigo);
+            if (cita is null)
+                return NotFound(new { mensaje = "Cita no encontrada" });
+
+            var backendUrl = _config["BackendUrl"] ?? string.Empty;
+            var icalUrl = string.IsNullOrWhiteSpace(backendUrl) ? null : $"{backendUrl}/api/publico/citas/{codigo}/ical";
+            var googleCalUrl = GenerarGoogleCalendarUrl(cita);
+
+            return Ok(new ConfirmacionCitaDto
+            {
+                Id = cita.Id,
+                CodigoConfirmacion = cita.CodigoConfirmacion,
+                NombreNegocio = cita.Negocio?.Nombre ?? string.Empty,
+                NegocioSlug = cita.Negocio?.Slug ?? string.Empty,
+                NombreServicio = cita.Servicio?.Nombre ?? string.Empty,
+                NombreEmpleado = cita.Empleado?.Nombre ?? string.Empty,
+                NombreCliente = cita.Cliente?.NombreCompleto ?? string.Empty,
+                InicioEn = cita.InicioEn,
+                FinEn = cita.FinEn,
+                Precio = cita.Precio,
+                Estado = cita.Estado,
+                EstadoTexto = ObtenerEstadoTexto(cita.Estado),
+                Notas = cita.Notas,
+                IcalUrl = icalUrl,
+                WebcalUrl = icalUrl?.Replace("https://", "webcal://").Replace("http://", "webcal://"),
+                GoogleCalUrl = googleCalUrl,
+                HorasCancelacion = cita.Negocio?.HorasCancelacion ?? 0
+            });
+        }
+
+        // GET api/publico/citas/{codigo}/ical
+        [HttpGet("citas/{codigo}/ical")]
+        [EnableRateLimiting("PublicoGeneral")]
+        public async Task<IActionResult> ObtenerIcal(string codigo)
+        {
+            var cita = await _citaRepo.ObtenerPorCodigoAsync(codigo);
+            if (cita is null) return NotFound();
+
+            var sb = new StringBuilder();
+            sb.Append("BEGIN:VCALENDAR\r\n");
+            sb.Append("VERSION:2.0\r\n");
+            sb.Append("PRODID:-//AppointVa//AppointVa//ES\r\n");
+            sb.Append("CALSCALE:GREGORIAN\r\n");
+            sb.Append("METHOD:PUBLISH\r\n");
+            sb.Append("BEGIN:VEVENT\r\n");
+            sb.Append($"DTSTART:{cita.InicioEn:yyyyMMddTHHmmssZ}\r\n");
+            sb.Append($"DTEND:{cita.FinEn:yyyyMMddTHHmmssZ}\r\n");
+            sb.Append($"DTSTAMP:{DateTime.UtcNow:yyyyMMddTHHmmssZ}\r\n");
+            sb.Append($"UID:{cita.CodigoConfirmacion}@appointva\r\n");
+            sb.Append($"SUMMARY:{cita.Servicio?.Nombre ?? "Cita"} con {cita.Empleado?.Nombre ?? "el equipo"}\r\n");
+            var descripcion = $"Negocio: {cita.Negocio?.Nombre ?? "AppointVa"}\\n" +
+                              $"Servicio: {cita.Servicio?.Nombre ?? string.Empty}\\n" +
+                              $"Profesional: {cita.Empleado?.Nombre ?? string.Empty}\\n" +
+                              $"Código: {cita.CodigoConfirmacion}";
+            sb.Append($"DESCRIPTION:{descripcion}\r\n");
+            if (!string.IsNullOrWhiteSpace(cita.Negocio?.Direccion))
+                sb.Append($"LOCATION:{cita.Negocio.Direccion}\r\n");
+            if (!string.IsNullOrWhiteSpace(cita.Negocio?.Email))
+                sb.Append($"ORGANIZER;CN={cita.Negocio.Nombre ?? "AppointVa"}:mailto:{cita.Negocio.Email}\r\n");
+            sb.Append("STATUS:CONFIRMED\r\n");
+            sb.Append("SEQUENCE:0\r\n");
+            sb.Append("BEGIN:VALARM\r\n");
+            sb.Append("ACTION:DISPLAY\r\n");
+            sb.Append("DESCRIPTION:Recordatorio de cita\r\n");
+            sb.Append("TRIGGER:-PT1H\r\n");
+            sb.Append("END:VALARM\r\n");
+            sb.Append("END:VEVENT\r\n");
+            sb.Append("END:VCALENDAR");
+
+            return File(Encoding.UTF8.GetBytes(sb.ToString()), "text/calendar; charset=utf-8", $"cita-{codigo}.ics");
+        }
+
+        // DELETE api/publico/citas/{codigo}?email=...  — el cliente cancela su propia cita
+        [HttpDelete("citas/{codigo}")]
+        [EnableRateLimiting("PublicoEstricto")]
+        public async Task<IActionResult> CancelarCita(string codigo, [FromQuery] string email)
+        {
+            if (string.IsNullOrWhiteSpace(email))
+                return BadRequest(new { mensaje = "El email es requerido para cancelar la cita." });
+
+            var cita = await _citaRepo.ObtenerPorCodigoAsync(codigo);
+            if (cita is null)
+                return NotFound(new { mensaje = "Cita no encontrada" });
+
+            // Verificar que el email corresponde al cliente de la cita
+            var emailCliente = cita.Cliente?.Email ?? string.Empty;
+            if (!emailCliente.Equals(email.Trim(), StringComparison.OrdinalIgnoreCase))
+                return Forbid();
+
+            if (cita.Estado == EstadosCitas.Cancelada)
+                return BadRequest(new { mensaje = "La cita ya está cancelada" });
+
+            if (cita.Estado == EstadosCitas.Completada)
+                return BadRequest(new { mensaje = "No se puede cancelar una cita completada" });
+
+            // Verificar política de cancelación del negocio
+            var horasCancelacion = cita.Negocio?.HorasCancelacion ?? 0;
+            if (horasCancelacion > 0)
+            {
+                var tiempoRestante = cita.InicioEn - DateTime.UtcNow;
+                if (tiempoRestante.TotalHours < horasCancelacion)
+                    return BadRequest(new { mensaje = $"No se puede cancelar con menos de {horasCancelacion} hora{(horasCancelacion == 1 ? "" : "s")} de anticipación." });
+            }
+
+            cita.Estado = EstadosCitas.Cancelada;
+            cita.MotivoCancelacion = "Cancelada por el cliente";
+            cita.FechaActualizacion = DateTime.UtcNow;
+            await _citaRepo.ActualizarAsync(cita);
+
+            // Notificar al cliente
+            if (!string.IsNullOrWhiteSpace(emailCliente))
+                _ = Task.Run(() => _email.EnviarCancelacionCitaAsync(cita, emailCliente, cita.Cliente!.NombreCompleto));
+
+            // Notificar al propietario
+            var emailNegocio = cita.Negocio?.Email;
+            if (!string.IsNullOrWhiteSpace(emailNegocio))
+                _ = Task.Run(() => _email.EnviarCancelacionClienteAlPropietarioAsync(cita, emailNegocio));
+
+            return NoContent();
+        }
+
+        // GET api/publico/mis-citas?slug=...&email=...&telefono=...&pagina=1&tamano=10
+        [HttpGet("mis-citas")]
+        [EnableRateLimiting("PublicoEstricto")]
+        public async Task<IActionResult> ObtenerMisCitas(
+            [FromQuery] string slug,
+            [FromQuery] string email,
+            [FromQuery] string telefono,
+            [FromQuery] int pagina = 1,
+            [FromQuery] int tamano = 10)
+        {
+            if (string.IsNullOrWhiteSpace(slug) || string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(telefono))
+                return BadRequest(new { mensaje = "Slug, email y teléfono son requeridos" });
+
+            tamano = Math.Clamp(tamano, 1, 50);
+            pagina = Math.Max(1, pagina);
+
+            var negocio = await _negocioRepo.ObtenerPorSlugAsync(slug);
+            if (negocio is null || negocio.Activo != 1)
+                return NotFound(new { mensaje = "Negocio no encontrado" });
+
+            var emailNorm = email.ToLower().Trim();
+            var telefonoNorm = telefono.Trim();
+
+            var baseQuery = _db.Citas
+                .Where(c =>
+                    c.NegocioId == negocio.Id &&
+                    c.Cliente != null &&
+                    c.Cliente.Email != null &&
+                    c.Cliente.Email.ToLower() == emailNorm &&
+                    c.Cliente.Telefono == telefonoNorm)
+                .AsNoTracking();
+
+            var total = await baseQuery.CountAsync();
+
+            var citas = await baseQuery
+                .Include(c => c.Empleado)
+                .Include(c => c.Servicio)
+                .OrderByDescending(c => c.InicioEn)
+                .Skip((pagina - 1) * tamano)
+                .Take(tamano)
+                .ToListAsync();
+
+            Response.Headers["X-Total-Count"] = total.ToString();
+            Response.Headers["Access-Control-Expose-Headers"] = "X-Total-Count";
+
+            return Ok(citas.Select(c => new
+            {
+                id = c.Id,
+                codigoConfirmacion = c.CodigoConfirmacion,
+                nombreNegocio = negocio.Nombre,
+                negocioSlug = negocio.Slug,
+                nombreServicio = c.Servicio?.Nombre ?? string.Empty,
+                nombreEmpleado = c.Empleado?.Nombre ?? string.Empty,
+                inicioEn = c.InicioEn,
+                finEn = c.FinEn,
+                precio = c.Precio,
+                estado = c.Estado,
+                estadoTexto = ObtenerEstadoTexto(c.Estado),
+            }));
+        }
+
+        // POST api/publico/registro — auto-registro de un nuevo negocio
+        [HttpPost("registro")]
+        [EnableRateLimiting("PublicoEstricto")]
+        public async Task<IActionResult> RegistrarNegocio([FromBody] RegistroNegocioDto dto)
+        {
+            if (await _db.Negocios.AnyAsync(n => n.Slug == dto.Slug))
+                return Conflict(new { mensaje = "Ese identificador ya está en uso. Prueba con otro." });
+
+            if (await _userManager.FindByEmailAsync(dto.Email) is not null)
+                return Conflict(new { mensaje = "Ya existe una cuenta con este correo." });
+
+            var negocio = new Negocio
+            {
+                Id = Guid.NewGuid(),
+                Slug = dto.Slug,
+                Nombre = dto.NombreNegocio,
+                Telefono = dto.Telefono,
+                Activo = 1,
+                FechaCreacion = DateTime.UtcNow,
+                FechaActualizacion = DateTime.UtcNow
+            };
+
+            ApplicationUser usuario;
+            using (var tx = await _db.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    await _db.Negocios.AddAsync(negocio);
+                    await _db.SaveChangesAsync();
+
+                    usuario = new ApplicationUser
+                    {
+                        Id = Guid.NewGuid(),
+                        UserName = dto.Email,
+                        Email = dto.Email,
+                        Nombre = dto.NombrePropietario,
+                        NegocioId = negocio.Id,
+                        Activo = true,
+                        FechaCreacion = DateTime.UtcNow
+                    };
+
+                    var resultado = await _userManager.CreateAsync(usuario, dto.Contrasena);
+                    if (!resultado.Succeeded)
+                    {
+                        await tx.RollbackAsync();
+                        var errores = resultado.Errors.Select(e => e.Description);
+                        return BadRequest(new { mensaje = "No se pudo crear la cuenta.", errores });
+                    }
+
+                    await _userManager.AddToRoleAsync(usuario, Roles.Propietario);
+                    await tx.CommitAsync();
+                }
+                catch
+                {
+                    await tx.RollbackAsync();
+                    throw;
+                }
+            }
+
+            var token = await _userManager.GenerateEmailConfirmationTokenAsync(usuario);
+            var tokenEncoded = Uri.EscapeDataString(token);
+            var frontendUrl = _config["FrontendUrl"] ?? "http://localhost:5173";
+            var urlVerificacion = $"{frontendUrl}/verificar-email?userId={usuario.Id}&token={tokenEncoded}";
+            _ = Task.Run(() => _email.EnviarVerificacionEmailAsync(dto.Email, dto.NombrePropietario, urlVerificacion));
+
+            return StatusCode(201, new { mensaje = "Negocio registrado. Revisa tu correo para verificar tu cuenta." });
+        }
+
+        // GET api/publico/verificar-email?userId=...&token=...
+        [HttpGet("verificar-email")]
+        [EnableRateLimiting("PublicoEstricto")]
+        public async Task<IActionResult> VerificarEmail([FromQuery] string userId, [FromQuery] string token)
+        {
+            var usuario = await _userManager.FindByIdAsync(userId);
+            if (usuario is null)
+                return BadRequest(new { mensaje = "Enlace de verificación inválido." });
+
+            if (usuario.EmailConfirmed)
+                return Ok(new { mensaje = "Tu correo ya estaba verificado. Puedes iniciar sesión." });
+
+            var resultado = await _userManager.ConfirmEmailAsync(usuario, Uri.UnescapeDataString(token));
+            if (!resultado.Succeeded)
+                return BadRequest(new { mensaje = "El enlace de verificación es inválido o ha expirado." });
+
+            return Ok(new { mensaje = "¡Correo verificado! Ya puedes iniciar sesión." });
+        }
+
+        // POST api/publico/reenviar-verificacion
+        [HttpPost("reenviar-verificacion")]
+        [EnableRateLimiting("PublicoEstricto")]
+        public async Task<IActionResult> ReenviarVerificacion([FromBody] ReenviarVerificacionDto dto)
+        {
+            const string respuestaGenerica = "Si el correo está registrado y pendiente de verificación, recibirás un email.";
+            var usuario = await _userManager.FindByEmailAsync(dto.Email);
+            if (usuario is null || usuario.EmailConfirmed)
+                return Ok(new { mensaje = respuestaGenerica });
+
+            var token = await _userManager.GenerateEmailConfirmationTokenAsync(usuario);
+            var tokenEncoded = Uri.EscapeDataString(token);
+            var frontendUrl = _config["FrontendUrl"] ?? "http://localhost:5173";
+            var url = $"{frontendUrl}/verificar-email?userId={usuario.Id}&token={tokenEncoded}";
+            _ = Task.Run(() => _email.EnviarVerificacionEmailAsync(dto.Email, usuario.Nombre ?? dto.Email, url));
+
+            return Ok(new { mensaje = respuestaGenerica });
+        }
+
+        private static bool EsConflictoSerializacion(Exception ex)
+        {
+            var inner = ex;
+            while (inner is not null)
+            {
+                if (inner.GetType().Name.Contains("Postgres") &&
+                    (inner.Message.Contains("40001") || inner.Message.Contains("serialization") || inner.Message.Contains("deadlock")))
+                    return true;
+                inner = inner.InnerException;
+            }
+            return false;
+        }
+
+        private static string GenerarGoogleCalendarUrl(Cita cita)
+        {
+            var titulo = Uri.EscapeDataString(
+                $"{cita.Servicio?.Nombre ?? "Cita"} - {cita.Negocio?.Nombre ?? "AppointVa"}");
+            var inicio = cita.InicioEn.ToString("yyyyMMddTHHmmssZ");
+            var fin = cita.FinEn.ToString("yyyyMMddTHHmmssZ");
+            var detalles = Uri.EscapeDataString(
+                $"Cita con {cita.Empleado?.Nombre ?? "el equipo"} en {cita.Negocio?.Nombre ?? "AppointVa"}");
+            return $"https://calendar.google.com/calendar/render?action=TEMPLATE&text={titulo}&dates={inicio}/{fin}&details={detalles}";
+        }
+
+        private static string GenerarCodigoConfirmacion()
+        {
+            var bytes = RandomNumberGenerator.GetBytes(4);
+            return Convert.ToHexString(bytes).ToUpper();
+        }
+
+        internal static string ObtenerEstadoTexto(byte estado) => estado switch
+        {
+            EstadosCitas.Pendiente => "Pendiente",
+            EstadosCitas.Confirmada => "Confirmada",
+            EstadosCitas.Completada => "Completada",
+            EstadosCitas.Cancelada => "Cancelada",
+            EstadosCitas.Inasistencia => "Inasistencia",
+            _ => "Desconocido"
+        };
+    }
+}

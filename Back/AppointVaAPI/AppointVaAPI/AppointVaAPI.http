@@ -1,0 +1,6 @@
+@AppointVaAPI_HostAddress = http://localhost:5048
+
+GET {{AppointVaAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
