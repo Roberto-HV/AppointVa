@@ -91,6 +91,8 @@ export default function CitasPage() {
     }),
     enabled: vista === "lista",
     placeholderData: (prev) => prev,
+    staleTime: 0,
+    refetchInterval: 30_000,
   });
   const citas = pagCitas?.datos ?? [];
   const totalCitas = pagCitas?.total ?? 0;

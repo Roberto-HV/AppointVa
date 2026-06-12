@@ -78,6 +78,7 @@ namespace AppointVaAPI.Services
                 .ToListAsync();
 
             var duracion = TimeSpan.FromMinutes(servicio.DuracionMinutos);
+            var ahora = DateTime.Now;
             var todos = new List<SlotDisponibleDto>();
 
             foreach (var emp in empleadosActivos)
@@ -97,7 +98,7 @@ namespace AppointVaAPI.Services
                     var solapaCita = citasEmp.Any(c => c.InicioEn < slotFin && c.FinEn > slotInicio);
                     var solapaBloqueo = bloqueosEmp.Any(b => b.InicioEn < slotFin && b.FinEn > slotInicio);
 
-                    if (!solapaCita && !solapaBloqueo)
+                    if (!solapaCita && !solapaBloqueo && slotInicio > ahora)
                     {
                         todos.Add(new SlotDisponibleDto
                         {
@@ -144,6 +145,7 @@ namespace AppointVaAPI.Services
                 .ToListAsync();
 
             var duracion = TimeSpan.FromMinutes(servicio.DuracionMinutos);
+            var ahora = DateTime.Now;
             var slots = new List<SlotDisponibleDto>();
 
             var slotInicio = fechaDt.Add(horario.HoraInicio);
@@ -155,7 +157,7 @@ namespace AppointVaAPI.Services
                 var solapaCita = citasExistentes.Any(c => c.InicioEn < slotFin && c.FinEn > slotInicio);
                 var solapaBloqueo = bloqueosExistentes.Any(b => b.InicioEn < slotFin && b.FinEn > slotInicio);
 
-                if (!solapaCita && !solapaBloqueo)
+                if (!solapaCita && !solapaBloqueo && slotInicio > ahora)
                 {
                     slots.Add(new SlotDisponibleDto
                     {

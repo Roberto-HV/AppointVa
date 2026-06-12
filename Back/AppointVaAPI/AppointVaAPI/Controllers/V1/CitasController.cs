@@ -101,7 +101,7 @@ namespace AppointVaAPI.Controllers.V1
         {
             if (_contexto.NegocioId is null) return Unauthorized();
 
-            if (dto.InicioEn <= DateTime.UtcNow)
+            if (dto.InicioEn <= DateTime.Now)
                 return BadRequest(new { mensaje = "La fecha de la cita debe ser en el futuro" });
 
             var negocioId = _contexto.NegocioId.Value;

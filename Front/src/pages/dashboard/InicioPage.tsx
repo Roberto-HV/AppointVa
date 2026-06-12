@@ -41,6 +41,8 @@ function VistaPropietario({ nombre }: { nombre: string }) {
   const { data, isLoading } = useQuery({
     queryKey: ["dashboard-resumen"],
     queryFn: dashboardApi.obtenerResumen,
+    staleTime: 0,
+    refetchInterval: 30_000,
   });
 
   const { data: tendencia = [] } = useQuery({
@@ -187,12 +189,16 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
     queryKey: ["mis-citas-hoy"],
     queryFn: () => citasApi.obtenerTodas({ desde: hoy, hasta: hoy }),
     select: (p) => p.datos,
+    staleTime: 0,
+    refetchInterval: 30_000,
   });
 
   const { data: citasProximas = [], isLoading: cargandoProximas } = useQuery({
     queryKey: ["mis-citas-proximas"],
     queryFn: () => citasApi.obtenerTodas({ desde: manana }),
     select: (p) => p.datos,
+    staleTime: 0,
+    refetchInterval: 30_000,
   });
 
   const pendientesOConfirmadas = citasProximas.filter(

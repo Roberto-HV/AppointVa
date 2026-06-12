@@ -389,7 +389,7 @@ namespace AppointVaAPI.Controllers.V1
             var horasCancelacion = cita.Negocio?.HorasCancelacion ?? 0;
             if (horasCancelacion > 0)
             {
-                var tiempoRestante = cita.InicioEn - DateTime.UtcNow;
+                var tiempoRestante = cita.InicioEn - DateTime.Now;
                 if (tiempoRestante.TotalHours < horasCancelacion)
                     return BadRequest(new { mensaje = $"No se puede cancelar con menos de {horasCancelacion} hora{(horasCancelacion == 1 ? "" : "s")} de anticipación." });
             }

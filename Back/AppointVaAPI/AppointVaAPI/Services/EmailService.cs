@@ -118,6 +118,7 @@ namespace AppointVaAPI.Services
 
         private static string PlantillaConfirmacion(Cita cita, string nombreCliente, string? urlCita = null, string? icalUrl = null, string? googleCalUrl = null)
         {
+            nombreCliente = nombreCliente.Trim();
             var negocio = cita.Negocio?.Nombre ?? "el negocio";
             var servicio = cita.Servicio?.Nombre ?? "el servicio";
             var empleado = cita.Empleado?.Nombre ?? string.Empty;
@@ -186,6 +187,7 @@ namespace AppointVaAPI.Services
 
         private static string PlantillaCancelacion(Cita cita, string nombreCliente)
         {
+            nombreCliente = nombreCliente.Trim();
             var negocio = cita.Negocio?.Nombre ?? "el negocio";
             var servicio = cita.Servicio?.Nombre ?? "el servicio";
             var inicio = cita.InicioEn.ToString("dddd dd 'de' MMMM 'de' yyyy HH:mm", new System.Globalization.CultureInfo("es-MX"));
@@ -320,6 +322,7 @@ namespace AppointVaAPI.Services
 
         private static string PlantillaReagendar(Cita cita, string nombreCliente, DateTime fechaOriginal)
         {
+            nombreCliente = nombreCliente.Trim();
             var servicio = cita.Servicio?.Nombre ?? "el servicio";
             var negocio = cita.Negocio?.Nombre ?? "el negocio";
             var empleado = cita.Empleado?.Nombre ?? string.Empty;
@@ -433,6 +436,7 @@ namespace AppointVaAPI.Services
 
         private static string PlantillaRecordatorio(Cita cita, string nombreCliente, string? icalUrl = null, string? googleCalUrl = null)
         {
+            nombreCliente = nombreCliente.Trim();
             var negocio = cita.Negocio?.Nombre ?? "el negocio";
             var servicio = cita.Servicio?.Nombre ?? "el servicio";
             var hora = cita.InicioEn.ToString("HH:mm");

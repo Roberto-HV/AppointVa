@@ -260,7 +260,15 @@ export default function BookingPage() {
               onEnviar={confirmarCita}
             />
             {errorEnvio && (
-              <p className="text-red-500 text-sm text-center mt-3">{errorEnvio}</p>
+              <div className="mt-4 flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+                <svg className="w-5 h-5 text-red-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                </svg>
+                <div>
+                  <p className="text-sm font-semibold text-red-700">No se pudo agendar la cita</p>
+                  <p className="text-sm text-red-600 mt-0.5">{errorEnvio}</p>
+                </div>
+              </div>
             )}
             <button onClick={irAtras} className="mt-3 w-full py-2.5 text-sm text-gray-500 hover:text-gray-700 transition">
               ← Atrás
