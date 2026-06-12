@@ -27,10 +27,6 @@ function formatFecha(iso: string) {
   }).replace(/\bDe\b/g, "de");
 }
 
-function formatHora(iso: string) {
-  return new Date(iso).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", hour12: true });
-}
-
 function formatPrecio(precio: number) {
   return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(precio);
 }

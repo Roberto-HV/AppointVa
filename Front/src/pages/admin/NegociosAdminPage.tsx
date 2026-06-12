@@ -25,7 +25,7 @@ type NegocioForm = z.infer<typeof schemaNegocio>;
 
 const schemaPropietario = z.object({
   nombre: z.string().min(2, "Nombre requerido"),
-  apellido: z.string().optional().default(""),
+  apellido: z.string().default(""),
   email: z.string().email("Correo inválido"),
   password: z.string().min(6, "Mínimo 6 caracteres"),
 });

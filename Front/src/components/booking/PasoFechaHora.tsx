@@ -20,10 +20,6 @@ function fechaISO(d: Date) {
   return d.toISOString().slice(0, 10);
 }
 
-function formatHora(iso: string) {
-  return new Date(iso).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", hour12: true });
-}
-
 const DIAS = ["Do", "Lu", "Ma", "Mi", "Ju", "Vi", "Sá"];
 const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 
