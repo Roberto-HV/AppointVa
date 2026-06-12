@@ -380,8 +380,8 @@ export default function CitasPage() {
       {vista === "lista" && (
         isLoading ? (
           <div className="bg-white rounded-xl border border-gray-100 overflow-x-auto">
-            <table className="w-full text-sm min-w-[700px]">
-              <tbody><SkeletonTableRows filas={6} columnas={8} /></tbody>
+            <table className="w-full text-sm">
+              <tbody><SkeletonTableRows filas={6} columnas={5} /></tbody>
             </table>
           </div>
         ) : citasFiltradas.length === 0 ? (
@@ -390,33 +390,33 @@ export default function CitasPage() {
           </div>
         ) : (
           <div className="bg-white rounded-xl border border-gray-100 overflow-x-auto">
-            <table className="w-full text-sm min-w-[700px]">
+            <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-100 text-xs text-gray-400 uppercase tracking-wide">
-                  <th className="text-left px-5 py-3 font-medium">Cliente</th>
-                  <th className="text-left px-5 py-3 font-medium">Servicio</th>
-                  <th className="text-left px-5 py-3 font-medium">Profesional</th>
-                  <th className="text-left px-5 py-3 font-medium">Fecha y hora</th>
-                  <th className="text-right px-5 py-3 font-medium">Precio</th>
-                  <th className="text-center px-5 py-3 font-medium">Pago</th>
-                  <th className="text-center px-5 py-3 font-medium">Estado</th>
-                  <th className="px-5 py-3" />
+                  <th className="text-left px-4 py-3 font-medium">Cliente</th>
+                  <th className="text-left px-4 py-3 font-medium">Servicio</th>
+                  <th className="text-left px-4 py-3 font-medium hidden sm:table-cell">Profesional</th>
+                  <th className="text-left px-4 py-3 font-medium">Fecha y hora</th>
+                  <th className="text-right px-4 py-3 font-medium hidden sm:table-cell">Precio</th>
+                  <th className="text-center px-4 py-3 font-medium hidden sm:table-cell">Pago</th>
+                  <th className="text-center px-4 py-3 font-medium">Estado</th>
+                  <th className="px-4 py-3 hidden sm:table-cell" />
                 </tr>
               </thead>
               <tbody>
                 {citasFiltradas.map((c) => (
                   <tr key={c.id} className="border-b border-gray-50 hover:bg-gray-50 transition">
-                    <td className="px-5 py-3">
+                    <td className="px-4 py-3">
                       <p className="font-medium text-gray-800">{c.nombreCliente}</p>
                       <p className="text-xs text-gray-400">{c.telefonoCliente}</p>
                     </td>
-                    <td className="px-5 py-3 text-gray-700">{c.nombreServicio}</td>
-                    <td className="px-5 py-3 text-gray-700">{c.nombreEmpleado}</td>
-                    <td className="px-5 py-3 text-gray-600 capitalize">{formatFechaHora(c.inicioEn)}</td>
-                    <td className="px-5 py-3 text-right font-medium text-gray-800">{formatPrecio(c.precio)}</td>
+                    <td className="px-4 py-3 text-gray-700 text-xs sm:text-sm">{c.nombreServicio}</td>
+                    <td className="px-4 py-3 text-gray-700 hidden sm:table-cell">{c.nombreEmpleado}</td>
+                    <td className="px-4 py-3 text-gray-600 capitalize text-xs sm:text-sm">{formatFechaHora(c.inicioEn)}</td>
+                    <td className="px-4 py-3 text-right font-medium text-gray-800 hidden sm:table-cell">{formatPrecio(c.precio)}</td>
 
-                    {/* Columna de pago */}
-                    <td className="px-5 py-3 text-center">
+                    {/* Columna de pago — solo desktop */}
+                    <td className="px-4 py-3 text-center hidden sm:table-cell">
                       <Tooltip text={c.pagada ? "Ver detalle o revertir el pago" : "Registrar el pago de esta cita"}>
                         <button
                           onClick={() => abrirPago(c)}
@@ -433,11 +433,25 @@ export default function CitasPage() {
                       </Tooltip>
                     </td>
 
-                    <td className="px-5 py-3 text-center"><EstadoBadge estado={c.estadoTexto} /></td>
+                    <td className="px-4 py-3 text-center">
+                      <div className="flex items-center justify-center gap-1.5">
+                        <EstadoBadge estado={c.estadoTexto} />
+                        {/* Botón de acciones — solo móvil */}
+                        {(TRANSICIONES[c.estadoTexto] || c.estadoTexto === "Pendiente" || c.estadoTexto === "Confirmada") && (
+                          <button
+                            onClick={() => abrirCambioEstado(c)}
+                            className="sm:hidden text-gray-400 hover:text-gray-700 p-1 rounded transition"
+                            title="Acciones"
+                          >
+                            ⋮
+                          </button>
+                        )}
+                      </div>
+                    </td>
 
-                    <td className="px-5 py-3 text-right">
+                    {/* Acciones — solo desktop */}
+                    <td className="px-4 py-3 text-right hidden sm:table-cell">
                       <div className="flex justify-end items-center gap-2">
-                        {/* Indicador de notas */}
                         <Tooltip text={c.notas ? "Ver o editar notas internas" : "Agregar una nota interna"}>
                           <button
                             onClick={() => abrirNotas(c)}
