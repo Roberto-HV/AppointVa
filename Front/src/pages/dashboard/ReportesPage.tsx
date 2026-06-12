@@ -77,7 +77,7 @@ export default function ReportesPage() {
 
   const { data: empleados = [] } = useQuery({
     queryKey: ["empleados-reporte"],
-    queryFn: empleadosApi.obtenerTodos,
+    queryFn: () => empleadosApi.obtenerTodos(),
     staleTime: 1000 * 60 * 5,
   });
 
@@ -239,7 +239,7 @@ export default function ReportesPage() {
                           : <span className="text-gray-300 text-xs">—</span>}
                       </td>
                       <td className="px-4 py-3">
-                        <EstadoBadge estadoTexto={c.estadoTexto} />
+                        <EstadoBadge estado={c.estadoTexto} />
                       </td>
                     </tr>
                   ))
@@ -277,7 +277,7 @@ export default function ReportesPage() {
                       <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                       <XAxis type="number" tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 11 }} />
                       <YAxis type="category" dataKey="nombreServicio" width={110} tick={{ fontSize: 11 }} />
-                      <Tooltip formatter={(v: number) => formatPrecio(v)} />
+                      <Tooltip formatter={(v) => formatPrecio(Number(v))} />
                       <Bar dataKey="totalIngresos" radius={[0, 4, 4, 0]}>
                         {reporteIngresos.porServicio.map((_, i) => (
                           <Cell key={i} fill={COLORES_GRAFICA[i % COLORES_GRAFICA.length]} />
@@ -299,7 +299,7 @@ export default function ReportesPage() {
                       <CartesianGrid strokeDasharray="3 3" vertical={false} />
                       <XAxis dataKey="fecha" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
                       <YAxis tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 11 }} />
-                      <Tooltip formatter={(v: number) => formatPrecio(v)} />
+                      <Tooltip formatter={(v) => formatPrecio(Number(v))} />
                       <Bar dataKey="totalIngresos" fill="#C8A961" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>

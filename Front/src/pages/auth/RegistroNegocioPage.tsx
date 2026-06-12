@@ -48,11 +48,8 @@ export default function RegistroNegocioPage() {
     register,
     handleSubmit,
     setValue,
-    watch,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({ resolver: zodResolver(schema) });
-
-  const nombreNegocio = watch("nombreNegocio");
 
   const onNombreChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const valor = e.target.value;

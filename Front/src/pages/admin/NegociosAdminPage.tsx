@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Select from "../../components/ui/Select";
-import { useForm } from "react-hook-form";
+import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Eye, EyeOff } from "lucide-react";
@@ -60,7 +60,7 @@ export default function NegociosAdminPage() {
   });
 
   const formNegocio = useForm<NegocioForm>({ resolver: zodResolver(schemaNegocio) });
-  const formPropietario = useForm<PropietarioForm>({ resolver: zodResolver(schemaPropietario) });
+  const formPropietario = useForm<PropietarioForm>({ resolver: zodResolver(schemaPropietario) as Resolver<PropietarioForm> });
 
   const { mutate: crearNegocio, isPending: creandoNegocio } = useMutation({
     mutationFn: (d: NegocioForm) =>

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Select from "../../components/ui/Select";
-import { useForm } from "react-hook-form";
+import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Eye, EyeOff, Copy, Check } from "lucide-react";
@@ -83,7 +83,7 @@ export default function PerfilPage() {
   });
 
   const { register, handleSubmit, reset, watch, formState: { errors, isSubmitting, isDirty } } = useForm<PerfilForm>({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(schema) as Resolver<PerfilForm>,
   });
 
   useEffect(() => {

@@ -1,12 +1,11 @@
 import { useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Select from "../../components/ui/Select";
-import { useForm } from "react-hook-form";
+import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { serviciosApi, categoriasApi } from "../../api/servicios";
 import Modal from "../../components/ui/Modal";
-import { Tooltip } from "../../components/ui/Tooltip";
 import { useToastStore } from "../../store/toastStore";
 import type { CategoriaDto, ServicioDto } from "../../types";
 
@@ -61,7 +60,7 @@ export default function ServiciosPage() {
 
   // ── Forms servicios ───────────────────────────────────────────────────────
   const { register, handleSubmit, reset, watch, formState: { errors } } = useForm<ServicioForm>({
-    resolver: zodResolver(schemaServicio),
+    resolver: zodResolver(schemaServicio) as Resolver<ServicioForm>,
     defaultValues: { orden: 1, duracionMinutos: 30, precio: 0 },
   });
 
@@ -83,7 +82,7 @@ export default function ServiciosPage() {
 
   // ── Forms categorías ──────────────────────────────────────────────────────
   const formCat = useForm<CategoriaForm>({
-    resolver: zodResolver(schemaCategoria),
+    resolver: zodResolver(schemaCategoria) as Resolver<CategoriaForm>,
     defaultValues: { nombre: "", orden: 1 },
   });
 

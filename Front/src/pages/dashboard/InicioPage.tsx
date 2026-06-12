@@ -111,8 +111,8 @@ function VistaPropietario({ nombre }: { nombre: string }) {
                   <YAxis yAxisId="ingresos" tickFormatter={formatPrecioCorto} tick={{ fontSize: 10, fill: "#9ca3af" }} axisLine={false} tickLine={false} width={40} />
                   <YAxis yAxisId="citas" orientation="right" tick={{ fontSize: 10, fill: "#9ca3af" }} axisLine={false} tickLine={false} width={28} allowDecimals={false} />
                   <Tooltip
-                    formatter={(val: number, name: string) =>
-                      name === "ingresos" ? [formatPrecio(val), "Ingresos"] : [val, "Citas"]
+                    formatter={(val, name) =>
+                      name === "ingresos" ? [formatPrecio(Number(val)), "Ingresos"] : [Number(val), "Citas"]
                     }
                     contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e5e7eb" }}
                   />
