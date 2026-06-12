@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import Select from "../../components/ui/Select";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -325,17 +326,14 @@ export default function NegociosAdminPage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Plan</label>
-            <select
-              {...formNegocio.register("planId")}
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary bg-white"
-            >
+            <Select {...formNegocio.register("planId")} className="w-full">
               <option value="">Sin plan asignado</option>
               {planes.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.nombre} — {formatPrecio(p.precioMensual)}/mes · {p.maxEmpleados} empleados
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
 
           <div>

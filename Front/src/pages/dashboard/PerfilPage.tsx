@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import Select from "../../components/ui/Select";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -316,34 +317,31 @@ export default function PerfilPage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Zona horaria</label>
-            <select {...register("zonaHoraria")}
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary bg-white">
+            <Select {...register("zonaHoraria")} value={watch("zonaHoraria") ?? ""} className="w-full">
               <option value="">Seleccionar...</option>
               {ZONAS_HORARIAS.map((z) => (
                 <option key={z.valor} value={z.valor}>{z.texto}</option>
               ))}
-            </select>
+            </Select>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Recordatorio al cliente</label>
-            <select {...register("horasRecordatorio")}
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary bg-white">
+            <Select {...register("horasRecordatorio")} value={watch("horasRecordatorio") ?? ""} className="w-full">
               {HORAS_RECORDATORIO.map((h) => (
                 <option key={h.valor} value={h.valor}>{h.texto}</option>
               ))}
-            </select>
+            </Select>
             <p className="text-xs text-gray-400 mt-1">Cuánto tiempo antes se envía el recordatorio por email.</p>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Política de cancelación</label>
-            <select {...register("horasCancelacion")}
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary bg-white">
+            <Select {...register("horasCancelacion")} value={watch("horasCancelacion") ?? ""} className="w-full">
               {HORAS_CANCELACION.map((h) => (
                 <option key={h.valor} value={h.valor}>{h.texto}</option>
               ))}
-            </select>
+            </Select>
             <p className="text-xs text-gray-400 mt-1">Tiempo mínimo de anticipación para cancelar una cita.</p>
           </div>
 

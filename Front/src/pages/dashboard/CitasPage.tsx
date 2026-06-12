@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { citasApi, ESTADOS, METODOS_PAGO } from "../../api/citas";
+import Select from "../../components/ui/Select";
 import { empleadosApi } from "../../api/empleados";
 import { serviciosApi } from "../../api/servicios";
 import { api } from "../../api/axios";
@@ -357,11 +358,10 @@ export default function CitasPage() {
         )}
         <div>
           <label className="block text-xs text-gray-500 mb-1">Profesional</label>
-          <select value={empleadoId} onChange={(e) => { setEmpleadoId(e.target.value); setPagina(1); }}
-            className="px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary bg-white">
+          <Select value={empleadoId} onChange={(e) => { setEmpleadoId(e.target.value); setPagina(1); }}>
             <option value="">Todos</option>
             {empleados.map((e) => <option key={e.id} value={e.id}>{e.nombre}</option>)}
-          </select>
+          </Select>
         </div>
         {vista === "lista" && (desde || hasta || empleadoId || busqueda) && (
           <button onClick={() => { setDesde(""); setHasta(""); setEmpleadoId(""); setBusqueda(""); setPagina(1); }}
@@ -633,10 +633,10 @@ export default function CitasPage() {
             {/* Servicio */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Servicio</label>
-              <select
+              <Select
                 value={svcSel}
                 onChange={(e) => { setSvcSel(e.target.value); setEmpSel(""); setFechaNueva(""); setSlotNuevo(""); }}
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary bg-white"
+                className="w-full"
               >
                 <option value="">— Selecciona un servicio —</option>
                 {servicios.filter((s) => s.activo).map((s) => (
@@ -644,7 +644,7 @@ export default function CitasPage() {
                     {s.nombre} · {s.duracionMinutos} min · {formatPrecio(s.precio)}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
 
             {/* Empleado */}
@@ -654,16 +654,16 @@ export default function CitasPage() {
                 {empleadosFiltrados.length === 0 ? (
                   <p className="text-sm text-gray-400">Ningún empleado ofrece este servicio</p>
                 ) : (
-                  <select
+                  <Select
                     value={empSel}
                     onChange={(e) => { setEmpSel(e.target.value); setFechaNueva(""); setSlotNuevo(""); }}
-                    className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary bg-white"
+                    className="w-full"
                   >
                     <option value="">— Selecciona un profesional —</option>
                     {empleadosFiltrados.map((e) => (
                       <option key={e.id} value={e.id}>{e.nombre}</option>
                     ))}
-                  </select>
+                  </Select>
                 )}
               </div>
             )}

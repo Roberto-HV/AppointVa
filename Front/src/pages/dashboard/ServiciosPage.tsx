@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import Select from "../../components/ui/Select";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -59,7 +60,7 @@ export default function ServiciosPage() {
   });
 
   // ── Forms servicios ───────────────────────────────────────────────────────
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<ServicioForm>({
+  const { register, handleSubmit, reset, watch, formState: { errors } } = useForm<ServicioForm>({
     resolver: zodResolver(schemaServicio),
     defaultValues: { orden: 1, duracionMinutos: 30, precio: 0 },
   });
@@ -396,13 +397,10 @@ export default function ServiciosPage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
-            <select
-              {...register("categoriaId")}
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary bg-white"
-            >
+            <Select {...register("categoriaId")} value={watch("categoriaId") ?? ""} className="w-full">
               <option value="">Sin categoría</option>
               {categorias.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-            </select>
+            </Select>
           </div>
 
           <div>

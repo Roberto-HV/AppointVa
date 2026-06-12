@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import Select from "../../components/ui/Select";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
 } from "recharts";
@@ -143,30 +144,30 @@ export default function ReportesPage() {
           <>
             <div className="flex flex-col gap-1">
               <label className="text-xs font-medium text-gray-600">Empleado</label>
-              <select value={empleadoId} onChange={(e) => setEmpleadoId(e.target.value)} className={inputCls}>
+              <Select value={empleadoId} onChange={(e) => setEmpleadoId(e.target.value)}>
                 <option value="">Todos</option>
                 {empleados.map((e) => (
                   <option key={e.id} value={e.id}>{e.nombre}</option>
                 ))}
-              </select>
+              </Select>
             </div>
             <div className="flex flex-col gap-1">
               <label className="text-xs font-medium text-gray-600">Servicio</label>
-              <select value={servicioId} onChange={(e) => setServicioId(e.target.value)} className={inputCls}>
+              <Select value={servicioId} onChange={(e) => setServicioId(e.target.value)}>
                 <option value="">Todos</option>
                 {servicios.map((s) => (
                   <option key={s.id} value={s.id}>{s.nombre}</option>
                 ))}
-              </select>
+              </Select>
             </div>
             <div className="flex flex-col gap-1">
               <label className="text-xs font-medium text-gray-600">Estado</label>
-              <select value={estado} onChange={(e) => setEstado(e.target.value)} className={inputCls}>
+              <Select value={estado} onChange={(e) => setEstado(e.target.value)}>
                 <option value="">Todos</option>
                 {ESTADOS_OPCIONES.map((o) => (
                   <option key={o.valor} value={o.valor}>{o.texto}</option>
                 ))}
-              </select>
+              </Select>
             </div>
           </>
         )}
