@@ -7,6 +7,7 @@ import { dashboardApi } from "../../api/dashboard";
 import { citasApi } from "../../api/citas";
 import { useAuthStore } from "../../store/authStore";
 import EstadoBadge from "../../components/ui/EstadoBadge";
+import { Skeleton } from "../../components/ui/Skeleton";
 
 function formatPrecio(n: number) {
   return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(n);
@@ -56,7 +57,21 @@ function VistaPropietario({ nombre }: { nombre: string }) {
       <p className="text-gray-400 text-sm mb-8">Resumen de tu negocio</p>
 
       {isLoading ? (
-        <p className="text-gray-400">Cargando métricas...</p>
+        <>
+          <Skeleton className="h-3 w-16 mb-3" />
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+            {[0,1,2].map(i => <Skeleton key={i} className="h-24 rounded-xl" />)}
+          </div>
+          <Skeleton className="h-3 w-16 mb-3" />
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+            {[0,1,2].map(i => <Skeleton key={i} className="h-24 rounded-xl" />)}
+          </div>
+          <Skeleton className="h-72 rounded-xl mb-6" />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <Skeleton className="lg:col-span-2 h-64 rounded-xl" />
+            <Skeleton className="h-64 rounded-xl" />
+          </div>
+        </>
       ) : data ? (
         <>
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Citas</p>
@@ -220,7 +235,9 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
         </div>
 
         {cargandoHoy ? (
-          <p className="text-gray-400 text-sm">Cargando...</p>
+          <div className="space-y-3">
+            {[0,1,2].map(i => <Skeleton key={i} className="h-16 rounded-lg" />)}
+          </div>
         ) : citasHoy.length === 0 ? (
           <p className="text-gray-400 text-sm">No tienes citas programadas para hoy</p>
         ) : (
@@ -248,7 +265,9 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
       <div className="bg-white rounded-xl border border-gray-100 p-5">
         <h2 className="text-sm font-semibold text-gray-700 mb-4">Próximas citas</h2>
         {cargandoProximas ? (
-          <p className="text-gray-400 text-sm">Cargando...</p>
+          <div className="space-y-2">
+            {[0,1,2].map(i => <Skeleton key={i} className="h-12 rounded-lg" />)}
+          </div>
         ) : pendientesOConfirmadas.length === 0 ? (
           <p className="text-gray-400 text-sm">No tienes citas próximas pendientes</p>
         ) : (

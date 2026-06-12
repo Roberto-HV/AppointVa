@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { Menu, X, LayoutDashboard, CalendarDays, Users, Scissors, UserCheck, Building2, Link, Copy, Check, BarChart2, ShieldCheck } from "lucide-react";
+import { Menu, X, LayoutDashboard, CalendarDays, Users, Scissors, UserCheck, Building2, Link, Copy, Check, BarChart2, ShieldCheck, UserCircle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "../store/authStore";
 import { authApi } from "../api/auth";
@@ -22,6 +22,7 @@ const NAV_PROPIETARIO = [
 const NAV_EMPLEADO = [
   { to: "/dashboard", label: "Inicio", end: true, icon: LayoutDashboard },
   { to: "/dashboard/citas", label: "Mis citas", icon: CalendarDays },
+  { to: "/dashboard/mi-perfil", label: "Mi perfil", icon: UserCircle },
 ];
 
 export default function DashboardLayout() {

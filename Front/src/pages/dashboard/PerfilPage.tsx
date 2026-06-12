@@ -10,6 +10,7 @@ import Modal from "../../components/ui/Modal";
 import { negociosApi } from "../../api/negocios";
 import { authApi } from "../../api/auth";
 import { useToastStore } from "../../store/toastStore";
+import { Skeleton } from "../../components/ui/Skeleton";
 import type { ActualizarNegocioDto, HorarioDto } from "../../types";
 
 const ZONAS_HORARIAS = [
@@ -208,7 +209,28 @@ export default function PerfilPage() {
     },
   });
 
-  if (isLoading) return <div className="p-4 sm:p-8 text-gray-400">Cargando...</div>;
+  if (isLoading) return (
+    <div className="p-4 sm:p-8 space-y-6">
+      <Skeleton className="h-8 w-48" />
+      <div className="bg-white rounded-xl border border-gray-100 p-5">
+        <Skeleton className="h-4 w-36 mb-3" />
+        <Skeleton className="h-10 rounded-lg" />
+      </div>
+      <div className="bg-white rounded-xl border border-gray-100 p-5">
+        <Skeleton className="h-4 w-24 mb-4" />
+        <div className="flex gap-6">
+          <Skeleton className="w-20 h-20 rounded-xl" />
+          <Skeleton className="w-40 h-20 rounded-xl" />
+        </div>
+      </div>
+      <div className="bg-white rounded-xl border border-gray-100 p-5 space-y-4">
+        <Skeleton className="h-4 w-40" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[0,1,2,3,4,5].map(i => <Skeleton key={i} className="h-10 rounded-lg" />)}
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="p-4 sm:p-8">

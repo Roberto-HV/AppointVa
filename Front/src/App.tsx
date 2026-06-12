@@ -24,6 +24,7 @@ import BookingPage from "./pages/publico/BookingPage";
 import ConfirmacionPage from "./pages/publico/ConfirmacionPage";
 import MisCitasPage from "./pages/publico/MisCitasPage";
 import NegociosAdminPage from "./pages/admin/NegociosAdminPage";
+import MiPerfilPage from "./pages/dashboard/MiPerfilPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -60,6 +61,7 @@ export default function App() {
               <Route path="/dashboard" element={<InicioPage />} />
               <Route path="/dashboard/citas" element={<CitasPage />} />
               <Route path="/dashboard/seguridad" element={<DosFactoresPage />} />
+              <Route path="/dashboard/mi-perfil" element={<MiPerfilPage />} />
 
               {/* Solo Propietario */}
               <Route element={<RutaProtegida roles={["Propietario"]} />}>
