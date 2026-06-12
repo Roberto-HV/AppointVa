@@ -177,7 +177,7 @@ export default function ClientesPage() {
                     <td className="px-5 py-3 text-right">
                       <button
                         onClick={() => abrirCliente(c)}
-                        className="text-xs text-primary hover:underline"
+                        className="text-xs font-medium px-2.5 py-1 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition"
                       >
                         Ver detalle
                       </button>

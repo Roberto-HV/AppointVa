@@ -193,7 +193,7 @@ export default function DashboardLayout() {
           <p className="text-xs text-gray-400 truncate mb-3">{usuario?.email}</p>
           <button
             onClick={handleLogout}
-            className="text-xs text-gray-500 hover:text-red-500 transition"
+            className="text-sm font-semibold text-red-500 hover:text-red-600 transition"
           >
             Cerrar sesión
           </button>

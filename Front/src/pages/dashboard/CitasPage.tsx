@@ -431,35 +431,35 @@ export default function CitasPage() {
                     <td className="px-5 py-3 text-center"><EstadoBadge estado={c.estadoTexto} /></td>
 
                     <td className="px-5 py-3 text-right">
-                      <div className="flex justify-end items-center gap-3">
+                      <div className="flex justify-end items-center gap-2">
                         {/* Indicador de notas */}
                         <Tooltip text={c.notas ? "Ver o editar notas internas" : "Agregar una nota interna"}>
                           <button
                             onClick={() => abrirNotas(c)}
-                            className={`text-xs transition ${
+                            className={`text-xs font-medium px-2.5 py-1 rounded-lg transition ${
                               c.notas
-                                ? "text-amber-500 hover:text-amber-600"
-                                : "text-gray-300 hover:text-gray-400"
+                                ? "bg-amber-50 text-amber-600 hover:bg-amber-100"
+                                : "bg-gray-100 text-gray-400 hover:bg-gray-200"
                             }`}
                           >
                             📝
                           </button>
                         </Tooltip>
                         {(c.estadoTexto === "Pendiente" || c.estadoTexto === "Confirmada") && (
-                          <Tooltip text="Cambiar la fecha u hora de la cita">
-                            <button onClick={() => abrirReagendar(c)}
-                              className="text-xs text-violet-600 hover:underline">
-                              Reagendar
-                            </button>
-                          </Tooltip>
+                          <button
+                            onClick={() => abrirReagendar(c)}
+                            className="text-xs font-medium px-2.5 py-1 rounded-lg bg-violet-50 text-violet-600 hover:bg-violet-100 transition"
+                          >
+                            Reagendar
+                          </button>
                         )}
                         {TRANSICIONES[c.estadoTexto] && (
-                          <Tooltip text={`Opciones: ${TRANSICIONES[c.estadoTexto]?.map(t => t.label).join(", ")}`}>
-                            <button onClick={() => abrirCambioEstado(c)}
-                              className="text-xs text-primary hover:underline">
-                              Estado
-                            </button>
-                          </Tooltip>
+                          <button
+                            onClick={() => abrirCambioEstado(c)}
+                            className="text-xs font-medium px-2.5 py-1 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition"
+                          >
+                            Estado
+                          </button>
                         )}
                       </div>
                     </td>
