@@ -94,8 +94,8 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">AppointVa</h1>
-          <p className="text-gray-500 mt-1">Panel de administración</p>
+          <img src="/MasterLogo.png" alt="AppointVa" className="h-24 object-contain mx-auto mb-2" />
+          <p className="text-gray-500 text-sm">Panel de administración</p>
         </div>
 
         {registroExitoso && (
@@ -252,7 +252,7 @@ export default function LoginPage() {
         )}
 
         <p className="text-center text-xs text-gray-400 mt-4">
-          AppointVa © {new Date().getFullYear()}
+          © {new Date().getFullYear()} AppointVa · Agiliza Tu Negocio
         </p>
       </div>
     </div>

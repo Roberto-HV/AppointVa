@@ -110,7 +110,7 @@ export default function DashboardLayout() {
         {/* Logo (desktop) + cerrar (móvil) */}
         <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-xl font-bold text-gray-900">AppointVa</span>
+            <img src="/MasterLogo.png" alt="AppointVa" className="h-9 object-contain" />
             {esEmpleado && (
               <span className="hidden md:inline text-xs bg-blue-100 text-blue-600 font-semibold px-2 py-0.5 rounded-full">
                 Empleado
@@ -195,7 +195,7 @@ export default function DashboardLayout() {
           >
             <Menu size={22} />
           </button>
-          <span className="font-bold text-gray-900">AppointVa</span>
+          <img src="/MasterLogo.png" alt="AppointVa" className="h-7 object-contain" />
           {esEmpleado && (
             <span className="text-xs bg-blue-100 text-blue-600 font-semibold px-2 py-0.5 rounded-full">
               Empleado
