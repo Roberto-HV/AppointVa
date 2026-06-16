@@ -280,37 +280,41 @@ export default function EmpleadosPage() {
                 {emp.telefono && <p className="text-xs text-gray-400">{emp.telefono}</p>}
                 <p className="text-xs text-gray-400 mt-1">{emp.servicioIds.length} servicios asignados</p>
 
-                <div className="flex gap-2 mt-3 flex-wrap">
-                  <button
-                    onClick={() => abrirEditar(emp)}
-                    className="text-xs font-medium px-2.5 py-1 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition"
-                  >
-                    Editar
-                  </button>
-                  <button
-                    onClick={() => abrirHorario(emp)}
-                    className="text-xs font-medium px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition"
-                  >
-                    Horarios
-                  </button>
-                  <button
-                    onClick={() => abrirBloqueo(emp)}
-                    className="text-xs font-medium px-2.5 py-1 rounded-lg bg-orange-50 text-orange-600 hover:bg-orange-100 transition"
-                  >
-                    Bloqueos
-                  </button>
-                  <button
-                    onClick={() => abrirInvitar(emp)}
-                    className="text-xs font-medium px-2.5 py-1 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition"
-                  >
-                    Invitar acceso
-                  </button>
-                  <button
-                    onClick={() => setEmpleadoEliminar(emp)}
-                    className="text-xs font-medium px-2.5 py-1 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 transition"
-                  >
-                    Eliminar
-                  </button>
+                <div className="mt-3 space-y-1.5">
+                  <div className="flex gap-1.5">
+                    <button
+                      onClick={() => abrirEditar(emp)}
+                      className="flex-1 text-xs font-medium py-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition"
+                    >
+                      Editar
+                    </button>
+                    <button
+                      onClick={() => abrirHorario(emp)}
+                      className="flex-1 text-xs font-medium py-1.5 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition"
+                    >
+                      Horarios
+                    </button>
+                    <button
+                      onClick={() => abrirBloqueo(emp)}
+                      className="flex-1 text-xs font-medium py-1.5 rounded-lg bg-orange-50 text-orange-600 hover:bg-orange-100 transition"
+                    >
+                      Bloqueos
+                    </button>
+                  </div>
+                  <div className="flex gap-1.5">
+                    <button
+                      onClick={() => abrirInvitar(emp)}
+                      className="flex-1 text-xs font-medium py-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition"
+                    >
+                      Invitar acceso
+                    </button>
+                    <button
+                      onClick={() => setEmpleadoEliminar(emp)}
+                      className="flex-1 text-xs font-medium py-1.5 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 transition"
+                    >
+                      Eliminar
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

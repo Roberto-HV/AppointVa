@@ -30,7 +30,7 @@ import { serviciosApi } from "../../api/servicios";
 import EstadoBadge from "../../components/ui/EstadoBadge";
 import { SkeletonTableRows } from "../../components/ui/Skeleton";
 
-type Tab = "citas" | "ingresos" | "empleados" | "analitica";
+type Tab = "citas" | "ingresos" | "empleados";
 
 const ESTADOS_OPCIONES = [
   { valor: 1, texto: "Pendiente" },
@@ -118,17 +118,6 @@ export default function ReportesPage() {
     enabled: tab === "ingresos" || tab === "empleados",
   });
 
-  const { data: heatmap, isLoading: cargandoHeatmap } = useQuery({
-    queryKey: ["heatmap", desde, hasta],
-    queryFn: () => reportesApi.obtenerHeatmap(desde, hasta),
-    enabled: tab === "analitica",
-  });
-
-  const { data: retencion, isLoading: cargandoRetencion } = useQuery({
-    queryKey: ["retencion", desde, hasta],
-    queryFn: () => reportesApi.obtenerRetencion(desde, hasta),
-    enabled: tab === "analitica",
-  });
 
   const handleExportar = async () => {
     setExportando(true);
@@ -210,7 +199,6 @@ export default function ReportesPage() {
           { id: "citas", label: "Citas" },
           { id: "ingresos", label: "Ingresos" },
           { id: "empleados", label: "Empleados" },
-          { id: "analitica", label: "Analítica" },
         ] as { id: Tab; label: string }[]).map((t) => (
           <button
             key={t.id}
@@ -484,92 +472,6 @@ export default function ReportesPage() {
         </>
       )}
 
-      {/* ── Tab: Analítica ── */}
-      {tab === "analitica" && (
-        <>
-          {(cargandoHeatmap || cargandoRetencion) ? (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              {[1,2,3,4].map((i) => <div key={i} className="h-24 bg-gray-100 rounded-xl animate-pulse" />)}
-            </div>
-          ) : (
-            <>
-              {/* Cards de retención */}
-              {retencion && (
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  <div className="bg-white rounded-xl border border-gray-100 p-4">
-                    <p className="text-xs text-gray-500 font-medium">Tasa de retención</p>
-                    <p className="text-2xl font-bold text-primary mt-1">{retencion.tasaRetencion}%</p>
-                    <p className="text-xs text-gray-400 mt-0.5">{retencion.clientesRecurrentes} de {retencion.totalClientes} clientes volvieron</p>
-                  </div>
-                  <div className="bg-white rounded-xl border border-gray-100 p-4">
-                    <p className="text-xs text-gray-500 font-medium">Clientes nuevos</p>
-                    <p className="text-2xl font-bold text-gray-900 mt-1">{retencion.clientesNuevos}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">en el período seleccionado</p>
-                  </div>
-                  <div className="bg-white rounded-xl border border-gray-100 p-4">
-                    <p className="text-xs text-gray-500 font-medium">Ingreso completado (mes)</p>
-                    <p className="text-2xl font-bold text-gray-900 mt-1">{formatPrecio(retencion.ingresoMesActual)}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">{formatPrecio(retencion.ingresoAgendado)} ya agendado</p>
-                  </div>
-                  <div className="bg-white rounded-xl border border-gray-100 p-4">
-                    <p className="text-xs text-gray-500 font-medium">Proyección del mes</p>
-                    <p className="text-2xl font-bold text-green-600 mt-1">{formatPrecio(retencion.proyeccionMes)}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">{retencion.diasRestantesMes} días restantes</p>
-                  </div>
-                </div>
-              )}
-
-              {/* Heatmap */}
-              {heatmap && (
-                <div className="bg-white rounded-xl border border-gray-100 p-5">
-                  <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-                    <div>
-                      <h3 className="font-semibold text-gray-900">Horas pico</h3>
-                      <p className="text-xs text-gray-400 mt-0.5">
-                        {heatmap.totalCitas} citas analizadas ·
-                        Pico: <span className="font-medium text-gray-600">{heatmap.diaPico} {heatmap.horaPico}</span>
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-xs text-gray-400">
-                      <span>Pocas</span>
-                      {[0.1, 0.3, 0.55, 0.75, 1].map((i) => (
-                        <div key={i} className="w-5 h-4 rounded" style={{ backgroundColor: `rgba(200,169,97,${i})` }} />
-                      ))}
-                      <span>Muchas</span>
-                    </div>
-                  </div>
-
-                  <div className="overflow-x-auto">
-                    <div className="min-w-[520px]">
-                      {/* Cabecera días */}
-                      <div className="grid gap-1 mb-1" style={{ gridTemplateColumns: "36px repeat(7, 1fr)" }}>
-                        <div />
-                        {DIAS_HEATMAP.map((d) => (
-                          <div key={d} className="text-center text-xs font-medium text-gray-500">{d}</div>
-                        ))}
-                      </div>
-                      {/* Filas de horas (solo 7am–10pm) */}
-                      {heatmap.matriz.slice(7, 22).map((fila, i) => {
-                        const hora = i + 7;
-                        return (
-                          <div key={hora} className="grid gap-1 mb-1" style={{ gridTemplateColumns: "36px repeat(7, 1fr)" }}>
-                            <div className="text-xs text-gray-400 text-right pr-2 leading-6">
-                              {hora}:00
-                            </div>
-                            {fila.map((val, d) => (
-                              <HeatmapCell key={d} valor={val} maximo={heatmap.maximo} />
-                            ))}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-        </>
-      )}
     </div>
   );
 }

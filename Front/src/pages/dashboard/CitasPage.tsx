@@ -360,45 +360,54 @@ export default function CitasPage() {
       </div>
 
       {/* Filtros */}
-      <div className="flex gap-3 mb-6 flex-wrap items-end">
-        {vista === "lista" && (
-          <>
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">Buscar cliente</label>
-              <input
-                type="text"
-                value={busqueda}
-                onChange={(e) => setBusqueda(e.target.value)}
-                placeholder="Nombre o teléfono..."
-                className="px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary w-44"
-              />
+      {vista === "lista" && (
+        <div className="grid grid-cols-2 gap-2 mb-6">
+          <div className="col-span-2 sm:col-span-1">
+            <label className="block text-xs text-gray-500 mb-1">Buscar cliente</label>
+            <input
+              type="text"
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              placeholder="Nombre o teléfono..."
+              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Profesional</label>
+            <Select value={empleadoId} onChange={(e) => { setEmpleadoId(e.target.value); setPagina(1); }} className="w-full">
+              <option value="">Todos</option>
+              {empleados.map((e) => <option key={e.id} value={e.id}>{e.nombre}</option>)}
+            </Select>
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Desde</label>
+            <input type="date" value={desde} onChange={(e) => { setDesde(e.target.value); setPagina(1); }}
+              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary" />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Hasta</label>
+            <input type="date" value={hasta} onChange={(e) => { setHasta(e.target.value); setPagina(1); }}
+              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary" />
+          </div>
+          {(desde || hasta || empleadoId || busqueda) && (
+            <div className="col-span-2 flex">
+              <button onClick={() => { setDesde(""); setHasta(""); setEmpleadoId(""); setBusqueda(""); setPagina(1); }}
+                className="text-sm text-primary font-medium hover:underline">
+                Limpiar filtros
+              </button>
             </div>
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">Desde</label>
-              <input type="date" value={desde} onChange={(e) => { setDesde(e.target.value); setPagina(1); }}
-                className="px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary" />
-            </div>
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">Hasta</label>
-              <input type="date" value={hasta} onChange={(e) => { setHasta(e.target.value); setPagina(1); }}
-                className="px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary" />
-            </div>
-          </>
-        )}
-        <div>
+          )}
+        </div>
+      )}
+      {vista === "calendario" && empleados.length > 1 && (
+        <div className="mb-4">
           <label className="block text-xs text-gray-500 mb-1">Profesional</label>
           <Select value={empleadoId} onChange={(e) => { setEmpleadoId(e.target.value); setPagina(1); }}>
             <option value="">Todos</option>
             {empleados.map((e) => <option key={e.id} value={e.id}>{e.nombre}</option>)}
           </Select>
         </div>
-        {vista === "lista" && (desde || hasta || empleadoId || busqueda) && (
-          <button onClick={() => { setDesde(""); setHasta(""); setEmpleadoId(""); setBusqueda(""); setPagina(1); }}
-            className="px-3 py-2 text-sm text-gray-500 hover:text-gray-700">
-            Limpiar filtros
-          </button>
-        )}
-      </div>
+      )}
 
       {/* Vista calendario */}
       {vista === "calendario" && (
