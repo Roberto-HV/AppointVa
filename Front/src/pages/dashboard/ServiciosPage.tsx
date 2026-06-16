@@ -309,59 +309,38 @@ export default function ServiciosPage() {
             </button>
           </div>
         ) : (
-          <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-100 text-xs text-gray-400 uppercase tracking-wide">
-                  <th className="text-left px-5 py-3 font-medium">Nombre</th>
-                  <th className="hidden sm:table-cell text-center px-5 py-3 font-medium">Orden</th>
-                  <th className="text-center px-5 py-3 font-medium">Servicios</th>
-                  <th className="px-5 py-3" />
-                </tr>
-              </thead>
-              <tbody>
-                {categorias.map((c, i) => {
-                  const count = serviciosPorCategoria(c.id);
-                  return (
-                    <tr
-                      key={c.id}
-                      className={`${i < categorias.length - 1 ? "border-b border-gray-50" : ""} hover:bg-gray-50 transition`}
+          <div className="space-y-2">
+            {categorias.map((c) => {
+              const count = serviciosPorCategoria(c.id);
+              return (
+                <div
+                  key={c.id}
+                  className="bg-white rounded-xl border border-gray-100 px-4 py-3 flex items-center gap-3"
+                >
+                  <div className="w-2 h-2 rounded-full bg-primary/40 shrink-0" />
+                  <span className="font-medium text-gray-800 flex-1 min-w-0 truncate">{c.nombre}</span>
+                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full shrink-0 ${
+                    count > 0 ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-400"
+                  }`}>
+                    {count} {count === 1 ? "servicio" : "servicios"}
+                  </span>
+                  <div className="flex gap-2 shrink-0">
+                    <button
+                      onClick={() => abrirEditarCategoria(c)}
+                      className="text-xs font-medium px-2.5 py-1 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition"
                     >
-                      <td className="px-5 py-3">
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full bg-primary/40 shrink-0" />
-                          <span className="font-medium text-gray-800">{c.nombre}</span>
-                        </div>
-                      </td>
-                      <td className="hidden sm:table-cell px-5 py-3 text-center text-gray-500">{c.orden}</td>
-                      <td className="px-5 py-3 text-center">
-                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                          count > 0 ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-400"
-                        }`}>
-                          {count} {count === 1 ? "servicio" : "servicios"}
-                        </span>
-                      </td>
-                      <td className="px-5 py-3 text-right">
-                        <div className="flex justify-end gap-2">
-                          <button
-                            onClick={() => abrirEditarCategoria(c)}
-                            className="text-xs font-medium px-2.5 py-1 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition"
-                          >
-                            Editar
-                          </button>
-                          <button
-                            onClick={() => setCategoriaEliminar(c)}
-                            className="text-xs font-medium px-2.5 py-1 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 transition"
-                          >
-                            Eliminar
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                      Editar
+                    </button>
+                    <button
+                      onClick={() => setCategoriaEliminar(c)}
+                      className="text-xs font-medium px-2.5 py-1 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 transition"
+                    >
+                      Eliminar
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )
       )}
