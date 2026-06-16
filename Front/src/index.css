@@ -14,4 +14,10 @@
   #root {
     min-height: 100vh;
   }
+  /* Previene auto-zoom de iOS en inputs con font-size < 16px */
+  @media screen and (max-width: 767px) {
+    input, textarea, select {
+      font-size: 16px;
+    }
+  }
 }

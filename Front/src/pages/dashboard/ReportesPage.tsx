@@ -7,24 +7,6 @@ import {
 import { Download, TrendingUp, Calendar, DollarSign, CheckCircle } from "lucide-react";
 import { reportesApi, type FiltrosReporteCitas } from "../../api/reportes";
 
-const DIAS_HEATMAP = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
-
-function HeatmapCell({ valor, maximo }: { valor: number; maximo: number }) {
-  const intensidad = maximo > 0 ? valor / maximo : 0;
-  const bg = intensidad === 0
-    ? "#f9fafb"
-    : `rgba(200,169,97,${Math.min(0.15 + intensidad * 0.85, 1)})`;
-  const text = intensidad > 0.6 ? "#5a3e10" : intensidad > 0 ? "#7a5c1e" : "#d1d5db";
-  return (
-    <div
-      className="h-6 flex items-center justify-center rounded text-[10px] font-medium"
-      style={{ backgroundColor: bg, color: text }}
-      title={`${valor} cita${valor !== 1 ? "s" : ""}`}
-    >
-      {valor > 0 ? valor : ""}
-    </div>
-  );
-}
 import { empleadosApi } from "../../api/empleados";
 import { serviciosApi } from "../../api/servicios";
 import EstadoBadge from "../../components/ui/EstadoBadge";
@@ -64,13 +46,13 @@ function inicioMes() {
 interface TarjetaProps { label: string; valor: string; subvalor?: string; icono: React.ReactNode }
 function Tarjeta({ label, valor, subvalor, icono }: TarjetaProps) {
   return (
-    <div className="bg-white rounded-xl border border-gray-100 p-5 flex items-center gap-4">
-      <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center text-primary shrink-0">
+    <div className="bg-white rounded-xl border border-gray-100 p-3 sm:p-5 flex items-center gap-3">
+      <div className="w-9 h-9 sm:w-10 sm:h-10 bg-primary/10 rounded-lg flex items-center justify-center text-primary shrink-0">
         {icono}
       </div>
-      <div>
-        <p className="text-xs text-gray-500 font-medium">{label}</p>
-        <p className="text-xl font-bold text-gray-900">{valor}</p>
+      <div className="min-w-0">
+        <p className="text-xs text-gray-500 font-medium truncate">{label}</p>
+        <p className="text-base sm:text-xl font-bold text-gray-900 truncate">{valor}</p>
         {subvalor && <p className="text-xs text-gray-400">{subvalor}</p>}
       </div>
     </div>
