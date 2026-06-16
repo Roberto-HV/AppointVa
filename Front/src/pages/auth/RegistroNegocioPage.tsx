@@ -95,7 +95,7 @@ export default function RegistroNegocioPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="w-full max-w-md text-center">
-          <h1 className="text-3xl font-bold text-gray-900 mb-8">AppointVa</h1>
+          <img src="/MasterLogo.png" alt="AppointVa" className="h-20 object-contain mx-auto mb-6" />
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
             <div className="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg className="w-7 h-7 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -126,7 +126,7 @@ export default function RegistroNegocioPage() {
               Ir al inicio de sesión
             </Link>
           </div>
-          <p className="text-center text-xs text-gray-400 mt-6">AppointVa © {new Date().getFullYear()}</p>
+          <p className="text-center text-xs text-gray-400 mt-6">© {new Date().getFullYear()} AppointVa · Agiliza Tu Negocio</p>
         </div>
       </div>
     );
@@ -136,8 +136,8 @@ export default function RegistroNegocioPage() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="w-full max-w-lg">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">AppointVa</h1>
-          <p className="text-gray-500 mt-1">Registra tu negocio gratis</p>
+          <img src="/MasterLogo.png" alt="AppointVa" className="h-20 object-contain mx-auto mb-2" />
+          <p className="text-gray-500 text-sm">Registra tu negocio gratis</p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8">
@@ -252,7 +252,7 @@ export default function RegistroNegocioPage() {
           </p>
         </div>
 
-        <p className="text-center text-xs text-gray-400 mt-6">AppointVa © {new Date().getFullYear()}</p>
+        <p className="text-center text-xs text-gray-400 mt-6">© {new Date().getFullYear()} AppointVa · Agiliza Tu Negocio</p>
       </div>
     </div>
   );

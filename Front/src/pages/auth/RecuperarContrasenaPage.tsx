@@ -28,8 +28,8 @@ export default function RecuperarContrasenaPage() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">AppointVa</h1>
-          <p className="text-gray-500 mt-1">Panel de administración</p>
+          <img src="/MasterLogo.png" alt="AppointVa" className="h-20 object-contain mx-auto mb-2" />
+          <p className="text-gray-500 text-sm">Panel de administración</p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8">
