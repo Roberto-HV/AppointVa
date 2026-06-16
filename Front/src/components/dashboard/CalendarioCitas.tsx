@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { citasApi } from "../../api/citas";
 import type { CitaDto } from "../../types";
 
@@ -86,28 +87,32 @@ export default function CalendarioCitas({ empleadoId, onCitaClick, onReagendar }
   return (
     <div>
       {/* Navegación semana */}
-      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+      <div className="grid grid-cols-3 items-center mb-4 gap-2">
         <button
           onClick={() => setLunes((d) => addDias(d, -7))}
-          className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 transition"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 transition w-fit"
         >
-          ← Anterior
+          <ChevronLeft size={15} />
+          <span className="hidden sm:inline">Anterior</span>
         </button>
-        <div className="flex items-center gap-3">
-          <span className="text-sm font-medium text-gray-700">{semanaLabel}</span>
+        <div className="flex flex-col items-center gap-0.5">
+          <span className="text-sm font-semibold text-gray-800 text-center">{semanaLabel}</span>
           <button
             onClick={() => setLunes(getLunesDeEstaSemana(new Date()))}
-            className="text-xs text-primary hover:underline"
+            className="text-xs text-primary hover:underline font-medium"
           >
             Hoy
           </button>
         </div>
-        <button
-          onClick={() => setLunes((d) => addDias(d, 7))}
-          className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 transition"
-        >
-          Siguiente →
-        </button>
+        <div className="flex justify-end">
+          <button
+            onClick={() => setLunes((d) => addDias(d, 7))}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 transition"
+          >
+            <span className="hidden sm:inline">Siguiente</span>
+            <ChevronRight size={15} />
+          </button>
+        </div>
       </div>
 
       {/* Leyenda estados */}

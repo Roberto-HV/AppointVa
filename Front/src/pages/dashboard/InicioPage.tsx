@@ -38,8 +38,8 @@ function Tarjeta({ label, valor, valorCorto, color = "text-gray-900" }: TarjetaP
 }
 
 function formatPrecioCorto(n: number) {
-  if (n >= 1000) return `$${(n / 1000).toFixed(1)}k`;
-  return `$${n.toFixed(0)}`;
+  if (n >= 10000) return `$${Math.round(n / 1000)}k`;
+  return `$${Math.round(n).toLocaleString("es-MX")}`;
 }
 
 // ── Vista del propietario ─────────────────────────────────────────────────────
