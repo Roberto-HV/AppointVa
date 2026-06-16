@@ -550,8 +550,8 @@ export default function PerfilPage() {
         <h2 className="text-sm font-semibold text-gray-700 mb-4">Horarios de atención</h2>
         <div className="space-y-3">
           {horarios.map((h) => (
-            <div key={h.diaSemana} className="flex sm:items-center gap-2 sm:gap-3 py-0.5">
-              <label className="flex items-center gap-2 cursor-pointer select-none w-28 shrink-0 mt-0.5 sm:mt-0">
+            <div key={h.diaSemana} className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3 py-2 border-b border-gray-50 last:border-0">
+              <label className="flex items-center gap-2 cursor-pointer select-none sm:w-28 sm:shrink-0">
                 <div
                   onClick={() => actualizarHorario(h.diaSemana!, "activo", !h.activo)}
                   className={`w-9 h-5 rounded-full transition relative cursor-pointer shrink-0 ${h.activo ? "bg-primary" : "bg-gray-300"}`}
@@ -561,23 +561,23 @@ export default function PerfilPage() {
                 <span className="text-sm text-gray-700">{DIAS[h.diaSemana ?? 0]}</span>
               </label>
               {h.activo ? (
-                <div className="flex items-center gap-1.5 flex-wrap">
+                <div className="flex items-center gap-2 pl-11 sm:pl-0">
                   <input
                     type="time"
                     value={h.horaInicio}
                     onChange={(e) => actualizarHorario(h.diaSemana!, "horaInicio", e.target.value)}
-                    className="w-32 px-2 py-1 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary"
+                    className="flex-1 min-w-0 sm:w-32 sm:flex-none px-2 py-1 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary"
                   />
-                  <span className="text-gray-400 text-sm">—</span>
+                  <span className="text-gray-400 text-sm shrink-0">—</span>
                   <input
                     type="time"
                     value={h.horaFin}
                     onChange={(e) => actualizarHorario(h.diaSemana!, "horaFin", e.target.value)}
-                    className="w-32 px-2 py-1 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary"
+                    className="flex-1 min-w-0 sm:w-32 sm:flex-none px-2 py-1 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary"
                   />
                 </div>
               ) : (
-                <span className="text-sm text-gray-400">Cerrado</span>
+                <span className="text-sm text-gray-400 pl-11 sm:pl-0">Cerrado</span>
               )}
             </div>
           ))}
