@@ -70,6 +70,8 @@ namespace AppointVaAPI.Controllers.V1
                 negocio.HorasRecordatorio = dto.HorasRecordatorio.Value;
             if (dto.HorasCancelacion.HasValue)
                 negocio.HorasCancelacion = Math.Max(0, dto.HorasCancelacion.Value);
+            if (dto.AutoConfirmar.HasValue)
+                negocio.AutoConfirmar = dto.AutoConfirmar.Value;
             negocio.FechaActualizacion = DateTime.UtcNow;
 
             await _repo.ActualizarAsync(negocio);
@@ -359,6 +361,77 @@ namespace AppointVaAPI.Controllers.V1
             }
         }
 
+        // ── Galería de imágenes ───────────────────────────────────────────────────
+
+        // GET api/negocios/galeria
+        [HttpGet("galeria")]
+        [Authorize(Roles = Roles.Propietario)]
+        public async Task<IActionResult> ObtenerGaleria()
+        {
+            if (_contexto.NegocioId is null) return Unauthorized();
+
+            var imagenes = await _db.ImagenesNegocios
+                .Where(i => i.NegocioId == _contexto.NegocioId.Value)
+                .OrderBy(i => i.Orden)
+                .Select(i => new { i.Id, i.Url, i.Descripcion, i.Orden, i.FechaCreacion })
+                .AsNoTracking()
+                .ToListAsync();
+
+            return Ok(imagenes);
+        }
+
+        // POST api/negocios/galeria
+        [HttpPost("galeria")]
+        [Authorize(Roles = Roles.Propietario)]
+        public async Task<IActionResult> SubirImagenGaleria(IFormFile archivo, [FromForm] string? descripcion)
+        {
+            if (_contexto.NegocioId is null) return Unauthorized();
+            if (archivo is null || archivo.Length == 0)
+                return BadRequest(new { mensaje = "No se recibió ningún archivo." });
+
+            var total = await _db.ImagenesNegocios
+                .CountAsync(i => i.NegocioId == _contexto.NegocioId.Value);
+            if (total >= 20)
+                return BadRequest(new { mensaje = "Máximo 20 imágenes en la galería." });
+
+            try
+            {
+                var url = await _storage.SubirImagenAsync(archivo, "negocios/galeria");
+                var imagen = new ImagenNegocio
+                {
+                    Id = Guid.NewGuid(),
+                    NegocioId = _contexto.NegocioId.Value,
+                    Url = url,
+                    Descripcion = string.IsNullOrWhiteSpace(descripcion) ? null : descripcion.Trim(),
+                    Orden = total + 1,
+                    FechaCreacion = DateTime.UtcNow
+                };
+                _db.ImagenesNegocios.Add(imagen);
+                await _db.SaveChangesAsync();
+                return Ok(new { imagen.Id, imagen.Url, imagen.Descripcion, imagen.Orden, imagen.FechaCreacion });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { mensaje = ex.Message });
+            }
+        }
+
+        // DELETE api/negocios/galeria/{id}
+        [HttpDelete("galeria/{id:guid}")]
+        [Authorize(Roles = Roles.Propietario)]
+        public async Task<IActionResult> EliminarImagenGaleria(Guid id)
+        {
+            if (_contexto.NegocioId is null) return Unauthorized();
+
+            var imagen = await _db.ImagenesNegocios
+                .FirstOrDefaultAsync(i => i.Id == id && i.NegocioId == _contexto.NegocioId.Value);
+            if (imagen is null) return NotFound();
+
+            _db.ImagenesNegocios.Remove(imagen);
+            await _db.SaveChangesAsync();
+            return NoContent();
+        }
+
         // ── Días bloqueados del negocio ───────────────────────────────────────────
 
         // GET api/negocios/dias-bloqueados
@@ -452,6 +525,7 @@ namespace AppointVaAPI.Controllers.V1
             Moneda = n.Moneda,
             HorasRecordatorio = n.HorasRecordatorio,
             HorasCancelacion = n.HorasCancelacion,
+            AutoConfirmar = n.AutoConfirmar,
             Activo = n.Activo == 1,
             PlanNombre = n.Plan?.Nombre
         };

@@ -17,6 +17,7 @@
         public string Moneda { get; set; } = string.Empty;
         public int HorasRecordatorio { get; set; }
         public int HorasCancelacion { get; set; }
+        public bool AutoConfirmar { get; set; }
         public bool Activo { get; set; }
         public string? PlanNombre { get; set; }
     }

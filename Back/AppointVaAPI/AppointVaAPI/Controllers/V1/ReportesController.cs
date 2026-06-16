@@ -232,6 +232,110 @@ namespace AppointVaAPI.Controllers.V1
             });
         }
 
+        // GET api/reportes/heatmap?desde=&hasta=
+        [HttpGet("heatmap")]
+        public async Task<IActionResult> HeatmapHorasPico([FromQuery] DateTime? desde, [FromQuery] DateTime? hasta)
+        {
+            if (_contexto.NegocioId is null) return Unauthorized();
+            var negocioId = _contexto.NegocioId.Value;
+            var (desdeUtc, hastaUtc) = NormalizarRango(desde, hasta);
+
+            var puntos = await _db.Citas
+                .Where(c => c.NegocioId == negocioId
+                       && c.InicioEn >= desdeUtc && c.InicioEn < hastaUtc
+                       && c.Estado != EstadosCitas.Cancelada)
+                .Select(c => new { c.InicioEn })
+                .AsNoTracking()
+                .ToListAsync();
+
+            // matriz[hora][dia]: hora 0-23, dia 0=Lun 6=Dom
+            var matriz = Enumerable.Range(0, 24).Select(_ => new int[7]).ToArray();
+            foreach (var p in puntos)
+            {
+                var hora = p.InicioEn.Hour;
+                var dia = ((int)p.InicioEn.DayOfWeek + 6) % 7;
+                matriz[hora][dia]++;
+            }
+
+            var maximo = matriz.SelectMany(r => r).DefaultIfEmpty(0).Max();
+            int horaPico = 9, diaPico = 4, maxVal = 0;
+            for (int h = 0; h < 24; h++)
+                for (int d = 0; d < 7; d++)
+                    if (matriz[h][d] > maxVal) { maxVal = matriz[h][d]; horaPico = h; diaPico = d; }
+
+            var diasNombres = new[] { "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo" };
+            return Ok(new
+            {
+                matriz = matriz.Select(r => r.ToList()).ToList(),
+                maximo = Math.Max(1, maximo),
+                totalCitas = puntos.Count,
+                horaPico = puntos.Any() ? $"{horaPico:D2}:00" : "--",
+                diaPico = puntos.Any() ? diasNombres[diaPico] : "--",
+            });
+        }
+
+        // GET api/reportes/retencion?desde=&hasta=
+        [HttpGet("retencion")]
+        public async Task<IActionResult> TasaRetencion([FromQuery] DateTime? desde, [FromQuery] DateTime? hasta)
+        {
+            if (_contexto.NegocioId is null) return Unauthorized();
+            var negocioId = _contexto.NegocioId.Value;
+            var (desdeUtc, hastaUtc) = NormalizarRango(desde, hasta);
+
+            var clientesPeriodo = await _db.Citas
+                .Where(c => c.NegocioId == negocioId
+                       && c.InicioEn >= desdeUtc && c.InicioEn < hastaUtc
+                       && c.Estado != EstadosCitas.Cancelada)
+                .Select(c => c.ClienteId)
+                .Distinct()
+                .ToListAsync();
+
+            var totalClientes = clientesPeriodo.Count;
+            var clientesRecurrentes = 0;
+            if (clientesPeriodo.Any())
+            {
+                clientesRecurrentes = await _db.Citas
+                    .Where(c => c.NegocioId == negocioId
+                           && c.InicioEn < desdeUtc
+                           && clientesPeriodo.Contains(c.ClienteId))
+                    .Select(c => c.ClienteId)
+                    .Distinct()
+                    .CountAsync();
+            }
+
+            var tasaRetencion = totalClientes > 0
+                ? Math.Round((double)clientesRecurrentes / totalClientes * 100, 1)
+                : 0.0;
+
+            var ahora = DateTime.UtcNow;
+            var inicioMes = new DateTime(ahora.Year, ahora.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+            var finMes = inicioMes.AddMonths(1);
+
+            var ingresoCompletado = await _db.Citas
+                .Where(c => c.NegocioId == negocioId
+                       && c.InicioEn >= inicioMes && c.InicioEn < finMes
+                       && c.Estado == EstadosCitas.Completada)
+                .SumAsync(c => (decimal?)c.Precio) ?? 0m;
+
+            var ingresoAgendado = await _db.Citas
+                .Where(c => c.NegocioId == negocioId
+                       && c.InicioEn >= ahora && c.InicioEn < finMes
+                       && (c.Estado == EstadosCitas.Pendiente || c.Estado == EstadosCitas.Confirmada))
+                .SumAsync(c => (decimal?)c.Precio) ?? 0m;
+
+            return Ok(new
+            {
+                totalClientes,
+                clientesRecurrentes,
+                clientesNuevos = totalClientes - clientesRecurrentes,
+                tasaRetencion,
+                ingresoMesActual = ingresoCompletado,
+                proyeccionMes = ingresoCompletado + ingresoAgendado,
+                ingresoAgendado,
+                diasRestantesMes = (int)Math.Ceiling(Math.Max(0, (finMes - ahora).TotalDays)),
+            });
+        }
+
         private static (DateTime desde, DateTime hasta) NormalizarRango(DateTime? desde, DateTime? hasta)
         {
             var ahora = DateTime.UtcNow;

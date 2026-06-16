@@ -260,9 +260,10 @@ export default function ServiciosPage() {
                         <p className="font-medium text-gray-800">{s.nombre}</p>
                         {s.descripcion && <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">{s.descripcion}</p>}
                         <p className="text-xs text-gray-400 mt-0.5">{s.duracionMinutos} min</p>
+                        <p className="sm:hidden font-semibold text-gray-800 text-sm mt-1">{formatPrecio(s.precio)}</p>
                       </div>
                       <div className="flex items-center gap-3 sm:gap-5 shrink-0">
-                        <span className="font-semibold text-gray-800 text-sm">{formatPrecio(s.precio)}</span>
+                        <span className="hidden sm:inline font-semibold text-gray-800 text-sm">{formatPrecio(s.precio)}</span>
                         <div className="flex gap-2">
                           <button
                             onClick={() => abrirEditarServicio(s)}
@@ -313,7 +314,7 @@ export default function ServiciosPage() {
               <thead>
                 <tr className="border-b border-gray-100 text-xs text-gray-400 uppercase tracking-wide">
                   <th className="text-left px-5 py-3 font-medium">Nombre</th>
-                  <th className="text-center px-5 py-3 font-medium">Orden</th>
+                  <th className="hidden sm:table-cell text-center px-5 py-3 font-medium">Orden</th>
                   <th className="text-center px-5 py-3 font-medium">Servicios</th>
                   <th className="px-5 py-3" />
                 </tr>
@@ -332,7 +333,7 @@ export default function ServiciosPage() {
                           <span className="font-medium text-gray-800">{c.nombre}</span>
                         </div>
                       </td>
-                      <td className="px-5 py-3 text-center text-gray-500">{c.orden}</td>
+                      <td className="hidden sm:table-cell px-5 py-3 text-center text-gray-500">{c.orden}</td>
                       <td className="px-5 py-3 text-center">
                         <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
                           count > 0 ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-400"

@@ -22,6 +22,7 @@ export interface CrearCitaDto {
   telefonoCliente: string;
   emailCliente?: string;
   notas?: string;
+  codigoDescuento?: string;
 }
 
 export const publicoApi = {
@@ -62,6 +63,11 @@ export const publicoApi = {
 
   enviarResena: async (token: string, dto: EnviarResenaDto): Promise<{ mensaje: string }> => {
     const { data } = await api.post(`/publico/resenas/${token}`, dto);
+    return data;
+  },
+
+  buscarClienteDatos: async (email: string, slug: string): Promise<{ nombreCliente: string; telefonoCliente: string; emailCliente: string }> => {
+    const { data } = await api.get("/publico/cliente", { params: { email, slug } });
     return data;
   },
 };

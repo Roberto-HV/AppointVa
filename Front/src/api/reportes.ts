@@ -68,6 +68,25 @@ export interface ReporteIngresos {
   porDia: IngresosPorDia[];
 }
 
+export interface HeatmapHoras {
+  matriz: number[][];   // [hora 0-23][dia 0=Lun 6=Dom]
+  maximo: number;
+  totalCitas: number;
+  horaPico: string;
+  diaPico: string;
+}
+
+export interface ReporteRetencion {
+  totalClientes: number;
+  clientesRecurrentes: number;
+  clientesNuevos: number;
+  tasaRetencion: number;
+  ingresoMesActual: number;
+  proyeccionMes: number;
+  ingresoAgendado: number;
+  diasRestantesMes: number;
+}
+
 export const reportesApi = {
   obtenerCitas: async (filtros?: FiltrosReporteCitas): Promise<ReporteCitas> => {
     const { data } = await api.get("/reportes/citas", { params: filtros });
@@ -92,6 +111,16 @@ export const reportesApi = {
 
   obtenerIngresos: async (desde?: string, hasta?: string): Promise<ReporteIngresos> => {
     const { data } = await api.get("/reportes/ingresos", { params: { desde, hasta } });
+    return data;
+  },
+
+  obtenerHeatmap: async (desde?: string, hasta?: string): Promise<HeatmapHoras> => {
+    const { data } = await api.get("/reportes/heatmap", { params: { desde, hasta } });
+    return data;
+  },
+
+  obtenerRetencion: async (desde?: string, hasta?: string): Promise<ReporteRetencion> => {
+    const { data } = await api.get("/reportes/retencion", { params: { desde, hasta } });
     return data;
   },
 };

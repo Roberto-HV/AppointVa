@@ -41,6 +41,8 @@ export interface NegocioPublico {
   colorPrimario?: string;
   colorSecundario?: string;
   telefono?: string;
+  horasCancelacion: number;
+  autoConfirmar: boolean;
   servicios: ServicioPublico[];
   empleados: EmpleadoPublico[];
   galeria: ImagenGaleria[];
@@ -262,6 +264,7 @@ export interface NegocioDto {
   moneda?: string;
   horasRecordatorio?: number;
   horasCancelacion?: number;
+  autoConfirmar?: boolean;
   activo: boolean;
   planNombre?: string;
 }
@@ -275,6 +278,7 @@ export interface ActualizarNegocioDto {
   zonaHoraria?: string;
   horasRecordatorio?: number;
   horasCancelacion?: number;
+  autoConfirmar?: boolean;
 }
 
 export interface ActualizarColoresNegocioDto {

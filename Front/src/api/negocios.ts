@@ -58,4 +58,31 @@ export const negociosApi = {
     const { data } = await api.patch("/negocios/perfil/colores", { colorPrimario, colorSecundario });
     return data;
   },
+
+  obtenerGaleria: async (): Promise<ImagenGaleriaItem[]> => {
+    const { data } = await api.get("/negocios/galeria");
+    return data;
+  },
+
+  subirImagenGaleria: async (archivo: File, descripcion?: string): Promise<ImagenGaleriaItem> => {
+    const form = new FormData();
+    form.append("archivo", archivo);
+    if (descripcion) form.append("descripcion", descripcion);
+    const { data } = await api.post("/negocios/galeria", form, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return data;
+  },
+
+  eliminarImagenGaleria: async (id: string): Promise<void> => {
+    await api.delete(`/negocios/galeria/${id}`);
+  },
 };
+
+export interface ImagenGaleriaItem {
+  id: string;
+  url: string;
+  descripcion?: string;
+  orden: number;
+  fechaCreacion: string;
+}

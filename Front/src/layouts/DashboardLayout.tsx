@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { Menu, X, LayoutDashboard, CalendarDays, Users, Scissors, UserCheck, Building2, Link, Copy, Check, BarChart2, ShieldCheck, UserCircle } from "lucide-react";
+import { Menu, X, LayoutDashboard, CalendarDays, Users, Scissors, UserCheck, Building2, Link, Copy, Check, BarChart2, ShieldCheck, UserCircle, Images, Clock, ClipboardList, Tag } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "../store/authStore";
 import { authApi } from "../api/auth";
@@ -15,6 +15,10 @@ const NAV_PROPIETARIO = [
   { to: "/dashboard/servicios", label: "Servicios", icon: Scissors },
   { to: "/dashboard/clientes", label: "Clientes", icon: UserCheck },
   { to: "/dashboard/perfil", label: "Mi negocio", icon: Building2 },
+  { to: "/dashboard/galeria", label: "Galería", icon: Images },
+  { to: "/dashboard/espera", label: "Lista de espera", icon: Clock },
+  { to: "/dashboard/intake", label: "Formulario", icon: ClipboardList },
+  { to: "/dashboard/descuentos", label: "Descuentos", icon: Tag },
   { to: "/dashboard/reportes", label: "Reportes", icon: BarChart2 },
   { to: "/dashboard/seguridad", label: "Seguridad", icon: ShieldCheck },
 ];

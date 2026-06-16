@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AppointVa – Presentación del sistema</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --gold: #C8A961;
+      --gold-light: #f5edda;
+      --dark: #1a1a1a;
+      --gray: #6b7280;
+      --light: #f9f8f5;
+      --border: #e8e4d9;
+      --white: #ffffff;
+      --green: #16a34a;
+      --blue: #2563eb;
+      --purple: #7c3aed;
+    }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: var(--light);
+      color: var(--dark);
+      line-height: 1.6;
+    }
+
+    /* ── HERO ─────────────────────────────────────────────── */
+    .hero {
+      background: var(--dark);
+      padding: 60px 48px 56px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: "";
+      position: absolute;
+      top: -80px; right: -80px;
+      width: 360px; height: 360px;
+      background: radial-gradient(circle, rgba(200,169,97,0.18) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+    .hero-inner {
+      max-width: 860px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+    .logo-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 32px;
+    }
+    .logo-box {
+      width: 52px; height: 52px;
+      background: var(--gold);
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .logo-box svg { width: 30px; height: 30px; }
+    .logo-name {
+      font-size: 28px; font-weight: 800;
+      color: var(--white); letter-spacing: -0.5px;
+    }
+    .hero h1 {
+      font-size: 38px; font-weight: 800;
+      color: var(--white); letter-spacing: -1px;
+      line-height: 1.15;
+      margin-bottom: 16px;
+    }
+    .hero h1 span { color: var(--gold); }
+    .hero p {
+      font-size: 16px; color: #9ca3af;
+      max-width: 560px; line-height: 1.7;
+    }
+    .badge-row {
+      display: flex; flex-wrap: wrap; gap: 10px;
+      margin-top: 28px;
+    }
+    .badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: #d1d5db;
+      font-size: 12px; font-weight: 600;
+      padding: 6px 14px; border-radius: 20px;
+    }
+    .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--gold); }
+
+    /* ── PAGE ─────────────────────────────────────────────── */
+    .page { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+
+    /* ── SECTION WRAPPER ──────────────────────────────────── */
+    .section { padding: 48px 0 0; }
+
+    .section-label {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 1.2px;
+      color: var(--gold); margin-bottom: 6px;
+    }
+    .section-label::before {
+      content: "";
+      display: block; width: 18px; height: 2px;
+      background: var(--gold); border-radius: 2px;
+    }
+    .section-title {
+      font-size: 24px; font-weight: 800;
+      color: var(--dark); letter-spacing: -0.4px;
+      margin-bottom: 24px;
+    }
+
+    /* ── GRID CARDS ───────────────────────────────────────── */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+    .card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 22px;
+    }
+    .card-icon {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 14px;
+      font-size: 20px;
+    }
+    .card-icon.gold  { background: var(--gold-light); }
+    .card-icon.green { background: #dcfce7; }
+    .card-icon.blue  { background: #dbeafe; }
+    .card-icon.purple{ background: #ede9fe; }
+    .card-icon.rose  { background: #ffe4e6; }
+    .card-icon.teal  { background: #ccfbf1; }
+    .card-icon.orange{ background: #ffedd5; }
+    .card-icon.slate { background: #f1f5f9; }
+
+    .card h3 { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+    .card p  { font-size: 13px; color: var(--gray); line-height: 1.6; }
+
+    /* ── FEATURE LIST ─────────────────────────────────────── */
+    .feature-list {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+    .feature-item {
+      display: flex; align-items: flex-start; gap: 14px;
+      padding: 16px 22px;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .feature-item:last-child { border-bottom: none; }
+    .feature-check {
+      width: 22px; height: 22px; flex-shrink: 0;
+      background: #dcfce7; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; color: var(--green);
+      margin-top: 1px;
+    }
+    .feature-text strong { font-size: 14px; display: block; margin-bottom: 2px; }
+    .feature-text span { font-size: 12px; color: var(--gray); }
+
+    /* ── ROLES ────────────────────────────────────────────── */
+    .role-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 22px;
+    }
+    .role-header {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 14px;
+    }
+    .role-badge {
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      padding: 3px 10px; border-radius: 20px;
+    }
+    .role-badge.gold   { background: var(--gold-light); color: #92640a; }
+    .role-badge.dark   { background: #f3f4f6; color: #374151; }
+    .role-badge.blue   { background: #dbeafe; color: var(--blue); }
+    .role-icon { font-size: 24px; }
+    .role-name { font-size: 16px; font-weight: 700; }
+    .role-list { list-style: none; }
+    .role-list li {
+      font-size: 13px; color: var(--gray);
+      padding: 5px 0; border-bottom: 1px solid #f9f8f5;
+      display: flex; gap: 8px; align-items: center;
+    }
+    .role-list li:last-child { border-bottom: none; }
+    .role-list li::before { content: "→"; color: var(--gold); font-weight: 700; flex-shrink: 0; }
+
+    /* ── BOOKING FLOW ─────────────────────────────────────── */
+    .flow {
+      display: flex; align-items: flex-start; gap: 0;
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+    .flow-step {
+      flex: 1; padding: 22px 18px; text-align: center;
+      border-right: 1px solid #f3f4f6;
+      position: relative;
+    }
+    .flow-step:last-child { border-right: none; }
+    .flow-num {
+      width: 32px; height: 32px;
+      background: var(--gold); color: var(--white);
+      border-radius: 50%; font-size: 14px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 10px;
+    }
+    .flow-step h4 { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+    .flow-step p  { font-size: 11px; color: var(--gray); }
+    .flow-arrow {
+      position: absolute; right: -10px; top: 50%;
+      transform: translateY(-50%);
+      color: var(--gold); font-size: 16px; font-weight: 700;
+      z-index: 1; display: none;
+    }
+
+    /* ── TECH PILLS ───────────────────────────────────────── */
+    .pill-grid {
+      display: flex; flex-wrap: wrap; gap: 10px;
+    }
+    .pill {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--white); border: 1px solid var(--border);
+      border-radius: 10px; padding: 10px 16px;
+      font-size: 13px; font-weight: 600; color: var(--dark);
+    }
+    .pill-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+    /* ── SCOPE BOX ────────────────────────────────────────── */
+    .scope-box {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+    }
+    .scope-col {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 14px; padding: 22px;
+    }
+    .scope-col h3 {
+      font-size: 13px; font-weight: 700;
+      margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+    }
+    .scope-col.included h3 { color: var(--green); }
+    .scope-col.future h3   { color: var(--gray); }
+    .scope-item {
+      font-size: 13px; padding: 5px 0;
+      border-bottom: 1px solid #f9f8f5;
+      display: flex; gap: 8px; align-items: flex-start;
+      color: #374151;
+    }
+    .scope-item:last-child { border-bottom: none; }
+    .scope-item.inc::before { content: "✓"; color: var(--green); font-weight: 700; flex-shrink: 0; }
+    .scope-item.fut::before { content: "◌"; color: #d1d5db; font-weight: 700; flex-shrink: 0; }
+
+    /* ── DIVIDER ──────────────────────────────────────────── */
+    .divider { height: 1px; background: var(--border); margin: 48px 0 0; }
+
+    /* ── FOOTER ───────────────────────────────────────────── */
+    .footer {
+      text-align: center;
+      padding: 32px 24px 48px;
+    }
+    .footer p { font-size: 12px; color: #9ca3af; }
+    .footer strong { color: var(--gold); }
+
+    /* ── PRINT ────────────────────────────────────────────── */
+    @media print {
+      body { background: #fff; }
+      .hero { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .card-icon, .role-badge, .flow-num, .pill, .scope-col,
+      .feature-check { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .section { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-inner">
+      <div class="logo-row">
+        <div class="logo-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round">
+            <rect x="3" y="4" width="18" height="18" rx="2"/>
+            <line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="3" y1="10" x2="21" y2="10"/>
+            <circle cx="12" cy="15" r="2" fill="#ffffff" stroke="none"/>
+          </svg>
+        </div>
+        <span class="logo-name">AppointVa</span>
+      </div>
+      <h1>Gestión de citas<br /><span>inteligente y sin complicaciones</span></h1>
+      <p>Plataforma web para negocios de servicios que automatiza la reservación de citas, la gestión de empleados y el seguimiento de ingresos en un solo lugar.</p>
+      <div class="badge-row">
+        <span class="badge"><span class="badge-dot"></span>Versión demo · Junio 2026</span>
+        <span class="badge"><span class="badge-dot"></span>Multi-rol</span>
+        <span class="badge"><span class="badge-dot"></span>100% web · Sin instalar</span>
+        <span class="badge"><span class="badge-dot"></span>Móvil compatible</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="page">
+
+    <!-- ── ¿QUÉ ES? ────────────────────────────────────────────── -->
+    <div class="section">
+      <div class="section-label">El sistema</div>
+      <div class="section-title">¿Qué resuelve AppointVa?</div>
+      <div class="grid-3">
+
+        <div class="card">
+          <div class="card-icon gold">📅</div>
+          <h3>Reservas 24/7</h3>
+          <p>Los clientes reservan en cualquier momento desde su celular o computadora, sin necesidad de llamar.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-icon green">👥</div>
+          <h3>Gestión de personal</h3>
+          <p>Cada empleado tiene su propia cuenta y ve únicamente su agenda del día, sin acceso a información sensible.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-icon purple">📊</div>
+          <h3>Reportes e ingresos</h3>
+          <p>El propietario ve en tiempo real cuántas citas tiene, qué ingresos genera y cuáles son sus servicios más populares.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-icon blue">🔔</div>
+          <h3>Notificaciones automáticas</h3>
+          <p>El sistema envía correos de confirmación y recordatorio al cliente cuando se agenda o confirma una cita.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-icon teal">🗓️</div>
+          <h3>Agenda visual</h3>
+          <p>Vista de calendario por semana con todas las citas del negocio, coloreadas por estado.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-icon orange">🛍️</div>
+          <h3>Catálogo de servicios</h3>
+          <p>Define categorías y servicios con duración, precio e imagen. El cliente los ve en la página pública de reservas.</p>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── FLUJO DE RESERVA ─────────────────────────────────────── -->
+    <div class="section">
+      <div class="section-label">Experiencia del cliente</div>
+      <div class="section-title">¿Cómo reserva un cliente?</div>
+      <div class="flow">
+        <div class="flow-step">
+          <div class="flow-num">1</div>
+          <h4>Entra al link</h4>
+          <p>El negocio comparte su URL pública única</p>
+        </div>
+        <div class="flow-step">
+          <div class="flow-num">2</div>
+          <h4>Elige servicio</h4>
+          <p>Ve el catálogo con precios y duración</p>
+        </div>
+        <div class="flow-step">
+          <div class="flow-num">3</div>
+          <h4>Elige empleado</h4>
+          <p>Selecciona a quién prefiere atenderle</p>
+        </div>
+        <div class="flow-step">
+          <div class="flow-num">4</div>
+          <h4>Elige fecha y hora</h4>
+          <p>Sólo muestra horarios disponibles</p>
+        </div>
+        <div class="flow-step">
+          <div class="flow-num">5</div>
+          <h4>Confirma datos</h4>
+          <p>Nombre, teléfono y correo</p>
+        </div>
+        <div class="flow-step">
+          <div class="flow-num">6</div>
+          <h4>¡Listo!</h4>
+          <p>Recibe correo de confirmación</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ROLES ───────────────────────────────────────────────── -->
+    <div class="section">
+      <div class="section-label">Usuarios del sistema</div>
+      <div class="section-title">Tres roles, un solo sistema</div>
+      <div class="grid-3">
+
+        <div class="role-card">
+          <div class="role-header">
+            <span class="role-icon">👑</span>
+            <div>
+              <div class="role-name">Propietario</div>
+              <span class="role-badge gold">Owner</span>
+            </div>
+          </div>
+          <ul class="role-list">
+            <li>Panel de métricas e ingresos</li>
+            <li>Gestión de citas (confirmar, cancelar, completar)</li>
+            <li>Alta y edición de servicios</li>
+            <li>Alta y edición de empleados</li>
+            <li>Vista de agenda semanal</li>
+            <li>Reportes y gráficas</li>
+            <li>Configuración del negocio y perfil</li>
+          </ul>
+        </div>
+
+        <div class="role-card">
+          <div class="role-header">
+            <span class="role-icon">🧑‍💼</span>
+            <div>
+              <div class="role-name">Empleado</div>
+              <span class="role-badge blue">Staff</span>
+            </div>
+          </div>
+          <ul class="role-list">
+            <li>Ve sus citas del día al iniciar sesión</li>
+            <li>Consulta sus próximas citas</li>
+            <li>Sin acceso a información de otros empleados</li>
+            <li>Sin acceso a ingresos ni métricas</li>
+          </ul>
+        </div>
+
+        <div class="role-card">
+          <div class="role-header">
+            <span class="role-icon">🔧</span>
+            <div>
+              <div class="role-name">Super Admin</div>
+              <span class="role-badge dark">Admin</span>
+            </div>
+          </div>
+          <ul class="role-list">
+            <li>Vista global de todos los negocios</li>
+            <li>Alta de nuevos negocios y propietarios</li>
+            <li>Gestión de usuarios del sistema</li>
+            <li>Panel exclusivo de administración</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── FUNCIONALIDADES DETALLADAS ──────────────────────────── -->
+    <div class="section">
+      <div class="section-label">Funcionalidades</div>
+      <div class="section-title">Lo que incluye esta versión</div>
+      <div class="feature-list">
+
+        <div class="feature-item">
+          <div class="feature-check">✓</div>
+          <div class="feature-text">
+            <strong>Página de reservas pública personalizada</strong>
+            <span>Cada negocio tiene su propio link único (ej: appointva.com/b/mi-negocio) que puede compartir en WhatsApp, redes sociales o su sitio web.</span>
+          </div>
+        </div>
+
+        <div class="feature-item">
+          <div class="feature-check">✓</div>
+          <div class="feature-text">
+            <strong>Catálogo de servicios con categorías</strong>
+            <span>Organiza servicios por categorías, con nombre, descripción, precio, duración e imagen de portada.</span>
+          </div>
+        </div>
+
+        <div class="feature-item">
+          <div class="feature-check">✓</div>
+          <div class="feature-text">
+            <strong>Control de disponibilidad en tiempo real</strong>
+            <span>Al reservar, el sistema muestra únicamente los horarios disponibles según la agenda del empleado seleccionado, sin sobreposición de citas.</span>
+          </div>
+        </div>
+
+        <div class="feature-item">
+          <div class="feature-check">✓</div>
+          <div class="feature-text">
+            <strong>Gestión completa de citas</strong>
+            <span>El propietario puede ver, confirmar, cancelar o marcar como completadas las citas desde el panel de administración.</span>
+          </div>
+        </div>
+
+        <div class="feature-item">
+          <div class="feature-check">✓</div>
+          <div class="feature-text">
+            <strong>Dashboard con métricas de negocio</strong>
+            <span>Tarjetas con citas e ingresos del día, la semana y el mes. Gráfica de tendencia (7, 14 o 30 días) y top de servicios más solicitados.</span>
+          </div>
+        </div>
+
+        <div class="feature-item">
+          <div class="feature-check">✓</div>
+          <div class="feature-text">
+            <strong>Agenda visual semanal</strong>
+            <span>Visualización tipo calendario con todas las citas del negocio, navegación por semanas y colores por estado de cita.</span>
+          </div>
+        </div>
+
+        <div class="feature-item">
+          <div class="feature-check">✓</div>
+          <div class="feature-text">
+            <strong>Reportes con gráficas</strong>
+            <span>Reporte de ingresos por período, citas por estado, y filtros por empleado para análisis de desempeño.</span>
+          </div>
+        </div>
+
+        <div class="feature-item">
+          <div class="feature-check">✓</div>
+          <div class="feature-text">
+            <strong>Notificaciones por correo electrónico</strong>
+            <span>Envío automático de correos de confirmación y recordatorio a los clientes al agendar o confirmar una cita.</span>
+          </div>
+        </div>
+
+        <div class="feature-item">
+          <div class="feature-check">✓</div>
+          <div class="feature-text">
+            <strong>Subida de imágenes en la nube</strong>
+            <span>El propietario puede subir foto de perfil y fotos para sus servicios, almacenadas automáticamente en la nube (Cloudinary).</span>
+          </div>
+        </div>
+
+        <div class="feature-item">
+          <div class="feature-check">✓</div>
+          <div class="feature-text">
+            <strong>Autenticación segura con 2FA</strong>
+            <span>Inicio de sesión con contraseña y verificación en dos pasos opcional mediante código enviado al correo.</span>
+          </div>
+        </div>
+
+        <div class="feature-item">
+          <div class="feature-check">✓</div>
+          <div class="feature-text">
+            <strong>Recuperación de contraseña</strong>
+            <span>Flujo de restablecimiento de contraseña por correo electrónico desde la pantalla de login.</span>
+          </div>
+        </div>
+
+        <div class="feature-item">
+          <div class="feature-check">✓</div>
+          <div class="feature-text">
+            <strong>Configuración de horarios y zona horaria</strong>
+            <span>El propietario define el horario de apertura y cierre del negocio, así como horas de recordatorio y cancelación.</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── ALCANCE Y ROADMAP ────────────────────────────────────── -->
+    <div class="section">
+      <div class="section-label">Alcance</div>
+      <div class="section-title">Qué hay ahora y qué viene después</div>
+      <div class="scope-box">
+        <div class="scope-col included">
+          <h3>✅ Disponible hoy</h3>
+          <div class="scope-item inc">Reservas en línea sin cuenta</div>
+          <div class="scope-item inc">Panel de administración completo</div>
+          <div class="scope-item inc">Multi-empleado con roles</div>
+          <div class="scope-item inc">Catálogo de servicios y categorías</div>
+          <div class="scope-item inc">Agenda semanal visual</div>
+          <div class="scope-item inc">Métricas e ingresos en tiempo real</div>
+          <div class="scope-item inc">Reportes con filtros</div>
+          <div class="scope-item inc">Correos automáticos de confirmación</div>
+          <div class="scope-item inc">Subida de imágenes</div>
+          <div class="scope-item inc">Autenticación segura + 2FA</div>
+          <div class="scope-item inc">Multi-negocio (Super Admin)</div>
+          <div class="scope-item inc">Compatible con móvil</div>
+        </div>
+        <div class="scope-col future">
+          <h3>◌ Próximas versiones</h3>
+          <div class="scope-item fut">Pagos en línea (Stripe / MercadoPago)</div>
+          <div class="scope-item fut">Recordatorios por WhatsApp o SMS</div>
+          <div class="scope-item fut">App móvil nativa (iOS / Android)</div>
+          <div class="scope-item fut">Reservas recurrentes</div>
+          <div class="scope-item fut">Sistema de fidelización y puntos</div>
+          <div class="scope-item fut">Galería de fotos del negocio</div>
+          <div class="scope-item fut">Reseñas de clientes</div>
+          <div class="scope-item fut">Horarios por empleado personalizados</div>
+          <div class="scope-item fut">Exportación de reportes a Excel/PDF</div>
+          <div class="scope-item fut">Dominio personalizado por negocio</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TECNOLOGÍA ───────────────────────────────────────────── -->
+    <div class="section">
+      <div class="section-label">Tecnología</div>
+      <div class="section-title">Construido con herramientas modernas</div>
+      <div class="pill-grid">
+        <span class="pill"><span class="pill-dot" style="background:#61dafb"></span>React + TypeScript</span>
+        <span class="pill"><span class="pill-dot" style="background:#7c3aed"></span>ASP.NET Core 10</span>
+        <span class="pill"><span class="pill-dot" style="background:#336791"></span>PostgreSQL</span>
+        <span class="pill"><span class="pill-dot" style="background:#C8A961"></span>Vercel (Frontend)</span>
+        <span class="pill"><span class="pill-dot" style="background:#46e3b7"></span>Render (Backend)</span>
+        <span class="pill"><span class="pill-dot" style="background:#00e599"></span>Neon (Base de datos)</span>
+        <span class="pill"><span class="pill-dot" style="background:#f97316"></span>Cloudinary (Imágenes)</span>
+        <span class="pill"><span class="pill-dot" style="background:#4f46e5"></span>Resend (Correos)</span>
+        <span class="pill"><span class="pill-dot" style="background:#06b6d4"></span>TanStack Query</span>
+        <span class="pill"><span class="pill-dot" style="background:#38bdf8"></span>Tailwind CSS</span>
+        <span class="pill"><span class="pill-dot" style="background:#facc15"></span>Zustand</span>
+        <span class="pill"><span class="pill-dot" style="background:#e11d48"></span>Docker</span>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <p><strong>AppointVa</strong> &copy; 2026 &nbsp;·&nbsp; Sistema de gestión de citas &nbsp;·&nbsp; Documento de presentación confidencial</p>
+  </div>
+
+</body>
+</html>

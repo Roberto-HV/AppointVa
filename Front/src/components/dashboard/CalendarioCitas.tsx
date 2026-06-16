@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { citasApi } from "../../api/citas";
 import type { CitaDto } from "../../types";
@@ -36,10 +36,14 @@ function addDias(date: Date, n: number): Date {
 interface Props {
   empleadoId: string;
   onCitaClick: (cita: CitaDto) => void;
+  onReagendar?: (cita: CitaDto, nuevoInicio: string) => void;
 }
 
-export default function CalendarioCitas({ empleadoId, onCitaClick }: Props) {
+export default function CalendarioCitas({ empleadoId, onCitaClick, onReagendar }: Props) {
   const [lunes, setLunes] = useState(() => getLunesDeEstaSemana(new Date()));
+  const [arrastrando, setArrastrando] = useState<CitaDto | null>(null);
+  const [dropTarget, setDropTarget] = useState<{ colIdx: number; hora: number; minutos: number } | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const domingo = addDias(lunes, 6);
   const hastaApi = addDias(domingo, 1); // incluye todo el domingo
 
@@ -136,7 +140,7 @@ export default function CalendarioCitas({ empleadoId, onCitaClick }: Props) {
         </div>
 
         {/* Grid con scroll */}
-        <div className="flex overflow-y-auto" style={{ maxHeight: 560 }}>
+        <div ref={scrollRef} className="flex overflow-y-auto" style={{ maxHeight: 560 }}>
           {/* Columna de horas */}
           <div className="w-12 shrink-0 relative bg-white" style={{ height: GRID_HEIGHT }}>
             {horas.map((h) => (
@@ -155,11 +159,34 @@ export default function CalendarioCitas({ empleadoId, onCitaClick }: Props) {
           {/* Columnas de días */}
           {dias.map((dia, colIdx) => {
             const citasDia = citasDelDia(dia);
+            const esDropTarget = dropTarget?.colIdx === colIdx;
             return (
               <div
                 key={colIdx}
-                className="flex-1 relative border-l border-gray-100"
+                className={`flex-1 relative border-l border-gray-100 ${arrastrando && esDropTarget ? "bg-primary/5" : ""}`}
                 style={{ height: GRID_HEIGHT }}
+                onDragOver={(e) => {
+                  if (!arrastrando) return;
+                  e.preventDefault();
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const scrollTop = scrollRef.current?.scrollTop ?? 0;
+                  const y = e.clientY - rect.top + scrollTop;
+                  const horasDesdeInicio = y / PX_POR_HORA;
+                  const totalMin = Math.round(horasDesdeInicio * 60 / 15) * 15;
+                  const hora = Math.min(23, Math.max(HORA_INICIO, Math.floor(totalMin / 60) + HORA_INICIO));
+                  const min = totalMin % 60;
+                  setDropTarget({ colIdx, hora, minutos: min });
+                }}
+                onDragLeave={() => setDropTarget(null)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  if (!arrastrando || !dropTarget || dropTarget.colIdx !== colIdx) return;
+                  const nuevaFecha = new Date(dia);
+                  nuevaFecha.setHours(dropTarget.hora, dropTarget.minutos, 0, 0);
+                  onReagendar?.(arrastrando, nuevaFecha.toISOString());
+                  setArrastrando(null);
+                  setDropTarget(null);
+                }}
               >
                 {/* Líneas de horas */}
                 {horas.map((h) => (
@@ -183,6 +210,14 @@ export default function CalendarioCitas({ empleadoId, onCitaClick }: Props) {
                   </div>
                 )}
 
+                {/* Línea de preview drag */}
+                {esDropTarget && dropTarget && arrastrando && (
+                  <div
+                    className="absolute inset-x-0.5 h-1 bg-primary/60 rounded z-30 pointer-events-none"
+                    style={{ top: (dropTarget.hora - HORA_INICIO + dropTarget.minutos / 60) * PX_POR_HORA }}
+                  />
+                )}
+
                 {/* Citas */}
                 {citasDia.map((c) => {
                   const top = calcTop(c);
@@ -191,12 +226,22 @@ export default function CalendarioCitas({ empleadoId, onCitaClick }: Props) {
                   const hora = new Date(c.inicioEn).toLocaleTimeString("es-MX", {
                     hour: "2-digit", minute: "2-digit", hour12: false,
                   });
+                  const puedeMover = onReagendar &&
+                    (c.estadoTexto === "Pendiente" || c.estadoTexto === "Confirmada");
                   return (
                     <button
                       key={c.id}
-                      onClick={() => onCitaClick(c)}
-                      title={`${c.nombreCliente} — ${c.nombreServicio} (${hora})`}
-                      className={`absolute inset-x-0.5 rounded text-left px-1.5 py-0.5 text-xs overflow-hidden hover:brightness-95 transition cursor-pointer ${color}`}
+                      onClick={() => !arrastrando && onCitaClick(c)}
+                      title={puedeMover
+                        ? `Arrastra para reagendar · ${c.nombreCliente} — ${c.nombreServicio} (${hora})`
+                        : `${c.nombreCliente} — ${c.nombreServicio} (${hora})`}
+                      draggable={!!puedeMover}
+                      onDragStart={() => puedeMover && setArrastrando(c)}
+                      onDragEnd={() => { setArrastrando(null); setDropTarget(null); }}
+                      className={`absolute inset-x-0.5 rounded text-left px-1.5 py-0.5 text-xs overflow-hidden transition
+                        ${puedeMover ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"}
+                        ${arrastrando?.id === c.id ? "opacity-40" : "hover:brightness-95"}
+                        ${color}`}
                       style={{ top, height }}
                     >
                       <p className="font-semibold truncate leading-tight">{hora} {c.nombreCliente}</p>

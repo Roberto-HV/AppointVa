@@ -29,5 +29,8 @@ namespace AppointVaAPI.Models.Dtos.Publico
 
         [StringLength(500)]
         public string? Notas { get; set; }
+
+        [MaxLength(50)]
+        public string? CodigoDescuento { get; set; }
     }
 }

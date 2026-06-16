@@ -24,6 +24,10 @@ namespace AppointVaAPI.Data
         public DbSet<ImagenNegocio> ImagenesNegocios { get; set; }
         public DbSet<BloqueoNegocio> BloqueosNegocio { get; set; }
         public DbSet<Resena> Resenas { get; set; }
+        public DbSet<ListaEspera> ListaEspera { get; set; }
+        public DbSet<CampoIntake> CamposIntake { get; set; }
+        public DbSet<RespuestaIntake> RespuestasIntake { get; set; }
+        public DbSet<Descuento> Descuentos { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -190,6 +194,65 @@ namespace AppointVaAPI.Data
                 .HasIndex(c => new { c.NegocioId, c.InicioEn });
             modelBuilder.Entity<Cita>()
                 .HasIndex(c => new { c.EmpleadoId, c.InicioEn });
+
+            // ListaEspera
+            modelBuilder.Entity<ListaEspera>()
+                .HasOne(le => le.Negocio)
+                .WithMany()
+                .HasForeignKey(le => le.NegocioId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<ListaEspera>()
+                .HasOne(le => le.Servicio)
+                .WithMany()
+                .HasForeignKey(le => le.ServicioId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<ListaEspera>()
+                .HasOne(le => le.Empleado)
+                .WithMany()
+                .HasForeignKey(le => le.EmpleadoId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<ListaEspera>()
+                .HasIndex(le => new { le.NegocioId, le.Estado });
+
+            // CampoIntake
+            modelBuilder.Entity<CampoIntake>()
+                .HasOne(ci => ci.Negocio)
+                .WithMany()
+                .HasForeignKey(ci => ci.NegocioId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<CampoIntake>()
+                .HasOne(ci => ci.Servicio)
+                .WithMany()
+                .HasForeignKey(ci => ci.ServicioId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            // RespuestaIntake
+            modelBuilder.Entity<RespuestaIntake>()
+                .HasOne(ri => ri.Cita)
+                .WithMany()
+                .HasForeignKey(ri => ri.CitaId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<RespuestaIntake>()
+                .HasOne(ri => ri.Campo)
+                .WithMany()
+                .HasForeignKey(ri => ri.CampoIntakeId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            // Descuento
+            modelBuilder.Entity<Descuento>()
+                .HasOne(d => d.Negocio)
+                .WithMany()
+                .HasForeignKey(d => d.NegocioId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Descuento>()
+                .HasIndex(d => new { d.NegocioId, d.Codigo })
+                .IsUnique();
         }
     }
 }

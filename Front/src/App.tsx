@@ -26,6 +26,10 @@ import MisCitasPage from "./pages/publico/MisCitasPage";
 import ResenaPage from "./pages/publico/ResenaPage";
 import NegociosAdminPage from "./pages/admin/NegociosAdminPage";
 import MiPerfilPage from "./pages/dashboard/MiPerfilPage";
+import GaleriaPage from "./pages/dashboard/GaleriaPage";
+import ListaEsperaPage from "./pages/dashboard/ListaEsperaPage";
+import IntakePage from "./pages/dashboard/IntakePage";
+import DescuentosPage from "./pages/dashboard/DescuentosPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -71,6 +75,10 @@ export default function App() {
                 <Route path="/dashboard/servicios" element={<ServiciosPage />} />
                 <Route path="/dashboard/clientes" element={<ClientesPage />} />
                 <Route path="/dashboard/perfil" element={<PerfilPage />} />
+                <Route path="/dashboard/galeria" element={<GaleriaPage />} />
+                <Route path="/dashboard/espera" element={<ListaEsperaPage />} />
+                <Route path="/dashboard/intake" element={<IntakePage />} />
+                <Route path="/dashboard/descuentos" element={<DescuentosPage />} />
                 <Route path="/dashboard/reportes" element={<ReportesPage />} />
               </Route>
             </Route>

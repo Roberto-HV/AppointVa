@@ -1,9 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../api/axios";
+import PasoFechaHora from "../../components/booking/PasoFechaHora";
+import type { SlotDisponible } from "../../types";
 
 const TAMANO = 10;
+const SESSION_KEY = "mcs_session";
 
 interface MiCita {
   id: string;
@@ -12,11 +15,18 @@ interface MiCita {
   negocioSlug: string;
   nombreServicio: string;
   nombreEmpleado: string;
+  servicioId: string;
+  empleadoId: string;
   inicioEn: string;
   finEn: string;
   precio: number;
   estado: number;
   estadoTexto: string;
+}
+
+interface Session {
+  email: string;
+  telefono: string;
 }
 
 const ESTADO_ESTILOS: Record<string, string> = {
@@ -43,24 +53,42 @@ export default function MisCitasPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
 
-  const [email, setEmail] = useState("");
-  const [telefono, setTelefono] = useState("");
+  // Session recordada en localStorage
+  const [session, setSession] = useState<Session | null>(() => {
+    try { return JSON.parse(localStorage.getItem(SESSION_KEY) ?? "null"); }
+    catch { return null; }
+  });
+
+  const [email, setEmail] = useState(session?.email ?? "");
+  const [telefono, setTelefono] = useState(session?.telefono ?? "");
   const [cancelando, setCancelando] = useState<string | null>(null);
   const [errorCancelacion, setErrorCancelacion] = useState("");
-  const [buscado, setBuscado] = useState({ email: "", telefono: "" });
+  const [buscado, setBuscado] = useState<Session | null>(session);
   const [pagina, setPagina] = useState(1);
   const [total, setTotal] = useState(0);
 
+  // Estado reagendar
+  const [reagendando, setReagendando] = useState<MiCita | null>(null);
+  const [slotNuevo, setSlotNuevo] = useState<SlotDisponible | null>(null);
+  const [guardandoReagenda, setGuardandoReagenda] = useState(false);
+  const [errorReagenda, setErrorReagenda] = useState("");
+  const [exitoReagenda, setExitoReagenda] = useState("");
+
+  // Auto-buscar si hay sesión guardada
+  useEffect(() => {
+    if (session && !buscado) setBuscado(session);
+  }, []);
+
   const { data: citas, isLoading, error } = useQuery<MiCita[]>({
-    queryKey: ["mis-citas", slug, buscado.email, buscado.telefono, pagina],
+    queryKey: ["mis-citas", slug, buscado?.email, buscado?.telefono, pagina],
     queryFn: async () => {
       const { data, headers } = await api.get("/publico/mis-citas", {
-        params: { slug, email: buscado.email, telefono: buscado.telefono, pagina, tamano: TAMANO },
+        params: { slug, email: buscado!.email, telefono: buscado!.telefono, pagina, tamano: TAMANO },
       });
       setTotal(parseInt(headers["x-total-count"] ?? "0", 10));
       return data;
     },
-    enabled: !!buscado.email && !!buscado.telefono && !!slug,
+    enabled: !!buscado && !!slug,
     retry: false,
   });
 
@@ -68,14 +96,24 @@ export default function MisCitasPage() {
 
   const buscar = (e: React.FormEvent) => {
     e.preventDefault();
-    if (email.trim() && telefono.trim()) {
-      setPagina(1);
-      setBuscado({ email: email.trim(), telefono: telefono.trim() });
-    }
+    if (!email.trim() || !telefono.trim()) return;
+    const s = { email: email.trim(), telefono: telefono.trim() };
+    setPagina(1);
+    setBuscado(s);
+    setSession(s);
+    localStorage.setItem(SESSION_KEY, JSON.stringify(s));
+  };
+
+  const cerrarSesion = () => {
+    localStorage.removeItem(SESSION_KEY);
+    setSession(null);
+    setBuscado(null);
+    setEmail("");
+    setTelefono("");
   };
 
   const cancelarCita = async (codigo: string) => {
-    if (!buscado.email) return;
+    if (!buscado?.email) return;
     if (!confirm("¿Seguro que deseas cancelar esta cita? Esta acción no se puede deshacer.")) return;
     setCancelando(codigo);
     setErrorCancelacion("");
@@ -84,10 +122,36 @@ export default function MisCitasPage() {
       qc.invalidateQueries({ queryKey: ["mis-citas", slug, buscado.email, buscado.telefono] });
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje
-        ?? "No se pudo cancelar la cita. Intenta de nuevo.";
+        ?? "No se pudo cancelar la cita.";
       setErrorCancelacion(msg);
     } finally {
       setCancelando(null);
+    }
+  };
+
+  const confirmarReagenda = async () => {
+    if (!reagendando || !slotNuevo || !buscado?.email) return;
+    setGuardandoReagenda(true);
+    setErrorReagenda("");
+    try {
+      await api.patch(
+        `/publico/citas/${reagendando.codigoConfirmacion}/reagendar`,
+        { inicioEn: slotNuevo.inicio },
+        { params: { email: buscado.email } }
+      );
+      setExitoReagenda("¡Cita reagendada! Recibirás un correo de confirmación.");
+      qc.invalidateQueries({ queryKey: ["mis-citas", slug, buscado.email, buscado.telefono] });
+      setTimeout(() => {
+        setReagendando(null);
+        setSlotNuevo(null);
+        setExitoReagenda("");
+      }, 2500);
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje
+        ?? "No se pudo reagendar la cita.";
+      setErrorReagenda(msg);
+    } finally {
+      setGuardandoReagenda(false);
     }
   };
 
@@ -101,44 +165,55 @@ export default function MisCitasPage() {
             A
           </div>
           <h1 className="text-xl font-bold text-gray-900">Mis citas</h1>
-          <p className="text-sm text-gray-500 mt-1">Ingresa tu email para ver tus reservas</p>
+          {buscado ? (
+            <div className="flex items-center justify-center gap-2 mt-1">
+              <p className="text-sm text-gray-500">{buscado.email}</p>
+              <button onClick={cerrarSesion} className="text-xs text-gray-400 hover:text-gray-600 underline">
+                Cambiar
+              </button>
+            </div>
+          ) : (
+            <p className="text-sm text-gray-500 mt-1">Ingresa tu email y teléfono para ver tus reservas</p>
+          )}
         </div>
 
-        {/* Formulario de búsqueda */}
-        <form onSubmit={buscar} className="bg-white rounded-2xl border border-gray-100 p-5 mb-6 shadow-sm space-y-3">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Correo electrónico</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="tu@correo.com"
-              required
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
-            <input
-              type="tel"
-              value={telefono}
-              onChange={(e) => setTelefono(e.target.value)}
-              placeholder="10 dígitos"
-              required
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={!email.trim() || !telefono.trim() || isLoading}
-            className="w-full py-2 bg-primary hover:bg-primary-dark disabled:opacity-40 text-white text-sm font-semibold rounded-lg transition"
-          >
-            {isLoading ? "Buscando..." : "Ver mis citas"}
-          </button>
-        </form>
+        {/* Formulario (solo si no hay sesión activa) */}
+        {!buscado && (
+          <form onSubmit={buscar} className="bg-white rounded-2xl border border-gray-100 p-5 mb-6 shadow-sm space-y-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Correo electrónico</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="tu@correo.com"
+                required
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+              <input
+                type="tel"
+                value={telefono}
+                onChange={(e) => setTelefono(e.target.value)}
+                placeholder="10 dígitos"
+                required
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={!email.trim() || !telefono.trim() || isLoading}
+              className="w-full py-2 bg-primary hover:bg-primary-dark disabled:opacity-40 text-white text-sm font-semibold rounded-lg transition"
+            >
+              {isLoading ? "Buscando..." : "Ver mis citas"}
+            </button>
+          </form>
+        )}
 
         {/* Resultados */}
-        {buscado.email && (
+        {buscado && (
           <>
             {isLoading && (
               <p className="text-center text-gray-400 text-sm py-4">Buscando citas...</p>
@@ -194,13 +269,21 @@ export default function MisCitasPage() {
                       </span>
                       <div className="flex items-center gap-3">
                         {(c.estadoTexto === "Pendiente" || c.estadoTexto === "Confirmada") && (
-                          <button
-                            onClick={() => cancelarCita(c.codigoConfirmacion)}
-                            disabled={cancelando === c.codigoConfirmacion}
-                            className="text-xs text-red-400 hover:text-red-600 font-medium disabled:opacity-40 transition"
-                          >
-                            {cancelando === c.codigoConfirmacion ? "Cancelando..." : "Cancelar"}
-                          </button>
+                          <>
+                            <button
+                              onClick={() => { setReagendando(c); setSlotNuevo(null); setErrorReagenda(""); }}
+                              className="text-xs text-blue-500 hover:text-blue-700 font-medium transition"
+                            >
+                              Reagendar
+                            </button>
+                            <button
+                              onClick={() => cancelarCita(c.codigoConfirmacion)}
+                              disabled={cancelando === c.codigoConfirmacion}
+                              className="text-xs text-red-400 hover:text-red-600 font-medium disabled:opacity-40 transition"
+                            >
+                              {cancelando === c.codigoConfirmacion ? "Cancelando..." : "Cancelar"}
+                            </button>
+                          </>
                         )}
                         <button
                           onClick={() => navigate(`/cita/${c.codigoConfirmacion}`)}
@@ -277,6 +360,62 @@ export default function MisCitasPage() {
           </>
         )}
       </div>
+
+      {/* Modal reagendar */}
+      {reagendando && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div className="bg-white w-full sm:max-w-lg sm:rounded-2xl rounded-t-2xl max-h-[92vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-100 px-5 py-4 flex items-center justify-between">
+              <div>
+                <h2 className="font-semibold text-gray-900">Reagendar cita</h2>
+                <p className="text-xs text-gray-400 mt-0.5">{reagendando.nombreServicio} · {reagendando.nombreEmpleado}</p>
+              </div>
+              <button
+                onClick={() => { setReagendando(null); setSlotNuevo(null); setErrorReagenda(""); }}
+                className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="p-5">
+              {exitoReagenda ? (
+                <div className="flex flex-col items-center gap-3 py-8 text-center">
+                  <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center">
+                    <svg className="w-7 h-7 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <p className="text-green-700 font-semibold text-sm">{exitoReagenda}</p>
+                </div>
+              ) : (
+                <>
+                  <p className="text-sm text-gray-600 mb-4">Selecciona la nueva fecha y hora para tu cita:</p>
+
+                  <PasoFechaHora
+                    servicioId={reagendando.servicioId}
+                    empleadoId={reagendando.empleadoId}
+                    seleccionado={slotNuevo}
+                    onSeleccionar={setSlotNuevo}
+                  />
+
+                  {errorReagenda && (
+                    <p className="mt-3 text-sm text-red-600 text-center">{errorReagenda}</p>
+                  )}
+
+                  <button
+                    onClick={confirmarReagenda}
+                    disabled={!slotNuevo || guardandoReagenda}
+                    className="mt-5 w-full bg-primary hover:bg-primary-dark disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition"
+                  >
+                    {guardandoReagenda ? "Guardando..." : "Confirmar nuevo horario"}
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

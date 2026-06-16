@@ -3,6 +3,7 @@ using System;
 using AppointVaAPI.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AppointVaAPI.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260616163351_Phase3_ListaEspera_Intake")]
+    partial class Phase3_ListaEspera_Intake
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -348,55 +351,6 @@ namespace AppointVaAPI.Migrations
                     b.ToTable("Clientes");
                 });
 
-            modelBuilder.Entity("AppointVaAPI.Models.Descuento", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<bool>("Activo")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("Codigo")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<string>("Descripcion")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<DateTime>("FechaCreacion")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.Property<DateTime?>("FechaExpiracion")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.Property<Guid>("NegocioId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Tipo")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
-
-                    b.Property<int>("UsoActual")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("UsoMaximo")
-                        .HasColumnType("integer");
-
-                    b.Property<decimal>("Valor")
-                        .HasColumnType("decimal(10,2)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("NegocioId", "Codigo")
-                        .IsUnique();
-
-                    b.ToTable("Descuentos");
-                });
-
             modelBuilder.Entity("AppointVaAPI.Models.Empleado", b =>
                 {
                     b.Property<Guid>("Id")
@@ -603,9 +557,6 @@ namespace AppointVaAPI.Migrations
 
                     b.Property<int>("Activo")
                         .HasColumnType("integer");
-
-                    b.Property<bool>("AutoConfirmar")
-                        .HasColumnType("boolean");
 
                     b.Property<string>("ColorPrimario")
                         .HasColumnType("text");
@@ -1096,17 +1047,6 @@ namespace AppointVaAPI.Migrations
                         .WithMany()
                         .HasForeignKey("NegocioId")
                         .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
-
-                    b.Navigation("Negocio");
-                });
-
-            modelBuilder.Entity("AppointVaAPI.Models.Descuento", b =>
-                {
-                    b.HasOne("AppointVaAPI.Models.Negocio", "Negocio")
-                        .WithMany()
-                        .HasForeignKey("NegocioId")
-                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Negocio");

@@ -18,6 +18,7 @@ interface Props {
   empleado: EmpleadoPublico;
   slot: SlotDisponible;
   enviando: boolean;
+  datosIniciales?: Partial<DatosClienteForm>;
   onEnviar: (datos: DatosClienteForm) => void;
 }
 
@@ -31,9 +32,10 @@ function formatPrecio(precio: number) {
   return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(precio);
 }
 
-export default function PasoDatosCliente({ servicio, empleado, slot, enviando, onEnviar }: Props) {
+export default function PasoDatosCliente({ servicio, empleado, slot, enviando, datosIniciales, onEnviar }: Props) {
   const { register, handleSubmit, formState: { errors } } = useForm<DatosClienteForm>({
     resolver: zodResolver(schema),
+    defaultValues: datosIniciales,
   });
 
   const nombreEmpleado = empleado.id === SIN_PREFERENCIA_ID

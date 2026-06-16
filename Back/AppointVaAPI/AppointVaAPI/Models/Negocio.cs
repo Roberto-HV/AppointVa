@@ -25,6 +25,7 @@ namespace AppointVaAPI.Models
         public string Moneda { get; set; } = "MXN";
         public int HorasRecordatorio { get; set; } = 24;
         public int HorasCancelacion { get; set; } = 0;
+        public bool AutoConfirmar { get; set; } = false;
         public Guid? PlanId { get; set; }
         [ForeignKey("PlanId")]
         public Plan? Plan { get; set; }

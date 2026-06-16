@@ -13,6 +13,7 @@ import { useToastStore } from "../../store/toastStore";
 import type { CitaDto, SlotDisponible } from "../../types";
 import { SkeletonTableRows } from "../../components/ui/Skeleton";
 import { Tooltip } from "../../components/ui/Tooltip";
+import { intakeApi } from "../../api/intake";
 
 function formatFechaHora(iso: string) {
   return new Date(iso).toLocaleString("es-MX", {
@@ -141,6 +142,12 @@ export default function CitasPage() {
       return data;
     },
     enabled: !!citaReag && !!fechaReag,
+  });
+
+  const { data: respuestasIntake = [] } = useQuery({
+    queryKey: ["intake-respuestas", citaSel?.id],
+    queryFn: () => intakeApi.getRespuestas(citaSel!.id),
+    enabled: !!citaSel,
   });
 
   // ── Mutations ────────────────────────────────────────────────────────────────
@@ -395,7 +402,19 @@ export default function CitasPage() {
 
       {/* Vista calendario */}
       {vista === "calendario" && (
-        <CalendarioCitas empleadoId={empleadoId} onCitaClick={abrirCambioEstado} />
+        <CalendarioCitas
+          empleadoId={empleadoId}
+          onCitaClick={abrirCambioEstado}
+          onReagendar={(cita, nuevoInicio) => {
+            const nueva = new Date(nuevoInicio).toLocaleString("es-MX", {
+              weekday: "short", day: "numeric", month: "short",
+              hour: "2-digit", minute: "2-digit", hour12: true,
+            });
+            if (confirm(`¿Reagendar "${cita.nombreCliente}" para el ${nueva}?`)) {
+              reagendar({ id: cita.id, inicioEn: nuevoInicio });
+            }
+          }}
+        />
       )}
 
       {/* Vista lista */}
@@ -923,6 +942,17 @@ export default function CitasPage() {
               <p><span className="text-gray-500">Servicio:</span> <span className="font-medium">{citaSel.nombreServicio}</span></p>
               <p><span className="text-gray-500">Hora:</span> <span className="font-medium capitalize">{formatFechaHora(citaSel.inicioEn)}</span></p>
               <p><span className="text-gray-500">Estado actual:</span> <span className="font-medium">{citaSel.estadoTexto}</span></p>
+              {respuestasIntake.length > 0 && (
+                <div className="mt-2 pt-2 border-t border-gray-200 space-y-1">
+                  <p className="text-gray-400 text-xs font-medium uppercase tracking-wide">Preguntas de intake</p>
+                  {respuestasIntake.map((r, i) => (
+                    <p key={i}>
+                      <span className="text-gray-500">{r.etiqueta}:</span>{" "}
+                      <span className="font-medium">{r.valor ?? "—"}</span>
+                    </p>
+                  ))}
+                </div>
+              )}
             </div>
             {accionesCita.length === 0 ? (
               <p className="text-sm text-gray-500 text-center py-2">Esta cita no puede cambiar de estado.</p>

@@ -1,6 +1,7 @@
 ﻿using AppointVaAPI.Constants;
 using AppointVaAPI.Data;
 using AppointVaAPI.Models;
+using AppointVaAPI.Models.Dtos.Citas;
 using AppointVaAPI.Models.Dtos.Negocios;
 using AppointVaAPI.Models.Dtos.Publico;
 using AppointVaAPI.Repository.IRepository;
@@ -107,6 +108,8 @@ namespace AppointVaAPI.Controllers.V1
                 ColorPrimario = negocio.ColorPrimario,
                 ColorSecundario = negocio.ColorSecundario,
                 Telefono = negocio.Telefono,
+                HorasCancelacion = negocio.HorasCancelacion,
+                AutoConfirmar = negocio.AutoConfirmar,
                 Servicios = servicios.Select(s => new ServicioPublicoDto
                 {
                     Id = s.Id,
@@ -200,6 +203,30 @@ namespace AppointVaAPI.Controllers.V1
 
             var finEn = dto.InicioEn.AddMinutes(servicio.DuracionMinutos);
 
+            // Validar descuento si se proporcionó código
+            Descuento? descuentoAplicado = null;
+            decimal precioFinal = servicio.Precio;
+            if (!string.IsNullOrWhiteSpace(dto.CodigoDescuento))
+            {
+                var codigoNorm = dto.CodigoDescuento.Trim().ToUpper();
+                descuentoAplicado = await _db.Descuentos.FirstOrDefaultAsync(d =>
+                    d.NegocioId == negocio.Id && d.Codigo == codigoNorm && d.Activo);
+
+                if (descuentoAplicado != null &&
+                    !(descuentoAplicado.FechaExpiracion.HasValue && descuentoAplicado.FechaExpiracion < DateTime.UtcNow) &&
+                    !(descuentoAplicado.UsoMaximo.HasValue && descuentoAplicado.UsoActual >= descuentoAplicado.UsoMaximo))
+                {
+                    if (descuentoAplicado.Tipo == "Porcentaje")
+                        precioFinal = servicio.Precio * (1 - descuentoAplicado.Valor / 100m);
+                    else
+                        precioFinal = Math.Max(0, servicio.Precio - descuentoAplicado.Valor);
+                }
+                else
+                {
+                    descuentoAplicado = null;
+                }
+            }
+
             // Transacción serializable: previene que dos reservas simultáneas ocupen el mismo slot
             Cita cita;
             Cliente cliente;
@@ -229,8 +256,8 @@ namespace AppointVaAPI.Controllers.V1
                         ServicioId = dto.ServicioId,
                         InicioEn = dto.InicioEn,
                         FinEn = finEn,
-                        Estado = EstadosCitas.Confirmada,
-                        Precio = servicio.Precio,
+                        Estado = negocio.AutoConfirmar ? EstadosCitas.Confirmada : EstadosCitas.Pendiente,
+                        Precio = precioFinal,
                         Notas = dto.Notas,
                         FechaCreacion = DateTime.UtcNow,
                         FechaActualizacion = DateTime.UtcNow
@@ -242,6 +269,12 @@ namespace AppointVaAPI.Controllers.V1
                     cliente.UltimaCitaEn = dto.InicioEn;
                     cliente.FechaActualizacion = DateTime.UtcNow;
                     await _clienteRepo.ActualizarAsync(cliente);
+
+                    if (descuentoAplicado != null)
+                    {
+                        descuentoAplicado.UsoActual++;
+                        await _db.SaveChangesAsync();
+                    }
 
                     await tx.CommitAsync();
                 }
@@ -439,6 +472,48 @@ namespace AppointVaAPI.Controllers.V1
                 _ = Task.Run(() => _email.EnviarCancelacionClienteAlPropietarioAsync(cita, emailNegocio));
 
             return NoContent();
+        }
+
+        // PATCH api/publico/citas/{codigo}/reagendar?email=... — el cliente reagenda su propia cita
+        [HttpPatch("citas/{codigo}/reagendar")]
+        [EnableRateLimiting("PublicoEstricto")]
+        public async Task<IActionResult> ReagendarPublico(string codigo, [FromQuery] string email, [FromBody] ReagendarCitaDto dto)
+        {
+            if (string.IsNullOrWhiteSpace(email))
+                return BadRequest(new { mensaje = "El email es requerido." });
+
+            var cita = await _citaRepo.ObtenerPorCodigoAsync(codigo);
+            if (cita is null)
+                return NotFound(new { mensaje = "Cita no encontrada" });
+
+            var emailCliente = cita.Cliente?.Email ?? string.Empty;
+            if (!emailCliente.Equals(email.Trim(), StringComparison.OrdinalIgnoreCase))
+                return Forbid();
+
+            if (cita.Estado == EstadosCitas.Cancelada || cita.Estado == EstadosCitas.Completada)
+                return BadRequest(new { mensaje = "No se puede reagendar esta cita" });
+
+            var horasCancelacion = cita.Negocio?.HorasCancelacion ?? 0;
+            if (horasCancelacion > 0 && (cita.InicioEn - DateTime.Now).TotalHours < horasCancelacion)
+                return BadRequest(new { mensaje = $"No puedes reagendar con menos de {horasCancelacion} hora{(horasCancelacion == 1 ? "" : "s")} de anticipación." });
+
+            var duracion = (int)(cita.FinEn - cita.InicioEn).TotalMinutes;
+            var nuevoFin = dto.InicioEn.AddMinutes(duracion);
+
+            var haySolapamiento = await _citaRepo.ExisteSolapamientoAsync(cita.EmpleadoId, dto.InicioEn, nuevoFin, cita.Id);
+            if (haySolapamiento)
+                return Conflict(new { mensaje = "El horario seleccionado ya no está disponible. Elige otro." });
+
+            var fechaOriginal = cita.InicioEn;
+            cita.InicioEn = dto.InicioEn;
+            cita.FinEn = nuevoFin;
+            cita.FechaActualizacion = DateTime.UtcNow;
+            await _citaRepo.ActualizarAsync(cita);
+
+            if (!string.IsNullOrWhiteSpace(emailCliente))
+                _ = Task.Run(() => _email.EnviarReagendarCitaAsync(cita, emailCliente, cita.Cliente!.NombreCompleto, fechaOriginal));
+
+            return Ok(new { mensaje = "¡Cita reagendada exitosamente!" });
         }
 
         // GET api/publico/mis-citas?slug=...&email=...&telefono=...&pagina=1&tamano=10
@@ -644,6 +719,37 @@ namespace AppointVaAPI.Controllers.V1
             return Ok(new { mensaje = "¡Gracias por tu reseña!" });
         }
 
+        // GET api/publico/cliente?email=xxx&slug=yyy — pre-relleno de datos para cliente recurrente
+        [HttpGet("cliente")]
+        [EnableRateLimiting("PublicoGeneral")]
+        public async Task<IActionResult> BuscarClienteDatos([FromQuery] string email, [FromQuery] string slug)
+        {
+            if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(slug))
+                return BadRequest();
+
+            var negocio = await _db.Negocios
+                .AsNoTracking()
+                .FirstOrDefaultAsync(n => n.Slug == slug && n.Activo == 1);
+            if (negocio is null)
+                return NotFound();
+
+            var emailNorm = email.Trim().ToLower();
+            var cliente = await _db.Clientes
+                .AsNoTracking()
+                .Where(c => c.NegocioId == negocio.Id && c.Email == emailNorm)
+                .FirstOrDefaultAsync();
+
+            if (cliente is null)
+                return NotFound(new { mensaje = "No encontramos citas con ese correo." });
+
+            return Ok(new
+            {
+                nombreCliente = cliente.NombreCompleto,
+                telefonoCliente = cliente.Telefono,
+                emailCliente = cliente.Email,
+            });
+        }
+
         // POST api/publico/reenviar-verificacion
         [HttpPost("reenviar-verificacion")]
         [EnableRateLimiting("PublicoEstricto")]
@@ -691,6 +797,39 @@ namespace AppointVaAPI.Controllers.V1
         {
             var bytes = RandomNumberGenerator.GetBytes(4);
             return Convert.ToHexString(bytes).ToUpper();
+        }
+
+        // POST api/publico/lista-espera — cliente se une a la lista
+        [HttpPost("lista-espera")]
+        [EnableRateLimiting("PublicoEstricto")]
+        public async Task<IActionResult> UnirseListaEspera([FromBody] UnirseListaEsperaDto dto)
+        {
+            if (string.IsNullOrWhiteSpace(dto.Slug))
+                return BadRequest(new { mensaje = "Slug requerido" });
+
+            var negocio = await _db.Negocios
+                .AsNoTracking()
+                .FirstOrDefaultAsync(n => n.Slug == dto.Slug && n.Activo == 1);
+            if (negocio is null)
+                return NotFound(new { mensaje = "Negocio no encontrado" });
+
+            var entrada = new ListaEspera
+            {
+                Id = Guid.NewGuid(),
+                NegocioId = negocio.Id,
+                ServicioId = dto.ServicioId,
+                EmpleadoId = dto.EmpleadoId,
+                NombreCliente = dto.NombreCliente.Trim(),
+                TelefonoCliente = dto.TelefonoCliente.Trim(),
+                EmailCliente = dto.EmailCliente?.Trim().ToLower(),
+                FechaPreferida = dto.FechaPreferida,
+                Estado = "Esperando",
+                FechaCreacion = DateTime.UtcNow,
+            };
+
+            _db.ListaEspera.Add(entrada);
+            await _db.SaveChangesAsync();
+            return Ok(new { mensaje = "Te has unido a la lista de espera", id = entrada.Id });
         }
 
         internal static string ObtenerEstadoTexto(byte estado) => estado switch

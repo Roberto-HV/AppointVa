@@ -11,6 +11,8 @@
         public string? ColorPrimario { get; set; }
         public string? ColorSecundario { get; set; }
         public string? Telefono { get; set; }
+        public int HorasCancelacion { get; set; }
+        public bool AutoConfirmar { get; set; }
         public List<ServicioPublicoDto> Servicios { get; set; } = new();
         public List<EmpleadoPublicoDto> Empleados { get; set; } = new();
         public List<ImagenGaleriaDto> Galeria { get; set; } = new();

@@ -70,8 +70,72 @@ const schema = z.object({
   zonaHoraria: z.string().optional(),
   horasRecordatorio: z.coerce.number().optional(),
   horasCancelacion: z.coerce.number().optional(),
+  autoConfirmar: z.boolean().optional(),
 });
 type PerfilForm = z.infer<typeof schema>;
+
+function WidgetEmbebido({ bookingUrl }: { bookingUrl: string }) {
+  const [copiado, setCopiado] = useState(false);
+  const [vista, setVista] = useState<"iframe" | "boton">("iframe");
+
+  const codigoIframe = `<iframe
+  src="${bookingUrl}"
+  width="100%"
+  height="680"
+  frameborder="0"
+  style="border-radius:12px;border:1px solid #e5e7eb;"
+></iframe>`;
+
+  const codigoBoton = `<a
+  href="${bookingUrl}"
+  target="_blank"
+  style="display:inline-block;background:#C8A961;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;"
+>
+  Reservar cita
+</a>`;
+
+  const codigo = vista === "iframe" ? codigoIframe : codigoBoton;
+
+  const copiar = () => {
+    navigator.clipboard.writeText(codigo);
+    setCopiado(true);
+    setTimeout(() => setCopiado(false), 2000);
+  };
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-100 p-5 mb-6">
+      <h2 className="text-sm font-semibold text-gray-700 mb-1">Widget para tu sitio web</h2>
+      <p className="text-xs text-gray-400 mb-4">
+        Pega este código en tu sitio web para que tus clientes reserven directamente desde él.
+      </p>
+      <div className="flex gap-2 mb-3">
+        {(["iframe", "boton"] as const).map((v) => (
+          <button
+            key={v}
+            onClick={() => setVista(v)}
+            className={`px-3 py-1.5 text-xs rounded-full border transition font-medium ${
+              vista === v ? "bg-primary text-white border-primary" : "border-gray-200 text-gray-600 hover:bg-gray-50"
+            }`}
+          >
+            {v === "iframe" ? "Formulario embebido" : "Botón de reserva"}
+          </button>
+        ))}
+      </div>
+      <div className="relative">
+        <pre className="bg-gray-900 text-green-400 text-xs rounded-xl p-4 overflow-x-auto leading-relaxed font-mono">
+          {codigo}
+        </pre>
+        <button
+          onClick={copiar}
+          className="absolute top-3 right-3 flex items-center gap-1 px-2.5 py-1 bg-gray-700 hover:bg-gray-600 text-white text-xs rounded-lg transition"
+        >
+          {copiado ? <Check size={12} /> : <Copy size={12} />}
+          {copiado ? "¡Copiado!" : "Copiar"}
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default function PerfilPage() {
   const qc = useQueryClient();
@@ -84,7 +148,7 @@ export default function PerfilPage() {
     queryFn: negociosApi.obtenerPerfil,
   });
 
-  const { register, handleSubmit, reset, watch, formState: { errors, isSubmitting, isDirty } } = useForm<PerfilForm>({
+  const { register, handleSubmit, reset, watch, setValue, formState: { errors, isSubmitting, isDirty } } = useForm<PerfilForm>({
     resolver: zodResolver(schema) as Resolver<PerfilForm>,
   });
 
@@ -96,6 +160,7 @@ export default function PerfilPage() {
         descripcion: negocio.descripcion ?? "", zonaHoraria: negocio.zonaHoraria ?? "",
         horasRecordatorio: negocio.horasRecordatorio ?? 24,
         horasCancelacion: negocio.horasCancelacion ?? 0,
+        autoConfirmar: negocio.autoConfirmar ?? true,
       });
     }
   }, [negocio, reset]);
@@ -311,6 +376,11 @@ export default function PerfilPage() {
         </div>
       )}
 
+      {/* Widget embebido */}
+      {negocio && (
+        <WidgetEmbebido bookingUrl={`${window.location.origin}/b/${negocio.slug}`} />
+      )}
+
       {/* Imágenes */}
       <div className="bg-white rounded-xl border border-gray-100 p-5 mb-6">
         <h2 className="text-sm font-semibold text-gray-700 mb-4">Imágenes</h2>
@@ -416,6 +486,28 @@ export default function PerfilPage() {
               ))}
             </Select>
             <p className="text-xs text-gray-400 mt-1">Tiempo mínimo de anticipación para cancelar una cita.</p>
+          </div>
+
+          <div className="sm:col-span-2 lg:col-span-3">
+            <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-700">Confirmación automática de citas</p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  Activado: las reservas quedan confirmadas de inmediato.<br />
+                  Desactivado: quedan pendientes y debes confirmarlas manualmente.
+                </p>
+              </div>
+              <div
+                onClick={() => setValue("autoConfirmar", !(watch("autoConfirmar") ?? true), { shouldDirty: true })}
+                className={`shrink-0 w-11 h-6 rounded-full transition relative cursor-pointer ${
+                  watch("autoConfirmar") ?? true ? "bg-primary" : "bg-gray-300"
+                }`}
+              >
+                <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${
+                  watch("autoConfirmar") ?? true ? "left-6" : "left-1"
+                }`} />
+              </div>
+            </div>
           </div>
 
           {negocio?.planNombre && (

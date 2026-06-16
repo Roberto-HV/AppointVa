@@ -2,13 +2,15 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { publicoApi } from "../../api/publico";
+import { intakePublicoApi, type CampoIntake } from "../../api/intake";
+import { descuentosPublicoApi, type DescuentoValidado } from "../../api/descuentos";
 import type { ServicioPublico, EmpleadoPublico, SlotDisponible, ImagenGaleria, ResenaPublica } from "../../types";
 import IndicadorPasos from "../../components/booking/IndicadorPasos";
 import PasoServicio from "../../components/booking/PasoServicio";
 import PasoEmpleado, { SIN_PREFERENCIA_ID } from "../../components/booking/PasoEmpleado";
 import PasoFechaHora from "../../components/booking/PasoFechaHora";
 import PasoDatosCliente, { type DatosClienteForm } from "../../components/booking/PasoDatosCliente";
-import { Star, X } from "lucide-react";
+import { Star, X, UserCircle, UserCheck, Tag, AlertCircle } from "lucide-react";
 
 function GaleriaSection({ imagenes }: { imagenes: ImagenGaleria[] }) {
   const [lightbox, setLightbox] = useState<string | null>(null);
@@ -80,6 +82,93 @@ function ResenasSection({ resenas, promedio, total }: { resenas: ResenaPublica[]
 
 const PASOS = ["Servicio", "Profesional", "Fecha y hora", "Tus datos"];
 
+function IntakeCampoInput({
+  campo,
+  valor,
+  onChange,
+}: {
+  campo: CampoIntake;
+  valor: string;
+  onChange: (v: string) => void;
+}) {
+  const label = (
+    <label className="block text-sm font-medium text-gray-700 mb-1">
+      {campo.etiqueta}
+      {campo.requerido && <span className="text-red-500 ml-1">*</span>}
+    </label>
+  );
+
+  if (campo.tipo === "Checkbox") {
+    return (
+      <div>
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={valor === "true"}
+            onChange={(e) => onChange(e.target.checked ? "true" : "false")}
+            className="accent-primary w-4 h-4"
+          />
+          <span className="text-sm text-gray-700">
+            {campo.etiqueta}
+            {campo.requerido && <span className="text-red-500 ml-1">*</span>}
+          </span>
+        </label>
+      </div>
+    );
+  }
+
+  if (campo.tipo === "Seleccion") {
+    let opciones: string[] = [];
+    try {
+      const raw = campo.opciones ?? "";
+      opciones = raw.includes("[")
+        ? JSON.parse(raw)
+        : raw.split(",").map((o) => o.trim()).filter(Boolean);
+    } catch { /* keep empty */ }
+    return (
+      <div>
+        {label}
+        <select
+          value={valor}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+        >
+          <option value="">Selecciona una opción</option>
+          {opciones.map((op) => (
+            <option key={op} value={op}>{op}</option>
+          ))}
+        </select>
+      </div>
+    );
+  }
+
+  if (campo.tipo === "MultilineTexto") {
+    return (
+      <div>
+        {label}
+        <textarea
+          value={valor}
+          onChange={(e) => onChange(e.target.value)}
+          rows={3}
+          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition resize-none"
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {label}
+      <input
+        type="text"
+        value={valor}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+      />
+    </div>
+  );
+}
+
 export default function BookingPage() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
@@ -91,20 +180,95 @@ export default function BookingPage() {
   const [enviando, setEnviando] = useState(false);
   const [errorEnvio, setErrorEnvio] = useState("");
 
+  // Sub-flujo paso 4: elegir → buscar | listo
+  const [modoCliente, setModoCliente] = useState<"elegir" | "buscar" | "listo">("elegir");
+  const [emailBusqueda, setEmailBusqueda] = useState("");
+  const [buscandoCliente, setBuscandoCliente] = useState(false);
+  const [errorBusqueda, setErrorBusqueda] = useState("");
+  const [datosPreRellenos, setDatosPreRellenos] = useState<Partial<DatosClienteForm> | null>(null);
+
+  // Intake sub-step (between paso 3 and paso 4)
+  const [mostrarIntake, setMostrarIntake] = useState(false);
+  const [respuestasIntake, setRespuestasIntake] = useState<Record<string, string>>({});
+
+  // Promo code
+  const [mostrarCupon, setMostrarCupon] = useState(false);
+  const [codigoInput, setCodigoInput] = useState("");
+  const [descuentoAplicado, setDescuentoAplicado] = useState<DescuentoValidado | null>(null);
+  const [validandoCupon, setValidandoCupon] = useState(false);
+  const [errorCupon, setErrorCupon] = useState("");
+
   const { data: negocio, isLoading, isError } = useQuery({
     queryKey: ["negocio", slug],
     queryFn: () => publicoApi.obtenerNegocio(slug!),
     enabled: !!slug,
   });
 
-  const irSiguiente = () => setPaso((p) => Math.min(p + 1, 4));
+  const { data: camposIntake = [] } = useQuery<CampoIntake[]>({
+    queryKey: ["intake-publico", slug, servicio?.id],
+    queryFn: () => intakePublicoApi.getCampos(slug!, servicio?.id),
+    enabled: !!slug && !!servicio,
+  });
+
+  const irSiguiente = () => {
+    if (paso === 3 && slot && camposIntake.length > 0 && !mostrarIntake) {
+      setMostrarIntake(true);
+      return;
+    }
+    setMostrarIntake(false);
+    setPaso((p) => Math.min(p + 1, 4));
+    setModoCliente("elegir");
+  };
+
   const irAtras = () => {
+    if (mostrarIntake) {
+      setMostrarIntake(false);
+      return;
+    }
+    if (paso === 4 && modoCliente !== "elegir") {
+      if (modoCliente === "listo") { setDatosPreRellenos(null); setEmailBusqueda(""); }
+      setModoCliente("elegir");
+      setErrorBusqueda("");
+      return;
+    }
     setPaso((p) => p - 1);
+    if (paso === 4) { setModoCliente("elegir"); setDatosPreRellenos(null); setEmailBusqueda(""); }
     if (paso === 3) setSlot(null);
     if (paso === 2) setEmpleado(null);
   };
 
+  const buscarCliente = async () => {
+    if (!emailBusqueda || !slug) return;
+    setBuscandoCliente(true);
+    setErrorBusqueda("");
+    try {
+      const datos = await publicoApi.buscarClienteDatos(emailBusqueda, slug);
+      setDatosPreRellenos(datos);
+      setModoCliente("listo");
+    } catch {
+      setErrorBusqueda("No encontramos citas con ese correo. Puedes continuar como invitado.");
+    } finally {
+      setBuscandoCliente(false);
+    }
+  };
+
   const sinPreferencia = empleado?.id === SIN_PREFERENCIA_ID;
+
+  const validarCupon = async () => {
+    if (!codigoInput.trim() || !slug) return;
+    setValidandoCupon(true);
+    setErrorCupon("");
+    try {
+      const descuento = await descuentosPublicoApi.validar(codigoInput.trim(), slug);
+      setDescuentoAplicado(descuento);
+      setMostrarCupon(false);
+      setCodigoInput("");
+    } catch {
+      setErrorCupon("Código inválido, expirado o agotado.");
+    } finally {
+      setValidandoCupon(false);
+    }
+  };
 
   const confirmarCita = async (datos: DatosClienteForm) => {
     if (!negocio || !servicio || !empleado || !slot) return;
@@ -121,7 +285,19 @@ export default function BookingPage() {
         telefonoCliente: datos.telefonoCliente,
         emailCliente: datos.emailCliente || undefined,
         notas: datos.notas || undefined,
+        codigoDescuento: descuentoAplicado?.codigo,
       });
+      if (Object.keys(respuestasIntake).length > 0) {
+        const resps = Object.entries(respuestasIntake).map(([campoIntakeId, valor]) => ({
+          campoIntakeId,
+          valor,
+        }));
+        try {
+          await intakePublicoApi.guardarRespuestas(cita.id, resps);
+        } catch {
+          // intake save failure is non-blocking
+        }
+      }
       navigate(`/b/${slug}/confirmacion/${cita.codigoConfirmacion}`);
     } catch (err: unknown) {
       const status = (err as { response?: { status?: number } })?.response?.status;
@@ -315,6 +491,18 @@ export default function BookingPage() {
               seleccionado={slot}
               onSeleccionar={setSlot}
             />
+            {slot && (negocio.horasCancelacion ?? 0) > 0 && (
+              <div className="mt-4 flex items-center gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+                <AlertCircle size={13} className="shrink-0" />
+                <span>
+                  Cancelación gratuita hasta{" "}
+                  <strong>
+                    {negocio.horasCancelacion} hora{negocio.horasCancelacion !== 1 ? "s" : ""}
+                  </strong>{" "}
+                  antes de la cita.
+                </span>
+              </div>
+            )}
             <div className="mt-6 flex gap-3">
               <button onClick={irAtras} className="flex-1 py-3 rounded-xl border-2 border-gray-200 text-sm font-medium text-gray-600 hover:border-gray-300 transition">
                 Atrás
@@ -330,14 +518,209 @@ export default function BookingPage() {
           </>
         )}
 
-        {/* Paso 4 */}
-        {paso === 4 && servicio && empleado && slot && (
+        {/* Paso 3 — Intake (sub-paso entre hora y datos) */}
+        {paso === 3 && mostrarIntake && camposIntake.length > 0 && (
           <>
+            <div className="mb-5">
+              <h2 className="text-lg font-semibold text-gray-800">Antes de continuar…</h2>
+              <p className="text-sm text-gray-400 mt-1">
+                Por favor responde estas preguntas adicionales para tu cita.
+              </p>
+            </div>
+            <div className="space-y-4">
+              {camposIntake.map((campo) => (
+                <IntakeCampoInput
+                  key={campo.id}
+                  campo={campo}
+                  valor={respuestasIntake[campo.id] ?? ""}
+                  onChange={(v) =>
+                    setRespuestasIntake((prev) => ({ ...prev, [campo.id]: v }))
+                  }
+                />
+              ))}
+            </div>
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={irAtras}
+                className="flex-1 py-3 rounded-xl border-2 border-gray-200 text-sm font-medium text-gray-600 hover:border-gray-300 transition"
+              >
+                Atrás
+              </button>
+              <button
+                onClick={irSiguiente}
+                disabled={camposIntake
+                  .filter((c) => c.requerido)
+                  .some((c) => !respuestasIntake[c.id]?.trim())}
+                className="flex-1 bg-primary hover:bg-primary-dark disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition"
+              >
+                Continuar
+              </button>
+            </div>
+          </>
+        )}
+
+        {/* Paso 4 — elegir modo */}
+        {paso === 4 && modoCliente === "elegir" && (
+          <div>
+            <h2 className="text-lg font-semibold text-gray-800 mb-1">¿Ya has reservado antes?</h2>
+            <p className="text-sm text-gray-400 mb-6">Busca tus datos para no volver a escribirlos, o continúa como nuevo cliente.</p>
+            <div className="space-y-3">
+              <button
+                onClick={() => setModoCliente("buscar")}
+                className="w-full flex items-center gap-4 bg-white border-2 border-gray-100 hover:border-primary/40 rounded-xl p-4 text-left transition group"
+              >
+                <div className="w-10 h-10 rounded-full bg-primary/10 group-hover:bg-primary/20 flex items-center justify-center shrink-0 transition">
+                  <UserCircle size={20} className="text-primary" />
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-800 text-sm">Soy cliente recurrente</p>
+                  <p className="text-xs text-gray-400 mt-0.5">Busca tus datos con tu correo</p>
+                </div>
+              </button>
+              <button
+                onClick={() => setModoCliente("listo")}
+                className="w-full flex items-center gap-4 bg-gray-900 hover:bg-gray-700 rounded-xl p-4 text-left transition"
+              >
+                <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center shrink-0">
+                  <UserCheck size={20} className="text-white" />
+                </div>
+                <div>
+                  <p className="font-semibold text-white text-sm">Continuar como invitado</p>
+                  <p className="text-xs text-white/50 mt-0.5">Ingresa tus datos manualmente</p>
+                </div>
+              </button>
+            </div>
+            <button onClick={irAtras} className="mt-5 w-full py-2.5 text-sm text-gray-500 hover:text-gray-700 transition">
+              ← Atrás
+            </button>
+          </div>
+        )}
+
+        {/* Paso 4 — buscar datos */}
+        {paso === 4 && modoCliente === "buscar" && (
+          <div>
+            <h2 className="text-lg font-semibold text-gray-800 mb-1">Buscar mis datos</h2>
+            <p className="text-sm text-gray-400 mb-5">Ingresa el correo con el que reservaste anteriormente.</p>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Correo electrónico</label>
+              <input
+                type="email"
+                value={emailBusqueda}
+                onChange={(e) => { setEmailBusqueda(e.target.value); setErrorBusqueda(""); }}
+                onKeyDown={(e) => e.key === "Enter" && buscarCliente()}
+                placeholder="correo@ejemplo.com"
+                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+              />
+              {errorBusqueda && <p className="text-red-500 text-xs mt-1.5">{errorBusqueda}</p>}
+            </div>
+            <button
+              onClick={buscarCliente}
+              disabled={buscandoCliente || !emailBusqueda.includes("@")}
+              className="mt-4 w-full bg-primary hover:bg-primary-dark disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition"
+            >
+              {buscandoCliente ? "Buscando..." : "Buscar"}
+            </button>
+            <button onClick={irAtras} className="mt-3 w-full py-2.5 text-sm text-gray-500 hover:text-gray-700 transition">
+              ← Atrás
+            </button>
+          </div>
+        )}
+
+        {/* Paso 4 — formulario (invitado o datos pre-rellenos) */}
+        {paso === 4 && modoCliente === "listo" && servicio && empleado && slot && (
+          <>
+            {datosPreRellenos && (
+              <div className="mb-4 flex items-center gap-3 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+                <svg className="w-5 h-5 text-green-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p className="text-sm text-green-700 font-medium">¡Datos encontrados! Verifica que sean correctos.</p>
+              </div>
+            )}
+            {/* Código de descuento */}
+            <div className="mb-4">
+              {descuentoAplicado ? (
+                <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Tag size={15} className="text-green-500 shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-green-700">
+                        Código <span className="font-mono">{descuentoAplicado.codigo}</span> aplicado
+                      </p>
+                      <p className="text-xs text-green-600">
+                        {descuentoAplicado.tipo === "Porcentaje"
+                          ? `${descuentoAplicado.valor}% de descuento`
+                          : `$${descuentoAplicado.valor} de descuento`}
+                        {servicio && (
+                          <span>
+                            {" — precio final: $"}
+                            {descuentoAplicado.tipo === "Porcentaje"
+                              ? (servicio.precio * (1 - descuentoAplicado.valor / 100)).toFixed(2)
+                              : Math.max(0, servicio.precio - descuentoAplicado.valor).toFixed(2)}
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setDescuentoAplicado(null)}
+                    className="text-green-500 hover:text-green-700 ml-3 shrink-0"
+                  >
+                    <X size={15} />
+                  </button>
+                </div>
+              ) : mostrarCupon ? (
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={codigoInput}
+                      onChange={(e) => { setCodigoInput(e.target.value.toUpperCase()); setErrorCupon(""); }}
+                      onKeyDown={(e) => e.key === "Enter" && validarCupon()}
+                      placeholder="PROMO20"
+                      maxLength={50}
+                      className="flex-1 px-3 py-2 rounded-lg border border-gray-300 text-sm font-mono uppercase focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                    />
+                    <button
+                      onClick={validarCupon}
+                      disabled={validandoCupon || !codigoInput.trim()}
+                      className="px-4 py-2 bg-primary text-white text-sm font-semibold rounded-lg disabled:opacity-50 hover:opacity-90 transition"
+                    >
+                      {validandoCupon ? "..." : "Aplicar"}
+                    </button>
+                  </div>
+                  {errorCupon && <p className="text-red-500 text-xs">{errorCupon}</p>}
+                  <button
+                    onClick={() => { setMostrarCupon(false); setCodigoInput(""); setErrorCupon(""); }}
+                    className="text-xs text-gray-400 hover:text-gray-600 transition"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setMostrarCupon(true)}
+                  className="text-sm text-primary font-medium hover:underline"
+                >
+                  ¿Tienes un código de descuento?
+                </button>
+              )}
+            </div>
+
+            {/* Confirmación pendiente */}
+            {negocio && !negocio.autoConfirmar && (
+              <div className="mb-4 flex items-center gap-2 text-xs text-blue-700 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2">
+                <AlertCircle size={13} className="shrink-0" />
+                <span>Tu cita quedará <strong>pendiente de confirmación</strong> por el negocio.</span>
+              </div>
+            )}
+
             <PasoDatosCliente
               servicio={servicio}
               empleado={empleado}
               slot={slot}
               enviando={enviando}
+              datosIniciales={datosPreRellenos ?? undefined}
               onEnviar={confirmarCita}
             />
             {errorEnvio && (
