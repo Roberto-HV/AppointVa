@@ -62,6 +62,7 @@ namespace AppointVaAPI.Controllers.V1
                 Nombre = dto.Nombre,
                 Descripcion = dto.Descripcion,
                 DuracionMinutos = dto.DuracionMinutos,
+                BufferMinutos = dto.BufferMinutos,
                 Precio = dto.Precio,
                 Orden = dto.Orden,
                 Activo = 1,
@@ -86,6 +87,7 @@ namespace AppointVaAPI.Controllers.V1
             servicio.Nombre = dto.Nombre;
             servicio.Descripcion = dto.Descripcion;
             servicio.DuracionMinutos = dto.DuracionMinutos;
+            servicio.BufferMinutos = dto.BufferMinutos;
             servicio.Precio = dto.Precio;
             servicio.Orden = dto.Orden;
             servicio.Activo = dto.Activo ? 1 : 0;
@@ -143,6 +145,7 @@ namespace AppointVaAPI.Controllers.V1
             Nombre = s.Nombre,
             Descripcion = s.Descripcion,
             DuracionMinutos = s.DuracionMinutos,
+            BufferMinutos = s.BufferMinutos,
             Precio = s.Precio,
             ImagenUrl = s.ImagenUrl,
             Orden = s.Orden,

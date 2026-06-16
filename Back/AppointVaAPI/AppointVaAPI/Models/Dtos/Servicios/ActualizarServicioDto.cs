@@ -17,6 +17,9 @@ namespace AppointVaAPI.Models.Dtos.Servicios
         [Range(5, 480, ErrorMessage = "La duración debe ser entre 5 y 480 minutos")]
         public int DuracionMinutos { get; set; }
 
+        [Range(0, 120, ErrorMessage = "El buffer debe ser entre 0 y 120 minutos")]
+        public int BufferMinutos { get; set; }
+
         [Required]
         [Range(0, 9999999)]
         public decimal Precio { get; set; }

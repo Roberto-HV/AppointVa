@@ -1,6 +1,18 @@
 import { api } from "./axios";
 import type { NegocioPublico, SlotDisponible, ConfirmacionCita } from "../types";
 
+export interface ResenaTokenInfo {
+  negocioNombre: string;
+  servicio: string;
+  empleado: string;
+  fecha?: string;
+}
+
+export interface EnviarResenaDto {
+  rating: number;
+  comentario?: string;
+}
+
 export interface CrearCitaDto {
   negocioSlug: string;
   servicioId: string;
@@ -41,5 +53,15 @@ export const publicoApi = {
 
   cancelarCita: async (codigo: string): Promise<void> => {
     await api.delete(`/publico/citas/${codigo}`);
+  },
+
+  obtenerTokenResena: async (token: string): Promise<ResenaTokenInfo> => {
+    const { data } = await api.get(`/publico/resenas/${token}`);
+    return data;
+  },
+
+  enviarResena: async (token: string, dto: EnviarResenaDto): Promise<{ mensaje: string }> => {
+    const { data } = await api.post(`/publico/resenas/${token}`, dto);
+    return data;
   },
 };

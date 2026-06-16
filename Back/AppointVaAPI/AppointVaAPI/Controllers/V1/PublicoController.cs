@@ -83,6 +83,19 @@ namespace AppointVaAPI.Controllers.V1
                 .AsNoTracking()
                 .ToListAsync();
 
+            var galeria = await _db.ImagenesNegocios
+                .Where(i => i.NegocioId == negocio.Id)
+                .OrderBy(i => i.Orden)
+                .AsNoTracking()
+                .ToListAsync();
+
+            var resenas = await _db.Resenas
+                .Where(r => r.NegocioId == negocio.Id && r.Aprobada && r.Respondida)
+                .OrderByDescending(r => r.FechaCreacion)
+                .Take(20)
+                .AsNoTracking()
+                .ToListAsync();
+
             var dto = new NegocioPublicoDto
             {
                 Id = negocio.Id,
@@ -102,6 +115,7 @@ namespace AppointVaAPI.Controllers.V1
                     Nombre = s.Nombre,
                     Descripcion = s.Descripcion,
                     DuracionMinutos = s.DuracionMinutos,
+                    BufferMinutos = s.BufferMinutos,
                     Precio = s.Precio,
                     ImagenUrl = s.ImagenUrl,
                     Orden = s.Orden
@@ -113,7 +127,23 @@ namespace AppointVaAPI.Controllers.V1
                     FotoUrl = e.FotoUrl,
                     Biografia = e.Biografia,
                     ServicioIds = e.ServicioIds
-                }).ToList()
+                }).ToList(),
+                Galeria = galeria.Select(i => new ImagenGaleriaDto
+                {
+                    Id = i.Id,
+                    Url = i.Url,
+                    Descripcion = i.Descripcion,
+                    Orden = i.Orden
+                }).ToList(),
+                Resenas = resenas.Select(r => new ResenaPublicaDto
+                {
+                    Rating = r.Rating,
+                    Comentario = r.Comentario,
+                    NombreCliente = r.NombreCliente,
+                    FechaCreacion = r.FechaCreacion
+                }).ToList(),
+                PromedioResenas = resenas.Count > 0 ? resenas.Average(r => r.Rating) : 0,
+                TotalResenas = resenas.Count
             };
 
             return Ok(dto);
@@ -557,6 +587,61 @@ namespace AppointVaAPI.Controllers.V1
                 return BadRequest(new { mensaje = "El enlace de verificación es inválido o ha expirado." });
 
             return Ok(new { mensaje = "¡Correo verificado! Ya puedes iniciar sesión." });
+        }
+
+        // GET api/publico/resenas/{token} — verifica token y devuelve info de la cita
+        [HttpGet("resenas/{token}")]
+        [EnableRateLimiting("PublicoGeneral")]
+        public async Task<IActionResult> ObtenerTokenResena(string token)
+        {
+            var resena = await _db.Resenas
+                .Include(r => r.Cita).ThenInclude(c => c!.Servicio)
+                .Include(r => r.Cita).ThenInclude(c => c!.Empleado)
+                .Include(r => r.Negocio)
+                .FirstOrDefaultAsync(r => r.Token == token);
+
+            if (resena is null)
+                return NotFound(new { mensaje = "Enlace no válido" });
+
+            if (resena.Respondida)
+                return BadRequest(new { mensaje = "Esta reseña ya fue enviada. ¡Gracias por tu opinión!" });
+
+            if (resena.FechaExpiracion.HasValue && resena.FechaExpiracion < DateTime.UtcNow)
+                return BadRequest(new { mensaje = "Este enlace ha expirado." });
+
+            return Ok(new
+            {
+                negocioNombre = resena.Negocio?.Nombre ?? string.Empty,
+                servicio = resena.Cita?.Servicio?.Nombre ?? string.Empty,
+                empleado = resena.Cita?.Empleado?.Nombre ?? string.Empty,
+                fecha = resena.Cita?.InicioEn
+            });
+        }
+
+        // POST api/publico/resenas/{token} — enviar reseña
+        [HttpPost("resenas/{token}")]
+        [EnableRateLimiting("PublicoEstricto")]
+        public async Task<IActionResult> EnviarResena(string token, [FromBody] EnviarResenaDto dto)
+        {
+            if (dto.Rating < 1 || dto.Rating > 5)
+                return BadRequest(new { mensaje = "El rating debe ser entre 1 y 5" });
+
+            var resena = await _db.Resenas.FirstOrDefaultAsync(r => r.Token == token);
+            if (resena is null)
+                return NotFound(new { mensaje = "Enlace no válido" });
+
+            if (resena.Respondida)
+                return BadRequest(new { mensaje = "Esta reseña ya fue enviada." });
+
+            if (resena.FechaExpiracion.HasValue && resena.FechaExpiracion < DateTime.UtcNow)
+                return BadRequest(new { mensaje = "Este enlace ha expirado." });
+
+            resena.Rating = dto.Rating;
+            resena.Comentario = dto.Comentario?.Trim();
+            resena.Respondida = true;
+            await _db.SaveChangesAsync();
+
+            return Ok(new { mensaje = "¡Gracias por tu reseña!" });
         }
 
         // POST api/publico/reenviar-verificacion

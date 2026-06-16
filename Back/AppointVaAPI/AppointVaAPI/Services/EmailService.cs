@@ -81,6 +81,13 @@ namespace AppointVaAPI.Services
             await EnviarAsync(emailDestino, asunto, PlantillaVerificacion(nombre, urlVerificacion));
         }
 
+        public async Task EnviarSolicitudResenaAsync(Cita cita, string emailDestino, string nombreCliente, string urlResena)
+        {
+            if (!EstaHabilitado()) return;
+            var asunto = $"¿Cómo fue tu experiencia en {cita.Negocio?.Nombre ?? "el negocio"}?";
+            await EnviarAsync(emailDestino, asunto, PlantillaSolicitudResena(cita, nombreCliente, urlResena));
+        }
+
         public async Task EnviarRecuperacionContrasenaAsync(string emailDestino, string nombre, string urlReset)
         {
             if (!EstaHabilitado()) return;
@@ -461,6 +468,31 @@ namespace AppointVaAPI.Services
                     </div>
                     """ : "")}
                     <p style="font-size:13px;color:#6b7280;">Si no puedes asistir, cancela con anticipación usando tu código: <strong>{cita.CodigoConfirmacion}</strong></p>
+                  </div>
+                </body>
+                </html>
+                """;
+        }
+
+        private static string PlantillaSolicitudResena(Cita cita, string nombreCliente, string urlResena)
+        {
+            var negocio = cita.Negocio?.Nombre ?? "el negocio";
+            var servicio = cita.Servicio?.Nombre ?? "el servicio";
+            return $"""
+                <!DOCTYPE html>
+                <html lang="es">
+                <body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#333;">
+                  <div style="background:#1a1a1a;padding:24px;border-radius:8px 8px 0 0;text-align:center;">
+                    <h1 style="color:#C8A961;margin:0;font-size:22px;">¿Cómo fue tu experiencia?</h1>
+                  </div>
+                  <div style="background:#f9f9f9;padding:24px;border-radius:0 0 8px 8px;border:1px solid #e5e7eb;">
+                    <p>Hola <strong>{nombreCliente}</strong>,</p>
+                    <p>Gracias por visitar <strong>{negocio}</strong>. Esperamos que tu servicio de <strong>{servicio}</strong> haya sido excelente.</p>
+                    <p>Tu opinión nos ayuda a mejorar. ¿Nos dejas una reseña? Solo te tomará un minuto.</p>
+                    <div style="text-align:center;margin:28px 0;">
+                      <a href="{urlResena}" style="display:inline-block;background:#C8A961;color:#1a1a1a;text-decoration:none;padding:14px 32px;border-radius:8px;font-size:15px;font-weight:700;">⭐ Dejar mi reseña</a>
+                    </div>
+                    <p style="font-size:12px;color:#9ca3af;text-align:center;">Este enlace es válido por 7 días. Si ya dejaste tu reseña, ignora este mensaje.</p>
                   </div>
                 </body>
                 </html>

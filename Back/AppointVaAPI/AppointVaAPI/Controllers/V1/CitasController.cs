@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using System.Data;
+using System.Security.Cryptography;
 
 namespace AppointVaAPI.Controllers.V1
 {
@@ -26,6 +27,7 @@ namespace AppointVaAPI.Controllers.V1
         private readonly ApplicationDbContext _db;
         private readonly IEmailService _email;
         private readonly IBackgroundJobClient _jobClient;
+        private readonly IConfiguration _config;
 
         public CitasController(
             ICitaRepository citaRepo,
@@ -34,7 +36,8 @@ namespace AppointVaAPI.Controllers.V1
             IContextoNegocio contexto,
             ApplicationDbContext db,
             IEmailService email,
-            IBackgroundJobClient jobClient)
+            IBackgroundJobClient jobClient,
+            IConfiguration config)
         {
             _citaRepo = citaRepo;
             _clienteRepo = clienteRepo;
@@ -43,6 +46,7 @@ namespace AppointVaAPI.Controllers.V1
             _db = db;
             _email = email;
             _jobClient = jobClient;
+            _config = config;
         }
 
         // GET api/citas?desde=...&hasta=...&empleadoId=...&pagina=1&tamano=100
@@ -241,6 +245,29 @@ namespace AppointVaAPI.Controllers.V1
             {
                 if (dto.NuevoEstado == EstadosCitas.Cancelada)
                     _ = Task.Run(() => _email.EnviarCancelacionCitaAsync(cita, emailDestino, cita.Cliente!.NombreCompleto));
+
+                if (dto.NuevoEstado == EstadosCitas.Completada && estadoAnterior != EstadosCitas.Completada)
+                {
+                    var token = Convert.ToHexString(RandomNumberGenerator.GetBytes(16)).ToLower();
+                    var resena = new Resena
+                    {
+                        Id = Guid.NewGuid(),
+                        NegocioId = cita.NegocioId,
+                        CitaId = cita.Id,
+                        NombreCliente = cita.Cliente!.NombreCompleto,
+                        Token = token,
+                        Respondida = false,
+                        Aprobada = true,
+                        FechaCreacion = DateTime.UtcNow,
+                        FechaExpiracion = DateTime.UtcNow.AddDays(7)
+                    };
+                    await _db.Resenas.AddAsync(resena);
+                    await _db.SaveChangesAsync();
+
+                    var frontendUrl = _config["FrontendUrl"] ?? "http://localhost:5173";
+                    var urlResena = $"{frontendUrl}/resena/{token}";
+                    _ = Task.Run(() => _email.EnviarSolicitudResenaAsync(cita, emailDestino, cita.Cliente!.NombreCompleto, urlResena));
+                }
             }
 
             return Ok(MapearDto(cita));

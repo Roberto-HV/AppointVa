@@ -2,12 +2,81 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { publicoApi } from "../../api/publico";
-import type { ServicioPublico, EmpleadoPublico, SlotDisponible } from "../../types";
+import type { ServicioPublico, EmpleadoPublico, SlotDisponible, ImagenGaleria, ResenaPublica } from "../../types";
 import IndicadorPasos from "../../components/booking/IndicadorPasos";
 import PasoServicio from "../../components/booking/PasoServicio";
 import PasoEmpleado, { SIN_PREFERENCIA_ID } from "../../components/booking/PasoEmpleado";
 import PasoFechaHora from "../../components/booking/PasoFechaHora";
 import PasoDatosCliente, { type DatosClienteForm } from "../../components/booking/PasoDatosCliente";
+import { Star, X } from "lucide-react";
+
+function GaleriaSection({ imagenes }: { imagenes: ImagenGaleria[] }) {
+  const [lightbox, setLightbox] = useState<string | null>(null);
+  if (!imagenes.length) return null;
+  return (
+    <>
+      <div className="overflow-x-auto pb-2 -mx-4 px-4 mb-5">
+        <div className="flex gap-2" style={{ width: "max-content" }}>
+          {imagenes.map((img) => (
+            <button
+              key={img.id}
+              onClick={() => setLightbox(img.url)}
+              className="shrink-0 w-28 h-28 rounded-xl overflow-hidden border border-gray-100 hover:opacity-90 transition"
+            >
+              <img src={img.url} alt={img.descripcion ?? ""} className="w-full h-full object-cover" />
+            </button>
+          ))}
+        </div>
+      </div>
+      {lightbox && (
+        <div
+          className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
+          onClick={() => setLightbox(null)}
+        >
+          <button
+            className="absolute top-4 right-4 text-white/80 hover:text-white"
+            onClick={() => setLightbox(null)}
+          >
+            <X size={28} />
+          </button>
+          <img src={lightbox} alt="" className="max-w-full max-h-[85vh] rounded-xl object-contain" />
+        </div>
+      )}
+    </>
+  );
+}
+
+function ResenasSection({ resenas, promedio, total }: { resenas: ResenaPublica[]; promedio: number; total: number }) {
+  if (!resenas.length) return null;
+  return (
+    <div className="mt-6">
+      <div className="flex items-center gap-2 mb-3">
+        <div className="flex gap-0.5">
+          {[1,2,3,4,5].map((s) => (
+            <Star key={s} size={14} fill={promedio >= s ? "#C8A961" : "none"} stroke="#C8A961" strokeWidth={1.5} />
+          ))}
+        </div>
+        <span className="text-sm font-semibold text-gray-700">{promedio.toFixed(1)}</span>
+        <span className="text-xs text-gray-400">({total} reseñas)</span>
+      </div>
+      <div className="space-y-3">
+        {resenas.slice(0, 5).map((r, i) => (
+          <div key={i} className="bg-white rounded-xl border border-gray-100 p-4">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-sm font-medium text-gray-800">{r.nombreCliente}</span>
+              <div className="flex gap-0.5">
+                {[1,2,3,4,5].map((s) => (
+                  <Star key={s} size={11} fill={r.rating >= s ? "#C8A961" : "none"} stroke="#C8A961" strokeWidth={1.5} />
+                ))}
+              </div>
+            </div>
+            {r.comentario && <p className="text-xs text-gray-500 leading-relaxed">{r.comentario}</p>}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 const PASOS = ["Servicio", "Profesional", "Fecha y hora", "Tus datos"];
 
@@ -186,6 +255,9 @@ export default function BookingPage() {
         {/* Paso 1 */}
         {paso === 1 && (
           <>
+            {/* Galería */}
+            {negocio.galeria?.length > 0 && <GaleriaSection imagenes={negocio.galeria} />}
+
             <PasoServicio
               servicios={negocio.servicios}
               seleccionado={servicio}
@@ -198,6 +270,15 @@ export default function BookingPage() {
             >
               Continuar
             </button>
+
+            {/* Reseñas */}
+            {negocio.resenas?.length > 0 && (
+              <ResenasSection
+                resenas={negocio.resenas}
+                promedio={negocio.promedioResenas}
+                total={negocio.totalResenas}
+              />
+            )}
           </>
         )}
 

@@ -78,6 +78,7 @@ namespace AppointVaAPI.Services
                 .ToListAsync();
 
             var duracion = TimeSpan.FromMinutes(servicio.DuracionMinutos);
+            var buffer = TimeSpan.FromMinutes(servicio.BufferMinutos);
             var ahora = DateTime.Now;
             var todos = new List<SlotDisponibleDto>();
 
@@ -95,7 +96,8 @@ namespace AppointVaAPI.Services
                 while (slotInicio + duracion <= horarioFin)
                 {
                     var slotFin = slotInicio + duracion;
-                    var solapaCita = citasEmp.Any(c => c.InicioEn < slotFin && c.FinEn > slotInicio);
+                    // La cita "ocupa" desde InicioEn hasta FinEn + buffer
+                    var solapaCita = citasEmp.Any(c => c.InicioEn < slotFin && c.FinEn.Add(buffer) > slotInicio);
                     var solapaBloqueo = bloqueosEmp.Any(b => b.InicioEn < slotFin && b.FinEn > slotInicio);
 
                     if (!solapaCita && !solapaBloqueo && slotInicio > ahora)
@@ -145,6 +147,7 @@ namespace AppointVaAPI.Services
                 .ToListAsync();
 
             var duracion = TimeSpan.FromMinutes(servicio.DuracionMinutos);
+            var buffer = TimeSpan.FromMinutes(servicio.BufferMinutos);
             var ahora = DateTime.Now;
             var slots = new List<SlotDisponibleDto>();
 
@@ -154,7 +157,7 @@ namespace AppointVaAPI.Services
             while (slotInicio + duracion <= horarioFin)
             {
                 var slotFin = slotInicio + duracion;
-                var solapaCita = citasExistentes.Any(c => c.InicioEn < slotFin && c.FinEn > slotInicio);
+                var solapaCita = citasExistentes.Any(c => c.InicioEn < slotFin && c.FinEn.Add(buffer) > slotInicio);
                 var solapaBloqueo = bloqueosExistentes.Any(b => b.InicioEn < slotFin && b.FinEn > slotInicio);
 
                 if (!solapaCita && !solapaBloqueo && slotInicio > ahora)

@@ -17,6 +17,20 @@ export interface UsuarioInfo {
 }
 
 // ── Público (booking) ─────────────────────────────────────────────────────────
+export interface ImagenGaleria {
+  id: string;
+  url: string;
+  descripcion?: string;
+  orden: number;
+}
+
+export interface ResenaPublica {
+  rating: number;
+  comentario?: string;
+  nombreCliente: string;
+  fechaCreacion: string;
+}
+
 export interface NegocioPublico {
   id: string;
   slug: string;
@@ -29,6 +43,10 @@ export interface NegocioPublico {
   telefono?: string;
   servicios: ServicioPublico[];
   empleados: EmpleadoPublico[];
+  galeria: ImagenGaleria[];
+  promedioResenas: number;
+  totalResenas: number;
+  resenas: ResenaPublica[];
 }
 
 export interface ServicioPublico {
@@ -38,6 +56,7 @@ export interface ServicioPublico {
   nombre: string;
   descripcion?: string;
   duracionMinutos: number;
+  bufferMinutos: number;
   precio: number;
   imagenUrl?: string;
   orden: number;
@@ -202,6 +221,7 @@ export interface ServicioDto {
   nombre: string;
   descripcion?: string;
   duracionMinutos: number;
+  bufferMinutos: number;
   precio: number;
   imagenUrl?: string;
   orden: number;
@@ -220,6 +240,7 @@ export interface CrearServicioDto {
   nombre: string;
   descripcion?: string;
   duracionMinutos: number;
+  bufferMinutos: number;
   precio: number;
   orden: number;
 }

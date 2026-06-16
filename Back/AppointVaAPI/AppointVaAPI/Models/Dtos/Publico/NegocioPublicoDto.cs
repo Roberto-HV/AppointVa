@@ -13,6 +13,10 @@
         public string? Telefono { get; set; }
         public List<ServicioPublicoDto> Servicios { get; set; } = new();
         public List<EmpleadoPublicoDto> Empleados { get; set; } = new();
+        public List<ImagenGaleriaDto> Galeria { get; set; } = new();
+        public double PromedioResenas { get; set; }
+        public int TotalResenas { get; set; }
+        public List<ResenaPublicaDto> Resenas { get; set; } = new();
     }
 
     public class ServicioPublicoDto
@@ -23,6 +27,7 @@
         public string Nombre { get; set; } = string.Empty;
         public string? Descripcion { get; set; }
         public int DuracionMinutos { get; set; }
+        public int BufferMinutos { get; set; }
         public decimal Precio { get; set; }
         public string? ImagenUrl { get; set; }
         public int Orden { get; set; }
@@ -35,5 +40,21 @@
         public string? FotoUrl { get; set; }
         public string? Biografia { get; set; }
         public List<Guid> ServicioIds { get; set; } = new();
+    }
+
+    public class ImagenGaleriaDto
+    {
+        public Guid Id { get; set; }
+        public string Url { get; set; } = string.Empty;
+        public string? Descripcion { get; set; }
+        public int Orden { get; set; }
+    }
+
+    public class ResenaPublicaDto
+    {
+        public int Rating { get; set; }
+        public string? Comentario { get; set; }
+        public string NombreCliente { get; set; } = string.Empty;
+        public DateTime FechaCreacion { get; set; }
     }
 }

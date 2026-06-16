@@ -23,6 +23,7 @@ namespace AppointVaAPI.Data
         public DbSet<Cita> Citas { get; set; }
         public DbSet<ImagenNegocio> ImagenesNegocios { get; set; }
         public DbSet<BloqueoNegocio> BloqueosNegocio { get; set; }
+        public DbSet<Resena> Resenas { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -148,6 +149,25 @@ namespace AppointVaAPI.Data
                 .WithMany()
                 .HasForeignKey(in_ => in_.NegocioId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // Configurar relación Resena -> Negocio (CASCADE)
+            modelBuilder.Entity<Resena>()
+                .HasOne(r => r.Negocio)
+                .WithMany()
+                .HasForeignKey(r => r.NegocioId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Configurar relación Resena -> Cita (NO_ACTION para evitar ciclos)
+            modelBuilder.Entity<Resena>()
+                .HasOne(r => r.Cita)
+                .WithMany()
+                .HasForeignKey(r => r.CitaId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<Resena>()
+                .HasIndex(r => r.Token).IsUnique();
+            modelBuilder.Entity<Resena>()
+                .HasIndex(r => new { r.NegocioId, r.Aprobada });
 
             // Precisión decimal explícita para evitar truncamiento silencioso
             modelBuilder.Entity<Plan>()

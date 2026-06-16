@@ -20,6 +20,8 @@ namespace AppointVaAPI.Models
         [Required]
         public int DuracionMinutos { get; set; }
         [Required]
+        public int BufferMinutos { get; set; }
+        [Required]
         public decimal Precio { get; set; }
         public string? ImagenUrl { get; set; }
         [Required]
