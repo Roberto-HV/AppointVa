@@ -550,7 +550,7 @@ export default function PerfilPage() {
         <h2 className="text-sm font-semibold text-gray-700 mb-4">Horarios de atención</h2>
         <div className="space-y-3">
           {horarios.map((h) => (
-            <div key={h.diaSemana} className="flex items-center justify-between gap-2">
+            <div key={h.diaSemana} className="flex items-center gap-3">
               <label className="flex items-center gap-2 cursor-pointer select-none w-28 shrink-0">
                 <div
                   onClick={() => actualizarHorario(h.diaSemana!, "activo", !h.activo)}
@@ -558,22 +558,22 @@ export default function PerfilPage() {
                 >
                   <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${h.activo ? "left-4" : "left-0.5"}`} />
                 </div>
-                <span className="text-sm text-gray-700 truncate">{DIAS[h.diaSemana ?? 0]}</span>
+                <span className="text-sm text-gray-700">{DIAS[h.diaSemana ?? 0]}</span>
               </label>
               {h.activo ? (
-                <div className="flex items-center gap-1 flex-1 justify-end">
+                <div className="flex items-center gap-2">
                   <input
                     type="time"
                     value={h.horaInicio}
                     onChange={(e) => actualizarHorario(h.diaSemana!, "horaInicio", e.target.value)}
-                    className="flex-1 min-w-0 px-2 py-1 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary"
+                    className="w-28 sm:w-32 px-2 py-1 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary"
                   />
-                  <span className="text-gray-400 text-sm shrink-0">—</span>
+                  <span className="text-gray-400 text-sm">—</span>
                   <input
                     type="time"
                     value={h.horaFin}
                     onChange={(e) => actualizarHorario(h.diaSemana!, "horaFin", e.target.value)}
-                    className="flex-1 min-w-0 px-2 py-1 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary"
+                    className="w-28 sm:w-32 px-2 py-1 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary"
                   />
                 </div>
               ) : (

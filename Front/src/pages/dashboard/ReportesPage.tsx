@@ -133,50 +133,52 @@ export default function ReportesPage() {
       </div>
 
       {/* Filtros */}
-      <div className="bg-white rounded-xl border border-gray-100 p-4 flex flex-wrap gap-3 items-end">
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-gray-600">Desde</label>
-          <input type="date" value={desde} onChange={(e) => setDesde(e.target.value)} className={inputCls} />
+      <div className="bg-white rounded-xl border border-gray-100 p-4">
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-3 items-end">
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-gray-600">Desde</label>
+            <input type="date" value={desde} onChange={(e) => setDesde(e.target.value)} className={inputCls} />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-gray-600">Hasta</label>
+            <input type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} className={inputCls} />
+          </div>
+          {tab === "citas" && (
+            <>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-gray-600">Empleado</label>
+                <Select value={empleadoId} onChange={(e) => setEmpleadoId(e.target.value)}>
+                  <option value="">Todos</option>
+                  {empleados.map((e) => (
+                    <option key={e.id} value={e.id}>{e.nombre}</option>
+                  ))}
+                </Select>
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-gray-600">Servicio</label>
+                <Select value={servicioId} onChange={(e) => setServicioId(e.target.value)}>
+                  <option value="">Todos</option>
+                  {servicios.map((s) => (
+                    <option key={s.id} value={s.id}>{s.nombre}</option>
+                  ))}
+                </Select>
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-gray-600">Estado</label>
+                <Select value={estado} onChange={(e) => setEstado(e.target.value)}>
+                  <option value="">Todos</option>
+                  {ESTADOS_OPCIONES.map((o) => (
+                    <option key={o.valor} value={o.valor}>{o.texto}</option>
+                  ))}
+                </Select>
+              </div>
+            </>
+          )}
         </div>
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-gray-600">Hasta</label>
-          <input type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} className={inputCls} />
-        </div>
-        {tab === "citas" && (
-          <>
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-gray-600">Empleado</label>
-              <Select value={empleadoId} onChange={(e) => setEmpleadoId(e.target.value)}>
-                <option value="">Todos</option>
-                {empleados.map((e) => (
-                  <option key={e.id} value={e.id}>{e.nombre}</option>
-                ))}
-              </Select>
-            </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-gray-600">Servicio</label>
-              <Select value={servicioId} onChange={(e) => setServicioId(e.target.value)}>
-                <option value="">Todos</option>
-                {servicios.map((s) => (
-                  <option key={s.id} value={s.id}>{s.nombre}</option>
-                ))}
-              </Select>
-            </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-gray-600">Estado</label>
-              <Select value={estado} onChange={(e) => setEstado(e.target.value)}>
-                <option value="">Todos</option>
-                {ESTADOS_OPCIONES.map((o) => (
-                  <option key={o.valor} value={o.valor}>{o.texto}</option>
-                ))}
-              </Select>
-            </div>
-          </>
-        )}
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
+      {/* Tabs — ancho completo, cada tab igual */}
+      <div className="flex bg-gray-100 p-1 rounded-lg">
         {([
           { id: "citas", label: "Citas" },
           { id: "ingresos", label: "Ingresos" },
@@ -185,7 +187,7 @@ export default function ReportesPage() {
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${
+            className={`flex-1 py-1.5 rounded-md text-sm font-medium transition ${
               tab === t.id ? "bg-white shadow text-gray-900" : "text-gray-500 hover:text-gray-700"
             }`}
           >

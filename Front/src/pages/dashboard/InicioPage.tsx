@@ -20,12 +20,19 @@ function formatFechaHora(iso: string) {
   }).replace(/\bDe\b/g, "de");
 }
 
-interface TarjetaProps { label: string; valor: string | number; color?: string }
-function Tarjeta({ label, valor, color = "text-gray-900" }: TarjetaProps) {
+interface TarjetaProps { label: string; valor: string | number; valorCorto?: string; color?: string }
+function Tarjeta({ label, valor, valorCorto, color = "text-gray-900" }: TarjetaProps) {
   return (
     <div className="bg-white rounded-xl border border-gray-100 p-3 sm:p-5">
       <p className="text-[10px] sm:text-xs text-gray-500 font-medium uppercase tracking-wide mb-0.5 sm:mb-1 line-clamp-1">{label}</p>
-      <p className={`text-lg sm:text-2xl font-bold leading-tight ${color}`}>{valor}</p>
+      <p className={`text-lg sm:text-2xl font-bold leading-tight ${color}`}>
+        {valorCorto ? (
+          <>
+            <span className="sm:hidden">{valorCorto}</span>
+            <span className="hidden sm:inline">{valor}</span>
+          </>
+        ) : valor}
+      </p>
     </div>
   );
 }
@@ -83,9 +90,9 @@ function VistaPropietario({ nombre }: { nombre: string }) {
 
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Ingresos</p>
           <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-8">
-            <Tarjeta label="Hoy" valor={formatPrecioCorto(data.ingresosHoy)} color="text-primary" />
-            <Tarjeta label="Semana" valor={formatPrecioCorto(data.ingresosSemana)} color="text-primary" />
-            <Tarjeta label="Mes" valor={formatPrecioCorto(data.ingresosMes)} color="text-primary" />
+            <Tarjeta label="Hoy" valor={formatPrecio(data.ingresosHoy)} valorCorto={formatPrecioCorto(data.ingresosHoy)} color="text-primary" />
+            <Tarjeta label="Semana" valor={formatPrecio(data.ingresosSemana)} valorCorto={formatPrecioCorto(data.ingresosSemana)} color="text-primary" />
+            <Tarjeta label="Mes" valor={formatPrecio(data.ingresosMes)} valorCorto={formatPrecioCorto(data.ingresosMes)} color="text-primary" />
           </div>
 
           {/* Gráfica de tendencia con selector de período */}
