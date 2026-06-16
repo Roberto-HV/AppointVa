@@ -313,10 +313,7 @@ export default function ServiciosPage() {
             {categorias.map((c) => {
               const count = serviciosPorCategoria(c.id);
               return (
-                <div
-                  key={c.id}
-                  className="bg-white rounded-xl border border-gray-100 px-4 py-3 flex items-center gap-3"
-                >
+                <div key={c.id} className="bg-white rounded-xl border border-gray-100 px-4 py-3 flex items-center gap-3">
                   <div className="w-2 h-2 rounded-full bg-primary/40 shrink-0" />
                   <span className="font-medium text-gray-800 flex-1 min-w-0 truncate">{c.nombre}</span>
                   <span className={`text-xs font-medium px-2 py-0.5 rounded-full shrink-0 ${

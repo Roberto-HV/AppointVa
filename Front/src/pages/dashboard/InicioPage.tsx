@@ -26,9 +26,9 @@ function formatFechaHora(iso: string) {
 interface TarjetaProps { label: string; valor: string | number; color?: string }
 function Tarjeta({ label, valor, color = "text-gray-900" }: TarjetaProps) {
   return (
-    <div className="bg-white rounded-xl border border-gray-100 p-5">
-      <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-1">{label}</p>
-      <p className={`text-2xl font-bold ${color}`}>{valor}</p>
+    <div className="bg-white rounded-xl border border-gray-100 p-3 sm:p-5">
+      <p className="text-[10px] sm:text-xs text-gray-500 font-medium uppercase tracking-wide mb-0.5 sm:mb-1 line-clamp-1">{label}</p>
+      <p className={`text-lg sm:text-2xl font-bold leading-tight ${color}`}>{valor}</p>
     </div>
   );
 }
@@ -149,12 +149,12 @@ function VistaPropietario({ nombre }: { nombre: string }) {
       {isLoading ? (
         <>
           <Skeleton className="h-3 w-16 mb-3" />
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-            {[0,1,2].map(i => <Skeleton key={i} className="h-24 rounded-xl" />)}
+          <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-6">
+            {[0,1,2].map(i => <Skeleton key={i} className="h-20 sm:h-24 rounded-xl" />)}
           </div>
           <Skeleton className="h-3 w-16 mb-3" />
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-            {[0,1,2].map(i => <Skeleton key={i} className="h-24 rounded-xl" />)}
+          <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-8">
+            {[0,1,2].map(i => <Skeleton key={i} className="h-20 sm:h-24 rounded-xl" />)}
           </div>
           <Skeleton className="h-72 rounded-xl mb-6" />
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -165,17 +165,17 @@ function VistaPropietario({ nombre }: { nombre: string }) {
       ) : data ? (
         <>
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Citas</p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-6">
             <Tarjeta label="Hoy" valor={data.citasHoy} />
-            <Tarjeta label="Esta semana" valor={data.citasSemana} />
-            <Tarjeta label="Este mes" valor={data.citasMes} />
+            <Tarjeta label="Semana" valor={data.citasSemana} />
+            <Tarjeta label="Mes" valor={data.citasMes} />
           </div>
 
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Ingresos</p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-            <Tarjeta label="Hoy" valor={formatPrecio(data.ingresosHoy)} color="text-primary" />
-            <Tarjeta label="Esta semana" valor={formatPrecio(data.ingresosSemana)} color="text-primary" />
-            <Tarjeta label="Este mes" valor={formatPrecio(data.ingresosMes)} color="text-primary" />
+          <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-8">
+            <Tarjeta label="Hoy" valor={formatPrecioCorto(data.ingresosHoy)} color="text-primary" />
+            <Tarjeta label="Semana" valor={formatPrecioCorto(data.ingresosSemana)} color="text-primary" />
+            <Tarjeta label="Mes" valor={formatPrecioCorto(data.ingresosMes)} color="text-primary" />
           </div>
 
           {/* Gráfica de tendencia con selector de período */}
