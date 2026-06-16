@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { citasApi, ESTADOS, METODOS_PAGO } from "../../api/citas";
 import Select from "../../components/ui/Select";
@@ -13,6 +14,7 @@ import { useToastStore } from "../../store/toastStore";
 import type { CitaDto, SlotDisponible } from "../../types";
 import { SkeletonTableRows } from "../../components/ui/Skeleton";
 import { Tooltip } from "../../components/ui/Tooltip";
+import { exportarExcel } from "../../utils/exportarExcel";
 import { intakeApi } from "../../api/intake";
 
 function formatFechaHora(iso: string) {
@@ -52,6 +54,7 @@ export default function CitasPage() {
   const [hasta, setHasta] = useState("");
   const [empleadoId, setEmpleadoId] = useState("");
   const [busqueda, setBusqueda] = useState("");
+  const [estadoFiltro, setEstadoFiltro] = useState("");
   const [pagina, setPagina] = useState(1);
   const TAMANO = 50;
 
@@ -267,12 +270,18 @@ export default function CitasPage() {
 
   const accionesCita = citaSel ? TRANSICIONES[citaSel.estadoTexto] ?? [] : [];
 
-  const citasFiltradas = busqueda.trim()
-    ? citas.filter((c) => {
-        const q = busqueda.toLowerCase();
-        return c.nombreCliente.toLowerCase().includes(q) || c.telefonoCliente.includes(q);
-      })
-    : citas;
+  const citasFiltradas = citas.filter((c) => {
+    if (estadoFiltro && c.estadoTexto !== estadoFiltro) return false;
+    if (busqueda.trim()) {
+      const q = busqueda.toLowerCase();
+      return (
+        c.nombreCliente.toLowerCase().includes(q) ||
+        c.telefonoCliente.includes(q) ||
+        c.nombreServicio.toLowerCase().includes(q)
+      );
+    }
+    return true;
+  });
 
   // ── WhatsApp ─────────────────────────────────────────────────────────────────
   const whatsappUrl = (c: CitaDto) => {
@@ -288,31 +297,22 @@ export default function CitasPage() {
     return `https://wa.me/${tel}?text=${encodeURIComponent(msg)}`;
   };
 
-  // ── CSV export ───────────────────────────────────────────────────────────────
+  // ── Excel export ─────────────────────────────────────────────────────────────
   const exportarCSV = () => {
-    const encabezado = ["Fecha", "Cliente", "Teléfono", "Servicio", "Profesional", "Precio", "Estado", "Pagada", "Método pago", "Notas"];
+    const encabezados = ["Fecha", "Cliente", "Teléfono", "Servicio", "Profesional", "Precio", "Estado", "Pagada", "Método de pago", "Notas"];
     const filas = citasFiltradas.map((c) => [
-      new Date(c.inicioEn).toLocaleString("es-MX"),
+      new Date(c.inicioEn).toLocaleString("es-MX", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true }),
       c.nombreCliente,
-      c.telefonoCliente,
+      c.telefonoCliente ?? "",
       c.nombreServicio,
       c.nombreEmpleado,
-      c.precio.toFixed(2),
+      `$${c.precio.toFixed(2)}`,
       c.estadoTexto,
       c.pagada ? "Sí" : "No",
       c.metodoPago ?? "",
       c.notas ?? "",
     ]);
-    const csv = [encabezado, ...filas]
-      .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","))
-      .join("\n");
-    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `citas-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    exportarExcel(encabezados, [filas], "citas", "Reporte de Citas");
   };
 
   // ── Render ───────────────────────────────────────────────────────────────────
@@ -327,7 +327,7 @@ export default function CitasPage() {
               onClick={exportarCSV}
               className="text-xs text-gray-500 hover:text-gray-700 border border-gray-200 hover:border-gray-300 px-3 py-1.5 rounded-lg transition"
             >
-              Exportar CSV
+              Exportar Excel
             </button>
           )}
         </div>
@@ -380,6 +380,17 @@ export default function CitasPage() {
             </Select>
           </div>
           <div>
+            <label className="block text-xs text-gray-500 mb-1">Estado</label>
+            <Select value={estadoFiltro} onChange={(e) => setEstadoFiltro(e.target.value)} className="w-full">
+              <option value="">Todos</option>
+              <option value="Pendiente">Pendiente</option>
+              <option value="Confirmada">Confirmada</option>
+              <option value="Completada">Completada</option>
+              <option value="Cancelada">Cancelada</option>
+              <option value="Inasistencia">Inasistencia</option>
+            </Select>
+          </div>
+          <div>
             <label className="block text-xs text-gray-500 mb-1">Desde</label>
             <input type="date" value={desde} onChange={(e) => { setDesde(e.target.value); setPagina(1); }}
               className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary" />
@@ -389,9 +400,9 @@ export default function CitasPage() {
             <input type="date" value={hasta} onChange={(e) => { setHasta(e.target.value); setPagina(1); }}
               className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary" />
           </div>
-          {(desde || hasta || empleadoId || busqueda) && (
+          {(desde || hasta || empleadoId || busqueda || estadoFiltro) && (
             <div className="col-span-2 flex">
-              <button onClick={() => { setDesde(""); setHasta(""); setEmpleadoId(""); setBusqueda(""); setPagina(1); }}
+              <button onClick={() => { setDesde(""); setHasta(""); setEmpleadoId(""); setBusqueda(""); setEstadoFiltro(""); setPagina(1); }}
                 className="text-sm text-primary font-medium hover:underline">
                 Limpiar filtros
               </button>
@@ -947,7 +958,16 @@ export default function CitasPage() {
         {citaSel && (
           <div>
             <div className="bg-gray-50 rounded-lg p-3 mb-5 text-sm space-y-1">
-              <p><span className="text-gray-500">Cliente:</span> <span className="font-medium">{citaSel.nombreCliente}</span></p>
+              <div className="flex items-center justify-between">
+                <p><span className="text-gray-500">Cliente:</span> <span className="font-medium">{citaSel.nombreCliente}</span></p>
+                <Link
+                  to={`/dashboard/clientes?clienteId=${citaSel.clienteId}`}
+                  className="text-xs text-primary hover:underline font-medium shrink-0 ml-2"
+                  onClick={() => setCitaSel(null)}
+                >
+                  Ver historial
+                </Link>
+              </div>
               <p><span className="text-gray-500">Servicio:</span> <span className="font-medium">{citaSel.nombreServicio}</span></p>
               <p><span className="text-gray-500">Hora:</span> <span className="font-medium capitalize">{formatFechaHora(citaSel.inicioEn)}</span></p>
               <p><span className="text-gray-500">Estado actual:</span> <span className="font-medium">{citaSel.estadoTexto}</span></p>

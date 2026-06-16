@@ -42,6 +42,8 @@
         public string? FotoUrl { get; set; }
         public string? Biografia { get; set; }
         public List<Guid> ServicioIds { get; set; } = new();
+        public double PromedioResenas { get; set; }
+        public int TotalResenas { get; set; }
     }
 
     public class ImagenGaleriaDto

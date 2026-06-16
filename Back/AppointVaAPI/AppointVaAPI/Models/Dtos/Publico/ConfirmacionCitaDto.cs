@@ -6,6 +6,8 @@ namespace AppointVaAPI.Models.Dtos.Publico
         public string CodigoConfirmacion { get; set; } = string.Empty;
         public string NombreNegocio { get; set; } = string.Empty;
         public string NegocioSlug { get; set; } = string.Empty;
+        public Guid ServicioId { get; set; }
+        public Guid EmpleadoId { get; set; }
         public string NombreServicio { get; set; } = string.Empty;
         public string NombreEmpleado { get; set; } = string.Empty;
         public string NombreCliente { get; set; } = string.Empty;

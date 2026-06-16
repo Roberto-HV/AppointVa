@@ -84,6 +84,15 @@ namespace AppointVaAPI.Controllers.V1
                 .AsNoTracking()
                 .ToListAsync();
 
+            var empleadoIds = empleados.Select(e => e.Id).ToList();
+            var ratingsEmpleados = await _db.Resenas
+                .Where(r => r.CitaId != null && r.Aprobada)
+                .Join(_db.Citas, r => r.CitaId, c => c.Id, (r, c) => new { c.EmpleadoId, r.Rating })
+                .Where(x => empleadoIds.Contains(x.EmpleadoId))
+                .GroupBy(x => x.EmpleadoId)
+                .Select(g => new { EmpleadoId = g.Key, Promedio = g.Average(x => (double)x.Rating), Total = g.Count() })
+                .ToListAsync();
+
             var galeria = await _db.ImagenesNegocios
                 .Where(i => i.NegocioId == negocio.Id)
                 .OrderBy(i => i.Orden)
@@ -123,13 +132,19 @@ namespace AppointVaAPI.Controllers.V1
                     ImagenUrl = s.ImagenUrl,
                     Orden = s.Orden
                 }).ToList(),
-                Empleados = empleados.Select(e => new EmpleadoPublicoDto
+                Empleados = empleados.Select(e =>
                 {
-                    Id = e.Id,
-                    Nombre = e.Nombre,
-                    FotoUrl = e.FotoUrl,
-                    Biografia = e.Biografia,
-                    ServicioIds = e.ServicioIds
+                    var rating = ratingsEmpleados.FirstOrDefault(r => r.EmpleadoId == e.Id);
+                    return new EmpleadoPublicoDto
+                    {
+                        Id = e.Id,
+                        Nombre = e.Nombre,
+                        FotoUrl = e.FotoUrl,
+                        Biografia = e.Biografia,
+                        ServicioIds = e.ServicioIds,
+                        PromedioResenas = rating?.Promedio ?? 0,
+                        TotalResenas = rating?.Total ?? 0
+                    };
                 }).ToList(),
                 Galeria = galeria.Select(i => new ImagenGaleriaDto
                 {
@@ -367,6 +382,8 @@ namespace AppointVaAPI.Controllers.V1
                 CodigoConfirmacion = cita.CodigoConfirmacion,
                 NombreNegocio = cita.Negocio?.Nombre ?? string.Empty,
                 NegocioSlug = cita.Negocio?.Slug ?? string.Empty,
+                ServicioId = cita.ServicioId,
+                EmpleadoId = cita.EmpleadoId,
                 NombreServicio = cita.Servicio?.Nombre ?? string.Empty,
                 NombreEmpleado = cita.Empleado?.Nombre ?? string.Empty,
                 NombreCliente = cita.Cliente?.NombreCompleto ?? string.Empty,
@@ -428,18 +445,15 @@ namespace AppointVaAPI.Controllers.V1
         // DELETE api/publico/citas/{codigo}?email=...  — el cliente cancela su propia cita
         [HttpDelete("citas/{codigo}")]
         [EnableRateLimiting("PublicoEstricto")]
-        public async Task<IActionResult> CancelarCita(string codigo, [FromQuery] string email)
+        public async Task<IActionResult> CancelarCita(string codigo, [FromQuery] string? email)
         {
-            if (string.IsNullOrWhiteSpace(email))
-                return BadRequest(new { mensaje = "El email es requerido para cancelar la cita." });
-
             var cita = await _citaRepo.ObtenerPorCodigoAsync(codigo);
             if (cita is null)
                 return NotFound(new { mensaje = "Cita no encontrada" });
 
-            // Verificar que el email corresponde al cliente de la cita
+            // Si se proporciona email, verificar que coincide con el del cliente
             var emailCliente = cita.Cliente?.Email ?? string.Empty;
-            if (!emailCliente.Equals(email.Trim(), StringComparison.OrdinalIgnoreCase))
+            if (!string.IsNullOrWhiteSpace(email) && !emailCliente.Equals(email.Trim(), StringComparison.OrdinalIgnoreCase))
                 return Forbid();
 
             if (cita.Estado == EstadosCitas.Cancelada)
@@ -477,17 +491,15 @@ namespace AppointVaAPI.Controllers.V1
         // PATCH api/publico/citas/{codigo}/reagendar?email=... — el cliente reagenda su propia cita
         [HttpPatch("citas/{codigo}/reagendar")]
         [EnableRateLimiting("PublicoEstricto")]
-        public async Task<IActionResult> ReagendarPublico(string codigo, [FromQuery] string email, [FromBody] ReagendarCitaDto dto)
+        public async Task<IActionResult> ReagendarPublico(string codigo, [FromQuery] string? email, [FromBody] ReagendarCitaDto dto)
         {
-            if (string.IsNullOrWhiteSpace(email))
-                return BadRequest(new { mensaje = "El email es requerido." });
-
             var cita = await _citaRepo.ObtenerPorCodigoAsync(codigo);
             if (cita is null)
                 return NotFound(new { mensaje = "Cita no encontrada" });
 
+            // Si se proporciona email, verificar que coincide con el del cliente
             var emailCliente = cita.Cliente?.Email ?? string.Empty;
-            if (!emailCliente.Equals(email.Trim(), StringComparison.OrdinalIgnoreCase))
+            if (!string.IsNullOrWhiteSpace(email) && !emailCliente.Equals(email.Trim(), StringComparison.OrdinalIgnoreCase))
                 return Forbid();
 
             if (cita.Estado == EstadosCitas.Cancelada || cita.Estado == EstadosCitas.Completada)

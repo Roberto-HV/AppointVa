@@ -140,24 +140,37 @@ export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, on
               No hay horarios disponibles para este día.
             </p>
           ) : (
-            <>
-              <p className="text-xs text-gray-500 mb-2 font-medium">Horarios disponibles</p>
-              <div className="grid grid-cols-3 gap-2">
-                {slots.map((slot) => {
-                  const activo = seleccionado?.inicio === slot.inicio;
-                  return (
-                    <button
-                      key={slot.inicio}
-                      onClick={() => onSeleccionar(slot)}
-                      className={`py-2 rounded-lg text-sm font-medium border-2 transition
-                        ${activo ? "border-primary bg-primary text-white" : "border-gray-100 hover:border-primary text-gray-700"}`}
-                    >
-                      {slot.horaTexto}
-                    </button>
-                  );
-                })}
-              </div>
-            </>
+            (() => {
+              const franjas = [
+                { label: "🌅 Mañana",  slots: slots.filter(s => new Date(s.inicio).getHours() < 12) },
+                { label: "☀️ Tarde",   slots: slots.filter(s => { const h = new Date(s.inicio).getHours(); return h >= 12 && h < 18; }) },
+                { label: "🌙 Noche",   slots: slots.filter(s => new Date(s.inicio).getHours() >= 18) },
+              ].filter(f => f.slots.length > 0);
+              return (
+                <div className="space-y-4">
+                  {franjas.map(({ label, slots: slotsFranja }) => (
+                    <div key={label}>
+                      <p className="text-xs text-gray-400 font-medium mb-2">{label}</p>
+                      <div className="grid grid-cols-3 gap-2">
+                        {slotsFranja.map((slot) => {
+                          const activo = seleccionado?.inicio === slot.inicio;
+                          return (
+                            <button
+                              key={slot.inicio}
+                              onClick={() => onSeleccionar(slot)}
+                              className={`py-2 rounded-lg text-sm font-medium border-2 transition
+                                ${activo ? "border-primary bg-primary text-white" : "border-gray-100 hover:border-primary text-gray-700"}`}
+                            >
+                              {slot.horaTexto}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()
           )}
         </div>
       )}

@@ -56,6 +56,11 @@ export const publicoApi = {
     await api.delete(`/publico/citas/${codigo}`);
   },
 
+  reagendarCita: async (codigo: string, inicioEn: string): Promise<{ mensaje: string }> => {
+    const { data } = await api.patch(`/publico/citas/${codigo}/reagendar`, { inicioEn });
+    return data;
+  },
+
   obtenerTokenResena: async (token: string): Promise<ResenaTokenInfo> => {
     const { data } = await api.get(`/publico/resenas/${token}`);
     return data;

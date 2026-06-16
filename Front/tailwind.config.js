@@ -8,9 +8,9 @@ export default {
     extend: {
       colors: {
         primary: {
-          DEFAULT: "#C8A961",
-          dark: "#a88b45",
-          light: "#e8d4a0",
+          DEFAULT: "rgb(var(--color-primary) / <alpha-value>)",
+          dark:    "rgb(var(--color-primary-dark) / <alpha-value>)",
+          light:   "rgb(var(--color-primary-light) / <alpha-value>)",
         },
       },
       fontFamily: {

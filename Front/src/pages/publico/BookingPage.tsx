@@ -12,6 +12,19 @@ import PasoFechaHora from "../../components/booking/PasoFechaHora";
 import PasoDatosCliente, { type DatosClienteForm } from "../../components/booking/PasoDatosCliente";
 import { Star, X, UserCircle, UserCheck, Tag, AlertCircle } from "lucide-react";
 
+// Convierte #RRGGBB a "R G B" (canales para CSS variables con opacity)
+function hexToChannels(hex: string): string {
+  const h = (hex ?? "#C8A961").replace("#", "").padEnd(6, "0");
+  return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16)).join(" ");
+}
+function adjustHex(hex: string, factor: number): string {
+  const h = (hex ?? "#C8A961").replace("#", "").padEnd(6, "0");
+  return "#" + [0, 2, 4]
+    .map((i) => Math.min(255, Math.max(0, Math.round(parseInt(h.slice(i, i + 2), 16) * factor)))
+      .toString(16).padStart(2, "0"))
+    .join("");
+}
+
 function GaleriaSection({ imagenes }: { imagenes: ImagenGaleria[] }) {
   const [lightbox, setLightbox] = useState<string | null>(null);
   if (!imagenes.length) return null;
@@ -363,8 +376,15 @@ export default function BookingPage() {
     );
   }
 
+  const color = negocio.colorPrimario ?? "#C8A961";
+  const bookingTheme = {
+    "--color-primary":       hexToChannels(color),
+    "--color-primary-dark":  hexToChannels(adjustHex(color, 0.8)),
+    "--color-primary-light": hexToChannels(adjustHex(color, 1.45)),
+  } as React.CSSProperties;
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50" style={bookingTheme}>
       {/* Header del negocio */}
       <div className="relative">
         {negocio.portadaUrl ? (
@@ -427,6 +447,9 @@ export default function BookingPage() {
             )}
           </div>
         )}
+
+        {/* Pasos — wrapper con animación de transición */}
+        <div key={`${paso}-${mostrarIntake ? "intake" : modoCliente}`} className="animate-step-in">
 
         {/* Paso 1 */}
         {paso === 1 && (
@@ -739,6 +762,8 @@ export default function BookingPage() {
             </button>
           </>
         )}
+
+        </div>{/* fin animate-step-in */}
       </div>
     </div>
   );

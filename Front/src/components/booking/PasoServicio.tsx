@@ -11,8 +11,12 @@ function formatPrecio(precio: number) {
 }
 
 export default function PasoServicio({ servicios, seleccionado, onSeleccionar }: Props) {
-  // Agrupar por categoría
   const categorias = Array.from(new Set(servicios.map((s) => s.categoriaNombre ?? "Servicios")));
+
+  // El servicio con menor orden es el que el dueño puso primero = más destacado
+  const masPopularId = servicios.length > 0
+    ? servicios.reduce((a, b) => a.orden <= b.orden ? a : b).id
+    : null;
 
   return (
     <div>
@@ -26,6 +30,7 @@ export default function PasoServicio({ servicios, seleccionado, onSeleccionar }:
                 .filter((s) => (s.categoriaNombre ?? "Servicios") === cat)
                 .map((servicio) => {
                   const activo = seleccionado?.id === servicio.id;
+                  const esPopular = servicio.id === masPopularId;
                   return (
                     <button
                       key={servicio.id}
@@ -42,9 +47,16 @@ export default function PasoServicio({ servicios, seleccionado, onSeleccionar }:
                         />
                       )}
                       <div className="flex-1 min-w-0">
-                        <p className={`font-medium text-sm ${activo ? "text-primary" : "text-gray-800"}`}>
-                          {servicio.nombre}
-                        </p>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <p className={`font-medium text-sm ${activo ? "text-primary" : "text-gray-800"}`}>
+                            {servicio.nombre}
+                          </p>
+                          {esPopular && (
+                            <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full shrink-0">
+                              ★ Más popular
+                            </span>
+                          )}
+                        </div>
                         {servicio.descripcion && (
                           <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">{servicio.descripcion}</p>
                         )}

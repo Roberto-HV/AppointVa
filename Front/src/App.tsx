@@ -30,6 +30,7 @@ import GaleriaPage from "./pages/dashboard/GaleriaPage";
 import ListaEsperaPage from "./pages/dashboard/ListaEsperaPage";
 import IntakePage from "./pages/dashboard/IntakePage";
 import DescuentosPage from "./pages/dashboard/DescuentosPage";
+import NotFoundPage from "./pages/NotFoundPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -93,7 +94,7 @@ export default function App() {
 
           {/* Default */}
           <Route path="/" element={<Navigate to="/login" replace />} />
-          <Route path="*" element={<Navigate to="/login" replace />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </BrowserRouter>
       <ToastContainer />

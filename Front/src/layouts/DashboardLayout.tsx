@@ -48,14 +48,15 @@ export default function DashboardLayout() {
   });
 
   const hoy = new Date().toISOString().split("T")[0];
-  const { data: citasPendientes = [] } = useQuery({
+  const { data: citasHoy = [] } = useQuery({
     queryKey: ["citas-badge", hoy],
-    queryFn: () => citasApi.obtenerTodas({ desde: hoy }),
+    queryFn: () => citasApi.obtenerTodas({ desde: hoy, hasta: hoy }),
     staleTime: 0,
     refetchInterval: 30_000,
-    select: (pagina) => pagina.datos.filter((c) => c.estado === ESTADOS.Pendiente),
+    select: (pagina) => pagina.datos,
   });
-  const pendientesCnt = citasPendientes.length;
+  const hoyCnt = citasHoy.length;
+  const pendientesCnt = citasHoy.filter((c) => c.estado === ESTADOS.Pendiente).length;
 
   useEffect(() => {
     if (prevPendientesRef.current !== null && pendientesCnt > prevPendientesRef.current) {
@@ -168,9 +169,9 @@ export default function DashboardLayout() {
               >
                 <Icon size={17} className="shrink-0" />
                 <span className="flex-1">{item.label}</span>
-                {esCitas && pendientesCnt > 0 && (
-                  <span className="bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center leading-none">
-                    {pendientesCnt > 9 ? "9+" : pendientesCnt}
+                {esCitas && hoyCnt > 0 && (
+                  <span className={`text-white text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center leading-none ${pendientesCnt > 0 ? "bg-red-500" : "bg-primary"}`}>
+                    {hoyCnt > 9 ? "9+" : hoyCnt}
                   </span>
                 )}
               </NavLink>

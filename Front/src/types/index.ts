@@ -70,6 +70,8 @@ export interface EmpleadoPublico {
   fotoUrl?: string;
   biografia?: string;
   servicioIds: string[];
+  promedioResenas: number;
+  totalResenas: number;
 }
 
 export interface SlotDisponible {
@@ -85,6 +87,8 @@ export interface ConfirmacionCita {
   codigoConfirmacion: string;
   nombreNegocio: string;
   negocioSlug: string;
+  servicioId: string;
+  empleadoId: string;
   nombreServicio: string;
   nombreEmpleado: string;
   nombreCliente: string;
@@ -137,6 +141,7 @@ export interface ServicioPopular {
 export interface CitaDto {
   id: string;
   codigoConfirmacion: string;
+  clienteId: string;
   empleadoId: string;
   servicioId: string;
   nombreCliente: string;

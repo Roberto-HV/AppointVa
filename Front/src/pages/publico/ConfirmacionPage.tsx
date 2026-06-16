@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { publicoApi } from "../../api/publico";
-import { Copy, Check, Calendar, ChevronDown } from "lucide-react";
+import { Copy, Check, Calendar, ChevronDown, CalendarClock } from "lucide-react";
 
 function formatFechaHora(iso: string) {
   return new Date(iso).toLocaleString("es-MX", {
@@ -20,6 +20,9 @@ export default function ConfirmacionPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [confirmandoCancelar, setConfirmandoCancelar] = useState(false);
+  const [reagendando, setReagendando] = useState(false);
+  const [fechaReag, setFechaReag] = useState("");
+  const [slotReag, setSlotReag] = useState("");
   const [linkCopiado, setLinkCopiado] = useState(false);
   const [calAbierto, setCalAbierto] = useState(false);
 
@@ -35,6 +38,22 @@ export default function ConfirmacionPage() {
       queryClient.invalidateQueries({ queryKey: ["cita", codigo] });
       setConfirmandoCancelar(false);
     },
+  });
+
+  const { mutate: reagendar, isPending: confirmandoReag, error: errorReag } = useMutation({
+    mutationFn: () => publicoApi.reagendarCita(codigo!, slotReag),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cita", codigo] });
+      setReagendando(false);
+      setFechaReag("");
+      setSlotReag("");
+    },
+  });
+
+  const { data: slotsDisp = [], isFetching: cargandoSlots } = useQuery({
+    queryKey: ["slots-reag-pub", cita?.servicioId, cita?.empleadoId, fechaReag],
+    queryFn: () => publicoApi.obtenerDisponibilidad(cita!.servicioId, cita!.empleadoId, fechaReag),
+    enabled: reagendando && !!cita && !!fechaReag,
   });
 
   const negocioSlug = slug ?? cita?.negocioSlug ?? "";
@@ -137,14 +156,19 @@ export default function ConfirmacionPage() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 print:bg-white print:block print:p-8">
       <style>{`
         @media print {
+          body { background: white !important; margin: 0; }
           body * { visibility: hidden; }
           #comprobante-cita, #comprobante-cita * { visibility: visible; }
-          #comprobante-cita { position: fixed; top: 24px; left: 50%; transform: translateX(-50%); width: 420px; }
+          #comprobante-cita {
+            position: fixed; top: 0; left: 50%; transform: translateX(-50%);
+            width: 360px; border: none !important; box-shadow: none !important;
+            border-radius: 0 !important; padding: 24px !important;
+          }
         }
       `}</style>
 
       <div className="w-full max-w-md">
-        {/* Encabezado */}
+        {/* Encabezado — solo pantalla */}
         <div className="text-center mb-6 print:hidden">
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
             <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -156,59 +180,61 @@ export default function ConfirmacionPage() {
         </div>
 
         {/* Comprobante — visible en pantalla y al imprimir */}
-        <div id="comprobante-cita" className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-3">
-          {/* Código — solo en print */}
-          <div className="hidden print:flex flex-col items-center pb-3 border-b border-gray-100">
-            <p className="text-xs text-gray-400 mb-1">Código de confirmación</p>
+        <div id="comprobante-cita" className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+
+          {/* Cabecera de recibo — solo en print */}
+          <div className="hidden print:block text-center px-5 pt-5 pb-4 border-b-2 border-dashed border-gray-200">
+            <p className="font-bold text-base text-gray-900 tracking-tight">{cita.nombreNegocio}</p>
+            <p className="text-xs text-gray-400 mt-0.5">Comprobante de cita · AppointVa</p>
+          </div>
+
+          {/* Badge código */}
+          <div className="flex justify-center py-4 border-b border-gray-50">
             <span className="bg-gray-900 text-white font-mono text-lg font-bold px-6 py-2 rounded-xl tracking-widest">
               {cita.codigoConfirmacion}
             </span>
           </div>
 
-          {/* Badge código en pantalla (fuera del card) → reubicado aquí para print */}
-          <div className="flex justify-center print:hidden mb-1">
-            <span className="bg-gray-900 text-white font-mono text-lg font-bold px-6 py-2 rounded-xl tracking-widest">
-              {cita.codigoConfirmacion}
-            </span>
-          </div>
-
-          <div className="flex justify-between">
-            <span className="text-sm text-gray-500">Negocio</span>
-            <span className="text-sm font-medium text-gray-800">{cita.nombreNegocio}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-sm text-gray-500">Servicio</span>
-            <span className="text-sm font-medium text-gray-800">{cita.nombreServicio}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-sm text-gray-500">Profesional</span>
-            <span className="text-sm font-medium text-gray-800">{cita.nombreEmpleado}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-sm text-gray-500">Cliente</span>
-            <span className="text-sm font-medium text-gray-800">{cita.nombreCliente}</span>
-          </div>
-          <div className="flex justify-between items-start">
-            <span className="text-sm text-gray-500">Fecha y hora</span>
-            <span className="text-sm font-medium text-gray-800 text-right capitalize max-w-[55%]">
-              {formatFechaHora(cita.inicioEn)}
-            </span>
-          </div>
-          {cita.notas && (
-            <div className="flex justify-between">
-              <span className="text-sm text-gray-500">Notas</span>
-              <span className="text-sm text-gray-700 text-right max-w-[60%]">{cita.notas}</span>
+          {/* Detalles */}
+          <div className="px-5 py-4 space-y-2.5">
+            {[
+              { label: "Negocio",      valor: cita.nombreNegocio,  cls: "print:hidden" },
+              { label: "Servicio",     valor: cita.nombreServicio },
+              { label: "Profesional",  valor: cita.nombreEmpleado },
+              { label: "Cliente",      valor: cita.nombreCliente },
+            ].map(({ label, valor, cls }) => (
+              <div key={label} className={`flex justify-between ${cls ?? ""}`}>
+                <span className="text-sm text-gray-500">{label}</span>
+                <span className="text-sm font-medium text-gray-800">{valor}</span>
+              </div>
+            ))}
+            <div className="flex justify-between items-start">
+              <span className="text-sm text-gray-500">Fecha y hora</span>
+              <span className="text-sm font-medium text-gray-800 text-right capitalize max-w-[55%]">
+                {formatFechaHora(cita.inicioEn)}
+              </span>
             </div>
-          )}
-          <div className="border-t border-gray-100 pt-3 flex justify-between">
-            <span className="text-sm text-gray-500">Total</span>
-            <span className="text-base font-bold text-primary">{formatPrecio(cita.precio)}</span>
+            {cita.notas && (
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-500">Notas</span>
+                <span className="text-sm text-gray-700 text-right max-w-[60%]">{cita.notas}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Total */}
+          <div className="mx-5 border-t-2 border-dashed border-gray-200 pt-3 pb-4 flex justify-between items-center">
+            <span className="text-sm font-semibold text-gray-700">Total</span>
+            <span className="text-lg font-bold text-primary">{formatPrecio(cita.precio)}</span>
           </div>
 
           {/* Pie solo en print */}
-          <p className="hidden print:block text-center text-xs text-gray-300 pt-2">
-            AppointVa — {new Date().toLocaleDateString("es-MX")}
-          </p>
+          <div className="hidden print:block text-center border-t-2 border-dashed border-gray-200 py-3 px-5">
+            <p className="text-[10px] text-gray-400">
+              Generado el {new Date().toLocaleString("es-MX", { day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+            </p>
+            <p className="text-[10px] text-gray-300 mt-0.5">appointva.com</p>
+          </div>
         </div>
 
         {/* Acciones — ocultas al imprimir */}
@@ -310,7 +336,16 @@ export default function ConfirmacionPage() {
               Hacer otra reserva
             </button>
 
-            {cancelable && !confirmandoCancelar && puedeCancel && (
+            {cancelable && !confirmandoCancelar && !reagendando && puedeCancel && (
+              <button
+                onClick={() => setReagendando(true)}
+                className="text-sm text-gray-500 hover:text-gray-700 hover:underline"
+              >
+                Reagendar
+              </button>
+            )}
+
+            {cancelable && !confirmandoCancelar && !reagendando && puedeCancel && (
               <button
                 onClick={() => setConfirmandoCancelar(true)}
                 className="text-sm text-red-500 hover:text-red-600 hover:underline"
@@ -320,7 +355,7 @@ export default function ConfirmacionPage() {
             )}
           </div>
 
-          {cancelable && horasCancelacion > 0 && (
+          {cancelable && horasCancelacion > 0 && !reagendando && !confirmandoCancelar && (
             <p className="text-xs text-center text-gray-400">
               Cancelaciones permitidas con al menos {horasCancelacion} hora{horasCancelacion === 1 ? "" : "s"} de anticipación.
             </p>
@@ -328,8 +363,68 @@ export default function ConfirmacionPage() {
 
           {cancelable && !puedeCancel && horasCancelacion > 0 && (
             <p className="text-xs text-center text-red-400 font-medium">
-              Este negocio no permite cancelaciones con menos de {horasCancelacion} hora{horasCancelacion === 1 ? "" : "s"} de anticipación.
+              Este negocio no permite cambios con menos de {horasCancelacion} hora{horasCancelacion === 1 ? "" : "s"} de anticipación.
             </p>
+          )}
+
+          {/* Panel reagendar */}
+          {reagendando && (
+            <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 space-y-3">
+              <div className="flex items-center gap-2 mb-1">
+                <CalendarClock size={15} className="text-blue-500" />
+                <p className="text-sm font-semibold text-gray-800">Elige una nueva fecha y hora</p>
+              </div>
+              <input
+                type="date"
+                value={fechaReag}
+                min={new Date().toISOString().split("T")[0]}
+                onChange={(e) => { setFechaReag(e.target.value); setSlotReag(""); }}
+                className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 outline-none focus:border-primary bg-white"
+              />
+              {fechaReag && (
+                cargandoSlots ? (
+                  <p className="text-xs text-gray-400 text-center py-2">Cargando horarios...</p>
+                ) : slotsDisp.length === 0 ? (
+                  <p className="text-xs text-gray-400 text-center py-2">Sin disponibilidad ese día. Elige otra fecha.</p>
+                ) : (
+                  <div className="grid grid-cols-3 gap-1.5 max-h-36 overflow-y-auto">
+                    {slotsDisp.map((s) => (
+                      <button
+                        key={s.inicio}
+                        onClick={() => setSlotReag(s.inicio)}
+                        className={`py-1.5 text-xs font-medium rounded-lg border transition ${
+                          slotReag === s.inicio
+                            ? "bg-primary text-white border-primary"
+                            : "bg-white text-gray-700 border-gray-200 hover:border-primary"
+                        }`}
+                      >
+                        {s.horaTexto}
+                      </button>
+                    ))}
+                  </div>
+                )
+              )}
+              {errorReag && (
+                <p className="text-xs text-red-500 text-center">
+                  {(errorReag as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje ?? "No se pudo reagendar"}
+                </p>
+              )}
+              <div className="flex gap-2 pt-1">
+                <button
+                  onClick={() => { setReagendando(false); setFechaReag(""); setSlotReag(""); }}
+                  className="flex-1 py-2 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => reagendar()}
+                  disabled={!slotReag || confirmandoReag}
+                  className="flex-1 py-2 rounded-lg bg-primary hover:bg-primary-dark text-white text-sm font-semibold disabled:opacity-50 transition"
+                >
+                  {confirmandoReag ? "Reagendando..." : "Confirmar cambio"}
+                </button>
+              </div>
+            </div>
           )}
 
           {confirmandoCancelar && (

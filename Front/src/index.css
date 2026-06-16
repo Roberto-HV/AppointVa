@@ -2,6 +2,24 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /* Canales RGB para primary (permite opacity modifiers: bg-primary/10) */
+  --color-primary:       200 169 97;   /* #C8A961 */
+  --color-primary-dark:  168 139 69;   /* #a88b45 */
+  --color-primary-light: 232 212 160;  /* #e8d4a0 */
+}
+
+@keyframes stepIn {
+  from { opacity: 0; transform: translateX(14px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-step-in  { animation: stepIn  0.22s ease-out both; }
+.animate-fade-in  { animation: fadeIn  0.22s ease-out both; }
+
 @layer base {
   * {
     box-sizing: border-box;

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
 import Select from "../../components/ui/Select";
 import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -168,6 +169,8 @@ export default function PerfilPage() {
   const { register, handleSubmit, reset, watch, setValue, formState: { errors, isSubmitting, isDirty } } = useForm<PerfilForm>({
     resolver: zodResolver(schema) as Resolver<PerfilForm>,
   });
+
+  useUnsavedChanges(isDirty);
 
   useEffect(() => {
     if (negocio) {

@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { clientesApi } from "../../api/clientes";
 import Modal from "../../components/ui/Modal";
 import EstadoBadge from "../../components/ui/EstadoBadge";
+import { exportarExcel } from "../../utils/exportarExcel";
 import type { ClienteDto } from "../../types";
 
 function formatFecha(iso: string) {
@@ -26,6 +28,7 @@ const TAMANO = 30;
 
 export default function ClientesPage() {
   const qc = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [buscar, setBuscar] = useState("");
   const [buscarActivo, setBuscarActivo] = useState("");
   const [pagina, setPagina] = useState(1);
@@ -37,6 +40,21 @@ export default function ClientesPage() {
     queryKey: ["clientes", buscarActivo, pagina],
     queryFn: () => clientesApi.obtenerTodos(buscarActivo || undefined, pagina, TAMANO),
   });
+
+  // Auto-abrir detalle si viene clienteId en la URL (e.g. desde CitasPage)
+  const clienteIdParam = searchParams.get("clienteId");
+  const { data: clienteDirecto } = useQuery({
+    queryKey: ["cliente-directo", clienteIdParam],
+    queryFn: () => clientesApi.obtenerPorId(clienteIdParam!),
+    enabled: !!clienteIdParam && !clienteSel,
+  });
+  useEffect(() => {
+    if (clienteDirecto && !clienteSel) {
+      setClienteSel(clienteDirecto);
+      setNotas(clienteDirecto.notas ?? "");
+      setSearchParams({}, { replace: true });
+    }
+  }, [clienteDirecto]);
 
   const clientes = paginaClientes?.datos ?? [];
   const totalClientes = paginaClientes?.total ?? 0;
@@ -66,9 +84,33 @@ export default function ClientesPage() {
 
   const buscarClientes = () => { setPagina(1); setBuscarActivo(buscar); };
 
+  const exportarClientes = () => {
+    const enc = ["Nombre", "Teléfono", "Correo", "Total citas", "Inasistencias", "Última visita", "Cliente desde"];
+    const filas = clientes.map((c) => [
+      c.nombreCompleto,
+      c.telefono,
+      c.email ?? "",
+      c.totalCitas,
+      c.cantidadInasistencias,
+      c.ultimaCitaEn ? new Date(c.ultimaCitaEn).toLocaleDateString("es-MX") : "",
+      new Date(c.fechaCreacion).toLocaleDateString("es-MX"),
+    ]);
+    exportarExcel(enc, [filas], "clientes", "Clientes");
+  };
+
   return (
     <div className="p-4 sm:p-8">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Clientes</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Clientes</h1>
+        {clientes.length > 0 && (
+          <button
+            onClick={exportarClientes}
+            className="text-xs text-gray-500 hover:text-gray-700 border border-gray-200 hover:border-gray-300 px-3 py-1.5 rounded-lg transition"
+          >
+            Exportar Excel
+          </button>
+        )}
+      </div>
 
       {/* Buscador */}
       <div className="flex gap-2 mb-6">

@@ -194,10 +194,15 @@ namespace AppointVaAPI.Controllers.V1
                 }
             }
 
-            // Programar recordatorio antes de la cita si el cliente tiene email
+            // Programar recordatorio usando el setting del negocio (no hardcodeado)
             if (!string.IsNullOrWhiteSpace(cliente.Email))
             {
-                var horaRecordatorio = cita.InicioEn.AddHours(-24);
+                var horasAntes = await _db.Negocios
+                    .Where(n => n.Id == negocioId)
+                    .Select(n => n.HorasRecordatorio)
+                    .FirstOrDefaultAsync();
+                var horas = horasAntes > 0 ? horasAntes : 24;
+                var horaRecordatorio = cita.InicioEn.AddHours(-horas);
                 if (horaRecordatorio > DateTime.UtcNow)
                     _jobClient.Schedule<IRecordatorioService>(
                         s => s.EnviarRecordatorioCitaAsync(cita.Id),

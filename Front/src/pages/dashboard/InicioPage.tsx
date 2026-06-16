@@ -1,10 +1,13 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
+import { CheckCircle2, Circle, X, Scissors, Users, Link2 } from "lucide-react";
 import { dashboardApi } from "../../api/dashboard";
 import { citasApi } from "../../api/citas";
+import { negociosApi } from "../../api/negocios";
 import { useAuthStore } from "../../store/authStore";
 import EstadoBadge from "../../components/ui/EstadoBadge";
 import { Skeleton } from "../../components/ui/Skeleton";
@@ -42,15 +45,98 @@ function formatPrecioCorto(n: number) {
   return `$${Math.round(n).toLocaleString("es-MX")}`;
 }
 
+// ── Wizard de onboarding ──────────────────────────────────────────────────────
+interface OnboardingProps {
+  negocioId: string;
+  slug: string;
+  tieneCitas: boolean;
+  tieneServicios: boolean;
+}
+
+function WizardOnboarding({ negocioId, slug, tieneCitas, tieneServicios }: OnboardingProps) {
+  const keyStorage = `onboarding-ok-${negocioId}`;
+  const [cerrado, setCerrado] = useState(() => !!localStorage.getItem(keyStorage));
+
+  if (cerrado || tieneCitas) return null;
+
+  const cerrar = () => {
+    localStorage.setItem(keyStorage, "1");
+    setCerrado(true);
+  };
+
+  const pasos = [
+    { hecho: true,           icono: CheckCircle2, label: "Cuenta creada", desc: "Tu negocio está registrado en AppointVa", accion: null },
+    { hecho: tieneServicios, icono: Scissors,     label: "Agrega servicios", desc: "Define los servicios que ofreces y sus precios", accion: { href: "/dashboard/servicios", texto: "Ir a Servicios" } },
+    { hecho: false,          icono: Users,         label: "Agrega tu equipo", desc: "Registra empleados para asignar citas", accion: { href: "/dashboard/empleados", texto: "Ir a Empleados" } },
+    { hecho: false,          icono: Link2,          label: "Comparte tu enlace", desc: `Envía este link a tus clientes para que reserven`, accion: null, link: `${window.location.origin}/b/${slug}` },
+  ];
+
+  const hechos = pasos.filter((p) => p.hecho).length;
+  const pct = Math.round((hechos / pasos.length) * 100);
+
+  return (
+    <div className="bg-white rounded-xl border border-primary/20 p-5 mb-6 relative">
+      <button onClick={cerrar} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition">
+        <X size={16} />
+      </button>
+
+      <div className="flex items-center justify-between mb-1 pr-6">
+        <h3 className="text-sm font-bold text-gray-800">Configura tu negocio</h3>
+        <span className="text-xs font-semibold text-primary">{hechos}/{pasos.length} completados</span>
+      </div>
+      <div className="w-full bg-gray-100 rounded-full h-1.5 mb-5">
+        <div className="bg-primary h-1.5 rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+      </div>
+
+      <div className="space-y-3">
+        {pasos.map((p, i) => (
+          <div key={i} className={`flex items-start gap-3 p-3 rounded-lg ${p.hecho ? "bg-gray-50" : "bg-primary/5 border border-primary/10"}`}>
+            <div className={`mt-0.5 shrink-0 ${p.hecho ? "text-emerald-500" : "text-primary"}`}>
+              {p.hecho ? <CheckCircle2 size={18} /> : <Circle size={18} />}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className={`text-sm font-medium ${p.hecho ? "text-gray-400 line-through" : "text-gray-800"}`}>{p.label}</p>
+              {!p.hecho && <p className="text-xs text-gray-500 mt-0.5">{p.desc}</p>}
+              {!p.hecho && p.link && (
+                <div className="flex items-center gap-2 mt-2">
+                  <code className="text-xs bg-white border border-gray-200 px-2 py-1 rounded text-primary truncate max-w-[200px] sm:max-w-xs">{p.link}</code>
+                  <button
+                    onClick={() => navigator.clipboard.writeText(p.link!)}
+                    className="text-xs text-primary font-semibold hover:underline shrink-0"
+                  >
+                    Copiar
+                  </button>
+                </div>
+              )}
+            </div>
+            {!p.hecho && p.accion && (
+              <Link to={p.accion.href} className="shrink-0 text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/20 px-3 py-1.5 rounded-lg transition">
+                {p.accion.texto}
+              </Link>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Vista del propietario ─────────────────────────────────────────────────────
 function VistaPropietario({ nombre }: { nombre: string }) {
   const [dias, setDias] = useState(14);
+  const usuario = useAuthStore((s) => s.usuario);
 
   const { data, isLoading } = useQuery({
     queryKey: ["dashboard-resumen"],
     queryFn: dashboardApi.obtenerResumen,
     staleTime: 0,
     refetchInterval: 30_000,
+  });
+
+  const { data: negocio } = useQuery({
+    queryKey: ["negocio-perfil"],
+    queryFn: negociosApi.obtenerPerfil,
+    staleTime: 1000 * 60 * 10,
   });
 
   const { data: tendencia = [] } = useQuery({
@@ -61,7 +147,16 @@ function VistaPropietario({ nombre }: { nombre: string }) {
   return (
     <div className="p-4 sm:p-8">
       <h1 className="text-2xl font-bold text-gray-900 mb-1">Bienvenido, {nombre}</h1>
-      <p className="text-gray-400 text-sm mb-8">Resumen de tu negocio</p>
+      <p className="text-gray-400 text-sm mb-6">Resumen de tu negocio</p>
+
+      {negocio && usuario?.negocioId && (
+        <WizardOnboarding
+          negocioId={usuario.negocioId}
+          slug={negocio.slug}
+          tieneCitas={(data?.citasMes ?? 0) > 0}
+          tieneServicios={(data?.topServicios?.length ?? 0) > 0}
+        />
+      )}
 
       {isLoading ? (
         <>
@@ -151,6 +246,43 @@ function VistaPropietario({ nombre }: { nombre: string }) {
             )}
           </div>
 
+          {/* Highlight próxima cita */}
+          {data.proximasCitas.length > 0 && (() => {
+            const proxima = data.proximasCitas[0];
+            const msRestantes = new Date(proxima.inicioEn).getTime() - Date.now();
+            const minutos = Math.round(msRestantes / 60000);
+            const esHoy = msRestantes > 0 && msRestantes < 24 * 60 * 60 * 1000;
+            const etiqueta = msRestantes <= 0
+              ? "En curso"
+              : minutos < 60
+              ? `En ${minutos} min`
+              : minutos < 1440
+              ? `En ${Math.floor(minutos / 60)}h ${minutos % 60 > 0 ? `${minutos % 60}min` : ""}`
+              : null;
+            if (!esHoy && !etiqueta) return null;
+            return (
+              <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 mb-6 flex items-center justify-between gap-4 animate-fade-in">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
+                    <span className="text-lg">📅</span>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs text-primary font-semibold uppercase tracking-wide mb-0.5">Próxima cita</p>
+                    <p className="font-semibold text-gray-900 truncate">{proxima.nombreCliente}</p>
+                    <p className="text-xs text-gray-500 truncate">{proxima.nombreServicio} · {proxima.nombreEmpleado}</p>
+                  </div>
+                </div>
+                <div className="text-right shrink-0">
+                  {etiqueta && (
+                    <p className={`text-sm font-bold ${msRestantes <= 0 ? "text-green-600" : "text-primary"}`}>{etiqueta}</p>
+                  )}
+                  <p className="text-xs text-gray-400 capitalize">{formatFechaHora(proxima.inicioEn)}</p>
+                  <EstadoBadge estado={proxima.estadoTexto} />
+                </div>
+              </div>
+            );
+          })()}
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 bg-white rounded-xl border border-gray-100 p-5">
               <h2 className="text-sm font-semibold text-gray-700 mb-4">Próximas citas</h2>
@@ -158,8 +290,8 @@ function VistaPropietario({ nombre }: { nombre: string }) {
                 <p className="text-gray-400 text-sm">No hay citas próximas</p>
               ) : (
                 <div className="space-y-3">
-                  {data.proximasCitas.map((c) => (
-                    <div key={c.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                  {data.proximasCitas.map((c, idx) => (
+                    <div key={c.id} className={`flex items-center justify-between py-2 border-b border-gray-50 last:border-0 ${idx === 0 ? "opacity-50" : ""}`}>
                       <div>
                         <p className="text-sm font-medium text-gray-800">{c.nombreCliente}</p>
                         <p className="text-xs text-gray-400">{c.nombreServicio} · {c.nombreEmpleado}</p>

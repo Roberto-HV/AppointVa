@@ -6,7 +6,7 @@ import {
 } from "recharts";
 import { Download, TrendingUp, Calendar, DollarSign, CheckCircle } from "lucide-react";
 import { reportesApi, type FiltrosReporteCitas } from "../../api/reportes";
-
+import { exportarExcel } from "../../utils/exportarExcel";
 import { empleadosApi } from "../../api/empleados";
 import { serviciosApi } from "../../api/servicios";
 import EstadoBadge from "../../components/ui/EstadoBadge";
@@ -66,7 +66,6 @@ export default function ReportesPage() {
   const [empleadoId, setEmpleadoId] = useState("");
   const [servicioId, setServicioId] = useState("");
   const [estado, setEstado] = useState("");
-  const [exportando, setExportando] = useState(false);
 
   const filtros: FiltrosReporteCitas = {
     desde,
@@ -101,13 +100,40 @@ export default function ReportesPage() {
   });
 
 
-  const handleExportar = async () => {
-    setExportando(true);
-    try {
-      await reportesApi.exportarCitasCsv(filtros);
-    } finally {
-      setExportando(false);
-    }
+  const handleExportar = () => {
+    if (!reporteCitas?.citas.length) return;
+
+    const fmtFecha = (iso: string) =>
+      new Date(iso).toLocaleDateString("es-MX", { day: "2-digit", month: "long", year: "numeric" });
+    const subtitulo = `Período: ${fmtFecha(desde)} — ${fmtFecha(hasta)}`;
+
+    const encabezados = ["Código", "Cliente", "Teléfono", "Email", "Servicio", "Empleado", "Fecha", "Duración (min)", "Precio", "Pagada", "Método de pago", "Estado", "Notas"];
+    const filas = reporteCitas.citas.map((c) => [
+      c.codigoConfirmacion,
+      c.nombreCliente,
+      c.telefonoCliente ?? "",
+      c.emailCliente ?? "",
+      c.nombreServicio,
+      c.nombreEmpleado,
+      new Date(c.inicioEn).toLocaleString("es-MX", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true }),
+      c.duracionMinutos,
+      `$${c.precio.toFixed(2)}`,
+      c.pagada ? "Sí" : "No",
+      c.metodoPago ?? "",
+      c.estadoTexto,
+      c.notas ?? "",
+    ]);
+
+    const totalMinutos = reporteCitas.citas.reduce((s, c) => s + c.duracionMinutos, 0);
+    const totales: (string | number)[] = [
+      `${reporteCitas.totalCitas} citas`,
+      "", "", "", "", "", "",
+      totalMinutos,
+      `$${reporteCitas.totalIngresos.toFixed(2)}`,
+      "", "", "", "",
+    ];
+
+    exportarExcel(encabezados, [filas], "reporte-citas", "Reporte de Citas", { subtitulo, totales });
   };
 
   const inputCls = "px-3 py-2 text-sm rounded-lg border border-gray-200 outline-none focus:border-primary bg-white";
@@ -123,11 +149,11 @@ export default function ReportesPage() {
         {tab === "citas" && (
           <button
             onClick={handleExportar}
-            disabled={exportando || !reporteCitas?.citas.length}
+            disabled={!reporteCitas?.citas.length}
             className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-dark disabled:opacity-40 text-white text-sm font-semibold rounded-lg transition"
           >
             <Download size={15} />
-            {exportando ? "Exportando..." : "Exportar CSV"}
+            Exportar Excel
           </button>
         )}
       </div>
