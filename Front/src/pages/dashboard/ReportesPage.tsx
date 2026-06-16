@@ -11,7 +11,7 @@ import { serviciosApi } from "../../api/servicios";
 import EstadoBadge from "../../components/ui/EstadoBadge";
 import { SkeletonTableRows } from "../../components/ui/Skeleton";
 
-type Tab = "citas" | "ingresos";
+type Tab = "citas" | "ingresos" | "empleados";
 
 const ESTADOS_OPCIONES = [
   { valor: 1, texto: "Pendiente" },
@@ -96,7 +96,7 @@ export default function ReportesPage() {
   const { data: reporteIngresos, isLoading: cargandoIngresos } = useQuery({
     queryKey: ["reporte-ingresos", desde, hasta],
     queryFn: () => reportesApi.obtenerIngresos(desde, hasta),
-    enabled: tab === "ingresos",
+    enabled: tab === "ingresos" || tab === "empleados",
   });
 
   const handleExportar = async () => {
@@ -175,15 +175,19 @@ export default function ReportesPage() {
 
       {/* Tabs */}
       <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
-        {(["citas", "ingresos"] as Tab[]).map((t) => (
+        {([
+          { id: "citas", label: "Citas" },
+          { id: "ingresos", label: "Ingresos" },
+          { id: "empleados", label: "Empleados" },
+        ] as { id: Tab; label: string }[]).map((t) => (
           <button
-            key={t}
-            onClick={() => setTab(t)}
+            key={t.id}
+            onClick={() => setTab(t.id)}
             className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${
-              tab === t ? "bg-white shadow text-gray-900" : "text-gray-500 hover:text-gray-700"
+              tab === t.id ? "bg-white shadow text-gray-900" : "text-gray-500 hover:text-gray-700"
             }`}
           >
-            {t === "citas" ? "Citas" : "Ingresos"}
+            {t.label}
           </button>
         ))}
       </div>
@@ -247,6 +251,116 @@ export default function ReportesPage() {
               </tbody>
             </table>
           </div>
+        </>
+      )}
+
+      {/* ── Tab: Empleados ── */}
+      {tab === "empleados" && (
+        <>
+          {cargandoIngresos ? (
+            <div className="bg-white rounded-xl border border-gray-100 p-8 flex items-center justify-center">
+              <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full" />
+            </div>
+          ) : !reporteIngresos?.porEmpleado.length ? (
+            <div className="bg-white rounded-xl border border-gray-100 p-10 text-center text-sm text-gray-400">
+              No hay datos de empleados en el rango seleccionado.
+            </div>
+          ) : (
+            <>
+              {/* Tarjetas resumen del equipo */}
+              {(() => {
+                const totalEquipoCitas = reporteIngresos.porEmpleado.reduce((s, e) => s + e.totalCitas, 0);
+                const totalEquipoIngresos = reporteIngresos.porEmpleado.reduce((s, e) => s + e.totalIngresos, 0);
+                const ticketPromedioEquipo = totalEquipoCitas > 0 ? totalEquipoIngresos / totalEquipoCitas : 0;
+                return (
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <Tarjeta label="Citas del equipo" valor={String(totalEquipoCitas)} icono={<Calendar size={18} />} />
+                    <Tarjeta label="Ingresos del equipo" valor={formatPrecio(totalEquipoIngresos)} icono={<DollarSign size={18} />} />
+                    <Tarjeta label="Ticket promedio" valor={formatPrecio(ticketPromedioEquipo)} icono={<TrendingUp size={18} />} />
+                  </div>
+                );
+              })()}
+
+              {/* Gráfica de barras por empleado */}
+              <div className="bg-white rounded-xl border border-gray-100 p-5">
+                <h2 className="text-sm font-semibold text-gray-700 mb-4">Ingresos por empleado</h2>
+                <ResponsiveContainer width="100%" height={Math.max(200, reporteIngresos.porEmpleado.length * 52)}>
+                  <BarChart
+                    data={reporteIngresos.porEmpleado}
+                    layout="vertical"
+                    margin={{ left: 8, right: 32 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                    <XAxis type="number" tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 11 }} />
+                    <YAxis type="category" dataKey="nombreEmpleado" width={120} tick={{ fontSize: 11 }} />
+                    <Tooltip formatter={(v) => formatPrecio(Number(v))} labelFormatter={(l) => `Empleado: ${l}`} />
+                    <Bar dataKey="totalIngresos" radius={[0, 6, 6, 0]} maxBarSize={36}>
+                      {reporteIngresos.porEmpleado.map((_, i) => (
+                        <Cell key={i} fill={COLORES_GRAFICA[i % COLORES_GRAFICA.length]} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Tabla detallada por empleado */}
+              <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-100">
+                      <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Empleado</th>
+                      <th className="px-5 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Citas</th>
+                      <th className="px-5 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Ingresos</th>
+                      <th className="px-5 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Ticket promedio</th>
+                      <th className="px-5 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">% del total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(() => {
+                      const totalEquipoIngresos = reporteIngresos.porEmpleado.reduce((s, e) => s + e.totalIngresos, 0);
+                      return reporteIngresos.porEmpleado
+                        .slice()
+                        .sort((a, b) => b.totalIngresos - a.totalIngresos)
+                        .map((e, i) => {
+                          const ticket = e.totalCitas > 0 ? e.totalIngresos / e.totalCitas : 0;
+                          const pct = totalEquipoIngresos > 0 ? (e.totalIngresos / totalEquipoIngresos) * 100 : 0;
+                          const iniciales = e.nombreEmpleado.split(" ").slice(0, 2).map((p) => p[0]).join("").toUpperCase();
+                          return (
+                            <tr key={e.empleadoId} className="border-b border-gray-50 last:border-0 hover:bg-gray-50 transition">
+                              <td className="px-5 py-3">
+                                <div className="flex items-center gap-3">
+                                  <div
+                                    className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
+                                    style={{ backgroundColor: COLORES_GRAFICA[i % COLORES_GRAFICA.length] }}
+                                  >
+                                    {iniciales}
+                                  </div>
+                                  <span className="font-medium text-gray-900">{e.nombreEmpleado}</span>
+                                </div>
+                              </td>
+                              <td className="px-5 py-3 text-right text-gray-600">{e.totalCitas}</td>
+                              <td className="px-5 py-3 text-right font-semibold text-gray-900">{formatPrecio(e.totalIngresos)}</td>
+                              <td className="px-5 py-3 text-right text-gray-600">{formatPrecio(ticket)}</td>
+                              <td className="px-5 py-3 text-right">
+                                <div className="flex items-center justify-end gap-2">
+                                  <div className="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                    <div
+                                      className="h-full rounded-full"
+                                      style={{ width: `${pct}%`, backgroundColor: COLORES_GRAFICA[i % COLORES_GRAFICA.length] }}
+                                    />
+                                  </div>
+                                  <span className="text-xs text-gray-500 w-10 text-right">{pct.toFixed(1)}%</span>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        });
+                    })()}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
         </>
       )}
 

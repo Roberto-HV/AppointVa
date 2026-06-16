@@ -4,8 +4,9 @@ import Select from "../../components/ui/Select";
 import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Eye, EyeOff, Copy, Check } from "lucide-react";
+import { Eye, EyeOff, Copy, Check, Download } from "lucide-react";
 import { Tooltip } from "../../components/ui/Tooltip";
+import { QRCodeCanvas } from "qrcode.react";
 import Modal from "../../components/ui/Modal";
 import { negociosApi } from "../../api/negocios";
 import { authApi } from "../../api/auth";
@@ -160,6 +161,16 @@ export default function PerfilPage() {
     setTimeout(() => setUrlCopiada(false), 2000);
   };
 
+  const descargarQR = () => {
+    const canvas = document.getElementById("qr-reservas") as HTMLCanvasElement | null;
+    if (!canvas) return;
+    const url = canvas.toDataURL("image/png");
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `qr-${negocio?.slug ?? "reservas"}.png`;
+    a.click();
+  };
+
   // ── Días bloqueados ───────────────────────────────────────────────────────
   const [nuevaFecha, setNuevaFecha] = useState("");
   const [nuevoMotivo, setNuevoMotivo] = useState("");
@@ -256,6 +267,46 @@ export default function PerfilPage() {
               {urlCopiada ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
               {urlCopiada ? "¡Copiado!" : "Copiar"}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* QR de reservas */}
+      {negocio && (
+        <div className="bg-white rounded-xl border border-gray-100 p-5 mb-6">
+          <h2 className="text-sm font-semibold text-gray-700 mb-4">Código QR de reservas</h2>
+          <div className="flex items-start gap-6 flex-wrap">
+            <div className="p-3 bg-white border border-gray-100 rounded-xl shadow-sm inline-block">
+              <QRCodeCanvas
+                id="qr-reservas"
+                value={bookingUrl}
+                size={148}
+                level="M"
+                includeMargin={false}
+                bgColor="#ffffff"
+                fgColor="#1a1a1a"
+              />
+            </div>
+            <div className="flex flex-col justify-center gap-3">
+              <p className="text-sm text-gray-500 max-w-xs">
+                Comparte este código QR en tu negocio para que los clientes reserven escaneándolo con su celular.
+              </p>
+              <div className="flex gap-2 flex-wrap">
+                <button
+                  onClick={descargarQR}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-900 hover:bg-gray-700 text-white text-sm font-semibold rounded-lg transition"
+                >
+                  <Download size={14} />
+                  Descargar PNG
+                </button>
+                <button
+                  onClick={() => window.print()}
+                  className="flex items-center gap-2 px-4 py-2 border border-gray-200 hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg transition"
+                >
+                  Imprimir
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

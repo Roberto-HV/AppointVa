@@ -4,6 +4,7 @@ import { citasApi, ESTADOS, METODOS_PAGO } from "../../api/citas";
 import Select from "../../components/ui/Select";
 import { empleadosApi } from "../../api/empleados";
 import { serviciosApi } from "../../api/servicios";
+import { negociosApi } from "../../api/negocios";
 import { api } from "../../api/axios";
 import EstadoBadge from "../../components/ui/EstadoBadge";
 import Modal from "../../components/ui/Modal";
@@ -98,6 +99,13 @@ export default function CitasPage() {
   const citas = pagCitas?.datos ?? [];
   const totalCitas = pagCitas?.total ?? 0;
   const totalPaginas = Math.ceil(totalCitas / TAMANO) || 1;
+
+  const { data: perfil } = useQuery({
+    queryKey: ["negocio-perfil-layout"],
+    queryFn: negociosApi.obtenerPerfil,
+    staleTime: 1000 * 60 * 5,
+  });
+  const nombreNegocio = perfil?.nombre ?? "";
 
   const { data: empleados = [] } = useQuery({
     queryKey: ["empleados"],
@@ -258,6 +266,20 @@ export default function CitasPage() {
         return c.nombreCliente.toLowerCase().includes(q) || c.telefonoCliente.includes(q);
       })
     : citas;
+
+  // ── WhatsApp ─────────────────────────────────────────────────────────────────
+  const whatsappUrl = (c: CitaDto) => {
+    const tel = c.telefonoCliente.replace(/\D/g, "");
+    const negocio = nombreNegocio ? ` en *${nombreNegocio}*` : "";
+    const msg =
+      `Hola ${c.nombreCliente} 👋, te recordamos tu cita${negocio}:\n\n` +
+      `📌 *Servicio:* ${c.nombreServicio}\n` +
+      `👤 *Con:* ${c.nombreEmpleado}\n` +
+      `📅 *Fecha:* ${formatFechaHora(c.inicioEn)}\n` +
+      `💰 *Total:* ${formatPrecio(c.precio)}\n\n` +
+      `¡Te esperamos!`;
+    return `https://wa.me/${tel}?text=${encodeURIComponent(msg)}`;
+  };
 
   // ── CSV export ───────────────────────────────────────────────────────────────
   const exportarCSV = () => {
@@ -436,12 +458,24 @@ export default function CitasPage() {
                     <td className="px-4 py-3 text-center">
                       <div className="flex items-center justify-center gap-1.5">
                         <EstadoBadge estado={c.estadoTexto} />
+                        {/* WhatsApp — solo móvil */}
+                        <a
+                          href={whatsappUrl(c)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="sm:hidden inline-flex items-center justify-center w-7 h-7 rounded-lg bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] transition"
+                          title="Enviar WhatsApp"
+                        >
+                          <svg viewBox="0 0 32 32" fill="currentColor" className="w-4 h-4">
+                            <path d="M16.003 0C7.164 0 0 7.164 0 16.003c0 2.82.737 5.463 2.027 7.759L0 32l8.484-2.003A15.93 15.93 0 0016.003 32C24.836 32 32 24.836 32 16.003 32 7.164 24.836 0 16.003 0zm7.29 21.948c-.398-.2-2.362-1.166-2.728-1.3-.366-.133-.632-.2-.898.2-.267.4-1.032 1.3-1.265 1.566-.233.267-.466.3-.865.1-.398-.2-1.682-.62-3.204-1.977-1.184-1.056-1.984-2.36-2.216-2.758-.233-.4-.025-.616.174-.814.179-.179.4-.466.6-.7.2-.233.266-.4.4-.666.133-.267.066-.5-.033-.7-.1-.2-.898-2.162-1.232-2.96-.324-.778-.655-.672-.898-.684-.232-.013-.5-.013-.765-.013-.267 0-.7.1-1.065.5-.366.4-1.398 1.365-1.398 3.328s1.432 3.86 1.632 4.127c.2.267 2.818 4.302 6.825 6.03.953.414 1.698.66 2.279.844.958.306 1.83.263 2.52.16.769-.115 2.362-.965 2.695-1.897.333-.933.333-1.732.233-1.899-.1-.166-.366-.266-.765-.466z"/>
+                          </svg>
+                        </a>
                         {/* Botón de acciones — solo móvil */}
-                        {(TRANSICIONES[c.estadoTexto] || c.estadoTexto === "Pendiente" || c.estadoTexto === "Confirmada") && (
+                        {TRANSICIONES[c.estadoTexto] && (
                           <button
                             onClick={() => abrirCambioEstado(c)}
-                            className="sm:hidden text-gray-400 hover:text-gray-700 p-1 rounded transition"
-                            title="Acciones"
+                            className="sm:hidden text-gray-400 hover:text-gray-700 p-1 rounded transition text-base leading-none"
+                            title="Cambiar estado"
                           >
                             ⋮
                           </button>
@@ -452,6 +486,19 @@ export default function CitasPage() {
                     {/* Acciones — solo desktop */}
                     <td className="px-4 py-3 text-right hidden sm:table-cell">
                       <div className="flex justify-end items-center gap-2">
+                        {/* WhatsApp */}
+                        <Tooltip text="Enviar recordatorio por WhatsApp">
+                          <a
+                            href={whatsappUrl(c)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] transition"
+                          >
+                            <svg viewBox="0 0 32 32" fill="currentColor" className="w-3.5 h-3.5">
+                              <path d="M16.003 0C7.164 0 0 7.164 0 16.003c0 2.82.737 5.463 2.027 7.759L0 32l8.484-2.003A15.93 15.93 0 0016.003 32C24.836 32 32 24.836 32 16.003 32 7.164 24.836 0 16.003 0zm7.29 21.948c-.398-.2-2.362-1.166-2.728-1.3-.366-.133-.632-.2-.898.2-.267.4-1.032 1.3-1.265 1.566-.233.267-.466.3-.865.1-.398-.2-1.682-.62-3.204-1.977-1.184-1.056-1.984-2.36-2.216-2.758-.233-.4-.025-.616.174-.814.179-.179.4-.466.6-.7.2-.233.266-.4.4-.666.133-.267.066-.5-.033-.7-.1-.2-.898-2.162-1.232-2.96-.324-.778-.655-.672-.898-.684-.232-.013-.5-.013-.765-.013-.267 0-.7.1-1.065.5-.366.4-1.398 1.365-1.398 3.328s1.432 3.86 1.632 4.127c.2.267 2.818 4.302 6.825 6.03.953.414 1.698.66 2.279.844.958.306 1.83.263 2.52.16.769-.115 2.362-.965 2.695-1.897.333-.933.333-1.732.233-1.899-.1-.166-.366-.266-.765-.466z"/>
+                            </svg>
+                          </a>
+                        </Tooltip>
                         <Tooltip text={c.notas ? "Ver o editar notas internas" : "Agregar una nota interna"}>
                           <button
                             onClick={() => abrirNotas(c)}
