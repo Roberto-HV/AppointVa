@@ -36,13 +36,15 @@ const schemaInvitar = z.object({
 type InvitarForm = z.infer<typeof schemaInvitar>;
 
 const schemaBloqueo = z.object({
-  inicioEn: z.string().min(1, "Fecha de inicio requerida"),
-  finEn: z.string().min(1, "Fecha de fin requerida"),
+  fechaInicio: z.string().min(1, "Fecha requerida"),
+  horaInicio: z.string().min(1, "Hora requerida"),
+  fechaFin: z.string().min(1, "Fecha requerida"),
+  horaFin: z.string().min(1, "Hora requerida"),
   motivo: z.string().optional(),
-}).refine((d) => d.finEn > d.inicioEn, {
-  message: "El fin debe ser posterior al inicio",
-  path: ["finEn"],
-});
+}).refine(
+  (d) => `${d.fechaFin}T${d.horaFin}` > `${d.fechaInicio}T${d.horaInicio}`,
+  { message: "El fin debe ser posterior al inicio", path: ["horaFin"] }
+);
 type BloqueoForm = z.infer<typeof schemaBloqueo>;
 
 export default function EmpleadosPage() {
@@ -128,7 +130,7 @@ export default function EmpleadosPage() {
 
   const abrirBloqueo = (emp: EmpleadoDto) => {
     setEmpleadoBloqueo(emp);
-    formBloqueo.reset({ inicioEn: "", finEn: "", motivo: "" });
+    formBloqueo.reset({ fechaInicio: "", horaInicio: "", fechaFin: "", horaFin: "", motivo: "" });
     setModalBloqueo(true);
   };
 
@@ -173,13 +175,13 @@ export default function EmpleadosPage() {
   const { mutate: crearBloqueo, isPending: creandoBloqueo } = useMutation({
     mutationFn: (data: BloqueoForm) =>
       empleadosApi.crearBloqueo(empleadoBloqueo!.id, {
-        inicioEn: data.inicioEn,
-        finEn: data.finEn,
+        inicioEn: `${data.fechaInicio}T${data.horaInicio}`,
+        finEn: `${data.fechaFin}T${data.horaFin}`,
         motivo: data.motivo || undefined,
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["bloqueos", empleadoBloqueo?.id] });
-      formBloqueo.reset({ inicioEn: "", finEn: "", motivo: "" });
+      formBloqueo.reset({ fechaInicio: "", horaInicio: "", fechaFin: "", horaFin: "", motivo: "" });
       toast("Bloqueo agregado");
     },
   });
@@ -480,31 +482,49 @@ export default function EmpleadosPage() {
           <div className="border-t border-gray-100 pt-4">
             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Agregar bloqueo</p>
             <form onSubmit={formBloqueo.handleSubmit((d) => crearBloqueo(d))} className="space-y-3">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Inicio *</label>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Inicio *</label>
+                <div className="grid grid-cols-2 gap-2">
                   <input
-                    type="datetime-local"
-                    {...formBloqueo.register("inicioEn")}
+                    type="date"
+                    {...formBloqueo.register("fechaInicio")}
                     className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-primary
-                      ${formBloqueo.formState.errors.inicioEn ? "border-red-400 bg-red-50" : "border-gray-200"}`}
+                      ${formBloqueo.formState.errors.fechaInicio ? "border-red-400 bg-red-50" : "border-gray-200"}`}
                   />
-                  {formBloqueo.formState.errors.inicioEn && (
-                    <p className="text-red-500 text-xs mt-1">{formBloqueo.formState.errors.inicioEn.message}</p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Fin *</label>
                   <input
-                    type="datetime-local"
-                    {...formBloqueo.register("finEn")}
+                    type="time"
+                    {...formBloqueo.register("horaInicio")}
                     className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-primary
-                      ${formBloqueo.formState.errors.finEn ? "border-red-400 bg-red-50" : "border-gray-200"}`}
+                      ${formBloqueo.formState.errors.horaInicio ? "border-red-400 bg-red-50" : "border-gray-200"}`}
                   />
-                  {formBloqueo.formState.errors.finEn && (
-                    <p className="text-red-500 text-xs mt-1">{formBloqueo.formState.errors.finEn.message}</p>
-                  )}
                 </div>
+                {(formBloqueo.formState.errors.fechaInicio || formBloqueo.formState.errors.horaInicio) && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {formBloqueo.formState.errors.fechaInicio?.message ?? formBloqueo.formState.errors.horaInicio?.message}
+                  </p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Fin *</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    type="date"
+                    {...formBloqueo.register("fechaFin")}
+                    className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-primary
+                      ${formBloqueo.formState.errors.fechaFin ? "border-red-400 bg-red-50" : "border-gray-200"}`}
+                  />
+                  <input
+                    type="time"
+                    {...formBloqueo.register("horaFin")}
+                    className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-primary
+                      ${formBloqueo.formState.errors.horaFin ? "border-red-400 bg-red-50" : "border-gray-200"}`}
+                  />
+                </div>
+                {(formBloqueo.formState.errors.fechaFin || formBloqueo.formState.errors.horaFin) && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {formBloqueo.formState.errors.fechaFin?.message ?? formBloqueo.formState.errors.horaFin?.message}
+                  </p>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">

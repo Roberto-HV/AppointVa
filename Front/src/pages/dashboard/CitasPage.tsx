@@ -19,8 +19,8 @@ import { intakeApi } from "../../api/intake";
 
 function formatFechaHora(iso: string) {
   return new Date(iso).toLocaleString("es-MX", {
-    day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true,
-  }).replace(/\bDe\b/g, "de");
+    day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true,
+  });
 }
 
 function formatPrecio(n: number) {
@@ -473,7 +473,7 @@ export default function CitasPage() {
                     </td>
                     <td className="px-4 py-3 text-gray-700 text-xs sm:text-sm">{c.nombreServicio}</td>
                     <td className="px-4 py-3 text-gray-700 hidden sm:table-cell">{c.nombreEmpleado}</td>
-                    <td className="px-4 py-3 text-gray-600 capitalize text-xs sm:text-sm">{formatFechaHora(c.inicioEn)}</td>
+                    <td className="px-4 py-3 text-gray-600 text-xs sm:text-sm">{formatFechaHora(c.inicioEn)}</td>
                     <td className="px-4 py-3 text-right font-medium text-gray-800 hidden sm:table-cell">{formatPrecio(c.precio)}</td>
 
                     {/* Columna de pago — solo desktop */}

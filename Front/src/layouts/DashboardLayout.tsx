@@ -88,29 +88,7 @@ export default function DashboardLayout() {
   const cerrarSidebar = () => setSidebarOpen(false);
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row bg-gray-50">
-
-      {/* ── Barra superior móvil ── */}
-      <header className="md:hidden bg-white border-b border-gray-100 px-4 py-3 flex items-center gap-3 sticky top-0 z-30">
-        <button
-          onClick={() => setSidebarOpen(true)}
-          className="text-gray-600 hover:text-gray-900 transition"
-        >
-          <Menu size={22} />
-        </button>
-        <span className="font-bold text-gray-900">AppointVa</span>
-        {esEmpleado && (
-          <span className="text-xs bg-blue-100 text-blue-600 font-semibold px-2 py-0.5 rounded-full">
-            Empleado
-          </span>
-        )}
-        {/* Badge móvil */}
-        {pendientesCnt > 0 && (
-          <span className="ml-auto bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
-            {pendientesCnt > 9 ? "9+" : pendientesCnt}
-          </span>
-        )}
-      </header>
+    <div className="h-screen flex overflow-hidden bg-gray-50">
 
       {/* ── Overlay backdrop (móvil) ── */}
       {sidebarOpen && (
@@ -125,7 +103,7 @@ export default function DashboardLayout() {
         className={`
           fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-100 flex flex-col
           transition-transform duration-200 ease-in-out
-          md:static md:w-60 md:translate-x-0 md:h-screen md:sticky md:top-0
+          md:static md:w-60 md:translate-x-0 md:h-full md:shrink-0
           ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
         `}
       >
@@ -206,10 +184,37 @@ export default function DashboardLayout() {
         </div>
       </aside>
 
-      {/* ── Contenido principal ── */}
-      <main className="flex-1 overflow-y-auto min-h-0">
-        <Outlet />
-      </main>
+      {/* ── Columna derecha: header móvil + contenido ── */}
+      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+
+        {/* ── Barra superior móvil ── */}
+        <header className="md:hidden bg-white border-b border-gray-100 px-4 py-3 flex items-center gap-3 shrink-0 z-30">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="text-gray-600 hover:text-gray-900 transition"
+          >
+            <Menu size={22} />
+          </button>
+          <span className="font-bold text-gray-900">AppointVa</span>
+          {esEmpleado && (
+            <span className="text-xs bg-blue-100 text-blue-600 font-semibold px-2 py-0.5 rounded-full">
+              Empleado
+            </span>
+          )}
+          {/* Badge móvil */}
+          {pendientesCnt > 0 && (
+            <span className="ml-auto bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
+              {pendientesCnt > 9 ? "9+" : pendientesCnt}
+            </span>
+          )}
+        </header>
+
+        {/* ── Contenido principal ── */}
+        <main className="flex-1 overflow-y-auto">
+          <Outlet />
+        </main>
+
+      </div>
     </div>
   );
 }
