@@ -489,12 +489,22 @@ export default function CitasPage() {
                             <path d="M16.003 0C7.164 0 0 7.164 0 16.003c0 2.82.737 5.463 2.027 7.759L0 32l8.484-2.003A15.93 15.93 0 0016.003 32C24.836 32 32 24.836 32 16.003 32 7.164 24.836 0 16.003 0zm7.29 21.948c-.398-.2-2.362-1.166-2.728-1.3-.366-.133-.632-.2-.898.2-.267.4-1.032 1.3-1.265 1.566-.233.267-.466.3-.865.1-.398-.2-1.682-.62-3.204-1.977-1.184-1.056-1.984-2.36-2.216-2.758-.233-.4-.025-.616.174-.814.179-.179.4-.466.6-.7.2-.233.266-.4.4-.666.133-.267.066-.5-.033-.7-.1-.2-.898-2.162-1.232-2.96-.324-.778-.655-.672-.898-.684-.232-.013-.5-.013-.765-.013-.267 0-.7.1-1.065.5-.366.4-1.398 1.365-1.398 3.328s1.432 3.86 1.632 4.127c.2.267 2.818 4.302 6.825 6.03.953.414 1.698.66 2.279.844.958.306 1.83.263 2.52.16.769-.115 2.362-.965 2.695-1.897.333-.933.333-1.732.233-1.899-.1-.166-.366-.266-.765-.466z"/>
                           </svg>
                         </a>
-                        {/* Botón de acciones — solo móvil */}
+                        {/* Acciones rápidas móvil */}
+                        {c.estadoTexto === "Pendiente" && (
+                          <button
+                            onClick={() => cambiarEstado({ id: c.id, estado: ESTADOS.Confirmada, mot: "" })}
+                            disabled={isPending}
+                            title="Confirmar"
+                            className="sm:hidden w-7 h-7 rounded-lg bg-green-500 text-white flex items-center justify-center text-xs font-bold hover:bg-green-600 disabled:opacity-50 transition"
+                          >
+                            ✓
+                          </button>
+                        )}
                         {TRANSICIONES[c.estadoTexto] && (
                           <button
                             onClick={() => abrirCambioEstado(c)}
                             className="sm:hidden text-gray-400 hover:text-gray-700 p-1 rounded transition text-base leading-none"
-                            title="Cambiar estado"
+                            title="Más opciones"
                           >
                             ⋮
                           </button>
@@ -538,12 +548,35 @@ export default function CitasPage() {
                             Reagendar
                           </button>
                         )}
+                        {/* Acción rápida principal */}
+                        {c.estadoTexto === "Pendiente" && (
+                          <Tooltip text="Confirmar cita directamente">
+                            <button
+                              onClick={() => cambiarEstado({ id: c.id, estado: ESTADOS.Confirmada, mot: "" })}
+                              disabled={isPending}
+                              className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-green-500 text-white hover:bg-green-600 disabled:opacity-50 transition"
+                            >
+                              ✓ Confirmar
+                            </button>
+                          </Tooltip>
+                        )}
+                        {c.estadoTexto === "Confirmada" && (
+                          <Tooltip text="Marcar como completada">
+                            <button
+                              onClick={() => cambiarEstado({ id: c.id, estado: ESTADOS.Completada, mot: "" })}
+                              disabled={isPending}
+                              className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50 transition"
+                            >
+                              ✓ Completar
+                            </button>
+                          </Tooltip>
+                        )}
                         {TRANSICIONES[c.estadoTexto] && (
                           <button
                             onClick={() => abrirCambioEstado(c)}
-                            className="text-xs font-medium px-2.5 py-1 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition"
+                            className="text-xs font-medium px-2.5 py-1 rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200 transition"
                           >
-                            Estado
+                            ⋮
                           </button>
                         )}
                       </div>

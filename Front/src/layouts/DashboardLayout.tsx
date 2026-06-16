@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { Menu, X, LayoutDashboard, CalendarDays, Users, Scissors, UserCheck, Building2, Link, Copy, Check, BarChart2, ShieldCheck, UserCircle, Images, Clock, ClipboardList, Tag } from "lucide-react";
+import { Menu, X, LayoutDashboard, CalendarDays, Users, Scissors, UserCheck, Building2, Link, Copy, Check, BarChart2, ShieldCheck, UserCircle, Images, Clock, ClipboardList, Tag, Bell } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "../store/authStore";
 import { authApi } from "../api/auth";
@@ -103,12 +103,17 @@ export default function DashboardLayout() {
             Empleado
           </span>
         )}
-        {/* Badge móvil */}
-        {pendientesCnt > 0 && (
-          <span className="ml-auto bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
-            {pendientesCnt > 9 ? "9+" : pendientesCnt}
-          </span>
-        )}
+        {/* Campana + Badge móvil */}
+        <div className="ml-auto flex items-center gap-2">
+          {pendientesCnt > 0 && (
+            <div className="relative">
+              <Bell size={20} className="text-gray-500" />
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold px-1 py-0 rounded-full min-w-[16px] text-center leading-4">
+                {pendientesCnt > 9 ? "9+" : pendientesCnt}
+              </span>
+            </div>
+          )}
+        </div>
       </header>
 
       {/* ── Overlay backdrop (móvil) ── */}
@@ -206,9 +211,52 @@ export default function DashboardLayout() {
       </aside>
 
       {/* ── Contenido principal ── */}
-      <main className="flex-1 overflow-y-auto min-h-0">
+      <main className="flex-1 overflow-y-auto min-h-0 pb-16 md:pb-0">
         <Outlet />
       </main>
+
+      {/* ── Bottom nav (solo móvil) ── */}
+      <nav className="md:hidden fixed bottom-0 inset-x-0 bg-white border-t border-gray-100 z-30 flex items-stretch">
+        {(esEmpleado
+          ? [
+              { to: "/dashboard", label: "Inicio", icon: LayoutDashboard, end: true },
+              { to: "/dashboard/citas", label: "Citas", icon: CalendarDays },
+              { to: "/dashboard/mi-perfil", label: "Perfil", icon: UserCircle },
+            ]
+          : [
+              { to: "/dashboard", label: "Inicio", icon: LayoutDashboard, end: true },
+              { to: "/dashboard/citas", label: "Citas", icon: CalendarDays },
+              { to: "/dashboard/clientes", label: "Clientes", icon: UserCheck },
+              { to: "/dashboard/perfil", label: "Negocio", icon: Building2 },
+              { to: "/dashboard/reportes", label: "Reportes", icon: BarChart2 },
+            ]
+        ).map((item) => {
+          const Icon = item.icon;
+          const esCitas = item.to === "/dashboard/citas";
+          return (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.end}
+              className={({ isActive }) =>
+                `flex-1 flex flex-col items-center justify-center py-2 gap-0.5 text-[10px] font-medium transition ${
+                  isActive ? "text-primary" : "text-gray-400 hover:text-gray-600"
+                }`
+              }
+            >
+              <div className="relative">
+                <Icon size={20} />
+                {esCitas && pendientesCnt > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center leading-none">
+                    {pendientesCnt > 9 ? "9+" : pendientesCnt}
+                  </span>
+                )}
+              </div>
+              <span>{item.label}</span>
+            </NavLink>
+          );
+        })}
+      </nav>
     </div>
   );
 }

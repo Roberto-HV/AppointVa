@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { publicoApi } from "../../api/publico";
@@ -203,6 +203,25 @@ export default function BookingPage() {
     queryFn: () => publicoApi.obtenerNegocio(slug!),
     enabled: !!slug,
   });
+
+  useEffect(() => {
+    if (!negocio) return;
+    const prev = document.title;
+    document.title = `Reservar cita — ${negocio.nombre}`;
+    let metaDesc = document.querySelector<HTMLMetaElement>('meta[name="description"]');
+    if (!metaDesc) {
+      metaDesc = document.createElement("meta");
+      metaDesc.name = "description";
+      document.head.appendChild(metaDesc);
+    }
+    metaDesc.content = negocio.descripcion
+      ? `${negocio.descripcion} — Reserva tu cita en línea.`
+      : `Reserva tu cita en ${negocio.nombre} de forma rápida y fácil.`;
+    return () => {
+      document.title = prev;
+      metaDesc?.remove();
+    };
+  }, [negocio]);
 
   const { data: camposIntake = [] } = useQuery<CampoIntake[]>({
     queryKey: ["intake-publico", slug, servicio?.id],

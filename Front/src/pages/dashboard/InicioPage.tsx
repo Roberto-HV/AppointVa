@@ -1,13 +1,16 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
 import { dashboardApi } from "../../api/dashboard";
 import { citasApi } from "../../api/citas";
+import { negociosApi } from "../../api/negocios";
 import { useAuthStore } from "../../store/authStore";
 import EstadoBadge from "../../components/ui/EstadoBadge";
 import { Skeleton } from "../../components/ui/Skeleton";
+import { CheckCircle2, Circle, X } from "lucide-react";
 
 function formatPrecio(n: number) {
   return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(n);
@@ -35,6 +38,91 @@ function formatPrecioCorto(n: number) {
   return `$${n.toFixed(0)}`;
 }
 
+// ── Onboarding checklist ──────────────────────────────────────────────────────
+const CHECKLIST_KEY = "appointva_checklist_dismissed";
+
+interface CheckItem { label: string; done: boolean; ruta: string; rutaLabel: string }
+
+function OnboardingChecklist() {
+  const [cerrado, setCerrado] = useState(() => !!localStorage.getItem(CHECKLIST_KEY));
+
+  const { data: perfil } = useQuery({
+    queryKey: ["negocio-perfil-layout"],
+    queryFn: negociosApi.obtenerPerfil,
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const { data: resumen } = useQuery({
+    queryKey: ["dashboard-resumen"],
+    queryFn: dashboardApi.obtenerResumen,
+    staleTime: 0,
+  });
+
+  if (cerrado || !perfil) return null;
+
+  const items: CheckItem[] = [
+    { label: "Agrega el logo de tu negocio",       done: !!perfil.logoUrl,       ruta: "/dashboard/perfil",    rutaLabel: "Ir a perfil" },
+    { label: "Escribe la descripción de tu negocio", done: !!perfil.descripcion, ruta: "/dashboard/perfil",    rutaLabel: "Ir a perfil" },
+    { label: "Crea al menos un servicio",            done: (resumen?.topServicios.length ?? 0) > 0, ruta: "/dashboard/servicios", rutaLabel: "Crear servicio" },
+    { label: "Agrega tu imagen de portada",          done: !!perfil.portadaUrl,   ruta: "/dashboard/perfil",   rutaLabel: "Ir a perfil" },
+    { label: "Comparte tu enlace de reservas",       done: (resumen?.citasMes ?? 0) > 0,             ruta: "/dashboard/perfil",   rutaLabel: "Ver enlace" },
+  ];
+
+  const completados = items.filter((i) => i.done).length;
+  const porcentaje = Math.round((completados / items.length) * 100);
+
+  if (porcentaje === 100) return null;
+
+  const cerrar = () => {
+    localStorage.setItem(CHECKLIST_KEY, "1");
+    setCerrado(true);
+  };
+
+  return (
+    <div className="bg-white border border-gray-100 rounded-2xl p-5 mb-6 shadow-sm">
+      <div className="flex items-start justify-between mb-3">
+        <div>
+          <h2 className="text-sm font-bold text-gray-800">Configura tu cuenta</h2>
+          <p className="text-xs text-gray-400 mt-0.5">{completados} de {items.length} completados</p>
+        </div>
+        <button onClick={cerrar} className="text-gray-300 hover:text-gray-500 transition">
+          <X size={16} />
+        </button>
+      </div>
+
+      {/* Barra de progreso */}
+      <div className="w-full bg-gray-100 rounded-full h-2 mb-4">
+        <div
+          className="bg-primary h-2 rounded-full transition-all duration-500"
+          style={{ width: `${porcentaje}%` }}
+        />
+      </div>
+
+      <div className="space-y-2.5">
+        {items.map((item) => (
+          <div key={item.label} className="flex items-center gap-3">
+            {item.done
+              ? <CheckCircle2 size={18} className="text-green-500 shrink-0" />
+              : <Circle size={18} className="text-gray-300 shrink-0" />
+            }
+            <span className={`text-sm flex-1 ${item.done ? "text-gray-400 line-through" : "text-gray-700"}`}>
+              {item.label}
+            </span>
+            {!item.done && (
+              <Link
+                to={item.ruta}
+                className="text-xs text-primary font-semibold hover:underline shrink-0"
+              >
+                {item.rutaLabel} →
+              </Link>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Vista del propietario ─────────────────────────────────────────────────────
 function VistaPropietario({ nombre }: { nombre: string }) {
   const [dias, setDias] = useState(14);
@@ -55,6 +143,8 @@ function VistaPropietario({ nombre }: { nombre: string }) {
     <div className="p-4 sm:p-8">
       <h1 className="text-2xl font-bold text-gray-900 mb-1">Bienvenido, {nombre}</h1>
       <p className="text-gray-400 text-sm mb-8">Resumen de tu negocio</p>
+
+      <OnboardingChecklist />
 
       {isLoading ? (
         <>

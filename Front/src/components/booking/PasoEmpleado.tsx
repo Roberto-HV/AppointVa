@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { EmpleadoPublico } from "../../types";
 
 export const SIN_PREFERENCIA_ID = "sin-preferencia";
@@ -15,8 +16,28 @@ interface Props {
   onSeleccionar: (e: EmpleadoPublico) => void;
 }
 
+function Avatar({ emp, size = "md" }: { emp: EmpleadoPublico; size?: "sm" | "md" | "lg" }) {
+  const [imgError, setImgError] = useState(false);
+  const dim = size === "lg" ? "w-20 h-20 text-2xl" : size === "md" ? "w-16 h-16 text-xl" : "w-10 h-10 text-sm";
+  return (
+    <div className={`${dim} rounded-full overflow-hidden bg-gray-100 flex items-center justify-center shrink-0`}>
+      {emp.fotoUrl && !imgError ? (
+        <img
+          src={emp.fotoUrl}
+          alt={emp.nombre}
+          className="w-full h-full object-cover"
+          onError={() => setImgError(true)}
+        />
+      ) : (
+        <span className="font-bold text-gray-300">{emp.nombre.charAt(0)}</span>
+      )}
+    </div>
+  );
+}
+
 export default function PasoEmpleado({ empleados, servicioId, seleccionado, onSeleccionar }: Props) {
   const disponibles = empleados.filter((e) => e.servicioIds.includes(servicioId));
+  const [expandido, setExpandido] = useState<string | null>(null);
 
   if (disponibles.length === 0) {
     return (
@@ -35,8 +56,8 @@ export default function PasoEmpleado({ empleados, servicioId, seleccionado, onSe
       {/* Opción sin preferencia */}
       <button
         onClick={() => onSeleccionar(SIN_PREFERENCIA)}
-        className={`w-full mb-3 p-3 rounded-xl border-2 flex items-center gap-3 transition text-left
-          ${activoSinPreferencia ? "border-primary bg-primary/5" : "border-gray-100 hover:border-gray-300 bg-white"}`}
+        className={`w-full mb-4 p-3.5 rounded-2xl border-2 flex items-center gap-3 transition-all text-left
+          ${activoSinPreferencia ? "border-primary bg-primary/5 shadow-sm" : "border-gray-100 hover:border-primary/30 bg-white"}`}
       >
         <div className="w-11 h-11 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
           <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -50,46 +71,59 @@ export default function PasoEmpleado({ empleados, servicioId, seleccionado, onSe
           <p className="text-xs text-gray-400">Ver todos los horarios disponibles</p>
         </div>
         {activoSinPreferencia && (
-          <svg className="w-4 h-4 text-primary shrink-0" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-          </svg>
+          <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center shrink-0">
+            <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none">
+              <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
         )}
       </button>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="space-y-2">
         {disponibles.map((emp) => {
           const activo = seleccionado?.id === emp.id;
+          const verBio = expandido === emp.id;
           return (
-            <button
+            <div
               key={emp.id}
-              onClick={() => onSeleccionar(emp)}
-              className={`p-4 rounded-xl border-2 text-center transition
-                ${activo ? "border-primary bg-primary/5" : "border-gray-100 hover:border-gray-300 bg-white"}`}
+              className={`rounded-2xl border-2 transition-all overflow-hidden
+                ${activo ? "border-primary shadow-sm" : "border-gray-100 hover:border-primary/30"}`}
             >
-              <div className="w-16 h-16 rounded-full mx-auto mb-3 overflow-hidden bg-gray-100 flex items-center justify-center">
-                {emp.fotoUrl ? (
-                  <img
-                    src={emp.fotoUrl}
-                    alt={emp.nombre}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      e.currentTarget.style.display = "none";
-                      e.currentTarget.parentElement!.innerHTML = `<span class="text-2xl font-bold text-gray-300">${emp.nombre.charAt(0)}</span>`;
-                    }}
-                  />
-                ) : (
-                  <span className="text-2xl font-bold text-gray-300">
-                    {emp.nombre.charAt(0)}
-                  </span>
+              <button
+                onClick={() => onSeleccionar(emp)}
+                className={`w-full p-4 flex items-center gap-4 text-left transition
+                  ${activo ? "bg-primary/5" : "bg-white hover:bg-gray-50"}`}
+              >
+                <div className="relative shrink-0">
+                  <Avatar emp={emp} size="md" />
+                  {activo && (
+                    <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-primary border-2 border-white flex items-center justify-center">
+                      <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 12 12" fill="none">
+                        <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className={`font-semibold text-sm ${activo ? "text-primary" : "text-gray-800"}`}>
+                    {emp.nombre}
+                  </p>
+                  {emp.biografia && (
+                    <p className={`text-xs text-gray-500 mt-0.5 ${verBio ? "" : "line-clamp-1"}`}>
+                      {emp.biografia}
+                    </p>
+                  )}
+                </div>
+                {emp.biografia && emp.biografia.length > 60 && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setExpandido(verBio ? null : emp.id); }}
+                    className="text-xs text-gray-400 hover:text-primary shrink-0 transition"
+                  >
+                    {verBio ? "menos" : "más"}
+                  </button>
                 )}
-              </div>
-              <p className={`text-sm font-semibold ${activo ? "text-primary" : "text-gray-800"}`}>
-                {emp.nombre}
-              </p>
-              {emp.biografia && (
-                <p className="text-xs text-gray-400 mt-1 line-clamp-2">{emp.biografia}</p>
-              )}
-            </button>
+              </button>
+            </div>
           );
         })}
       </div>
