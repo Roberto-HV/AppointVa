@@ -16,16 +16,8 @@ import { SkeletonTableRows } from "../../components/ui/Skeleton";
 import { Tooltip } from "../../components/ui/Tooltip";
 import { exportarExcel } from "../../utils/exportarExcel";
 import { intakeApi } from "../../api/intake";
-
-function formatFechaHora(iso: string) {
-  return new Date(iso).toLocaleString("es-MX", {
-    day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true,
-  });
-}
-
-function formatPrecio(n: number) {
-  return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(n);
-}
+import { formatPrecio, formatFechaHoraCorta as formatFechaHora } from "../../utils/formatters";
+import Pagination from "../../components/ui/Pagination";
 
 const METODO_ICONO: Record<string, string> = {
   Efectivo: "💵",
@@ -573,43 +565,14 @@ export default function CitasPage() {
               </tbody>
             </table>
 
-            {/* Paginación */}
-            {totalPaginas > 1 && (
-              <div className="flex items-center justify-between px-5 py-3 border-t border-gray-100 text-sm text-gray-500">
-                <span>{totalCitas} citas · página {pagina} de {totalPaginas}</span>
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => setPagina(p => Math.max(1, p - 1))}
-                    disabled={pagina === 1}
-                    className="px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition text-xs font-medium"
-                  >
-                    ← Anterior
-                  </button>
-                  {Array.from({ length: Math.min(5, totalPaginas) }, (_, i) => {
-                    const inicio = Math.max(1, Math.min(pagina - 2, totalPaginas - 4));
-                    const num = inicio + i;
-                    return (
-                      <button
-                        key={num}
-                        onClick={() => setPagina(num)}
-                        className={`w-8 h-8 rounded-lg text-xs font-medium transition ${
-                          num === pagina ? "bg-primary text-white" : "hover:bg-gray-50 border border-gray-200"
-                        }`}
-                      >
-                        {num}
-                      </button>
-                    );
-                  })}
-                  <button
-                    onClick={() => setPagina(p => Math.min(totalPaginas, p + 1))}
-                    disabled={pagina === totalPaginas}
-                    className="px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition text-xs font-medium"
-                  >
-                    Siguiente →
-                  </button>
-                </div>
-              </div>
-            )}
+            <Pagination
+              pagina={pagina}
+              totalPaginas={totalPaginas}
+              total={totalCitas}
+              labelTotal="citas"
+              onCambiar={setPagina}
+              cargando={isLoading}
+            />
           </div>
         )
       )}

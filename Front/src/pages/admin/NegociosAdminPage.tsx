@@ -9,6 +9,7 @@ import { adminApi } from "../../api/admin";
 import Modal from "../../components/ui/Modal";
 import { useToastStore } from "../../store/toastStore";
 import type { NegocioDto } from "../../types";
+import { formatPrecio } from "../../utils/formatters";
 
 const schemaNegocio = z.object({
   nombre: z.string().min(2, "Nombre requerido"),
@@ -30,10 +31,6 @@ const schemaPropietario = z.object({
   password: z.string().min(6, "Mínimo 6 caracteres"),
 });
 type PropietarioForm = z.infer<typeof schemaPropietario>;
-
-function formatPrecio(n: number) {
-  return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(n);
-}
 
 export default function NegociosAdminPage() {
   const qc = useQueryClient();

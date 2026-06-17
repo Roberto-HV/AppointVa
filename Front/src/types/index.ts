@@ -41,6 +41,7 @@ export interface NegocioPublico {
   colorPrimario?: string;
   colorSecundario?: string;
   telefono?: string;
+  telefonoWhatsApp?: string;
   horasCancelacion: number;
   autoConfirmar: boolean;
   servicios: ServicioPublico[];

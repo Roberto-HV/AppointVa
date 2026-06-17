@@ -3,6 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import type { ServicioPublico, EmpleadoPublico, SlotDisponible } from "../../types";
 import { SIN_PREFERENCIA_ID } from "./PasoEmpleado";
+import { formatPrecio, formatFechaLarga as formatFecha } from "../../utils/formatters";
 
 const schema = z.object({
   nombreCliente: z.string().min(2, "Ingresa tu nombre completo"),
@@ -20,16 +21,6 @@ interface Props {
   enviando: boolean;
   datosIniciales?: Partial<DatosClienteForm>;
   onEnviar: (datos: DatosClienteForm) => void;
-}
-
-function formatFecha(iso: string) {
-  return new Date(iso).toLocaleDateString("es-MX", {
-    weekday: "long", day: "numeric", month: "long", year: "numeric",
-  }).replace(/\bDe\b/g, "de");
-}
-
-function formatPrecio(precio: number) {
-  return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(precio);
 }
 
 export default function PasoDatosCliente({ servicio, empleado, slot, enviando, datosIniciales, onEnviar }: Props) {

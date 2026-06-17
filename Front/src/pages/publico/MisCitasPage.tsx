@@ -37,16 +37,7 @@ const ESTADO_ESTILOS: Record<string, string> = {
   Inasistencia: "bg-gray-100 text-gray-500",
 };
 
-function formatFecha(iso: string) {
-  return new Date(iso).toLocaleString("es-MX", {
-    weekday: "short", day: "numeric", month: "long", year: "numeric",
-    hour: "2-digit", minute: "2-digit", hour12: true,
-  }).replace(/\bDe\b/g, "de");
-}
-
-function formatPrecio(n: number) {
-  return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(n);
-}
+import { formatPrecio, formatFechaHoraResumen as formatFecha } from "../../utils/formatters";
 
 export default function MisCitasPage() {
   const { slug } = useParams<{ slug: string }>();

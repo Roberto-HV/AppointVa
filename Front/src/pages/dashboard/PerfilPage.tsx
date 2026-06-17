@@ -5,7 +5,8 @@ import Select from "../../components/ui/Select";
 import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Eye, EyeOff, Copy, Check, Download, ChevronDown } from "lucide-react";
+import { Eye, EyeOff, Copy, Check, Download, ChevronDown, Mail } from "lucide-react";
+import WhatsAppIcon from "../../components/icons/WhatsAppIcon";
 import { Tooltip } from "../../components/ui/Tooltip";
 import { QRCodeCanvas } from "qrcode.react";
 import Modal from "../../components/ui/Modal";
@@ -539,20 +540,25 @@ export default function PerfilPage() {
             <div className="p-3 bg-gray-50 rounded-lg border border-gray-100">
               <p className="text-sm font-medium text-gray-700 mb-2">Canal de notificaciones al cliente</p>
               <div className="flex flex-wrap gap-2 mb-3">
-                {(["Correo", "WhatsApp", "Ambos"] as const).map((op) => (
-                  <button
-                    key={op}
-                    type="button"
-                    onClick={() => setValue("metodoNotificacion", op, { shouldDirty: true })}
-                    className={`px-4 py-1.5 rounded-lg text-sm font-medium transition ${
-                      (watch("metodoNotificacion") ?? "Correo") === op
-                        ? "bg-primary text-white"
-                        : "bg-white border border-gray-200 text-gray-600 hover:border-primary"
-                    }`}
-                  >
-                    {op}
-                  </button>
-                ))}
+                {(["Correo", "WhatsApp", "Ambos"] as const).map((op) => {
+                  const activo = (watch("metodoNotificacion") ?? "Correo") === op;
+                  return (
+                    <button
+                      key={op}
+                      type="button"
+                      onClick={() => setValue("metodoNotificacion", op, { shouldDirty: true })}
+                      className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-medium transition ${
+                        activo ? "bg-primary text-white" : "bg-white border border-gray-200 text-gray-600 hover:border-primary"
+                      }`}
+                    >
+                      {(op === "Correo" || op === "Ambos") && <Mail size={13} />}
+                      {(op === "WhatsApp" || op === "Ambos") && (
+                        <WhatsAppIcon className="w-3.5 h-3.5 shrink-0" />
+                      )}
+                      {op}
+                    </button>
+                  );
+                })}
               </div>
               {(watch("metodoNotificacion") === "WhatsApp" || watch("metodoNotificacion") === "Ambos") && (
                 <div className="mb-2">

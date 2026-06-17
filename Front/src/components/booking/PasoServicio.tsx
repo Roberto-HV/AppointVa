@@ -1,13 +1,10 @@
 import type { ServicioPublico } from "../../types";
+import { formatPrecio } from "../../utils/formatters";
 
 interface Props {
   servicios: ServicioPublico[];
   seleccionado: ServicioPublico | null;
   onSeleccionar: (s: ServicioPublico) => void;
-}
-
-function formatPrecio(precio: number) {
-  return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(precio);
 }
 
 export default function PasoServicio({ servicios, seleccionado, onSeleccionar }: Props) {

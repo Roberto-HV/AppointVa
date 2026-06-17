@@ -120,6 +120,7 @@ namespace AppointVaAPI.Controllers.V1
                 ColorPrimario = negocio.ColorPrimario,
                 ColorSecundario = negocio.ColorSecundario,
                 Telefono = negocio.Telefono,
+                TelefonoWhatsApp = negocio.TelefonoWhatsApp,
                 HorasCancelacion = negocio.HorasCancelacion,
                 AutoConfirmar = negocio.AutoConfirmar,
                 Servicios = servicios.Select(s => new ServicioPublicoDto

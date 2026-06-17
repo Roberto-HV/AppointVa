@@ -11,6 +11,7 @@ import { empleadosApi } from "../../api/empleados";
 import { serviciosApi } from "../../api/servicios";
 import EstadoBadge from "../../components/ui/EstadoBadge";
 import { SkeletonTableRows } from "../../components/ui/Skeleton";
+import { formatPrecio, formatFechaHora as formatFecha } from "../../utils/formatters";
 
 type Tab = "citas" | "ingresos" | "empleados";
 
@@ -23,16 +24,6 @@ const ESTADOS_OPCIONES = [
 ];
 
 const COLORES_GRAFICA = ["#C8A961", "#a88b45", "#e8d4a0", "#7a6530", "#d4bc80"];
-
-function formatPrecio(n: number) {
-  return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(n);
-}
-
-function formatFecha(iso: string) {
-  return new Date(iso).toLocaleString("es-MX", {
-    day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true,
-  }).replace(/\bDe\b/g, "de");
-}
 
 function hoy() {
   return new Date().toISOString().split("T")[0];

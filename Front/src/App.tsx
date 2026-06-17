@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import RutaProtegida from "./components/RutaProtegida";
 import RutaPublica from "./components/RutaPublica";
 import ToastContainer from "./components/ui/ToastContainer";
+import { TooltipProvider } from "./components/ui/Tooltip";
 import DashboardLayout from "./layouts/DashboardLayout";
 import AdminLayout from "./layouts/AdminLayout";
 
@@ -41,6 +42,7 @@ const queryClient = new QueryClient({
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
       <BrowserRouter>
         <Routes>
           {/* ── Rutas públicas (redirigen si ya hay sesión) ── */}
@@ -98,6 +100,7 @@ export default function App() {
         </Routes>
       </BrowserRouter>
       <ToastContainer />
+      </TooltipProvider>
     </QueryClientProvider>
   );
 }

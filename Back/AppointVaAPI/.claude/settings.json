@@ -103,7 +103,11 @@
       "Bash(git merge *)",
       "Bash(grep -v \"//\\\\|vista\\\\|setVista\\\\|iframe\\\\|codigoI\")",
       "Bash(xargs grep -l \"createBrowserRouter\\\\|RouterProvider\\\\|BrowserRouter\")",
-      "Bash(Get-ChildItem -Path \"c:\\\\Cursos\\\\AppointVa\\\\Back\\\\AppointVaAPI\" -Directory)"
+      "Bash(Get-ChildItem -Path \"c:\\\\Cursos\\\\AppointVa\\\\Back\\\\AppointVaAPI\" -Directory)",
+      "Bash(Get-ChildItem -Path . -Recurse -Directory -Name)",
+      "PowerShell(cd \"c:\\\\Cursos\\\\AppointVa\\\\Back\\\\AppointVaAPI\\\\AppointVaAPI\"; dotnet build 2>&1 | Where-Object { $_ -match \"error CS\" } | Select-Object -First 20)",
+      "Bash(grep -r \"^//\" --include=\"*.tsx\")",
+      "Bash(grep -r \"^[[:space:]]*//.*\\\\\\(TODO\\\\|FIXME\\\\|HACK\\\\|XXX\\\\|COMMENTED\\\\\\)\" --include=\"*.tsx\" --include=\"*.ts\")"
     ],
     "additionalDirectories": [
       "C:\\Cursos\\AppointVa\\Back\\AppointVaAPI\\AppointVaAPI\\Migrations",

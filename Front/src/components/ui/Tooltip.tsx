@@ -1,31 +1,35 @@
-import { type ReactNode } from "react";
+import * as React from "react";
+import * as TooltipPrimitive from "@radix-ui/react-tooltip";
+import { cn } from "@/lib/utils";
 
-interface TooltipProps {
-  text: string;
-  children: ReactNode;
-  position?: "top" | "bottom";
-}
+const TooltipProvider = TooltipPrimitive.Provider;
+const TooltipRoot = TooltipPrimitive.Root;
+const TooltipTrigger = TooltipPrimitive.Trigger;
 
-export function Tooltip({ text, children, position = "top" }: TooltipProps) {
+const TooltipContent = React.forwardRef<
+  React.ElementRef<typeof TooltipPrimitive.Content>,
+  React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content>
+>(({ className, sideOffset = 4, ...props }, ref) => (
+  <TooltipPrimitive.Content
+    ref={ref}
+    sideOffset={sideOffset}
+    className={cn(
+      "z-50 overflow-hidden rounded-md border bg-popover px-3 py-1.5 text-sm text-popover-foreground shadow-md animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 origin-[--radix-tooltip-content-transform-origin]",
+      className
+    )}
+    {...props}
+  />
+));
+TooltipContent.displayName = TooltipPrimitive.Content.displayName;
+
+// Simple backward-compatible wrapper: <Tooltip text="..."><child /></Tooltip>
+function Tooltip({ text, children }: { text: string; children: React.ReactNode }) {
   return (
-    <div className="relative group inline-flex">
-      {children}
-      <div
-        className={`
-          absolute z-50 px-2 py-1 text-xs text-white bg-gray-900 rounded-md whitespace-nowrap
-          opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-150 delay-100
-          left-1/2 -translate-x-1/2
-          ${position === "top" ? "bottom-full mb-2" : "top-full mt-2"}
-        `}
-      >
-        {text}
-        <span
-          className={`
-            absolute left-1/2 -translate-x-1/2 border-4 border-transparent
-            ${position === "top" ? "top-full border-t-gray-900" : "bottom-full border-b-gray-900"}
-          `}
-        />
-      </div>
-    </div>
+    <TooltipRoot>
+      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipContent>{text}</TooltipContent>
+    </TooltipRoot>
   );
 }
+
+export { Tooltip, TooltipProvider, TooltipRoot, TooltipTrigger, TooltipContent };

@@ -8,6 +8,7 @@ import { serviciosApi, categoriasApi } from "../../api/servicios";
 import Modal from "../../components/ui/Modal";
 import { useToastStore } from "../../store/toastStore";
 import type { CategoriaDto, ServicioDto } from "../../types";
+import { formatPrecio } from "../../utils/formatters";
 
 // ── Schemas ───────────────────────────────────────────────────────────────────
 const schemaServicio = z.object({
@@ -26,10 +27,6 @@ const schemaCategoria = z.object({
   orden: z.coerce.number().min(1),
 });
 type CategoriaForm = z.infer<typeof schemaCategoria>;
-
-function formatPrecio(n: number) {
-  return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(n);
-}
 
 export default function ServiciosPage() {
   const qc = useQueryClient();

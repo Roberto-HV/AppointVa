@@ -6,23 +6,8 @@ import Modal from "../../components/ui/Modal";
 import EstadoBadge from "../../components/ui/EstadoBadge";
 import { exportarExcel } from "../../utils/exportarExcel";
 import type { ClienteDto } from "../../types";
-
-function formatFecha(iso: string) {
-  return new Date(iso).toLocaleDateString("es-MX", {
-    day: "2-digit", month: "long", year: "numeric",
-  }).replace(/\bDe\b/g, "de");
-}
-
-function formatFechaHora(iso: string) {
-  return new Date(iso).toLocaleString("es-MX", {
-    day: "2-digit", month: "long", year: "numeric",
-    hour: "2-digit", minute: "2-digit", hour12: true,
-  }).replace(/\bDe\b/g, "de");
-}
-
-function formatPrecio(n: number) {
-  return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(n);
-}
+import { formatPrecio, formatFecha, formatFechaHora } from "../../utils/formatters";
+import Pagination from "../../components/ui/Pagination";
 
 const TAMANO = 30;
 
@@ -228,44 +213,14 @@ export default function ClientesPage() {
                 ))}
               </tbody>
             </table>
-          {totalPaginas > 1 && (
-            <div className="flex items-center justify-between px-5 py-3 border-t border-gray-100 text-sm text-gray-500">
-              <span>{totalClientes} clientes · página {pagina} de {totalPaginas}</span>
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => setPagina(p => Math.max(1, p - 1))}
-                  disabled={pagina === 1}
-                  className="px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed text-xs transition"
-                >
-                  ← Anterior
-                </button>
-                {Array.from({ length: Math.min(5, totalPaginas) }, (_, i) => {
-                  const start = Math.max(1, Math.min(pagina - 2, totalPaginas - 4));
-                  const num = start + i;
-                  return num <= totalPaginas ? (
-                    <button
-                      key={num}
-                      onClick={() => setPagina(num)}
-                      className={`w-8 h-8 rounded-lg text-xs font-medium transition ${
-                        num === pagina
-                          ? "bg-primary text-white"
-                          : "border border-gray-200 hover:bg-gray-50 text-gray-600"
-                      }`}
-                    >
-                      {num}
-                    </button>
-                  ) : null;
-                })}
-                <button
-                  onClick={() => setPagina(p => Math.min(totalPaginas, p + 1))}
-                  disabled={pagina === totalPaginas}
-                  className="px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed text-xs transition"
-                >
-                  Siguiente →
-                </button>
-              </div>
-            </div>
-          )}
+          <Pagination
+            pagina={pagina}
+            totalPaginas={totalPaginas}
+            total={totalClientes}
+            labelTotal="clientes"
+            onCambiar={setPagina}
+            cargando={isLoading}
+          />
           </div>
         </>
       )}

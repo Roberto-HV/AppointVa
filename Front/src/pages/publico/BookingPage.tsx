@@ -11,6 +11,7 @@ import PasoEmpleado, { SIN_PREFERENCIA_ID } from "../../components/booking/PasoE
 import PasoFechaHora from "../../components/booking/PasoFechaHora";
 import PasoDatosCliente, { type DatosClienteForm } from "../../components/booking/PasoDatosCliente";
 import { Star, X, UserCircle, UserCheck, Tag, AlertCircle } from "lucide-react";
+import WhatsAppIcon from "../../components/icons/WhatsAppIcon";
 
 // Convierte #RRGGBB a "R G B" (canales para CSS variables con opacity)
 function hexToChannels(hex: string): string {
@@ -407,13 +408,21 @@ export default function BookingPage() {
               className="w-14 h-14 rounded-xl border-2 border-white object-cover shadow shrink-0"
             />
           )}
-          <div>
+          <div className="flex-1 min-w-0">
             <h1 className="text-white text-xl font-bold drop-shadow">{negocio.nombre}</h1>
             {negocio.descripcion && (
               <p className="text-white/80 text-xs mt-0.5 line-clamp-1">{negocio.descripcion}</p>
             )}
-            {negocio.telefono && !negocio.descripcion && (
-              <p className="text-white/80 text-xs">{negocio.telefono}</p>
+            {(negocio.telefonoWhatsApp || negocio.telefono) && (
+              <a
+                href={`https://wa.me/${(negocio.telefonoWhatsApp || negocio.telefono || "").replace(/\D/g, "").replace(/^(\d{10})$/, "52$1")}`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 mt-1 text-white/90 hover:text-white text-xs transition"
+              >
+                <WhatsAppIcon className="w-3.5 h-3.5 shrink-0" />
+                {negocio.telefonoWhatsApp || negocio.telefono}
+              </a>
             )}
           </div>
         </div>

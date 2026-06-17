@@ -1,18 +1,18 @@
-interface SkeletonProps {
-  className?: string;
+import { cn } from "@/lib/utils";
+
+function Skeleton({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div className={cn("animate-pulse rounded-md bg-muted", className)} {...props} />
+  );
 }
 
-export function Skeleton({ className = "" }: SkeletonProps) {
-  return <div className={`animate-pulse bg-gray-200 rounded ${className}`} />;
-}
-
-export function SkeletonTableRows({ filas = 5, columnas = 6 }: { filas?: number; columnas?: number }) {
+function SkeletonTableRows({ filas, columnas }: { filas: number; columnas: number }) {
   return (
     <>
       {Array.from({ length: filas }).map((_, i) => (
-        <tr key={i} className="border-b border-gray-50">
+        <tr key={i}>
           {Array.from({ length: columnas }).map((_, j) => (
-            <td key={j} className="px-5 py-3.5">
+            <td key={j} className="px-3 py-2">
               <Skeleton className="h-4 w-full" />
             </td>
           ))}
@@ -22,35 +22,28 @@ export function SkeletonTableRows({ filas = 5, columnas = 6 }: { filas?: number;
   );
 }
 
-export function SkeletonCards({ cantidad = 4 }: { cantidad?: number }) {
+function SkeletonCards({ cantidad }: { cantidad: number }) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       {Array.from({ length: cantidad }).map((_, i) => (
-        <div key={i} className="bg-white rounded-xl border border-gray-100 p-5 flex gap-4">
-          <Skeleton className="w-14 h-14 rounded-full shrink-0" />
-          <div className="flex-1 space-y-2">
-            <Skeleton className="h-4 w-3/4" />
-            <Skeleton className="h-3 w-1/2" />
-            <Skeleton className="h-3 w-1/3" />
-          </div>
+        <div key={i} className="rounded-xl border p-4 space-y-3">
+          <Skeleton className="h-5 w-3/4" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-2/3" />
         </div>
       ))}
     </div>
   );
 }
 
-export function SkeletonList({ filas = 6 }: { filas?: number }) {
+function SkeletonList({ filas = 5 }: { filas?: number }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-100 divide-y divide-gray-50">
+    <div className="space-y-3">
       {Array.from({ length: filas }).map((_, i) => (
-        <div key={i} className="px-5 py-4 flex items-center gap-4">
-          <div className="flex-1 space-y-2">
-            <Skeleton className="h-4 w-2/5" />
-            <Skeleton className="h-3 w-1/4" />
-          </div>
-          <Skeleton className="h-6 w-16 rounded-full" />
-        </div>
+        <Skeleton key={i} className="h-10 w-full rounded-lg" />
       ))}
     </div>
   );
 }
+
+export { Skeleton, SkeletonTableRows, SkeletonCards, SkeletonList };

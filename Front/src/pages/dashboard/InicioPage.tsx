@@ -11,17 +11,7 @@ import { negociosApi } from "../../api/negocios";
 import { useAuthStore } from "../../store/authStore";
 import EstadoBadge from "../../components/ui/EstadoBadge";
 import { Skeleton } from "../../components/ui/Skeleton";
-
-function formatPrecio(n: number) {
-  return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(n);
-}
-
-function formatFechaHora(iso: string) {
-  return new Date(iso).toLocaleString("es-MX", {
-    weekday: "short", day: "numeric", month: "long", year: "numeric",
-    hour: "2-digit", minute: "2-digit", hour12: true,
-  }).replace(/\bDe\b/g, "de");
-}
+import { formatPrecio, formatFechaHoraResumen as formatFechaHora } from "../../utils/formatters";
 
 interface TarjetaProps { label: string; valor: string | number; valorCorto?: string; color?: string }
 function Tarjeta({ label, valor, valorCorto, color = "text-gray-900" }: TarjetaProps) {

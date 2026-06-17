@@ -3,10 +3,32 @@
 @tailwind utilities;
 
 :root {
-  /* Canales RGB para primary (permite opacity modifiers: bg-primary/10) */
+  /* ── AppointVa: canales RGB (permite bg-primary/10 etc.) ─────────────────── */
   --color-primary:       200 169 97;   /* #C8A961 */
   --color-primary-dark:  168 139 69;   /* #a88b45 */
   --color-primary-light: 232 212 160;  /* #e8d4a0 */
+
+  /* ── shadcn/ui: variables HSL (zinc base + gold primary) ─────────────────── */
+  --background:           0 0% 100%;
+  --foreground:           240 10% 3.9%;
+  --card:                 0 0% 100%;
+  --card-foreground:      240 10% 3.9%;
+  --popover:              0 0% 100%;
+  --popover-foreground:   240 10% 3.9%;
+  --primary:              42 47% 58%;   /* #C8A961 gold — coincide con AppointVa */
+  --primary-foreground:   0 0% 100%;
+  --secondary:            240 4.8% 95.9%;
+  --secondary-foreground: 240 5.9% 10%;
+  --muted:                240 4.8% 95.9%;
+  --muted-foreground:     240 3.8% 46.1%;
+  --accent:               240 4.8% 95.9%;
+  --accent-foreground:    240 5.9% 10%;
+  --destructive:          0 84.2% 60.2%;
+  --destructive-foreground: 0 0% 98%;
+  --border:               240 5.9% 90%;
+  --input:                240 5.9% 90%;
+  --ring:                 42 47% 58%;   /* gold ring */
+  --radius:               0.5rem;
 }
 
 @keyframes stepIn {

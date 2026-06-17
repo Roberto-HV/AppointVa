@@ -22,7 +22,7 @@ export default function ListaEsperaPage() {
   const qc = useQueryClient();
   const { toast } = useToastStore();
 
-  const { data: lista = [], isLoading } = useQuery({
+  const { data: lista = [], isLoading, isError } = useQuery({
     queryKey: ["lista-espera", filtroEstado],
     queryFn: () => listaEsperaApi.obtener(filtroEstado || undefined),
   });
@@ -95,6 +95,8 @@ export default function ListaEsperaPage() {
       {/* Tabla */}
       {isLoading ? (
         <div className="text-center py-16 text-gray-400">Cargando...</div>
+      ) : isError ? (
+        <div className="text-center py-16 text-red-400">No se pudo cargar la lista de espera.</div>
       ) : lista.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
           <Clock size={40} className="mx-auto mb-3 opacity-30" />

@@ -11,6 +11,7 @@
         public string? ColorPrimario { get; set; }
         public string? ColorSecundario { get; set; }
         public string? Telefono { get; set; }
+        public string? TelefonoWhatsApp { get; set; }
         public int HorasCancelacion { get; set; }
         public bool AutoConfirmar { get; set; }
         public List<ServicioPublicoDto> Servicios { get; set; } = new();
