@@ -1,4 +1,5 @@
-import { useState } from "react";
+﻿import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { publicoApi } from "../../api/publico";
@@ -10,16 +11,18 @@ import PasoServicio from "../../components/booking/PasoServicio";
 import PasoEmpleado, { SIN_PREFERENCIA_ID } from "../../components/booking/PasoEmpleado";
 import PasoFechaHora from "../../components/booking/PasoFechaHora";
 import PasoDatosCliente, { type DatosClienteForm } from "../../components/booking/PasoDatosCliente";
-import { Star, X, UserCircle, UserCheck, Tag, AlertCircle } from "lucide-react";
+import { Star, X, UserCircle, UserCheck, Tag, AlertCircle, ChevronRight, Lock } from "lucide-react";
 import WhatsAppIcon from "../../components/icons/WhatsAppIcon";
+import PublicFooter from "../../components/PublicFooter";
 
-// Convierte #RRGGBB a "R G B" (canales para CSS variables con opacity)
+const DEFAULT_COLOR = "#334155"; // slate-700
+
 function hexToChannels(hex: string): string {
-  const h = (hex ?? "#C8A961").replace("#", "").padEnd(6, "0");
+  const h = (hex ?? DEFAULT_COLOR).replace("#", "").padEnd(6, "0");
   return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16)).join(" ");
 }
 function adjustHex(hex: string, factor: number): string {
-  const h = (hex ?? "#C8A961").replace("#", "").padEnd(6, "0");
+  const h = (hex ?? DEFAULT_COLOR).replace("#", "").padEnd(6, "0");
   return "#" + [0, 2, 4]
     .map((i) => Math.min(255, Math.max(0, Math.round(parseInt(h.slice(i, i + 2), 16) * factor)))
       .toString(16).padStart(2, "0"))
@@ -120,7 +123,7 @@ function IntakeCampoInput({
             type="checkbox"
             checked={valor === "true"}
             onChange={(e) => onChange(e.target.checked ? "true" : "false")}
-            className="accent-primary w-4 h-4"
+            className="accent-slate-700 w-4 h-4"
           />
           <span className="text-sm text-gray-700">
             {campo.etiqueta}
@@ -145,7 +148,7 @@ function IntakeCampoInput({
         <select
           value={valor}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm outline-none focus:ring-2 focus:ring-slate-700/40 focus:border-slate-700 transition"
         >
           <option value="">Selecciona una opción</option>
           {opciones.map((op) => (
@@ -164,7 +167,7 @@ function IntakeCampoInput({
           value={valor}
           onChange={(e) => onChange(e.target.value)}
           rows={3}
-          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition resize-none"
+          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm outline-none focus:ring-2 focus:ring-slate-700/40 focus:border-slate-700 transition resize-none"
         />
       </div>
     );
@@ -177,7 +180,7 @@ function IntakeCampoInput({
         type="text"
         value={valor}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+        className="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm outline-none focus:ring-2 focus:ring-slate-700/40 focus:border-slate-700 transition"
       />
     </div>
   );
@@ -204,6 +207,7 @@ export default function BookingPage() {
   // Intake sub-step (between paso 3 and paso 4)
   const [mostrarIntake, setMostrarIntake] = useState(false);
   const [respuestasIntake, setRespuestasIntake] = useState<Record<string, string>>({});
+  const [direction, setDirection] = useState(1);
 
   // Promo code
   const [mostrarCupon, setMostrarCupon] = useState(false);
@@ -226,9 +230,11 @@ export default function BookingPage() {
 
   const irSiguiente = () => {
     if (paso === 3 && slot && camposIntake.length > 0 && !mostrarIntake) {
+      setDirection(1);
       setMostrarIntake(true);
       return;
     }
+    setDirection(1);
     setMostrarIntake(false);
     setPaso((p) => Math.min(p + 1, 4));
     setModoCliente("elegir");
@@ -236,6 +242,7 @@ export default function BookingPage() {
 
   const irAtras = () => {
     if (mostrarIntake) {
+      setDirection(-1);
       setMostrarIntake(false);
       return;
     }
@@ -245,6 +252,7 @@ export default function BookingPage() {
       setErrorBusqueda("");
       return;
     }
+    setDirection(-1);
     setPaso((p) => p - 1);
     if (paso === 4) { setModoCliente("elegir"); setDatosPreRellenos(null); setEmailBusqueda(""); }
     if (paso === 3) setSlot(null);
@@ -329,14 +337,14 @@ export default function BookingPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="h-36 bg-gray-200 animate-pulse" />
+      <div className="min-h-screen bg-slate-50">
+        <div className="h-48 bg-slate-200 animate-pulse" />
         <div className="max-w-lg mx-auto px-4 py-6 space-y-4">
-          <div className="h-3 bg-gray-200 rounded animate-pulse w-3/4 mx-auto" />
+          <div className="h-1.5 bg-slate-200 rounded-full animate-pulse w-full" />
           {[1,2,3].map((i) => (
-            <div key={i} className="bg-white rounded-xl border border-gray-100 p-4">
-              <div className="h-4 bg-gray-200 rounded animate-pulse w-1/2 mb-2" />
-              <div className="h-3 bg-gray-200 rounded animate-pulse w-1/3" />
+            <div key={i} className="bg-white rounded-2xl border border-slate-100 p-4">
+              <div className="h-4 bg-slate-100 rounded animate-pulse w-1/2 mb-2" />
+              <div className="h-3 bg-slate-100 rounded animate-pulse w-1/3" />
             </div>
           ))}
         </div>
@@ -346,18 +354,18 @@ export default function BookingPage() {
 
   if (isError) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
         <div className="text-center">
-          <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="w-14 h-14 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
             <svg className="w-7 h-7 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
             </svg>
           </div>
-          <p className="text-gray-600 font-medium mb-1">No se pudo cargar la página</p>
-          <p className="text-gray-400 text-sm mb-4">Verifica tu conexión e intenta de nuevo.</p>
+          <p className="text-slate-700 font-semibold mb-1">No se pudo cargar la página</p>
+          <p className="text-slate-400 text-sm mb-5">Verifica tu conexión e intenta de nuevo.</p>
           <button
             onClick={() => window.location.reload()}
-            className="text-sm bg-primary hover:bg-primary-dark text-white font-semibold px-4 py-2 rounded-lg transition"
+            className="text-sm bg-slate-700 hover:bg-slate-800 text-white font-semibold px-5 py-2.5 rounded-xl transition"
           >
             Reintentar
           </button>
@@ -368,87 +376,80 @@ export default function BookingPage() {
 
   if (!negocio) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
         <div className="text-center">
-          <p className="text-gray-600 font-medium">Negocio no encontrado</p>
-          <p className="text-gray-400 text-sm">Verifica el enlace e intenta de nuevo.</p>
+          <p className="text-slate-700 font-semibold">Negocio no encontrado</p>
+          <p className="text-slate-400 text-sm mt-1">Verifica el enlace e intenta de nuevo.</p>
         </div>
       </div>
     );
   }
 
-  const color = negocio.colorPrimario ?? "#C8A961";
-  const bookingTheme = {
-    "--color-primary":       hexToChannels(color),
-    "--color-primary-dark":  hexToChannels(adjustHex(color, 0.8)),
-    "--color-primary-light": hexToChannels(adjustHex(color, 1.45)),
-  } as React.CSSProperties;
+  const color = negocio.colorPrimario ?? DEFAULT_COLOR;
 
   return (
-    <div className="min-h-screen bg-gray-50" style={bookingTheme}>
+    <div className="min-h-screen bg-slate-50">
       {/* Header del negocio */}
       <div className="relative">
         {negocio.portadaUrl ? (
-          <div className="h-36 overflow-hidden">
+          <div className="h-48 overflow-hidden">
             <img src={negocio.portadaUrl} alt="" className="w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-black/30" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
           </div>
         ) : (
-          <div
-            className="h-36"
-            style={{ background: negocio.colorPrimario ?? "#C8A961" }}
-          />
+          <div className="h-48" style={{ background: `linear-gradient(135deg, rgb(${hexToChannels(color)}), rgb(${hexToChannels(adjustHex(color, 0.7))}))` }} />
         )}
-
-        <div className="absolute bottom-0 left-0 right-0 px-4 pb-4 flex items-end gap-3">
+        <div className="absolute bottom-0 left-0 right-0 px-5 pb-5 flex items-end gap-3">
           {negocio.logoUrl && (
             <img
               src={negocio.logoUrl}
               alt={negocio.nombre}
-              className="w-14 h-14 rounded-xl border-2 border-white object-cover shadow shrink-0"
+              className="w-14 h-14 rounded-2xl border-2 border-white object-cover shadow-lg shrink-0"
             />
           )}
           <div className="flex-1 min-w-0">
-            <h1 className="text-white text-xl font-bold drop-shadow">{negocio.nombre}</h1>
+            <h1 className="text-white text-xl font-bold drop-shadow-sm">{negocio.nombre}</h1>
             {negocio.descripcion && (
-              <p className="text-white/80 text-xs mt-0.5 line-clamp-1">{negocio.descripcion}</p>
-            )}
-            {(negocio.telefonoWhatsApp || negocio.telefono) && (
-              <a
-                href={`https://wa.me/${(negocio.telefonoWhatsApp || negocio.telefono || "").replace(/\D/g, "").replace(/^(\d{10})$/, "52$1")}`}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1 mt-1 text-white/90 hover:text-white text-xs transition"
-              >
-                <WhatsAppIcon className="w-3.5 h-3.5 shrink-0" />
-                {negocio.telefonoWhatsApp || negocio.telefono}
-              </a>
+              <p className="text-white/75 text-xs mt-0.5 line-clamp-1">{negocio.descripcion}</p>
             )}
           </div>
         </div>
       </div>
 
-      {/* Contenido */}
-      <div className="max-w-lg mx-auto px-4 py-6">
-        <div className="flex justify-end mb-2">
+      {/* Sub-header: acciones del negocio */}
+      <div className="bg-white border-b border-slate-100 px-5 py-2.5 flex items-center justify-between">
+        {(negocio.telefonoWhatsApp || negocio.telefono) ? (
           <a
-            href={`/b/${negocio.slug}/mis-citas`}
-            className="text-xs text-gray-400 hover:text-gray-600 underline underline-offset-2"
+            href={`https://wa.me/${(negocio.telefonoWhatsApp || negocio.telefono || "").replace(/\D/g, "").replace(/^(\d{10})$/, "52$1")}`}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-[#25D366] hover:opacity-80 transition"
           >
-            Ver mis citas
+            <WhatsAppIcon className="w-3.5 h-3.5 shrink-0" />
+            {negocio.telefonoWhatsApp || negocio.telefono}
           </a>
-        </div>
+        ) : <span />}
+        <a
+          href={`/b/${negocio.slug}/mis-citas`}
+          className="text-xs font-medium text-slate-400 hover:text-slate-600 transition"
+        >
+          Mis citas →
+        </a>
+      </div>
+
+      {/* Contenido */}
+      <div className="max-w-lg mx-auto px-4 pt-5 pb-10">
         <IndicadorPasos pasoActual={paso} pasos={PASOS} />
 
-        {/* Mini-resumen de selecciones previas */}
+        {/* Mini-resumen breadcrumb */}
         {paso >= 2 && (servicio || empleado) && (
-          <div className="flex items-center gap-2 text-xs text-gray-500 bg-white border border-gray-100 rounded-lg px-3 py-2 mb-4 flex-wrap">
+          <div className="flex items-center gap-1.5 text-xs bg-white border border-slate-100 rounded-xl px-3 py-2 mb-4 flex-wrap shadow-sm">
             {servicio && (
-              <span className="font-medium text-gray-700">{servicio.nombre}</span>
+              <span className="font-semibold text-slate-700">{servicio.nombre}</span>
             )}
-            {servicio && empleado && <span className="text-gray-300">·</span>}
+            {servicio && empleado && paso >= 3 && <span className="text-slate-300">›</span>}
             {empleado && paso >= 3 && (
-              <span className="font-medium text-gray-700">
+              <span className="text-slate-500">
                 {sinPreferencia
                   ? (slot?.empleadoNombre ?? "Cualquier disponible")
                   : empleado.nombre}
@@ -458,7 +459,19 @@ export default function BookingPage() {
         )}
 
         {/* Pasos — wrapper con animación de transición */}
-        <div key={`${paso}-${mostrarIntake ? "intake" : modoCliente}`} className="animate-step-in">
+        <AnimatePresence mode="wait" custom={direction} initial={false}>
+        <motion.div
+          key={`${paso}-${mostrarIntake ? "intake" : modoCliente}`}
+          custom={direction}
+          variants={{
+            enter: (dir: number) => ({ opacity: 0, x: dir * 30 }),
+            center: { opacity: 1, x: 0, transition: { duration: 0.2, ease: "easeOut" } },
+            exit: (dir: number) => ({ opacity: 0, x: dir * -30, transition: { duration: 0.15, ease: "easeIn" } }),
+          }}
+          initial="enter"
+          animate="center"
+          exit="exit"
+        >
 
         {/* Paso 1 */}
         {paso === 1 && (
@@ -474,7 +487,7 @@ export default function BookingPage() {
             <button
               onClick={irSiguiente}
               disabled={!servicio}
-              className="mt-6 w-full bg-primary hover:bg-primary-dark disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition"
+              className="mt-6 w-full bg-slate-700 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-2xl transition text-sm tracking-wide"
             >
               Continuar
             </button>
@@ -506,7 +519,7 @@ export default function BookingPage() {
               <button
                 onClick={irSiguiente}
                 disabled={!empleado}
-                className="flex-1 bg-primary hover:bg-primary-dark disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition"
+                className="flex-1 bg-slate-700 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-3 rounded-2xl transition text-sm"
               >
                 Continuar
               </button>
@@ -524,8 +537,8 @@ export default function BookingPage() {
               onSeleccionar={setSlot}
             />
             {slot && (negocio.horasCancelacion ?? 0) > 0 && (
-              <div className="mt-4 flex items-center gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
-                <AlertCircle size={13} className="shrink-0" />
+              <div className="mt-4 flex items-center gap-2 text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5">
+                <AlertCircle size={13} className="shrink-0 text-slate-400" />
                 <span>
                   Cancelación gratuita hasta{" "}
                   <strong>
@@ -542,7 +555,7 @@ export default function BookingPage() {
               <button
                 onClick={irSiguiente}
                 disabled={!slot}
-                className="flex-1 bg-primary hover:bg-primary-dark disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition"
+                className="flex-1 bg-slate-700 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-3 rounded-2xl transition text-sm"
               >
                 Continuar
               </button>
@@ -554,8 +567,8 @@ export default function BookingPage() {
         {paso === 3 && mostrarIntake && camposIntake.length > 0 && (
           <>
             <div className="mb-5">
-              <h2 className="text-lg font-semibold text-gray-800">Antes de continuar…</h2>
-              <p className="text-sm text-gray-400 mt-1">
+              <h2 className="text-xl font-bold text-slate-900">Antes de continuar…</h2>
+              <p className="text-sm text-slate-500 mt-1">
                 Por favor responde estas preguntas adicionales para tu cita.
               </p>
             </div>
@@ -574,7 +587,7 @@ export default function BookingPage() {
             <div className="mt-6 flex gap-3">
               <button
                 onClick={irAtras}
-                className="flex-1 py-3 rounded-xl border-2 border-gray-200 text-sm font-medium text-gray-600 hover:border-gray-300 transition"
+                className="flex-1 py-3 rounded-2xl border-2 border-slate-200 text-sm font-medium text-slate-600 hover:border-slate-300 transition"
               >
                 Atrás
               </button>
@@ -583,7 +596,7 @@ export default function BookingPage() {
                 disabled={camposIntake
                   .filter((c) => c.requerido)
                   .some((c) => !respuestasIntake[c.id]?.trim())}
-                className="flex-1 bg-primary hover:bg-primary-dark disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition"
+                className="flex-1 bg-slate-700 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-3 rounded-2xl transition text-sm"
               >
                 Continuar
               </button>
@@ -594,35 +607,47 @@ export default function BookingPage() {
         {/* Paso 4 — elegir modo */}
         {paso === 4 && modoCliente === "elegir" && (
           <div>
-            <h2 className="text-lg font-semibold text-gray-800 mb-1">¿Ya has reservado antes?</h2>
-            <p className="text-sm text-gray-400 mb-6">Busca tus datos para no volver a escribirlos, o continúa como nuevo cliente.</p>
+            <h2 className="text-xl font-bold text-slate-900 mb-1">¿Ya has reservado antes?</h2>
+            <p className="text-sm text-slate-500 mb-6">Busca tus datos o continúa como nuevo cliente.</p>
             <div className="space-y-3">
+              {/* Opción 1 — Cliente recurrente (Klarna-style card) */}
               <button
                 onClick={() => setModoCliente("buscar")}
-                className="w-full flex items-center gap-4 bg-white border-2 border-gray-100 hover:border-primary/40 rounded-xl p-4 text-left transition group"
+                className="w-full flex items-center gap-4 bg-white border-2 border-slate-100 hover:border-slate-300 rounded-2xl p-4 text-left transition hover:shadow-sm group"
               >
-                <div className="w-10 h-10 rounded-full bg-primary/10 group-hover:bg-primary/20 flex items-center justify-center shrink-0 transition">
-                  <UserCircle size={20} className="text-primary" />
+                <div className="w-11 h-11 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
+                  <UserCircle size={20} className="text-slate-500" />
                 </div>
-                <div>
-                  <p className="font-semibold text-gray-800 text-sm">Soy cliente recurrente</p>
-                  <p className="text-xs text-gray-400 mt-0.5">Busca tus datos con tu correo</p>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-slate-800 text-sm">Soy cliente recurrente</p>
+                  <p className="text-xs text-slate-400 mt-0.5">Busca tus datos con tu correo</p>
                 </div>
+                <ChevronRight size={16} className="text-slate-300 group-hover:text-slate-400 transition shrink-0" />
               </button>
+
+              {/* Separador "o" */}
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-px bg-slate-100" />
+                <span className="text-xs font-medium text-slate-300 uppercase tracking-widest">o</span>
+                <div className="flex-1 h-px bg-slate-100" />
+              </div>
+
+              {/* Opción 2 — Invitado */}
               <button
                 onClick={() => setModoCliente("listo")}
-                className="w-full flex items-center gap-4 bg-gray-900 hover:bg-gray-700 rounded-xl p-4 text-left transition"
+                className="w-full flex items-center gap-4 bg-slate-900 hover:bg-slate-800 rounded-2xl p-4 text-left transition group"
               >
-                <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center shrink-0">
+                <div className="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
                   <UserCheck size={20} className="text-white" />
                 </div>
-                <div>
+                <div className="flex-1 min-w-0">
                   <p className="font-semibold text-white text-sm">Continuar como invitado</p>
                   <p className="text-xs text-white/50 mt-0.5">Ingresa tus datos manualmente</p>
                 </div>
+                <ChevronRight size={16} className="text-white/30 group-hover:text-white/50 transition shrink-0" />
               </button>
             </div>
-            <button onClick={irAtras} className="mt-5 w-full py-2.5 text-sm text-gray-500 hover:text-gray-700 transition">
+            <button onClick={irAtras} className="mt-5 w-full py-3 rounded-2xl border-2 border-slate-200 text-sm font-medium text-slate-600 hover:border-slate-300 transition">
               ← Atrás
             </button>
           </div>
@@ -631,28 +656,28 @@ export default function BookingPage() {
         {/* Paso 4 — buscar datos */}
         {paso === 4 && modoCliente === "buscar" && (
           <div>
-            <h2 className="text-lg font-semibold text-gray-800 mb-1">Buscar mis datos</h2>
-            <p className="text-sm text-gray-400 mb-5">Ingresa el correo con el que reservaste anteriormente.</p>
+            <h2 className="text-xl font-bold text-slate-900 mb-1">Buscar mis datos</h2>
+            <p className="text-sm text-slate-500 mb-5">Ingresa el correo con el que reservaste anteriormente.</p>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Correo electrónico</label>
+              <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">Correo electrónico</label>
               <input
                 type="email"
                 value={emailBusqueda}
                 onChange={(e) => { setEmailBusqueda(e.target.value); setErrorBusqueda(""); }}
                 onKeyDown={(e) => e.key === "Enter" && buscarCliente()}
                 placeholder="correo@ejemplo.com"
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-slate-700/20 focus:border-slate-700 transition bg-white"
               />
-              {errorBusqueda && <p className="text-red-500 text-xs mt-1.5">{errorBusqueda}</p>}
+              {errorBusqueda && <p className="text-slate-500 text-xs mt-1.5 bg-slate-50 border border-slate-100 rounded-lg px-3 py-2">{errorBusqueda}</p>}
             </div>
             <button
               onClick={buscarCliente}
               disabled={buscandoCliente || !emailBusqueda.includes("@")}
-              className="mt-4 w-full bg-primary hover:bg-primary-dark disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition"
+              className="mt-4 w-full bg-slate-700 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-2xl transition text-sm"
             >
-              {buscandoCliente ? "Buscando..." : "Buscar"}
+              {buscandoCliente ? "Buscando…" : "Buscar mis datos"}
             </button>
-            <button onClick={irAtras} className="mt-3 w-full py-2.5 text-sm text-gray-500 hover:text-gray-700 transition">
+            <button onClick={irAtras} className="mt-3 w-full py-3 rounded-2xl border-2 border-slate-200 text-sm font-medium text-slate-600 hover:border-slate-300 transition">
               ← Atrás
             </button>
           </div>
@@ -711,12 +736,12 @@ export default function BookingPage() {
                       onKeyDown={(e) => e.key === "Enter" && validarCupon()}
                       placeholder="PROMO20"
                       maxLength={50}
-                      className="flex-1 px-3 py-2 rounded-lg border border-gray-300 text-sm font-mono uppercase focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                      className="flex-1 px-3 py-2 rounded-lg border border-gray-300 text-sm font-mono uppercase focus:outline-none focus:ring-2 focus:ring-slate-700/40 focus:border-slate-700 transition"
                     />
                     <button
                       onClick={validarCupon}
                       disabled={validandoCupon || !codigoInput.trim()}
-                      className="px-4 py-2 bg-primary text-white text-sm font-semibold rounded-lg disabled:opacity-50 hover:opacity-90 transition"
+                      className="px-4 py-2 bg-slate-700 text-white text-sm font-semibold rounded-lg disabled:opacity-50 hover:opacity-90 transition"
                     >
                       {validandoCupon ? "..." : "Aplicar"}
                     </button>
@@ -732,7 +757,7 @@ export default function BookingPage() {
               ) : (
                 <button
                   onClick={() => setMostrarCupon(true)}
-                  className="text-sm text-primary font-medium hover:underline"
+                  className="text-sm text-slate-700 font-medium hover:underline"
                 >
                   ¿Tienes un código de descuento?
                 </button>
@@ -741,12 +766,23 @@ export default function BookingPage() {
 
             {/* Confirmación pendiente */}
             {negocio && !negocio.autoConfirmar && (
-              <div className="mb-4 flex items-center gap-2 text-xs text-blue-700 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2">
-                <AlertCircle size={13} className="shrink-0" />
+              <div className="mb-4 flex items-center gap-2 text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5">
+                <AlertCircle size={13} className="shrink-0 text-slate-400" />
                 <span>Tu cita quedará <strong>pendiente de confirmación</strong> por el negocio.</span>
               </div>
             )}
 
+            <div className="mb-4 flex items-start gap-2 text-xs text-slate-400 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2.5">
+              <Lock size={12} className="shrink-0 mt-0.5 text-slate-300" />
+              <span>
+                Tus datos serán compartidos únicamente con{" "}
+                <strong className="text-slate-500">{negocio.nombre}</strong> para gestionar tu cita,
+                de acuerdo con nuestra{" "}
+                <a href="/privacidad" target="_blank" rel="noreferrer" className="underline hover:text-slate-600 transition">
+                  política de privacidad
+                </a>.
+              </span>
+            </div>
             <PasoDatosCliente
               servicio={servicio}
               empleado={empleado}
@@ -766,13 +802,15 @@ export default function BookingPage() {
                 </div>
               </div>
             )}
-            <button onClick={irAtras} className="mt-3 w-full py-2.5 text-sm text-gray-500 hover:text-gray-700 transition">
+            <button onClick={irAtras} className="mt-3 w-full py-3 rounded-2xl border-2 border-slate-200 text-sm font-medium text-slate-600 hover:border-slate-300 transition">
               ← Atrás
             </button>
           </>
         )}
 
-        </div>{/* fin animate-step-in */}
+        </motion.div>
+        </AnimatePresence>
+        <PublicFooter />
       </div>
     </div>
   );

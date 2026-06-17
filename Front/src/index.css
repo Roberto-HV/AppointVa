@@ -4,30 +4,30 @@
 
 :root {
   /* ── AppointVa: canales RGB (permite bg-primary/10 etc.) ─────────────────── */
-  --color-primary:       200 169 97;   /* #C8A961 */
-  --color-primary-dark:  168 139 69;   /* #a88b45 */
-  --color-primary-light: 232 212 160;  /* #e8d4a0 */
+  --color-primary:       51 65 85;    /* #334155 slate-700 */
+  --color-primary-dark:  30 41 59;    /* #1E293B slate-800 */
+  --color-primary-light: 100 116 139; /* #64748B slate-500 */
 
-  /* ── shadcn/ui: variables HSL (zinc base + gold primary) ─────────────────── */
+  /* ── shadcn/ui: variables HSL (zinc base + slate primary) ────────────────── */
   --background:           0 0% 100%;
-  --foreground:           240 10% 3.9%;
+  --foreground:           222 47% 11%;
   --card:                 0 0% 100%;
-  --card-foreground:      240 10% 3.9%;
+  --card-foreground:      222 47% 11%;
   --popover:              0 0% 100%;
-  --popover-foreground:   240 10% 3.9%;
-  --primary:              42 47% 58%;   /* #C8A961 gold — coincide con AppointVa */
+  --popover-foreground:   222 47% 11%;
+  --primary:              215 25% 27%;  /* #334155 slate-700 */
   --primary-foreground:   0 0% 100%;
-  --secondary:            240 4.8% 95.9%;
-  --secondary-foreground: 240 5.9% 10%;
-  --muted:                240 4.8% 95.9%;
-  --muted-foreground:     240 3.8% 46.1%;
-  --accent:               240 4.8% 95.9%;
-  --accent-foreground:    240 5.9% 10%;
+  --secondary:            214 32% 91%;
+  --secondary-foreground: 215 25% 27%;
+  --muted:                214 32% 96%;
+  --muted-foreground:     215 16% 47%;
+  --accent:               214 32% 91%;
+  --accent-foreground:    215 25% 27%;
   --destructive:          0 84.2% 60.2%;
   --destructive-foreground: 0 0% 98%;
-  --border:               240 5.9% 90%;
-  --input:                240 5.9% 90%;
-  --ring:                 42 47% 58%;   /* gold ring */
+  --border:               214 32% 91%;
+  --input:                214 32% 91%;
+  --ring:                 215 25% 27%;  /* slate ring */
   --radius:               0.5rem;
 }
 
@@ -41,6 +41,16 @@
 }
 .animate-step-in  { animation: stepIn  0.22s ease-out both; }
 .animate-fade-in  { animation: fadeIn  0.22s ease-out both; }
+
+/* ── Micro-interactions ─────────────────────────────────────────────────── */
+button:not([disabled]) {
+  transition-property: transform, opacity;
+  transition-duration: 80ms;
+  transition-timing-function: ease;
+}
+button:not([disabled]):active {
+  transform: scale(0.97);
+}
 
 @layer base {
   * {

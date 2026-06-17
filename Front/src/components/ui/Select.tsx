@@ -1,4 +1,4 @@
-import {
+﻿import {
   useState,
   useRef,
   useEffect,
@@ -123,7 +123,7 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
             "w-full flex items-center justify-between pl-4 pr-3 py-2.5",
             "rounded-xl border bg-white text-sm text-left shadow-sm outline-none transition-all duration-150",
             open
-              ? "border-primary ring-2 ring-primary/20"
+              ? "border-slate-700 ring-2 ring-slate-700/20"
               : "border-gray-200 hover:border-gray-300",
             disabled
               ? "bg-gray-50 text-gray-400 cursor-not-allowed opacity-60"
@@ -158,13 +158,13 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
                         opt.disabled
                           ? "text-gray-300 cursor-not-allowed"
                           : isSelected
-                          ? "bg-primary/10 text-primary font-medium"
+                          ? "bg-slate-700/10 text-slate-700 font-medium"
                           : "text-gray-700 hover:bg-gray-50 cursor-pointer",
                       ].join(" ")}
                     >
                       <span>{opt.label}</span>
                       {isSelected && (
-                        <Check size={14} className="text-primary shrink-0 ml-2" />
+                        <Check size={14} className="text-slate-700 shrink-0 ml-2" />
                       )}
                     </button>
                   </li>

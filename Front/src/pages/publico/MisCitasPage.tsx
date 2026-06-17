@@ -1,9 +1,12 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../api/axios";
 import PasoFechaHora from "../../components/booking/PasoFechaHora";
 import type { SlotDisponible } from "../../types";
+import { CalendarDays, ChevronLeft, ChevronRight, X, CheckCircle2, LogOut } from "lucide-react";
+import { formatPrecio, formatFechaHoraResumen as formatFecha } from "../../utils/formatters";
+import PublicFooter from "../../components/PublicFooter";
 
 const TAMANO = 10;
 const SESSION_KEY = "mcs_session";
@@ -29,22 +32,29 @@ interface Session {
   telefono: string;
 }
 
-const ESTADO_ESTILOS: Record<string, string> = {
-  Pendiente:    "bg-yellow-100 text-yellow-700",
-  Confirmada:   "bg-green-100 text-green-700",
-  Completada:   "bg-blue-100 text-blue-700",
-  Cancelada:    "bg-red-100 text-red-600",
-  Inasistencia: "bg-gray-100 text-gray-500",
+const ESTADO_CONFIG: Record<string, { bg: string; text: string; dot: string }> = {
+  Pendiente:    { bg: "bg-amber-50",  text: "text-amber-700",  dot: "bg-amber-400" },
+  Confirmada:   { bg: "bg-emerald-50", text: "text-emerald-700", dot: "bg-emerald-400" },
+  Completada:   { bg: "bg-slate-100", text: "text-slate-600",   dot: "bg-slate-400" },
+  Cancelada:    { bg: "bg-red-50",    text: "text-red-600",     dot: "bg-red-400" },
+  Inasistencia: { bg: "bg-slate-50",  text: "text-slate-500",   dot: "bg-slate-300" },
 };
 
-import { formatPrecio, formatFechaHoraResumen as formatFecha } from "../../utils/formatters";
+function EstadoBadge({ estado }: { estado: string }) {
+  const cfg = ESTADO_CONFIG[estado] ?? { bg: "bg-slate-100", text: "text-slate-500", dot: "bg-slate-300" };
+  return (
+    <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${cfg.bg} ${cfg.text}`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
+      {estado}
+    </span>
+  );
+}
 
 export default function MisCitasPage() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const qc = useQueryClient();
 
-  // Session recordada en localStorage
   const [session, setSession] = useState<Session | null>(() => {
     try { return JSON.parse(localStorage.getItem(SESSION_KEY) ?? "null"); }
     catch { return null; }
@@ -58,14 +68,12 @@ export default function MisCitasPage() {
   const [pagina, setPagina] = useState(1);
   const [total, setTotal] = useState(0);
 
-  // Estado reagendar
   const [reagendando, setReagendando] = useState<MiCita | null>(null);
   const [slotNuevo, setSlotNuevo] = useState<SlotDisponible | null>(null);
   const [guardandoReagenda, setGuardandoReagenda] = useState(false);
   const [errorReagenda, setErrorReagenda] = useState("");
   const [exitoReagenda, setExitoReagenda] = useState("");
 
-  // Auto-buscar si hay sesión guardada
   useEffect(() => {
     if (session && !buscado) setBuscado(session);
   }, []);
@@ -112,8 +120,7 @@ export default function MisCitasPage() {
       await api.delete(`/publico/citas/${codigo}`, { params: { email: buscado.email } });
       qc.invalidateQueries({ queryKey: ["mis-citas", slug, buscado.email, buscado.telefono] });
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje
-        ?? "No se pudo cancelar la cita.";
+      const msg = (err as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje ?? "No se pudo cancelar la cita.";
       setErrorCancelacion(msg);
     } finally {
       setCancelando(null);
@@ -130,16 +137,11 @@ export default function MisCitasPage() {
         { inicioEn: slotNuevo.inicio },
         { params: { email: buscado.email } }
       );
-      setExitoReagenda("¡Cita reagendada! Recibirás un correo de confirmación.");
+      setExitoReagenda("¡Cita reagendada exitosamente!");
       qc.invalidateQueries({ queryKey: ["mis-citas", slug, buscado.email, buscado.telefono] });
-      setTimeout(() => {
-        setReagendando(null);
-        setSlotNuevo(null);
-        setExitoReagenda("");
-      }, 2500);
+      setTimeout(() => { setReagendando(null); setSlotNuevo(null); setExitoReagenda(""); }, 2500);
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje
-        ?? "No se pudo reagendar la cita.";
+      const msg = (err as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje ?? "No se pudo reagendar la cita.";
       setErrorReagenda(msg);
     } finally {
       setGuardandoReagenda(false);
@@ -147,58 +149,70 @@ export default function MisCitasPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-50">
       <div className="max-w-xl mx-auto px-4 py-10">
 
         {/* Header */}
-        <div className="text-center mb-8">
-          <div className="w-12 h-12 bg-primary rounded-xl mx-auto flex items-center justify-center text-white font-bold text-xl mb-3">
-            A
-          </div>
-          <h1 className="text-xl font-bold text-gray-900">Mis citas</h1>
-          {buscado ? (
-            <div className="flex items-center justify-center gap-2 mt-1">
-              <p className="text-sm text-gray-500">{buscado.email}</p>
-              <button onClick={cerrarSesion} className="text-xs text-gray-400 hover:text-gray-600 underline">
-                Cambiar
-              </button>
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-slate-900 rounded-2xl flex items-center justify-center">
+                <CalendarDays size={18} className="text-white" />
+              </div>
+              <h1 className="text-xl font-bold text-slate-900">Mis citas</h1>
             </div>
+            {buscado && (
+              <button
+                onClick={cerrarSesion}
+                className="flex items-center gap-1.5 text-xs font-medium text-slate-400 hover:text-slate-600 transition"
+              >
+                <LogOut size={13} />
+                Cambiar cuenta
+              </button>
+            )}
+          </div>
+          {buscado ? (
+            <p className="text-sm text-slate-500 ml-[52px]">{buscado.email}</p>
           ) : (
-            <p className="text-sm text-gray-500 mt-1">Ingresa tu email y teléfono para ver tus reservas</p>
+            <p className="text-sm text-slate-500 ml-[52px]">Ingresa tu correo y teléfono para ver tus reservas</p>
           )}
         </div>
 
-        {/* Formulario (solo si no hay sesión activa) */}
+        {/* Formulario de acceso */}
         {!buscado && (
-          <form onSubmit={buscar} className="bg-white rounded-2xl border border-gray-100 p-5 mb-6 shadow-sm space-y-3">
+          <form onSubmit={buscar} className="bg-white rounded-2xl border border-slate-100 p-5 mb-6 shadow-sm space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Correo electrónico</label>
+              <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">
+                Correo electrónico
+              </label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="tu@correo.com"
                 required
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary"
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-slate-700/20 focus:border-slate-700 transition bg-white"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+              <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">
+                Teléfono
+              </label>
               <input
                 type="tel"
                 value={telefono}
                 onChange={(e) => setTelefono(e.target.value)}
                 placeholder="10 dígitos"
                 required
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary"
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-slate-700/20 focus:border-slate-700 transition bg-white"
               />
             </div>
             <button
               type="submit"
               disabled={!email.trim() || !telefono.trim() || isLoading}
-              className="w-full py-2 bg-primary hover:bg-primary-dark disabled:opacity-40 text-white text-sm font-semibold rounded-lg transition"
+              className="w-full py-3.5 bg-slate-700 hover:bg-slate-800 disabled:opacity-40 text-white text-sm font-bold rounded-2xl transition"
             >
-              {isLoading ? "Buscando..." : "Ver mis citas"}
+              {isLoading ? "Buscando…" : "Ver mis citas"}
             </button>
           </form>
         )}
@@ -207,55 +221,67 @@ export default function MisCitasPage() {
         {buscado && (
           <>
             {isLoading && (
-              <p className="text-center text-gray-400 text-sm py-4">Buscando citas...</p>
+              <div className="space-y-3">
+                {[1, 2].map((i) => (
+                  <div key={i} className="bg-white rounded-2xl border border-slate-100 p-4 animate-pulse">
+                    <div className="h-4 bg-slate-100 rounded w-1/2 mb-2" />
+                    <div className="h-3 bg-slate-100 rounded w-1/3" />
+                  </div>
+                ))}
+              </div>
             )}
 
             {error && (
-              <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-center text-sm text-red-600">
-                No se pudo buscar las citas. Verifica tu email e intenta de nuevo.
+              <div className="bg-red-50 border border-red-100 rounded-2xl p-4 text-center text-sm text-red-600">
+                No se pudo buscar las citas. Verifica tu información e intenta de nuevo.
               </div>
             )}
 
             {!isLoading && !error && citas && citas.length === 0 && (
-              <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center shadow-sm">
-                <p className="text-gray-400 text-sm">No encontramos citas para este correo.</p>
+              <div className="bg-white rounded-2xl border border-slate-100 p-10 text-center shadow-sm">
+                <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <CalendarDays size={20} className="text-slate-400" />
+                </div>
+                <p className="text-slate-700 font-semibold text-sm mb-1">Sin citas registradas</p>
+                <p className="text-slate-400 text-xs mb-5">No encontramos reservas asociadas a este correo.</p>
                 <Link
                   to={`/b/${slug}`}
-                  className="inline-block mt-4 text-sm text-primary font-semibold hover:underline"
+                  className="inline-flex items-center gap-1.5 text-sm font-semibold text-white bg-slate-700 hover:bg-slate-800 px-5 py-2.5 rounded-xl transition"
                 >
-                  Hacer una reserva →
+                  + Nueva reserva
                 </Link>
               </div>
             )}
 
             {!isLoading && citas && citas.length > 0 && (
               <div className="space-y-3">
-                <p className="text-xs text-gray-400 font-medium uppercase tracking-wide px-1">
-                  {total} cita{total !== 1 ? "s" : ""} encontrada{total !== 1 ? "s" : ""}
-                  {totalPaginas > 1 && ` — página ${pagina} de ${totalPaginas}`}
-                </p>
+                <div className="flex items-center justify-between px-1 mb-1">
+                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest">
+                    {total} cita{total !== 1 ? "s" : ""}
+                    {totalPaginas > 1 && ` — p. ${pagina}/${totalPaginas}`}
+                  </p>
+                  <Link to={`/b/${slug}`} className="text-xs font-semibold text-slate-700 hover:underline">
+                    + Nueva reserva
+                  </Link>
+                </div>
+
                 {citas.map((c) => (
-                  <div
-                    key={c.id}
-                    className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm"
-                  >
+                  <div key={c.id} className="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm hover:shadow-md transition-shadow">
                     <div className="flex items-start justify-between gap-3 mb-3">
-                      <div>
-                        <p className="font-semibold text-gray-900 text-sm">{c.nombreServicio}</p>
-                        <p className="text-xs text-gray-500 mt-0.5">con {c.nombreEmpleado}</p>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-slate-900 text-sm">{c.nombreServicio}</p>
+                        <p className="text-xs text-slate-400 mt-0.5">con {c.nombreEmpleado}</p>
                       </div>
-                      <span className={`text-xs font-semibold px-2 py-1 rounded-full whitespace-nowrap ${ESTADO_ESTILOS[c.estadoTexto] ?? "bg-gray-100 text-gray-500"}`}>
-                        {c.estadoTexto}
-                      </span>
+                      <EstadoBadge estado={c.estadoTexto} />
                     </div>
 
-                    <div className="flex items-center justify-between text-xs text-gray-500">
-                      <span className="capitalize">{formatFecha(c.inicioEn)}</span>
-                      <span className="font-semibold text-gray-800">{formatPrecio(c.precio)}</span>
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-slate-500 capitalize">{formatFecha(c.inicioEn)}</p>
+                      <p className="text-sm font-bold text-slate-800">{formatPrecio(c.precio)}</p>
                     </div>
 
-                    <div className="mt-3 pt-3 border-t border-gray-50 flex items-center justify-between gap-2">
-                      <span className="font-mono text-xs text-gray-400 bg-gray-50 px-2 py-1 rounded">
+                    <div className="mt-3 pt-3 border-t border-slate-50 flex items-center justify-between gap-2">
+                      <span className="font-mono text-xs text-slate-400 bg-slate-50 px-2 py-1 rounded-lg tracking-wider">
                         {c.codigoConfirmacion}
                       </span>
                       <div className="flex items-center gap-3">
@@ -263,24 +289,24 @@ export default function MisCitasPage() {
                           <>
                             <button
                               onClick={() => { setReagendando(c); setSlotNuevo(null); setErrorReagenda(""); }}
-                              className="text-xs text-blue-500 hover:text-blue-700 font-medium transition"
+                              className="text-xs font-semibold text-slate-500 hover:text-slate-800 transition"
                             >
                               Reagendar
                             </button>
                             <button
                               onClick={() => cancelarCita(c.codigoConfirmacion)}
                               disabled={cancelando === c.codigoConfirmacion}
-                              className="text-xs text-red-400 hover:text-red-600 font-medium disabled:opacity-40 transition"
+                              className="text-xs font-semibold text-red-400 hover:text-red-600 disabled:opacity-40 transition"
                             >
-                              {cancelando === c.codigoConfirmacion ? "Cancelando..." : "Cancelar"}
+                              {cancelando === c.codigoConfirmacion ? "Cancelando…" : "Cancelar"}
                             </button>
                           </>
                         )}
                         <button
                           onClick={() => navigate(`/cita/${c.codigoConfirmacion}`)}
-                          className="text-xs text-primary font-semibold hover:underline"
+                          className="text-xs font-bold text-slate-700 hover:underline"
                         >
-                          Ver detalles →
+                          Ver →
                         </button>
                       </div>
                     </div>
@@ -288,20 +314,20 @@ export default function MisCitasPage() {
                 ))}
 
                 {errorCancelacion && (
-                  <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-600 text-center">
+                  <div className="bg-red-50 border border-red-100 rounded-xl p-3 text-sm text-red-600 text-center">
                     {errorCancelacion}
                   </div>
                 )}
 
                 {/* Paginación */}
                 {totalPaginas > 1 && (
-                  <div className="flex items-center justify-center gap-2 pt-2">
+                  <div className="flex items-center justify-center gap-1.5 pt-2">
                     <button
                       onClick={() => setPagina((p) => Math.max(1, p - 1))}
                       disabled={pagina === 1 || isLoading}
-                      className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                      className="w-9 h-9 rounded-xl border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition"
                     >
-                      ← Anterior
+                      <ChevronLeft size={14} />
                     </button>
                     {Array.from({ length: totalPaginas }, (_, i) => i + 1)
                       .filter((p) => p === 1 || p === totalPaginas || Math.abs(p - pagina) <= 1)
@@ -312,16 +338,16 @@ export default function MisCitasPage() {
                       }, [])
                       .map((item, i) =>
                         item === "..." ? (
-                          <span key={`dots-${i}`} className="px-2 text-gray-400 text-sm">…</span>
+                          <span key={`dots-${i}`} className="px-1 text-slate-400 text-sm">…</span>
                         ) : (
                           <button
                             key={item}
                             onClick={() => setPagina(item as number)}
                             disabled={isLoading}
-                            className={`w-8 h-8 rounded-lg text-sm font-medium transition ${
+                            className={`w-9 h-9 rounded-xl text-sm font-semibold transition ${
                               pagina === item
-                                ? "bg-primary text-white"
-                                : "border border-gray-200 text-gray-600 hover:bg-gray-50"
+                                ? "bg-slate-700 text-white shadow-sm"
+                                : "border border-slate-200 text-slate-600 hover:bg-slate-50"
                             }`}
                           >
                             {item}
@@ -331,58 +357,49 @@ export default function MisCitasPage() {
                     <button
                       onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))}
                       disabled={pagina === totalPaginas || isLoading}
-                      className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                      className="w-9 h-9 rounded-xl border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition"
                     >
-                      Siguiente →
+                      <ChevronRight size={14} />
                     </button>
                   </div>
                 )}
-
-                <div className="text-center pt-2">
-                  <Link
-                    to={`/b/${slug}`}
-                    className="text-sm text-primary font-semibold hover:underline"
-                  >
-                    + Nueva reserva
-                  </Link>
-                </div>
               </div>
             )}
           </>
         )}
+        <PublicFooter />
       </div>
 
-      {/* Modal reagendar */}
+      {/* Modal reagendar — bottom sheet en mobile */}
       {reagendando && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-          <div className="bg-white w-full sm:max-w-lg sm:rounded-2xl rounded-t-2xl max-h-[92vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-gray-100 px-5 py-4 flex items-center justify-between">
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center sm:p-4">
+          <div className="bg-white w-full sm:max-w-lg sm:rounded-2xl rounded-t-3xl max-h-[92vh] overflow-y-auto">
+            {/* Handle bar */}
+            <div className="flex justify-center pt-3 pb-1 sm:hidden">
+              <div className="w-10 h-1 bg-slate-200 rounded-full" />
+            </div>
+
+            <div className="sticky top-0 bg-white border-b border-slate-100 px-5 py-4 flex items-start justify-between">
               <div>
-                <h2 className="font-semibold text-gray-900">Reagendar cita</h2>
-                <p className="text-xs text-gray-400 mt-0.5">{reagendando.nombreServicio} · {reagendando.nombreEmpleado}</p>
+                <h2 className="font-bold text-slate-900">Reagendar cita</h2>
+                <p className="text-xs text-slate-400 mt-0.5">{reagendando.nombreServicio} · {reagendando.nombreEmpleado}</p>
               </div>
               <button
                 onClick={() => { setReagendando(null); setSlotNuevo(null); setErrorReagenda(""); }}
-                className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+                className="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition"
               >
-                ×
+                <X size={15} />
               </button>
             </div>
 
             <div className="p-5">
               {exitoReagenda ? (
-                <div className="flex flex-col items-center gap-3 py-8 text-center">
-                  <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center">
-                    <svg className="w-7 h-7 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                  <p className="text-green-700 font-semibold text-sm">{exitoReagenda}</p>
+                <div className="flex flex-col items-center gap-3 py-10 text-center">
+                  <CheckCircle2 size={48} className="text-emerald-500" />
+                  <p className="text-slate-800 font-semibold">{exitoReagenda}</p>
                 </div>
               ) : (
                 <>
-                  <p className="text-sm text-gray-600 mb-4">Selecciona la nueva fecha y hora para tu cita:</p>
-
                   <PasoFechaHora
                     servicioId={reagendando.servicioId}
                     empleadoId={reagendando.empleadoId}
@@ -391,15 +408,17 @@ export default function MisCitasPage() {
                   />
 
                   {errorReagenda && (
-                    <p className="mt-3 text-sm text-red-600 text-center">{errorReagenda}</p>
+                    <p className="mt-3 text-sm text-red-600 text-center bg-red-50 border border-red-100 rounded-xl px-3 py-2">
+                      {errorReagenda}
+                    </p>
                   )}
 
                   <button
                     onClick={confirmarReagenda}
                     disabled={!slotNuevo || guardandoReagenda}
-                    className="mt-5 w-full bg-primary hover:bg-primary-dark disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition"
+                    className="mt-5 w-full bg-slate-700 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-2xl transition text-sm"
                   >
-                    {guardandoReagenda ? "Guardando..." : "Confirmar nuevo horario"}
+                    {guardandoReagenda ? "Guardando…" : "Confirmar nuevo horario"}
                   </button>
                 </>
               )}

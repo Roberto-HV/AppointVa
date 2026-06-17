@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -44,7 +44,7 @@ export default function RecuperarContrasenaPage() {
               <p className="text-sm text-gray-500 mb-6">
                 Si el correo está registrado, recibirás un enlace para restablecer tu contraseña en los próximos minutos.
               </p>
-              <Link to="/login" className="text-sm text-primary hover:underline">
+              <Link to="/login" className="text-sm text-slate-700 hover:underline">
                 Volver al inicio de sesión
               </Link>
             </div>
@@ -65,7 +65,7 @@ export default function RecuperarContrasenaPage() {
                     autoComplete="email"
                     {...register("email")}
                     className={`w-full px-4 py-2.5 rounded-lg border text-sm outline-none transition
-                      focus:ring-2 focus:ring-primary/40 focus:border-primary
+                      focus:ring-2 focus:ring-slate-700/40 focus:border-slate-700
                       ${errors.email ? "border-red-400 bg-red-50" : "border-gray-300"}`}
                     placeholder="correo@ejemplo.com"
                   />
@@ -77,7 +77,7 @@ export default function RecuperarContrasenaPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full bg-primary hover:bg-primary-dark disabled:opacity-60 disabled:cursor-not-allowed
+                  className="w-full bg-slate-700 hover:bg-slate-800 disabled:opacity-60 disabled:cursor-not-allowed
                     text-white font-semibold py-2.5 rounded-lg transition text-sm"
                 >
                   {isSubmitting ? "Enviando..." : "Enviar enlace"}
@@ -89,7 +89,7 @@ export default function RecuperarContrasenaPage() {
 
         {!enviado && (
           <p className="text-center text-sm text-gray-500 mt-5">
-            <Link to="/login" className="text-primary hover:underline">
+            <Link to="/login" className="text-slate-700 hover:underline">
               Volver al inicio de sesión
             </Link>
           </p>

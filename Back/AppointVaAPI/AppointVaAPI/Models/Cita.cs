@@ -39,6 +39,7 @@ namespace AppointVaAPI.Models
         [MaxLength(30)]
         public string? MetodoPago { get; set; }
         public Guid? CreadoPorUsuarioId { get; set; }
+        public string? ComprobanteUrl { get; set; }
         [Required]
         public DateTime FechaCreacion { get; set; }
         [Required]

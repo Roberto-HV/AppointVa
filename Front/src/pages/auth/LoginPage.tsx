@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -129,8 +129,8 @@ export default function LoginPage() {
           {challengeToken ? (
             <>
               <div className="text-center mb-6">
-                <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-3">
-                  <svg className="w-6 h-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <div className="w-12 h-12 bg-slate-700/10 rounded-xl flex items-center justify-center mx-auto mb-3">
+                  <svg className="w-6 h-6 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
                   </svg>
                 </div>
@@ -147,7 +147,7 @@ export default function LoginPage() {
                   value={codigo2FA}
                   onChange={(e) => setCodigo2FA(e.target.value.replace(/\D/g, ""))}
                   placeholder="000000"
-                  className="w-full px-4 py-3 text-center text-2xl font-mono tracking-[0.5em] rounded-lg border border-gray-300 outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary"
+                  className="w-full px-4 py-3 text-center text-2xl font-mono tracking-[0.5em] rounded-lg border border-gray-300 outline-none focus:ring-2 focus:ring-slate-700/40 focus:border-slate-700"
                   autoFocus
                 />
 
@@ -160,7 +160,7 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={verificando || codigo2FA.length < 6}
-                  className="w-full bg-primary hover:bg-primary-dark disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-lg transition text-sm"
+                  className="w-full bg-slate-700 hover:bg-slate-800 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-lg transition text-sm"
                 >
                   {verificando ? "Verificando..." : "Verificar"}
                 </button>
@@ -187,7 +187,7 @@ export default function LoginPage() {
                     autoComplete="email"
                     {...register("email")}
                     className={`w-full px-4 py-2.5 rounded-lg border text-sm outline-none transition
-                      focus:ring-2 focus:ring-primary/40 focus:border-primary
+                      focus:ring-2 focus:ring-slate-700/40 focus:border-slate-700
                       ${errors.email ? "border-red-400 bg-red-50" : "border-gray-300"}`}
                     placeholder="correo@ejemplo.com"
                   />
@@ -202,7 +202,7 @@ export default function LoginPage() {
                       autoComplete="current-password"
                       {...register("contrasena")}
                       className={`w-full px-4 py-2.5 pr-11 rounded-lg border text-sm outline-none transition
-                        focus:ring-2 focus:ring-primary/40 focus:border-primary
+                        focus:ring-2 focus:ring-slate-700/40 focus:border-slate-700
                         ${errors.contrasena ? "border-red-400 bg-red-50" : "border-gray-300"}`}
                       placeholder="••••••••"
                     />
@@ -225,7 +225,7 @@ export default function LoginPage() {
                 )}
 
                 <div className="flex justify-end">
-                  <Link to="/recuperar-contrasena" className="text-xs text-primary hover:underline">
+                  <Link to="/recuperar-contrasena" className="text-xs text-slate-700 hover:underline">
                     ¿Olvidaste tu contraseña?
                   </Link>
                 </div>
@@ -233,7 +233,7 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full bg-primary hover:bg-primary-dark disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-lg transition text-sm"
+                  className="w-full bg-slate-700 hover:bg-slate-800 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-lg transition text-sm"
                 >
                   {isSubmitting ? "Entrando..." : "Entrar"}
                 </button>
@@ -245,14 +245,18 @@ export default function LoginPage() {
         {!challengeToken && (
           <p className="text-center text-sm text-gray-500 mt-4">
             ¿No tienes cuenta?{" "}
-            <Link to="/registro" className="text-primary hover:underline font-medium">
+            <Link to="/registro" className="text-slate-700 hover:underline font-medium">
               Registra tu negocio
             </Link>
           </p>
         )}
 
-        <p className="text-center text-xs text-gray-400 mt-4">
-          © {new Date().getFullYear()} AppointVa · Agiliza Tu Negocio
+        <p className="text-center text-xs text-gray-400 mt-4 space-x-2">
+          <span>© {new Date().getFullYear()} AppointVa</span>
+          <span>·</span>
+          <Link to="/privacidad" className="hover:underline hover:text-gray-600 transition">Privacidad</Link>
+          <span>·</span>
+          <Link to="/terminos" className="hover:underline hover:text-gray-600 transition">Términos</Link>
         </p>
       </div>
     </div>

@@ -386,6 +386,7 @@ namespace AppointVaAPI.Controllers.V1
             EstadoTexto = PublicoController.ObtenerEstadoTexto(c.Estado),
             Notas = c.Notas,
             MotivoCancelacion = c.MotivoCancelacion,
+            ComprobanteUrl = c.ComprobanteUrl,
             FechaCreacion = c.FechaCreacion
         };
     }

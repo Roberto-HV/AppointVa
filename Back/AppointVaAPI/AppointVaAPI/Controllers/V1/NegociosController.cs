@@ -75,6 +75,11 @@ namespace AppointVaAPI.Controllers.V1
             if (!string.IsNullOrWhiteSpace(dto.MetodoNotificacion))
                 negocio.MetodoNotificacion = dto.MetodoNotificacion;
             negocio.TelefonoWhatsApp = dto.TelefonoWhatsApp;
+            if (dto.RequiereAnticipo.HasValue)
+                negocio.RequiereAnticipo = dto.RequiereAnticipo.Value;
+            if (dto.MontoAnticipo.HasValue)
+                negocio.MontoAnticipo = Math.Max(0, dto.MontoAnticipo.Value);
+            negocio.InstruccionesAnticipo = dto.InstruccionesAnticipo;
             negocio.FechaActualizacion = DateTime.UtcNow;
 
             await _repo.ActualizarAsync(negocio);
@@ -531,6 +536,9 @@ namespace AppointVaAPI.Controllers.V1
             AutoConfirmar = n.AutoConfirmar,
             MetodoNotificacion = n.MetodoNotificacion,
             TelefonoWhatsApp = n.TelefonoWhatsApp,
+            RequiereAnticipo = n.RequiereAnticipo,
+            MontoAnticipo = n.MontoAnticipo,
+            InstruccionesAnticipo = n.InstruccionesAnticipo,
             Activo = n.Activo == 1,
             PlanNombre = n.Plan?.Nombre
         };

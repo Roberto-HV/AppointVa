@@ -38,5 +38,10 @@ namespace AppointVaAPI.Models.Dtos.Negocios
 
         [MaxLength(30)]
         public string? TelefonoWhatsApp { get; set; }
+        public bool? RequiereAnticipo { get; set; }
+        [Range(0, 99999.99)]
+        public decimal? MontoAnticipo { get; set; }
+        [MaxLength(500)]
+        public string? InstruccionesAnticipo { get; set; }
     }
 }

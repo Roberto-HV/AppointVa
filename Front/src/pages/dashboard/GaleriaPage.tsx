@@ -37,6 +37,7 @@ export default function GaleriaPage() {
       setEliminando(null);
       toast("Foto eliminada");
     },
+    onError: () => toast("No se pudo eliminar la foto. Intenta de nuevo.", "error"),
   });
 
   const handleArchivos = (files: FileList | null) => {

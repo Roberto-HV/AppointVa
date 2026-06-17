@@ -33,6 +33,7 @@ namespace AppointVaAPI.Controllers.V1
         private readonly IConfiguration _config;
         private readonly IBackgroundJobClient _jobClient;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IBlobStorageService _blob;
 
         public PublicoController(
             ApplicationDbContext db,
@@ -44,7 +45,8 @@ namespace AppointVaAPI.Controllers.V1
             IEmailService email,
             IConfiguration config,
             IBackgroundJobClient jobClient,
-            UserManager<ApplicationUser> userManager)
+            UserManager<ApplicationUser> userManager,
+            IBlobStorageService blob)
         {
             _db = db;
             _negocioRepo = negocioRepo;
@@ -56,6 +58,7 @@ namespace AppointVaAPI.Controllers.V1
             _config = config;
             _jobClient = jobClient;
             _userManager = userManager;
+            _blob = blob;
         }
 
         // GET api/publico/negocios/{slug}
@@ -123,6 +126,9 @@ namespace AppointVaAPI.Controllers.V1
                 TelefonoWhatsApp = negocio.TelefonoWhatsApp,
                 HorasCancelacion = negocio.HorasCancelacion,
                 AutoConfirmar = negocio.AutoConfirmar,
+                RequiereAnticipo = negocio.RequiereAnticipo,
+                MontoAnticipo = negocio.MontoAnticipo,
+                InstruccionesAnticipo = negocio.InstruccionesAnticipo,
                 Servicios = servicios.Select(s => new ServicioPublicoDto
                 {
                     Id = s.Id,
@@ -336,7 +342,10 @@ namespace AppointVaAPI.Controllers.V1
                 Notas = cita.Notas,
                 IcalUrl = icalUrl,
                 WebcalUrl = icalUrl?.Replace("https://", "webcal://").Replace("http://", "webcal://"),
-                GoogleCalUrl = googleCalUrl
+                GoogleCalUrl = googleCalUrl,
+                RequiereAnticipo = negocio.RequiereAnticipo,
+                MontoAnticipo = negocio.MontoAnticipo,
+                InstruccionesAnticipo = negocio.InstruccionesAnticipo
             };
 
             // Enviar email de confirmación si el cliente tiene correo
@@ -490,6 +499,31 @@ namespace AppointVaAPI.Controllers.V1
                 _ = Task.Run(() => _notificacion.EnviarCancelacionClienteAlPropietarioAsync(cita, emailNegocio));
 
             return NoContent();
+        }
+
+        // POST api/publico/citas/{codigo}/comprobante — el cliente sube su comprobante de anticipo
+        [HttpPost("citas/{codigo}/comprobante")]
+        [EnableRateLimiting("PublicoEstricto")]
+        public async Task<IActionResult> SubirComprobante(string codigo, IFormFile archivo)
+        {
+            if (archivo == null || archivo.Length == 0)
+                return BadRequest(new { mensaje = "El archivo es obligatorio" });
+
+            var cita = await _db.Citas
+                .Include(c => c.Negocio)
+                .FirstOrDefaultAsync(c => c.CodigoConfirmacion == codigo);
+            if (cita is null)
+                return NotFound(new { mensaje = "Cita no encontrada" });
+
+            if (cita.Estado == EstadosCitas.Cancelada || cita.Estado == EstadosCitas.Completada)
+                return BadRequest(new { mensaje = "No se puede subir comprobante para esta cita" });
+
+            var url = await _blob.SubirImagenAsync(archivo, "comprobantes");
+            cita.ComprobanteUrl = url;
+            cita.FechaActualizacion = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+
+            return Ok(new { comprobanteUrl = url });
         }
 
         // PATCH api/publico/citas/{codigo}/reagendar?email=... — el cliente reagenda su propia cita

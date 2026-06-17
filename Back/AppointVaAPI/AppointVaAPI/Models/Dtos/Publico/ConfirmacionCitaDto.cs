@@ -21,5 +21,9 @@ namespace AppointVaAPI.Models.Dtos.Publico
         public string? WebcalUrl { get; set; }
         public string? GoogleCalUrl { get; set; }
         public int HorasCancelacion { get; set; }
+        public bool RequiereAnticipo { get; set; }
+        public decimal MontoAnticipo { get; set; }
+        public string? InstruccionesAnticipo { get; set; }
+        public string? ComprobanteUrl { get; set; }
     }
 }

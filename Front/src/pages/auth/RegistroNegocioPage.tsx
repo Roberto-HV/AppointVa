@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -97,8 +97,8 @@ export default function RegistroNegocioPage() {
         <div className="w-full max-w-md text-center">
           <img src="/MasterLogo.png" alt="AppointVa" className="h-20 object-contain mx-auto mb-6" />
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-            <div className="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-7 h-7 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <div className="w-14 h-14 bg-slate-700/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-7 h-7 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
               </svg>
             </div>
@@ -114,7 +114,7 @@ export default function RegistroNegocioPage() {
               <button
                 onClick={reenviarVerificacion}
                 disabled={reenvioEnviando}
-                className="text-sm text-primary hover:underline disabled:opacity-50 mb-4 block mx-auto"
+                className="text-sm text-slate-700 hover:underline disabled:opacity-50 mb-4 block mx-auto"
               >
                 {reenvioEnviando ? "Enviando..." : "¿No lo recibiste? Reenviar correo"}
               </button>
@@ -154,7 +154,7 @@ export default function RegistroNegocioPage() {
                 {...register("nombreNegocio")}
                 onChange={onNombreChange}
                 placeholder="Ej. Salón Belleza Luna"
-                className={`w-full px-4 py-2.5 rounded-lg border text-sm outline-none transition focus:ring-2 focus:ring-primary/40 focus:border-primary ${errors.nombreNegocio ? "border-red-400 bg-red-50" : "border-gray-300"}`}
+                className={`w-full px-4 py-2.5 rounded-lg border text-sm outline-none transition focus:ring-2 focus:ring-slate-700/40 focus:border-slate-700 ${errors.nombreNegocio ? "border-red-400 bg-red-50" : "border-gray-300"}`}
               />
               {errors.nombreNegocio && <p className="text-red-500 text-xs mt-1">{errors.nombreNegocio.message}</p>}
             </div>
@@ -165,7 +165,7 @@ export default function RegistroNegocioPage() {
                 Identificador (URL) *
                 <span className="text-gray-400 font-normal ml-1">— tu link de reservas</span>
               </label>
-              <div className="flex items-center border rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-primary/40 focus-within:border-primary border-gray-300">
+              <div className="flex items-center border rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-slate-700/40 focus-within:border-slate-700 border-gray-300">
                 <span className="px-3 py-2.5 bg-gray-50 text-gray-400 text-sm border-r border-gray-200 whitespace-nowrap">appointva.com/b/</span>
                 <input
                   type="text"
@@ -187,7 +187,7 @@ export default function RegistroNegocioPage() {
                 type="tel"
                 {...register("telefono")}
                 placeholder="+52 55 1234 5678"
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm outline-none transition focus:ring-2 focus:ring-primary/40 focus:border-primary"
+                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm outline-none transition focus:ring-2 focus:ring-slate-700/40 focus:border-slate-700"
               />
             </div>
 
@@ -200,7 +200,7 @@ export default function RegistroNegocioPage() {
                 type="text"
                 {...register("nombrePropietario")}
                 placeholder="Nombre y apellido"
-                className={`w-full px-4 py-2.5 rounded-lg border text-sm outline-none transition focus:ring-2 focus:ring-primary/40 focus:border-primary ${errors.nombrePropietario ? "border-red-400 bg-red-50" : "border-gray-300"}`}
+                className={`w-full px-4 py-2.5 rounded-lg border text-sm outline-none transition focus:ring-2 focus:ring-slate-700/40 focus:border-slate-700 ${errors.nombrePropietario ? "border-red-400 bg-red-50" : "border-gray-300"}`}
               />
               {errors.nombrePropietario && <p className="text-red-500 text-xs mt-1">{errors.nombrePropietario.message}</p>}
             </div>
@@ -212,7 +212,7 @@ export default function RegistroNegocioPage() {
                 type="email"
                 {...register("email")}
                 placeholder="correo@ejemplo.com"
-                className={`w-full px-4 py-2.5 rounded-lg border text-sm outline-none transition focus:ring-2 focus:ring-primary/40 focus:border-primary ${errors.email ? "border-red-400 bg-red-50" : "border-gray-300"}`}
+                className={`w-full px-4 py-2.5 rounded-lg border text-sm outline-none transition focus:ring-2 focus:ring-slate-700/40 focus:border-slate-700 ${errors.email ? "border-red-400 bg-red-50" : "border-gray-300"}`}
               />
               {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}
             </div>
@@ -224,7 +224,7 @@ export default function RegistroNegocioPage() {
                 type="password"
                 {...register("contrasena")}
                 placeholder="Mínimo 6 caracteres, una mayúscula y un número"
-                className={`w-full px-4 py-2.5 rounded-lg border text-sm outline-none transition focus:ring-2 focus:ring-primary/40 focus:border-primary ${errors.contrasena ? "border-red-400 bg-red-50" : "border-gray-300"}`}
+                className={`w-full px-4 py-2.5 rounded-lg border text-sm outline-none transition focus:ring-2 focus:ring-slate-700/40 focus:border-slate-700 ${errors.contrasena ? "border-red-400 bg-red-50" : "border-gray-300"}`}
               />
               {errors.contrasena && <p className="text-red-500 text-xs mt-1">{errors.contrasena.message}</p>}
             </div>
@@ -238,15 +238,26 @@ export default function RegistroNegocioPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full bg-primary hover:bg-primary-dark disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-lg transition text-sm"
+              className="w-full bg-slate-700 hover:bg-slate-800 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-lg transition text-sm"
             >
               {isSubmitting ? "Creando cuenta..." : "Crear cuenta"}
             </button>
+
+            <p className="text-xs text-gray-400 text-center leading-relaxed">
+              Al crear tu cuenta, aceptas nuestros{" "}
+              <Link to="/terminos" target="_blank" className="underline hover:text-gray-600 transition">
+                Términos de uso
+              </Link>{" "}
+              y nuestra{" "}
+              <Link to="/privacidad" target="_blank" className="underline hover:text-gray-600 transition">
+                Política de privacidad
+              </Link>.
+            </p>
           </form>
 
           <p className="text-center text-sm text-gray-500 mt-5">
             ¿Ya tienes cuenta?{" "}
-            <Link to="/login" className="text-primary hover:underline font-medium">
+            <Link to="/login" className="text-slate-700 hover:underline font-medium">
               Iniciar sesión
             </Link>
           </p>

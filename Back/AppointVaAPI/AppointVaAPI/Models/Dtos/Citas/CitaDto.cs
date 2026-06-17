@@ -31,6 +31,7 @@
         public string EstadoTexto { get; set; } = string.Empty;
         public string? Notas { get; set; }
         public string? MotivoCancelacion { get; set; }
+        public string? ComprobanteUrl { get; set; }
         public DateTime FechaCreacion { get; set; }
     }
 }

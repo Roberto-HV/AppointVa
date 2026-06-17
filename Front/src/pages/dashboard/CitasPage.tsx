@@ -1,4 +1,5 @@
-import { useState } from "react";
+﻿import { useState } from "react";
+import { Calendar } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { citasApi, ESTADOS, METODOS_PAGO } from "../../api/citas";
@@ -67,6 +68,9 @@ export default function CitasPage() {
   // Modal notas
   const [citaNotas, setCitaNotas] = useState<CitaDto | null>(null);
   const [notasTexto, setNotasTexto] = useState("");
+
+  // Modal comprobante
+  const [urlComprobante, setUrlComprobante] = useState<string | null>(null);
 
   // Modal nueva cita
   const [modalNueva, setModalNueva] = useState(false);
@@ -226,6 +230,7 @@ export default function CitasPage() {
       setNotasTexto("");
       toast("Notas guardadas");
     },
+    onError: () => toast("No se pudieron guardar las notas. Intenta de nuevo.", "error"),
   });
 
   const { mutate: cambiarEstado, isPending } = useMutation({
@@ -261,6 +266,11 @@ export default function CitasPage() {
   };
 
   const accionesCita = citaSel ? TRANSICIONES[citaSel.estadoTexto] ?? [] : [];
+
+  const conteoEstados = citas.reduce<Record<string, number>>((acc, c) => {
+    acc[c.estadoTexto] = (acc[c.estadoTexto] ?? 0) + 1;
+    return acc;
+  }, {});
 
   const citasFiltradas = citas.filter((c) => {
     if (estadoFiltro && c.estadoTexto !== estadoFiltro) return false;
@@ -326,7 +336,7 @@ export default function CitasPage() {
         <div className="flex items-center gap-2">
           <button
             onClick={abrirNuevaCita}
-            className="px-4 py-2 bg-primary hover:bg-primary-dark text-white text-sm font-semibold rounded-lg transition"
+            className="px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white text-sm font-semibold rounded-lg transition"
           >
             + Nueva cita
           </button>
@@ -361,7 +371,7 @@ export default function CitasPage() {
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
               placeholder="Nombre o teléfono..."
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary"
+              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700"
             />
           </div>
           <div>
@@ -371,31 +381,48 @@ export default function CitasPage() {
               {empleados.map((e) => <option key={e.id} value={e.id}>{e.nombre}</option>)}
             </Select>
           </div>
-          <div>
-            <label className="block text-xs text-gray-500 mb-1">Estado</label>
-            <Select value={estadoFiltro} onChange={(e) => setEstadoFiltro(e.target.value)} className="w-full">
-              <option value="">Todos</option>
-              <option value="Pendiente">Pendiente</option>
-              <option value="Confirmada">Confirmada</option>
-              <option value="Completada">Completada</option>
-              <option value="Cancelada">Cancelada</option>
-              <option value="Inasistencia">Inasistencia</option>
-            </Select>
+          <div className="col-span-2">
+            <label className="block text-xs text-gray-500 mb-1.5">Estado</label>
+            <div className="flex flex-wrap gap-1.5">
+              {(["", "Pendiente", "Confirmada", "Completada", "Cancelada", "Inasistencia"] as const).map((e) => {
+                const count = e ? conteoEstados[e] : citas.length;
+                return (
+                  <button
+                    key={e || "todos"}
+                    onClick={() => setEstadoFiltro(e)}
+                    className={`px-3 py-1 text-xs font-medium rounded-full border transition ${
+                      estadoFiltro === e
+                        ? "bg-slate-700 text-white border-slate-700"
+                        : "bg-white text-gray-600 border-gray-200 hover:border-slate-400"
+                    }`}
+                  >
+                    {e || "Todos"}
+                    {count > 0 && (
+                      <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                        estadoFiltro === e ? "bg-white/20" : "bg-gray-100"
+                      }`}>
+                        {count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
           <div>
             <label className="block text-xs text-gray-500 mb-1">Desde</label>
             <input type="date" value={desde} onChange={(e) => { setDesde(e.target.value); setPagina(1); }}
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary" />
+              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700" />
           </div>
           <div>
             <label className="block text-xs text-gray-500 mb-1">Hasta</label>
             <input type="date" value={hasta} onChange={(e) => { setHasta(e.target.value); setPagina(1); }}
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary" />
+              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700" />
           </div>
           {(desde || hasta || empleadoId || busqueda || estadoFiltro) && (
             <div className="col-span-2 flex">
               <button onClick={() => { setDesde(""); setHasta(""); setEmpleadoId(""); setBusqueda(""); setEstadoFiltro(""); setPagina(1); }}
-                className="text-sm text-primary font-medium hover:underline">
+                className="text-sm text-slate-700 font-medium hover:underline">
                 Limpiar filtros
               </button>
             </div>
@@ -438,8 +465,23 @@ export default function CitasPage() {
             </table>
           </div>
         ) : citasFiltradas.length === 0 ? (
-          <div className="bg-white rounded-xl border border-gray-100 p-12 text-center">
-            <p className="text-gray-400">No hay citas con los filtros seleccionados</p>
+          <div className="bg-white rounded-xl border border-gray-100 p-12 text-center flex flex-col items-center gap-3">
+            <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center">
+              <Calendar size={26} className="text-gray-300" />
+            </div>
+            <div>
+              <p className="font-medium text-gray-500">
+                {estadoFiltro ? `Sin citas ${estadoFiltro.toLowerCase()}s` : "No hay citas en este rango"}
+              </p>
+              {(estadoFiltro || busqueda) && (
+                <button
+                  onClick={() => { setEstadoFiltro(""); setBusqueda(""); }}
+                  className="mt-2 text-sm text-slate-700 hover:underline"
+                >
+                  Limpiar filtros
+                </button>
+              )}
+            </div>
           </div>
         ) : (
           <div className="bg-white rounded-xl border border-gray-100 overflow-x-auto">
@@ -487,15 +529,20 @@ export default function CitasPage() {
                     </td>
 
                     <td className="px-4 py-3 text-center">
-                      <div className="flex items-center justify-center gap-1.5">
+                      <div className="flex items-center justify-center gap-1.5 flex-wrap">
                         <EstadoBadge estado={c.estadoTexto} />
+                        {c.comprobanteUrl && c.estadoTexto === "Pendiente" && (
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-600">
+                            🧾
+                          </span>
+                        )}
                         {/* WhatsApp — solo móvil */}
                         <a
                           href={whatsappUrl(c)}
                           target="_blank"
                           rel="noreferrer"
+                          aria-label={`Enviar WhatsApp a ${c.nombreCliente}`}
                           className="sm:hidden inline-flex items-center justify-center w-7 h-7 rounded-lg bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] transition"
-                          title="Enviar WhatsApp"
                         >
                           <svg viewBox="0 0 32 32" fill="currentColor" className="w-4 h-4">
                             <path d="M16.003 0C7.164 0 0 7.164 0 16.003c0 2.82.737 5.463 2.027 7.759L0 32l8.484-2.003A15.93 15.93 0 0016.003 32C24.836 32 32 24.836 32 16.003 32 7.164 24.836 0 16.003 0zm7.29 21.948c-.398-.2-2.362-1.166-2.728-1.3-.366-.133-.632-.2-.898.2-.267.4-1.032 1.3-1.265 1.566-.233.267-.466.3-.865.1-.398-.2-1.682-.62-3.204-1.977-1.184-1.056-1.984-2.36-2.216-2.758-.233-.4-.025-.616.174-.814.179-.179.4-.466.6-.7.2-.233.266-.4.4-.666.133-.267.066-.5-.033-.7-.1-.2-.898-2.162-1.232-2.96-.324-.778-.655-.672-.898-.684-.232-.013-.5-.013-.765-.013-.267 0-.7.1-1.065.5-.366.4-1.398 1.365-1.398 3.328s1.432 3.86 1.632 4.127c.2.267 2.818 4.302 6.825 6.03.953.414 1.698.66 2.279.844.958.306 1.83.263 2.52.16.769-.115 2.362-.965 2.695-1.897.333-.933.333-1.732.233-1.899-.1-.166-.366-.266-.765-.466z"/>
@@ -523,9 +570,10 @@ export default function CitasPage() {
                             href={whatsappUrl(c)}
                             target="_blank"
                             rel="noreferrer"
-                            className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] transition"
+                            aria-label={`Enviar WhatsApp a ${c.nombreCliente}`}
+                          className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] transition"
                           >
-                            <svg viewBox="0 0 32 32" fill="currentColor" className="w-3.5 h-3.5">
+                            <svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true" className="w-3.5 h-3.5">
                               <path d="M16.003 0C7.164 0 0 7.164 0 16.003c0 2.82.737 5.463 2.027 7.759L0 32l8.484-2.003A15.93 15.93 0 0016.003 32C24.836 32 32 24.836 32 16.003 32 7.164 24.836 0 16.003 0zm7.29 21.948c-.398-.2-2.362-1.166-2.728-1.3-.366-.133-.632-.2-.898.2-.267.4-1.032 1.3-1.265 1.566-.233.267-.466.3-.865.1-.398-.2-1.682-.62-3.204-1.977-1.184-1.056-1.984-2.36-2.216-2.758-.233-.4-.025-.616.174-.814.179-.179.4-.466.6-.7.2-.233.266-.4.4-.666.133-.267.066-.5-.033-.7-.1-.2-.898-2.162-1.232-2.96-.324-.778-.655-.672-.898-.684-.232-.013-.5-.013-.765-.013-.267 0-.7.1-1.065.5-.366.4-1.398 1.365-1.398 3.328s1.432 3.86 1.632 4.127c.2.267 2.818 4.302 6.825 6.03.953.414 1.698.66 2.279.844.958.306 1.83.263 2.52.16.769-.115 2.362-.965 2.695-1.897.333-.933.333-1.732.233-1.899-.1-.166-.366-.266-.765-.466z"/>
                             </svg>
                           </a>
@@ -542,6 +590,38 @@ export default function CitasPage() {
                             📝
                           </button>
                         </Tooltip>
+                        {c.comprobanteUrl && (
+                          <Tooltip text="Ver comprobante de anticipo">
+                            <button
+                              onClick={() => setUrlComprobante(c.comprobanteUrl!)}
+                              className="text-xs font-medium px-2.5 py-1 rounded-lg bg-purple-50 text-purple-600 hover:bg-purple-100 transition"
+                            >
+                              🧾
+                            </button>
+                          </Tooltip>
+                        )}
+                        {c.estadoTexto === "Pendiente" && (
+                          <Tooltip text="Confirmar esta cita directamente">
+                            <button
+                              onClick={() => cambiarEstado({ id: c.id, estado: ESTADOS.Confirmada, mot: "" })}
+                              disabled={isPending}
+                              className="text-xs font-medium px-2.5 py-1 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 disabled:opacity-40 transition"
+                            >
+                              ✓ Confirmar
+                            </button>
+                          </Tooltip>
+                        )}
+                        {c.estadoTexto === "Confirmada" && (
+                          <Tooltip text="Marcar como completada directamente">
+                            <button
+                              onClick={() => cambiarEstado({ id: c.id, estado: ESTADOS.Completada, mot: "" })}
+                              disabled={isPending}
+                              className="text-xs font-medium px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 disabled:opacity-40 transition"
+                            >
+                              ✓ Completar
+                            </button>
+                          </Tooltip>
+                        )}
                         {(c.estadoTexto === "Pendiente" || c.estadoTexto === "Confirmada") && (
                           <button
                             onClick={() => abrirReagendar(c)}
@@ -553,9 +633,9 @@ export default function CitasPage() {
                         {TRANSICIONES[c.estadoTexto] && (
                           <button
                             onClick={() => abrirCambioEstado(c)}
-                            className="text-xs font-medium px-2.5 py-1 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition"
+                            className="text-xs font-medium px-2.5 py-1 rounded-lg bg-slate-700/10 text-slate-700 hover:bg-slate-700/20 transition"
                           >
-                            Estado
+                            Más
                           </button>
                         )}
                       </div>
@@ -621,7 +701,7 @@ export default function CitasPage() {
                         onClick={() => setMetodoPagoSel(m)}
                         className={`flex flex-col items-center gap-1.5 py-3 rounded-xl border-2 text-sm font-medium transition ${
                           metodoPagoSel === m
-                            ? "border-primary bg-primary/5 text-primary"
+                            ? "border-slate-700 bg-slate-700/5 text-slate-700"
                             : "border-gray-200 text-gray-600 hover:border-gray-300"
                         }`}
                       >
@@ -662,7 +742,7 @@ export default function CitasPage() {
                 rows={4}
                 maxLength={1000}
                 placeholder="Preferencias del cliente, indicaciones especiales, alergias..."
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary resize-none"
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700 resize-none"
               />
               <p className="text-xs text-gray-400 text-right mt-1">{notasTexto.length}/1000</p>
             </div>
@@ -679,7 +759,7 @@ export default function CitasPage() {
               <button
                 onClick={() => actualizarNotas({ id: citaNotas.id, notas: notasTexto || null })}
                 disabled={guardandoNotas || notasTexto === (citaNotas.notas ?? "")}
-                className="flex-1 bg-primary hover:bg-primary-dark disabled:opacity-40 text-white font-semibold py-2.5 rounded-xl text-sm transition"
+                className="flex-1 bg-slate-700 hover:bg-slate-800 disabled:opacity-40 text-white font-semibold py-2.5 rounded-xl text-sm transition"
               >
                 {guardandoNotas ? "Guardando..." : "Guardar nota"}
               </button>
@@ -740,7 +820,7 @@ export default function CitasPage() {
                   value={fechaNueva}
                   min={new Date().toISOString().split("T")[0]}
                   onChange={(e) => { setFechaNueva(e.target.value); setSlotNuevo(""); }}
-                  className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary"
+                  className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700"
                 />
               </div>
             )}
@@ -761,8 +841,8 @@ export default function CitasPage() {
                         onClick={() => setSlotNuevo(s.inicio)}
                         className={`py-2 text-sm rounded-lg border transition ${
                           slotNuevo === s.inicio
-                            ? "bg-primary text-white border-primary"
-                            : "border-gray-200 text-gray-700 hover:border-primary"
+                            ? "bg-slate-700 text-white border-slate-700"
+                            : "border-gray-200 text-gray-700 hover:border-slate-700"
                         }`}
                       >
                         {s.horaTexto}
@@ -776,7 +856,7 @@ export default function CitasPage() {
             <button
               onClick={() => slotNuevo && setPasoCita(2)}
               disabled={!slotNuevo}
-              className="w-full bg-primary hover:bg-primary-dark disabled:opacity-40 text-white font-semibold py-2.5 rounded-xl transition"
+              className="w-full bg-slate-700 hover:bg-slate-800 disabled:opacity-40 text-white font-semibold py-2.5 rounded-xl transition"
             >
               Continuar →
             </button>
@@ -800,7 +880,7 @@ export default function CitasPage() {
                 value={fCliente.nombre}
                 onChange={(e) => setFCliente((p) => ({ ...p, nombre: e.target.value }))}
                 placeholder="Nombre completo"
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary"
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700"
               />
             </div>
 
@@ -811,7 +891,7 @@ export default function CitasPage() {
                 value={fCliente.telefono}
                 onChange={(e) => setFCliente((p) => ({ ...p, telefono: e.target.value }))}
                 placeholder="10 dígitos"
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary"
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700"
               />
             </div>
 
@@ -824,7 +904,7 @@ export default function CitasPage() {
                 value={fCliente.email}
                 onChange={(e) => setFCliente((p) => ({ ...p, email: e.target.value }))}
                 placeholder="correo@ejemplo.com"
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary"
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700"
               />
             </div>
 
@@ -837,7 +917,7 @@ export default function CitasPage() {
                 onChange={(e) => setFCliente((p) => ({ ...p, notas: e.target.value }))}
                 rows={2}
                 placeholder="Preferencias, indicaciones..."
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary resize-none"
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700 resize-none"
               />
             </div>
 
@@ -851,7 +931,7 @@ export default function CitasPage() {
               <button
                 onClick={() => crearCita()}
                 disabled={!fCliente.nombre.trim() || !fCliente.telefono.trim() || creando}
-                className="flex-1 bg-primary hover:bg-primary-dark disabled:opacity-40 text-white font-semibold py-2.5 rounded-xl text-sm transition"
+                className="flex-1 bg-slate-700 hover:bg-slate-800 disabled:opacity-40 text-white font-semibold py-2.5 rounded-xl text-sm transition"
               >
                 {creando ? "Creando..." : "Crear cita"}
               </button>
@@ -876,7 +956,7 @@ export default function CitasPage() {
                 value={fechaReag}
                 min={new Date().toISOString().split("T")[0]}
                 onChange={(e) => { setFechaReag(e.target.value); setSlotReag(""); }}
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary"
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700"
               />
             </div>
             {fechaReag && (
@@ -916,6 +996,27 @@ export default function CitasPage() {
         )}
       </Modal>
 
+      {/* ── Modal: Ver comprobante ── */}
+      <Modal abierto={!!urlComprobante} onCerrar={() => setUrlComprobante(null)} titulo="Comprobante de anticipo" ancho="sm">
+        {urlComprobante && (
+          <div className="space-y-3">
+            <img
+              src={urlComprobante}
+              alt="Comprobante de anticipo"
+              className="w-full rounded-xl border border-gray-100 object-contain max-h-[60vh]"
+            />
+            <a
+              href={urlComprobante}
+              target="_blank"
+              rel="noreferrer"
+              className="block text-center text-sm text-slate-700 hover:underline font-medium"
+            >
+              Abrir imagen completa →
+            </a>
+          </div>
+        )}
+      </Modal>
+
       {/* ── Modal: Cambiar estado ── */}
       <Modal abierto={!!citaSel} onCerrar={() => setCitaSel(null)} titulo="Cambiar estado de la cita" ancho="sm">
         {citaSel && (
@@ -925,7 +1026,7 @@ export default function CitasPage() {
                 <p><span className="text-gray-500">Cliente:</span> <span className="font-medium">{citaSel.nombreCliente}</span></p>
                 <Link
                   to={`/dashboard/clientes?clienteId=${citaSel.clienteId}`}
-                  className="text-xs text-primary hover:underline font-medium shrink-0 ml-2"
+                  className="text-xs text-slate-700 hover:underline font-medium shrink-0 ml-2"
                   onClick={() => setCitaSel(null)}
                 >
                   Ver historial
@@ -970,13 +1071,13 @@ export default function CitasPage() {
                     </label>
                     <textarea value={motivo} onChange={(e) => setMotivo(e.target.value)}
                       rows={2} placeholder="Motivo de la cancelación..."
-                      className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary resize-none" />
+                      className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700 resize-none" />
                   </div>
                 )}
                 <button
                   onClick={() => nuevoEstado && cambiarEstado({ id: citaSel.id, estado: nuevoEstado, mot: motivo })}
                   disabled={!nuevoEstado || isPending}
-                  className="w-full bg-primary hover:bg-primary-dark disabled:opacity-40 text-white font-semibold py-2.5 rounded-xl transition">
+                  className="w-full bg-slate-700 hover:bg-slate-800 disabled:opacity-40 text-white font-semibold py-2.5 rounded-xl transition">
                   {isPending ? "Guardando..." : "Confirmar cambio"}
                 </button>
               </>

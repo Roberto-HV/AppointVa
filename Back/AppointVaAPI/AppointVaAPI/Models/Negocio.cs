@@ -29,6 +29,12 @@ namespace AppointVaAPI.Models
         // Notificaciones: "Correo" | "WhatsApp" | "Ambos"
         public string MetodoNotificacion { get; set; } = "Correo";
         public string? TelefonoWhatsApp { get; set; }
+        // Anticipo
+        public bool RequiereAnticipo { get; set; } = false;
+        [Column(TypeName = "decimal(10,2)")]
+        public decimal MontoAnticipo { get; set; } = 0;
+        [MaxLength(500)]
+        public string? InstruccionesAnticipo { get; set; }
         public Guid? PlanId { get; set; }
         [ForeignKey("PlanId")]
         public Plan? Plan { get; set; }

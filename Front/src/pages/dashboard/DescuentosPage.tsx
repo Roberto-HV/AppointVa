@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Trash2, Tag, X, Check, Copy } from "lucide-react";
 import { descuentosApi, type Descuento } from "../../api/descuentos";
@@ -73,6 +73,7 @@ export default function DescuentosPage() {
       qc.invalidateQueries({ queryKey: ["descuentos"] });
       toast("Cupón eliminado");
     },
+    onError: () => toast("No se pudo eliminar el cupón. Intenta de nuevo.", "error"),
   });
 
   const copiarCodigo = (codigo: string) => {
@@ -95,7 +96,7 @@ export default function DescuentosPage() {
         </div>
         <button
           onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl text-sm font-semibold hover:opacity-90 transition"
+          className="flex items-center gap-2 px-4 py-2 bg-slate-700 text-white rounded-xl text-sm font-semibold hover:opacity-90 transition"
         >
           <Plus size={16} /> Nuevo cupón
         </button>
@@ -119,7 +120,7 @@ export default function DescuentosPage() {
                 onChange={(e) => setForm({ ...form, codigo: e.target.value.toUpperCase() })}
                 placeholder="PROMO20"
                 maxLength={50}
-                className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono uppercase focus:outline-none focus:ring-2 focus:ring-primary/30"
+                className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono uppercase focus:outline-none focus:ring-2 focus:ring-slate-700/30"
               />
             </div>
             <div>
@@ -128,7 +129,7 @@ export default function DescuentosPage() {
                 value={form.descripcion}
                 onChange={(e) => setForm({ ...form, descripcion: e.target.value })}
                 placeholder="Descuento de bienvenida"
-                className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-700/30"
               />
             </div>
             <div>
@@ -136,7 +137,7 @@ export default function DescuentosPage() {
               <select
                 value={form.tipo}
                 onChange={(e) => setForm({ ...form, tipo: e.target.value })}
-                className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-700/30"
               >
                 {TIPOS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
               </select>
@@ -153,7 +154,7 @@ export default function DescuentosPage() {
                 min="0.01"
                 max={form.tipo === "Porcentaje" ? "100" : undefined}
                 step="0.01"
-                className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-700/30"
               />
             </div>
             <div>
@@ -164,7 +165,7 @@ export default function DescuentosPage() {
                 onChange={(e) => setForm({ ...form, usoMaximo: e.target.value })}
                 placeholder="Sin límite"
                 min="1"
-                className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-700/30"
               />
             </div>
             <div>
@@ -173,7 +174,7 @@ export default function DescuentosPage() {
                 type="date"
                 value={form.fechaExpiracion}
                 onChange={(e) => setForm({ ...form, fechaExpiracion: e.target.value })}
-                className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-700/30"
               />
             </div>
           </div>
@@ -185,7 +186,7 @@ export default function DescuentosPage() {
             <button
               onClick={() => mutCrear.mutate()}
               disabled={!form.codigo.trim() || !form.valor || mutCrear.isPending}
-              className="flex items-center gap-1 px-4 py-2 bg-primary text-white rounded-lg text-sm font-semibold disabled:opacity-50 hover:opacity-90 transition"
+              className="flex items-center gap-1 px-4 py-2 bg-slate-700 text-white rounded-lg text-sm font-semibold disabled:opacity-50 hover:opacity-90 transition"
             >
               <Check size={15} /> Crear cupón
             </button>
@@ -258,7 +259,7 @@ function DescuentoRow({
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="font-mono font-bold text-gray-900 text-sm">{d.codigo}</span>
-          <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">
+          <span className="text-xs bg-slate-700/10 text-slate-700 px-2 py-0.5 rounded-full font-medium">
             {formatDescuento(d)}
           </span>
           {d.agotado && <span className="text-xs bg-red-50 text-red-500 px-2 py-0.5 rounded-full">Agotado</span>}
@@ -276,7 +277,7 @@ function DescuentoRow({
         <button
           onClick={onCopiar}
           title="Copiar código"
-          className="p-1.5 text-gray-400 hover:text-primary hover:bg-primary/10 rounded-lg transition"
+          className="p-1.5 text-gray-400 hover:text-slate-700 hover:bg-slate-700/10 rounded-lg transition"
         >
           {copiado ? <Check size={15} className="text-green-500" /> : <Copy size={15} />}
         </button>

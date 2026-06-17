@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -60,8 +60,8 @@ export default function MiPerfilPage() {
 
       {/* Info del usuario */}
       <div className="bg-white rounded-xl border border-gray-100 p-5 mb-6 flex items-center gap-4">
-        <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-          <span className="text-xl font-bold text-primary">{iniciales}</span>
+        <div className="w-14 h-14 rounded-full bg-slate-700/10 flex items-center justify-center shrink-0">
+          <span className="text-xl font-bold text-slate-700">{iniciales}</span>
         </div>
         <div>
           <p className="font-semibold text-gray-900">{usuario?.nombreCompleto}</p>
@@ -85,7 +85,7 @@ export default function MiPerfilPage() {
             <input
               type={mostrarActual ? "text" : "password"}
               {...register("passwordActual")}
-              className={`w-full px-3 py-2 pr-10 rounded-lg border text-sm outline-none focus:border-primary
+              className={`w-full px-3 py-2 pr-10 rounded-lg border text-sm outline-none focus:border-slate-700
                 ${errors.passwordActual ? "border-red-400 bg-red-50" : "border-gray-200"}`}
             />
             <button
@@ -109,7 +109,7 @@ export default function MiPerfilPage() {
               type={mostrarNueva ? "text" : "password"}
               {...register("passwordNuevo")}
               placeholder="Mínimo 6 caracteres"
-              className={`w-full px-3 py-2 pr-10 rounded-lg border text-sm outline-none focus:border-primary
+              className={`w-full px-3 py-2 pr-10 rounded-lg border text-sm outline-none focus:border-slate-700
                 ${errors.passwordNuevo ? "border-red-400 bg-red-50" : "border-gray-200"}`}
             />
             <button
@@ -131,7 +131,7 @@ export default function MiPerfilPage() {
           <input
             type="password"
             {...register("confirmar")}
-            className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-primary
+            className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700
               ${errors.confirmar ? "border-red-400 bg-red-50" : "border-gray-200"}`}
           />
           {errors.confirmar && (

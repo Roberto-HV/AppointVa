@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Pencil, Trash2, GripVertical, ClipboardList, X, Check } from "lucide-react";
 import { intakeApi, type CampoIntake } from "../../api/intake";
@@ -60,6 +60,7 @@ export default function IntakePage() {
       setForm(EMPTY);
       toast("Campo creado");
     },
+    onError: () => toast("No se pudo crear el campo. Intenta de nuevo.", "error"),
   });
 
   const mutActualizar = useMutation({
@@ -78,6 +79,7 @@ export default function IntakePage() {
       setForm(EMPTY);
       toast("Campo actualizado");
     },
+    onError: () => toast("No se pudo actualizar el campo. Intenta de nuevo.", "error"),
   });
 
   const mutEliminar = useMutation({
@@ -86,6 +88,7 @@ export default function IntakePage() {
       qc.invalidateQueries({ queryKey: ["intake-campos"] });
       toast("Campo eliminado");
     },
+    onError: () => toast("No se pudo eliminar el campo. Intenta de nuevo.", "error"),
   });
 
   function abrirCrear() {
@@ -126,7 +129,7 @@ export default function IntakePage() {
         </div>
         <button
           onClick={abrirCrear}
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl text-sm font-semibold hover:opacity-90 transition"
+          className="flex items-center gap-2 px-4 py-2 bg-slate-700 text-white rounded-xl text-sm font-semibold hover:opacity-90 transition"
         >
           <Plus size={16} /> Nueva pregunta
         </button>
@@ -154,7 +157,7 @@ export default function IntakePage() {
                 value={form.etiqueta}
                 onChange={(e) => setForm({ ...form, etiqueta: e.target.value })}
                 placeholder="Ej: ¿Tienes alguna alergia?"
-                className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-700/30"
               />
             </div>
 
@@ -163,7 +166,7 @@ export default function IntakePage() {
               <select
                 value={form.tipo}
                 onChange={(e) => setForm({ ...form, tipo: e.target.value })}
-                className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-700/30"
               >
                 {TIPOS.map((t) => (
                   <option key={t.value} value={t.value}>{t.label}</option>
@@ -180,7 +183,7 @@ export default function IntakePage() {
                   value={form.opciones}
                   onChange={(e) => setForm({ ...form, opciones: e.target.value })}
                   placeholder="Sí, No, Tal vez"
-                  className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-700/30"
                 />
                 <p className="text-xs text-gray-400 mt-1">
                   Escribe las opciones separadas por coma
@@ -193,7 +196,7 @@ export default function IntakePage() {
               <select
                 value={form.servicioId}
                 onChange={(e) => setForm({ ...form, servicioId: e.target.value })}
-                className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-700/30"
               >
                 <option value="">Todos los servicios</option>
                 {servicios.map((s) => (
@@ -207,7 +210,7 @@ export default function IntakePage() {
                 type="checkbox"
                 checked={form.requerido}
                 onChange={(e) => setForm({ ...form, requerido: e.target.checked })}
-                className="accent-primary w-4 h-4"
+                className="accent-slate-700 w-4 h-4"
               />
               <span className="text-sm font-medium text-gray-700">Respuesta requerida</span>
             </label>
@@ -223,7 +226,7 @@ export default function IntakePage() {
             <button
               onClick={guardar}
               disabled={!form.etiqueta.trim() || mutCrear.isPending || mutActualizar.isPending}
-              className="flex items-center gap-1 px-4 py-2 bg-primary text-white rounded-lg text-sm font-semibold disabled:opacity-50 hover:opacity-90 transition"
+              className="flex items-center gap-1 px-4 py-2 bg-slate-700 text-white rounded-lg text-sm font-semibold disabled:opacity-50 hover:opacity-90 transition"
             >
               <Check size={15} />
               {editando ? "Guardar cambios" : "Crear pregunta"}
@@ -309,7 +312,7 @@ function CampoRow({
       <div className="flex items-center gap-1 shrink-0">
         <button
           onClick={onEditar}
-          className="p-1.5 text-gray-400 hover:text-primary hover:bg-primary/10 rounded-lg transition"
+          className="p-1.5 text-gray-400 hover:text-slate-700 hover:bg-slate-700/10 rounded-lg transition"
         >
           <Pencil size={15} />
         </button>

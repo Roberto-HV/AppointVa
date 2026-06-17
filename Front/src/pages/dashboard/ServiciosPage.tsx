@@ -1,4 +1,5 @@
-import { useRef, useState } from "react";
+﻿import { useRef, useState } from "react";
+import { motion } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Select from "../../components/ui/Select";
 import { useForm, type Resolver } from "react-hook-form";
@@ -107,16 +108,19 @@ export default function ServiciosPage() {
       setModal(false);
       toast(servicioEdit ? "Servicio actualizado" : "Servicio creado");
     },
+    onError: () => toast("No se pudo guardar el servicio. Intenta de nuevo.", "error"),
   });
 
   const { mutate: eliminarServicio } = useMutation({
     mutationFn: (id: string) => serviciosApi.eliminar(id),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["servicios"] }); toast("Servicio eliminado"); },
+    onError: () => toast("No se pudo eliminar el servicio. Intenta de nuevo.", "error"),
   });
 
   const { mutate: subirImagen } = useMutation({
     mutationFn: ({ id, file }: { id: string; file: File }) => serviciosApi.subirImagen(id, file),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["servicios"] }); toast("Imagen actualizada"); },
+    onError: () => toast("No se pudo subir la imagen. Intenta de nuevo.", "error"),
   });
 
   // ── Mutations categorías ──────────────────────────────────────────────────
@@ -131,6 +135,7 @@ export default function ServiciosPage() {
       setModalCategoria(false);
       toast(categoriaEdit ? "Categoría actualizada" : "Categoría creada");
     },
+    onError: () => toast("No se pudo guardar la categoría. Intenta de nuevo.", "error"),
   });
 
   const { mutate: eliminarCategoria } = useMutation({
@@ -140,6 +145,7 @@ export default function ServiciosPage() {
       qc.invalidateQueries({ queryKey: ["servicios"] });
       toast("Categoría eliminada");
     },
+    onError: () => toast("No se pudo eliminar la categoría. Intenta de nuevo.", "error"),
   });
 
   // ── Helpers ───────────────────────────────────────────────────────────────
@@ -188,14 +194,14 @@ export default function ServiciosPage() {
         {tab === "servicios" ? (
           <button
             onClick={abrirCrearServicio}
-            className="bg-primary hover:bg-primary-dark text-white text-sm font-semibold px-4 py-2 rounded-lg transition"
+            className="bg-slate-700 hover:bg-slate-800 text-white text-sm font-semibold px-4 py-2 rounded-lg transition"
           >
             + Nuevo servicio
           </button>
         ) : (
           <button
             onClick={abrirCrearCategoria}
-            className="bg-primary hover:bg-primary-dark text-white text-sm font-semibold px-4 py-2 rounded-lg transition"
+            className="bg-slate-700 hover:bg-slate-800 text-white text-sm font-semibold px-4 py-2 rounded-lg transition"
           >
             + Nueva categoría
           </button>
@@ -217,7 +223,7 @@ export default function ServiciosPage() {
             <p className="text-sm text-gray-400 mb-5">Crea tus servicios para que los clientes puedan reservar</p>
             <button
               onClick={abrirCrearServicio}
-              className="bg-primary hover:bg-primary-dark text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition"
+              className="bg-slate-700 hover:bg-slate-800 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition"
             >
               Crear primer servicio
             </button>
@@ -227,10 +233,16 @@ export default function ServiciosPage() {
             {Object.entries(grupos).map(([cat, items]) => (
               <div key={cat}>
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">{cat}</p>
-                <div className="bg-white rounded-xl border border-gray-100">
+                <motion.div
+                  initial="hidden"
+                  animate="show"
+                  variants={{ hidden: {}, show: { transition: { staggerChildren: 0.06 } } }}
+                  className="bg-white rounded-xl border border-gray-100"
+                >
                   {items.map((s, i) => (
-                    <div
+                    <motion.div
                       key={s.id}
+                      variants={{ hidden: { opacity: 0, x: -10 }, show: { opacity: 1, x: 0, transition: { duration: 0.25 } } }}
                       className={`flex items-center gap-3 px-4 py-3 ${i < items.length - 1 ? "border-b border-gray-50" : ""}`}
                     >
                       {/* Thumbnail imagen */}
@@ -264,7 +276,7 @@ export default function ServiciosPage() {
                         <div className="flex gap-2">
                           <button
                             onClick={() => abrirEditarServicio(s)}
-                            className="text-xs font-medium px-2.5 py-1 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition"
+                            className="text-xs font-medium px-2.5 py-1 rounded-lg bg-slate-700/10 text-slate-700 hover:bg-slate-700/20 transition"
                           >
                             Editar
                           </button>
@@ -276,9 +288,9 @@ export default function ServiciosPage() {
                           </button>
                         </div>
                       </div>
-                    </div>
+                    </motion.div>
                   ))}
-                </div>
+                </motion.div>
               </div>
             ))}
           </div>
@@ -300,7 +312,7 @@ export default function ServiciosPage() {
             <p className="text-sm text-gray-400 mb-5">Las categorías agrupan tus servicios en el catálogo público</p>
             <button
               onClick={abrirCrearCategoria}
-              className="bg-primary hover:bg-primary-dark text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition"
+              className="bg-slate-700 hover:bg-slate-800 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition"
             >
               Crear primera categoría
             </button>
@@ -311,7 +323,7 @@ export default function ServiciosPage() {
               const count = serviciosPorCategoria(c.id);
               return (
                 <div key={c.id} className="bg-white rounded-xl border border-gray-100 px-4 py-3 flex items-center gap-3">
-                  <div className="w-2 h-2 rounded-full bg-primary/40 shrink-0" />
+                  <div className="w-2 h-2 rounded-full bg-slate-700/40 shrink-0" />
                   <span className="font-medium text-gray-800 flex-1 min-w-0">{c.nombre}</span>
                   <span className={`text-xs font-medium px-2 py-0.5 rounded-full shrink-0 ${
                     count > 0 ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-400"
@@ -321,7 +333,7 @@ export default function ServiciosPage() {
                   <div className="flex gap-2 shrink-0">
                     <button
                       onClick={() => abrirEditarCategoria(c)}
-                      className="text-xs font-medium px-2.5 py-1 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition"
+                      className="text-xs font-medium px-2.5 py-1 rounded-lg bg-slate-700/10 text-slate-700 hover:bg-slate-700/20 transition"
                     >
                       Editar
                     </button>
@@ -363,7 +375,7 @@ export default function ServiciosPage() {
             <label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
             <input
               {...register("nombre")}
-              className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-primary
+              className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700
                 ${errors.nombre ? "border-red-400 bg-red-50" : "border-gray-200"}`}
             />
             {errors.nombre && <p className="text-red-500 text-xs mt-1">{errors.nombre.message}</p>}
@@ -382,7 +394,7 @@ export default function ServiciosPage() {
             <textarea
               rows={2}
               {...register("descripcion")}
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary resize-none"
+              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700 resize-none"
             />
           </div>
 
@@ -392,7 +404,7 @@ export default function ServiciosPage() {
               <input
                 type="number" min="5" step="5"
                 {...register("duracionMinutos")}
-                className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-primary
+                className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700
                   ${errors.duracionMinutos ? "border-red-400" : "border-gray-200"}`}
               />
             </div>
@@ -404,7 +416,7 @@ export default function ServiciosPage() {
               <input
                 type="number" min="0" max="120" step="5"
                 {...register("bufferMinutos")}
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary"
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700"
               />
             </div>
           </div>
@@ -414,7 +426,7 @@ export default function ServiciosPage() {
               <input
                 type="number" min="0" step="0.5"
                 {...register("precio")}
-                className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-primary
+                className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700
                   ${errors.precio ? "border-red-400" : "border-gray-200"}`}
               />
             </div>
@@ -423,7 +435,7 @@ export default function ServiciosPage() {
               <input
                 type="number" min="1"
                 {...register("orden")}
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary"
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700"
               />
             </div>
           </div>
@@ -431,7 +443,7 @@ export default function ServiciosPage() {
           <button
             type="submit"
             disabled={guardandoServicio}
-            className="w-full bg-primary hover:bg-primary-dark disabled:opacity-50 text-white font-semibold py-2.5 rounded-xl transition"
+            className="w-full bg-slate-700 hover:bg-slate-800 disabled:opacity-50 text-white font-semibold py-2.5 rounded-xl transition"
           >
             {guardandoServicio ? "Guardando..." : servicioEdit ? "Guardar cambios" : "Crear servicio"}
           </button>
@@ -508,7 +520,7 @@ export default function ServiciosPage() {
             <input
               {...formCat.register("nombre")}
               placeholder="Ej. Cabello, Uñas, Tratamientos..."
-              className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-primary
+              className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700
                 ${formCat.formState.errors.nombre ? "border-red-400 bg-red-50" : "border-gray-200"}`}
             />
             {formCat.formState.errors.nombre && (
@@ -520,14 +532,14 @@ export default function ServiciosPage() {
             <input
               type="number" min="1"
               {...formCat.register("orden")}
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary"
+              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700"
             />
             <p className="text-xs text-gray-400 mt-1">Número que define el orden en el catálogo público.</p>
           </div>
           <button
             type="submit"
             disabled={guardandoCategoria}
-            className="w-full bg-primary hover:bg-primary-dark disabled:opacity-50 text-white font-semibold py-2.5 rounded-xl transition"
+            className="w-full bg-slate-700 hover:bg-slate-800 disabled:opacity-50 text-white font-semibold py-2.5 rounded-xl transition"
           >
             {guardandoCategoria ? "Guardando..." : categoriaEdit ? "Guardar cambios" : "Crear categoría"}
           </button>

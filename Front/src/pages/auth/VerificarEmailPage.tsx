@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { api } from "../../api/axios";
 
@@ -41,7 +41,7 @@ export default function VerificarEmailPage() {
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
           {estado === "cargando" && (
             <>
-              <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+              <div className="w-12 h-12 border-4 border-slate-700 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
               <p className="text-gray-500">Verificando tu correo...</p>
             </>
           )}
@@ -57,7 +57,7 @@ export default function VerificarEmailPage() {
               <p className="text-gray-500 text-sm mb-6">{mensaje}</p>
               <Link
                 to="/login"
-                className="inline-block w-full bg-primary hover:bg-primary-dark text-white font-semibold py-2.5 rounded-lg transition text-sm"
+                className="inline-block w-full bg-slate-700 hover:bg-slate-800 text-white font-semibold py-2.5 rounded-lg transition text-sm"
               >
                 Iniciar sesión
               </Link>
@@ -75,7 +75,7 @@ export default function VerificarEmailPage() {
               <p className="text-gray-500 text-sm mb-6">{mensaje}</p>
               <Link
                 to="/registro"
-                className="inline-block w-full bg-primary hover:bg-primary-dark text-white font-semibold py-2.5 rounded-lg transition text-sm"
+                className="inline-block w-full bg-slate-700 hover:bg-slate-800 text-white font-semibold py-2.5 rounded-lg transition text-sm"
               >
                 Volver al registro
               </Link>

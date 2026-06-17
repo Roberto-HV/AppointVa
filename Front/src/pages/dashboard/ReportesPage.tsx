@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Select from "../../components/ui/Select";
 import {
@@ -34,11 +34,23 @@ function inicioMes() {
   return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split("T")[0];
 }
 
+function inicioSemana() {
+  const d = new Date();
+  const dia = d.getDay();
+  const lunes = new Date(d);
+  lunes.setDate(d.getDate() - (dia === 0 ? 6 : dia - 1));
+  return lunes.toISOString().split("T")[0];
+}
+
+function inicioAnio() {
+  return `${new Date().getFullYear()}-01-01`;
+}
+
 interface TarjetaProps { label: string; valor: string; subvalor?: string; icono: React.ReactNode }
 function Tarjeta({ label, valor, subvalor, icono }: TarjetaProps) {
   return (
     <div className="bg-white rounded-xl border border-gray-100 p-3 sm:p-5 flex items-center gap-3">
-      <div className="w-9 h-9 sm:w-10 sm:h-10 bg-primary/10 rounded-lg flex items-center justify-center text-primary shrink-0">
+      <div className="w-9 h-9 sm:w-10 sm:h-10 bg-slate-700/10 rounded-lg flex items-center justify-center text-slate-700 shrink-0">
         {icono}
       </div>
       <div className="min-w-0">
@@ -127,7 +139,40 @@ export default function ReportesPage() {
     exportarExcel(encabezados, [filas], "reporte-citas", "Reporte de Citas", { subtitulo, totales });
   };
 
-  const inputCls = "px-3 py-2 text-sm rounded-lg border border-gray-200 outline-none focus:border-primary bg-white";
+  const handleExportarEmpleados = () => {
+    if (!reporteIngresos?.porEmpleado.length) return;
+    const fmtFecha = (iso: string) =>
+      new Date(iso).toLocaleDateString("es-MX", { day: "2-digit", month: "long", year: "numeric" });
+    const subtitulo = `Período: ${fmtFecha(desde)} — ${fmtFecha(hasta)}`;
+    const encabezados = ["Empleado", "Citas", "Ingresos", "Ticket promedio", "% del total"];
+    const totalEquipoIngresos = reporteIngresos.porEmpleado.reduce((s, e) => s + e.totalIngresos, 0);
+    const filas = reporteIngresos.porEmpleado
+      .slice()
+      .sort((a, b) => b.totalIngresos - a.totalIngresos)
+      .map((e) => {
+        const ticket = e.totalCitas > 0 ? e.totalIngresos / e.totalCitas : 0;
+        const pct = totalEquipoIngresos > 0 ? (e.totalIngresos / totalEquipoIngresos) * 100 : 0;
+        return [e.nombreEmpleado, e.totalCitas, `$${e.totalIngresos.toFixed(2)}`, `$${ticket.toFixed(2)}`, `${pct.toFixed(1)}%`];
+      });
+    exportarExcel(encabezados, [filas], "reporte-empleados", "Reporte por Empleado", { subtitulo });
+  };
+
+  const handleExportarIngresos = () => {
+    if (!reporteIngresos?.porServicio.length) return;
+    const fmtFecha = (iso: string) =>
+      new Date(iso).toLocaleDateString("es-MX", { day: "2-digit", month: "long", year: "numeric" });
+    const subtitulo = `Período: ${fmtFecha(desde)} — ${fmtFecha(hasta)}`;
+    const encabezados = ["Servicio", "Citas", "% del total", "Ingresos"];
+    const filas = reporteIngresos.porServicio.map((s) => [
+      s.nombreServicio, s.totalCitas, `${s.porcentaje.toFixed(1)}%`, `$${s.totalIngresos.toFixed(2)}`,
+    ]);
+    const totales: (string | number)[] = [
+      "TOTAL", reporteIngresos.totalCitasCompletadas, "100%", `$${reporteIngresos.totalIngresos.toFixed(2)}`,
+    ];
+    exportarExcel(encabezados, [filas], "reporte-ingresos", "Reporte de Ingresos", { subtitulo, totales });
+  };
+
+  const inputCls = "px-3 py-2 text-sm rounded-lg border border-gray-200 outline-none focus:border-slate-700 bg-white";
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
@@ -137,20 +182,47 @@ export default function ReportesPage() {
           <h1 className="text-2xl font-bold text-gray-900">Reportes</h1>
           <p className="text-sm text-gray-500 mt-0.5">Análisis de citas e ingresos</p>
         </div>
-        {tab === "citas" && (
-          <button
-            onClick={handleExportar}
-            disabled={!reporteCitas?.citas.length}
-            className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-dark disabled:opacity-40 text-white text-sm font-semibold rounded-lg transition"
-          >
-            <Download size={15} />
-            Exportar Excel
-          </button>
-        )}
+        <button
+          onClick={
+            tab === "citas" ? handleExportar
+            : tab === "empleados" ? handleExportarEmpleados
+            : handleExportarIngresos
+          }
+          disabled={
+            tab === "citas" ? !reporteCitas?.citas.length
+            : tab === "empleados" ? !reporteIngresos?.porEmpleado.length
+            : !reporteIngresos?.porServicio.length
+          }
+          className="flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-800 disabled:opacity-40 text-white text-sm font-semibold rounded-lg transition"
+        >
+          <Download size={15} />
+          Exportar Excel
+        </button>
       </div>
 
       {/* Filtros */}
       <div className="bg-white rounded-xl border border-gray-100 p-4">
+        {/* Presets de fechas */}
+        <div className="flex flex-wrap gap-1.5 mb-3">
+          {([
+            { label: "Hoy", d: hoy(), h: hoy() },
+            { label: "Esta semana", d: inicioSemana(), h: hoy() },
+            { label: "Este mes", d: inicioMes(), h: hoy() },
+            { label: "Este año", d: inicioAnio(), h: hoy() },
+          ] as const).map((p) => (
+            <button
+              key={p.label}
+              onClick={() => { setDesde(p.d); setHasta(p.h); }}
+              className={`px-2.5 py-1 text-xs font-medium rounded-md border transition ${
+                desde === p.d && hasta === p.h
+                  ? "bg-slate-700 text-white border-slate-700"
+                  : "bg-white text-gray-600 border-gray-200 hover:border-slate-400"
+              }`}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
         <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-3 items-end">
           <div className="flex flex-col gap-1">
             <label className="text-xs font-medium text-gray-600">Desde</label>
@@ -228,6 +300,45 @@ export default function ReportesPage() {
               icono={<TrendingUp size={18} />} />
           </div>
 
+          {/* Métodos de pago */}
+          {reporteCitas && (reporteCitas.totalIngresosEfectivo > 0 || reporteCitas.totalIngresosTarjeta > 0) && (() => {
+            const efectivo = reporteCitas.totalIngresosEfectivo;
+            const tarjeta = reporteCitas.totalIngresosTarjeta;
+            const transferencia = Math.max(0, reporteCitas.totalIngresos - efectivo - tarjeta);
+            const total = efectivo + tarjeta + transferencia;
+            const items = [
+              { label: "Efectivo", valor: efectivo, color: "#10b981" },
+              { label: "Tarjeta", valor: tarjeta, color: "#3b82f6" },
+              { label: "Transferencia", valor: transferencia, color: "#8b5cf6" },
+            ].filter((i) => i.valor > 0);
+            return (
+              <div className="bg-white rounded-xl border border-gray-100 p-4">
+                <h2 className="text-sm font-semibold text-gray-700 mb-3">Métodos de pago</h2>
+                <div className="flex gap-4 flex-wrap mb-3">
+                  {items.map((item) => (
+                    <div key={item.label} className="flex items-center gap-2 min-w-32">
+                      <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+                      <div>
+                        <p className="text-xs text-gray-500">{item.label}</p>
+                        <p className="text-sm font-bold text-gray-900">{formatPrecio(item.valor)}</p>
+                        <p className="text-xs text-gray-400">{total > 0 ? `${((item.valor / total) * 100).toFixed(0)}%` : "0%"}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="h-2 rounded-full overflow-hidden flex">
+                  {items.map((item) => (
+                    <div
+                      key={item.label}
+                      className="h-full"
+                      style={{ width: `${(item.valor / total) * 100}%`, backgroundColor: item.color }}
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Tabla */}
           <div className="bg-white rounded-xl border border-gray-100 overflow-x-auto">
             <table className="w-full text-sm">
@@ -280,7 +391,7 @@ export default function ReportesPage() {
         <>
           {cargandoIngresos ? (
             <div className="bg-white rounded-xl border border-gray-100 p-8 flex items-center justify-center">
-              <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full" />
+              <div className="animate-spin w-6 h-6 border-2 border-slate-700 border-t-transparent rounded-full" />
             </div>
           ) : !reporteIngresos?.porEmpleado.length ? (
             <div className="bg-white rounded-xl border border-gray-100 p-10 text-center text-sm text-gray-400">
@@ -397,7 +508,7 @@ export default function ReportesPage() {
 
           {cargandoIngresos ? (
             <div className="bg-white rounded-xl border border-gray-100 p-8 flex items-center justify-center">
-              <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full" />
+              <div className="animate-spin w-6 h-6 border-2 border-slate-700 border-t-transparent rounded-full" />
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

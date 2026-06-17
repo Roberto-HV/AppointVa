@@ -1,4 +1,5 @@
-import { useRef, useState } from "react";
+﻿import { useRef, useState } from "react";
+import { motion } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -137,6 +138,7 @@ export default function EmpleadosPage() {
   const { mutate: subirFoto } = useMutation({
     mutationFn: ({ id, file }: { id: string; file: File }) => empleadosApi.subirFoto(id, file),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["empleados"] }); toast("Foto actualizada"); },
+    onError: () => toast("No se pudo subir la foto. Intenta de nuevo.", "error"),
   });
 
   const { mutate: guardarEmpleado, isPending: guardando } = useMutation({
@@ -149,11 +151,13 @@ export default function EmpleadosPage() {
       setModalEmpleado(false);
       toast(empleadoEdit ? "Empleado actualizado" : "Empleado creado");
     },
+    onError: () => toast("No se pudo guardar el empleado. Intenta de nuevo.", "error"),
   });
 
   const { mutate: eliminar } = useMutation({
     mutationFn: (id: string) => empleadosApi.eliminar(id),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["empleados"] }); toast("Empleado eliminado"); },
+    onError: () => toast("No se pudo eliminar el empleado. Intenta de nuevo.", "error"),
   });
 
   const { mutate: guardarHorario, isPending: guardandoHorario } = useMutation({
@@ -184,12 +188,14 @@ export default function EmpleadosPage() {
       formBloqueo.reset({ fechaInicio: "", horaInicio: "", fechaFin: "", horaFin: "", motivo: "" });
       toast("Bloqueo agregado");
     },
+    onError: () => toast("No se pudo agregar el bloqueo. Intenta de nuevo.", "error"),
   });
 
   const { mutate: eliminarBloqueo } = useMutation({
     mutationFn: (bloqueoId: string) =>
       empleadosApi.eliminarBloqueo(empleadoBloqueo!.id, bloqueoId),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["bloqueos", empleadoBloqueo?.id] }); toast("Bloqueo eliminado"); },
+    onError: () => toast("No se pudo eliminar el bloqueo. Intenta de nuevo.", "error"),
   });
 
   const serviciosSeleccionados = formEmpleado.watch("servicioIds") ?? [];
@@ -214,7 +220,7 @@ export default function EmpleadosPage() {
       <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
         <h1 className="text-2xl font-bold text-gray-900">Empleados</h1>
         <button onClick={abrirCrear}
-          className="bg-primary hover:bg-primary-dark text-white text-sm font-semibold px-4 py-2 rounded-lg transition">
+          className="bg-slate-700 hover:bg-slate-800 text-white text-sm font-semibold px-4 py-2 rounded-lg transition">
           + Nuevo empleado
         </button>
       </div>
@@ -226,7 +232,7 @@ export default function EmpleadosPage() {
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
             placeholder="Buscar por nombre..."
-            className="px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary w-56"
+            className="px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700 w-56"
           />
         </div>
       )}
@@ -244,17 +250,26 @@ export default function EmpleadosPage() {
           <p className="text-sm text-gray-400 mb-5">Agrega a tu equipo para que puedan recibir citas</p>
           <button
             onClick={abrirCrear}
-            className="bg-primary hover:bg-primary-dark text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition"
+            className="bg-slate-700 hover:bg-slate-800 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition"
           >
             Agregar primer empleado
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <motion.div
+          initial="hidden"
+          animate="show"
+          variants={{ hidden: {}, show: { transition: { staggerChildren: 0.07 } } }}
+          className="grid grid-cols-1 md:grid-cols-2 gap-4"
+        >
           {empleados
             .filter((e) => !busqueda.trim() || e.nombre.toLowerCase().includes(busqueda.toLowerCase()))
             .map((emp) => (
-            <div key={emp.id} className="bg-white rounded-xl border border-gray-100 p-5 flex gap-4">
+            <motion.div
+              key={emp.id}
+              variants={{ hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0, transition: { duration: 0.35 } } }}
+              className="bg-white rounded-xl border border-gray-100 p-5 flex gap-4 hover:-translate-y-0.5 hover:shadow-md transition-all"
+            >
               <div
                 className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center shrink-0 overflow-hidden relative group cursor-pointer"
                 onClick={() => { empleadoFotoIdRef.current = emp.id; fotoInputRef.current?.click(); }}
@@ -286,7 +301,7 @@ export default function EmpleadosPage() {
                   <div className="flex gap-1.5">
                     <button
                       onClick={() => abrirEditar(emp)}
-                      className="flex-1 text-xs font-medium py-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition"
+                      className="flex-1 text-xs font-medium py-1.5 rounded-lg bg-slate-700/10 text-slate-700 hover:bg-slate-700/20 transition"
                     >
                       Editar
                     </button>
@@ -319,9 +334,9 @@ export default function EmpleadosPage() {
                   </div>
                 </div>
               </div>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       )}
 
       {/* Modal crear/editar empleado */}
@@ -341,10 +356,10 @@ export default function EmpleadosPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">{labels[campo]}</label>
                 {campo === "biografia" ? (
                   <textarea rows={2} {...formEmpleado.register(campo)}
-                    className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary resize-none" />
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700 resize-none" />
                 ) : (
                   <input type={campo === "email" ? "email" : "text"} {...formEmpleado.register(campo)}
-                    className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-primary
+                    className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700
                       ${err ? "border-red-400 bg-red-50" : "border-gray-200"}`} />
                 )}
                 {err && <p className="text-red-500 text-xs mt-1">{err.message}</p>}
@@ -360,7 +375,7 @@ export default function EmpleadosPage() {
                   <input type="checkbox"
                     checked={serviciosSeleccionados.includes(s.id)}
                     onChange={() => toggleServicio(s.id)}
-                    className="accent-primary" />
+                    className="accent-slate-700" />
                   <span className="text-sm text-gray-700">{s.nombre}</span>
                 </label>
               ))}
@@ -368,7 +383,7 @@ export default function EmpleadosPage() {
           </div>
 
           <button type="submit" disabled={guardando}
-            className="w-full bg-primary hover:bg-primary-dark disabled:opacity-50 text-white font-semibold py-2.5 rounded-xl transition">
+            className="w-full bg-slate-700 hover:bg-slate-800 disabled:opacity-50 text-white font-semibold py-2.5 rounded-xl transition">
             {guardando ? "Guardando..." : empleadoEdit ? "Guardar cambios" : "Crear empleado"}
           </button>
         </form>
@@ -391,7 +406,7 @@ export default function EmpleadosPage() {
                       updated[i] = { ...h, activo: !h.activo };
                       setHorarioLocal(updated);
                     }}
-                    className={`w-9 h-5 rounded-full transition relative cursor-pointer shrink-0 ${h.activo ? "bg-primary" : "bg-gray-300"}`}
+                    className={`w-9 h-5 rounded-full transition relative cursor-pointer shrink-0 ${h.activo ? "bg-slate-700" : "bg-gray-300"}`}
                   >
                     <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${h.activo ? "left-4" : "left-0.5"}`} />
                   </div>
@@ -412,7 +427,7 @@ export default function EmpleadosPage() {
                         updated[i] = { ...h, horaInicio: e.target.value };
                         setHorarioLocal(updated);
                       }}
-                      className="px-2 py-1 rounded border border-gray-200 text-sm outline-none focus:border-primary"
+                      className="px-2 py-1 rounded border border-gray-200 text-sm outline-none focus:border-slate-700"
                     />
                   </div>
                   <div className="flex items-center gap-1.5">
@@ -424,7 +439,7 @@ export default function EmpleadosPage() {
                         updated[i] = { ...h, horaFin: e.target.value };
                         setHorarioLocal(updated);
                       }}
-                      className="px-2 py-1 rounded border border-gray-200 text-sm outline-none focus:border-primary"
+                      className="px-2 py-1 rounded border border-gray-200 text-sm outline-none focus:border-slate-700"
                     />
                   </div>
                 </div>
@@ -435,7 +450,7 @@ export default function EmpleadosPage() {
           <button
             onClick={() => guardarHorario()}
             disabled={guardandoHorario}
-            className="w-full bg-primary hover:bg-primary-dark disabled:opacity-50 text-white font-semibold py-2.5 rounded-xl transition mt-2"
+            className="w-full bg-slate-700 hover:bg-slate-800 disabled:opacity-50 text-white font-semibold py-2.5 rounded-xl transition mt-2"
           >
             {guardandoHorario ? "Guardando..." : "Guardar horario"}
           </button>
@@ -488,13 +503,13 @@ export default function EmpleadosPage() {
                   <input
                     type="date"
                     {...formBloqueo.register("fechaInicio")}
-                    className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-primary
+                    className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700
                       ${formBloqueo.formState.errors.fechaInicio ? "border-red-400 bg-red-50" : "border-gray-200"}`}
                   />
                   <input
                     type="time"
                     {...formBloqueo.register("horaInicio")}
-                    className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-primary
+                    className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700
                       ${formBloqueo.formState.errors.horaInicio ? "border-red-400 bg-red-50" : "border-gray-200"}`}
                   />
                 </div>
@@ -510,13 +525,13 @@ export default function EmpleadosPage() {
                   <input
                     type="date"
                     {...formBloqueo.register("fechaFin")}
-                    className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-primary
+                    className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700
                       ${formBloqueo.formState.errors.fechaFin ? "border-red-400 bg-red-50" : "border-gray-200"}`}
                   />
                   <input
                     type="time"
                     {...formBloqueo.register("horaFin")}
-                    className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-primary
+                    className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700
                       ${formBloqueo.formState.errors.horaFin ? "border-red-400 bg-red-50" : "border-gray-200"}`}
                   />
                 </div>
@@ -534,7 +549,7 @@ export default function EmpleadosPage() {
                   type="text"
                   {...formBloqueo.register("motivo")}
                   placeholder="Ej. Vacaciones, cita médica..."
-                  className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary"
+                  className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700"
                 />
               </div>
               <button
@@ -599,7 +614,7 @@ export default function EmpleadosPage() {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Correo de acceso *</label>
             <input type="email" {...formInvitar.register("email")}
-              className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-primary
+              className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700
                 ${formInvitar.formState.errors.email ? "border-red-400 bg-red-50" : "border-gray-200"}`} />
             {formInvitar.formState.errors.email && (
               <p className="text-red-500 text-xs mt-1">{formInvitar.formState.errors.email.message}</p>
@@ -611,7 +626,7 @@ export default function EmpleadosPage() {
               <input
                 type={mostrarPasswordInvitar ? "text" : "password"}
                 {...formInvitar.register("password")}
-                className={`w-full px-3 py-2 pr-10 rounded-lg border text-sm outline-none focus:border-primary
+                className={`w-full px-3 py-2 pr-10 rounded-lg border text-sm outline-none focus:border-slate-700
                   ${formInvitar.formState.errors.password ? "border-red-400 bg-red-50" : "border-gray-200"}`}
               />
               <button
@@ -631,7 +646,7 @@ export default function EmpleadosPage() {
             <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-3 py-2">{errorInvitar}</div>
           )}
           <button type="submit" disabled={invitando}
-            className="w-full bg-primary hover:bg-primary-dark disabled:opacity-50 text-white font-semibold py-2.5 rounded-xl transition">
+            className="w-full bg-slate-700 hover:bg-slate-800 disabled:opacity-50 text-white font-semibold py-2.5 rounded-xl transition">
             {invitando ? "Creando cuenta..." : "Crear cuenta de acceso"}
           </button>
         </form>

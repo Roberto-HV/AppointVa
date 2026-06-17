@@ -1,31 +1,36 @@
-import { useState } from "react";
+﻿import { useState } from "react";
+import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
-import { CheckCircle2, Circle, X, Scissors, Users, Link2 } from "lucide-react";
+import { CheckCircle2, Circle, X, Scissors, Users, Link2, CalendarDays, BarChart2, Tag, UserCheck } from "lucide-react";
 import { dashboardApi } from "../../api/dashboard";
 import { citasApi } from "../../api/citas";
 import { negociosApi } from "../../api/negocios";
 import { useAuthStore } from "../../store/authStore";
 import EstadoBadge from "../../components/ui/EstadoBadge";
 import { Skeleton } from "../../components/ui/Skeleton";
+import AnimatedCounter from "../../components/ui/AnimatedCounter";
 import { formatPrecio, formatFechaHoraResumen as formatFechaHora } from "../../utils/formatters";
 
-interface TarjetaProps { label: string; valor: string | number; valorCorto?: string; color?: string }
-function Tarjeta({ label, valor, valorCorto, color = "text-gray-900" }: TarjetaProps) {
+interface TarjetaProps { label: string; valor?: string | number; rawValue?: number; valorCorto?: string; color?: string; accent?: boolean }
+function Tarjeta({ label, valor, rawValue, color = "text-slate-900", accent = false }: TarjetaProps) {
+  const numCls = `text-xl sm:text-2xl font-black leading-none ${accent ? "text-white" : color}`;
   return (
-    <div className="bg-white rounded-xl border border-gray-100 p-3 sm:p-5">
-      <p className="text-[10px] sm:text-xs text-gray-500 font-medium uppercase tracking-wide mb-0.5 sm:mb-1 line-clamp-1">{label}</p>
-      <p className={`text-lg sm:text-2xl font-bold leading-tight ${color}`}>
-        {valorCorto ? (
-          <>
-            <span className="sm:hidden">{valorCorto}</span>
-            <span className="hidden sm:inline">{valor}</span>
-          </>
-        ) : valor}
-      </p>
+    <div className={`rounded-2xl border p-3 sm:p-4 transition-all ${accent ? "bg-slate-900 border-slate-800" : "bg-white border-slate-100"}`}>
+      <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest mb-1.5 line-clamp-1 text-slate-400">{label}</p>
+      {typeof valor === "number" ? (
+        <AnimatedCounter to={valor} className={numCls} />
+      ) : rawValue !== undefined ? (
+        <p className={numCls}>
+          <AnimatedCounter to={rawValue} format={formatPrecioCorto} className="sm:hidden" />
+          <AnimatedCounter to={rawValue} format={(n) => formatPrecio(n)} className="hidden sm:inline" />
+        </p>
+      ) : (
+        <p className={numCls}>{valor}</p>
+      )}
     </div>
   );
 }
@@ -65,23 +70,23 @@ function WizardOnboarding({ negocioId, slug, tieneCitas, tieneServicios }: Onboa
   const pct = Math.round((hechos / pasos.length) * 100);
 
   return (
-    <div className="bg-white rounded-xl border border-primary/20 p-5 mb-6 relative">
+    <div className="bg-white rounded-xl border border-slate-700/20 p-5 mb-6 relative">
       <button onClick={cerrar} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition">
         <X size={16} />
       </button>
 
       <div className="flex items-center justify-between mb-1 pr-6">
         <h3 className="text-sm font-bold text-gray-800">Configura tu negocio</h3>
-        <span className="text-xs font-semibold text-primary">{hechos}/{pasos.length} completados</span>
+        <span className="text-xs font-semibold text-slate-700">{hechos}/{pasos.length} completados</span>
       </div>
       <div className="w-full bg-gray-100 rounded-full h-1.5 mb-5">
-        <div className="bg-primary h-1.5 rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+        <div className="bg-slate-700 h-1.5 rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
       </div>
 
       <div className="space-y-3">
         {pasos.map((p, i) => (
-          <div key={i} className={`flex items-start gap-3 p-3 rounded-lg ${p.hecho ? "bg-gray-50" : "bg-primary/5 border border-primary/10"}`}>
-            <div className={`mt-0.5 shrink-0 ${p.hecho ? "text-emerald-500" : "text-primary"}`}>
+          <div key={i} className={`flex items-start gap-3 p-3 rounded-lg ${p.hecho ? "bg-gray-50" : "bg-slate-700/5 border border-slate-700/10"}`}>
+            <div className={`mt-0.5 shrink-0 ${p.hecho ? "text-emerald-500" : "text-slate-700"}`}>
               {p.hecho ? <CheckCircle2 size={18} /> : <Circle size={18} />}
             </div>
             <div className="flex-1 min-w-0">
@@ -89,10 +94,10 @@ function WizardOnboarding({ negocioId, slug, tieneCitas, tieneServicios }: Onboa
               {!p.hecho && <p className="text-xs text-gray-500 mt-0.5">{p.desc}</p>}
               {!p.hecho && p.link && (
                 <div className="flex items-center gap-2 mt-2">
-                  <code className="text-xs bg-white border border-gray-200 px-2 py-1 rounded text-primary truncate max-w-[200px] sm:max-w-xs">{p.link}</code>
+                  <code className="text-xs bg-white border border-gray-200 px-2 py-1 rounded text-slate-700 truncate max-w-[200px] sm:max-w-xs">{p.link}</code>
                   <button
                     onClick={() => navigator.clipboard.writeText(p.link!)}
-                    className="text-xs text-primary font-semibold hover:underline shrink-0"
+                    className="text-xs text-slate-700 font-semibold hover:underline shrink-0"
                   >
                     Copiar
                   </button>
@@ -100,7 +105,7 @@ function WizardOnboarding({ negocioId, slug, tieneCitas, tieneServicios }: Onboa
               )}
             </div>
             {!p.hecho && p.accion && (
-              <Link to={p.accion.href} className="shrink-0 text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/20 px-3 py-1.5 rounded-lg transition">
+              <Link to={p.accion.href} className="shrink-0 text-xs font-semibold text-slate-700 bg-slate-700/10 hover:bg-slate-700/20 px-3 py-1.5 rounded-lg transition">
                 {p.accion.texto}
               </Link>
             )}
@@ -136,8 +141,41 @@ function VistaPropietario({ nombre }: { nombre: string }) {
 
   return (
     <div className="p-4 sm:p-8">
-      <h1 className="text-2xl font-bold text-gray-900 mb-1">Bienvenido, {nombre}</h1>
-      <p className="text-gray-400 text-sm mb-6">Resumen de tu negocio</p>
+      {/* Encabezado — Apple Store style */}
+      <div className="mb-6">
+        <h1 className="text-3xl font-black text-slate-900 leading-none mb-1">Hola, {nombre}</h1>
+        <p className="text-sm text-slate-400">{negocio?.nombre ?? "Tu negocio"}</p>
+      </div>
+
+      {/* Quick actions — ElevenReader 4-col grid */}
+      <motion.div
+        initial="hidden"
+        animate="show"
+        variants={{ hidden: {}, show: { transition: { staggerChildren: 0.07 } } }}
+        className="grid grid-cols-4 gap-2 sm:gap-3 mb-6"
+      >
+        {[
+          { label: "Citas", icon: CalendarDays, to: "/dashboard/citas" },
+          { label: "Servicios", icon: Scissors, to: "/dashboard/servicios" },
+          { label: "Clientes", icon: UserCheck, to: "/dashboard/clientes" },
+          { label: "Reportes", icon: BarChart2, to: "/dashboard/reportes" },
+        ].map(({ label, icon: Icon, to }) => (
+          <motion.div
+            key={to}
+            variants={{ hidden: { opacity: 0, y: 12, scale: 0.95 }, show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.3, ease: "easeOut" } } }}
+          >
+            <Link
+              to={to}
+              className="flex flex-col items-center gap-2 bg-white rounded-2xl border border-slate-100 p-3 hover:border-slate-200 hover:-translate-y-0.5 hover:shadow-md transition group"
+            >
+              <div className="w-10 h-10 rounded-xl bg-slate-50 group-hover:bg-slate-100 flex items-center justify-center transition">
+                <Icon size={18} className="text-slate-600" />
+              </div>
+              <span className="text-[10px] font-semibold text-slate-500 text-center leading-tight">{label}</span>
+            </Link>
+          </motion.div>
+        ))}
+      </motion.div>
 
       {negocio && usuario?.negocioId && (
         <WizardOnboarding
@@ -150,47 +188,65 @@ function VistaPropietario({ nombre }: { nombre: string }) {
 
       {isLoading ? (
         <>
-          <Skeleton className="h-3 w-16 mb-3" />
-          <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-6">
-            {[0,1,2].map(i => <Skeleton key={i} className="h-20 sm:h-24 rounded-xl" />)}
+          <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-6">
+            {[0,1,2].map(i => <Skeleton key={i} className="h-20 sm:h-24 rounded-2xl" />)}
           </div>
-          <Skeleton className="h-3 w-16 mb-3" />
-          <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-8">
-            {[0,1,2].map(i => <Skeleton key={i} className="h-20 sm:h-24 rounded-xl" />)}
+          <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-8">
+            {[0,1,2].map(i => <Skeleton key={i} className="h-20 sm:h-24 rounded-2xl" />)}
           </div>
-          <Skeleton className="h-72 rounded-xl mb-6" />
+          <Skeleton className="h-72 rounded-2xl mb-6" />
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Skeleton className="lg:col-span-2 h-64 rounded-xl" />
-            <Skeleton className="h-64 rounded-xl" />
+            <Skeleton className="lg:col-span-2 h-64 rounded-2xl" />
+            <Skeleton className="h-64 rounded-2xl" />
           </div>
         </>
       ) : data ? (
         <>
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Citas</p>
-          <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-6">
-            <Tarjeta label="Hoy" valor={data.citasHoy} />
-            <Tarjeta label="Semana" valor={data.citasSemana} />
-            <Tarjeta label="Mes" valor={data.citasMes} />
-          </div>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2.5">Citas</p>
+          <motion.div
+            initial="hidden" animate="show"
+            variants={{ hidden: {}, show: { transition: { staggerChildren: 0.08 } } }}
+            className="grid grid-cols-3 gap-2 sm:gap-3 mb-6"
+          >
+            {[
+              { label: "Hoy", valor: data.citasHoy },
+              { label: "Semana", valor: data.citasSemana },
+              { label: "Mes", valor: data.citasMes },
+            ].map(({ label, valor }) => (
+              <motion.div key={label} variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0, transition: { duration: 0.3 } } }}>
+                <Tarjeta label={label} valor={valor} />
+              </motion.div>
+            ))}
+          </motion.div>
 
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Ingresos</p>
-          <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-8">
-            <Tarjeta label="Hoy" valor={formatPrecio(data.ingresosHoy)} valorCorto={formatPrecioCorto(data.ingresosHoy)} color="text-primary" />
-            <Tarjeta label="Semana" valor={formatPrecio(data.ingresosSemana)} valorCorto={formatPrecioCorto(data.ingresosSemana)} color="text-primary" />
-            <Tarjeta label="Mes" valor={formatPrecio(data.ingresosMes)} valorCorto={formatPrecioCorto(data.ingresosMes)} color="text-primary" />
-          </div>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2.5">Ingresos</p>
+          <motion.div
+            initial="hidden" animate="show"
+            variants={{ hidden: {}, show: { transition: { staggerChildren: 0.08 } } }}
+            className="grid grid-cols-3 gap-2 sm:gap-3 mb-8"
+          >
+            {[
+              { label: "Hoy", rawValue: data.ingresosHoy },
+              { label: "Semana", rawValue: data.ingresosSemana },
+              { label: "Mes", rawValue: data.ingresosMes },
+            ].map(({ label, rawValue }) => (
+              <motion.div key={label} variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0, transition: { duration: 0.3 } } }}>
+                <Tarjeta label={label} rawValue={rawValue} accent />
+              </motion.div>
+            ))}
+          </motion.div>
 
-          {/* Gráfica de tendencia con selector de período */}
-          <div className="bg-white rounded-xl border border-gray-100 p-5 mb-6">
+          {/* Gráfica de tendencia */}
+          <div className="bg-white rounded-2xl border border-slate-100 p-5 mb-6">
             <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-              <h2 className="text-sm font-semibold text-gray-700">Ingresos y citas por día</h2>
-              <div className="flex bg-gray-100 rounded-lg p-0.5 gap-0.5">
+              <h2 className="text-sm font-bold text-slate-800">Ingresos y citas por día</h2>
+              <div className="flex bg-slate-100 rounded-xl p-0.5 gap-0.5">
                 {[7, 14, 30].map((d) => (
                   <button
                     key={d}
                     onClick={() => setDias(d)}
-                    className={`px-3 py-1 text-xs font-medium rounded-md transition ${
-                      dias === d ? "bg-white text-gray-800 shadow-sm" : "text-gray-500 hover:text-gray-700"
+                    className={`px-3 py-1 text-xs font-semibold rounded-lg transition ${
+                      dias === d ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"
                     }`}
                   >
                     {d}d
@@ -209,8 +265,8 @@ function VistaPropietario({ nombre }: { nombre: string }) {
                       <stop offset="95%" stopColor="#7c3aed" stopOpacity={0} />
                     </linearGradient>
                     <linearGradient id="gradCitas" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#C8A961" stopOpacity={0.2} />
-                      <stop offset="95%" stopColor="#C8A961" stopOpacity={0} />
+                      <stop offset="5%" stopColor="#0D9488" stopOpacity={0.2} />
+                      <stop offset="95%" stopColor="#0D9488" stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
@@ -230,7 +286,7 @@ function VistaPropietario({ nombre }: { nombre: string }) {
                     formatter={(v) => v === "ingresos" ? "Ingresos" : "Citas"}
                   />
                   <Area yAxisId="ingresos" type="monotone" dataKey="ingresos" stroke="#7c3aed" strokeWidth={2} fill="url(#gradIngresos)" dot={false} />
-                  <Area yAxisId="citas" type="monotone" dataKey="citas" stroke="#C8A961" strokeWidth={2} fill="url(#gradCitas)" dot={false} />
+                  <Area yAxisId="citas" type="monotone" dataKey="citas" stroke="#0D9488" strokeWidth={2} fill="url(#gradCitas)" dot={false} />
                 </AreaChart>
               </ResponsiveContainer>
             )}
@@ -251,20 +307,20 @@ function VistaPropietario({ nombre }: { nombre: string }) {
               : null;
             if (!esHoy && !etiqueta) return null;
             return (
-              <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 mb-6 flex items-center justify-between gap-4 animate-fade-in">
+              <div className="bg-slate-700/5 border border-slate-700/20 rounded-xl p-4 mb-6 flex items-center justify-between gap-4 animate-fade-in">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-slate-700/15 flex items-center justify-center shrink-0">
                     <span className="text-lg">📅</span>
                   </div>
                   <div className="min-w-0">
-                    <p className="text-xs text-primary font-semibold uppercase tracking-wide mb-0.5">Próxima cita</p>
+                    <p className="text-xs text-slate-700 font-semibold uppercase tracking-wide mb-0.5">Próxima cita</p>
                     <p className="font-semibold text-gray-900 truncate">{proxima.nombreCliente}</p>
                     <p className="text-xs text-gray-500 truncate">{proxima.nombreServicio} · {proxima.nombreEmpleado}</p>
                   </div>
                 </div>
                 <div className="text-right shrink-0">
                   {etiqueta && (
-                    <p className={`text-sm font-bold ${msRestantes <= 0 ? "text-green-600" : "text-primary"}`}>{etiqueta}</p>
+                    <p className={`text-sm font-bold ${msRestantes <= 0 ? "text-green-600" : "text-slate-700"}`}>{etiqueta}</p>
                   )}
                   <p className="text-xs text-gray-400 capitalize">{formatFechaHora(proxima.inicioEn)}</p>
                   <EstadoBadge estado={proxima.estadoTexto} />
@@ -308,7 +364,7 @@ function VistaPropietario({ nombre }: { nombre: string }) {
                       </div>
                       <div className="w-full bg-gray-100 rounded-full h-1.5">
                         <div
-                          className="bg-primary h-1.5 rounded-full"
+                          className="bg-slate-700 h-1.5 rounded-full"
                           style={{ width: `${Math.min((s.totalCitas / (data.topServicios[0]?.totalCitas || 1)) * 100, 100)}%` }}
                         />
                       </div>
@@ -358,7 +414,7 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
       <div className="bg-white rounded-xl border border-gray-100 p-5 mb-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-semibold text-gray-700">Citas de hoy</h2>
-          <span className="text-xs bg-primary/10 text-primary font-semibold px-2.5 py-1 rounded-full">
+          <span className="text-xs bg-slate-700/10 text-slate-700 font-semibold px-2.5 py-1 rounded-full">
             {cargandoHoy ? "..." : citasHoy.length}
           </span>
         </div>

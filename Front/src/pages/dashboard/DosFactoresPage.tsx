@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { QRCodeSVG } from "qrcode.react";
 import { Shield, ShieldCheck, ShieldOff } from "lucide-react";
@@ -83,7 +83,7 @@ export default function DosFactoresPage() {
         value={codigo}
         onChange={(e) => { setCodigo(e.target.value.replace(/\D/g, "")); setErrorCodigo(""); }}
         placeholder="000000"
-        className="w-full px-4 py-2.5 text-center text-xl font-mono tracking-[0.5em] rounded-lg border border-gray-200 outline-none focus:border-primary"
+        className="w-full px-4 py-2.5 text-center text-xl font-mono tracking-[0.5em] rounded-lg border border-gray-200 outline-none focus:border-slate-700"
         autoFocus
       />
       {errorCodigo && <p className="text-red-500 text-xs mt-1 text-center">{errorCodigo}</p>}
@@ -131,7 +131,7 @@ export default function DosFactoresPage() {
           <button
             onClick={() => iniciarConfiguracion()}
             disabled={iniciando}
-            className="w-full py-2.5 bg-primary hover:bg-primary-dark disabled:opacity-40 text-white font-semibold rounded-xl text-sm transition"
+            className="w-full py-2.5 bg-slate-700 hover:bg-slate-800 disabled:opacity-40 text-white font-semibold rounded-xl text-sm transition"
           >
             {iniciando ? "Generando..." : "Activar autenticación en dos pasos"}
           </button>
@@ -171,7 +171,7 @@ export default function DosFactoresPage() {
             <button
               onClick={() => activar()}
               disabled={activando || codigo.length < 6}
-              className="flex-1 py-2.5 bg-primary hover:bg-primary-dark disabled:opacity-40 text-white font-semibold rounded-xl text-sm transition"
+              className="flex-1 py-2.5 bg-slate-700 hover:bg-slate-800 disabled:opacity-40 text-white font-semibold rounded-xl text-sm transition"
             >
               {activando ? "Verificando..." : "Confirmar activación"}
             </button>

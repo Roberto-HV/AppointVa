@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { publicoApi } from "../../api/publico";
@@ -28,7 +28,7 @@ export default function ResenaPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full" />
+        <div className="animate-spin w-8 h-8 border-2 border-slate-700 border-t-transparent rounded-full" />
       </div>
     );
   }
@@ -106,7 +106,7 @@ export default function ResenaPage() {
           placeholder="Cuéntanos más sobre tu experiencia (opcional)"
           maxLength={1000}
           rows={3}
-          className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:border-primary resize-none mb-4"
+          className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:border-slate-700 resize-none mb-4"
         />
 
         <button

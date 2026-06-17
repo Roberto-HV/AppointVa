@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Clock, Trash2, CheckCircle, Bell, Ban, Phone, Mail, Calendar, User, Scissors } from "lucide-react";
 import { listaEsperaApi, type EntradaListaEspera } from "../../api/listaEspera";
@@ -34,6 +34,7 @@ export default function ListaEsperaPage() {
       qc.invalidateQueries({ queryKey: ["lista-espera"] });
       toast("Estado actualizado");
     },
+    onError: () => toast("No se pudo actualizar el estado. Intenta de nuevo.", "error"),
   });
 
   const mutEliminar = useMutation({
@@ -42,6 +43,7 @@ export default function ListaEsperaPage() {
       qc.invalidateQueries({ queryKey: ["lista-espera"] });
       toast("Entrada eliminada");
     },
+    onError: () => toast("No se pudo eliminar la entrada. Intenta de nuevo.", "error"),
   });
 
   const esperando = lista.filter((e) => e.estado === "Esperando").length;
@@ -83,7 +85,7 @@ export default function ListaEsperaPage() {
             onClick={() => setFiltroEstado(e)}
             className={`px-3 py-1.5 text-sm rounded-full border transition ${
               filtroEstado === e
-                ? "bg-primary text-white border-primary"
+                ? "bg-slate-700 text-white border-slate-700"
                 : "border-gray-200 text-gray-600 hover:bg-gray-50"
             }`}
           >

@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+﻿import { useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, CalendarDays, List } from "lucide-react";
 import { citasApi } from "../../api/citas";
@@ -146,7 +146,7 @@ export default function CalendarioCitas({ empleadoId, onCitaClick, onReagendar }
             </button>
             <div className="flex flex-col items-center gap-0.5">
               <span className="text-sm font-semibold text-gray-800 text-center">{semanaLabel}</span>
-              <button onClick={() => setLunes(getLunesDeEstaSemana(new Date()))} className="text-xs text-primary hover:underline font-medium">Hoy</button>
+              <button onClick={() => setLunes(getLunesDeEstaSemana(new Date()))} className="text-xs text-slate-700 hover:underline font-medium">Hoy</button>
             </div>
             <div className="flex justify-end">
               <button
@@ -168,7 +168,7 @@ export default function CalendarioCitas({ empleadoId, onCitaClick, onReagendar }
             </button>
             <div className="flex flex-col items-center gap-0.5">
               <span className="text-sm font-semibold text-gray-800 text-center capitalize">{diaActivoLabel}</span>
-              <button onClick={() => abrirDia(new Date())} className="text-xs text-primary hover:underline font-medium">Hoy</button>
+              <button onClick={() => abrirDia(new Date())} className="text-xs text-slate-700 hover:underline font-medium">Hoy</button>
             </div>
             <div className="flex justify-end">
               <button
@@ -223,7 +223,7 @@ export default function CalendarioCitas({ empleadoId, onCitaClick, onReagendar }
                 className="flex-1 py-2 text-center border-l border-gray-100 hover:bg-gray-50 transition flex flex-col items-center"
               >
                 <p className="text-xs text-gray-400 uppercase">{DIAS_CORTOS[dia.getDay()]}</p>
-                <div className={`w-7 h-7 rounded-full flex items-center justify-center mt-0.5 ${esHoy ? "bg-primary" : ""}`}>
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center mt-0.5 ${esHoy ? "bg-slate-700" : ""}`}>
                   <span className={`text-sm font-semibold ${esHoy ? "text-white" : "text-gray-700"}`}>{dia.getDate()}</span>
                 </div>
                 {badgeOcupacion(count)}
@@ -250,7 +250,7 @@ export default function CalendarioCitas({ empleadoId, onCitaClick, onReagendar }
             return (
               <div
                 key={colIdx}
-                className={`flex-1 relative border-l border-gray-100 ${arrastrando && esDropTarget ? "bg-primary/5" : ""}`}
+                className={`flex-1 relative border-l border-gray-100 ${arrastrando && esDropTarget ? "bg-slate-700/5" : ""}`}
                 style={{ height: GRID_HEIGHT }}
                 onDragOver={(e) => {
                   if (!arrastrando) return;
@@ -286,7 +286,7 @@ export default function CalendarioCitas({ empleadoId, onCitaClick, onReagendar }
                 )}
                 {esDropTarget && dropTarget && arrastrando && (
                   <div
-                    className="absolute inset-x-0.5 h-1 bg-primary/60 rounded z-30 pointer-events-none"
+                    className="absolute inset-x-0.5 h-1 bg-slate-700/60 rounded z-30 pointer-events-none"
                     style={{ top: (dropTarget.hora - HORA_INICIO + dropTarget.minutos / 60) * PX_POR_HORA }}
                   />
                 )}
@@ -304,7 +304,7 @@ export default function CalendarioCitas({ empleadoId, onCitaClick, onReagendar }
           <div className="flex border-b border-gray-100 sticky top-0 bg-white z-10">
             <div className="w-12 shrink-0" />
             <div className="flex-1 py-3 text-center border-l border-gray-100">
-              <p className={`text-sm font-semibold capitalize ${diaActivo.toDateString() === hoy.toDateString() ? "text-primary" : "text-gray-800"}`}>
+              <p className={`text-sm font-semibold capitalize ${diaActivo.toDateString() === hoy.toDateString() ? "text-slate-700" : "text-gray-800"}`}>
                 {diaActivoLabel}
               </p>
               {(() => {

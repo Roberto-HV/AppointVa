@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -51,7 +51,7 @@ export default function RestablecerContrasenaPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="w-full max-w-md bg-white rounded-2xl border border-gray-100 p-8 text-center">
           <p className="text-red-500 font-medium mb-4">Enlace inválido o incompleto.</p>
-          <Link to="/login" className="text-sm text-primary hover:underline">Volver al inicio</Link>
+          <Link to="/login" className="text-sm text-slate-700 hover:underline">Volver al inicio</Link>
         </div>
       </div>
     );
@@ -79,7 +79,7 @@ export default function RestablecerContrasenaPage() {
               </p>
               <Link
                 to="/login"
-                className="inline-block bg-primary hover:bg-primary-dark text-white font-semibold px-6 py-2.5 rounded-lg text-sm transition"
+                className="inline-block bg-slate-700 hover:bg-slate-800 text-white font-semibold px-6 py-2.5 rounded-lg text-sm transition"
               >
                 Ir al inicio de sesión
               </Link>
@@ -103,7 +103,7 @@ export default function RestablecerContrasenaPage() {
                       autoComplete="new-password"
                       {...register("nuevaContrasena")}
                       className={`w-full px-4 py-2.5 pr-11 rounded-lg border text-sm outline-none transition
-                        focus:ring-2 focus:ring-primary/40 focus:border-primary
+                        focus:ring-2 focus:ring-slate-700/40 focus:border-slate-700
                         ${errors.nuevaContrasena ? "border-red-400 bg-red-50" : "border-gray-300"}`}
                       placeholder="Mínimo 6 caracteres"
                     />
@@ -132,7 +132,7 @@ export default function RestablecerContrasenaPage() {
                       autoComplete="new-password"
                       {...register("confirmar")}
                       className={`w-full px-4 py-2.5 pr-11 rounded-lg border text-sm outline-none transition
-                        focus:ring-2 focus:ring-primary/40 focus:border-primary
+                        focus:ring-2 focus:ring-slate-700/40 focus:border-slate-700
                         ${errors.confirmar ? "border-red-400 bg-red-50" : "border-gray-300"}`}
                       placeholder="Repite la contraseña"
                     />
@@ -159,7 +159,7 @@ export default function RestablecerContrasenaPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full bg-primary hover:bg-primary-dark disabled:opacity-60 disabled:cursor-not-allowed
+                  className="w-full bg-slate-700 hover:bg-slate-800 disabled:opacity-60 disabled:cursor-not-allowed
                     text-white font-semibold py-2.5 rounded-lg transition text-sm"
                 >
                   {isSubmitting ? "Guardando..." : "Restablecer contraseña"}

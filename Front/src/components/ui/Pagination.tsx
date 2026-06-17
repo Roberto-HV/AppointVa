@@ -1,4 +1,4 @@
-interface PaginationProps {
+﻿interface PaginationProps {
   pagina: number;
   totalPaginas: number;
   total: number;
@@ -30,7 +30,7 @@ export default function Pagination({ pagina, totalPaginas, total, labelTotal, on
               onClick={() => onCambiar(num)}
               disabled={cargando}
               className={`w-8 h-8 rounded-lg text-xs font-medium transition ${
-                num === pagina ? "bg-primary text-white" : "border border-gray-200 hover:bg-gray-50 text-gray-600"
+                num === pagina ? "bg-slate-700 text-white" : "border border-gray-200 hover:bg-gray-50 text-gray-600"
               }`}
             >
               {num}

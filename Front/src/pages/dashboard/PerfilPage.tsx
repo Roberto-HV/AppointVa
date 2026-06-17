@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+﻿import { useEffect, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
 import Select from "../../components/ui/Select";
@@ -75,6 +75,9 @@ const schema = z.object({
   autoConfirmar: z.boolean().optional(),
   metodoNotificacion: z.enum(["Correo", "WhatsApp", "Ambos"]).optional(),
   telefonoWhatsApp: z.string().max(30).optional(),
+  requiereAnticipo: z.boolean().optional(),
+  montoAnticipo: z.coerce.number().min(0).optional(),
+  instruccionesAnticipo: z.string().max(500).optional(),
 });
 type PerfilForm = z.infer<typeof schema>;
 
@@ -133,7 +136,7 @@ function WidgetEmbebido({ bookingUrl }: { bookingUrl: string }) {
                 key={v}
                 onClick={() => setVista(v)}
                 className={`px-3 py-1.5 text-xs rounded-full border transition font-medium ${
-                  vista === v ? "bg-primary text-white border-primary" : "border-gray-200 text-gray-600 hover:bg-gray-50"
+                  vista === v ? "bg-slate-700 text-white border-slate-700" : "border-gray-200 text-gray-600 hover:bg-gray-50"
                 }`}
               >
                 {v === "iframe" ? "Formulario embebido" : "Botón de reserva"}
@@ -186,6 +189,9 @@ export default function PerfilPage() {
         autoConfirmar: negocio.autoConfirmar ?? true,
         metodoNotificacion: (negocio.metodoNotificacion as "Correo" | "WhatsApp" | "Ambos") ?? "Correo",
         telefonoWhatsApp: negocio.telefonoWhatsApp ?? "",
+        requiereAnticipo: negocio.requiereAnticipo ?? false,
+        montoAnticipo: negocio.montoAnticipo ?? 0,
+        instruccionesAnticipo: negocio.instruccionesAnticipo ?? "",
       });
     }
   }, [negocio, reset]);
@@ -193,16 +199,19 @@ export default function PerfilPage() {
   const { mutate: guardar } = useMutation({
     mutationFn: (dto: ActualizarNegocioDto) => negociosApi.actualizarPerfil(dto),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["negocio-perfil"] }); toast("Cambios guardados"); },
+    onError: () => toast("No se pudieron guardar los cambios. Intenta de nuevo.", "error"),
   });
 
   const { mutate: subirLogo, isPending: subiendoLogo } = useMutation({
     mutationFn: (file: File) => negociosApi.subirLogo(file),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["negocio-perfil"] }); toast("Logo actualizado"); },
+    onError: () => toast("No se pudo subir el logo. Intenta de nuevo.", "error"),
   });
 
   const { mutate: subirPortada, isPending: subiendoPortada } = useMutation({
     mutationFn: (file: File) => negociosApi.subirPortada(file),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["negocio-perfil"] }); toast("Portada actualizada"); },
+    onError: () => toast("No se pudo subir la portada. Intenta de nuevo.", "error"),
   });
 
   const onSubmit = (data: PerfilForm) => {
@@ -236,6 +245,7 @@ export default function PerfilPage() {
       qc.invalidateQueries({ queryKey: ["horarios-negocio"] });
       toast("Horarios guardados");
     },
+    onError: () => toast("No se pudieron guardar los horarios. Intenta de nuevo.", "error"),
   });
 
   const actualizarHorario = (dia: number, campo: keyof HorarioDto, valor: string | boolean) => {
@@ -288,6 +298,7 @@ export default function PerfilPage() {
       qc.invalidateQueries({ queryKey: ["dias-bloqueados"] });
       toast("Día desbloqueado");
     },
+    onError: () => toast("No se pudo desbloquear el día. Intenta de nuevo.", "error"),
   });
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -346,7 +357,7 @@ export default function PerfilPage() {
               href={bookingUrl}
               target="_blank"
               rel="noreferrer"
-              className="flex-1 px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 text-sm text-primary font-mono truncate hover:underline"
+              className="flex-1 px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 text-sm text-slate-700 font-mono truncate hover:underline"
             >
               {bookingUrl}
             </a>
@@ -421,7 +432,7 @@ export default function PerfilPage() {
             <input ref={logoRef} type="file" accept="image/*" className="hidden"
               onChange={(e) => { const f = e.target.files?.[0]; if (f) subirLogo(f); }} />
             <button onClick={() => logoRef.current?.click()} disabled={subiendoLogo}
-              className="text-xs text-primary hover:underline disabled:opacity-50">
+              className="text-xs text-slate-700 hover:underline disabled:opacity-50">
               {subiendoLogo ? "Subiendo..." : "Cambiar logo"}
             </button>
           </div>
@@ -437,7 +448,7 @@ export default function PerfilPage() {
             <input ref={portadaRef} type="file" accept="image/*" className="hidden"
               onChange={(e) => { const f = e.target.files?.[0]; if (f) subirPortada(f); }} />
             <button onClick={() => portadaRef.current?.click()} disabled={subiendoPortada}
-              className="text-xs text-primary hover:underline disabled:opacity-50">
+              className="text-xs text-slate-700 hover:underline disabled:opacity-50">
               {subiendoPortada ? "Subiendo..." : "Cambiar portada"}
             </button>
           </div>
@@ -452,7 +463,7 @@ export default function PerfilPage() {
           <div className="sm:col-span-2 lg:col-span-3">
             <label className="block text-sm font-medium text-gray-700 mb-1">Nombre del negocio *</label>
             <input {...register("nombre")}
-              className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-primary
+              className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700
                 ${errors.nombre ? "border-red-400 bg-red-50" : "border-gray-200"}`} />
             {errors.nombre && <p className="text-red-500 text-xs mt-1">{errors.nombre.message}</p>}
           </div>
@@ -460,26 +471,26 @@ export default function PerfilPage() {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
             <input {...register("telefono")}
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary" />
+              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700" />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Correo de contacto</label>
             <input type="email" {...register("email")}
-              className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-primary
+              className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700
                 ${errors.email ? "border-red-400 bg-red-50" : "border-gray-200"}`} />
           </div>
 
           <div className="sm:col-span-2 lg:col-span-3">
             <label className="block text-sm font-medium text-gray-700 mb-1">Dirección</label>
             <input {...register("direccion")}
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary" />
+              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700" />
           </div>
 
           <div className="sm:col-span-2 lg:col-span-3">
             <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
             <textarea rows={3} maxLength={500} {...register("descripcion")}
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary resize-none" />
+              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700 resize-none" />
             <p className="text-xs text-gray-400 text-right mt-0.5">{(watch("descripcion") ?? "").length}/500</p>
           </div>
 
@@ -525,7 +536,7 @@ export default function PerfilPage() {
               <div
                 onClick={() => setValue("autoConfirmar", !(watch("autoConfirmar") ?? true), { shouldDirty: true })}
                 className={`shrink-0 w-11 h-6 rounded-full transition relative cursor-pointer ${
-                  watch("autoConfirmar") ?? true ? "bg-primary" : "bg-gray-300"
+                  watch("autoConfirmar") ?? true ? "bg-slate-700" : "bg-gray-300"
                 }`}
               >
                 <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${
@@ -548,7 +559,7 @@ export default function PerfilPage() {
                       type="button"
                       onClick={() => setValue("metodoNotificacion", op, { shouldDirty: true })}
                       className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-medium transition ${
-                        activo ? "bg-primary text-white" : "bg-white border border-gray-200 text-gray-600 hover:border-primary"
+                        activo ? "bg-slate-700 text-white" : "bg-white border border-gray-200 text-gray-600 hover:border-slate-700"
                       }`}
                     >
                       {(op === "Correo" || op === "Ambos") && <Mail size={13} />}
@@ -567,7 +578,7 @@ export default function PerfilPage() {
                     {...register("telefonoWhatsApp")}
                     placeholder="5512345678"
                     maxLength={30}
-                    className="w-full sm:w-64 px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary"
+                    className="w-full sm:w-64 px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700"
                   />
                 </div>
               )}
@@ -589,11 +600,59 @@ export default function PerfilPage() {
           )}
         </div>
 
+        {/* ── Anticipo ── */}
+        <div className="sm:col-span-2 lg:col-span-3 pt-2 border-t border-gray-100">
+          <h3 className="text-sm font-semibold text-gray-700 mb-3">Anticipo / Depósito</h3>
+          <div className="space-y-4">
+            <label className="flex items-center justify-between cursor-pointer select-none">
+              <div>
+                <p className="text-sm font-medium text-gray-700">Requerir anticipo al reservar</p>
+                <p className="text-xs text-gray-400">El cliente recibe instrucciones de pago y la cita queda pendiente hasta que confirmes el depósito</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setValue("requiereAnticipo", !(watch("requiereAnticipo") ?? false), { shouldDirty: true })}
+                className={`relative w-12 h-6 rounded-full transition-colors ${watch("requiereAnticipo") ? "bg-slate-700" : "bg-gray-300"}`}
+              >
+                <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${watch("requiereAnticipo") ? "left-7" : "left-1"}`} />
+              </button>
+            </label>
+
+            {watch("requiereAnticipo") && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pl-0 pt-1">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Monto del anticipo ($)</label>
+                  <input
+                    {...register("montoAnticipo")}
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="0.00"
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">Cantidad que el cliente debe pagar por adelantado</p>
+                </div>
+                <div className="sm:col-span-1">
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Instrucciones de pago</label>
+                  <textarea
+                    {...register("instruccionesAnticipo")}
+                    rows={3}
+                    maxLength={500}
+                    placeholder={"CLABE: 012345678901234567\nBanco: BBVA\nNombre: Nombre del negocio\nConcepto: Anticipo cita"}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700 resize-none"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">El cliente verá estas instrucciones al confirmar su reserva</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
         <button
           type="button"
           disabled={isSubmitting || !isDirty}
           onClick={() => setModalConfirmarGuardar(true)}
-          className="bg-primary hover:bg-primary-dark disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-xl transition text-sm"
+          className="bg-slate-700 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-xl transition text-sm"
         >
           {isSubmitting ? "Guardando..." : "Guardar cambios"}
         </button>
@@ -608,7 +667,7 @@ export default function PerfilPage() {
               <label className="flex items-center gap-2 cursor-pointer select-none sm:w-28 sm:shrink-0">
                 <div
                   onClick={() => actualizarHorario(h.diaSemana!, "activo", !h.activo)}
-                  className={`w-9 h-5 rounded-full transition relative cursor-pointer shrink-0 ${h.activo ? "bg-primary" : "bg-gray-300"}`}
+                  className={`w-9 h-5 rounded-full transition relative cursor-pointer shrink-0 ${h.activo ? "bg-slate-700" : "bg-gray-300"}`}
                 >
                   <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${h.activo ? "left-4" : "left-0.5"}`} />
                 </div>
@@ -620,14 +679,14 @@ export default function PerfilPage() {
                     type="time"
                     value={h.horaInicio}
                     onChange={(e) => actualizarHorario(h.diaSemana!, "horaInicio", e.target.value)}
-                    className="flex-1 min-w-0 sm:w-32 sm:flex-none px-2 py-1 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary"
+                    className="flex-1 min-w-0 sm:w-32 sm:flex-none px-2 py-1 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700"
                   />
                   <span className="text-gray-400 text-sm shrink-0">—</span>
                   <input
                     type="time"
                     value={h.horaFin}
                     onChange={(e) => actualizarHorario(h.diaSemana!, "horaFin", e.target.value)}
-                    className="flex-1 min-w-0 sm:w-32 sm:flex-none px-2 py-1 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary"
+                    className="flex-1 min-w-0 sm:w-32 sm:flex-none px-2 py-1 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700"
                   />
                 </div>
               ) : (
@@ -639,7 +698,7 @@ export default function PerfilPage() {
         <button
           onClick={() => guardarHorarios()}
           disabled={guardandoHorarios || !horariosDirty}
-          className="mt-4 bg-primary hover:bg-primary-dark disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-xl transition text-sm"
+          className="mt-4 bg-slate-700 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-xl transition text-sm"
         >
           {guardandoHorarios ? "Guardando..." : "Guardar horarios"}
         </button>
@@ -658,7 +717,7 @@ export default function PerfilPage() {
               value={nuevaFecha}
               min={new Date().toISOString().split("T")[0]}
               onChange={(e) => setNuevaFecha(e.target.value)}
-              className="px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary"
+              className="px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700"
             />
           </div>
           <div className="flex-1 min-w-[180px]">
@@ -669,7 +728,7 @@ export default function PerfilPage() {
               onChange={(e) => setNuevoMotivo(e.target.value)}
               placeholder="Ej: Día festivo, Vacaciones..."
               maxLength={100}
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary"
+              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700"
             />
           </div>
           <button
@@ -723,7 +782,7 @@ export default function PerfilPage() {
               <input
                 type={mostrarActual ? "text" : "password"}
                 {...formPassword.register("passwordActual")}
-                className={`w-full px-3 py-2 pr-10 rounded-lg border text-sm outline-none focus:border-primary
+                className={`w-full px-3 py-2 pr-10 rounded-lg border text-sm outline-none focus:border-slate-700
                   ${formPassword.formState.errors.passwordActual ? "border-red-400 bg-red-50" : "border-gray-200"}`}
               />
               <Tooltip text={mostrarActual ? "Ocultar contraseña" : "Mostrar contraseña"}>
@@ -745,7 +804,7 @@ export default function PerfilPage() {
               <input
                 type={mostrarNueva ? "text" : "password"}
                 {...formPassword.register("passwordNuevo")}
-                className={`w-full px-3 py-2 pr-10 rounded-lg border text-sm outline-none focus:border-primary
+                className={`w-full px-3 py-2 pr-10 rounded-lg border text-sm outline-none focus:border-slate-700
                   ${formPassword.formState.errors.passwordNuevo ? "border-red-400 bg-red-50" : "border-gray-200"}`}
                 placeholder="Mínimo 6 caracteres"
               />
@@ -767,7 +826,7 @@ export default function PerfilPage() {
             <input
               type="password"
               {...formPassword.register("confirmar")}
-              className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-primary
+              className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700
                 ${formPassword.formState.errors.confirmar ? "border-red-400 bg-red-50" : "border-gray-200"}`}
             />
             {formPassword.formState.errors.confirmar && (
@@ -815,7 +874,7 @@ export default function PerfilPage() {
           </button>
           <button
             onClick={() => { setModalConfirmarGuardar(false); handleSubmit(onSubmit)(); }}
-            className="flex-1 py-2.5 rounded-xl bg-primary hover:bg-primary-dark text-white text-sm font-semibold transition"
+            className="flex-1 py-2.5 rounded-xl bg-slate-700 hover:bg-slate-800 text-white text-sm font-semibold transition"
           >
             Sí, guardar
           </button>

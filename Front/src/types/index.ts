@@ -44,6 +44,9 @@ export interface NegocioPublico {
   telefonoWhatsApp?: string;
   horasCancelacion: number;
   autoConfirmar: boolean;
+  requiereAnticipo: boolean;
+  montoAnticipo: number;
+  instruccionesAnticipo?: string;
   servicios: ServicioPublico[];
   empleados: EmpleadoPublico[];
   galeria: ImagenGaleria[];
@@ -103,6 +106,10 @@ export interface ConfirmacionCita {
   webcalUrl?: string;
   googleCalUrl?: string;
   horasCancelacion: number;
+  requiereAnticipo: boolean;
+  montoAnticipo: number;
+  instruccionesAnticipo?: string;
+  comprobanteUrl?: string;
 }
 
 // ── Dashboard ─────────────────────────────────────────────────────────────────
@@ -160,6 +167,7 @@ export interface CitaDto {
   estadoTexto: string;
   notas?: string;
   motivoCancelacion?: string;
+  comprobanteUrl?: string;
   fechaCreacion: string;
 }
 
@@ -273,6 +281,9 @@ export interface NegocioDto {
   autoConfirmar?: boolean;
   metodoNotificacion?: string;
   telefonoWhatsApp?: string;
+  requiereAnticipo?: boolean;
+  montoAnticipo?: number;
+  instruccionesAnticipo?: string;
   activo: boolean;
   planNombre?: string;
 }
@@ -289,6 +300,9 @@ export interface ActualizarNegocioDto {
   autoConfirmar?: boolean;
   metodoNotificacion?: string;
   telefonoWhatsApp?: string;
+  requiereAnticipo?: boolean;
+  montoAnticipo?: number;
+  instruccionesAnticipo?: string;
 }
 
 export interface ActualizarColoresNegocioDto {

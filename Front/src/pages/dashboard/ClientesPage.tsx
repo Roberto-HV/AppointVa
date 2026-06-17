@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { clientesApi } from "../../api/clientes";
@@ -8,11 +8,13 @@ import { exportarExcel } from "../../utils/exportarExcel";
 import type { ClienteDto } from "../../types";
 import { formatPrecio, formatFecha, formatFechaHora } from "../../utils/formatters";
 import Pagination from "../../components/ui/Pagination";
+import { useToastStore } from "../../store/toastStore";
 
 const TAMANO = 30;
 
 export default function ClientesPage() {
   const qc = useQueryClient();
+  const { toast } = useToastStore();
   const [searchParams, setSearchParams] = useSearchParams();
   const [buscar, setBuscar] = useState("");
   const [buscarActivo, setBuscarActivo] = useState("");
@@ -59,6 +61,7 @@ export default function ClientesPage() {
       setNotasGuardadas(true);
       setTimeout(() => setNotasGuardadas(false), 2500);
     },
+    onError: () => toast("No se pudieron guardar las notas. Intenta de nuevo.", "error"),
   });
 
   const abrirCliente = (c: ClienteDto) => {
@@ -105,11 +108,11 @@ export default function ClientesPage() {
           onChange={(e) => setBuscar(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && buscarClientes()}
           placeholder="Buscar por nombre o teléfono..."
-          className="flex-1 max-w-sm px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary"
+          className="flex-1 max-w-sm px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700"
         />
         <button
           onClick={buscarClientes}
-          className="px-4 py-2 bg-primary hover:bg-primary-dark text-white text-sm font-medium rounded-lg transition"
+          className="px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white text-sm font-medium rounded-lg transition"
         >
           Buscar
         </button>
@@ -139,7 +142,7 @@ export default function ClientesPage() {
               <p className="text-sm text-gray-400 mb-4">No hay clientes que coincidan con tu búsqueda</p>
               <button
                 onClick={() => { setBuscar(""); setBuscarActivo(""); setPagina(1); }}
-                className="text-primary text-sm font-medium hover:underline"
+                className="text-slate-700 text-sm font-medium hover:underline"
               >
                 Ver todos los clientes
               </button>
@@ -176,8 +179,8 @@ export default function ClientesPage() {
                   <tr key={c.id} className="border-b border-gray-50 hover:bg-gray-50 transition">
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                          <span className="text-xs font-bold text-primary">
+                        <div className="w-8 h-8 rounded-full bg-slate-700/10 flex items-center justify-center shrink-0">
+                          <span className="text-xs font-bold text-slate-700">
                             {c.nombreCompleto.charAt(0).toUpperCase()}
                           </span>
                         </div>
@@ -204,7 +207,7 @@ export default function ClientesPage() {
                     <td className="px-5 py-3 text-right">
                       <button
                         onClick={() => abrirCliente(c)}
-                        className="text-xs font-medium px-2.5 py-1 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition"
+                        className="text-xs font-medium px-2.5 py-1 rounded-lg bg-slate-700/10 text-slate-700 hover:bg-slate-700/20 transition"
                       >
                         Ver detalle
                       </button>
@@ -272,7 +275,7 @@ export default function ClientesPage() {
                 onChange={(e) => { setNotas(e.target.value); setNotasGuardadas(false); }}
                 rows={3}
                 placeholder="Preferencias, alergias, observaciones..."
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary resize-none"
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700 resize-none"
               />
               <div className="flex items-center gap-3 mt-2">
                 <button

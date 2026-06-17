@@ -7,6 +7,10 @@ Back/**/logs/
 Back/**/wwwroot/uploads/
 Back/**/appsettings.Development.json
 Back/**/appsettings.Production.json
+Back/**/.env
+
+# ── Base de datos ─────────────────────────────────────────────────────────────
+appointva_data.sql
 *.suo
 .vs/
 

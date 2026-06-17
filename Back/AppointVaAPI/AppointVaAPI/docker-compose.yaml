@@ -7,7 +7,7 @@ services:
     environment:
       POSTGRES_DB: appointva
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -30,19 +30,19 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: http://+:8080
-      ConnectionStrings__ConexionSql: "Host=postgres;Port=5432;Database=appointva;Username=postgres;Password=postgres"
-      Jwt__Clave: "REEMPLAZAR_CON_CLAVE_SECRETA_MINIMO_32_CARACTERES"
+      ConnectionStrings__ConexionSql: "Host=postgres;Port=5432;Database=appointva;Username=postgres;Password=${DB_PASSWORD}"
+      Jwt__Clave: ${JWT_CLAVE}
       Jwt__Emisor: "AppointVaAPI"
       Jwt__Audiencia: "AppointVaClientes"
-      Cors__OrigenesPermitidos: "http://localhost:3000,http://localhost:5173"
-      Cloudinary__CloudName: "REEMPLAZAR"
-      Cloudinary__ApiKey: "REEMPLAZAR"
-      Cloudinary__ApiSecret: "REEMPLAZAR"
-      Email__ResendApiKey: "REEMPLAZAR"
-      Email__Origen: "AppointVa <notificaciones@tudominio.com>"
+      Cors__OrigenesPermitidos: ${CORS_ORIGENES}
+      Cloudinary__CloudName: ${CLOUDINARY_CLOUD_NAME}
+      Cloudinary__ApiKey: ${CLOUDINARY_API_KEY}
+      Cloudinary__ApiSecret: ${CLOUDINARY_API_SECRET}
+      Email__ResendApiKey: ${RESEND_API_KEY}
+      Email__Origen: "AppointVa <notificaciones@appointva.com>"
       Email__Habilitado: "true"
-      FrontendUrl: "http://localhost:5173"
-      BackendUrl: "http://localhost:8080"
+      FrontendUrl: ${FRONTEND_URL}
+      BackendUrl: ${BACKEND_URL}
     volumes:
       - uploads_data:/app/wwwroot/uploads
 
