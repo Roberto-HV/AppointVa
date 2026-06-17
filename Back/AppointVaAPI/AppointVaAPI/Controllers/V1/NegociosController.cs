@@ -72,6 +72,9 @@ namespace AppointVaAPI.Controllers.V1
                 negocio.HorasCancelacion = Math.Max(0, dto.HorasCancelacion.Value);
             if (dto.AutoConfirmar.HasValue)
                 negocio.AutoConfirmar = dto.AutoConfirmar.Value;
+            if (!string.IsNullOrWhiteSpace(dto.MetodoNotificacion))
+                negocio.MetodoNotificacion = dto.MetodoNotificacion;
+            negocio.TelefonoWhatsApp = dto.TelefonoWhatsApp;
             negocio.FechaActualizacion = DateTime.UtcNow;
 
             await _repo.ActualizarAsync(negocio);
@@ -526,6 +529,8 @@ namespace AppointVaAPI.Controllers.V1
             HorasRecordatorio = n.HorasRecordatorio,
             HorasCancelacion = n.HorasCancelacion,
             AutoConfirmar = n.AutoConfirmar,
+            MetodoNotificacion = n.MetodoNotificacion,
+            TelefonoWhatsApp = n.TelefonoWhatsApp,
             Activo = n.Activo == 1,
             PlanNombre = n.Plan?.Nombre
         };

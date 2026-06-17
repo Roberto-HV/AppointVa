@@ -8,13 +8,13 @@ namespace AppointVaAPI.Services
     public class RecordatorioService : IRecordatorioService
     {
         private readonly ApplicationDbContext _db;
-        private readonly IEmailService _email;
+        private readonly INotificacionService _notificacion;
         private readonly IConfiguration _config;
 
-        public RecordatorioService(ApplicationDbContext db, IEmailService email, IConfiguration config)
+        public RecordatorioService(ApplicationDbContext db, INotificacionService notificacion, IConfiguration config)
         {
             _db = db;
-            _email = email;
+            _notificacion = notificacion;
             _config = config;
         }
 
@@ -37,13 +37,13 @@ namespace AppointVaAPI.Services
             var googleCalUrl = GenerarGoogleCalendarUrl(cita);
 
             var emailCliente = cita.Cliente?.Email;
-            if (!string.IsNullOrWhiteSpace(emailCliente))
-                await _email.EnviarRecordatorioCitaAsync(
-                    cita, emailCliente, cita.Cliente!.NombreCompleto, icalUrl, googleCalUrl);
+            await _notificacion.EnviarRecordatorioCitaAsync(
+                cita, emailCliente ?? string.Empty, cita.Cliente?.NombreCompleto ?? string.Empty,
+                icalUrl, googleCalUrl);
 
             var emailEmpleado = cita.Empleado?.Email;
             if (!string.IsNullOrWhiteSpace(emailEmpleado))
-                await _email.EnviarRecordatorioEmpleadoAsync(cita, emailEmpleado);
+                await _notificacion.EnviarRecordatorioEmpleadoAsync(cita, emailEmpleado);
         }
 
         private static string GenerarGoogleCalendarUrl(Models.Cita cita)

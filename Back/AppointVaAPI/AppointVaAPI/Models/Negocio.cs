@@ -26,6 +26,9 @@ namespace AppointVaAPI.Models
         public int HorasRecordatorio { get; set; } = 24;
         public int HorasCancelacion { get; set; } = 0;
         public bool AutoConfirmar { get; set; } = false;
+        // Notificaciones: "Correo" | "WhatsApp" | "Ambos"
+        public string MetodoNotificacion { get; set; } = "Correo";
+        public string? TelefonoWhatsApp { get; set; }
         public Guid? PlanId { get; set; }
         [ForeignKey("PlanId")]
         public Plan? Plan { get; set; }

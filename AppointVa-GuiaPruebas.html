@@ -111,8 +111,8 @@
   <h1>AppointVa</h1>
   <div class="subtitle">Guía de Pruebas del Sistema</div>
   <p>Recorrido completo desde la configuración del entorno hasta las pruebas en dispositivo móvil</p>
-  <div class="badge">Versión 2.2 — Junio 2026</div>
-  <div class="date">Preparado el 10 de junio de 2026</div>
+  <div class="badge">Versión 3.0 — Junio 2026</div>
+  <div class="date">Preparado el 16 de junio de 2026</div>
 </div>
 
 <!-- ══════════════════ SECCIÓN 1: LEVANTAR EL SISTEMA ══════════════════ -->
@@ -532,6 +532,114 @@
       </div>
     </li>
   </ul>
+
+  <!-- v3.0 features -->
+  <h3 style="margin-top:28px;">🖼️ Flujo 8 — Galería, Reseñas y QR (v3.0)</h3>
+  <ul class="checklist">
+    <li>
+      <div class="check-box"></div>
+      <div class="check-text">
+        <strong>Subir foto en /dashboard/galeria</strong>
+        <div class="check-note">Subir imagen, verificar que aparece en la página pública de reservas del negocio.</div>
+      </div>
+    </li>
+    <li>
+      <div class="check-box"></div>
+      <div class="check-text">
+        <strong>Ver reseñas en el dashboard</strong>
+        <div class="check-note">Si existen reseñas, verificar que aparecen en el panel del propietario. Probar responder una.</div>
+      </div>
+    </li>
+    <li>
+      <div class="check-box"></div>
+      <div class="check-text">
+        <strong>Verificar QR en Mi negocio</strong>
+        <div class="check-note">Ir a Perfil → sección QR. Escanear con el celular. Debe abrir la página pública del negocio.</div>
+      </div>
+    </li>
+    <li>
+      <div class="check-box"></div>
+      <div class="check-text">
+        <strong>Botón compartir por WhatsApp en Mi negocio</strong>
+        <div class="check-note">Debe abrir WhatsApp con mensaje prearmado que incluye nombre del negocio y URL de reservas.</div>
+      </div>
+    </li>
+  </ul>
+
+  <h3 style="margin-top:28px;">🏷️ Flujo 9 — Descuentos y códigos (v3.0)</h3>
+  <ul class="checklist">
+    <li>
+      <div class="check-box"></div>
+      <div class="check-text">
+        <strong>Crear código de descuento en /dashboard/descuentos</strong>
+        <div class="check-note">Crear un código ej. "PROMO10" con 10% de descuento. Definir fecha de vencimiento.</div>
+      </div>
+    </li>
+    <li>
+      <div class="check-box"></div>
+      <div class="check-text">
+        <strong>Usar el código al reservar (booking público)</strong>
+        <div class="check-note">En la página de reservas, ingresar "PROMO10" en el campo de código. El precio debe actualizarse.</div>
+      </div>
+    </li>
+    <li>
+      <div class="check-box"></div>
+      <div class="check-text">
+        <strong>Verificar cita con descuento aplicado</strong>
+        <div class="check-note">En CitasPage, la cita debe mostrar el código de descuento y el precio final.</div>
+      </div>
+    </li>
+  </ul>
+
+  <h3 style="margin-top:28px;">⏳ Flujo 10 — Lista de espera y Widget (v3.0)</h3>
+  <ul class="checklist">
+    <li>
+      <div class="check-box"></div>
+      <div class="check-text">
+        <strong>Unirse a lista de espera en booking público</strong>
+        <div class="check-note">Seleccionar un horario ocupado → aparece opción de unirse a lista de espera → confirmar con datos.</div>
+      </div>
+    </li>
+    <li>
+      <div class="check-box"></div>
+      <div class="check-text">
+        <strong>Ver lista de espera en /dashboard/lista-espera</strong>
+        <div class="check-note">El cliente registrado debe aparecer en la lista del propietario.</div>
+      </div>
+    </li>
+    <li>
+      <div class="check-box"></div>
+      <div class="check-text">
+        <strong>Verificar código del widget en Mi negocio</strong>
+        <div class="check-note">Ir a Perfil → sección Widget. Copiar el código HTML y pegarlo en un archivo HTML vacío. El formulario de reservas debe cargar dentro del iframe.</div>
+      </div>
+    </li>
+  </ul>
+
+  <h3 style="margin-top:28px;">📲 Flujo 11 — PWA e instalación en celular (v3.0)</h3>
+  <ul class="checklist">
+    <li>
+      <div class="check-box"></div>
+      <div class="check-text">
+        <strong>Abrir la app en Chrome móvil</strong>
+        <div class="check-note">Acceder desde el celular a la URL de la app. Debe aparecer el banner de "Instalar aplicación".</div>
+      </div>
+    </li>
+    <li>
+      <div class="check-box"></div>
+      <div class="check-text">
+        <strong>Instalar la PWA</strong>
+        <div class="check-note">Aceptar la instalación. La app debe aparecer en la pantalla de inicio del celular con el ícono dorado (IconApp.png).</div>
+      </div>
+    </li>
+    <li>
+      <div class="check-box"></div>
+      <div class="check-text">
+        <strong>Verificar logo en páginas de autenticación</strong>
+        <div class="check-note">Abrir login, registro, recuperar contraseña. Todas deben mostrar MasterLogo.png en lugar de texto.</div>
+      </div>
+    </li>
+  </ul>
 </div>
 
 <!-- ══════════════════ SECCIÓN 4: PRUEBAS EN CELULAR ══════════════════ -->
@@ -600,7 +708,28 @@
       <div class="check-box"></div>
       <div class="check-text">
         <strong>Dashboard en móvil (propietario)</strong>
-        <div class="check-note">Iniciar sesión desde el celular. ¿El sidebar se colapsa? ¿Las tablas son navegables?</div>
+        <div class="check-note">Iniciar sesión desde el celular. ¿El sidebar se colapsa? ¿El header superior siempre es visible desde la primera carga?</div>
+      </div>
+    </li>
+    <li>
+      <div class="check-box"></div>
+      <div class="check-text">
+        <strong>Formato de fecha en Citas (móvil)</strong>
+        <div class="check-note">En CitasPage, la columna de fecha debe mostrar "16 jun. 2026, 10:00 a.m." — compacto, sin mayúsculas extrañas ni desbordamiento.</div>
+      </div>
+    </li>
+    <li>
+      <div class="check-box"></div>
+      <div class="check-text">
+        <strong>Bloqueos de horario en móvil</strong>
+        <div class="check-note">Abrir modal de bloqueo en EmpleadosPage desde el celular. Los campos de fecha y hora deben ser visibles y usables (ya no usan datetime-local).</div>
+      </div>
+    </li>
+    <li>
+      <div class="check-box"></div>
+      <div class="check-text">
+        <strong>Instalar como PWA desde el celular</strong>
+        <div class="check-note">Abrir la URL de la app en Chrome móvil. Usar "Añadir a pantalla de inicio". La app instalada debe mostrar el ícono dorado de AppointVa.</div>
       </div>
     </li>
   </ul>
@@ -617,28 +746,63 @@
   </div>
 
   <!-- Pendientes del sistema -->
-  <h3>Funcionalidades Pendientes para Próximas Sesiones</h3>
+  <h3>Estado de Funcionalidades — Pendientes y Completadas</h3>
   <table>
-    <tr><th>Funcionalidad</th><th>Descripción</th><th>Prioridad</th></tr>
+    <tr><th>Funcionalidad</th><th>Descripción</th><th>Estado</th></tr>
     <tr>
       <td><strong>Configurar Resend</strong></td>
       <td>Emails reales (confirmación, recordatorio, cancelación). Requiere API key.</td>
-      <td><span class="tag tag-red">Alta</span></td>
+      <td><span class="tag tag-red">Pendiente config</span></td>
     </tr>
     <tr>
       <td><strong>Configurar Cloudinary</strong></td>
-      <td>Imágenes de empleados y portada en la nube. Requiere credenciales.</td>
-      <td><span class="tag tag-red">Alta</span></td>
+      <td>Imágenes de empleados, servicios y galería en la nube. Requiere credenciales.</td>
+      <td><span class="tag tag-red">Pendiente config</span></td>
     </tr>
     <tr>
       <td><strong>Límite de citas por plan</strong></td>
-      <td>Validar que el negocio no supere el límite mensual de su plan.</td>
-      <td><span class="tag tag-gold">Media</span></td>
+      <td>Validar que el negocio no supere el límite mensual de su plan (Básico: 200, Pro: 1,000).</td>
+      <td><span class="tag tag-gold">Pendiente</span></td>
     </tr>
     <tr>
       <td><strong>Retry en Hangfire</strong></td>
-      <td>Si Resend falla al enviar recordatorio, reintentar automáticamente.</td>
-      <td><span class="tag tag-blue">Baja</span></td>
+      <td>Si Resend falla al enviar recordatorio, reintentar con backoff exponencial.</td>
+      <td><span class="tag tag-gold">Pendiente</span></td>
+    </tr>
+    <tr>
+      <td><strong>Galería de fotos</strong></td>
+      <td>Subida de fotos del negocio, visibles en booking público.</td>
+      <td><span class="tag tag-green">✅ v3.0</span></td>
+    </tr>
+    <tr>
+      <td><strong>Reseñas de clientes</strong></td>
+      <td>Calificación y comentarios por cita, respuesta del propietario.</td>
+      <td><span class="tag tag-green">✅ v3.0</span></td>
+    </tr>
+    <tr>
+      <td><strong>Lista de espera</strong></td>
+      <td>Registro automático de clientes en horarios ocupados, notificación al liberarse.</td>
+      <td><span class="tag tag-green">✅ v3.0</span></td>
+    </tr>
+    <tr>
+      <td><strong>Formulario de admisión</strong></td>
+      <td>Preguntas configurables previas a la confirmación de la cita.</td>
+      <td><span class="tag tag-green">✅ v3.0</span></td>
+    </tr>
+    <tr>
+      <td><strong>Descuentos y códigos</strong></td>
+      <td>Códigos por porcentaje o monto fijo, aplicables al reservar.</td>
+      <td><span class="tag tag-green">✅ v3.0</span></td>
+    </tr>
+    <tr>
+      <td><strong>Widget embebido</strong></td>
+      <td>Snippet HTML para incrustar el booking en cualquier sitio web.</td>
+      <td><span class="tag tag-green">✅ v3.0</span></td>
+    </tr>
+    <tr>
+      <td><strong>PWA + branding</strong></td>
+      <td>App instalable en celular, logos en todas las páginas de auth.</td>
+      <td><span class="tag tag-green">✅ v3.0</span></td>
     </tr>
   </table>
 

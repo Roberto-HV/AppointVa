@@ -28,7 +28,8 @@ namespace AppointVaAPI.Controllers.V1
         private readonly ICitaRepository _citaRepo;
         private readonly IClienteRepository _clienteRepo;
         private readonly IDisponibilidadService _disponibilidad;
-        private readonly IEmailService _email;
+        private readonly INotificacionService _notificacion;
+        private readonly IEmailService _email; // solo para emails de autenticación
         private readonly IConfiguration _config;
         private readonly IBackgroundJobClient _jobClient;
         private readonly UserManager<ApplicationUser> _userManager;
@@ -39,6 +40,7 @@ namespace AppointVaAPI.Controllers.V1
             ICitaRepository citaRepo,
             IClienteRepository clienteRepo,
             IDisponibilidadService disponibilidad,
+            INotificacionService notificacion,
             IEmailService email,
             IConfiguration config,
             IBackgroundJobClient jobClient,
@@ -49,6 +51,7 @@ namespace AppointVaAPI.Controllers.V1
             _citaRepo = citaRepo;
             _clienteRepo = clienteRepo;
             _disponibilidad = disponibilidad;
+            _notificacion = notificacion;
             _email = email;
             _config = config;
             _jobClient = jobClient;
@@ -340,16 +343,16 @@ namespace AppointVaAPI.Controllers.V1
             {
                 var frontendUrl = _config["FrontendUrl"] ?? "http://localhost:5173";
                 var urlCita = $"{frontendUrl}/b/{negocio.Slug}/confirmacion/{codigo}";
-                _ = Task.Run(() => _email.EnviarConfirmacionCitaAsync(cita, dto.EmailCliente, cliente.NombreCompleto, urlCita, icalUrl, googleCalUrl));
+                _ = Task.Run(() => _notificacion.EnviarConfirmacionCitaAsync(cita, dto.EmailCliente, cliente.NombreCompleto, urlCita, icalUrl, googleCalUrl));
             }
 
             // Notificar al propietario del negocio
             if (!string.IsNullOrWhiteSpace(negocio.Email))
-                _ = Task.Run(() => _email.EnviarNuevaCitaPropietarioAsync(cita, negocio.Email));
+                _ = Task.Run(() => _notificacion.EnviarNuevaCitaPropietarioAsync(cita, negocio.Email));
 
             // Notificar al empleado asignado (si tiene email distinto al del negocio)
             if (!string.IsNullOrWhiteSpace(empleado?.Email) && empleado.Email != negocio.Email)
-                _ = Task.Run(() => _email.EnviarNuevaCitaPropietarioAsync(cita, empleado.Email));
+                _ = Task.Run(() => _notificacion.EnviarNuevaCitaPropietarioAsync(cita, empleado.Email));
 
             // Agendar recordatorio configurable antes de la cita si el cliente tiene correo
             if (!string.IsNullOrWhiteSpace(dto.EmailCliente))
@@ -478,12 +481,12 @@ namespace AppointVaAPI.Controllers.V1
 
             // Notificar al cliente
             if (!string.IsNullOrWhiteSpace(emailCliente))
-                _ = Task.Run(() => _email.EnviarCancelacionCitaAsync(cita, emailCliente, cita.Cliente!.NombreCompleto));
+                _ = Task.Run(() => _notificacion.EnviarCancelacionCitaAsync(cita, emailCliente, cita.Cliente!.NombreCompleto));
 
             // Notificar al propietario
             var emailNegocio = cita.Negocio?.Email;
             if (!string.IsNullOrWhiteSpace(emailNegocio))
-                _ = Task.Run(() => _email.EnviarCancelacionClienteAlPropietarioAsync(cita, emailNegocio));
+                _ = Task.Run(() => _notificacion.EnviarCancelacionClienteAlPropietarioAsync(cita, emailNegocio));
 
             return NoContent();
         }
@@ -523,7 +526,7 @@ namespace AppointVaAPI.Controllers.V1
             await _citaRepo.ActualizarAsync(cita);
 
             if (!string.IsNullOrWhiteSpace(emailCliente))
-                _ = Task.Run(() => _email.EnviarReagendarCitaAsync(cita, emailCliente, cita.Cliente!.NombreCompleto, fechaOriginal));
+                _ = Task.Run(() => _notificacion.EnviarReagendarCitaAsync(cita, emailCliente, cita.Cliente!.NombreCompleto, fechaOriginal));
 
             return Ok(new { mensaje = "¡Cita reagendada exitosamente!" });
         }

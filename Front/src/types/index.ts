@@ -270,6 +270,8 @@ export interface NegocioDto {
   horasRecordatorio?: number;
   horasCancelacion?: number;
   autoConfirmar?: boolean;
+  metodoNotificacion?: string;
+  telefonoWhatsApp?: string;
   activo: boolean;
   planNombre?: string;
 }
@@ -284,6 +286,8 @@ export interface ActualizarNegocioDto {
   horasRecordatorio?: number;
   horasCancelacion?: number;
   autoConfirmar?: boolean;
+  metodoNotificacion?: string;
+  telefonoWhatsApp?: string;
 }
 
 export interface ActualizarColoresNegocioDto {

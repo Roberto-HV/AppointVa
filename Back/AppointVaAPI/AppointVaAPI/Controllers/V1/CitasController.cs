@@ -25,7 +25,7 @@ namespace AppointVaAPI.Controllers.V1
         private readonly IServicioRepository _servicioRepo;
         private readonly IContextoNegocio _contexto;
         private readonly ApplicationDbContext _db;
-        private readonly IEmailService _email;
+        private readonly INotificacionService _notificacion;
         private readonly IBackgroundJobClient _jobClient;
         private readonly IConfiguration _config;
 
@@ -35,7 +35,7 @@ namespace AppointVaAPI.Controllers.V1
             IServicioRepository servicioRepo,
             IContextoNegocio contexto,
             ApplicationDbContext db,
-            IEmailService email,
+            INotificacionService notificacion,
             IBackgroundJobClient jobClient,
             IConfiguration config)
         {
@@ -44,7 +44,7 @@ namespace AppointVaAPI.Controllers.V1
             _servicioRepo = servicioRepo;
             _contexto = contexto;
             _db = db;
-            _email = email;
+            _notificacion = notificacion;
             _jobClient = jobClient;
             _config = config;
         }
@@ -249,7 +249,7 @@ namespace AppointVaAPI.Controllers.V1
             if (!string.IsNullOrWhiteSpace(emailDestino))
             {
                 if (dto.NuevoEstado == EstadosCitas.Cancelada)
-                    _ = Task.Run(() => _email.EnviarCancelacionCitaAsync(cita, emailDestino, cita.Cliente!.NombreCompleto));
+                    _ = Task.Run(() => _notificacion.EnviarCancelacionCitaAsync(cita, emailDestino, cita.Cliente!.NombreCompleto));
 
                 if (dto.NuevoEstado == EstadosCitas.Completada && estadoAnterior != EstadosCitas.Completada)
                 {
@@ -271,7 +271,7 @@ namespace AppointVaAPI.Controllers.V1
 
                     var frontendUrl = _config["FrontendUrl"] ?? "http://localhost:5173";
                     var urlResena = $"{frontendUrl}/resena/{token}";
-                    _ = Task.Run(() => _email.EnviarSolicitudResenaAsync(cita, emailDestino, cita.Cliente!.NombreCompleto, urlResena));
+                    _ = Task.Run(() => _notificacion.EnviarSolicitudResenaAsync(cita, emailDestino, cita.Cliente!.NombreCompleto, urlResena));
                 }
             }
 
@@ -339,7 +339,7 @@ namespace AppointVaAPI.Controllers.V1
 
             var emailCliente = cita.Cliente?.Email;
             if (!string.IsNullOrWhiteSpace(emailCliente))
-                _ = Task.Run(() => _email.EnviarReagendarCitaAsync(cita, emailCliente, cita.Cliente!.NombreCompleto, fechaOriginal));
+                _ = Task.Run(() => _notificacion.EnviarReagendarCitaAsync(cita, emailCliente, cita.Cliente!.NombreCompleto, fechaOriginal));
 
             return Ok(MapearDto(cita));
         }

@@ -72,6 +72,8 @@ const schema = z.object({
   horasRecordatorio: z.coerce.number().optional(),
   horasCancelacion: z.coerce.number().optional(),
   autoConfirmar: z.boolean().optional(),
+  metodoNotificacion: z.enum(["Correo", "WhatsApp", "Ambos"]).optional(),
+  telefonoWhatsApp: z.string().max(30).optional(),
 });
 type PerfilForm = z.infer<typeof schema>;
 
@@ -181,6 +183,8 @@ export default function PerfilPage() {
         horasRecordatorio: negocio.horasRecordatorio ?? 24,
         horasCancelacion: negocio.horasCancelacion ?? 0,
         autoConfirmar: negocio.autoConfirmar ?? true,
+        metodoNotificacion: (negocio.metodoNotificacion as "Correo" | "WhatsApp" | "Ambos") ?? "Correo",
+        telefonoWhatsApp: negocio.telefonoWhatsApp ?? "",
       });
     }
   }, [negocio, reset]);
@@ -527,6 +531,47 @@ export default function PerfilPage() {
                   watch("autoConfirmar") ?? true ? "left-6" : "left-1"
                 }`} />
               </div>
+            </div>
+          </div>
+
+          {/* Notificaciones */}
+          <div className="sm:col-span-2 lg:col-span-3">
+            <div className="p-3 bg-gray-50 rounded-lg border border-gray-100">
+              <p className="text-sm font-medium text-gray-700 mb-2">Canal de notificaciones al cliente</p>
+              <div className="flex flex-wrap gap-2 mb-3">
+                {(["Correo", "WhatsApp", "Ambos"] as const).map((op) => (
+                  <button
+                    key={op}
+                    type="button"
+                    onClick={() => setValue("metodoNotificacion", op, { shouldDirty: true })}
+                    className={`px-4 py-1.5 rounded-lg text-sm font-medium transition ${
+                      (watch("metodoNotificacion") ?? "Correo") === op
+                        ? "bg-primary text-white"
+                        : "bg-white border border-gray-200 text-gray-600 hover:border-primary"
+                    }`}
+                  >
+                    {op}
+                  </button>
+                ))}
+              </div>
+              {(watch("metodoNotificacion") === "WhatsApp" || watch("metodoNotificacion") === "Ambos") && (
+                <div className="mb-2">
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Número WhatsApp Business del negocio</label>
+                  <input
+                    {...register("telefonoWhatsApp")}
+                    placeholder="5512345678"
+                    maxLength={30}
+                    className="w-full sm:w-64 px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary"
+                  />
+                </div>
+              )}
+              <p className="text-xs text-gray-400">
+                {(watch("metodoNotificacion") ?? "Correo") === "Correo"
+                  ? "Los clientes reciben confirmaciones, recordatorios y cancelaciones por correo electrónico."
+                  : watch("metodoNotificacion") === "WhatsApp"
+                    ? "Los clientes reciben mensajes por WhatsApp. AppointVa envía desde su número compartido; tu número de WhatsApp Business aparece como contacto en cada mensaje."
+                    : "Los clientes reciben mensajes tanto por correo como por WhatsApp."}
+              </p>
             </div>
           </div>
 

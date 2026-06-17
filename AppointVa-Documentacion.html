@@ -124,7 +124,7 @@
     Sistema de reservas online para negocios de servicios — Backend .NET 8 + PostgreSQL, Frontend React + Vite
   </p>
   <div class="badge">Versión de desarrollo — Junio 2026</div>
-  <div class="date">Actualizado el 10 de junio de 2026 — v2.2</div>
+  <div class="date">Actualizado el 16 de junio de 2026 — v3.0</div>
 </div>
 
 <!-- ══════════════════ SECCIÓN 1: URLs ══════════════════ -->
@@ -181,7 +181,27 @@
     <div class="url-item">
       <span class="url-badge">GET</span>
       <span class="url-path">http://localhost:5173/dashboard/seguridad</span>
-      <span class="url-desc">✨ NUEVO — Configurar / desactivar 2FA (autenticación en dos pasos)</span>
+      <span class="url-desc">Configurar / desactivar 2FA (autenticación en dos pasos)</span>
+    </div>
+    <div class="url-item">
+      <span class="url-badge">GET</span>
+      <span class="url-path">http://localhost:5173/dashboard/galeria</span>
+      <span class="url-desc">✨ v3.0 — Galería de fotos del negocio (subida, reordenar, eliminar)</span>
+    </div>
+    <div class="url-item">
+      <span class="url-badge">GET</span>
+      <span class="url-path">http://localhost:5173/dashboard/lista-espera</span>
+      <span class="url-desc">✨ v3.0 — Lista de espera — clientes pendientes de asignación de horario</span>
+    </div>
+    <div class="url-item">
+      <span class="url-badge">GET</span>
+      <span class="url-path">http://localhost:5173/dashboard/intake</span>
+      <span class="url-desc">✨ v3.0 — Formulario de admisión — preguntas configurables previas a la cita</span>
+    </div>
+    <div class="url-item">
+      <span class="url-badge">GET</span>
+      <span class="url-path">http://localhost:5173/dashboard/descuentos</span>
+      <span class="url-desc">✨ v3.0 — Descuentos y códigos promocionales</span>
     </div>
     <div class="url-item">
       <span class="url-badge">GET</span>
@@ -720,7 +740,7 @@
 
 <!-- ══════════════════ SECCIÓN 5: CAMBIOS ══════════════════ -->
 <div class="container page-break">
-  <h2>5. Registro de Cambios — Sesión Actual (Junio 2026)</h2>
+  <h2>5. Registro de Cambios v2.0–v2.2 (hasta 10 de junio de 2026)</h2>
 
   <!-- ── v2.2 ── -->
   <h3>v2.2 — Observabilidad, rendimiento y política de cancelación</h3>
@@ -1225,6 +1245,291 @@
       </div>
     </div>
   </div>
+</div>
+
+<!-- ══════════════════ SECCIÓN 5b: CAMBIOS v3.0 ══════════════════ -->
+<div class="container page-break">
+  <h2>5b. Registro de Cambios — v3.0 (16 de junio de 2026)</h2>
+
+  <!-- ── Fase 1 ── -->
+  <h3>v3.0 Fase 1 — Métricas de empleados, QR, WhatsApp y PWA</h3>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#dcfce7;">📊</div>
+    <div>
+      <div class="change-title">Métricas de citas por empleado en EmpleadosPage</div>
+      <div class="change-desc">
+        Cada tarjeta de empleado muestra el recuento de citas del mes en curso. Los datos se calculan directamente desde el servidor al traer la lista de empleados para evitar N+1 queries.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">EmpleadosPage.tsx</span>
+        <span class="file-chip">EmpleadosController.cs</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#fef3c7;">📱</div>
+    <div>
+      <div class="change-title">Código QR de página de reservas</div>
+      <div class="change-desc">
+        En Mi negocio (PerfilPage) se genera un QR con la URL pública del negocio usando <code>qrcode.react</code>. El propietario puede descargar el QR como PNG para imprimir tarjetas o carteles.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">PerfilPage.tsx</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#dbeafe;">🟢</div>
+    <div>
+      <div class="change-title">Botón de compartir por WhatsApp en PerfilPage</div>
+      <div class="change-desc">
+        Botón que genera un enlace <code>https://wa.me/?text=...</code> con el mensaje prearmado incluyendo el nombre del negocio y la URL de reservas. Sin API externa.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">PerfilPage.tsx</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#f3e8ff;">📲</div>
+    <div>
+      <div class="change-title">PWA — Instalable en celular</div>
+      <div class="change-desc">
+        Se agregó soporte completo de Progressive Web App:<br>
+        • <code>manifest.json</code> con <code>name</code>, <code>short_name</code>, <code>theme_color: #C8A961</code> e íconos en tamaños 192×192 y 512×512 (<code>purpose: "any"</code> y <code>"maskable"</code>).<br>
+        • <code>&lt;link rel="apple-touch-icon"&gt;</code> para iOS home screen.<br>
+        • Favicon actualizado a <code>IconApp.png</code> (ícono dorado cuadrado).<br>
+        El usuario puede instalar la app desde el navegador sin pasar por App Store o Play Store.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">public/manifest.json</span>
+        <span class="file-chip">public/IconApp.png (NUEVO)</span>
+        <span class="file-chip">index.html</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Fase 2 ── -->
+  <h3 style="margin-top:28px;">v3.0 Fase 2 — Buffer time, Galería de fotos y Reseñas</h3>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#f0fdf4;">⏱️</div>
+    <div>
+      <div class="change-title">Buffer time entre citas por empleado</div>
+      <div class="change-desc">
+        Nuevo campo <code>BufferMinutos</code> en <code>EmpleadoHorario</code>. Al calcular disponibilidad, el servicio suma el buffer al tiempo de la cita para determinar cuándo el empleado vuelve a estar libre. Configurable desde la modal de edición de empleado.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">EmpleadoHorario.cs</span>
+        <span class="file-chip">DisponibilidadService.cs</span>
+        <span class="file-chip">EmpleadosPage.tsx</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#fef3c7;">🖼️</div>
+    <div>
+      <div class="change-title">Galería de fotos del negocio</div>
+      <div class="change-desc">
+        Nueva sección en el dashboard (<code>/dashboard/galeria</code>). El propietario sube fotos de sus instalaciones y trabajos con subida directa a Cloudinary. Las fotos aparecen en la página pública de reservas del negocio, visible para todos los clientes antes de agendar.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">GaleriaPage.tsx (NUEVO)</span>
+        <span class="file-chip">GaleriaController.cs (NUEVO)</span>
+        <span class="file-chip">NegocioFoto.cs (NUEVO)</span>
+        <span class="file-chip">api/galeria.ts (NUEVO)</span>
+        <span class="file-chip">DashboardLayout.tsx</span>
+        <span class="file-chip">App.tsx</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#ffe4e6;">⭐</div>
+    <div>
+      <div class="change-title">Reseñas de clientes</div>
+      <div class="change-desc">
+        Los clientes pueden dejar una reseña con calificación (1–5 estrellas) y comentario tras completar una cita. El propietario ve todas las reseñas en el dashboard, puede responderlas y moderar (ocultar) las inapropiadas. Las reseñas aprobadas se muestran en la página pública de reservas.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">ReseñasController.cs (NUEVO)</span>
+        <span class="file-chip">Resena.cs (NUEVO)</span>
+        <span class="file-chip">api/resenas.ts (NUEVO)</span>
+        <span class="file-chip">BookingPage.tsx</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Fases 3-4 ── -->
+  <h3 style="margin-top:28px;">v3.0 Fases 3-4 — Lista de espera, Intake, Descuentos y Widget</h3>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#dcfce7;">⏳</div>
+    <div>
+      <div class="change-title">Lista de espera</div>
+      <div class="change-desc">
+        Si el horario deseado está ocupado, el cliente puede unirse a la lista de espera desde la página pública. Cuando se cancela o libera un espacio en ese horario, el primer cliente en la lista recibe un correo de notificación automática (vía Hangfire + Resend). El propietario gestiona la lista desde <code>/dashboard/lista-espera</code>.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">ListaEsperaController.cs (NUEVO)</span>
+        <span class="file-chip">ListaEspera.cs (NUEVO)</span>
+        <span class="file-chip">ListaEsperaPage.tsx (NUEVO)</span>
+        <span class="file-chip">api/listaEspera.ts (NUEVO)</span>
+        <span class="file-chip">DashboardLayout.tsx</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#dbeafe;">📋</div>
+    <div>
+      <div class="change-title">Formulario de admisión (Intake)</div>
+      <div class="change-desc">
+        El propietario configura preguntas adicionales que los clientes deben responder antes de confirmar la reserva. Las respuestas quedan asociadas a la cita y son visibles desde el panel. Soporta preguntas de texto libre, opción múltiple y sí/no. Configurable desde <code>/dashboard/intake</code>.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">IntakeController.cs (NUEVO)</span>
+        <span class="file-chip">IntakePregunta.cs (NUEVO)</span>
+        <span class="file-chip">IntakePage.tsx (NUEVO)</span>
+        <span class="file-chip">api/intake.ts (NUEVO)</span>
+        <span class="file-chip">BookingPage.tsx</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#f5f3ff;">🏷️</div>
+    <div>
+      <div class="change-title">Descuentos y códigos promocionales</div>
+      <div class="change-desc">
+        El propietario crea códigos de descuento con tipo (porcentaje o monto fijo), fecha de vencimiento, límite de usos y servicios aplicables. El cliente ingresa el código al reservar y el precio se actualiza en tiempo real. Los códigos usados se registran con la cita. Gestión desde <code>/dashboard/descuentos</code>.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">DescuentosController.cs (NUEVO)</span>
+        <span class="file-chip">Descuento.cs (NUEVO)</span>
+        <span class="file-chip">DescuentosPage.tsx (NUEVO)</span>
+        <span class="file-chip">api/descuentos.ts (NUEVO)</span>
+        <span class="file-chip">BookingPage.tsx</span>
+        <span class="file-chip">PublicoController.cs</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#fef3c7;">🔘</div>
+    <div>
+      <div class="change-title">Auto-confirmar citas</div>
+      <div class="change-desc">
+        Opción en la configuración del negocio para confirmar automáticamente las nuevas citas sin intervención del propietario. Cuando está activado, las citas pasan directamente a estado "Confirmada" al crearse.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">Negocio.cs</span>
+        <span class="file-chip">PerfilPage.tsx</span>
+        <span class="file-chip">CitasController.cs</span>
+        <span class="file-chip">PublicoController.cs</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#ccfbf1;">🔲</div>
+    <div>
+      <div class="change-title">Widget embebido para sitio web</div>
+      <div class="change-desc">
+        Genera un snippet de código <code>&lt;script&gt;</code> + <code>&lt;div&gt;</code> que el propietario puede pegar en cualquier sitio web externo. El widget carga el formulario de reservas de AppointVa en un iframe dentro del sitio del negocio, sin redirigir al usuario. El código se copia desde Mi negocio en el dashboard.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">PerfilPage.tsx</span>
+        <span class="file-chip">BookingWidget.tsx (NUEVO)</span>
+        <span class="file-chip">App.tsx</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Fixes de UX ── -->
+  <h3 style="margin-top:28px;">v3.0 — Correcciones de UX y móvil</h3>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#fee2e2;">📱</div>
+    <div>
+      <div class="change-title">DashboardLayout reestructurado para móvil</div>
+      <div class="change-desc">
+        Raíz cause: el antiguo <code>min-h-screen flex flex-col</code> en el contenedor raíz causaba que el header móvil desapareciera en la primera carga porque no había un contexto de scroll donde "sticky" pudiera funcionar.<br>
+        <strong>Fix:</strong> Restructura a patrón estándar de SPA: <code>h-screen flex overflow-hidden</code> en el root. El header móvil ahora vive DENTRO de la columna derecha (header + main), no flotando fuera del scroll. El sidebar usa <code>md:static md:shrink-0</code> en desktop y <code>fixed + translate-x</code> en móvil.<br>
+        <strong>Resultado:</strong> El header siempre visible desde la primera carga, el sidebar anima correctamente, y el overflow horizontal no aparece.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">DashboardLayout.tsx</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#dbeafe;">📅</div>
+    <div>
+      <div class="change-title">Formato de fecha en CitasPage corregido</div>
+      <div class="change-desc">
+        El problema: <code>month: "long"</code> + clase <code>capitalize</code> en español producía "16 De Junio De 2026 A Las 10:00 A.m." (todo capitalizado, muy largo, desbordaba la columna).<br>
+        <strong>Fix:</strong> Cambiado a <code>month: "short"</code> y eliminada la clase <code>capitalize</code>.<br>
+        <strong>Resultado:</strong> "16 jun. 2026, 10:00 a.m." — compacto y legible.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">CitasPage.tsx</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#f0fdf4;">🗓️</div>
+    <div>
+      <div class="change-title">Inputs de bloqueo separados (date + time) en EmpleadosPage</div>
+      <div class="change-desc">
+        El input <code>datetime-local</code> desbordaba y aparecía en blanco en iOS por su mínimo de ancho interno y renderizado no estándar.<br>
+        <strong>Fix:</strong> Reemplazados por dos inputs separados (<code>date</code> + <code>time</code>) con grid 2 columnas. El schema Zod fue actualizado con 4 campos separados (<code>fechaInicio</code>, <code>horaInicio</code>, <code>fechaFin</code>, <code>horaFin</code>) y el mutation los concatena (<code>inicioEn: \`\${fechaInicio}T\${horaInicio}\`</code>).
+      </div>
+      <div class="change-files">
+        <span class="file-chip">EmpleadosPage.tsx</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Logo branding ── -->
+  <h3 style="margin-top:28px;">v3.0 — Logo e identidad visual</h3>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#fef3c7;">🎨</div>
+    <div>
+      <div class="change-title">Integración de logos en toda la app</div>
+      <div class="change-desc">
+        Se agregaron 4 archivos de imagen al proyecto:<br>
+        • <strong>IconApp.png</strong> — ícono cuadrado dorado. Usado como favicon, PWA icon y apple-touch-icon.<br>
+        • <strong>MasterLogo.png</strong> — logo completo con texto. Usado en todas las páginas de autenticación (Login, Registro, Verificar email, Recuperar/Restablecer contraseña) y en el header del sidebar.<br>
+        • <strong>BannerLogo.png</strong> — layout horizontal. Reservado para la página pública de reservas.<br>
+        • <strong>BlackAndWhiteLogo.png</strong> — versión monocromática. Reservada para temas oscuros o correos.<br>
+        El texto <code>&lt;h1&gt;AppointVa&lt;/h1&gt;</code> anterior fue reemplazado por <code>&lt;img src="/MasterLogo.png"&gt;</code> en todas las rutas de auth.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">public/IconApp.png (NUEVO)</span>
+        <span class="file-chip">public/MasterLogo.png (NUEVO)</span>
+        <span class="file-chip">public/BannerLogo.png (NUEVO)</span>
+        <span class="file-chip">public/BlackAndWhiteLogo.png (NUEVO)</span>
+        <span class="file-chip">LoginPage.tsx</span>
+        <span class="file-chip">RegistroNegocioPage.tsx</span>
+        <span class="file-chip">VerificarEmailPage.tsx</span>
+        <span class="file-chip">RecuperarContrasenaPage.tsx</span>
+        <span class="file-chip">RestablecerContrasenaPage.tsx</span>
+        <span class="file-chip">DashboardLayout.tsx</span>
+        <span class="file-chip">index.html</span>
+        <span class="file-chip">public/manifest.json</span>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <!-- ══════════════════ SECCIÓN 6: DATOS DEMO ══════════════════ -->
