@@ -5,13 +5,18 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Eye, EyeOff } from "lucide-react";
 import { authApi } from "../../api/auth";
+import PasswordStrengthBar from "../../components/PasswordStrengthBar";
 import { useAuthStore } from "../../store/authStore";
 import { useToastStore } from "../../store/toastStore";
 
 const schema = z
   .object({
     passwordActual: z.string().min(1, "Requerido"),
-    passwordNuevo: z.string().min(6, "Mínimo 6 caracteres"),
+    passwordNuevo: z
+      .string()
+      .min(6, "Mínimo 6 caracteres")
+      .regex(/[A-Z]/, "Debe tener al menos una mayúscula")
+      .regex(/[0-9]/, "Debe tener al menos un número"),
     confirmar: z.string(),
   })
   .refine((v) => v.passwordNuevo === v.confirmar, {
@@ -26,11 +31,14 @@ export default function MiPerfilPage() {
   const { toast } = useToastStore();
   const [mostrarActual, setMostrarActual] = useState(false);
   const [mostrarNueva, setMostrarNueva] = useState(false);
+  const [mostrarConfirmar, setMostrarConfirmar] = useState(false);
   const [mensaje, setMensaje] = useState<{ tipo: "ok" | "error"; texto: string } | null>(null);
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<Form>({
+  const { register, handleSubmit, reset, watch, formState: { errors } } = useForm<Form>({
     resolver: zodResolver(schema),
   });
+
+  const nuevaValor = watch("passwordNuevo", "");
 
   const { mutate: cambiarPassword, isPending } = useMutation({
     mutationFn: (d: Form) => authApi.cambiarPassword(d.passwordActual, d.passwordNuevo),
@@ -124,16 +132,27 @@ export default function MiPerfilPage() {
           {errors.passwordNuevo && (
             <p className="text-red-500 text-xs mt-1">{errors.passwordNuevo.message}</p>
           )}
+          <PasswordStrengthBar password={nuevaValor} />
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Confirmar contraseña</label>
-          <input
-            type="password"
-            {...register("confirmar")}
-            className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700
-              ${errors.confirmar ? "border-red-400 bg-red-50" : "border-gray-200"}`}
-          />
+          <div className="relative">
+            <input
+              type={mostrarConfirmar ? "text" : "password"}
+              {...register("confirmar")}
+              className={`w-full px-3 py-2 pr-10 rounded-lg border text-sm outline-none focus:border-slate-700
+                ${errors.confirmar ? "border-red-400 bg-red-50" : "border-gray-200"}`}
+            />
+            <button
+              type="button"
+              onClick={() => setMostrarConfirmar((v) => !v)}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              tabIndex={-1}
+            >
+              {mostrarConfirmar ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          </div>
           {errors.confirmar && (
             <p className="text-red-500 text-xs mt-1">{errors.confirmar.message}</p>
           )}

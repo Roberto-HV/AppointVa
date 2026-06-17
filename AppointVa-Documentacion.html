@@ -121,10 +121,10 @@
   <h1>AppointVa</h1>
   <div class="subtitle">Documentación del Sistema</div>
   <p style="color:#9ca3af;margin-top:16px;max-width:500px;">
-    Sistema de reservas online para negocios de servicios — Backend .NET 8 + PostgreSQL, Frontend React + Vite
+    Sistema de reservas online para negocios de servicios — Backend .NET 10 + PostgreSQL, Frontend React + Vite
   </p>
-  <div class="badge">Versión de desarrollo — Junio 2026</div>
-  <div class="date">Actualizado el 16 de junio de 2026 — v3.0</div>
+  <div class="badge">Versión de producción — Junio 2026</div>
+  <div class="date">Actualizado el 17 de junio de 2026 — v4.0</div>
 </div>
 
 <!-- ══════════════════ SECCIÓN 1: URLs ══════════════════ -->
@@ -255,6 +255,16 @@
       <span class="url-badge">GET</span>
       <span class="url-path">http://localhost:5173/b/<em style="color:#C8A961">slug</em>/mis-citas</span>
       <span class="url-desc">Consulta de mis citas (requiere email + teléfono)</span>
+    </div>
+    <div class="url-item">
+      <span class="url-badge">GET</span>
+      <span class="url-path">http://localhost:5173/privacidad</span>
+      <span class="url-desc">✨ v4.0 — Política de privacidad (10 secciones, español)</span>
+    </div>
+    <div class="url-item">
+      <span class="url-badge">GET</span>
+      <span class="url-path">http://localhost:5173/terminos</span>
+      <span class="url-desc">✨ v4.0 — Términos de uso (11 secciones, español)</span>
     </div>
   </div>
 
@@ -1532,6 +1542,149 @@
 
 </div>
 
+<!-- ══════════════════ SECCIÓN 5c: CAMBIOS v4.0 ══════════════════ -->
+<div class="container page-break">
+  <h2>5c. Registro de Cambios — v4.0 (17 de junio de 2026)</h2>
+  <p style="color:#6b7280;margin-bottom:24px;">Lanzamiento a producción + funciones de pulido profesional: dominio propio, correo personalizado, páginas legales, sistema de anticipos y keep-alive automático.</p>
+
+  <!-- ── Infraestructura de producción ── -->
+  <h3>v4.0 — Infraestructura de producción</h3>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#fef3c7;">🌐</div>
+    <div>
+      <div class="change-title">Dominio propio appointva.com en Cloudflare</div>
+      <div class="change-desc">
+        Registro y configuración del dominio <strong>appointva.com</strong> en Cloudflare ($10.46/año, auto-renovación). DNS configurado con registros A/CNAME apuntando a Vercel para el frontend. El sitio responde en <code>appointva.com</code> y <code>www.appointva.com</code>.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">Front/.env.production (VITE_API_URL actualizado)</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#dbeafe;">✉️</div>
+    <div>
+      <div class="change-title">Correo personalizado — notificaciones@appointva.com</div>
+      <div class="change-desc">
+        Dominio <strong>appointva.com</strong> verificado en Resend con registros SPF, DKIM y DMARC configurados via Cloudflare. Todos los correos del sistema (confirmación, recordatorio, verificación, recuperación) se envían desde <code>notificaciones@appointva.com</code> en lugar de la dirección genérica de Resend.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">appsettings.Development.json (Email.Origen)</span>
+        <span class="file-chip">.env (RESEND_API_KEY, nueva clave de producción)</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#f0fdf4;">🔒</div>
+    <div>
+      <div class="change-title">Secretos migrados de docker-compose.yaml a archivo .env</div>
+      <div class="change-desc">
+        <strong>Problema:</strong> <code>docker-compose.yaml</code> contenía credenciales en texto plano (contraseña DB, JWT, Cloudinary, Resend).<br>
+        <strong>Solución:</strong> Todas las credenciales movidas a un archivo <code>.env</code> (excluido de git via <code>.gitignore</code>). <code>docker-compose.yaml</code> ahora solo usa referencias <code>${VAR}</code>. Se creó <code>.env.example</code> con placeholders como documentación para nuevos desarrolladores.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">docker-compose.yaml (${VAR} references)</span>
+        <span class="file-chip">.env (NUEVO — no se sube a git)</span>
+        <span class="file-chip">.env.example (NUEVO — plantilla pública)</span>
+        <span class="file-chip">.gitignore (Back/**/.env añadido)</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#dcfce7;">⏰</div>
+    <div>
+      <div class="change-title">Keep-alive automático — sin cold starts en Render</div>
+      <div class="change-desc">
+        <strong>Problema:</strong> Render Free tier apaga el servicio tras 15 min de inactividad. La primera petición tardaba hasta 50 segundos.<br>
+        <strong>Solución:</strong> Cron job en <strong>cron-job.org</strong> que hace <code>GET https://appointva.onrender.com/health</code> cada 15 minutos, manteniendo el servidor siempre activo. El endpoint <code>/health</code> ya existía desde v2.2 y retorna JSON con estado de la DB.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">Program.cs (/health endpoint — ya existente)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Funcionalidades ── -->
+  <h3 style="margin-top:28px;">v4.0 — Nuevas funcionalidades</h3>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#f5f3ff;">🧾</div>
+    <div>
+      <div class="change-title">Sistema de anticipos con visor de comprobante</div>
+      <div class="change-desc">
+        Al reservar, el cliente puede subir una imagen del comprobante de pago parcial. El propietario ve el comprobante directamente desde el panel de citas con un modal de visualización.<br>
+        <strong>Backend:</strong> endpoint <code>POST /api/citas/{id}/comprobante</code> que sube la imagen a Cloudinary via <code>IBlobStorageService</code> y persiste la URL en la cita.<br>
+        <strong>Frontend:</strong> paso adicional en <code>BookingPage</code> (paso 5 con uploader opcional) y modal en <code>CitasPage</code> con imagen a tamaño completo y enlace de apertura directa.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">CitasPage.tsx (modal visor de comprobante)</span>
+        <span class="file-chip">BookingPage.tsx (paso 5 — upload comprobante)</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#fef3c7;">⚖️</div>
+    <div>
+      <div class="change-title">Páginas legales: Política de privacidad y Términos de uso</div>
+      <div class="change-desc">
+        Documentos legales completos en español accesibles desde rutas públicas:<br>
+        • <strong>/privacidad</strong> — 10 secciones: quiénes somos, datos recopilados, uso, terceros, seguridad, retención, cookies, derechos ARCO, cambios, contacto.<br>
+        • <strong>/terminos</strong> — 11 secciones: aceptación, descripción del servicio, cuentas negocio, clientes, pagos/anticipos, propiedad intelectual, limitación responsabilidad, disponibilidad, modificaciones, legislación mexicana, contacto.<br>
+        Contacto legal: privacidad@appointva.com y soporte@appointva.com.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">pages/publico/PrivacidadPage.tsx (NUEVO)</span>
+        <span class="file-chip">pages/publico/TerminosPage.tsx (NUEVO)</span>
+        <span class="file-chip">App.tsx (rutas /privacidad y /terminos)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Pulido profesional ── -->
+  <h3 style="margin-top:28px;">v4.0 — Pulido profesional y UX</h3>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#f0fdf4;">🦶</div>
+    <div>
+      <div class="change-title">PublicFooter — footer en todas las páginas públicas</div>
+      <div class="change-desc">
+        Componente reutilizable <code>PublicFooter</code> añadido a BookingPage, ConfirmacionPage y MisCitasPage. Muestra el logo con baja opacidad, copyright "© {año} AppointVa · Todos los derechos reservados" y links a /privacidad y /terminos.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">components/PublicFooter.tsx (NUEVO)</span>
+        <span class="file-chip">BookingPage.tsx</span>
+        <span class="file-chip">ConfirmacionPage.tsx</span>
+        <span class="file-chip">MisCitasPage.tsx</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#dbeafe;">🔐</div>
+    <div>
+      <div class="change-title">Aviso de privacidad en flujo de reserva + aceptación de términos en registro</div>
+      <div class="change-desc">
+        <strong>BookingPage (paso 4 — datos del cliente):</strong> Banner con ícono de candado que informa que los datos serán compartidos con el negocio según la política de privacidad. Link a /privacidad.<br>
+        <strong>RegistroNegocioPage:</strong> Texto bajo el botón de registro: "Al crear tu cuenta, aceptas nuestros Términos de uso y nuestra Política de privacidad." Con links.<br>
+        <strong>LoginPage:</strong> Copyright en el footer actualizado con links a /privacidad y /terminos.<br>
+        <strong>DashboardLayout:</strong> "AppointVa © {año}" bajo el botón de logout.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">BookingPage.tsx (aviso privacidad paso 4)</span>
+        <span class="file-chip">RegistroNegocioPage.tsx (aceptación términos)</span>
+        <span class="file-chip">LoginPage.tsx (footer con links legales)</span>
+        <span class="file-chip">DashboardLayout.tsx (copyright)</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
 <!-- ══════════════════ SECCIÓN 6: DATOS DEMO ══════════════════ -->
 <div class="container page-break">
   <h2>6. Datos Demo Precargados</h2>
@@ -1596,43 +1749,63 @@
     <tr><th>Capa</th><th>Tecnología</th><th>Versión</th><th>Notas</th></tr>
     <tr><td>Frontend</td><td>React + Vite + TypeScript</td><td>React 19 / Vite 6</td><td>—</td></tr>
     <tr><td>Estilos</td><td>Tailwind CSS</td><td>v3</td><td>Token <code>primary: #C8A961</code></td></tr>
+    <tr><td>Animaciones</td><td>Framer Motion</td><td>v12</td><td>✨ v4.0 — Transiciones de página y componentes</td></tr>
     <tr><td>Estado/Fetching</td><td>TanStack Query v5 + Zustand</td><td>5.x</td><td>—</td></tr>
     <tr><td>Formularios</td><td>React Hook Form + Zod</td><td>—</td><td>—</td></tr>
     <tr><td>Gráficas</td><td>Recharts</td><td>—</td><td>AreaChart, BarChart</td></tr>
     <tr><td>Íconos</td><td>lucide-react</td><td>—</td><td>—</td></tr>
-    <tr><td>QR Code</td><td>qrcode.react</td><td>—</td><td>✨ NUEVO — para 2FA</td></tr>
-    <tr><td>Backend</td><td>ASP.NET Core + Entity Framework Core</td><td>.NET 8 / EF 8.0.27</td><td>—</td></tr>
-    <tr><td>Base de datos</td><td>PostgreSQL</td><td>16 (Docker)</td><td>Puerto 5433</td></tr>
-    <tr><td>ORM provider</td><td>Npgsql.EntityFrameworkCore.PostgreSQL</td><td>8.0.11</td><td>—</td></tr>
+    <tr><td>QR Code</td><td>qrcode.react</td><td>—</td><td>2FA + página de reservas</td></tr>
+    <tr><td>Backend</td><td>ASP.NET Core + Entity Framework Core</td><td>.NET 10 / EF 10</td><td>—</td></tr>
+    <tr><td>Base de datos</td><td>PostgreSQL</td><td>16 (Docker local / Neon prod)</td><td>Puerto 5433</td></tr>
+    <tr><td>ORM provider</td><td>Npgsql.EntityFrameworkCore.PostgreSQL</td><td>—</td><td>—</td></tr>
     <tr><td>Autenticación</td><td>JWT Bearer + ASP.NET Identity</td><td>—</td><td>TOTP 2FA nativo</td></tr>
-    <tr><td>Jobs</td><td>Hangfire + Hangfire.PostgreSql</td><td>1.8.23 / 1.20.10</td><td>Recordatorios 24h</td></tr>
-    <tr><td>Email</td><td>Resend SDK</td><td>0.5.1</td><td>Requiere API key</td></tr>
-    <tr><td>Imágenes</td><td>Cloudinary</td><td>1.29.1</td><td>Requiere credenciales</td></tr>
-    <tr><td>Rate Limiting</td><td>ASP.NET Core RateLimiter</td><td>nativo .NET 8</td><td>Auth + endpoints públicos</td></tr>
-    <tr><td>Output Cache</td><td>ASP.NET Core OutputCache</td><td>nativo .NET 8</td><td>✨ NUEVO — GET /publico/negocios/:slug, 5 min TTL</td></tr>
-    <tr><td>Logging</td><td>Serilog</td><td>8.0.3</td><td>✨ NUEVO — Console + rolling file diario, nivel Warning+</td></tr>
-    <tr><td>Health Checks</td><td>Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore</td><td>8.0.10</td><td>✨ NUEVO — GET /health verifica DB</td></tr>
+    <tr><td>Jobs</td><td>Hangfire + Hangfire.PostgreSql</td><td>—</td><td>Recordatorios 24h</td></tr>
+    <tr><td>Email</td><td>Resend SDK</td><td>0.5.1</td><td>✨ v4.0 — notificaciones@appointva.com</td></tr>
+    <tr><td>Imágenes</td><td>Cloudinary</td><td>1.29.1</td><td>Cloud: dssyaimvj</td></tr>
+    <tr><td>Rate Limiting</td><td>ASP.NET Core RateLimiter</td><td>nativo .NET 10</td><td>Auth + endpoints públicos</td></tr>
+    <tr><td>Output Cache</td><td>ASP.NET Core OutputCache</td><td>nativo .NET 10</td><td>GET /publico/negocios/:slug, 5 min TTL</td></tr>
+    <tr><td>Logging</td><td>Serilog</td><td>—</td><td>Console + rolling file diario, nivel Warning+</td></tr>
+    <tr><td>Health Checks</td><td>Microsoft.Extensions.Diagnostics.HealthChecks</td><td>—</td><td>GET /health verifica DB</td></tr>
+    <tr><td>Dominio</td><td>Cloudflare</td><td>—</td><td>✨ v4.0 — appointva.com, auto-renovación anual</td></tr>
+    <tr><td>Hosting Frontend</td><td>Vercel</td><td>—</td><td>✨ v4.0 — appointva.com + www.appointva.com</td></tr>
+    <tr><td>Hosting Backend</td><td>Render (Free)</td><td>—</td><td>✨ v4.0 — appointva.onrender.com</td></tr>
+    <tr><td>Base de datos prod</td><td>Neon PostgreSQL</td><td>—</td><td>✨ v4.0 — us-east-1, Free tier</td></tr>
+    <tr><td>Keep-alive</td><td>cron-job.org</td><td>—</td><td>✨ v4.0 — Ping /health cada 15 min (sin cold starts)</td></tr>
   </table>
 
-  <h2>8. Servicios Externos Pendientes de Configurar</h2>
-  <div class="card card-gold">
-    <h4 style="margin-top:0;color:#92400e;">Resend (Email)</h4>
-    <p style="margin:0;">Reemplazar en <code>appsettings.json</code>:</p>
-    <p style="font-family:monospace;font-size:12px;color:#78350f;margin-top:4px;">
-      "Email:ResendApiKey": "re_REEMPLAZAR_CON_TU_API_KEY"<br>
-      "Email:Origen": "AppointVa &lt;notificaciones@tudominio.com&gt;"<br>
-      "Email:Habilitado": true
-    </p>
+  <h2>8. Infraestructura de Producción</h2>
+
+  <div class="card card-green">
+    <h4 style="margin-top:0;color:#166534;">✅ Sistema en producción — appointva.com</h4>
+    <p style="margin:0;">Todos los servicios externos están configurados y operativos. Los secretos se gestionan mediante variables de entorno en Render y un archivo <code>.env</code> local (excluido de git).</p>
   </div>
-  <div class="card card-purple" style="margin-top:0;">
-    <h4 style="margin-top:0;color:#5b21b6;">Cloudinary (Imágenes)</h4>
-    <p style="margin:0;">Reemplazar en <code>appsettings.json</code>:</p>
-    <p style="font-family:monospace;font-size:12px;color:#4c1d95;margin-top:4px;">
-      "Cloudinary:CloudName": "REEMPLAZAR"<br>
-      "Cloudinary:ApiKey": "REEMPLAZAR"<br>
-      "Cloudinary:ApiSecret": "REEMPLAZAR"
+
+  <table>
+    <tr><th>Componente</th><th>Servicio</th><th>URL / Detalles</th><th>Estado</th></tr>
+    <tr><td><strong>Dominio</strong></td><td>Cloudflare</td><td>appointva.com · auto-renovación anual</td><td><span class="tag tag-new">✅ Activo</span></td></tr>
+    <tr><td><strong>Frontend</strong></td><td>Vercel</td><td>appointva.com + www.appointva.com</td><td><span class="tag tag-new">✅ Activo</span></td></tr>
+    <tr><td><strong>Backend API</strong></td><td>Render (Free)</td><td>appointva.onrender.com · Virginia</td><td><span class="tag tag-new">✅ Activo</span></td></tr>
+    <tr><td><strong>Base de datos</strong></td><td>Neon PostgreSQL</td><td>us-east-1 · Free tier</td><td><span class="tag tag-new">✅ Activo</span></td></tr>
+    <tr><td><strong>Imágenes</strong></td><td>Cloudinary</td><td>Cloud: dssyaimvj</td><td><span class="tag tag-new">✅ Activo</span></td></tr>
+    <tr><td><strong>Emails</strong></td><td>Resend</td><td>notificaciones@appointva.com</td><td><span class="tag tag-new">✅ Activo</span></td></tr>
+    <tr><td><strong>Keep-alive</strong></td><td>cron-job.org</td><td>GET /health cada 15 min</td><td><span class="tag tag-new">✅ Activo</span></td></tr>
+  </table>
+
+  <div class="card card-gold" style="margin-top:16px;">
+    <h4 style="margin-top:0;color:#92400e;">Secretos — archivo .env (local, excluido de git)</h4>
+    <p style="margin:0;font-size:11px;color:#6b7280;">El archivo <code>Back/AppointVaAPI/.env</code> contiene las credenciales reales. <strong>Nunca se sube a git.</strong> En producción (Render) se configuran como variables de entorno en el dashboard.</p>
+    <p style="font-family:monospace;font-size:11px;color:#78350f;margin-top:8px;line-height:1.8;">
+      DB_PASSWORD=...<br>
+      JWT_CLAVE=...<br>
+      CLOUDINARY_CLOUD_NAME=dssyaimvj<br>
+      CLOUDINARY_API_KEY=...<br>
+      CLOUDINARY_API_SECRET=...<br>
+      RESEND_API_KEY=re_...<br>
+      FRONTEND_URL=https://appointva.com<br>
+      BACKEND_URL=https://api.appointva.com<br>
+      CORS_ORIGENES=https://appointva.com
     </p>
-    <p style="font-size:11px;color:#6b7280;margin-top:8px;">Sin configurar, las imágenes se guardan en <code>wwwroot/uploads/</code> (modo desarrollo).</p>
+    <p style="font-size:11px;color:#6b7280;margin-top:8px;">Ver <code>.env.example</code> en el repositorio para la estructura completa con placeholders.</p>
   </div>
 
   <div class="card card-gold" style="margin-top:16px;">
@@ -1653,7 +1826,7 @@
   <div class="card card-green">
     <h4 style="margin-top:0;color:#166534;">Veredicto: Muy sólido para esta escala</h4>
     <p>Un servidor .NET 8 puede manejar miles de solicitudes/segundo. Con 10-20 negocios, carga estimada: 20-100 usuarios simultáneos en hora pico, 500-4,000 reservas/mes totales, 40-80 requests/minuto de polling del dashboard. <strong>Márgenes muy amplios.</strong></p>
-    <p style="margin-bottom:0;">En v2.2 se implementaron 4 de las 7 mejoras prioritarias: Output cache, Serilog, Health check y Política de cancelación. El sistema está preparado para un deploy a producción real.</p>
+    <p style="margin-bottom:0;">En v4.0 el sistema está <strong>en producción real</strong> en appointva.com. Dominio propio, correo personalizado, credenciales en variables de entorno y backend siempre activo con keep-alive automático.</p>
   </div>
 
   <h3>Fortalezas actuales</h3>
@@ -1670,8 +1843,10 @@
     <tr><td>Observabilidad</td><td>Serilog rolling daily + nivel Warning. Health check en /health</td><td><span class="tag tag-new">✅ v2.2</span></td></tr>
     <tr><td>Output cache</td><td>[OutputCache(Duration=300)] en GET /publico/negocios/:slug</td><td><span class="tag tag-new">✅ v2.2</span></td></tr>
     <tr><td>Política cancelación</td><td>HorasCancelacion en Negocio, validación en CancelarCita, UI en PerfilPage</td><td><span class="tag tag-new">✅ v2.2</span></td></tr>
-    <tr><td>Emails</td><td>Confirmación, recordatorio (cliente + empleado), verificación, recuperación, cancelación</td><td><span class="tag tag-mod">Requiere Resend key</span></td></tr>
-    <tr><td>Imágenes</td><td>Cloudinary integrado, fallback local en dev</td><td><span class="tag tag-mod">Requiere credenciales</span></td></tr>
+    <tr><td>Emails</td><td>Confirmación, recordatorio (cliente + empleado), verificación, recuperación, cancelación — desde notificaciones@appointva.com</td><td><span class="tag tag-new">✅ v4.0</span></td></tr>
+    <tr><td>Imágenes</td><td>Cloudinary integrado, fallback local en dev</td><td><span class="tag tag-new">✅ v4.0</span></td></tr>
+    <tr><td>Dominio</td><td>appointva.com en Cloudflare, Vercel custom domain, correo propio</td><td><span class="tag tag-new">✅ v4.0</span></td></tr>
+    <tr><td>Keep-alive</td><td>cron-job.org ping /health cada 15 min — sin cold starts en Render</td><td><span class="tag tag-new">✅ v4.0</span></td></tr>
   </table>
 
   <h3>Mejoras recomendadas para escalar a 10-20 clientes en producción</h3>
@@ -1752,7 +1927,7 @@
   <h3>Resumen de estado — pendientes para producción</h3>
   <table>
     <tr><th>#</th><th>Mejora</th><th>Impacto</th><th>Estado</th></tr>
-    <tr><td>1</td><td>Configurar Resend + Cloudinary (credenciales reales)</td><td style="color:#166534;font-weight:700;">Bloqueante para producción</td><td><span class="tag tag-mod">Pendiente config</span></td></tr>
+    <tr><td>1</td><td>Configurar Resend + Cloudinary (credenciales reales)</td><td style="color:#166534;font-weight:700;">Bloqueante para producción</td><td><span class="tag tag-new">✅ v4.0 — Producción</span></td></tr>
     <tr><td>2</td><td>Health check endpoint /health</td><td style="color:#1e40af;font-weight:700;">Alto</td><td><span class="tag tag-new">✅ v2.2</span></td></tr>
     <tr><td>3</td><td>Serilog logging estructurado</td><td style="color:#1e40af;font-weight:700;">Alto</td><td><span class="tag tag-new">✅ v2.2</span></td></tr>
     <tr><td>4</td><td>Output cache en /publico/negocios/:slug</td><td style="color:#1e40af;font-weight:700;">Alto</td><td><span class="tag tag-new">✅ v2.2</span></td></tr>

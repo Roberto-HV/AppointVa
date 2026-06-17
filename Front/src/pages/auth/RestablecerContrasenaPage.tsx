@@ -5,10 +5,15 @@ import { z } from "zod";
 import { Link, useSearchParams } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import { authApi } from "../../api/auth";
+import PasswordStrengthBar from "../../components/PasswordStrengthBar";
 
 const schema = z
   .object({
-    nuevaContrasena: z.string().min(6, "Mínimo 6 caracteres"),
+    nuevaContrasena: z
+      .string()
+      .min(6, "Mínimo 6 caracteres")
+      .regex(/[A-Z]/, "Debe tener al menos una mayúscula")
+      .regex(/[0-9]/, "Debe tener al menos un número"),
     confirmar: z.string(),
   })
   .refine((v) => v.nuevaContrasena === v.confirmar, {
@@ -30,8 +35,11 @@ export default function RestablecerContrasenaPage() {
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({ resolver: zodResolver(schema) });
+
+  const nuevaValor = watch("nuevaContrasena", "");
 
   const onSubmit = async (data: FormData) => {
     setError("");
@@ -105,7 +113,7 @@ export default function RestablecerContrasenaPage() {
                       className={`w-full px-4 py-2.5 pr-11 rounded-lg border text-sm outline-none transition
                         focus:ring-2 focus:ring-slate-700/40 focus:border-slate-700
                         ${errors.nuevaContrasena ? "border-red-400 bg-red-50" : "border-gray-300"}`}
-                      placeholder="Mínimo 6 caracteres"
+                      placeholder="Mín. 6 caracteres, una mayúscula y un número"
                     />
                     <button
                       type="button"
@@ -119,6 +127,7 @@ export default function RestablecerContrasenaPage() {
                   {errors.nuevaContrasena && (
                     <p className="text-red-500 text-xs mt-1">{errors.nuevaContrasena.message}</p>
                   )}
+                  <PasswordStrengthBar password={nuevaValor} />
                 </div>
 
                 {/* Confirmar */}

@@ -100,7 +100,7 @@ export default function CalendarioCitas({ empleadoId, onCitaClick, onReagendar }
     return <span className={`text-[10px] font-semibold mt-0.5 ${color}`}>{count}</span>;
   };
 
-  const renderGridCita = (c: CitaDto, colIdx: number, totalCols = 1) => {
+  const renderGridCita = (c: CitaDto, _colIdx: number, totalCols = 1) => {
     const top = calcTop(c);
     const height = calcAltura(c);
     const color = COLORES[c.estadoTexto] ?? COLORES.Confirmada;

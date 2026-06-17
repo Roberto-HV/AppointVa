@@ -145,8 +145,8 @@
       align-items: flex-start;
     }
     .alert-icon { font-size: 20px; line-height: 1; }
-    .alert-text { font-size: 13px; color: #92400e; line-height: 1.6; }
-    .alert-text strong { color: #78350f; }
+    .alert-text { font-size: 13px; color: #166534; line-height: 1.6; }
+    .alert-text strong { color: #14532d; }
 
     /* Divider */
     hr { border: none; border-top: 1px solid #f3f4f6; margin: 28px 0; }
@@ -194,8 +194,8 @@
         <div class="url-block">
           <div class="url-label">Página de reservas (clientes) <span class="tag">Público</span></div>
           <div class="url-value">
-            <a href="https://appoint-va.vercel.app/b/salon-aramis">
-              https://appoint-va.vercel.app/b/salon-aramis
+            <a href="https://appointva.com/b/salon-aramis">
+              https://appointva.com/b/salon-aramis
             </a>
           </div>
         </div>
@@ -203,8 +203,8 @@
         <div class="url-block">
           <div class="url-label">Panel de administración <span class="tag blue">Login</span></div>
           <div class="url-value">
-            <a href="https://appoint-va.vercel.app/login">
-              https://appoint-va.vercel.app/login
+            <a href="https://appointva.com/login">
+              https://appointva.com/login
             </a>
           </div>
         </div>
@@ -253,9 +253,14 @@
           </thead>
           <tbody>
             <tr>
+              <td><strong>Dominio</strong></td>
+              <td>Cloudflare</td>
+              <td class="mono" style="font-size:12px">appointva.com · auto-renovación</td>
+            </tr>
+            <tr>
               <td><strong>Frontend</strong></td>
               <td>Vercel</td>
-              <td class="mono" style="font-size:12px">appoint-va.vercel.app</td>
+              <td class="mono" style="font-size:12px">appointva.com</td>
             </tr>
             <tr>
               <td><strong>Backend API</strong></td>
@@ -275,7 +280,12 @@
             <tr>
               <td><strong>Emails</strong></td>
               <td>Resend</td>
-              <td class="mono" style="font-size:12px">onboarding@resend.dev</td>
+              <td class="mono" style="font-size:12px">notificaciones@appointva.com</td>
+            </tr>
+            <tr>
+              <td><strong>Keep-alive</strong></td>
+              <td>cron-job.org</td>
+              <td class="mono" style="font-size:12px">Ping /health cada 15 min</td>
             </tr>
           </tbody>
         </table>
@@ -285,10 +295,10 @@
 
       <!-- Aviso -->
       <div class="section">
-        <div class="alert">
-          <div class="alert-icon">⚠️</div>
+        <div class="alert" style="background:#f0fdf4;border-color:#bbf7d0;">
+          <div class="alert-icon">✅</div>
           <div class="alert-text">
-            <strong>Importante antes de la demo:</strong> El backend usa el plan gratuito de Render y entra en reposo después de 15 minutos de inactividad. La primera solicitud puede tardar hasta 50 segundos en responder. <strong>Abre el sistema 2–3 minutos antes</strong> de presentarlo para que esté activo.
+            <strong>Backend siempre activo:</strong> Un cron job en cron-job.org hace ping al endpoint <code>/health</code> cada 15 minutos, manteniendo el servidor de Render despierto. No es necesario esperar — el sistema responde de inmediato.
           </div>
         </div>
       </div>
@@ -298,7 +308,7 @@
     <!-- Footer -->
     <div class="footer">
       <span>AppointVa &copy; 2026 – Documento confidencial</span>
-      <span>Actualizado el 16 de junio de 2026</span>
+      <span>Actualizado el 17 de junio de 2026</span>
     </div>
 
   </div>

@@ -3,24 +3,32 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Link } from "react-router-dom";
+import { Eye, EyeOff } from "lucide-react";
 import { api } from "../../api/axios";
+import PasswordStrengthBar from "../../components/PasswordStrengthBar";
 
-const schema = z.object({
-  nombreNegocio: z.string().min(2, "Mínimo 2 caracteres").max(150),
-  slug: z
-    .string()
-    .min(2, "Mínimo 2 caracteres")
-    .max(80)
-    .regex(/^[a-z0-9-]+$/, "Solo minúsculas, números y guiones"),
-  nombrePropietario: z.string().min(2, "Mínimo 2 caracteres").max(150),
-  email: z.string().email("Correo inválido"),
-  contrasena: z
-    .string()
-    .min(6, "Mínimo 6 caracteres")
-    .regex(/[A-Z]/, "Debe tener al menos una mayúscula")
-    .regex(/[0-9]/, "Debe tener al menos un número"),
-  telefono: z.string().max(20).optional().or(z.literal("")),
-});
+const schema = z
+  .object({
+    nombreNegocio: z.string().min(2, "Mínimo 2 caracteres").max(150),
+    slug: z
+      .string()
+      .min(2, "Mínimo 2 caracteres")
+      .max(80)
+      .regex(/^[a-z0-9-]+$/, "Solo minúsculas, números y guiones"),
+    nombrePropietario: z.string().min(2, "Mínimo 2 caracteres").max(150),
+    email: z.string().email("Correo inválido"),
+    contrasena: z
+      .string()
+      .min(6, "Mínimo 6 caracteres")
+      .regex(/[A-Z]/, "Debe tener al menos una mayúscula")
+      .regex(/[0-9]/, "Debe tener al menos un número"),
+    confirmarContrasena: z.string().min(1, "Confirma tu contraseña"),
+    telefono: z.string().max(20).optional().or(z.literal("")),
+  })
+  .refine((v) => v.contrasena === v.confirmarContrasena, {
+    message: "Las contraseñas no coinciden",
+    path: ["confirmarContrasena"],
+  });
 
 type FormData = z.infer<typeof schema>;
 
@@ -43,13 +51,18 @@ export default function RegistroNegocioPage() {
   const [emailRegistrado, setEmailRegistrado] = useState("");
   const [reenvioEnviado, setReenvioEnviado] = useState(false);
   const [reenvioEnviando, setReenvioEnviando] = useState(false);
+  const [mostrarContrasena, setMostrarContrasena] = useState(false);
+  const [mostrarConfirmar, setMostrarConfirmar] = useState(false);
 
   const {
     register,
     handleSubmit,
     setValue,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({ resolver: zodResolver(schema) });
+
+  const contrasenaValor = watch("contrasena", "");
 
   const onNombreChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const valor = e.target.value;
@@ -220,13 +233,48 @@ export default function RegistroNegocioPage() {
             {/* Contraseña */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña *</label>
-              <input
-                type="password"
-                {...register("contrasena")}
-                placeholder="Mínimo 6 caracteres, una mayúscula y un número"
-                className={`w-full px-4 py-2.5 rounded-lg border text-sm outline-none transition focus:ring-2 focus:ring-slate-700/40 focus:border-slate-700 ${errors.contrasena ? "border-red-400 bg-red-50" : "border-gray-300"}`}
-              />
+              <div className="relative">
+                <input
+                  type={mostrarContrasena ? "text" : "password"}
+                  autoComplete="new-password"
+                  {...register("contrasena")}
+                  placeholder="Mín. 6 caracteres, una mayúscula y un número"
+                  className={`w-full px-4 py-2.5 pr-11 rounded-lg border text-sm outline-none transition focus:ring-2 focus:ring-slate-700/40 focus:border-slate-700 ${errors.contrasena ? "border-red-400 bg-red-50" : "border-gray-300"}`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setMostrarContrasena((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  tabIndex={-1}
+                >
+                  {mostrarContrasena ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
               {errors.contrasena && <p className="text-red-500 text-xs mt-1">{errors.contrasena.message}</p>}
+              <PasswordStrengthBar password={contrasenaValor} />
+            </div>
+
+            {/* Confirmar contraseña */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Confirmar contraseña *</label>
+              <div className="relative">
+                <input
+                  type={mostrarConfirmar ? "text" : "password"}
+                  autoComplete="new-password"
+                  {...register("confirmarContrasena")}
+                  placeholder="Repite tu contraseña"
+                  className={`w-full px-4 py-2.5 pr-11 rounded-lg border text-sm outline-none transition focus:ring-2 focus:ring-slate-700/40 focus:border-slate-700 ${errors.confirmarContrasena ? "border-red-400 bg-red-50" : "border-gray-300"}`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setMostrarConfirmar((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  tabIndex={-1}
+                >
+                  {mostrarConfirmar ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+              {errors.confirmarContrasena && <p className="text-red-500 text-xs mt-1">{errors.confirmarContrasena.message}</p>}
             </div>
 
             {errorGeneral && (

@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
-import { CheckCircle2, Circle, X, Scissors, Users, Link2, CalendarDays, BarChart2, Tag, UserCheck } from "lucide-react";
+import { CheckCircle2, Circle, X, Scissors, Users, Link2, CalendarDays, BarChart2, UserCheck } from "lucide-react";
 import { dashboardApi } from "../../api/dashboard";
 import { citasApi } from "../../api/citas";
 import { negociosApi } from "../../api/negocios";
