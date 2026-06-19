@@ -276,7 +276,7 @@ export default function MisCitasPage() {
                     </div>
 
                     <div className="flex items-center justify-between">
-                      <p className="text-xs text-slate-500 capitalize">{formatFecha(c.inicioEn)}</p>
+                      <p className="text-xs text-slate-500">{formatFecha(c.inicioEn)}</p>
                       <p className="text-sm font-bold text-slate-800">{formatPrecio(c.precio)}</p>
                     </div>
 

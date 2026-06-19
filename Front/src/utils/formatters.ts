@@ -12,11 +12,12 @@ export function formatFecha(iso: string): string {
   }).replace(/\bDe\b/g, "de");
 }
 
-/** Fecha con día de semana completo, sin hora: "martes, 15 de junio de 2026" */
+/** Fecha con día de semana completo, sin hora: "Martes, 15 de junio de 2026" */
 export function formatFechaLarga(iso: string): string {
-  return new Date(iso).toLocaleDateString("es-MX", {
+  const s = new Date(iso).toLocaleDateString("es-MX", {
     weekday: "long", day: "numeric", month: "long", year: "numeric",
   }).replace(/\bDe\b/g, "de");
+  return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 // ── Fecha y hora ───────────────────────────────────────────────────────────────

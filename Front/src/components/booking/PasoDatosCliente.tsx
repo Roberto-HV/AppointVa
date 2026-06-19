@@ -28,6 +28,7 @@ export default function PasoDatosCliente({ servicio, empleado, slot, enviando, d
   const { register, handleSubmit, formState: { errors } } = useForm<DatosClienteForm>({
     resolver: zodResolver(schema),
     defaultValues: datosIniciales,
+    mode: "onBlur",
   });
 
   const nombreEmpleado = empleado.id === SIN_PREFERENCIA_ID
@@ -62,7 +63,7 @@ export default function PasoDatosCliente({ servicio, empleado, slot, enviando, d
             <div className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
               <CalendarDays size={13} className="text-white/70" />
             </div>
-            <p className="text-sm font-medium text-slate-200 capitalize">{formatFecha(slot.inicio)}</p>
+            <p className="text-sm font-medium text-slate-200">{formatFecha(slot.inicio)}</p>
           </div>
           <div className="flex items-center gap-3">
             <div className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
@@ -119,7 +120,8 @@ export default function PasoDatosCliente({ servicio, empleado, slot, enviando, d
             {...register("emailCliente")}
             type="email"
             placeholder="correo@ejemplo.com"
-            className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-slate-700/20 focus:border-slate-700 transition bg-white"
+            className={`w-full px-4 py-3 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-slate-700/20 focus:border-slate-700 transition bg-white
+              ${errors.emailCliente ? "border-red-300 bg-red-50" : "border-slate-200"}`}
           />
           {errors.emailCliente && (
             <p className="text-red-500 text-xs mt-1.5">{errors.emailCliente.message}</p>
