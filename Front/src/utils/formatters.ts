@@ -37,12 +37,13 @@ export function formatFechaHora(iso: string): string {
   }).replace(/\bDe\b/g, "de");
 }
 
-/** Fecha + hora con día de semana abreviado para dashboards: "mar. 15 de junio..." */
+/** Fecha + hora con día de semana abreviado para dashboards: "Mar. 15 de junio..." */
 export function formatFechaHoraResumen(iso: string): string {
-  return new Date(iso).toLocaleString("es-MX", {
+  const s = new Date(iso).toLocaleString("es-MX", {
     weekday: "short", day: "numeric", month: "long", year: "numeric",
     hour: "2-digit", minute: "2-digit", hour12: true,
   }).replace(/\bDe\b/g, "de");
+  return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 /** Fecha + hora completa para comprobantes: "Martes, 15 de junio de 2026..." */

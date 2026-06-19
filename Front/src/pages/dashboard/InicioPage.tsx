@@ -237,7 +237,7 @@ function VistaPropietario({ nombre }: { nombre: string }) {
           </motion.div>
 
           {/* Gráfica de tendencia */}
-          <div className="bg-white rounded-2xl border border-slate-100 p-5 mb-6">
+          <div className="bg-white rounded-2xl border border-slate-100 p-5 mb-6 overflow-hidden">
             <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
               <h2 className="text-sm font-bold text-slate-800">Ingresos y citas por día</h2>
               <div className="flex bg-slate-100 rounded-xl p-0.5 gap-0.5">
@@ -322,7 +322,7 @@ function VistaPropietario({ nombre }: { nombre: string }) {
                   {etiqueta && (
                     <p className={`text-sm font-bold ${msRestantes <= 0 ? "text-green-600" : "text-slate-700"}`}>{etiqueta}</p>
                   )}
-                  <p className="text-xs text-gray-400 capitalize">{formatFechaHora(proxima.inicioEn)}</p>
+                  <p className="text-xs text-gray-400">{formatFechaHora(proxima.inicioEn)}</p>
                   <EstadoBadge estado={proxima.estadoTexto} />
                 </div>
               </div>
@@ -341,7 +341,7 @@ function VistaPropietario({ nombre }: { nombre: string }) {
                       <div>
                         <p className="text-sm font-medium text-gray-800">{c.nombreCliente}</p>
                         <p className="text-xs text-gray-400">{c.nombreServicio} · {c.nombreEmpleado}</p>
-                        <p className="text-xs text-gray-400 capitalize">{formatFechaHora(c.inicioEn)}</p>
+                        <p className="text-xs text-gray-400">{formatFechaHora(c.inicioEn)}</p>
                       </div>
                       <EstadoBadge estado={c.estadoTexto} />
                     </div>
@@ -432,7 +432,7 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
                 <div>
                   <p className="text-sm font-medium text-gray-800">{c.nombreCliente}</p>
                   <p className="text-xs text-gray-500">{c.nombreServicio} · {c.duracionMinutos} min</p>
-                  <p className="text-xs text-gray-400 capitalize">{formatFechaHora(c.inicioEn)}</p>
+                  <p className="text-xs text-gray-400">{formatFechaHora(c.inicioEn)}</p>
                 </div>
                 <div className="text-right">
                   <EstadoBadge estado={c.estadoTexto} />
@@ -462,7 +462,7 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
                 <div>
                   <p className="text-sm font-medium text-gray-800">{c.nombreCliente}</p>
                   <p className="text-xs text-gray-400">{c.nombreServicio}</p>
-                  <p className="text-xs text-gray-400 capitalize">{formatFechaHora(c.inicioEn)}</p>
+                  <p className="text-xs text-gray-400">{formatFechaHora(c.inicioEn)}</p>
                 </div>
                 <EstadoBadge estado={c.estadoTexto} />
               </div>
