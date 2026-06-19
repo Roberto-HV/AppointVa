@@ -89,12 +89,12 @@ export default function DashboardLayout() {
   const cerrarSidebar = () => setSidebarOpen(false);
 
   return (
-    <div className="h-lvh flex bg-white">
+    <div className="h-lvh flex overflow-hidden bg-white">
 
       {/* ── Overlay backdrop (móvil) ── */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/40 z-40 md:hidden"
+          className="fixed inset-0 bg-black/40 z-40 md:hidden cursor-pointer"
           onClick={cerrarSidebar}
         />
       )}
@@ -109,7 +109,10 @@ export default function DashboardLayout() {
         `}
       >
         {/* Logo + cerrar móvil */}
-        <div className="relative px-5 py-3 border-b border-slate-100 flex items-center justify-center">
+        <div
+          className="relative px-5 pb-3 border-b border-slate-100 flex items-center justify-center"
+          style={{ paddingTop: 'calc(env(safe-area-inset-top) + 0.75rem)' }}
+        >
           <div className="flex flex-col items-center gap-1">
             <img src="/MasterLogo.png" alt="AppointVa" className="h-9 object-contain" />
             {esEmpleado && (
@@ -209,7 +212,10 @@ export default function DashboardLayout() {
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
 
         {/* ── Barra superior móvil ── */}
-        <header className="md:hidden bg-white border-b border-slate-100 px-4 py-3 flex items-center gap-3 shrink-0 z-30">
+        <header
+          className="md:hidden bg-white border-b border-slate-100 px-4 pb-3 flex items-center gap-3 shrink-0 z-30"
+          style={{ paddingTop: 'calc(env(safe-area-inset-top) + 0.75rem)' }}
+        >
           <button
             onClick={() => setSidebarOpen(true)}
             className="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-50 text-slate-600 hover:bg-slate-100 transition"
