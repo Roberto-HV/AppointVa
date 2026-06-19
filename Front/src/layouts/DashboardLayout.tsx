@@ -88,8 +88,27 @@ export default function DashboardLayout() {
 
   const cerrarSidebar = () => setSidebarOpen(false);
 
+  // Bloquea el scroll del body en iOS cuando el sidebar está abierto,
+  // evitando el artefacto gris que queda al cerrar.
+  useEffect(() => {
+    if (sidebarOpen) {
+      document.body.style.overflow = "hidden";
+      document.body.style.position = "fixed";
+      document.body.style.width = "100%";
+    } else {
+      document.body.style.overflow = "";
+      document.body.style.position = "";
+      document.body.style.width = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+      document.body.style.position = "";
+      document.body.style.width = "";
+    };
+  }, [sidebarOpen]);
+
   return (
-    <div className="h-lvh flex overflow-hidden bg-white">
+    <div className="h-lvh flex bg-white">
 
       {/* ── Overlay backdrop (móvil) ── */}
       {sidebarOpen && (
