@@ -89,7 +89,7 @@ export default function DashboardLayout() {
   const cerrarSidebar = () => setSidebarOpen(false);
 
   return (
-    <div className="h-dvh flex overflow-hidden bg-white">
+    <div className="h-lvh flex overflow-hidden bg-white">
 
       {/* ── Overlay backdrop (móvil) ── */}
       {sidebarOpen && (
@@ -235,7 +235,7 @@ export default function DashboardLayout() {
         </header>
 
         {/* ── Contenido principal ── */}
-        <main className="flex-1 overflow-y-auto overflow-x-hidden bg-slate-50">
+        <main className="flex-1 overflow-y-auto bg-white">
           <Outlet />
         </main>
 

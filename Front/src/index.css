@@ -56,13 +56,15 @@ button:not([disabled]):active {
   * {
     box-sizing: border-box;
   }
-  body {
+  html, body {
     margin: 0;
+    background-color: #ffffff;
     font-family: Inter, system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
   }
   #root {
-    min-height: 100vh;
+    min-height: 100lvh;
+    background-color: #ffffff;
   }
   /* Previene auto-zoom de iOS en inputs con font-size < 16px */
   @media screen and (max-width: 767px) {

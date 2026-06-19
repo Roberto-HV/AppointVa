@@ -124,7 +124,7 @@
     Sistema de reservas online para negocios de servicios — Backend .NET 10 + PostgreSQL, Frontend React + Vite
   </p>
   <div class="badge">Versión de producción — Junio 2026</div>
-  <div class="date">Actualizado el 17 de junio de 2026 — v4.0</div>
+  <div class="date">Actualizado el 19 de junio de 2026 — v4.1</div>
 </div>
 
 <!-- ══════════════════ SECCIÓN 1: URLs ══════════════════ -->
@@ -1679,6 +1679,154 @@
         <span class="file-chip">RegistroNegocioPage.tsx (aceptación términos)</span>
         <span class="file-chip">LoginPage.tsx (footer con links legales)</span>
         <span class="file-chip">DashboardLayout.tsx (copyright)</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════ SECCIÓN 5d: CAMBIOS v4.1 ══════════════════ -->
+<div class="container page-break">
+  <h2>5d. Registro de Cambios — v4.1 (19 de junio de 2026)</h2>
+  <p style="color:#6b7280;margin-bottom:24px;">Mejoras de UX, correcciones de mobile, rediseño del dashboard del empleado, validación de correo y seguridad de contraseña.</p>
+
+  <!-- ── Seguridad de contraseña ── -->
+  <h3>v4.1 — Seguridad de contraseña</h3>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#fee2e2;">🔒</div>
+    <div>
+      <div class="change-title">Medidor de fortaleza de contraseña (PasswordStrengthBar)</div>
+      <div class="change-desc">
+        Nuevo componente <code>PasswordStrengthBar</code> que evalúa la contraseña en tiempo real con 4 niveles: débil (rojo), aceptable (naranja), fuerte (amarillo), muy fuerte (verde). Criterios: longitud ≥ 8, mayúsculas, minúsculas, números y caracteres especiales.<br>
+        <strong>Aplicado en:</strong> <code>RegistroNegocioPage</code>, <code>RestablecerContrasenaPage</code> y <code>MiPerfilPage</code>.<br>
+        Además se agregaron: campo de confirmación de contraseña con validación Zod (<code>.refine</code>), y botón de mostrar/ocultar en cada campo de contraseña con ícono <code>Eye/EyeOff</code> de lucide-react.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">components/PasswordStrengthBar.tsx (NUEVO)</span>
+        <span class="file-chip">RegistroNegocioPage.tsx</span>
+        <span class="file-chip">RestablecerContrasenaPage.tsx</span>
+        <span class="file-chip">MiPerfilPage.tsx</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Validación de correo ── -->
+  <h3 style="margin-top:28px;">v4.1 — Validación de correo electrónico</h3>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#dbeafe;">📧</div>
+    <div>
+      <div class="change-title">Validación de formato de email en CitasPage (panel admin)</div>
+      <div class="change-desc">
+        Al crear una cita manual desde el panel del propietario, el campo de correo del cliente ahora valida el formato con regex (<code>/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/</code>) al salir del campo (onBlur) y al intentar guardar. El campo solo valida si tiene contenido (el correo es opcional).<br>
+        <strong>Implementación:</strong> estado <code>emailClienteError</code> local, función <code>validarEmailCliente</code>, borde rojo + fondo rojo claro en el input cuando hay error, mensaje con ícono ⚠ debajo del campo.<br>
+        El botón "Crear cita" queda deshabilitado mientras el error esté activo.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">CitasPage.tsx</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#dcfce7;">📧</div>
+    <div>
+      <div class="change-title">Validación de formato de email en PasoDatosCliente (flujo público)</div>
+      <div class="change-desc">
+        El formulario de datos del cliente en el flujo de reserva pública ya tenía el esquema Zod con <code>.email("Correo inválido")</code>, pero solo disparaba al hacer submit. Se agregó <code>mode: "onBlur"</code> al hook <code>useForm</code> para que valide en tiempo real cuando el usuario sale del campo.<br>
+        El input de correo ahora aplica borde rojo y fondo rojo claro cuando el valor es inválido (<code>errors.emailCliente</code>).
+      </div>
+      <div class="change-files">
+        <span class="file-chip">components/booking/PasoDatosCliente.tsx</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Mobile layout ── -->
+  <h3 style="margin-top:28px;">v4.1 — Correcciones de layout móvil</h3>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#f3e8ff;">📱</div>
+    <div>
+      <div class="change-title">DashboardLayout: h-dvh + fondo correcto en cambio de pestaña</div>
+      <div class="change-desc">
+        <strong>Problema 1 — Zoom:</strong> La gráfica Recharts en InicioPage (con doble eje Y) desbordaba horizontalmente, forzando al navegador móvil a hacer zoom out.<br>
+        <strong>Fix:</strong> Se añadió <code>overflow-hidden</code> al contenedor de la tarjeta de la gráfica para contener el desbordamiento.<br><br>
+        <strong>Problema 2 — Sombreado gris al cambiar pestaña:</strong> <code>h-screen</code> es exactamente <code>100vh</code> y no se ajusta cuando el navegador móvil muestra/oculta la barra de herramientas. El fondo <code>bg-slate-50</code> del contenedor raíz quedaba visible en las zonas no cubiertas.<br>
+        <strong>Fix:</strong> Contenedor raíz cambiado a <code>h-dvh bg-white</code> (<code>100dvh</code> se ajusta dinámicamente). El fondo <code>bg-slate-50</code> se movió al elemento <code>&lt;main&gt;</code> que siempre cubre el área de contenido.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">DashboardLayout.tsx (h-dvh, bg-white → bg-slate-50 en main)</span>
+        <span class="file-chip">InicioPage.tsx (overflow-hidden en tarjeta de gráfica)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Formato de fechas ── -->
+  <h3 style="margin-top:28px;">v4.1 — Corrección de formato de fechas en español</h3>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#fef3c7;">📅</div>
+    <div>
+      <div class="change-title">formatters.ts — capitalización correcta de fechas en español</div>
+      <div class="change-desc">
+        <strong>Problema:</strong> La clase CSS <code>capitalize</code> capitaliza la primera letra de CADA palabra. En español esto producía "Miércoles, 15 De Julio De 2026, 09:00 A.m." (las preposiciones "de" y el am/pm quedaban capitalizados incorrectamente).<br>
+        <strong>Fix:</strong> Se actualizaron 3 funciones en <code>formatters.ts</code> para capitalizar solo la primera letra de la cadena completa con <code>s.charAt(0).toUpperCase() + s.slice(1)</code>, y se eliminó la clase <code>capitalize</code> de todos los spans que mostraban fechas en:
+        <ul style="margin:8px 0 0 16px;font-size:12px;color:#6b7280;">
+          <li><code>ConfirmacionPage.tsx</code> — 3 ocurrencias</li>
+          <li><code>InicioPage.tsx</code> — 4 ocurrencias (VistaEmpleado y VistaPropietario)</li>
+          <li><code>PasoDatosCliente.tsx</code> — 1 ocurrencia</li>
+          <li><code>MisCitasPage.tsx</code> — 1 ocurrencia</li>
+        </ul>
+        Resultado: "Miércoles, 15 de julio de 2026, 09:00 a. m." — correcto en español.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">utils/formatters.ts (formatFechaHoraCompleta, formatFechaHoraResumen, formatFechaLarga)</span>
+        <span class="file-chip">ConfirmacionPage.tsx</span>
+        <span class="file-chip">InicioPage.tsx</span>
+        <span class="file-chip">PasoDatosCliente.tsx</span>
+        <span class="file-chip">MisCitasPage.tsx</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Rediseño VistaEmpleado ── -->
+  <h3 style="margin-top:28px;">v4.1 — Rediseño del dashboard del empleado</h3>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#dcfce7;">🧑‍💼</div>
+    <div>
+      <div class="change-title">VistaEmpleado rediseñada — de lista simple a dashboard completo</div>
+      <div class="change-desc">
+        La vista anterior solo mostraba una lista de citas del día. La nueva vista incluye:<br>
+        <strong>1. Saludo dinámico:</strong> "Buenos días / Buenas tardes / Buenas noches" según la hora actual.<br>
+        <strong>2. Tarjetas de estadísticas (3):</strong> Citas hoy · Completadas · Ingresos del día (solo citas con estado "Completada").<br>
+        <strong>3. Próxima cita:</strong> Tarjeta destacada con el servicio, cliente y hora. Cuenta regresiva dinámica: "En X min", "En Xh Ymin" o "En curso" si ya comenzó.<br>
+        <strong>4. Agenda del día (timeline):</strong> Lista ordenada cronológicamente con barra lateral de color por estado, cita actual resaltada en verde, citas terminadas con opacidad reducida (55%).<br>
+        <strong>5. Próximas citas:</strong> Lista de citas futuras (días siguientes) con separador <code>divide-y</code>.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">InicioPage.tsx (función VistaEmpleado)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Entorno local ── -->
+  <h3 style="margin-top:28px;">v4.1 — Configuración de entorno local</h3>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#f0fdf4;">⚙️</div>
+    <div>
+      <div class="change-title">Proxy Vite — desarrollo local sin CORS</div>
+      <div class="change-desc">
+        <strong>Problema:</strong> Al acceder al frontend desde otra IP de la red (ej: <code>10.0.0.40:5173</code>), las peticiones al backend local (<code>localhost:5048</code>) eran bloqueadas por CORS porque el origen no era <code>localhost</code>.<br>
+        <strong>Fix:</strong> Se configuró un proxy en <code>vite.config.ts</code> que redirige <code>/api/*</code> al backend en Render. <code>Front/.env</code> usa <code>VITE_API_URL=/api</code> (relativo). El proxy hace la petición server-side, eliminando el problema de CORS para desarrollo desde cualquier dispositivo en la red local.<br>
+        <code>.env.production</code> mantiene la URL absoluta de producción sin cambios.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">Front/vite.config.ts (server.proxy)</span>
+        <span class="file-chip">Front/.env (VITE_API_URL=/api)</span>
       </div>
     </div>
   </div>
