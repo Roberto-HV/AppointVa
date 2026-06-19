@@ -110,7 +110,7 @@ export default function ConfirmacionPage() {
             Tu cita de <strong className="text-slate-700">{cita.nombreServicio}</strong> en{" "}
             <strong className="text-slate-700">{cita.nombreNegocio}</strong> fue cancelada.
           </p>
-          <p className="text-slate-400 text-xs mb-8 capitalize">{formatFechaHora(cita.inicioEn)}</p>
+          <p className="text-slate-400 text-xs mb-8">{formatFechaHora(cita.inicioEn)}</p>
           <button
             onClick={irAlNegocio}
             className="w-full py-3.5 rounded-2xl bg-slate-700 hover:bg-slate-800 text-white font-bold text-sm transition"
@@ -216,7 +216,7 @@ export default function ConfirmacionPage() {
             ))}
             <div className="flex justify-between items-start">
               <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Fecha y hora</span>
-              <span className="text-sm font-semibold text-slate-800 text-right capitalize max-w-[55%]">
+              <span className="text-sm font-semibold text-slate-800 text-right max-w-[55%]">
                 {formatFechaHora(cita.inicioEn)}
               </span>
             </div>
@@ -282,7 +282,7 @@ export default function ConfirmacionPage() {
               </div>
               <div className="pt-0.5">
                 <p className="text-sm font-semibold text-slate-400">¡Tu cita!</p>
-                <p className="text-xs text-slate-300 mt-0.5 capitalize">{formatFechaHora(cita.inicioEn)}</p>
+                <p className="text-xs text-slate-300 mt-0.5">{formatFechaHora(cita.inicioEn)}</p>
               </div>
             </div>
           </div>

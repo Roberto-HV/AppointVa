@@ -45,10 +45,11 @@ export function formatFechaHoraResumen(iso: string): string {
   }).replace(/\bDe\b/g, "de");
 }
 
-/** Fecha + hora completa para comprobantes: "martes, 15 de junio de 2026..." */
+/** Fecha + hora completa para comprobantes: "Martes, 15 de junio de 2026..." */
 export function formatFechaHoraCompleta(iso: string): string {
-  return new Date(iso).toLocaleString("es-MX", {
+  const s = new Date(iso).toLocaleString("es-MX", {
     weekday: "long", day: "numeric", month: "long", year: "numeric",
     hour: "2-digit", minute: "2-digit", hour12: true,
   }).replace(/\bDe\b/g, "de");
+  return s.charAt(0).toUpperCase() + s.slice(1);
 }
