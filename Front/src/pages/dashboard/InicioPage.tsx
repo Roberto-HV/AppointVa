@@ -382,8 +382,10 @@ function VistaPropietario({ nombre }: { nombre: string }) {
 
 // ── Vista del empleado ────────────────────────────────────────────────────────
 function VistaEmpleado({ nombre }: { nombre: string }) {
-  const hoy = new Date().toISOString().slice(0, 10);
-  const manana = new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().slice(0, 10);
+  const ahora = new Date();
+  const hoy = ahora.toISOString().slice(0, 10);
+  const manana = new Date(new Date().setDate(ahora.getDate() + 1)).toISOString().slice(0, 10);
+  const saludo = ahora.getHours() < 12 ? "Buenos días" : ahora.getHours() < 19 ? "Buenas tardes" : "Buenas noches";
 
   const { data: citasHoy = [], isLoading: cargandoHoy } = useQuery({
     queryKey: ["mis-citas-hoy"],
@@ -405,63 +407,153 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
     (c) => c.estadoTexto === "Pendiente" || c.estadoTexto === "Confirmada"
   ).slice(0, 10);
 
+  // Stats computados
+  const completadas = citasHoy.filter((c) => c.estadoTexto === "Completada");
+  const ingresosHoy = completadas.reduce((s, c) => s + c.precio, 0);
+  const citasOrdenadas = [...citasHoy].sort(
+    (a, b) => new Date(a.inicioEn).getTime() - new Date(b.inicioEn).getTime()
+  );
+
+  // Próxima cita pendiente/confirmada de hoy
+  const proxima = citasOrdenadas.find(
+    (c) =>
+      new Date(c.inicioEn) > ahora &&
+      (c.estadoTexto === "Pendiente" || c.estadoTexto === "Confirmada")
+  );
+  const msProxima = proxima ? new Date(proxima.inicioEn).getTime() - ahora.getTime() : 0;
+  const minProxima = Math.round(msProxima / 60000);
+  const etiquetaProxima =
+    msProxima <= 0 ? "En curso"
+    : minProxima < 60 ? `En ${minProxima} min`
+    : `En ${Math.floor(minProxima / 60)}h${minProxima % 60 > 0 ? ` ${minProxima % 60}min` : ""}`;
+
+  const horaTexto = (iso: string) =>
+    new Date(iso).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", hour12: true });
+
   return (
     <div className="p-4 sm:p-8 max-w-2xl">
-      <h1 className="text-2xl font-bold text-gray-900 mb-1">Hola, {nombre}</h1>
-      <p className="text-gray-400 text-sm mb-8">Tu agenda de hoy</p>
+      {/* Encabezado */}
+      <div className="mb-6">
+        <p className="text-sm text-slate-400 mb-0.5">{saludo}</p>
+        <h1 className="text-3xl font-black text-slate-900 leading-none">{nombre}</h1>
+      </div>
 
-      {/* Citas de hoy */}
-      <div className="bg-white rounded-xl border border-gray-100 p-5 mb-6">
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-6">
+        <div className="bg-white rounded-2xl border border-slate-100 p-3 sm:p-4">
+          <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1.5">Citas hoy</p>
+          <p className="text-2xl font-black text-slate-900 leading-none">
+            {cargandoHoy ? "—" : citasHoy.length}
+          </p>
+        </div>
+        <div className="bg-white rounded-2xl border border-slate-100 p-3 sm:p-4">
+          <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1.5">Completadas</p>
+          <p className="text-2xl font-black text-slate-900 leading-none">
+            {cargandoHoy ? "—" : completadas.length}
+          </p>
+        </div>
+        <div className="bg-slate-900 rounded-2xl p-3 sm:p-4">
+          <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1.5">Ingresos</p>
+          <p className="text-xl font-black text-white leading-none">
+            {cargandoHoy ? "—" : ingresosHoy >= 10000
+              ? `$${Math.round(ingresosHoy / 1000)}k`
+              : `$${Math.round(ingresosHoy).toLocaleString("es-MX")}`}
+          </p>
+        </div>
+      </div>
+
+      {/* Próxima cita del día */}
+      {!cargandoHoy && proxima && (
+        <div className="bg-slate-700/5 border border-slate-700/20 rounded-2xl p-4 mb-6">
+          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">Próxima cita</p>
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="font-bold text-slate-900 truncate">{proxima.nombreCliente}</p>
+              <p className="text-sm text-slate-500 truncate">{proxima.nombreServicio} · {proxima.duracionMinutos} min</p>
+            </div>
+            <div className="text-right shrink-0">
+              <p className="text-sm font-black text-slate-700">{etiquetaProxima}</p>
+              <p className="text-xs text-slate-400">{horaTexto(proxima.inicioEn)}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Agenda del día */}
+      <div className="bg-white rounded-2xl border border-slate-100 p-5 mb-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-gray-700">Citas de hoy</h2>
+          <h2 className="text-sm font-semibold text-gray-700">Agenda de hoy</h2>
           <span className="text-xs bg-slate-700/10 text-slate-700 font-semibold px-2.5 py-1 rounded-full">
             {cargandoHoy ? "..." : citasHoy.length}
           </span>
         </div>
-
         {cargandoHoy ? (
           <div className="space-y-3">
-            {[0,1,2].map(i => <Skeleton key={i} className="h-16 rounded-lg" />)}
+            {[0, 1, 2].map((i) => <Skeleton key={i} className="h-14 rounded-xl" />)}
           </div>
         ) : citasHoy.length === 0 ? (
-          <p className="text-gray-400 text-sm">No tienes citas programadas para hoy</p>
+          <p className="text-gray-400 text-sm py-2">No tienes citas hoy — ¡disfruta el día!</p>
         ) : (
-          <div className="space-y-3">
-            {citasHoy.map((c) => (
-              <div key={c.id} className="flex items-center justify-between py-2.5 px-3 rounded-lg bg-gray-50">
-                <div>
-                  <p className="text-sm font-medium text-gray-800">{c.nombreCliente}</p>
-                  <p className="text-xs text-gray-500">{c.nombreServicio} · {c.duracionMinutos} min</p>
-                  <p className="text-xs text-gray-400">{formatFechaHora(c.inicioEn)}</p>
+          <div className="space-y-2">
+            {citasOrdenadas.map((c) => {
+              const inicio = new Date(c.inicioEn);
+              const fin = new Date(inicio.getTime() + c.duracionMinutos * 60000);
+              const enCurso = inicio <= ahora && ahora < fin;
+              const terminada = ahora >= fin || c.estadoTexto === "Completada" || c.estadoTexto === "Cancelada";
+              return (
+                <div
+                  key={c.id}
+                  className={`flex items-center gap-3 p-3 rounded-xl transition-all ${
+                    enCurso
+                      ? "bg-emerald-50 border border-emerald-200"
+                      : terminada
+                      ? "opacity-55 bg-gray-50"
+                      : "bg-slate-50"
+                  }`}
+                >
+                  <div className="shrink-0 text-right w-[52px]">
+                    <p className={`text-xs font-bold ${enCurso ? "text-emerald-600" : "text-slate-600"}`}>
+                      {horaTexto(c.inicioEn)}
+                    </p>
+                    <p className="text-[10px] text-slate-300">{c.duracionMinutos}min</p>
+                  </div>
+                  <div className={`w-1 h-10 rounded-full shrink-0 ${
+                    enCurso ? "bg-emerald-500"
+                    : c.estadoTexto === "Completada" ? "bg-slate-300"
+                    : c.estadoTexto === "Cancelada" ? "bg-red-300"
+                    : "bg-slate-700"
+                  }`} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-800 truncate">{c.nombreCliente}</p>
+                    <p className="text-xs text-gray-500 truncate">{c.nombreServicio}</p>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <EstadoBadge estado={c.estadoTexto} />
+                    <p className="text-xs font-semibold text-gray-500 mt-0.5">{formatPrecio(c.precio)}</p>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <EstadoBadge estado={c.estadoTexto} />
-                  <p className="text-xs font-semibold text-gray-700 mt-1">
-                    {formatPrecio(c.precio)}
-                  </p>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
 
-      {/* Próximas citas */}
-      <div className="bg-white rounded-xl border border-gray-100 p-5">
+      {/* Próximas citas (mañana en adelante) */}
+      <div className="bg-white rounded-2xl border border-slate-100 p-5">
         <h2 className="text-sm font-semibold text-gray-700 mb-4">Próximas citas</h2>
         {cargandoProximas ? (
           <div className="space-y-2">
-            {[0,1,2].map(i => <Skeleton key={i} className="h-12 rounded-lg" />)}
+            {[0, 1, 2].map((i) => <Skeleton key={i} className="h-12 rounded-xl" />)}
           </div>
         ) : pendientesOConfirmadas.length === 0 ? (
-          <p className="text-gray-400 text-sm">No tienes citas próximas pendientes</p>
+          <p className="text-gray-400 text-sm">Sin citas próximas</p>
         ) : (
-          <div className="space-y-2">
+          <div className="divide-y divide-slate-50">
             {pendientesOConfirmadas.map((c) => (
-              <div key={c.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
-                <div>
-                  <p className="text-sm font-medium text-gray-800">{c.nombreCliente}</p>
-                  <p className="text-xs text-gray-400">{c.nombreServicio}</p>
+              <div key={c.id} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
+                <div className="min-w-0 mr-3">
+                  <p className="text-sm font-semibold text-gray-800 truncate">{c.nombreCliente}</p>
+                  <p className="text-xs text-gray-400 truncate">{c.nombreServicio}</p>
                   <p className="text-xs text-gray-400">{formatFechaHora(c.inicioEn)}</p>
                 </div>
                 <EstadoBadge estado={c.estadoTexto} />

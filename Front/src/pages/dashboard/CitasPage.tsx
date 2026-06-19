@@ -80,6 +80,10 @@ export default function CitasPage() {
   const [fechaNueva, setFechaNueva] = useState("");
   const [slotNuevo, setSlotNuevo] = useState("");
   const [fCliente, setFCliente] = useState({ nombre: "", telefono: "", email: "", notas: "" });
+  const [emailClienteError, setEmailClienteError] = useState("");
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+  const validarEmailCliente = (v: string) =>
+    v.trim() && !EMAIL_RE.test(v.trim()) ? "Correo no válido (ej: nombre@dominio.com)" : "";
 
   // ── Queries ──────────────────────────────────────────────────────────────────
   const { data: pagCitas, isLoading } = useQuery({
@@ -205,6 +209,7 @@ export default function CitasPage() {
       setPasoCita(1);
       setSvcSel(""); setEmpSel(""); setFechaNueva(""); setSlotNuevo("");
       setFCliente({ nombre: "", telefono: "", email: "", notas: "" });
+      setEmailClienteError("");
       toast("Cita creada");
     },
     onError: (err: unknown) => {
@@ -219,6 +224,7 @@ export default function CitasPage() {
     setPasoCita(1);
     setSvcSel(""); setEmpSel(""); setFechaNueva(""); setSlotNuevo("");
     setFCliente({ nombre: "", telefono: "", email: "", notas: "" });
+    setEmailClienteError("");
   };
 
   const { mutate: actualizarNotas, isPending: guardandoNotas } = useMutation({
@@ -902,10 +908,21 @@ export default function CitasPage() {
               <input
                 type="email"
                 value={fCliente.email}
-                onChange={(e) => setFCliente((p) => ({ ...p, email: e.target.value }))}
+                onChange={(e) => {
+                  setFCliente((p) => ({ ...p, email: e.target.value }));
+                  if (emailClienteError) setEmailClienteError(validarEmailCliente(e.target.value));
+                }}
+                onBlur={() => setEmailClienteError(validarEmailCliente(fCliente.email))}
                 placeholder="correo@ejemplo.com"
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700"
+                className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700 ${
+                  emailClienteError ? "border-red-400 bg-red-50" : "border-gray-200"
+                }`}
               />
+              {emailClienteError && (
+                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                  <span>⚠</span> {emailClienteError}
+                </p>
+              )}
             </div>
 
             <div>
@@ -929,8 +946,12 @@ export default function CitasPage() {
                 ← Atrás
               </button>
               <button
-                onClick={() => crearCita()}
-                disabled={!fCliente.nombre.trim() || !fCliente.telefono.trim() || creando}
+                onClick={() => {
+                  const err = validarEmailCliente(fCliente.email);
+                  setEmailClienteError(err);
+                  if (!err) crearCita();
+                }}
+                disabled={!fCliente.nombre.trim() || !fCliente.telefono.trim() || creando || !!emailClienteError}
                 className="flex-1 bg-slate-700 hover:bg-slate-800 disabled:opacity-40 text-white font-semibold py-2.5 rounded-xl text-sm transition"
               >
                 {creando ? "Creando..." : "Crear cita"}
