@@ -91,12 +91,14 @@ export default function DashboardLayout() {
   return (
     <div className="h-lvh flex overflow-hidden bg-white">
 
-      {/* ── Overlay backdrop (móvil) — siempre montado para evitar flash gris al cerrar ── */}
+      {/* ── Overlay backdrop (móvil) — siempre montado, fade vía inline style ── */}
       <div
-        className={`fixed inset-0 z-40 md:hidden transition-opacity duration-200 ${
-          sidebarOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-        }`}
-        style={{ backgroundColor: "rgba(0,0,0,0.4)", touchAction: "manipulation" }}
+        className="fixed inset-0 z-40 md:hidden transition-colors duration-200"
+        style={{
+          backgroundColor: sidebarOpen ? "rgba(0,0,0,0.4)" : "rgba(0,0,0,0)",
+          pointerEvents: sidebarOpen ? "auto" : "none",
+          touchAction: "manipulation",
+        }}
         onClick={cerrarSidebar}
       />
 
