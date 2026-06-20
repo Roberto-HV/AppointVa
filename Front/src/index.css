@@ -59,7 +59,6 @@ button:not([disabled]):active {
   html, body {
     margin: 0;
     background-color: #ffffff;
-    overflow: hidden;
     font-family: Inter, system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
   }
