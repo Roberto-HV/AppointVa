@@ -91,13 +91,14 @@ export default function DashboardLayout() {
   return (
     <div className="h-lvh flex overflow-hidden bg-white">
 
-      {/* ── Overlay backdrop (móvil) ── */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/40 z-40 md:hidden cursor-pointer"
-          onClick={cerrarSidebar}
-        />
-      )}
+      {/* ── Overlay backdrop (móvil) — siempre montado para evitar flash gris al cerrar ── */}
+      <div
+        className={`fixed inset-0 z-40 md:hidden transition-opacity duration-200 ${
+          sidebarOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        }`}
+        style={{ backgroundColor: "rgba(0,0,0,0.4)", touchAction: "manipulation" }}
+        onClick={cerrarSidebar}
+      />
 
       {/* ── Sidebar ── */}
       <aside
@@ -108,9 +109,6 @@ export default function DashboardLayout() {
           ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
         `}
       >
-        {/* Espaciador status bar iOS — solo móvil */}
-        <div className="safe-area-top md:hidden" />
-
         {/* Logo + cerrar móvil */}
         <div
           className="relative px-5 py-3 border-b border-slate-100 flex items-center justify-center"
@@ -212,9 +210,6 @@ export default function DashboardLayout() {
 
       {/* ── Columna derecha ── */}
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-
-        {/* Espaciador status bar iOS — solo móvil */}
-        <div className="safe-area-top md:hidden bg-white" />
 
         {/* ── Barra superior móvil ── */}
         <header
