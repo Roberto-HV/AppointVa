@@ -88,6 +88,12 @@ export default function DashboardLayout() {
 
   const cerrarSidebar = () => setSidebarOpen(false);
 
+  // Resetea scroll al montar — iOS puede llegar con viewport desplazado por el teclado del login
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+  }, []);
+
   return (
     <div className="h-lvh flex overflow-hidden bg-white">
 

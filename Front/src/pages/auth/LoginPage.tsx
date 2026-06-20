@@ -45,6 +45,7 @@ export default function LoginPage() {
         return;
       }
       iniciarSesion(respuesta.token, respuesta.refreshToken, respuesta.usuario);
+      (document.activeElement as HTMLElement)?.blur();
       navigate(respuesta.usuario.rol === "SuperAdmin" ? "/admin" : "/dashboard");
     } catch (err: unknown) {
       const codigoError = (err as { response?: { data?: { codigoError?: string } } })?.response?.data?.codigoError;
@@ -78,6 +79,7 @@ export default function LoginPage() {
     try {
       const respuesta = await authApi.verificar2FA(challengeToken, codigo2FA.trim());
       iniciarSesion(respuesta.token, respuesta.refreshToken, respuesta.usuario);
+      (document.activeElement as HTMLElement)?.blur();
       navigate(respuesta.usuario.rol === "SuperAdmin" ? "/admin" : "/dashboard");
     } catch (err: unknown) {
       const mensaje =
