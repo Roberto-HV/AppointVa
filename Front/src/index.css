@@ -42,6 +42,13 @@
 .animate-step-in  { animation: stepIn  0.22s ease-out both; }
 .animate-fade-in  { animation: fadeIn  0.22s ease-out both; }
 
+/* Espaciador para el safe-area del status bar de iOS */
+.safe-area-top {
+  height: env(safe-area-inset-top, 0px);
+  min-height: 0;
+  flex-shrink: 0;
+}
+
 /* ── Micro-interactions ─────────────────────────────────────────────────── */
 button:not([disabled]) {
   transition-property: transform, opacity;

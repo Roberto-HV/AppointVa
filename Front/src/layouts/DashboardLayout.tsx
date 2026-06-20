@@ -108,10 +108,12 @@ export default function DashboardLayout() {
           ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
         `}
       >
+        {/* Espaciador status bar iOS — solo móvil */}
+        <div className="safe-area-top md:hidden" />
+
         {/* Logo + cerrar móvil */}
         <div
-          className="relative px-5 pb-3 border-b border-slate-100 flex items-center justify-center"
-          style={{ paddingTop: 'calc(env(safe-area-inset-top) + 0.75rem)' }}
+          className="relative px-5 py-3 border-b border-slate-100 flex items-center justify-center"
         >
           <div className="flex flex-col items-center gap-1">
             <img src="/MasterLogo.png" alt="AppointVa" className="h-9 object-contain" />
@@ -211,10 +213,12 @@ export default function DashboardLayout() {
       {/* ── Columna derecha ── */}
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
 
+        {/* Espaciador status bar iOS — solo móvil */}
+        <div className="safe-area-top md:hidden bg-white" />
+
         {/* ── Barra superior móvil ── */}
         <header
-          className="md:hidden bg-white border-b border-slate-100 px-4 pb-3 flex items-center gap-3 shrink-0 z-30"
-          style={{ paddingTop: 'calc(env(safe-area-inset-top) + 0.75rem)' }}
+          className="md:hidden bg-white border-b border-slate-100 px-4 py-3 flex items-center gap-3 shrink-0 z-30"
         >
           <button
             onClick={() => setSidebarOpen(true)}
