@@ -232,7 +232,7 @@ export default function EmpleadosPage() {
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
             placeholder="Buscar por nombre..."
-            className="px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700 w-56"
+            className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700"
           />
         </div>
       )}

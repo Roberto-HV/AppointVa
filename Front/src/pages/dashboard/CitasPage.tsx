@@ -44,7 +44,7 @@ export default function CitasPage() {
 
   const [vista, setVista] = useState<"lista" | "calendario">("lista");
   const [desde, setDesde] = useState(() => new Date().toISOString().split("T")[0]);
-  const [hasta, setHasta] = useState("");
+  const [hasta, setHasta] = useState(() => new Date().toISOString().split("T")[0]);
   const [empleadoId, setEmpleadoId] = useState("");
   const [busqueda, setBusqueda] = useState("");
   const [estadoFiltro, setEstadoFiltro] = useState("");
@@ -325,7 +325,7 @@ export default function CitasPage() {
 
   // ── Render ───────────────────────────────────────────────────────────────────
   return (
-    <div className="p-4 sm:p-8">
+    <div className="p-4 sm:p-8 overflow-x-hidden">
       {/* Encabezado */}
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div className="flex items-center gap-3">
@@ -369,7 +369,7 @@ export default function CitasPage() {
 
       {/* Filtros */}
       {vista === "lista" && (
-        <div className="grid grid-cols-2 gap-2 mb-6">
+        <div className="grid grid-cols-2 gap-2 mb-6 min-w-0">
           <div className="col-span-2 sm:col-span-1">
             <label className="block text-xs text-gray-500 mb-1">Buscar cliente</label>
             <input
@@ -380,7 +380,7 @@ export default function CitasPage() {
               className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700"
             />
           </div>
-          <div>
+          <div className="col-span-2">
             <label className="block text-xs text-gray-500 mb-1">Profesional</label>
             <Select value={empleadoId} onChange={(e) => { setEmpleadoId(e.target.value); setPagina(1); }} className="w-full">
               <option value="">Todos</option>
@@ -415,15 +415,19 @@ export default function CitasPage() {
               })}
             </div>
           </div>
-          <div>
-            <label className="block text-xs text-gray-500 mb-1">Desde</label>
-            <input type="date" value={desde} onChange={(e) => { setDesde(e.target.value); setPagina(1); }}
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700" />
-          </div>
-          <div>
-            <label className="block text-xs text-gray-500 mb-1">Hasta</label>
-            <input type="date" value={hasta} onChange={(e) => { setHasta(e.target.value); setPagina(1); }}
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700" />
+          <div className="col-span-2 flex gap-2">
+            <div className="flex-1 min-w-0">
+              <label className="block text-xs text-gray-500 mb-1">Desde</label>
+              <input type="date" value={desde} onChange={(e) => { setDesde(e.target.value); setPagina(1); }}
+                className="px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700"
+                style={{ width: '100%', minWidth: 0, WebkitAppearance: 'none' }} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <label className="block text-xs text-gray-500 mb-1">Hasta</label>
+              <input type="date" value={hasta} onChange={(e) => { setHasta(e.target.value); setPagina(1); }}
+                className="px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700"
+                style={{ width: '100%', minWidth: 0, WebkitAppearance: 'none' }} />
+            </div>
           </div>
           {(desde || hasta || empleadoId || busqueda || estadoFiltro) && (
             <div className="col-span-2 flex">
