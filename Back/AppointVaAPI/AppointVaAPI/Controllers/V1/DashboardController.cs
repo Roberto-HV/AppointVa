@@ -82,7 +82,7 @@ namespace AppointVaAPI.Controllers.V1
                 .GroupBy(c => c.Servicio!.Nombre)
                 .Select(g => new ServicioPopularDto
                 {
-                    NombreServicio = g.Key,
+                    Nombre = g.Key,
                     TotalCitas = g.Count()
                 })
                 .OrderByDescending(s => s.TotalCitas)

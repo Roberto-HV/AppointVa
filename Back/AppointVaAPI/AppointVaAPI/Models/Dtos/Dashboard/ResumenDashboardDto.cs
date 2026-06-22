@@ -26,7 +26,7 @@ namespace AppointVaAPI.Models.Dtos.Dashboard
 
     public class ServicioPopularDto
     {
-        public string NombreServicio { get; set; } = string.Empty;
+        public string Nombre { get; set; } = string.Empty;
         public int TotalCitas { get; set; }
     }
 }
