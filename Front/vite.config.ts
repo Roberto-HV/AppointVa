@@ -14,7 +14,7 @@ export default defineConfig({
       "/api": {
         target: "https://appointva.onrender.com",
         changeOrigin: true,
-        secure: true,
+        secure: false,
       },
     },
   },

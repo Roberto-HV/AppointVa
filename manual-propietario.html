@@ -1,0 +1,1369 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AppointVa — Manual del Propietario</title>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --gold:       #C8A961;
+      --gold-light: #f5edda;
+      --gold-dim:   rgba(200, 169, 97, 0.18);
+      --dark:       #1a1a1a;
+      --gray:       #6b7280;
+      --gray-light: #9ca3af;
+      --light:      #f9f8f5;
+      --border:     #e8e4d9;
+      --white:      #ffffff;
+      --green:      #16a34a;
+      --green-light:#dcfce7;
+      --blue:       #2563eb;
+      --blue-light: #dbeafe;
+      --red:        #dc2626;
+      --red-light:  #fee2e2;
+      --radius-card: 16px;
+      --shadow-card: 0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.05);
+    }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: var(--light);
+      color: var(--dark);
+      line-height: 1.65;
+      font-size: 15px;
+    }
+
+    /* ── HERO ──────────────────────────────────────────────── */
+    .hero {
+      background: var(--dark);
+      padding: 56px 48px 52px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: "";
+      position: absolute;
+      top: -100px; right: -100px;
+      width: 420px; height: 420px;
+      background: radial-gradient(circle, var(--gold-dim) 0%, transparent 68%);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+    .hero::after {
+      content: "";
+      position: absolute;
+      bottom: -60px; left: -60px;
+      width: 240px; height: 240px;
+      background: radial-gradient(circle, rgba(200,169,97,0.08) 0%, transparent 70%);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+    .hero-inner {
+      max-width: 860px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+    .logo-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 36px;
+    }
+    .logo-box {
+      width: 52px; height: 52px;
+      background: var(--gold);
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .logo-name {
+      font-size: 26px; font-weight: 800;
+      color: var(--white); letter-spacing: -0.5px;
+    }
+    .hero h1 {
+      font-size: 40px; font-weight: 800;
+      color: var(--white); letter-spacing: -1.2px;
+      line-height: 1.12;
+      margin-bottom: 14px;
+    }
+    .hero h1 span { color: var(--gold); }
+    .hero-sub {
+      font-size: 16px; color: #9ca3af;
+      max-width: 520px; line-height: 1.7;
+      margin-bottom: 28px;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(200,169,97,0.15);
+      border: 1px solid rgba(200,169,97,0.35);
+      color: var(--gold);
+      font-size: 12px; font-weight: 700;
+      padding: 6px 16px; border-radius: 999px;
+      letter-spacing: 0.3px;
+    }
+
+    /* ── WRAPPER ───────────────────────────────────────────── */
+    .page {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 24px 72px;
+    }
+
+    /* ── TABLE OF CONTENTS — appointment-slot aesthetic ──── */
+    .toc-section {
+      padding: 52px 0 0;
+    }
+    .section-label {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 1.4px;
+      color: var(--gold); margin-bottom: 8px;
+    }
+    .section-label::before {
+      content: "";
+      display: block; width: 18px; height: 2px;
+      background: var(--gold); border-radius: 2px;
+    }
+    .section-title {
+      font-size: 24px; font-weight: 800;
+      color: var(--dark); letter-spacing: -0.4px;
+      margin-bottom: 28px;
+    }
+
+    /* The agenda / appointment-slot TOC */
+    .toc-agenda {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      overflow: hidden;
+      box-shadow: var(--shadow-card);
+    }
+    .toc-header {
+      background: var(--dark);
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .toc-header-label {
+      font-size: 11px; font-weight: 700; letter-spacing: 1px;
+      text-transform: uppercase; color: var(--gold);
+    }
+    .toc-header-title {
+      font-size: 14px; font-weight: 700; color: var(--white);
+      flex: 1;
+    }
+    .toc-list {
+      display: flex; flex-direction: column;
+    }
+    .toc-item {
+      display: flex;
+      align-items: stretch;
+      border-bottom: 1px solid #f0ede6;
+      text-decoration: none;
+      color: inherit;
+      transition: background 0.15s;
+    }
+    .toc-item:last-child { border-bottom: none; }
+    .toc-item:hover { background: var(--gold-light); }
+    .toc-item:hover .toc-num { background: var(--gold); color: var(--white); }
+    .toc-rail {
+      width: 5px;
+      background: var(--gold);
+      flex-shrink: 0;
+    }
+    .toc-num {
+      width: 52px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 800;
+      color: var(--gold); letter-spacing: 0.5px;
+      background: var(--gold-light);
+      border-right: 1px solid var(--border);
+      padding: 14px 0;
+      transition: background 0.15s, color 0.15s;
+    }
+    .toc-content {
+      padding: 14px 20px;
+      flex: 1;
+    }
+    .toc-name {
+      font-size: 14px; font-weight: 700; color: var(--dark);
+      margin-bottom: 2px;
+    }
+    .toc-desc {
+      font-size: 12px; color: var(--gray-light);
+    }
+    .toc-arrow {
+      display: flex; align-items: center; padding: 0 18px;
+      color: var(--gold); font-size: 14px; font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    /* ── SECTION BLOCKS ─────────────────────────────────────── */
+    .section {
+      padding: 52px 0 0;
+    }
+
+    /* ── CARDS ─────────────────────────────────────────────── */
+    .card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      padding: 24px;
+      box-shadow: var(--shadow-card);
+    }
+    .card + .card { margin-top: 12px; }
+    .card-title {
+      font-size: 15px; font-weight: 700;
+      margin-bottom: 6px; color: var(--dark);
+    }
+    .card p {
+      font-size: 14px; color: var(--gray);
+      line-height: 1.65;
+    }
+
+    /* ── STEP LISTS ────────────────────────────────────────── */
+    .steps {
+      display: flex; flex-direction: column; gap: 0;
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      overflow: hidden;
+      box-shadow: var(--shadow-card);
+    }
+    .step-item {
+      display: flex; align-items: flex-start; gap: 18px;
+      padding: 20px 24px;
+      border-bottom: 1px solid #f0ede6;
+      position: relative;
+    }
+    .step-item:last-child { border-bottom: none; }
+    .step-num {
+      width: 34px; height: 34px; flex-shrink: 0;
+      background: var(--gold);
+      color: var(--white);
+      border-radius: 50%;
+      font-size: 14px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      margin-top: 1px;
+    }
+    .step-body {}
+    .step-title {
+      font-size: 15px; font-weight: 700;
+      color: var(--dark); margin-bottom: 4px;
+    }
+    .step-desc {
+      font-size: 13px; color: var(--gray); line-height: 1.6;
+    }
+    .step-code {
+      display: inline-block;
+      margin-top: 6px;
+      background: #f0ede6;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 3px 10px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px; color: var(--dark);
+    }
+
+    /* ── TIP / NOTE BOXES ───────────────────────────────────── */
+    .tip {
+      background: var(--gold-light);
+      border: 1px solid rgba(200,169,97,0.45);
+      border-left: 4px solid var(--gold);
+      border-radius: 10px;
+      padding: 16px 20px;
+      display: flex; align-items: flex-start; gap: 12px;
+      margin-top: 16px;
+    }
+    .tip-icon {
+      flex-shrink: 0; width: 22px; height: 22px;
+      margin-top: 1px;
+    }
+    .tip p {
+      font-size: 13px; color: #5a4010; line-height: 1.6;
+    }
+    .tip strong { color: #3d2a05; }
+
+    .warn {
+      background: var(--red-light);
+      border: 1px solid #fecaca;
+      border-left: 4px solid var(--red);
+      border-radius: 10px;
+      padding: 16px 20px;
+      display: flex; align-items: flex-start; gap: 12px;
+      margin-top: 16px;
+    }
+    .warn-icon {
+      flex-shrink: 0; width: 22px; height: 22px;
+      margin-top: 1px;
+    }
+    .warn p {
+      font-size: 13px; color: #7f1d1d; line-height: 1.6;
+    }
+    .warn strong { color: #5b0f0f; }
+
+    .info {
+      background: var(--blue-light);
+      border: 1px solid #bfdbfe;
+      border-left: 4px solid var(--blue);
+      border-radius: 10px;
+      padding: 16px 20px;
+      display: flex; align-items: flex-start; gap: 12px;
+      margin-top: 16px;
+    }
+    .info-icon {
+      flex-shrink: 0; width: 22px; height: 22px;
+      margin-top: 1px;
+    }
+    .info p {
+      font-size: 13px; color: #1e3a5f; line-height: 1.6;
+    }
+    .info strong { color: #1e3a5f; }
+
+    /* ── FEATURE LIST ───────────────────────────────────────── */
+    .feat-list {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      overflow: hidden;
+      box-shadow: var(--shadow-card);
+    }
+    .feat-item {
+      display: flex; align-items: flex-start; gap: 14px;
+      padding: 16px 24px;
+      border-bottom: 1px solid #f0ede6;
+    }
+    .feat-item:last-child { border-bottom: none; }
+    .feat-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--gold);
+      flex-shrink: 0; margin-top: 7px;
+    }
+    .feat-text strong {
+      font-size: 14px; font-weight: 700;
+      color: var(--dark); display: block; margin-bottom: 2px;
+    }
+    .feat-text span {
+      font-size: 13px; color: var(--gray);
+    }
+
+    /* ── STATUS PILLS ───────────────────────────────────────── */
+    .status-grid {
+      display: flex; flex-wrap: wrap; gap: 10px;
+      margin-top: 16px;
+    }
+    .status-pill {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 7px 14px; border-radius: 999px;
+      font-size: 12px; font-weight: 700; letter-spacing: 0.2px;
+    }
+    .status-pill .dot {
+      width: 7px; height: 7px; border-radius: 50%;
+    }
+    .s-pending  { background: #fef3c7; color: #78350f; }
+    .s-pending .dot  { background: #f59e0b; }
+    .s-confirm  { background: var(--blue-light); color: #1d4ed8; }
+    .s-confirm .dot  { background: var(--blue); }
+    .s-complete { background: var(--green-light); color: #15803d; }
+    .s-complete .dot { background: var(--green); }
+    .s-cancel   { background: var(--red-light); color: #b91c1c; }
+    .s-cancel .dot   { background: var(--red); }
+    .s-noshow   { background: #f3f4f6; color: #374151; }
+    .s-noshow .dot   { background: #6b7280; }
+
+    /* ── TWO-COL GRID ───────────────────────────────────────── */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 14px;
+    }
+
+    .mini-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      box-shadow: var(--shadow-card);
+    }
+    .mini-card-icon {
+      width: 38px; height: 38px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 12px;
+    }
+    .bg-gold   { background: var(--gold-light); }
+    .bg-green  { background: var(--green-light); }
+    .bg-blue   { background: var(--blue-light); }
+    .bg-red    { background: var(--red-light); }
+    .bg-slate  { background: #f1f5f9; }
+    .bg-purple { background: #ede9fe; }
+    .bg-teal   { background: #ccfbf1; }
+    .bg-orange { background: #ffedd5; }
+
+    .mini-card h4 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+    .mini-card p  { font-size: 12px; color: var(--gray); line-height: 1.5; }
+
+    /* ── URL DEMO ───────────────────────────────────────────── */
+    .url-demo {
+      background: var(--dark);
+      border-radius: 12px;
+      padding: 14px 20px;
+      display: flex; align-items: center; gap: 14px;
+      margin-top: 16px;
+    }
+    .url-label {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
+      text-transform: uppercase; color: var(--gold);
+      flex-shrink: 0;
+    }
+    .url-text {
+      font-family: 'Courier New', monospace;
+      font-size: 13px; color: #e5e7eb; flex: 1;
+    }
+    .url-text em { color: var(--gold); font-style: normal; font-weight: 700; }
+
+    /* ── DIVIDER ────────────────────────────────────────────── */
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 52px 0 0;
+    }
+
+    /* ── FOOTER ─────────────────────────────────────────────── */
+    .footer {
+      text-align: center;
+      padding: 36px 24px 52px;
+    }
+    .footer p { font-size: 12px; color: var(--gray-light); }
+    .footer strong { color: var(--gold); }
+
+    /* ── SECTION ANCHOR OFFSET (TOC links) ──────────────────── */
+    .anchor-target {
+      scroll-margin-top: 24px;
+    }
+
+    /* ── RESPONSIVE ─────────────────────────────────────────── */
+    @media (max-width: 640px) {
+      .hero { padding: 40px 20px 36px; }
+      .hero h1 { font-size: 28px; }
+      .page { padding: 0 16px 56px; }
+      .grid-2 { grid-template-columns: 1fr; }
+      .grid-3 { grid-template-columns: 1fr; }
+      .toc-num { width: 44px; font-size: 11px; }
+      .toc-arrow { padding: 0 12px; }
+    }
+
+    /* ── REDUCED MOTION ─────────────────────────────────────── */
+    @media (prefers-reduced-motion: reduce) {
+      .toc-item { transition: none; }
+      .toc-num  { transition: none; }
+    }
+
+    /* ── FOCUS ──────────────────────────────────────────────── */
+    a:focus-visible {
+      outline: 2px solid var(--gold);
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!--  HERO                                                      -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<header class="hero">
+  <div class="hero-inner">
+    <div class="logo-row">
+      <div class="logo-box" aria-hidden="true">
+        <svg viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg" width="30" height="30">
+          <rect x="3" y="5" width="24" height="22" rx="4" fill="white" fill-opacity="0.15" stroke="white" stroke-width="1.5"/>
+          <rect x="3" y="5" width="24" height="8" rx="4" fill="white" fill-opacity="0.25"/>
+          <line x1="10" y1="3" x2="10" y2="9" stroke="white" stroke-width="2" stroke-linecap="round"/>
+          <line x1="20" y1="3" x2="20" y2="9" stroke="white" stroke-width="2" stroke-linecap="round"/>
+          <rect x="8" y="17" width="5" height="5" rx="1.5" fill="white" fill-opacity="0.8"/>
+          <rect x="17" y="17" width="5" height="5" rx="1.5" fill="white" fill-opacity="0.4"/>
+        </svg>
+      </div>
+      <span class="logo-name">AppointVa</span>
+    </div>
+
+    <h1>Manual del <span>Propietario</span></h1>
+    <p class="hero-sub">Guía completa para gestionar tu negocio en AppointVa — desde el registro hasta los reportes de ingresos.</p>
+    <div class="hero-badge" aria-label="Versión 4.1, Junio 2026">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+        <circle cx="6" cy="6" r="5" stroke="#C8A961" stroke-width="1.5"/>
+        <line x1="6" y1="3.5" x2="6" y2="6" stroke="#C8A961" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="6" y1="6" x2="8" y2="7.5" stroke="#C8A961" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      Versión 4.1 &nbsp;·&nbsp; Junio 2026
+    </div>
+  </div>
+</header>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!--  TABLE OF CONTENTS                                         -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<main>
+<div class="page">
+
+  <nav class="toc-section" aria-label="Tabla de contenidos">
+    <div class="section-label">Agenda del manual</div>
+    <div class="section-title">¿Qué quieres hacer hoy?</div>
+
+    <div class="toc-agenda" role="list">
+      <div class="toc-header" aria-hidden="true">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <rect x="1" y="2" width="14" height="13" rx="2.5" stroke="#C8A961" stroke-width="1.4"/>
+          <line x1="5" y1="1" x2="5" y2="4" stroke="#C8A961" stroke-width="1.4" stroke-linecap="round"/>
+          <line x1="11" y1="1" x2="11" y2="4" stroke="#C8A961" stroke-width="1.4" stroke-linecap="round"/>
+          <rect x="4" y="8" width="3" height="3" rx="0.8" fill="#C8A961" fill-opacity="0.6"/>
+          <rect x="9" y="8" width="3" height="3" rx="0.8" fill="#C8A961" fill-opacity="0.3"/>
+        </svg>
+        <span class="toc-header-title">Manual del Propietario — 11 secciones</span>
+        <span class="toc-header-label">Ir a sección</span>
+      </div>
+
+      <div class="toc-list">
+
+        <a class="toc-item" href="#primeros-pasos" role="listitem">
+          <div class="toc-rail" aria-hidden="true"></div>
+          <div class="toc-num" aria-hidden="true">01</div>
+          <div class="toc-content">
+            <div class="toc-name">Primeros pasos</div>
+            <div class="toc-desc">Registro, verificación de email e ingreso inicial</div>
+          </div>
+          <div class="toc-arrow" aria-hidden="true">→</div>
+        </a>
+
+        <a class="toc-item" href="#configuracion" role="listitem">
+          <div class="toc-rail" aria-hidden="true"></div>
+          <div class="toc-num" aria-hidden="true">02</div>
+          <div class="toc-content">
+            <div class="toc-name">Configuración del negocio</div>
+            <div class="toc-desc">Datos, logo, horarios y URL pública</div>
+          </div>
+          <div class="toc-arrow" aria-hidden="true">→</div>
+        </a>
+
+        <a class="toc-item" href="#servicios" role="listitem">
+          <div class="toc-rail" aria-hidden="true"></div>
+          <div class="toc-num" aria-hidden="true">03</div>
+          <div class="toc-content">
+            <div class="toc-name">Gestión de servicios</div>
+            <div class="toc-desc">Crear, asignar y administrar los servicios que ofreces</div>
+          </div>
+          <div class="toc-arrow" aria-hidden="true">→</div>
+        </a>
+
+        <a class="toc-item" href="#empleados" role="listitem">
+          <div class="toc-rail" aria-hidden="true"></div>
+          <div class="toc-num" aria-hidden="true">04</div>
+          <div class="toc-content">
+            <div class="toc-name">Gestión de empleados</div>
+            <div class="toc-desc">Invitar, asignar servicios y controlar horarios individuales</div>
+          </div>
+          <div class="toc-arrow" aria-hidden="true">→</div>
+        </a>
+
+        <a class="toc-item" href="#citas" role="listitem">
+          <div class="toc-rail" aria-hidden="true"></div>
+          <div class="toc-num" aria-hidden="true">05</div>
+          <div class="toc-content">
+            <div class="toc-name">Gestión de citas</div>
+            <div class="toc-desc">Ver, crear, cambiar estado y exportar citas</div>
+          </div>
+          <div class="toc-arrow" aria-hidden="true">→</div>
+        </a>
+
+        <a class="toc-item" href="#clientes" role="listitem">
+          <div class="toc-rail" aria-hidden="true"></div>
+          <div class="toc-num" aria-hidden="true">06</div>
+          <div class="toc-content">
+            <div class="toc-name">Gestión de clientes</div>
+            <div class="toc-desc">Lista, historial y búsqueda de clientes</div>
+          </div>
+          <div class="toc-arrow" aria-hidden="true">→</div>
+        </a>
+
+        <a class="toc-item" href="#enlace" role="listitem">
+          <div class="toc-rail" aria-hidden="true"></div>
+          <div class="toc-num" aria-hidden="true">07</div>
+          <div class="toc-content">
+            <div class="toc-name">Enlace de reservas</div>
+            <div class="toc-desc">Compartir tu página pública por WhatsApp e Instagram</div>
+          </div>
+          <div class="toc-arrow" aria-hidden="true">→</div>
+        </a>
+
+        <a class="toc-item" href="#galeria" role="listitem">
+          <div class="toc-rail" aria-hidden="true"></div>
+          <div class="toc-num" aria-hidden="true">08</div>
+          <div class="toc-content">
+            <div class="toc-name">Galería</div>
+            <div class="toc-desc">Subir fotos que se muestran en tu página de booking</div>
+          </div>
+          <div class="toc-arrow" aria-hidden="true">→</div>
+        </a>
+
+        <a class="toc-item" href="#espera" role="listitem">
+          <div class="toc-rail" aria-hidden="true"></div>
+          <div class="toc-num" aria-hidden="true">09</div>
+          <div class="toc-content">
+            <div class="toc-name">Lista de espera</div>
+            <div class="toc-desc">Gestionar clientes que esperan un slot disponible</div>
+          </div>
+          <div class="toc-arrow" aria-hidden="true">→</div>
+        </a>
+
+        <a class="toc-item" href="#reportes" role="listitem">
+          <div class="toc-rail" aria-hidden="true"></div>
+          <div class="toc-num" aria-hidden="true">10</div>
+          <div class="toc-content">
+            <div class="toc-name">Reportes</div>
+            <div class="toc-desc">Ingresos, citas por empleado y gráficas de tendencia</div>
+          </div>
+          <div class="toc-arrow" aria-hidden="true">→</div>
+        </a>
+
+        <a class="toc-item" href="#seguridad" role="listitem">
+          <div class="toc-rail" aria-hidden="true"></div>
+          <div class="toc-num" aria-hidden="true">11</div>
+          <div class="toc-content">
+            <div class="toc-name">Seguridad</div>
+            <div class="toc-desc">2FA y cambio de contraseña</div>
+          </div>
+          <div class="toc-arrow" aria-hidden="true">→</div>
+        </a>
+
+      </div>
+    </div>
+  </nav>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!--  01 — PRIMEROS PASOS                                       -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <section class="section anchor-target" id="primeros-pasos" aria-labelledby="h-primeros-pasos">
+    <div class="divider" aria-hidden="true"></div>
+    <div style="padding-top: 52px;">
+      <div class="section-label">Sección 01</div>
+      <h2 class="section-title" id="h-primeros-pasos">Primeros pasos</h2>
+
+      <div class="steps">
+        <div class="step-item">
+          <div class="step-num" aria-hidden="true">1</div>
+          <div class="step-body">
+            <div class="step-title">Crea tu cuenta en /registro</div>
+            <p class="step-desc">Ingresa a <strong>appointva.com/registro</strong> e introduce tu email, el nombre de tu negocio y una contraseña segura. El nombre del negocio es lo primero que verán tus clientes, así que úsalo tal como aparece en tu local.</p>
+            <span class="step-code">appointva.com/registro</span>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num" aria-hidden="true">2</div>
+          <div class="step-body">
+            <div class="step-title">Verifica tu email</div>
+            <p class="step-desc">Revisa tu bandeja de entrada — recibirás un correo de AppointVa con un enlace de verificación. Haz clic en él para activar tu cuenta. Si no lo ves en un minuto, revisa la carpeta de spam.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num" aria-hidden="true">3</div>
+          <div class="step-body">
+            <div class="step-title">Inicia sesión por primera vez</div>
+            <p class="step-desc">Una vez verificado, inicia sesión en <strong>appointva.com/login</strong>. El sistema te redirigirá automáticamente al <strong>Dashboard</strong>, donde verás un resumen de las citas del día y acceso a todas las secciones.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="tip">
+        <svg class="tip-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+          <circle cx="11" cy="11" r="9" stroke="#C8A961" stroke-width="1.5"/>
+          <line x1="11" y1="7" x2="11" y2="11.5" stroke="#C8A961" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="11" cy="14.5" r="1.2" fill="#C8A961"/>
+        </svg>
+        <p><strong>Consejo:</strong> Completa la configuración del negocio antes de compartir tu enlace de reservas. Un perfil incompleto puede confundir a los clientes.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!--  02 — CONFIGURACIÓN DEL NEGOCIO                           -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <section class="section anchor-target" id="configuracion" aria-labelledby="h-configuracion">
+    <div class="divider" aria-hidden="true"></div>
+    <div style="padding-top: 52px;">
+      <div class="section-label">Sección 02</div>
+      <h2 class="section-title" id="h-configuracion">Configuración del negocio</h2>
+      <p style="font-size:14px; color:var(--gray); margin-bottom:24px;">Ve a <strong>Mi negocio</strong> en la barra lateral. Desde aquí controlas todo lo que ven tus clientes.</p>
+
+      <div class="grid-2">
+        <div class="mini-card">
+          <div class="mini-card-icon bg-gold">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <path d="M10 2C8.9 2 8 2.9 8 4s.9 2 2 2 2-.9 2-2-.9-2-2-2z" fill="#C8A961"/>
+              <path d="M16 7H4a1 1 0 000 2h1v7a1 1 0 001 1h8a1 1 0 001-1V9h1a1 1 0 000-2z" fill="#C8A961" fill-opacity="0.6"/>
+            </svg>
+          </div>
+          <h4>Nombre y descripción</h4>
+          <p>El nombre del negocio aparece en tu página pública. La descripción ayuda a los clientes a entender qué ofreces — sé específico.</p>
+        </div>
+        <div class="mini-card">
+          <div class="mini-card-icon bg-green">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <path d="M3 5a2 2 0 012-2h10a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V5z" stroke="#16a34a" stroke-width="1.5"/>
+              <path d="M7 10l2 2 4-4" stroke="#16a34a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <h4>Teléfono WhatsApp</h4>
+          <p>Ingresa el número con código de país (ej. +505 8888 0000). AppointVa lo usa para que los clientes te contacten directamente.</p>
+        </div>
+        <div class="mini-card">
+          <div class="mini-card-icon bg-blue">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <rect x="2" y="4" width="16" height="12" rx="2" stroke="#2563eb" stroke-width="1.5"/>
+              <circle cx="10" cy="10" r="3" stroke="#2563eb" stroke-width="1.5"/>
+            </svg>
+          </div>
+          <h4>Logo y foto de portada</h4>
+          <p>Sube imágenes en formato JPG o PNG. El logo aparece en la barra de tu página de booking; la portada ocupa el banner superior.</p>
+        </div>
+        <div class="mini-card">
+          <div class="mini-card-icon bg-purple">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <circle cx="10" cy="10" r="4" stroke="#7c3aed" stroke-width="1.5"/>
+              <path d="M10 6V4M10 16v-2M6 10H4M16 10h-2" stroke="#7c3aed" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <h4>Color primario</h4>
+          <p>Elige el color que identifica tu marca. Aparece en los botones y acentos de tu página pública de reservas.</p>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:14px;">
+        <div class="card-title">Slug / URL de reservas</div>
+        <p>El slug es la parte de la URL que identifica a tu negocio. Se define al registrarte y puede editarse desde <strong>Mi negocio → Configuración</strong>.</p>
+        <div class="url-demo" aria-label="Ejemplo de URL pública">
+          <span class="url-label">Tu enlace</span>
+          <span class="url-text">appointva.com/b/<em>tu-negocio</em></span>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:12px;">
+        <div class="card-title">Horarios de atención</div>
+        <p style="margin-bottom:14px; font-size:14px; color:var(--gray);">Define qué días y en qué horas recibes clientes. Solo los horarios activos estarán disponibles para reservas.</p>
+        <div class="feat-list">
+          <div class="feat-item">
+            <div class="feat-dot"></div>
+            <div class="feat-text">
+              <strong>Activar / desactivar días</strong>
+              <span>Marca el interruptor del día para habilitarlo. Los días desactivados no aparecen en el calendario de tu página pública.</span>
+            </div>
+          </div>
+          <div class="feat-item">
+            <div class="feat-dot"></div>
+            <div class="feat-text">
+              <strong>Hora de inicio y fin</strong>
+              <span>Establece el rango de atención para cada día activo. Por ejemplo: lunes a viernes de 8:00 a 18:00.</span>
+            </div>
+          </div>
+          <div class="feat-item">
+            <div class="feat-dot"></div>
+            <div class="feat-text">
+              <strong>Horario individual por empleado</strong>
+              <span>Si un empleado tiene un horario diferente al del negocio, puedes ajustarlo desde la sección Empleados.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tip">
+        <svg class="tip-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+          <circle cx="11" cy="11" r="9" stroke="#C8A961" stroke-width="1.5"/>
+          <line x1="11" y1="7" x2="11" y2="11.5" stroke="#C8A961" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="11" cy="14.5" r="1.2" fill="#C8A961"/>
+        </svg>
+        <p><strong>Consejo:</strong> Si cierras por días festivos, desactiva esos días desde tu calendario. Tus clientes no podrán reservar en esas fechas.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!--  03 — SERVICIOS                                            -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <section class="section anchor-target" id="servicios" aria-labelledby="h-servicios">
+    <div class="divider" aria-hidden="true"></div>
+    <div style="padding-top: 52px;">
+      <div class="section-label">Sección 03</div>
+      <h2 class="section-title" id="h-servicios">Gestión de servicios</h2>
+      <p style="font-size:14px; color:var(--gray); margin-bottom:24px;">Ve a <strong>Servicios</strong> en el menú lateral. Aquí creas y administras todo lo que ofreces.</p>
+
+      <h3 style="font-size:16px; font-weight:700; margin-bottom:14px;">Crear un nuevo servicio</h3>
+      <div class="steps">
+        <div class="step-item">
+          <div class="step-num" aria-hidden="true">1</div>
+          <div class="step-body">
+            <div class="step-title">Haz clic en "Nuevo servicio"</div>
+            <p class="step-desc">El botón está en la esquina superior derecha de la pantalla Servicios.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num" aria-hidden="true">2</div>
+          <div class="step-body">
+            <div class="step-title">Completa los datos del servicio</div>
+            <p class="step-desc">Introduce el <strong>nombre</strong> (ej. "Corte caballero"), una <strong>descripción</strong> breve, la <strong>duración en minutos</strong>, el <strong>precio</strong> y la <strong>categoría</strong> a la que pertenece.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num" aria-hidden="true">3</div>
+          <div class="step-body">
+            <div class="step-title">Guarda y asigna el servicio</div>
+            <p class="step-desc">Haz clic en <strong>Guardar</strong>. Luego, desde la tarjeta del servicio, usa <strong>Asignar empleados</strong> para indicar quiénes pueden realizarlo.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2" style="margin-top:16px;">
+        <div class="mini-card">
+          <div class="mini-card-icon bg-green">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <circle cx="10" cy="10" r="8" stroke="#16a34a" stroke-width="1.5"/>
+              <path d="M7 10l2 2 4-4" stroke="#16a34a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <h4>Activar / desactivar</h4>
+          <p>Usa el interruptor en la tarjeta del servicio. Un servicio inactivo no aparece en la página pública, pero conserva su historial.</p>
+        </div>
+        <div class="mini-card">
+          <div class="mini-card-icon bg-gold">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <path d="M10 4v12M4 10h12" stroke="#C8A961" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <h4>Asignar a empleados</h4>
+          <p>Cada servicio puede realizarlo uno o varios empleados. Solo los empleados asignados aparecerán como opción al reservar ese servicio.</p>
+        </div>
+      </div>
+
+      <div class="warn">
+        <svg class="warn-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+          <path d="M11 2L2 19h18L11 2z" stroke="#dc2626" stroke-width="1.5" stroke-linejoin="round"/>
+          <line x1="11" y1="9" x2="11" y2="13" stroke="#dc2626" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="11" cy="16" r="1.2" fill="#dc2626"/>
+        </svg>
+        <p><strong>Importante:</strong> Si eliminas un servicio, las citas existentes asociadas a él conservan el nombre, pero no podrás crear nuevas citas con ese servicio. Desactívalo en su lugar si planeas reactivarlo en el futuro.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!--  04 — EMPLEADOS                                            -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <section class="section anchor-target" id="empleados" aria-labelledby="h-empleados">
+    <div class="divider" aria-hidden="true"></div>
+    <div style="padding-top: 52px;">
+      <div class="section-label">Sección 04</div>
+      <h2 class="section-title" id="h-empleados">Gestión de empleados</h2>
+      <p style="font-size:14px; color:var(--gray); margin-bottom:24px;">Ve a <strong>Empleados</strong> en el menú lateral. Desde aquí invitas y configuras a cada miembro de tu equipo.</p>
+
+      <div class="steps">
+        <div class="step-item">
+          <div class="step-num" aria-hidden="true">1</div>
+          <div class="step-body">
+            <div class="step-title">Invita al empleado por email</div>
+            <p class="step-desc">Haz clic en <strong>Nuevo empleado</strong> e introduce su nombre y correo. AppointVa le enviará un email con sus credenciales de acceso (contraseña temporal).</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num" aria-hidden="true">2</div>
+          <div class="step-body">
+            <div class="step-title">Asigna los servicios que puede realizar</div>
+            <p class="step-desc">Desde la tarjeta del empleado, activa los servicios a los que tiene acceso. Solo podrá tomar citas de esos servicios.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num" aria-hidden="true">3</div>
+          <div class="step-body">
+            <div class="step-title">Configura su horario individual</div>
+            <p class="step-desc">Si el empleado trabaja en horario distinto al del negocio, define su propio horario día a día. Esto limita cuándo los clientes pueden reservarle a él específicamente.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num" aria-hidden="true">4</div>
+          <div class="step-body">
+            <div class="step-title">Activa o desactiva según necesites</div>
+            <p class="step-desc">Un empleado desactivado no aparece como opción en el booking público, pero mantiene todo su historial de citas intacto.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="info">
+        <svg class="info-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+          <circle cx="11" cy="11" r="9" stroke="#2563eb" stroke-width="1.5"/>
+          <line x1="11" y1="7" x2="11" y2="11.5" stroke="#2563eb" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="11" cy="14.5" r="1.2" fill="#2563eb"/>
+        </svg>
+        <p><strong>Acceso del empleado:</strong> El empleado tiene un panel limitado. Solo ve sus propias citas del día y puede marcar su estado. No puede ver reportes, configurar el negocio ni acceder a los datos de otros empleados.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!--  05 — CITAS                                                -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <section class="section anchor-target" id="citas" aria-labelledby="h-citas">
+    <div class="divider" aria-hidden="true"></div>
+    <div style="padding-top: 52px;">
+      <div class="section-label">Sección 05</div>
+      <h2 class="section-title" id="h-citas">Gestión de citas</h2>
+
+      <div class="card">
+        <div class="card-title">Ver las citas del día — Dashboard</div>
+        <p>Al entrar al sistema, el <strong>Dashboard (Inicio)</strong> muestra un resumen de las citas programadas para hoy: cliente, servicio, empleado y hora. Es el punto de partida de tu jornada.</p>
+      </div>
+
+      <div class="card" style="margin-top:14px;">
+        <div class="card-title">Lista de citas con filtros</div>
+        <p>En <strong>Citas → Lista</strong> puedes filtrar por fecha, estado o empleado. Útil para encontrar una cita específica o revisar el historial de un cliente.</p>
+      </div>
+
+      <h3 style="font-size:16px; font-weight:700; margin:24px 0 14px;">Estados de una cita</h3>
+      <p style="font-size:14px; color:var(--gray); margin-bottom:12px;">Cada cita tiene un estado que puedes cambiar manualmente en cualquier momento.</p>
+      <div class="status-grid" role="list" aria-label="Estados de una cita">
+        <div class="status-pill s-pending" role="listitem">
+          <div class="dot"></div> Pendiente
+        </div>
+        <div class="status-pill s-confirm" role="listitem">
+          <div class="dot"></div> Confirmada
+        </div>
+        <div class="status-pill s-complete" role="listitem">
+          <div class="dot"></div> Completada
+        </div>
+        <div class="status-pill s-cancel" role="listitem">
+          <div class="dot"></div> Cancelada
+        </div>
+        <div class="status-pill s-noshow" role="listitem">
+          <div class="dot"></div> Inasistencia
+        </div>
+      </div>
+
+      <div class="feat-list" style="margin-top:20px;">
+        <div class="feat-item">
+          <div class="feat-dot"></div>
+          <div class="feat-text">
+            <strong>Pendiente</strong>
+            <span>La cita fue reservada pero aún no confirmada por el negocio.</span>
+          </div>
+        </div>
+        <div class="feat-item">
+          <div class="feat-dot"></div>
+          <div class="feat-text">
+            <strong>Confirmada</strong>
+            <span>El negocio aprobó la cita. El cliente ya puede presentarse con seguridad.</span>
+          </div>
+        </div>
+        <div class="feat-item">
+          <div class="feat-dot"></div>
+          <div class="feat-text">
+            <strong>Completada</strong>
+            <span>El servicio se realizó correctamente. Pasa a los reportes de ingresos.</span>
+          </div>
+        </div>
+        <div class="feat-item">
+          <div class="feat-dot"></div>
+          <div class="feat-text">
+            <strong>Cancelada</strong>
+            <span>La cita no se realizará. El slot queda libre para nuevas reservas.</span>
+          </div>
+        </div>
+        <div class="feat-item">
+          <div class="feat-dot"></div>
+          <div class="feat-text">
+            <strong>Inasistencia</strong>
+            <span>El cliente no se presentó sin cancelar. Útil para identificar patrones de clientes.</span>
+          </div>
+        </div>
+      </div>
+
+      <h3 style="font-size:16px; font-weight:700; margin:24px 0 14px;">Otras acciones</h3>
+      <div class="grid-2">
+        <div class="mini-card">
+          <div class="mini-card-icon bg-gold">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <path d="M10 4v12M4 10h12" stroke="#C8A961" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <h4>Crear cita manual</h4>
+          <p>Desde Citas → Nueva cita, agenda directamente sin que el cliente reserve por web. Útil para llamadas telefónicas.</p>
+        </div>
+        <div class="mini-card">
+          <div class="mini-card-icon bg-green">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <path d="M4 14l4-4 3 3 5-6" stroke="#16a34a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <rect x="2" y="2" width="16" height="16" rx="2" stroke="#16a34a" stroke-width="1.2"/>
+            </svg>
+          </div>
+          <h4>Exportar a Excel</h4>
+          <p>Desde la lista de citas, usa el botón <strong>Exportar</strong>. Descarga un archivo .xlsx con todas las citas del filtro aplicado.</p>
+        </div>
+      </div>
+
+      <div class="tip">
+        <svg class="tip-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+          <circle cx="11" cy="11" r="9" stroke="#C8A961" stroke-width="1.5"/>
+          <line x1="11" y1="7" x2="11" y2="11.5" stroke="#C8A961" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="11" cy="14.5" r="1.2" fill="#C8A961"/>
+        </svg>
+        <p><strong>Consejo:</strong> Marca las citas como <em>Completadas</em> al final del día. Esto mantiene los reportes de ingresos exactos y te permite ver el historial real de tu negocio.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!--  06 — CLIENTES                                             -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <section class="section anchor-target" id="clientes" aria-labelledby="h-clientes">
+    <div class="divider" aria-hidden="true"></div>
+    <div style="padding-top: 52px;">
+      <div class="section-label">Sección 06</div>
+      <h2 class="section-title" id="h-clientes">Gestión de clientes</h2>
+      <p style="font-size:14px; color:var(--gray); margin-bottom:24px;">Ve a <strong>Clientes</strong> en el menú lateral. Aquí encuentras el directorio completo de quienes han reservado en tu negocio.</p>
+
+      <div class="feat-list">
+        <div class="feat-item">
+          <div class="feat-dot"></div>
+          <div class="feat-text">
+            <strong>Lista de clientes registrados</strong>
+            <span>Nombre, teléfono, email y fecha del último servicio. Se actualiza automáticamente con cada reserva nueva.</span>
+          </div>
+        </div>
+        <div class="feat-item">
+          <div class="feat-dot"></div>
+          <div class="feat-text">
+            <strong>Historial de citas por cliente</strong>
+            <span>Haz clic en cualquier cliente para ver todas las citas que ha tenido contigo: servicio, fecha, empleado y estado.</span>
+          </div>
+        </div>
+        <div class="feat-item">
+          <div class="feat-dot"></div>
+          <div class="feat-text">
+            <strong>Búsqueda por nombre o teléfono</strong>
+            <span>Usa la barra de búsqueda para encontrar a un cliente rápidamente, incluso si tienes cientos de registros.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="info">
+        <svg class="info-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+          <circle cx="11" cy="11" r="9" stroke="#2563eb" stroke-width="1.5"/>
+          <line x1="11" y1="7" x2="11" y2="11.5" stroke="#2563eb" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="11" cy="14.5" r="1.2" fill="#2563eb"/>
+        </svg>
+        <p><strong>Nota:</strong> Los clientes se registran en tu directorio solo cuando reservan por primera vez. Si creas una cita manual para un cliente nuevo, puedes buscarlo por nombre o añadirlo directamente desde el formulario de cita.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!--  07 — ENLACE DE RESERVAS                                   -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <section class="section anchor-target" id="enlace" aria-labelledby="h-enlace">
+    <div class="divider" aria-hidden="true"></div>
+    <div style="padding-top: 52px;">
+      <div class="section-label">Sección 07</div>
+      <h2 class="section-title" id="h-enlace">Enlace de reservas</h2>
+      <p style="font-size:14px; color:var(--gray); margin-bottom:24px;">Tu enlace público es la dirección que comparten tus clientes para reservar contigo, las 24 horas, sin necesidad de llamar.</p>
+
+      <div class="card">
+        <div class="card-title">Copia tu enlace desde la barra lateral</div>
+        <p>En la parte inferior de la barra lateral del panel, verás tu enlace de reservas con un botón <strong>Copiar</strong>. Haz clic y ya lo tienes en el portapapeles.</p>
+        <div class="url-demo" aria-label="Ejemplo de enlace público">
+          <span class="url-label">Enlace público</span>
+          <span class="url-text">appointva.com/b/<em>mi-negocio</em></span>
+        </div>
+      </div>
+
+      <h3 style="font-size:16px; font-weight:700; margin:24px 0 14px;">¿Dónde compartirlo?</h3>
+      <div class="grid-3">
+        <div class="mini-card">
+          <div class="mini-card-icon bg-green">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <path d="M10 2C5.58 2 2 5.58 2 10c0 1.42.37 2.75 1.01 3.92L2 18l4.26-1.12A7.95 7.95 0 0010 18c4.42 0 8-3.58 8-8s-3.58-8-8-8z" fill="#16a34a" fill-opacity="0.2" stroke="#16a34a" stroke-width="1.3"/>
+              <path d="M7.5 8.5c0-.28.22-.5.5-.5h4a.5.5 0 010 1H8a.5.5 0 01-.5-.5zM7.5 11.5c0-.28.22-.5.5-.5h2.5a.5.5 0 010 1H8a.5.5 0 01-.5-.5z" fill="#16a34a"/>
+            </svg>
+          </div>
+          <h4>WhatsApp</h4>
+          <p>Pégalo en tu mensaje de estado o en conversaciones. Es el canal más directo con tus clientes actuales.</p>
+        </div>
+        <div class="mini-card">
+          <div class="mini-card-icon bg-purple">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <rect x="3" y="3" width="14" height="14" rx="4" stroke="#7c3aed" stroke-width="1.4"/>
+              <circle cx="10" cy="10" r="3" stroke="#7c3aed" stroke-width="1.3"/>
+              <circle cx="14" cy="6" r="1" fill="#7c3aed"/>
+            </svg>
+          </div>
+          <h4>Instagram</h4>
+          <p>Colócalo en tu bio o en las historias con el sticker de enlace. Nuevos seguidores se convierten en clientes.</p>
+        </div>
+        <div class="mini-card">
+          <div class="mini-card-icon bg-gold">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <path d="M4 4h12v12H4z" stroke="#C8A961" stroke-width="1.4" fill="none"/>
+              <path d="M4 4l8 7-8 7" stroke="#C8A961" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <h4>Otros canales</h4>
+          <p>Email, tarjetas de presentación con QR, Facebook, Google Business — el enlace funciona en cualquier plataforma.</p>
+        </div>
+      </div>
+
+      <div class="tip">
+        <svg class="tip-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+          <circle cx="11" cy="11" r="9" stroke="#C8A961" stroke-width="1.5"/>
+          <line x1="11" y1="7" x2="11" y2="11.5" stroke="#C8A961" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="11" cy="14.5" r="1.2" fill="#C8A961"/>
+        </svg>
+        <p><strong>Consejo:</strong> El cliente puede reservar a cualquier hora del día o de la noche. Tu agenda se llena sola mientras duermes — sin llamadas y sin errores de agenda doble.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!--  08 — GALERÍA                                              -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <section class="section anchor-target" id="galeria" aria-labelledby="h-galeria">
+    <div class="divider" aria-hidden="true"></div>
+    <div style="padding-top: 52px;">
+      <div class="section-label">Sección 08</div>
+      <h2 class="section-title" id="h-galeria">Galería</h2>
+      <p style="font-size:14px; color:var(--gray); margin-bottom:24px;">Ve a <strong>Galería</strong> en el menú lateral. Las fotos que subas aquí aparecen en tu página pública de reservas.</p>
+
+      <div class="steps">
+        <div class="step-item">
+          <div class="step-num" aria-hidden="true">1</div>
+          <div class="step-body">
+            <div class="step-title">Haz clic en "Subir foto"</div>
+            <p class="step-desc">Selecciona imágenes en JPG o PNG desde tu dispositivo. Puedes subir varias a la vez.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num" aria-hidden="true">2</div>
+          <div class="step-body">
+            <div class="step-title">Ordena las fotos</div>
+            <p class="step-desc">Arrastra las imágenes para cambiar el orden en que aparecen en tu galería pública. La primera foto es la más visible.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num" aria-hidden="true">3</div>
+          <div class="step-body">
+            <div class="step-title">Elimina las que ya no uses</div>
+            <p class="step-desc">Pasa el cursor sobre cualquier foto y haz clic en el ícono de papelera para quitarla de la galería.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="tip">
+        <svg class="tip-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+          <circle cx="11" cy="11" r="9" stroke="#C8A961" stroke-width="1.5"/>
+          <line x1="11" y1="7" x2="11" y2="11.5" stroke="#C8A961" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="11" cy="14.5" r="1.2" fill="#C8A961"/>
+        </svg>
+        <p><strong>Consejo:</strong> Usa fotos reales de tu trabajo — antes y después, tu local, tu equipo. Los clientes nuevos deciden si reservar basándose en lo que ven. Una galería actualizada genera más confianza que ninguna.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!--  09 — LISTA DE ESPERA                                      -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <section class="section anchor-target" id="espera" aria-labelledby="h-espera">
+    <div class="divider" aria-hidden="true"></div>
+    <div style="padding-top: 52px;">
+      <div class="section-label">Sección 09</div>
+      <h2 class="section-title" id="h-espera">Lista de espera</h2>
+      <p style="font-size:14px; color:var(--gray); margin-bottom:24px;">Ve a <strong>Lista de espera</strong> en el menú lateral. Cuando un cliente intenta reservar y no hay slots disponibles, puede anotarse para ser avisado.</p>
+
+      <div class="feat-list">
+        <div class="feat-item">
+          <div class="feat-dot"></div>
+          <div class="feat-text">
+            <strong>¿Cómo funciona?</strong>
+            <span>El cliente se anota con su nombre y teléfono desde tu página pública cuando no hay horarios libres. Tú ves la lista en este panel.</span>
+          </div>
+        </div>
+        <div class="feat-item">
+          <div class="feat-dot"></div>
+          <div class="feat-text">
+            <strong>Ver la lista de espera</strong>
+            <span>Cada entrada muestra el nombre del cliente, el servicio que quiere y su número de WhatsApp.</span>
+          </div>
+        </div>
+        <div class="feat-item">
+          <div class="feat-dot"></div>
+          <div class="feat-text">
+            <strong>Contactar por WhatsApp</strong>
+            <span>Cuando se libera un slot, haz clic en <strong>Contactar</strong>. Se abrirá WhatsApp con el número del cliente listo para que le escribas.</span>
+          </div>
+        </div>
+        <div class="feat-item">
+          <div class="feat-dot"></div>
+          <div class="feat-text">
+            <strong>Eliminar de la lista</strong>
+            <span>Una vez que el cliente reserva o decide no continuar, puedes quitarlo de la lista con el botón de eliminar.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="tip">
+        <svg class="tip-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+          <circle cx="11" cy="11" r="9" stroke="#C8A961" stroke-width="1.5"/>
+          <line x1="11" y1="7" x2="11" y2="11.5" stroke="#C8A961" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="11" cy="14.5" r="1.2" fill="#C8A961"/>
+        </svg>
+        <p><strong>Consejo:</strong> Revisa la lista de espera cuando canceles una cita. Hay alguien esperando ese slot — contactarle de inmediato evita que el tiempo quede sin utilizar.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!--  10 — REPORTES                                             -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <section class="section anchor-target" id="reportes" aria-labelledby="h-reportes">
+    <div class="divider" aria-hidden="true"></div>
+    <div style="padding-top: 52px;">
+      <div class="section-label">Sección 10</div>
+      <h2 class="section-title" id="h-reportes">Reportes</h2>
+      <p style="font-size:14px; color:var(--gray); margin-bottom:24px;">Ve a <strong>Reportes</strong> en el menú lateral. Aquí ves en números cómo va tu negocio, por período.</p>
+
+      <div class="grid-2">
+        <div class="mini-card">
+          <div class="mini-card-icon bg-gold">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <rect x="3" y="10" width="3" height="7" rx="1" fill="#C8A961"/>
+              <rect x="8.5" y="6" width="3" height="11" rx="1" fill="#C8A961" fill-opacity="0.7"/>
+              <rect x="14" y="3" width="3" height="14" rx="1" fill="#C8A961" fill-opacity="0.4"/>
+            </svg>
+          </div>
+          <h4>Ingresos por período</h4>
+          <p>Filtra por día, semana, mes o rango personalizado. Muestra el total de ingresos de las citas marcadas como Completadas.</p>
+        </div>
+        <div class="mini-card">
+          <div class="mini-card-icon bg-blue">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <circle cx="8" cy="8" r="4" stroke="#2563eb" stroke-width="1.4"/>
+              <circle cx="13" cy="13" r="4" stroke="#2563eb" stroke-width="1.4" fill="#2563eb" fill-opacity="0.1"/>
+              <path d="M11 8h6M14 5v6" stroke="#2563eb" stroke-width="1.3" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <h4>Citas por empleado</h4>
+          <p>Compara cuántas citas realizó cada empleado en el período seleccionado y cuál generó más ingresos.</p>
+        </div>
+        <div class="mini-card">
+          <div class="mini-card-icon bg-teal">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <path d="M3 15l4-5 3 3 4-7 3 4" stroke="#0d9488" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <h4>Gráfica de tendencia</h4>
+          <p>Visualiza la evolución de ingresos y citas semana a semana. Identifica tus días más ocupados y los meses de mayor demanda.</p>
+        </div>
+        <div class="mini-card">
+          <div class="mini-card-icon bg-green">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <path d="M6 10l3 3 5-6" stroke="#16a34a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="10" cy="10" r="8" stroke="#16a34a" stroke-width="1.3"/>
+            </svg>
+          </div>
+          <h4>Servicios más solicitados</h4>
+          <p>Ve cuáles servicios generan más citas, para saber dónde enfocar tu marketing y qué servicios impulsar.</p>
+        </div>
+      </div>
+
+      <div class="warn">
+        <svg class="warn-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+          <path d="M11 2L2 19h18L11 2z" stroke="#dc2626" stroke-width="1.5" stroke-linejoin="round"/>
+          <line x1="11" y1="9" x2="11" y2="13" stroke="#dc2626" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="11" cy="16" r="1.2" fill="#dc2626"/>
+        </svg>
+        <p><strong>Para obtener reportes precisos:</strong> Los reportes de ingresos solo incluyen citas marcadas como <em>Completadas</em>. Si las citas del día quedan en estado <em>Confirmada</em>, no se contarán en los totales. Marca el estado al finalizar cada servicio.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!--  11 — SEGURIDAD                                            -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <section class="section anchor-target" id="seguridad" aria-labelledby="h-seguridad">
+    <div class="divider" aria-hidden="true"></div>
+    <div style="padding-top: 52px;">
+      <div class="section-label">Sección 11</div>
+      <h2 class="section-title" id="h-seguridad">Seguridad</h2>
+      <p style="font-size:14px; color:var(--gray); margin-bottom:24px;">Ve a <strong>Configuración → Seguridad</strong>. Desde aquí protege el acceso a tu cuenta.</p>
+
+      <div class="steps">
+        <div class="step-item">
+          <div class="step-num" aria-hidden="true">1</div>
+          <div class="step-body">
+            <div class="step-title">Activa la autenticación de dos factores (2FA)</div>
+            <p class="step-desc">Haz clic en <strong>Activar 2FA</strong>. Escanea el código QR con una app como Google Authenticator o Authy desde tu teléfono. A partir de ese momento, al iniciar sesión se te pedirá el código de 6 dígitos de la app además de tu contraseña.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num" aria-hidden="true">2</div>
+          <div class="step-body">
+            <div class="step-title">Guarda tus códigos de respaldo</div>
+            <p class="step-desc">Al activar el 2FA, AppointVa te muestra códigos de recuperación. Guárdalos en un lugar seguro — son tu única forma de entrar si pierdes acceso a tu teléfono.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num" aria-hidden="true">3</div>
+          <div class="step-body">
+            <div class="step-title">Cambia tu contraseña cuando lo necesites</div>
+            <p class="step-desc">En la misma sección, haz clic en <strong>Cambiar contraseña</strong>. Introduce la contraseña actual y la nueva dos veces. La nueva debe tener al menos 8 caracteres.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="warn">
+        <svg class="warn-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+          <path d="M11 2L2 19h18L11 2z" stroke="#dc2626" stroke-width="1.5" stroke-linejoin="round"/>
+          <line x1="11" y1="9" x2="11" y2="13" stroke="#dc2626" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="11" cy="16" r="1.2" fill="#dc2626"/>
+        </svg>
+        <p><strong>No compartas tu contraseña.</strong> Si necesitas que otra persona gestione el negocio, invítala como empleado con su propio correo. AppointVa no solicita tu contraseña por email ni por WhatsApp — cualquier mensaje que lo pida es un intento de fraude.</p>
+      </div>
+
+      <div class="tip" style="margin-top:14px;">
+        <svg class="tip-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+          <circle cx="11" cy="11" r="9" stroke="#C8A961" stroke-width="1.5"/>
+          <line x1="11" y1="7" x2="11" y2="11.5" stroke="#C8A961" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="11" cy="14.5" r="1.2" fill="#C8A961"/>
+        </svg>
+        <p><strong>Recomendación:</strong> Activa el 2FA en cuanto termines de configurar tu negocio. Es el paso más importante para proteger tu agenda y los datos de tus clientes.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!--  FOOTER                                                    -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div class="divider" aria-hidden="true"></div>
+
+</div><!-- /page -->
+</main>
+
+<footer class="footer">
+  <p><strong>AppointVa</strong> &copy; 2026 &nbsp;·&nbsp; Manual del Propietario &nbsp;·&nbsp; Versión 4.1</p>
+  <p style="margin-top:6px;">Para soporte, escríbenos por WhatsApp o desde el panel en <strong>Ayuda</strong>.</p>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,1714 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AppointVa — Manual del Cliente</title>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --gold:        #C8A961;
+      --gold-light:  #f5edda;
+      --gold-dim:    rgba(200,169,97,0.18);
+      --dark:        #1a1a1a;
+      --gray:        #6b7280;
+      --gray-light:  #9ca3af;
+      --light:       #f9f8f5;
+      --border:      #e8e4d9;
+      --white:       #ffffff;
+      --green:       #16a34a;
+      --green-light: #dcfce7;
+      --blue:        #2563eb;
+      --blue-light:  #dbeafe;
+      --red:         #dc2626;
+      --red-light:   #fee2e2;
+      --radius-card: 16px;
+      --shadow-card: 0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.05);
+    }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: var(--light);
+      color: var(--dark);
+      line-height: 1.65;
+      font-size: 15px;
+    }
+
+    /* ── HERO ──────────────────────────────────────────────────── */
+    .hero {
+      background: var(--dark);
+      padding: 56px 48px 52px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: "";
+      position: absolute;
+      top: -100px; right: -100px;
+      width: 420px; height: 420px;
+      background: radial-gradient(circle, var(--gold-dim) 0%, transparent 68%);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+    .hero::after {
+      content: "";
+      position: absolute;
+      bottom: -60px; left: -60px;
+      width: 240px; height: 240px;
+      background: radial-gradient(circle, rgba(200,169,97,0.08) 0%, transparent 70%);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+    .hero-inner {
+      max-width: 860px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+    .logo-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 36px;
+    }
+    .logo-box {
+      width: 52px; height: 52px;
+      background: var(--gold);
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .logo-name {
+      font-size: 26px; font-weight: 800;
+      color: var(--white); letter-spacing: -0.5px;
+    }
+    .hero h1 {
+      font-size: 40px; font-weight: 800;
+      color: var(--white); letter-spacing: -1.2px;
+      line-height: 1.12;
+      margin-bottom: 14px;
+    }
+    .hero h1 span { color: var(--gold); }
+    .hero-sub {
+      font-size: 16px; color: #9ca3af;
+      max-width: 520px; line-height: 1.7;
+      margin-bottom: 28px;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(200,169,97,0.15);
+      border: 1px solid rgba(200,169,97,0.35);
+      color: var(--gold);
+      font-size: 12px; font-weight: 700;
+      padding: 6px 16px; border-radius: 999px;
+      letter-spacing: 0.3px;
+    }
+
+    /* ── WRAPPER ──────────────────────────────────────────────── */
+    .page {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 24px 72px;
+    }
+
+    /* ── TABLE OF CONTENTS ──────────────────────────────────── */
+    .toc-section { padding: 52px 0 0; }
+
+    .section-label {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 1.4px;
+      color: var(--gold); margin-bottom: 8px;
+    }
+    .section-label::before {
+      content: "";
+      display: block; width: 18px; height: 2px;
+      background: var(--gold); border-radius: 2px;
+    }
+    .section-title {
+      font-size: 24px; font-weight: 800;
+      color: var(--dark); letter-spacing: -0.4px;
+      margin-bottom: 28px;
+    }
+
+    .toc-agenda {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      overflow: hidden;
+      box-shadow: var(--shadow-card);
+    }
+    .toc-header {
+      background: var(--dark);
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .toc-header-label {
+      font-size: 11px; font-weight: 700; letter-spacing: 1px;
+      text-transform: uppercase; color: var(--gold);
+    }
+    .toc-header-title {
+      font-size: 14px; font-weight: 700; color: var(--white);
+      flex: 1;
+    }
+    .toc-list { display: flex; flex-direction: column; }
+    .toc-item {
+      display: flex;
+      align-items: stretch;
+      border-bottom: 1px solid #f0ede6;
+      text-decoration: none;
+      color: inherit;
+      transition: background 0.15s;
+    }
+    .toc-item:last-child { border-bottom: none; }
+    .toc-item:hover { background: var(--gold-light); }
+    .toc-item:hover .toc-num { background: var(--gold); color: var(--white); }
+    .toc-rail {
+      width: 5px;
+      background: var(--gold);
+      flex-shrink: 0;
+    }
+    .toc-num {
+      width: 52px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 800;
+      color: var(--gold); letter-spacing: 0.5px;
+      background: var(--gold-light);
+      border-right: 1px solid var(--border);
+      padding: 14px 0;
+      transition: background 0.15s, color 0.15s;
+    }
+    .toc-content {
+      padding: 14px 20px;
+      flex: 1;
+    }
+    .toc-name {
+      font-size: 14px; font-weight: 700; color: var(--dark);
+      margin-bottom: 2px;
+    }
+    .toc-desc { font-size: 12px; color: var(--gray-light); }
+    .toc-arrow {
+      display: flex; align-items: center; padding: 0 18px;
+      color: var(--gold); font-size: 14px; font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    /* ── SECTION BLOCKS ──────────────────────────────────────── */
+    .section { padding: 52px 0 0; }
+
+    /* ── DIVIDER ─────────────────────────────────────────────── */
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 52px 0 0;
+    }
+
+    /* ── ANCHOR OFFSET ───────────────────────────────────────── */
+    .anchor-target { scroll-margin-top: 24px; }
+
+    /* ── INTRO CARD (Como funciona) ──────────────────────────── */
+    .intro-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    .intro-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      padding: 22px 20px;
+      box-shadow: var(--shadow-card);
+    }
+    .intro-icon {
+      width: 40px; height: 40px;
+      background: var(--gold-light);
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 14px;
+    }
+    .intro-card h3 {
+      font-size: 14px; font-weight: 700; color: var(--dark);
+      margin-bottom: 6px;
+    }
+    .intro-card p {
+      font-size: 13px; color: var(--gray); line-height: 1.55;
+    }
+
+    /* ── STEP CARDS (la novedad visual) ─────────────────────── */
+    /*
+      Aesthetic risk: each booking step is a horizontal card
+      with a large gold step-number on the left, the description
+      in the center, and a compact inline phone mockup on the right
+      showing a simplified render of that exact screen state.
+      This gives people something to *recognise*, not just read.
+    */
+    .booking-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+    .booking-step {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 0;
+      display: flex;
+      align-items: stretch;
+      overflow: hidden;
+      border-bottom: none;
+      position: relative;
+    }
+    .booking-step:first-child { border-radius: var(--radius-card) var(--radius-card) 0 0; }
+    .booking-step:last-child  { border-radius: 0 0 var(--radius-card) var(--radius-card); border-bottom: 1px solid var(--border); }
+    .booking-step:only-child  { border-radius: var(--radius-card); border-bottom: 1px solid var(--border); }
+    .booking-step + .booking-step { border-top: 1px solid #f0ede6; }
+
+    /* connector line between steps */
+    .booking-step::before {
+      content: "";
+      position: absolute;
+      left: 43px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: linear-gradient(to bottom, transparent 0%, var(--border) 15%, var(--border) 85%, transparent 100%);
+      z-index: 0;
+    }
+    .booking-step:first-child::before { top: 50%; }
+    .booking-step:last-child::before  { bottom: 50%; }
+
+    .step-num-col {
+      width: 88px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 28px 0 28px;
+      position: relative;
+      z-index: 1;
+    }
+    .step-circle {
+      width: 46px; height: 46px;
+      background: var(--gold);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; font-weight: 800;
+      color: var(--white);
+      box-shadow: 0 0 0 5px var(--gold-light);
+      flex-shrink: 0;
+    }
+    .step-body-col {
+      flex: 1;
+      padding: 24px 20px 24px 0;
+      min-width: 0;
+    }
+    .step-body-col h3 {
+      font-size: 16px; font-weight: 800;
+      color: var(--dark); margin-bottom: 6px; letter-spacing: -0.3px;
+    }
+    .step-body-col p {
+      font-size: 13px; color: var(--gray);
+      line-height: 1.6;
+    }
+    .step-tag {
+      display: inline-block;
+      margin-top: 8px;
+      background: var(--gold-light);
+      border: 1px solid rgba(200,169,97,0.4);
+      border-radius: 6px;
+      padding: 3px 10px;
+      font-size: 11px; font-weight: 700;
+      color: #7a5c10; letter-spacing: 0.3px;
+    }
+    .step-phone-col {
+      width: 148px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 18px 16px;
+      border-left: 1px solid #f0ede6;
+      background: var(--light);
+    }
+
+    /* ── PHONE MOCKUP ────────────────────────────────────────── */
+    .phone {
+      width: 116px;
+      background: var(--dark);
+      border-radius: 18px;
+      padding: 7px 5px 10px;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.22), 0 0 0 1px rgba(255,255,255,0.05);
+      position: relative;
+    }
+    .phone-notch {
+      width: 36px; height: 5px;
+      background: #333;
+      border-radius: 999px;
+      margin: 0 auto 6px;
+    }
+    .phone-screen {
+      background: var(--white);
+      border-radius: 12px;
+      overflow: hidden;
+      min-height: 168px;
+      display: flex;
+      flex-direction: column;
+    }
+    /* screen header bar */
+    .pscreen-bar {
+      background: var(--dark);
+      padding: 6px 8px;
+      display: flex; align-items: center; gap: 4px;
+    }
+    .pscreen-bar-dot {
+      width: 4px; height: 4px; border-radius: 50%;
+      background: var(--gold); opacity: 0.8;
+    }
+    .pscreen-bar-title {
+      font-size: 6px; font-weight: 700; color: var(--gold);
+      letter-spacing: 0.3px; margin-left: 2px;
+    }
+    .pscreen-body {
+      padding: 8px 7px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    /* generic micro UI elements */
+    .pmock-label {
+      font-size: 5px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      color: var(--gray); margin-bottom: 1px;
+    }
+    .pmock-input {
+      height: 11px; background: var(--light);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      display: flex; align-items: center;
+      padding: 0 4px;
+    }
+    .pmock-input span {
+      font-size: 5.5px; color: var(--dark);
+      overflow: hidden; white-space: nowrap;
+    }
+    .pmock-input.placeholder span { color: var(--gray-light); }
+    .pmock-btn {
+      height: 13px; background: var(--gold);
+      border-radius: 3px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .pmock-btn span { font-size: 5.5px; font-weight: 700; color: var(--white); }
+    .pmock-service-row {
+      display: flex; align-items: center; gap: 4px;
+      padding: 4px 4px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--white);
+    }
+    .pmock-service-row.selected {
+      border-color: var(--gold);
+      background: var(--gold-light);
+    }
+    .pmock-svc-dot {
+      width: 5px; height: 5px; border-radius: 50%;
+      background: var(--gold); flex-shrink: 0;
+    }
+    .pmock-svc-text { font-size: 5.5px; font-weight: 600; color: var(--dark); }
+    .pmock-svc-price { font-size: 5px; color: var(--gray); margin-left: auto; }
+    .pmock-avatar-row {
+      display: flex; gap: 5px;
+    }
+    .pmock-avatar {
+      flex: 1;
+      display: flex; flex-direction: column; align-items: center;
+      gap: 2px;
+      padding: 5px 2px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+    }
+    .pmock-avatar.selected {
+      border-color: var(--gold); background: var(--gold-light);
+    }
+    .pmock-avatar-circle {
+      width: 18px; height: 18px;
+      background: var(--gray-light);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .pmock-avatar-circle svg { opacity: 0.6; }
+    .pmock-avatar-name { font-size: 5px; font-weight: 600; color: var(--dark); text-align: center; }
+    .pmock-cal-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 3px;
+    }
+    .pmock-cal-header span { font-size: 5.5px; font-weight: 700; color: var(--dark); }
+    .pmock-cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 1.5px;
+    }
+    .pmock-cal-day {
+      height: 9px;
+      border-radius: 2px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 4.5px; color: var(--gray);
+    }
+    .pmock-cal-day.avail { background: var(--gold-light); color: var(--dark); font-weight: 600; }
+    .pmock-cal-day.selected { background: var(--gold); color: var(--white); font-weight: 700; }
+    .pmock-cal-day.empty { opacity: 0; }
+    .pmock-slots {
+      display: grid; grid-template-columns: 1fr 1fr 1fr;
+      gap: 3px;
+    }
+    .pmock-slot {
+      height: 13px; border: 1px solid var(--border);
+      border-radius: 3px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 5px; color: var(--gray);
+    }
+    .pmock-slot.selected {
+      border-color: var(--gold); background: var(--gold-light);
+      color: var(--dark); font-weight: 700;
+    }
+    .pmock-slot.taken {
+      background: #f0ede6; color: #ccc;
+    }
+    .pmock-form-row { display: flex; flex-direction: column; gap: 3px; }
+    .pmock-success {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 5px;
+      padding: 12px 4px;
+    }
+    .pmock-success-circle {
+      width: 28px; height: 28px;
+      background: var(--green-light);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .pmock-success-title {
+      font-size: 6px; font-weight: 700; color: var(--dark);
+      text-align: center;
+    }
+    .pmock-success-sub {
+      font-size: 5px; color: var(--gray); text-align: center; line-height: 1.4;
+    }
+    .pmock-detail-row {
+      display: flex; justify-content: space-between;
+      padding: 3px 0;
+      border-bottom: 1px solid #f0ede6;
+    }
+    .pmock-detail-row:last-child { border-bottom: none; }
+    .pmock-detail-label { font-size: 5px; color: var(--gray-light); }
+    .pmock-detail-val { font-size: 5px; font-weight: 700; color: var(--dark); }
+    .pmock-waitlist {
+      display: flex; flex-direction: column; gap: 4px;
+      align-items: center; padding: 6px 4px;
+    }
+    .pmock-waitlist-icon {
+      width: 22px; height: 22px;
+      background: #dbeafe; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .pmock-waitlist-text {
+      font-size: 5.5px; font-weight: 700; color: var(--dark); text-align: center;
+    }
+    .pmock-waitlist-sub {
+      font-size: 5px; color: var(--gray); text-align: center;
+    }
+    .pmock-discount {
+      height: 11px; background: var(--gold-light);
+      border: 1px dashed var(--gold);
+      border-radius: 3px;
+      display: flex; align-items: center;
+      padding: 0 4px; gap: 3px;
+    }
+    .pmock-discount span { font-size: 5.5px; color: #7a5c10; font-weight: 600; }
+
+    /* ── TIP BOXES ────────────────────────────────────────────── */
+    .tip {
+      background: var(--gold-light);
+      border: 1px solid rgba(200,169,97,0.45);
+      border-left: 4px solid var(--gold);
+      border-radius: 10px;
+      padding: 16px 20px;
+      display: flex; align-items: flex-start; gap: 12px;
+      margin-top: 16px;
+    }
+    .tip-icon { flex-shrink: 0; width: 22px; height: 22px; margin-top: 1px; }
+    .tip p { font-size: 13px; color: #5a4010; line-height: 1.6; }
+    .tip strong { color: #3d2a05; }
+
+    .info {
+      background: var(--blue-light);
+      border: 1px solid #bfdbfe;
+      border-left: 4px solid var(--blue);
+      border-radius: 10px;
+      padding: 16px 20px;
+      display: flex; align-items: flex-start; gap: 12px;
+      margin-top: 16px;
+    }
+    .info-icon { flex-shrink: 0; width: 22px; height: 22px; margin-top: 1px; }
+    .info p { font-size: 13px; color: #1e3a5f; line-height: 1.6; }
+    .info strong { color: #1e3a5f; }
+
+    .success-note {
+      background: var(--green-light);
+      border: 1px solid #bbf7d0;
+      border-left: 4px solid var(--green);
+      border-radius: 10px;
+      padding: 16px 20px;
+      display: flex; align-items: flex-start; gap: 12px;
+      margin-top: 16px;
+    }
+    .success-icon { flex-shrink: 0; width: 22px; height: 22px; margin-top: 1px; }
+    .success-note p { font-size: 13px; color: #14532d; line-height: 1.6; }
+    .success-note strong { color: #14532d; }
+
+    /* ── CARD PLAIN ───────────────────────────────────────────── */
+    .card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      padding: 24px;
+      box-shadow: var(--shadow-card);
+    }
+    .card + .card { margin-top: 12px; }
+    .card-title {
+      font-size: 15px; font-weight: 700;
+      margin-bottom: 6px; color: var(--dark);
+    }
+    .card p {
+      font-size: 14px; color: var(--gray);
+      line-height: 1.65;
+    }
+
+    /* ── EMAIL MOCKUP ─────────────────────────────────────────── */
+    .email-mock {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      overflow: hidden;
+      box-shadow: var(--shadow-card);
+    }
+    .email-header {
+      background: var(--dark);
+      padding: 14px 20px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .email-header-logo {
+      width: 28px; height: 28px;
+      background: var(--gold);
+      border-radius: 7px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .email-header-info { flex: 1; }
+    .email-from { font-size: 10px; color: var(--gray-light); }
+    .email-subject { font-size: 12px; font-weight: 700; color: var(--white); }
+    .email-body { padding: 20px; }
+    .email-greeting { font-size: 14px; font-weight: 700; color: var(--dark); margin-bottom: 8px; }
+    .email-body > p { font-size: 13px; color: var(--gray); line-height: 1.6; margin-bottom: 14px; }
+    .email-detail-box {
+      background: var(--light);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 14px;
+    }
+    .email-detail-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 5px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .email-detail-row:last-child { border-bottom: none; }
+    .email-detail-key {
+      font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      color: var(--gray-light); width: 90px; flex-shrink: 0; padding-top: 1px;
+    }
+    .email-detail-val {
+      font-size: 13px; font-weight: 600; color: var(--dark);
+    }
+    .email-footer-note {
+      font-size: 11px; color: var(--gray-light); text-align: center;
+      padding-top: 4px;
+    }
+
+    /* ── FAQ ──────────────────────────────────────────────────── */
+    .faq-list {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      overflow: hidden;
+      box-shadow: var(--shadow-card);
+    }
+    .faq-item {
+      padding: 18px 24px;
+      border-bottom: 1px solid #f0ede6;
+    }
+    .faq-item:last-child { border-bottom: none; }
+    .faq-q {
+      font-size: 14px; font-weight: 700; color: var(--dark);
+      margin-bottom: 6px;
+      display: flex; align-items: flex-start; gap: 10px;
+    }
+    .faq-q-mark {
+      width: 20px; height: 20px; flex-shrink: 0;
+      background: var(--gold-light);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 800; color: var(--gold);
+      margin-top: 1px;
+    }
+    .faq-a {
+      font-size: 13px; color: var(--gray);
+      line-height: 1.65;
+      padding-left: 30px;
+    }
+
+    /* ── URL DEMO ─────────────────────────────────────────────── */
+    .url-demo {
+      background: var(--dark);
+      border-radius: 12px;
+      padding: 14px 20px;
+      display: flex; align-items: center; gap: 14px;
+      margin-top: 16px;
+    }
+    .url-label {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
+      text-transform: uppercase; color: var(--gold); flex-shrink: 0;
+    }
+    .url-text {
+      font-family: 'Courier New', monospace;
+      font-size: 13px; color: #e5e7eb; flex: 1;
+    }
+    .url-text em { color: var(--gold); font-style: normal; font-weight: 700; }
+
+    /* ── FOOTER ───────────────────────────────────────────────── */
+    .footer {
+      text-align: center;
+      padding: 36px 24px 52px;
+    }
+    .footer p { font-size: 12px; color: var(--gray-light); }
+    .footer strong { color: var(--gold); }
+
+    /* ── RESPONSIVE ───────────────────────────────────────────── */
+    @media (max-width: 700px) {
+      .hero { padding: 40px 20px 36px; }
+      .hero h1 { font-size: 28px; }
+      .page { padding: 0 16px 56px; }
+      .intro-grid { grid-template-columns: 1fr; }
+      .toc-num { width: 44px; font-size: 11px; }
+      .toc-arrow { padding: 0 12px; }
+      /* On mobile, phone mockups slide below the text */
+      .booking-step { flex-wrap: wrap; }
+      .step-phone-col {
+        width: 100%;
+        border-left: none;
+        border-top: 1px solid #f0ede6;
+        background: var(--light);
+        justify-content: flex-start;
+        padding: 14px 20px 18px 88px;
+      }
+      .phone { width: 104px; }
+      .step-num-col { padding: 22px 0 0; }
+      .booking-step::before {
+        left: 43px;
+        top: 0; bottom: 0;
+      }
+    }
+    @media (max-width: 440px) {
+      .step-phone-col { padding-left: 20px; justify-content: center; }
+    }
+
+    /* ── REDUCED MOTION ───────────────────────────────────────── */
+    @media (prefers-reduced-motion: reduce) {
+      .toc-item, .toc-num { transition: none; }
+    }
+
+    /* ── FOCUS ────────────────────────────────────────────────── */
+    a:focus-visible {
+      outline: 2px solid var(--gold);
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!--  HERO                                                          -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<header class="hero">
+  <div class="hero-inner">
+    <div class="logo-row">
+      <div class="logo-box" aria-hidden="true">
+        <svg viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg" width="30" height="30">
+          <rect x="3" y="5" width="24" height="22" rx="4" fill="white" fill-opacity="0.15" stroke="white" stroke-width="1.5"/>
+          <rect x="3" y="5" width="24" height="8" rx="4" fill="white" fill-opacity="0.25"/>
+          <line x1="10" y1="3" x2="10" y2="9" stroke="white" stroke-width="2" stroke-linecap="round"/>
+          <line x1="20" y1="3" x2="20" y2="9" stroke="white" stroke-width="2" stroke-linecap="round"/>
+          <rect x="8" y="17" width="5" height="5" rx="1.5" fill="white" fill-opacity="0.9"/>
+          <rect x="17" y="17" width="5" height="5" rx="1.5" fill="white" fill-opacity="0.4"/>
+          <rect x="8" y="11" width="14" height="2" rx="1" fill="white" fill-opacity="0.5"/>
+        </svg>
+      </div>
+      <span class="logo-name">AppointVa</span>
+    </div>
+
+    <h1>Manual del <span>Cliente</span></h1>
+    <p class="hero-sub">Cómo reservar y gestionar tus citas en AppointVa — rápido, sin descargar nada, desde tu celular o computadora.</p>
+    <div class="hero-badge" aria-label="Versión 4.1, Junio 2026">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+        <circle cx="6" cy="6" r="5" stroke="#C8A961" stroke-width="1.5"/>
+        <line x1="6" y1="3.5" x2="6" y2="6" stroke="#C8A961" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="6" y1="6" x2="8" y2="7.5" stroke="#C8A961" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      Versión 4.1 &nbsp;·&nbsp; Junio 2026
+    </div>
+  </div>
+</header>
+
+<main>
+<div class="page">
+
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <!--  TABLA DE CONTENIDOS                                           -->
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <nav class="toc-section" aria-label="Tabla de contenidos">
+    <div class="section-label">Contenido del manual</div>
+    <div class="section-title">¿Qué quieres saber hoy?</div>
+
+    <div class="toc-agenda" role="list">
+      <div class="toc-header" aria-hidden="true">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <rect x="1" y="2" width="14" height="13" rx="2.5" stroke="#C8A961" stroke-width="1.4"/>
+          <line x1="5" y1="1" x2="5" y2="4" stroke="#C8A961" stroke-width="1.4" stroke-linecap="round"/>
+          <line x1="11" y1="1" x2="11" y2="4" stroke="#C8A961" stroke-width="1.4" stroke-linecap="round"/>
+          <rect x="4" y="8" width="3" height="3" rx="0.8" fill="#C8A961" fill-opacity="0.7"/>
+          <rect x="9" y="8" width="3" height="3" rx="0.8" fill="#C8A961" fill-opacity="0.3"/>
+        </svg>
+        <span class="toc-header-title">Manual del Cliente — 7 secciones</span>
+        <span class="toc-header-label">Ir a sección</span>
+      </div>
+
+      <div class="toc-list">
+
+        <a class="toc-item" href="#como-funciona" role="listitem">
+          <div class="toc-rail" aria-hidden="true"></div>
+          <div class="toc-num" aria-hidden="true">01</div>
+          <div class="toc-content">
+            <div class="toc-name">¿Cómo funciona AppointVa?</div>
+            <div class="toc-desc">Sin apps, sin registros — solo un enlace</div>
+          </div>
+          <div class="toc-arrow" aria-hidden="true">→</div>
+        </a>
+
+        <a class="toc-item" href="#reservar" role="listitem">
+          <div class="toc-rail" aria-hidden="true"></div>
+          <div class="toc-num" aria-hidden="true">02</div>
+          <div class="toc-content">
+            <div class="toc-name">Reservar una cita paso a paso</div>
+            <div class="toc-desc">Desde que entras al enlace hasta que recibes confirmación</div>
+          </div>
+          <div class="toc-arrow" aria-hidden="true">→</div>
+        </a>
+
+        <a class="toc-item" href="#confirmacion" role="listitem">
+          <div class="toc-rail" aria-hidden="true"></div>
+          <div class="toc-num" aria-hidden="true">03</div>
+          <div class="toc-content">
+            <div class="toc-name">Confirmación de tu cita</div>
+            <div class="toc-desc">Qué dice el email y cómo usarlo</div>
+          </div>
+          <div class="toc-arrow" aria-hidden="true">→</div>
+        </a>
+
+        <a class="toc-item" href="#cancelar" role="listitem">
+          <div class="toc-rail" aria-hidden="true"></div>
+          <div class="toc-num" aria-hidden="true">04</div>
+          <div class="toc-content">
+            <div class="toc-name">Cancelar o modificar una cita</div>
+            <div class="toc-desc">Cómo contactar al negocio y qué tener en cuenta</div>
+          </div>
+          <div class="toc-arrow" aria-hidden="true">→</div>
+        </a>
+
+        <a class="toc-item" href="#espera" role="listitem">
+          <div class="toc-rail" aria-hidden="true"></div>
+          <div class="toc-num" aria-hidden="true">05</div>
+          <div class="toc-content">
+            <div class="toc-name">Lista de espera</div>
+            <div class="toc-desc">Qué hacer cuando no hay turnos disponibles</div>
+          </div>
+          <div class="toc-arrow" aria-hidden="true">→</div>
+        </a>
+
+        <a class="toc-item" href="#descuentos" role="listitem">
+          <div class="toc-rail" aria-hidden="true"></div>
+          <div class="toc-num" aria-hidden="true">06</div>
+          <div class="toc-content">
+            <div class="toc-name">Descuentos</div>
+            <div class="toc-desc">Cómo ingresar tu código de descuento</div>
+          </div>
+          <div class="toc-arrow" aria-hidden="true">→</div>
+        </a>
+
+        <a class="toc-item" href="#faq" role="listitem">
+          <div class="toc-rail" aria-hidden="true"></div>
+          <div class="toc-num" aria-hidden="true">07</div>
+          <div class="toc-content">
+            <div class="toc-name">Preguntas frecuentes</div>
+            <div class="toc-desc">Cuentas, seguridad, llegadas y más</div>
+          </div>
+          <div class="toc-arrow" aria-hidden="true">→</div>
+        </a>
+
+      </div>
+    </div>
+  </nav>
+
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <!--  01 — COMO FUNCIONA                                            -->
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <section class="section anchor-target" id="como-funciona" aria-labelledby="h-como-funciona">
+    <div class="divider" aria-hidden="true"></div>
+    <div style="padding-top: 52px;">
+      <div class="section-label">Sección 01</div>
+      <h2 class="section-title" id="h-como-funciona">¿Cómo funciona AppointVa?</h2>
+
+      <div class="intro-grid">
+        <div class="intro-card">
+          <div class="intro-icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+              <path d="M4 11C4 7.13 7.13 4 11 4s7 3.13 7 7-3.13 7-7 7-7-3.13-7-7z" stroke="#C8A961" stroke-width="1.6"/>
+              <path d="M11 8v3l2 2" stroke="#C8A961" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <h3>Sin descargar nada</h3>
+          <p>Todo funciona desde el navegador de tu celular o computadora. No necesitas instalar ninguna aplicación.</p>
+        </div>
+        <div class="intro-card">
+          <div class="intro-icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+              <rect x="3" y="5" width="16" height="12" rx="2.5" stroke="#C8A961" stroke-width="1.6"/>
+              <path d="M3 9h16" stroke="#C8A961" stroke-width="1.6"/>
+              <circle cx="11" cy="14" r="1.5" fill="#C8A961"/>
+            </svg>
+          </div>
+          <h3>Sin crear una cuenta</h3>
+          <p>No tienes que registrarte. Solo ingresas tu nombre, teléfono y email al momento de reservar.</p>
+        </div>
+        <div class="intro-card">
+          <div class="intro-icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+              <path d="M4 6h14M4 11h10M4 16h7" stroke="#C8A961" stroke-width="1.6" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <h3>Desde un enlace</h3>
+          <p>El negocio te comparte su enlace (por WhatsApp, Instagram o Google). Tócalo y ya estás dentro.</p>
+        </div>
+      </div>
+
+      <div class="url-demo" aria-label="Ejemplo de enlace de reservas">
+        <span class="url-label">Ejemplo de enlace</span>
+        <span class="url-text">appointva.com/b/<em>salon-diana</em></span>
+      </div>
+
+      <div class="tip" role="note">
+        <svg class="tip-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+          <circle cx="11" cy="11" r="9" stroke="#C8A961" stroke-width="1.6"/>
+          <path d="M11 10v5" stroke="#C8A961" stroke-width="1.8" stroke-linecap="round"/>
+          <circle cx="11" cy="7.5" r="1" fill="#C8A961"/>
+        </svg>
+        <p><strong>Cada negocio tiene su propio enlace.</strong> Si reservas en el Salón Diana y en el Centro de Estética Lucía, cada uno tiene un enlace distinto. El negocio te dice cuál usar.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <!--  02 — RESERVAR UNA CITA                                        -->
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <section class="section anchor-target" id="reservar" aria-labelledby="h-reservar">
+    <div class="divider" aria-hidden="true"></div>
+    <div style="padding-top: 52px;">
+      <div class="section-label">Sección 02</div>
+      <h2 class="section-title" id="h-reservar">Reservar una cita paso a paso</h2>
+
+      <div class="booking-steps" role="list">
+
+        <!-- PASO 1 -->
+        <div class="booking-step" role="listitem">
+          <div class="step-num-col" aria-hidden="true">
+            <div class="step-circle">1</div>
+          </div>
+          <div class="step-body-col">
+            <h3>Entra al enlace del negocio</h3>
+            <p>El negocio comparte su enlace de reservas por Instagram, WhatsApp o Google. Toca el enlace y se abre la página del negocio directamente en tu navegador.</p>
+            <span class="step-tag">Desde WhatsApp, Instagram o Google</span>
+          </div>
+          <div class="step-phone-col" aria-hidden="true">
+            <div class="phone">
+              <div class="phone-notch"></div>
+              <div class="phone-screen">
+                <div class="pscreen-bar">
+                  <div class="pscreen-bar-dot"></div>
+                  <span class="pscreen-bar-title">AppointVa</span>
+                </div>
+                <div class="pscreen-body">
+                  <!-- Business card -->
+                  <div style="background:var(--dark);border-radius:6px;padding:8px;margin-bottom:3px;">
+                    <div style="font-size:6.5px;font-weight:800;color:var(--white);margin-bottom:2px;">Salón Diana</div>
+                    <div style="font-size:5px;color:var(--gray-light);">Av. Reforma 240 · Ciudad de México</div>
+                    <div style="display:flex;gap:4px;margin-top:5px;">
+                      <div style="background:var(--gold);border-radius:3px;padding:2px 5px;font-size:5px;font-weight:700;color:var(--white);">Reservar cita</div>
+                      <div style="background:rgba(255,255,255,0.08);border-radius:3px;padding:2px 5px;font-size:5px;color:var(--gray-light);">Ver servicios</div>
+                    </div>
+                  </div>
+                  <div style="background:var(--light);border-radius:4px;height:30px;display:flex;align-items:center;justify-content:center;">
+                    <div style="font-size:5px;color:var(--gray);">Galería de fotos ···</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PASO 2 -->
+        <div class="booking-step" role="listitem">
+          <div class="step-num-col" aria-hidden="true">
+            <div class="step-circle">2</div>
+          </div>
+          <div class="step-body-col">
+            <h3>Elige el servicio</h3>
+            <p>Verás la lista de servicios que ofrece el negocio — cada uno con nombre, duración y precio. Toca el que deseas para seleccionarlo.</p>
+            <span class="step-tag">Corte, coloración, tratamiento, etc.</span>
+          </div>
+          <div class="step-phone-col" aria-hidden="true">
+            <div class="phone">
+              <div class="phone-notch"></div>
+              <div class="phone-screen">
+                <div class="pscreen-bar">
+                  <div class="pscreen-bar-dot"></div>
+                  <span class="pscreen-bar-title">Selecciona un servicio</span>
+                </div>
+                <div class="pscreen-body">
+                  <div class="pmock-service-row selected">
+                    <div class="pmock-svc-dot"></div>
+                    <span class="pmock-svc-text">Corte de cabello</span>
+                    <span class="pmock-svc-price">$180</span>
+                  </div>
+                  <div class="pmock-service-row">
+                    <div class="pmock-svc-dot" style="background:var(--gray-light)"></div>
+                    <span class="pmock-svc-text">Coloración completa</span>
+                    <span class="pmock-svc-price">$650</span>
+                  </div>
+                  <div class="pmock-service-row">
+                    <div class="pmock-svc-dot" style="background:var(--gray-light)"></div>
+                    <span class="pmock-svc-text">Tratamiento capilar</span>
+                    <span class="pmock-svc-price">$320</span>
+                  </div>
+                  <div class="pmock-service-row">
+                    <div class="pmock-svc-dot" style="background:var(--gray-light)"></div>
+                    <span class="pmock-svc-text">Manicura</span>
+                    <span class="pmock-svc-price">$220</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PASO 3 -->
+        <div class="booking-step" role="listitem">
+          <div class="step-num-col" aria-hidden="true">
+            <div class="step-circle">3</div>
+          </div>
+          <div class="step-body-col">
+            <h3>Elige el profesional</h3>
+            <p>Puedes elegir a un profesional específico del negocio, o seleccionar "Sin preferencia" si no tienes una persona favorita. El sistema te asignará quien esté disponible.</p>
+            <span class="step-tag">O selecciona "Sin preferencia"</span>
+          </div>
+          <div class="step-phone-col" aria-hidden="true">
+            <div class="phone">
+              <div class="phone-notch"></div>
+              <div class="phone-screen">
+                <div class="pscreen-bar">
+                  <div class="pscreen-bar-dot"></div>
+                  <span class="pscreen-bar-title">¿Con quién?</span>
+                </div>
+                <div class="pscreen-body">
+                  <div class="pmock-avatar-row">
+                    <div class="pmock-avatar" style="border-color:var(--gold);background:var(--gold-light);">
+                      <div class="pmock-avatar-circle">
+                        <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                          <circle cx="5" cy="3.5" r="2" fill="#9ca3af"/>
+                          <path d="M1.5 9c0-1.93 1.57-3.5 3.5-3.5S8.5 7.07 8.5 9" stroke="#9ca3af" stroke-width="1.2"/>
+                        </svg>
+                      </div>
+                      <span class="pmock-avatar-name">Sin pref.</span>
+                    </div>
+                    <div class="pmock-avatar">
+                      <div class="pmock-avatar-circle">
+                        <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                          <circle cx="5" cy="3.5" r="2" fill="#9ca3af"/>
+                          <path d="M1.5 9c0-1.93 1.57-3.5 3.5-3.5S8.5 7.07 8.5 9" stroke="#9ca3af" stroke-width="1.2"/>
+                        </svg>
+                      </div>
+                      <span class="pmock-avatar-name">Diana R.</span>
+                    </div>
+                    <div class="pmock-avatar">
+                      <div class="pmock-avatar-circle">
+                        <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                          <circle cx="5" cy="3.5" r="2" fill="#9ca3af"/>
+                          <path d="M1.5 9c0-1.93 1.57-3.5 3.5-3.5S8.5 7.07 8.5 9" stroke="#9ca3af" stroke-width="1.2"/>
+                        </svg>
+                      </div>
+                      <span class="pmock-avatar-name">Lucía M.</span>
+                    </div>
+                  </div>
+                  <div style="background:var(--gold-light);border:1px solid rgba(200,169,97,0.4);border-radius:4px;padding:4px 6px;margin-top:2px;">
+                    <div style="font-size:5.5px;color:#7a5c10;font-weight:600;">Seleccionado: Sin preferencia</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PASO 4 -->
+        <div class="booking-step" role="listitem">
+          <div class="step-num-col" aria-hidden="true">
+            <div class="step-circle">4</div>
+          </div>
+          <div class="step-body-col">
+            <h3>Selecciona una fecha disponible</h3>
+            <p>Verás un calendario con los días disponibles resaltados. Los días grises ya están llenos o el negocio no trabaja ese día. Toca cualquier día dorado para elegirlo.</p>
+          </div>
+          <div class="step-phone-col" aria-hidden="true">
+            <div class="phone">
+              <div class="phone-notch"></div>
+              <div class="phone-screen">
+                <div class="pscreen-bar">
+                  <div class="pscreen-bar-dot"></div>
+                  <span class="pscreen-bar-title">Elige una fecha</span>
+                </div>
+                <div class="pscreen-body">
+                  <div class="pmock-cal-header">
+                    <span>Junio 2026</span>
+                    <div style="display:flex;gap:4px;">
+                      <div style="font-size:7px;color:var(--gold);cursor:pointer;">&lt;</div>
+                      <div style="font-size:7px;color:var(--gold);cursor:pointer;">&gt;</div>
+                    </div>
+                  </div>
+                  <div class="pmock-cal-grid">
+                    <!-- L M X J V S D -->
+                    <div class="pmock-cal-day" style="font-size:4px;color:var(--gray-light);">L</div>
+                    <div class="pmock-cal-day" style="font-size:4px;color:var(--gray-light);">M</div>
+                    <div class="pmock-cal-day" style="font-size:4px;color:var(--gray-light);">X</div>
+                    <div class="pmock-cal-day" style="font-size:4px;color:var(--gray-light);">J</div>
+                    <div class="pmock-cal-day" style="font-size:4px;color:var(--gray-light);">V</div>
+                    <div class="pmock-cal-day" style="font-size:4px;color:var(--gray-light);">S</div>
+                    <div class="pmock-cal-day" style="font-size:4px;color:var(--gray-light);">D</div>
+                    <!-- semana 1 -->
+                    <div class="pmock-cal-day empty"></div>
+                    <div class="pmock-cal-day">2</div>
+                    <div class="pmock-cal-day avail">3</div>
+                    <div class="pmock-cal-day avail">4</div>
+                    <div class="pmock-cal-day avail">5</div>
+                    <div class="pmock-cal-day avail">6</div>
+                    <div class="pmock-cal-day">7</div>
+                    <!-- semana 2 -->
+                    <div class="pmock-cal-day avail">8</div>
+                    <div class="pmock-cal-day avail">9</div>
+                    <div class="pmock-cal-day avail">10</div>
+                    <div class="pmock-cal-day">11</div>
+                    <div class="pmock-cal-day avail">12</div>
+                    <div class="pmock-cal-day selected">13</div>
+                    <div class="pmock-cal-day">14</div>
+                    <!-- semana 3 -->
+                    <div class="pmock-cal-day avail">15</div>
+                    <div class="pmock-cal-day">16</div>
+                    <div class="pmock-cal-day avail">17</div>
+                    <div class="pmock-cal-day avail">18</div>
+                    <div class="pmock-cal-day">19</div>
+                    <div class="pmock-cal-day avail">20</div>
+                    <div class="pmock-cal-day">21</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PASO 5 -->
+        <div class="booking-step" role="listitem">
+          <div class="step-num-col" aria-hidden="true">
+            <div class="step-circle">5</div>
+          </div>
+          <div class="step-body-col">
+            <h3>Selecciona la hora</h3>
+            <p>Aparecen todos los horarios disponibles para ese día. Los bloques grises ya están ocupados. Toca la hora que más te convenga.</p>
+          </div>
+          <div class="step-phone-col" aria-hidden="true">
+            <div class="phone">
+              <div class="phone-notch"></div>
+              <div class="phone-screen">
+                <div class="pscreen-bar">
+                  <div class="pscreen-bar-dot"></div>
+                  <span class="pscreen-bar-title">Elige un horario</span>
+                </div>
+                <div class="pscreen-body">
+                  <div class="pmock-label">Sáb 13 Jun — disponibles</div>
+                  <div class="pmock-slots">
+                    <div class="pmock-slot taken">9:00</div>
+                    <div class="pmock-slot taken">9:30</div>
+                    <div class="pmock-slot">10:00</div>
+                    <div class="pmock-slot selected">10:30</div>
+                    <div class="pmock-slot">11:00</div>
+                    <div class="pmock-slot taken">11:30</div>
+                    <div class="pmock-slot taken">12:00</div>
+                    <div class="pmock-slot">14:00</div>
+                    <div class="pmock-slot">14:30</div>
+                    <div class="pmock-slot">15:00</div>
+                    <div class="pmock-slot taken">15:30</div>
+                    <div class="pmock-slot">16:00</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PASO 6 -->
+        <div class="booking-step" role="listitem">
+          <div class="step-num-col" aria-hidden="true">
+            <div class="step-circle">6</div>
+          </div>
+          <div class="step-body-col">
+            <h3>Ingresa tus datos personales</h3>
+            <p>El negocio necesita saber quién eres para confirmar la cita. Ingresa tu nombre completo, número de teléfono y dirección de email. Con tu email, recibirás la confirmación.</p>
+          </div>
+          <div class="step-phone-col" aria-hidden="true">
+            <div class="phone">
+              <div class="phone-notch"></div>
+              <div class="phone-screen">
+                <div class="pscreen-bar">
+                  <div class="pscreen-bar-dot"></div>
+                  <span class="pscreen-bar-title">Tus datos</span>
+                </div>
+                <div class="pscreen-body">
+                  <div class="pmock-form-row">
+                    <div class="pmock-label">Nombre completo</div>
+                    <div class="pmock-input"><span>María López</span></div>
+                  </div>
+                  <div class="pmock-form-row">
+                    <div class="pmock-label">Teléfono</div>
+                    <div class="pmock-input"><span>+52 55 1234 5678</span></div>
+                  </div>
+                  <div class="pmock-form-row">
+                    <div class="pmock-label">Email</div>
+                    <div class="pmock-input"><span>maria@email.com</span></div>
+                  </div>
+                  <div class="pmock-btn" style="margin-top:4px;"><span>Continuar →</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PASO 7 -->
+        <div class="booking-step" role="listitem">
+          <div class="step-num-col" aria-hidden="true">
+            <div class="step-circle">7</div>
+          </div>
+          <div class="step-body-col">
+            <h3>Formulario de preguntas (opcional)</h3>
+            <p>Algunos negocios tienen preguntas adicionales antes de tu cita — por ejemplo, alergias, preferencias de color o condición del cabello. Si aparece este formulario, respóndelo con la mayor información posible: ayuda al profesional a prepararse.</p>
+            <span class="step-tag">Solo si el negocio lo tiene configurado</span>
+          </div>
+          <div class="step-phone-col" aria-hidden="true">
+            <div class="phone">
+              <div class="phone-notch"></div>
+              <div class="phone-screen">
+                <div class="pscreen-bar">
+                  <div class="pscreen-bar-dot"></div>
+                  <span class="pscreen-bar-title">Información adicional</span>
+                </div>
+                <div class="pscreen-body">
+                  <div class="pmock-form-row">
+                    <div class="pmock-label">¿Tienes alergias a tintes?</div>
+                    <div class="pmock-input"><span>No, ninguna</span></div>
+                  </div>
+                  <div class="pmock-form-row">
+                    <div class="pmock-label">Color actual del cabello</div>
+                    <div class="pmock-input"><span>Castaño oscuro</span></div>
+                  </div>
+                  <div class="pmock-form-row">
+                    <div class="pmock-label">¿Has usado químicos antes?</div>
+                    <div style="display:flex;gap:3px;margin-top:1px;">
+                      <div style="flex:1;height:11px;border:1px solid var(--gold);border-radius:3px;background:var(--gold-light);display:flex;align-items:center;justify-content:center;"><span style="font-size:5.5px;font-weight:700;color:#7a5c10;">Sí</span></div>
+                      <div style="flex:1;height:11px;border:1px solid var(--border);border-radius:3px;display:flex;align-items:center;justify-content:center;"><span style="font-size:5.5px;color:var(--gray);">No</span></div>
+                    </div>
+                  </div>
+                  <div class="pmock-btn" style="margin-top:4px;"><span>Confirmar cita →</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PASO 8 -->
+        <div class="booking-step" role="listitem">
+          <div class="step-num-col" aria-hidden="true">
+            <div class="step-circle">8</div>
+          </div>
+          <div class="step-body-col">
+            <h3>¡Cita confirmada!</h3>
+            <p>Verás una pantalla de confirmación con todos los detalles. Además, recibirás un email automático con la misma información. Guarda ese correo — lo necesitarás si tienes preguntas.</p>
+          </div>
+          <div class="step-phone-col" aria-hidden="true">
+            <div class="phone">
+              <div class="phone-notch"></div>
+              <div class="phone-screen">
+                <div class="pscreen-bar">
+                  <div class="pscreen-bar-dot"></div>
+                  <span class="pscreen-bar-title">Confirmación</span>
+                </div>
+                <div class="pscreen-body">
+                  <div class="pmock-success">
+                    <div class="pmock-success-circle">
+                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                        <path d="M3 7l3 3 5-5" stroke="#16a34a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    </div>
+                    <div class="pmock-success-title">¡Cita reservada!</div>
+                    <div class="pmock-success-sub">Revisa tu email para ver los detalles completos</div>
+                  </div>
+                  <div style="padding: 0 4px;">
+                    <div class="pmock-detail-row"><span class="pmock-detail-label">Servicio</span><span class="pmock-detail-val">Corte</span></div>
+                    <div class="pmock-detail-row"><span class="pmock-detail-label">Profesional</span><span class="pmock-detail-val">Diana R.</span></div>
+                    <div class="pmock-detail-row"><span class="pmock-detail-label">Fecha</span><span class="pmock-detail-val">Sáb 13 Jun</span></div>
+                    <div class="pmock-detail-row"><span class="pmock-detail-label">Hora</span><span class="pmock-detail-val">10:30 AM</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /booking-steps -->
+
+      <div class="tip" role="note" style="margin-top:20px;">
+        <svg class="tip-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+          <circle cx="11" cy="11" r="9" stroke="#C8A961" stroke-width="1.6"/>
+          <path d="M11 10v5" stroke="#C8A961" stroke-width="1.8" stroke-linecap="round"/>
+          <circle cx="11" cy="7.5" r="1" fill="#C8A961"/>
+        </svg>
+        <p><strong>Tarda menos de 2 minutos.</strong> El proceso completo — desde que entras al enlace hasta que confirmas tu cita — normalmente toma entre 60 y 90 segundos.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <!--  03 — CONFIRMACION                                             -->
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <section class="section anchor-target" id="confirmacion" aria-labelledby="h-confirmacion">
+    <div class="divider" aria-hidden="true"></div>
+    <div style="padding-top: 52px;">
+      <div class="section-label">Sección 03</div>
+      <h2 class="section-title" id="h-confirmacion">Confirmación de tu cita</h2>
+
+      <p style="font-size:14px;color:var(--gray);margin-bottom:20px;line-height:1.7;">
+        Unos segundos después de reservar, recibirás un email automático de AppointVa con todos los detalles de tu cita. Así se ve ese correo:
+      </p>
+
+      <div class="email-mock" role="img" aria-label="Vista previa del email de confirmación">
+        <div class="email-header">
+          <div class="email-header-logo" aria-hidden="true">
+            <svg viewBox="0 0 20 20" fill="none" width="16" height="16">
+              <rect x="2" y="3" width="16" height="14" rx="2.5" fill="white" fill-opacity="0.15" stroke="white" stroke-width="1.2"/>
+              <line x1="2" y1="8" x2="18" y2="8" stroke="white" stroke-width="1.2"/>
+              <rect x="5" y="11" width="3" height="3" rx="0.8" fill="white" fill-opacity="0.7"/>
+            </svg>
+          </div>
+          <div class="email-header-info">
+            <div class="email-from">De: noreply@appointva.com</div>
+            <div class="email-subject">Confirmación de cita — Salón Diana</div>
+          </div>
+        </div>
+        <div class="email-body">
+          <div class="email-greeting">Hola María,</div>
+          <p>Tu cita ha sido confirmada. A continuación encontrarás todos los detalles:</p>
+          <div class="email-detail-box" role="table" aria-label="Detalles de la cita">
+            <div class="email-detail-row" role="row">
+              <span class="email-detail-key" role="rowheader">Negocio</span>
+              <span class="email-detail-val" role="cell">Salón Diana</span>
+            </div>
+            <div class="email-detail-row" role="row">
+              <span class="email-detail-key" role="rowheader">Servicio</span>
+              <span class="email-detail-val" role="cell">Corte de cabello · 45 min</span>
+            </div>
+            <div class="email-detail-row" role="row">
+              <span class="email-detail-key" role="rowheader">Profesional</span>
+              <span class="email-detail-val" role="cell">Diana Ramírez</span>
+            </div>
+            <div class="email-detail-row" role="row">
+              <span class="email-detail-key" role="rowheader">Fecha</span>
+              <span class="email-detail-val" role="cell">Sábado 13 de junio de 2026</span>
+            </div>
+            <div class="email-detail-row" role="row">
+              <span class="email-detail-key" role="rowheader">Hora</span>
+              <span class="email-detail-val" role="cell">10:30 AM</span>
+            </div>
+            <div class="email-detail-row" role="row">
+              <span class="email-detail-key" role="rowheader">Precio</span>
+              <span class="email-detail-val" role="cell">$180 MXN</span>
+            </div>
+          </div>
+          <p>Si tienes alguna pregunta o necesitas modificar tu cita, contacta directamente al negocio.</p>
+          <div class="email-footer-note">AppointVa · Sistema de reservas en línea</div>
+        </div>
+      </div>
+
+      <div class="tip" role="note" style="margin-top:20px;">
+        <svg class="tip-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+          <circle cx="11" cy="11" r="9" stroke="#C8A961" stroke-width="1.6"/>
+          <path d="M11 10v5" stroke="#C8A961" stroke-width="1.8" stroke-linecap="round"/>
+          <circle cx="11" cy="7.5" r="1" fill="#C8A961"/>
+        </svg>
+        <p><strong>¿No llegó el email?</strong> Revisa la carpeta de <strong>spam o correo no deseado</strong>. Si tampoco está ahí, contacta al negocio directamente para confirmar que recibieron tu reserva.</p>
+      </div>
+
+      <div class="success-note" role="note">
+        <svg class="success-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+          <circle cx="11" cy="11" r="9" stroke="#16a34a" stroke-width="1.6"/>
+          <path d="M7 11l3 3 5-5" stroke="#16a34a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <p><strong>Guarda ese correo.</strong> Contiene toda la información de tu cita en un solo lugar. Si el negocio te pide que confirmes o si tienes una pregunta, ese email es tu referencia.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <!--  04 — CANCELAR O MODIFICAR                                     -->
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <section class="section anchor-target" id="cancelar" aria-labelledby="h-cancelar">
+    <div class="divider" aria-hidden="true"></div>
+    <div style="padding-top: 52px;">
+      <div class="section-label">Sección 04</div>
+      <h2 class="section-title" id="h-cancelar">Cancelar o modificar una cita</h2>
+
+      <div class="card">
+        <div style="display:flex;align-items:flex-start;gap:14px;">
+          <div style="width:40px;height:40px;background:var(--gold-light);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M10 2a8 8 0 100 16A8 8 0 0010 2z" stroke="#C8A961" stroke-width="1.5"/>
+              <path d="M10 6v4l3 3" stroke="#C8A961" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div>
+            <div class="card-title">Contacta directamente al negocio</div>
+            <p>AppointVa no tiene una función de cancelación propia para clientes. Si necesitas cancelar o cambiar tu cita, comunícate con el negocio por WhatsApp o teléfono y ellos la gestionan desde su sistema.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:12px;">
+        <div style="display:flex;align-items:flex-start;gap:14px;">
+          <div style="width:40px;height:40px;background:var(--gold-light);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M4 10h12M4 6h12M4 14h7" stroke="#C8A961" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div>
+            <div class="card-title">Hazlo con tiempo de anticipación</div>
+            <p>Cada negocio tiene su propia política de cancelación. Cancelar con pocas horas de anticipación puede significar perder el turno o pagar una penalización. Cuando reserves, pregunta cuánto tiempo antes puedes cancelar sin problema.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="tip" role="note" style="margin-top:16px;">
+        <svg class="tip-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+          <circle cx="11" cy="11" r="9" stroke="#C8A961" stroke-width="1.6"/>
+          <path d="M11 10v5" stroke="#C8A961" stroke-width="1.8" stroke-linecap="round"/>
+          <circle cx="11" cy="7.5" r="1" fill="#C8A961"/>
+        </svg>
+        <p><strong>Regla práctica:</strong> avisa con al menos 24 horas de anticipación. Si tu cita es a las 10 AM del martes, comunícate antes de las 10 AM del lunes.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <!--  05 — LISTA DE ESPERA                                          -->
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <section class="section anchor-target" id="espera" aria-labelledby="h-espera">
+    <div class="divider" aria-hidden="true"></div>
+    <div style="padding-top: 52px;">
+      <div class="section-label">Sección 05</div>
+      <h2 class="section-title" id="h-espera">Lista de espera</h2>
+
+      <p style="font-size:14px;color:var(--gray);margin-bottom:20px;line-height:1.7;">
+        Cuando un negocio no tiene turnos disponibles en las fechas que necesitas, algunos ofrecen la opción de unirte a su lista de espera. Si se libera un lugar, te contactan directamente.
+      </p>
+
+      <div class="card">
+        <div style="display:flex;gap:16px;align-items:flex-start;">
+          <div>
+            <div class="card-title" style="margin-bottom:14px;">¿Cómo funciona la lista de espera?</div>
+
+            <div style="display:flex;flex-direction:column;gap:12px;">
+              <div style="display:flex;align-items:flex-start;gap:12px;">
+                <div style="width:24px;height:24px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;" aria-hidden="true">
+                  <span style="font-size:11px;font-weight:800;color:var(--white);">1</span>
+                </div>
+                <p style="font-size:13px;color:var(--gray);line-height:1.6;">Ve al final del proceso de reserva y, si no hay horarios disponibles, aparece un botón para <strong style="color:var(--dark);">unirte a la lista de espera</strong>.</p>
+              </div>
+              <div style="display:flex;align-items:flex-start;gap:12px;">
+                <div style="width:24px;height:24px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;" aria-hidden="true">
+                  <span style="font-size:11px;font-weight:800;color:var(--white);">2</span>
+                </div>
+                <p style="font-size:13px;color:var(--gray);line-height:1.6;">Ingresa solo tu <strong style="color:var(--dark);">nombre</strong> y tu <strong style="color:var(--dark);">número de teléfono</strong>. Nada más.</p>
+              </div>
+              <div style="display:flex;align-items:flex-start;gap:12px;">
+                <div style="width:24px;height:24px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;" aria-hidden="true">
+                  <span style="font-size:11px;font-weight:800;color:var(--white);">3</span>
+                </div>
+                <p style="font-size:13px;color:var(--gray);line-height:1.6;">Si se cancela una cita y se libera un turno, el negocio te contacta directamente por <strong style="color:var(--dark);">WhatsApp</strong> para ofrecerte el espacio.</p>
+              </div>
+            </div>
+          </div>
+
+          <div style="flex-shrink:0;display:flex;align-items:center;justify-content:center;" aria-hidden="true">
+            <div class="phone" style="width:108px;">
+              <div class="phone-notch"></div>
+              <div class="phone-screen">
+                <div class="pscreen-bar">
+                  <div class="pscreen-bar-dot"></div>
+                  <span class="pscreen-bar-title">Lista de espera</span>
+                </div>
+                <div class="pscreen-body">
+                  <div class="pmock-waitlist">
+                    <div class="pmock-waitlist-icon">
+                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                        <circle cx="6" cy="6" r="5" stroke="#2563eb" stroke-width="1.3"/>
+                        <path d="M6 3.5V6l1.5 1.5" stroke="#2563eb" stroke-width="1.2" stroke-linecap="round"/>
+                      </svg>
+                    </div>
+                    <div class="pmock-waitlist-text">No hay turnos disponibles</div>
+                    <div class="pmock-waitlist-sub">¿Quieres que te avisemos si se libera uno?</div>
+                  </div>
+                  <div class="pmock-form-row" style="padding:0 4px;">
+                    <div class="pmock-label">Nombre</div>
+                    <div class="pmock-input"><span>María López</span></div>
+                  </div>
+                  <div class="pmock-form-row" style="padding:0 4px;margin-top:3px;">
+                    <div class="pmock-label">Teléfono (WhatsApp)</div>
+                    <div class="pmock-input"><span>+52 55 1234 5678</span></div>
+                  </div>
+                  <div class="pmock-btn" style="margin:5px 4px 0;"><span>Unirme a la lista →</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="info" role="note">
+        <svg class="info-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+          <circle cx="11" cy="11" r="9" stroke="#2563eb" stroke-width="1.6"/>
+          <path d="M11 10v5" stroke="#2563eb" stroke-width="1.8" stroke-linecap="round"/>
+          <circle cx="11" cy="7.5" r="1" fill="#2563eb"/>
+        </svg>
+        <p>La lista de espera no garantiza que obtendrás un turno. Solo significa que el negocio te tendrá en mente si se libera uno. <strong>El turno no está reservado hasta que el negocio te confirme.</strong></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <!--  06 — DESCUENTOS                                               -->
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <section class="section anchor-target" id="descuentos" aria-labelledby="h-descuentos">
+    <div class="divider" aria-hidden="true"></div>
+    <div style="padding-top: 52px;">
+      <div class="section-label">Sección 06</div>
+      <h2 class="section-title" id="h-descuentos">Descuentos</h2>
+
+      <p style="font-size:14px;color:var(--gray);margin-bottom:20px;line-height:1.7;">
+        Algunos negocios ofrecen códigos de descuento a sus clientes — pueden ser un porcentaje del total (ej. 15% de descuento) o un monto fijo (ej. $50 de descuento). Si tienes uno, así lo usas:
+      </p>
+
+      <div class="card">
+        <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;">
+          <div style="flex:1;min-width:200px;">
+            <div style="display:flex;flex-direction:column;gap:14px;">
+              <div style="display:flex;align-items:flex-start;gap:12px;">
+                <div style="width:24px;height:24px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;" aria-hidden="true">
+                  <span style="font-size:11px;font-weight:800;color:var(--white);">1</span>
+                </div>
+                <p style="font-size:13px;color:var(--gray);line-height:1.6;">Completa los pasos de reserva normalmente: servicio, profesional, fecha, hora y tus datos.</p>
+              </div>
+              <div style="display:flex;align-items:flex-start;gap:12px;">
+                <div style="width:24px;height:24px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;" aria-hidden="true">
+                  <span style="font-size:11px;font-weight:800;color:var(--white);">2</span>
+                </div>
+                <p style="font-size:13px;color:var(--gray);line-height:1.6;">En la pantalla de <strong style="color:var(--dark);">resumen final</strong>, antes de confirmar, verás un campo que dice "¿Tienes un código de descuento?"</p>
+              </div>
+              <div style="display:flex;align-items:flex-start;gap:12px;">
+                <div style="width:24px;height:24px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;" aria-hidden="true">
+                  <span style="font-size:11px;font-weight:800;color:var(--white);">3</span>
+                </div>
+                <p style="font-size:13px;color:var(--gray);line-height:1.6;">Ingresa el código exactamente como te lo dieron (sin espacios extra) y toca <strong style="color:var(--dark);">"Aplicar"</strong>. El descuento se muestra de inmediato antes de confirmar.</p>
+              </div>
+            </div>
+          </div>
+
+          <div style="flex-shrink:0;display:flex;align-items:center;justify-content:center;" aria-hidden="true">
+            <div class="phone" style="width:108px;">
+              <div class="phone-notch"></div>
+              <div class="phone-screen">
+                <div class="pscreen-bar">
+                  <div class="pscreen-bar-dot"></div>
+                  <span class="pscreen-bar-title">Resumen de tu cita</span>
+                </div>
+                <div class="pscreen-body">
+                  <div class="pmock-detail-row"><span class="pmock-detail-label">Servicio</span><span class="pmock-detail-val">Corte</span></div>
+                  <div class="pmock-detail-row"><span class="pmock-detail-label">Profesional</span><span class="pmock-detail-val">Diana R.</span></div>
+                  <div class="pmock-detail-row"><span class="pmock-detail-label">Fecha</span><span class="pmock-detail-val">Sáb 13 Jun</span></div>
+                  <div class="pmock-detail-row"><span class="pmock-detail-label">Hora</span><span class="pmock-detail-val">10:30 AM</span></div>
+                  <div style="height:1px;background:var(--border);margin:3px 0;"></div>
+                  <div class="pmock-label" style="margin-top:2px;">Código de descuento</div>
+                  <div style="display:flex;gap:2px;margin-top:1px;">
+                    <div class="pmock-discount" style="flex:1;">
+                      <svg width="6" height="6" viewBox="0 0 6 6" fill="none"><path d="M1 3h4M3 1v4" stroke="#C8A961" stroke-width="1" stroke-linecap="round"/></svg>
+                      <span>SALON15</span>
+                    </div>
+                    <div style="width:24px;height:11px;background:var(--gold);border-radius:3px;display:flex;align-items:center;justify-content:center;"><span style="font-size:5px;font-weight:700;color:var(--white);">OK</span></div>
+                  </div>
+                  <div style="background:var(--green-light);border:1px solid #bbf7d0;border-radius:3px;padding:3px 5px;margin-top:3px;display:flex;justify-content:space-between;">
+                    <span style="font-size:5px;color:#14532d;font-weight:600;">Descuento 15%</span>
+                    <span style="font-size:5px;color:#14532d;font-weight:700;">−$27</span>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;padding:3px 0;">
+                    <span style="font-size:6px;font-weight:700;color:var(--dark);">Total</span>
+                    <span style="font-size:6px;font-weight:800;color:var(--gold);">$153</span>
+                  </div>
+                  <div class="pmock-btn"><span>Confirmar cita →</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tip" role="note" style="margin-top:16px;">
+        <svg class="tip-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+          <circle cx="11" cy="11" r="9" stroke="#C8A961" stroke-width="1.6"/>
+          <path d="M11 10v5" stroke="#C8A961" stroke-width="1.8" stroke-linecap="round"/>
+          <circle cx="11" cy="7.5" r="1" fill="#C8A961"/>
+        </svg>
+        <p><strong>El descuento solo se aplica en línea.</strong> Si llegas al negocio sin haberlo ingresado al reservar, dependerá de la política del negocio si pueden aplicarlo de forma manual.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <!--  07 — PREGUNTAS FRECUENTES                                     -->
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <section class="section anchor-target" id="faq" aria-labelledby="h-faq">
+    <div class="divider" aria-hidden="true"></div>
+    <div style="padding-top: 52px;">
+      <div class="section-label">Sección 07</div>
+      <h2 class="section-title" id="h-faq">Preguntas frecuentes</h2>
+
+      <div class="faq-list" role="list">
+
+        <div class="faq-item" role="listitem">
+          <div class="faq-q">
+            <div class="faq-q-mark" aria-hidden="true">?</div>
+            <span>¿Necesito crear una cuenta para reservar?</span>
+          </div>
+          <p class="faq-a">No. No tienes que registrarte ni crear ningún usuario. Simplemente ingresas tu nombre, teléfono y email al momento de hacer la reserva, y listo.</p>
+        </div>
+
+        <div class="faq-item" role="listitem">
+          <div class="faq-q">
+            <div class="faq-q-mark" aria-hidden="true">?</div>
+            <span>¿Puedo reservar desde WhatsApp?</span>
+          </div>
+          <p class="faq-a">Sí. Si el negocio comparte el enlace por WhatsApp, tócalo y se abre directamente la página de reservas en tu navegador. El proceso es el mismo desde cualquier lugar.</p>
+        </div>
+
+        <div class="faq-item" role="listitem">
+          <div class="faq-q">
+            <div class="faq-q-mark" aria-hidden="true">?</div>
+            <span>¿Cómo sé si mi cita fue confirmada?</span>
+          </div>
+          <p class="faq-a">Al terminar el proceso verás una pantalla de confirmación en verde. Además, recibirás un email automático con los detalles. Si el email no llegó en 5 minutos, revisa la carpeta de spam.</p>
+        </div>
+
+        <div class="faq-item" role="listitem">
+          <div class="faq-q">
+            <div class="faq-q-mark" aria-hidden="true">?</div>
+            <span>¿Qué pasa si llego tarde?</span>
+          </div>
+          <p class="faq-a">Eso depende de la política del negocio. Algunos pueden atenderte con el tiempo restante; otros necesitarán reprogramar. La recomendación general es llegar 5 minutos antes de tu hora.</p>
+        </div>
+
+        <div class="faq-item" role="listitem">
+          <div class="faq-q">
+            <div class="faq-q-mark" aria-hidden="true">?</div>
+            <span>¿Puedo reservar una cita para otra persona?</span>
+          </div>
+          <p class="faq-a">Sí. Cuando el sistema te pida los datos personales, ingresa el nombre y teléfono de la persona que va a ir a la cita, no los tuyos. Así el negocio sabrá a quién esperar.</p>
+        </div>
+
+        <div class="faq-item" role="listitem">
+          <div class="faq-q">
+            <div class="faq-q-mark" aria-hidden="true">?</div>
+            <span>¿Es seguro ingresar mis datos?</span>
+          </div>
+          <p class="faq-a">Sí. AppointVa solo usa tu nombre, teléfono y email para gestionar tu cita con el negocio. Tus datos no se comparten con terceros ni se usan para publicidad.</p>
+        </div>
+
+        <div class="faq-item" role="listitem">
+          <div class="faq-q">
+            <div class="faq-q-mark" aria-hidden="true">?</div>
+            <span>¿Funciona desde iPhone y Android?</span>
+          </div>
+          <p class="faq-a">Sí, funciona desde cualquier celular moderno — iPhone, Android, o desde una computadora. No importa el navegador que uses: Safari, Chrome, Firefox, todos son compatibles.</p>
+        </div>
+
+      </div>
+
+      <div class="tip" role="note" style="margin-top:20px;">
+        <svg class="tip-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+          <circle cx="11" cy="11" r="9" stroke="#C8A961" stroke-width="1.6"/>
+          <path d="M11 10v5" stroke="#C8A961" stroke-width="1.8" stroke-linecap="round"/>
+          <circle cx="11" cy="7.5" r="1" fill="#C8A961"/>
+        </svg>
+        <p><strong>¿Tu pregunta no está aquí?</strong> Contacta directamente al negocio donde reservaste — ellos pueden ayudarte con cualquier situación específica de tu cita.</p>
+      </div>
+    </div>
+  </section>
+
+</div><!-- /page -->
+</main>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!--  FOOTER                                                        -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<footer class="footer">
+  <div style="width:32px;height:1px;background:var(--border);margin:0 auto 18px;" aria-hidden="true"></div>
+  <p><strong>AppointVa</strong> &copy; 2026 &nbsp;·&nbsp; Manual del Cliente</p>
+  <p style="margin-top:4px;">Versión 4.1 &nbsp;·&nbsp; Junio 2026</p>
+</footer>
+
+</body>
+</html>

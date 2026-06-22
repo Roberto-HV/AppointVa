@@ -5,7 +5,7 @@ import Select from "../../components/ui/Select";
 import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Eye, EyeOff, Copy, Check, Download, ChevronDown, Mail } from "lucide-react";
+import { Eye, EyeOff, Copy, Check, Download, Mail } from "lucide-react";
 import WhatsAppIcon from "../../components/icons/WhatsAppIcon";
 import { Tooltip } from "../../components/ui/Tooltip";
 import { QRCodeCanvas } from "qrcode.react";
@@ -81,85 +81,6 @@ const schema = z.object({
 });
 type PerfilForm = z.infer<typeof schema>;
 
-function WidgetEmbebido({ bookingUrl }: { bookingUrl: string }) {
-  const [abierto, setAbierto] = useState(false);
-  const [copiado, setCopiado] = useState(false);
-  const [vista, setVista] = useState<"iframe" | "boton">("iframe");
-
-  const codigoIframe = `<iframe
-  src="${bookingUrl}"
-  width="100%"
-  height="680"
-  frameborder="0"
-  style="border-radius:12px;border:1px solid #e5e7eb;"
-></iframe>`;
-
-  const codigoBoton = `<a
-  href="${bookingUrl}"
-  target="_blank"
-  style="display:inline-block;background:#C8A961;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;"
->
-  Reservar cita
-</a>`;
-
-  const codigo = vista === "iframe" ? codigoIframe : codigoBoton;
-
-  const copiar = () => {
-    navigator.clipboard.writeText(codigo);
-    setCopiado(true);
-    setTimeout(() => setCopiado(false), 2000);
-  };
-
-  return (
-    <div className="bg-white rounded-xl border border-gray-100 mb-6">
-      <button
-        onClick={() => setAbierto((v) => !v)}
-        className="w-full flex items-center justify-between px-5 py-4 text-left"
-      >
-        <div>
-          <p className="text-sm font-semibold text-gray-700">Widget para tu sitio web</p>
-          <p className="text-xs text-gray-400 mt-0.5">
-            Código para embeber el formulario de reservas en tu sitio
-          </p>
-        </div>
-        <ChevronDown
-          size={16}
-          className={`text-gray-400 shrink-0 transition-transform duration-200 ${abierto ? "rotate-180" : ""}`}
-        />
-      </button>
-
-      {abierto && (
-        <div className="px-5 pb-5 border-t border-gray-50 pt-4">
-          <div className="flex gap-2 mb-3">
-            {(["iframe", "boton"] as const).map((v) => (
-              <button
-                key={v}
-                onClick={() => setVista(v)}
-                className={`px-3 py-1.5 text-xs rounded-full border transition font-medium ${
-                  vista === v ? "bg-slate-700 text-white border-slate-700" : "border-gray-200 text-gray-600 hover:bg-gray-50"
-                }`}
-              >
-                {v === "iframe" ? "Formulario embebido" : "Botón de reserva"}
-              </button>
-            ))}
-          </div>
-          <div className="relative">
-            <pre className="bg-gray-900 text-green-400 text-xs rounded-xl p-4 overflow-x-auto leading-relaxed font-mono">
-              {codigo}
-            </pre>
-            <button
-              onClick={copiar}
-              className="absolute top-3 right-3 flex items-center gap-1 px-2.5 py-1 bg-gray-700 hover:bg-gray-600 text-white text-xs rounded-lg transition"
-            >
-              {copiado ? <Check size={12} /> : <Copy size={12} />}
-              {copiado ? "¡Copiado!" : "Copiar"}
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
 
 export default function PerfilPage() {
   const qc = useQueryClient();
@@ -410,11 +331,6 @@ export default function PerfilPage() {
             </div>
           </div>
         </div>
-      )}
-
-      {/* Widget embebido */}
-      {negocio && (
-        <WidgetEmbebido bookingUrl={`${window.location.origin}/b/${negocio.slug}`} />
       )}
 
       {/* Imágenes */}

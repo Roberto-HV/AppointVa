@@ -229,6 +229,7 @@ export default function BookingPage() {
   });
 
   const irSiguiente = () => {
+    (document.activeElement as HTMLElement)?.blur();
     if (paso === 3 && slot && camposIntake.length > 0 && !mostrarIntake) {
       setDirection(1);
       setMostrarIntake(true);
@@ -241,6 +242,7 @@ export default function BookingPage() {
   };
 
   const irAtras = () => {
+    (document.activeElement as HTMLElement)?.blur();
     if (mostrarIntake) {
       setDirection(-1);
       setMostrarIntake(false);
