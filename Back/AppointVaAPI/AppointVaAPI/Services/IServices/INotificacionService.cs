@@ -10,7 +10,7 @@ namespace AppointVaAPI.Services.IServices
     public interface INotificacionService
     {
         Task EnviarConfirmacionCitaAsync(Cita cita, string emailDestino, string nombreCliente,
-            string? urlCita = null, string? icalUrl = null, string? googleCalUrl = null);
+            string? urlCita = null, string? icalUrl = null, string? googleCalUrl = null, string? urlCancelacion = null);
 
         Task EnviarCancelacionCitaAsync(Cita cita, string emailDestino, string nombreCliente);
 

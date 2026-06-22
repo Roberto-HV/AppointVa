@@ -175,7 +175,7 @@ export default function ReportesPage() {
   const inputCls = "px-3 py-2 text-sm rounded-lg border border-gray-200 outline-none focus:border-slate-700 bg-white";
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6 overflow-x-hidden">
       {/* Header */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
@@ -224,13 +224,15 @@ export default function ReportesPage() {
           ))}
         </div>
         <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-3 items-end">
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1 min-w-0">
             <label className="text-xs font-medium text-gray-600">Desde</label>
-            <input type="date" value={desde} onChange={(e) => setDesde(e.target.value)} className={inputCls} />
+            <input type="date" value={desde} onChange={(e) => setDesde(e.target.value)} className={inputCls}
+              style={{ width: '100%', minWidth: 0, WebkitAppearance: 'none' }} />
           </div>
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1 min-w-0">
             <label className="text-xs font-medium text-gray-600">Hasta</label>
-            <input type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} className={inputCls} />
+            <input type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} className={inputCls}
+              style={{ width: '100%', minWidth: 0, WebkitAppearance: 'none' }} />
           </div>
           {tab === "citas" && (
             <>

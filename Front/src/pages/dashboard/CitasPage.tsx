@@ -1,4 +1,15 @@
 ﻿import { useState } from "react";
+
+function hoy() { return new Date().toISOString().split("T")[0]; }
+function inicioSemana() {
+  const d = new Date(), dia = d.getDay(), lunes = new Date(d);
+  lunes.setDate(d.getDate() - (dia === 0 ? 6 : dia - 1));
+  return lunes.toISOString().split("T")[0];
+}
+function inicioMes() {
+  const d = new Date();
+  return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split("T")[0];
+}
 import { Calendar } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -415,6 +426,27 @@ export default function CitasPage() {
               })}
             </div>
           </div>
+          {/* Atajos rápidos de fecha */}
+          <div className="col-span-2 flex flex-wrap gap-1.5">
+            {([
+              { label: "Hoy",    d: hoy(),        h: hoy() },
+              { label: "Semana", d: inicioSemana(), h: hoy() },
+              { label: "Mes",    d: inicioMes(),   h: hoy() },
+            ] as const).map((p) => (
+              <button
+                key={p.label}
+                onClick={() => { setDesde(p.d); setHasta(p.h); setPagina(1); }}
+                className={`px-2.5 py-1 text-xs font-medium rounded-md border transition ${
+                  desde === p.d && hasta === p.h
+                    ? "bg-slate-700 text-white border-slate-700"
+                    : "bg-white text-gray-600 border-gray-200 hover:border-slate-400"
+                }`}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+
           <div className="col-span-2 flex gap-2">
             <div className="flex-1 min-w-0">
               <label className="block text-xs text-gray-500 mb-1">Desde</label>

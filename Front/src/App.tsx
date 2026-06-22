@@ -27,6 +27,7 @@ import MisCitasPage from "./pages/publico/MisCitasPage";
 import ResenaPage from "./pages/publico/ResenaPage";
 import PrivacidadPage from "./pages/publico/PrivacidadPage";
 import TerminosPage from "./pages/publico/TerminosPage";
+import CancelarCitaPage from "./pages/publico/CancelarCitaPage";
 import NegociosAdminPage from "./pages/admin/NegociosAdminPage";
 import MiPerfilPage from "./pages/dashboard/MiPerfilPage";
 import GaleriaPage from "./pages/dashboard/GaleriaPage";
@@ -66,6 +67,7 @@ export default function App() {
           <Route path="/resena/:token" element={<ResenaPage />} />
           <Route path="/privacidad" element={<PrivacidadPage />} />
           <Route path="/terminos" element={<TerminosPage />} />
+          <Route path="/cancelar/:codigo" element={<CancelarCitaPage />} />
 
           {/* ── Dashboard (requiere auth) ── */}
           <Route element={<RutaProtegida roles={["Propietario", "Empleado"]} />}>

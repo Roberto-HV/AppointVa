@@ -353,7 +353,8 @@ namespace AppointVaAPI.Controllers.V1
             {
                 var frontendUrl = _config["FrontendUrl"] ?? "http://localhost:5173";
                 var urlCita = $"{frontendUrl}/b/{negocio.Slug}/confirmacion/{codigo}";
-                _ = Task.Run(() => _notificacion.EnviarConfirmacionCitaAsync(cita, dto.EmailCliente, cliente.NombreCompleto, urlCita, icalUrl, googleCalUrl));
+                var urlCancelacion = $"{frontendUrl}/cancelar/{codigo}";
+                _ = Task.Run(() => _notificacion.EnviarConfirmacionCitaAsync(cita, dto.EmailCliente, cliente.NombreCompleto, urlCita, icalUrl, googleCalUrl, urlCancelacion));
             }
 
             // Notificar al propietario del negocio

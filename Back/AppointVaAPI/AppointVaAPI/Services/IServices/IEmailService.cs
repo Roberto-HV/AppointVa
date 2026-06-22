@@ -4,7 +4,7 @@ namespace AppointVaAPI.Services.IServices
 {
     public interface IEmailService
     {
-        Task EnviarConfirmacionCitaAsync(Cita cita, string emailDestino, string nombreCliente, string? urlCita = null, string? icalUrl = null, string? googleCalUrl = null);
+        Task EnviarConfirmacionCitaAsync(Cita cita, string emailDestino, string nombreCliente, string? urlCita = null, string? icalUrl = null, string? googleCalUrl = null, string? urlCancelacion = null);
         Task EnviarCancelacionCitaAsync(Cita cita, string emailDestino, string nombreCliente);
         Task EnviarRecordatorioCitaAsync(Cita cita, string emailDestino, string nombreCliente, string? icalUrl = null, string? googleCalUrl = null);
         Task EnviarRecordatorioEmpleadoAsync(Cita cita, string emailDestino);

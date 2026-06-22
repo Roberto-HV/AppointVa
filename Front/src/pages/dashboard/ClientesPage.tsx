@@ -108,7 +108,7 @@ export default function ClientesPage() {
           onChange={(e) => setBuscar(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && buscarClientes()}
           placeholder="Buscar por nombre o teléfono..."
-          className="flex-1 max-w-sm px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700"
+          className="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700"
         />
         <button
           onClick={buscarClientes}

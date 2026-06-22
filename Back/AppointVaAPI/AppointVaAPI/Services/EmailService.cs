@@ -19,12 +19,12 @@ namespace AppointVaAPI.Services
             _logger = logger;
         }
 
-        public async Task EnviarConfirmacionCitaAsync(Cita cita, string emailDestino, string nombreCliente, string? urlCita = null, string? icalUrl = null, string? googleCalUrl = null)
+        public async Task EnviarConfirmacionCitaAsync(Cita cita, string emailDestino, string nombreCliente, string? urlCita = null, string? icalUrl = null, string? googleCalUrl = null, string? urlCancelacion = null)
         {
             if (!EstaHabilitado()) return;
 
             var asunto = $"¡Tu cita está confirmada! — {cita.Servicio?.Nombre ?? "AppointVa"}";
-            var html = PlantillaConfirmacion(cita, nombreCliente, urlCita, icalUrl, googleCalUrl);
+            var html = PlantillaConfirmacion(cita, nombreCliente, urlCita, icalUrl, googleCalUrl, urlCancelacion);
             await EnviarAsync(emailDestino, asunto, html);
         }
 
@@ -123,7 +123,7 @@ namespace AppointVaAPI.Services
             return habilitado != null && bool.TryParse(habilitado, out var val) && val;
         }
 
-        private static string PlantillaConfirmacion(Cita cita, string nombreCliente, string? urlCita = null, string? icalUrl = null, string? googleCalUrl = null)
+        private static string PlantillaConfirmacion(Cita cita, string nombreCliente, string? urlCita = null, string? icalUrl = null, string? googleCalUrl = null, string? urlCancelacion = null)
         {
             nombreCliente = nombreCliente.Trim();
             var negocio = cita.Negocio?.Nombre ?? "el negocio";
@@ -185,7 +185,13 @@ namespace AppointVaAPI.Services
                       {(googleCalUrl is not null ? $"""<a href="{googleCalUrl}" style="display:inline-block;background:#EA4335;color:#fff;text-decoration:none;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;margin:4px;">Google Calendar</a>""" : "")}
                     </div>
                     """ : "")}
-                    <p style="font-size:13px;color:#6b7280;">Guarda este código — lo necesitarás si deseas cancelar tu cita.</p>
+                    {(string.IsNullOrEmpty(urlCancelacion) ? "<p style=\"font-size:13px;color:#6b7280;\">Guarda este código — lo necesitarás si deseas cancelar tu cita.</p>" : $"""
+                    <div style="text-align:center;margin:16px 0 8px;">
+                      <a href="{urlCancelacion}" style="background:#f3f4f6;color:#6b7280;text-decoration:none;padding:10px 24px;border-radius:8px;font-size:13px;font-weight:600;border:1px solid #e5e7eb;display:inline-block;">
+                        Cancelar mi cita
+                      </a>
+                    </div>
+                    """)}
                   </div>
                 </body>
                 </html>

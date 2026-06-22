@@ -395,7 +395,7 @@ export default function BookingPage() {
       <div className="relative">
         {negocio.portadaUrl ? (
           <div className="h-48 overflow-hidden">
-            <img src={negocio.portadaUrl} alt="" className="w-full h-full object-cover" />
+            <img src={negocio.portadaUrl} alt="" className="w-full h-full object-cover" loading="lazy" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
           </div>
         ) : (
@@ -407,6 +407,7 @@ export default function BookingPage() {
               src={negocio.logoUrl}
               alt={negocio.nombre}
               className="w-14 h-14 rounded-2xl border-2 border-white object-cover shadow-lg shrink-0"
+              loading="lazy"
             />
           )}
           <div className="flex-1 min-w-0">

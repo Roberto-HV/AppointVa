@@ -69,11 +69,11 @@ namespace AppointVaAPI.Services
 
         public async Task EnviarConfirmacionCitaAsync(Cita cita, string emailDestino,
             string nombreCliente, string? urlCita = null, string? icalUrl = null,
-            string? googleCalUrl = null)
+            string? googleCalUrl = null, string? urlCancelacion = null)
         {
             if (UsaEmail(cita) && !string.IsNullOrWhiteSpace(emailDestino))
                 await _email.EnviarConfirmacionCitaAsync(
-                    cita, emailDestino, nombreCliente, urlCita, icalUrl, googleCalUrl);
+                    cita, emailDestino, nombreCliente, urlCita, icalUrl, googleCalUrl, urlCancelacion);
 
             if (UsaWhatsApp(cita) && _whatsApp.EstaHabilitado())
             {
