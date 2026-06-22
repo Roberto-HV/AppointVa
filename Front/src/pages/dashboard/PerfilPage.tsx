@@ -6,7 +6,6 @@ import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Eye, EyeOff, Copy, Check, Download, Mail } from "lucide-react";
-import WhatsAppIcon from "../../components/icons/WhatsAppIcon";
 import { Tooltip } from "../../components/ui/Tooltip";
 import { QRCodeCanvas } from "qrcode.react";
 import Modal from "../../components/ui/Modal";
@@ -467,43 +466,16 @@ export default function PerfilPage() {
             <div className="p-3 bg-gray-50 rounded-lg border border-gray-100">
               <p className="text-sm font-medium text-gray-700 mb-2">Canal de notificaciones al cliente</p>
               <div className="flex flex-wrap gap-2 mb-3">
-                {(["Correo", "WhatsApp", "Ambos"] as const).map((op) => {
-                  const activo = (watch("metodoNotificacion") ?? "Correo") === op;
-                  return (
-                    <button
-                      key={op}
-                      type="button"
-                      onClick={() => setValue("metodoNotificacion", op, { shouldDirty: true })}
-                      className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-medium transition ${
-                        activo ? "bg-slate-700 text-white" : "bg-white border border-gray-200 text-gray-600 hover:border-slate-700"
-                      }`}
-                    >
-                      {(op === "Correo" || op === "Ambos") && <Mail size={13} />}
-                      {(op === "WhatsApp" || op === "Ambos") && (
-                        <WhatsAppIcon className="w-3.5 h-3.5 shrink-0" />
-                      )}
-                      {op}
-                    </button>
-                  );
-                })}
+                <button
+                  type="button"
+                  className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-medium bg-slate-700 text-white"
+                >
+                  <Mail size={13} />
+                  Correo
+                </button>
               </div>
-              {(watch("metodoNotificacion") === "WhatsApp" || watch("metodoNotificacion") === "Ambos") && (
-                <div className="mb-2">
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Número WhatsApp Business del negocio</label>
-                  <input
-                    {...register("telefonoWhatsApp")}
-                    placeholder="5512345678"
-                    maxLength={30}
-                    className="w-full sm:w-64 px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700"
-                  />
-                </div>
-              )}
               <p className="text-xs text-gray-400">
-                {(watch("metodoNotificacion") ?? "Correo") === "Correo"
-                  ? "Los clientes reciben confirmaciones, recordatorios y cancelaciones por correo electrónico."
-                  : watch("metodoNotificacion") === "WhatsApp"
-                    ? "Los clientes reciben mensajes por WhatsApp. AppointVa envía desde su número compartido; tu número de WhatsApp Business aparece como contacto en cada mensaje."
-                    : "Los clientes reciben mensajes tanto por correo como por WhatsApp."}
+                Los clientes reciben confirmaciones, recordatorios y cancelaciones por correo electrónico.
               </p>
             </div>
           </div>
