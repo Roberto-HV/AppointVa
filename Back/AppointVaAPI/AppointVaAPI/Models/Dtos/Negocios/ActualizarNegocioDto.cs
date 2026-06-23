@@ -43,5 +43,11 @@ namespace AppointVaAPI.Models.Dtos.Negocios
         public decimal? MontoAnticipo { get; set; }
         [MaxLength(500)]
         public string? InstruccionesAnticipo { get; set; }
+        [MaxLength(200)]
+        public string? InstagramUrl { get; set; }
+        [MaxLength(200)]
+        public string? FacebookUrl { get; set; }
+        [MaxLength(200)]
+        public string? TiktokUrl { get; set; }
     }
 }

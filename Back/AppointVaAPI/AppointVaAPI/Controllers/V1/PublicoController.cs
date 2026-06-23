@@ -129,6 +129,9 @@ namespace AppointVaAPI.Controllers.V1
                 RequiereAnticipo = negocio.RequiereAnticipo,
                 MontoAnticipo = negocio.MontoAnticipo,
                 InstruccionesAnticipo = negocio.InstruccionesAnticipo,
+                InstagramUrl = negocio.InstagramUrl,
+                FacebookUrl = negocio.FacebookUrl,
+                TiktokUrl = negocio.TiktokUrl,
                 Servicios = servicios.Select(s => new ServicioPublicoDto
                 {
                     Id = s.Id,
@@ -410,7 +413,10 @@ namespace AppointVaAPI.Controllers.V1
                 IcalUrl = icalUrl,
                 WebcalUrl = icalUrl?.Replace("https://", "webcal://").Replace("http://", "webcal://"),
                 GoogleCalUrl = googleCalUrl,
-                HorasCancelacion = cita.Negocio?.HorasCancelacion ?? 0
+                HorasCancelacion = cita.Negocio?.HorasCancelacion ?? 0,
+                InstagramUrl = cita.Negocio?.InstagramUrl,
+                FacebookUrl = cita.Negocio?.FacebookUrl,
+                TiktokUrl = cita.Negocio?.TiktokUrl
             });
         }
 

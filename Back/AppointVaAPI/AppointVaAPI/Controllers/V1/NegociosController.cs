@@ -80,6 +80,9 @@ namespace AppointVaAPI.Controllers.V1
             if (dto.MontoAnticipo.HasValue)
                 negocio.MontoAnticipo = Math.Max(0, dto.MontoAnticipo.Value);
             negocio.InstruccionesAnticipo = dto.InstruccionesAnticipo;
+            negocio.InstagramUrl = string.IsNullOrWhiteSpace(dto.InstagramUrl) ? null : dto.InstagramUrl.Trim();
+            negocio.FacebookUrl = string.IsNullOrWhiteSpace(dto.FacebookUrl) ? null : dto.FacebookUrl.Trim();
+            negocio.TiktokUrl = string.IsNullOrWhiteSpace(dto.TiktokUrl) ? null : dto.TiktokUrl.Trim();
             negocio.FechaActualizacion = DateTime.UtcNow;
 
             await _repo.ActualizarAsync(negocio);
@@ -539,6 +542,9 @@ namespace AppointVaAPI.Controllers.V1
             RequiereAnticipo = n.RequiereAnticipo,
             MontoAnticipo = n.MontoAnticipo,
             InstruccionesAnticipo = n.InstruccionesAnticipo,
+            InstagramUrl = n.InstagramUrl,
+            FacebookUrl = n.FacebookUrl,
+            TiktokUrl = n.TiktokUrl,
             Activo = n.Activo == 1,
             PlanNombre = n.Plan?.Nombre
         };

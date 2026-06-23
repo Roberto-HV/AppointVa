@@ -23,6 +23,9 @@
         public bool RequiereAnticipo { get; set; }
         public decimal MontoAnticipo { get; set; }
         public string? InstruccionesAnticipo { get; set; }
+        public string? InstagramUrl { get; set; }
+        public string? FacebookUrl { get; set; }
+        public string? TiktokUrl { get; set; }
         public bool Activo { get; set; }
         public string? PlanNombre { get; set; }
     }

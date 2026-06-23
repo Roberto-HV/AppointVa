@@ -17,6 +17,9 @@
         public bool RequiereAnticipo { get; set; }
         public decimal MontoAnticipo { get; set; }
         public string? InstruccionesAnticipo { get; set; }
+        public string? InstagramUrl { get; set; }
+        public string? FacebookUrl { get; set; }
+        public string? TiktokUrl { get; set; }
         public List<ServicioPublicoDto> Servicios { get; set; } = new();
         public List<EmpleadoPublicoDto> Empleados { get; set; } = new();
         public List<ImagenGaleriaDto> Galeria { get; set; } = new();

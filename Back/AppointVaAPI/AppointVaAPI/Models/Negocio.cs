@@ -35,6 +35,12 @@ namespace AppointVaAPI.Models
         public decimal MontoAnticipo { get; set; } = 0;
         [MaxLength(500)]
         public string? InstruccionesAnticipo { get; set; }
+        [MaxLength(200)]
+        public string? InstagramUrl { get; set; }
+        [MaxLength(200)]
+        public string? FacebookUrl { get; set; }
+        [MaxLength(200)]
+        public string? TiktokUrl { get; set; }
         public Guid? PlanId { get; set; }
         [ForeignKey("PlanId")]
         public Plan? Plan { get; set; }

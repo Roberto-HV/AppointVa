@@ -47,6 +47,9 @@ export interface NegocioPublico {
   requiereAnticipo: boolean;
   montoAnticipo: number;
   instruccionesAnticipo?: string;
+  instagramUrl?: string;
+  facebookUrl?: string;
+  tiktokUrl?: string;
   servicios: ServicioPublico[];
   empleados: EmpleadoPublico[];
   galeria: ImagenGaleria[];
@@ -110,6 +113,9 @@ export interface ConfirmacionCita {
   montoAnticipo: number;
   instruccionesAnticipo?: string;
   comprobanteUrl?: string;
+  instagramUrl?: string;
+  facebookUrl?: string;
+  tiktokUrl?: string;
 }
 
 // ── Dashboard ─────────────────────────────────────────────────────────────────
@@ -284,6 +290,9 @@ export interface NegocioDto {
   requiereAnticipo?: boolean;
   montoAnticipo?: number;
   instruccionesAnticipo?: string;
+  instagramUrl?: string;
+  facebookUrl?: string;
+  tiktokUrl?: string;
   activo: boolean;
   planNombre?: string;
 }
@@ -303,6 +312,9 @@ export interface ActualizarNegocioDto {
   requiereAnticipo?: boolean;
   montoAnticipo?: number;
   instruccionesAnticipo?: string;
+  instagramUrl?: string;
+  facebookUrl?: string;
+  tiktokUrl?: string;
 }
 
 export interface ActualizarColoresNegocioDto {
