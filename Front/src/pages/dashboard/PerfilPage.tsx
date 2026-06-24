@@ -206,10 +206,10 @@ export default function PerfilPage() {
   };
 
   // ── Botón guardar compartido ─────────────────────────────────────────────
-  const BtnGuardar = () => (
+  const btnGuardar = (
     <button
       type="button"
-      disabled={isSubmitting || !isDirty}
+      disabled={isSubmitting}
       onClick={() => setModalConfirmarGuardar(true)}
       className="bg-slate-700 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-xl transition text-sm"
     >
@@ -396,7 +396,7 @@ export default function PerfilPage() {
             </div>
           </div>
 
-          <BtnGuardar />
+          {btnGuardar}
         </div>
 
         {/* ── TAB: CONFIGURACIÓN ──────────────────────────────────────────────── */}
@@ -505,7 +505,7 @@ export default function PerfilPage() {
             )}
           </div>
 
-          <BtnGuardar />
+          {btnGuardar}
         </div>
       </form>
 
