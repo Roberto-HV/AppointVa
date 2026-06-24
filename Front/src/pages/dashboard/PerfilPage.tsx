@@ -7,7 +7,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Copy, Check, Download, Mail } from "lucide-react";
 import { QRCodeCanvas } from "qrcode.react";
-import Modal from "../../components/ui/Modal";
 import { negociosApi } from "../../api/negocios";
 import { useToastStore } from "../../store/toastStore";
 import { Skeleton } from "../../components/ui/Skeleton";
@@ -78,7 +77,6 @@ export default function PerfilPage() {
   const portadaRef = useRef<HTMLInputElement>(null);
   const [tab, setTab] = useState<Tab>("perfil");
   const [urlCopiada, setUrlCopiada] = useState(false);
-  const [modalConfirmarGuardar, setModalConfirmarGuardar] = useState(false);
 
   const { data: negocio, isLoading } = useQuery({
     queryKey: ["negocio-perfil"],
@@ -208,9 +206,8 @@ export default function PerfilPage() {
   // ── Botón guardar compartido ─────────────────────────────────────────────
   const btnGuardar = (
     <button
-      type="button"
+      type="submit"
       disabled={isSubmitting}
-      onClick={() => setModalConfirmarGuardar(true)}
       className="bg-slate-700 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-xl transition text-sm"
     >
       {isSubmitting ? "Guardando..." : "Guardar cambios"}
@@ -593,21 +590,6 @@ export default function PerfilPage() {
         </div>
       )}
 
-      {/* Modal confirmar guardar */}
-      <Modal abierto={modalConfirmarGuardar} onCerrar={() => setModalConfirmarGuardar(false)} titulo="Guardar cambios" ancho="sm">
-        <p className="text-sm text-gray-600 mb-1">¿Estás seguro de que deseas guardar los cambios en tu perfil de negocio?</p>
-        <p className="text-xs text-gray-400 mb-6">Esta acción actualizará la información visible para tus clientes.</p>
-        <div className="flex gap-3">
-          <button onClick={() => setModalConfirmarGuardar(false)}
-            className="flex-1 py-2.5 rounded-xl border-2 border-gray-200 text-sm font-medium text-gray-600 hover:border-gray-300 transition">
-            Cancelar
-          </button>
-          <button onClick={() => { setModalConfirmarGuardar(false); handleSubmit(onSubmit)(); }}
-            className="flex-1 py-2.5 rounded-xl bg-slate-700 hover:bg-slate-800 text-white text-sm font-semibold transition">
-            Sí, guardar
-          </button>
-        </div>
-      </Modal>
     </div>
   );
 }
