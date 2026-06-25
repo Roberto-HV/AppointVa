@@ -7,6 +7,7 @@ interface UsuarioInfo {
   nombreCompleto: string;
   rol: string;
   negocioId: string | null;
+  fotoUrl?: string | null;
 }
 
 interface AuthState {
@@ -16,6 +17,7 @@ interface AuthState {
   iniciarSesion: (token: string, refreshToken: string, usuario: UsuarioInfo) => void;
   cerrarSesion: () => void;
   estaAutenticado: () => boolean;
+  actualizarFoto: (fotoUrl: string) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -29,6 +31,8 @@ export const useAuthStore = create<AuthState>()(
       cerrarSesion: () =>
         set({ token: null, refreshToken: null, usuario: null }),
       estaAutenticado: () => get().token !== null,
+      actualizarFoto: (fotoUrl) =>
+        set((s) => ({ usuario: s.usuario ? { ...s.usuario, fotoUrl } : null })),
     }),
     { name: "appointva-auth" }
   )

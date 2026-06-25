@@ -1,6 +1,6 @@
 ﻿import { useState, useRef, useEffect } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { Menu, X, LayoutDashboard, CalendarDays, Users, Scissors, UserCheck, Building2, Link, Copy, Check, BarChart2, ShieldCheck, UserCircle, Images, Clock, ClipboardList, Tag } from "lucide-react";
+import { Menu, X, LayoutDashboard, CalendarDays, Users, Scissors, UserCheck, Building2, Link, Copy, Check, BarChart2, ShieldCheck, UserCircle, Images, Clock, ClipboardList, Tag, LogOut, ChevronUp } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "../store/authStore";
 import { authApi } from "../api/auth";
@@ -35,7 +35,10 @@ export default function DashboardLayout() {
   const { toast } = useToastStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [copiado, setCopiado] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const prevPendientesRef = useRef<number | null>(null);
+  const sidebarUserRef = useRef<HTMLDivElement>(null);
+  const headerUserRef = useRef<HTMLDivElement>(null);
 
   const esEmpleado = usuario?.rol === "Empleado";
   const navItems = esEmpleado ? NAV_EMPLEADO : NAV_PROPIETARIO;
@@ -91,6 +94,71 @@ export default function DashboardLayout() {
     setSidebarOpen(false);
   };
 
+  useEffect(() => {
+    if (!userMenuOpen) return;
+    const handler = (e: MouseEvent) => {
+      const target = e.target as Node;
+      const fueraSidebar = !sidebarUserRef.current?.contains(target);
+      const fueraHeader = !headerUserRef.current?.contains(target);
+      if (fueraSidebar && fueraHeader) setUserMenuOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [userMenuOpen]);
+
+  const rolChip = usuario?.rol === "Empleado"
+    ? { label: "Empleado", cls: "bg-blue-100 text-blue-700" }
+    : usuario?.rol === "SuperAdmin"
+    ? { label: "Super Admin", cls: "bg-purple-100 text-purple-700" }
+    : { label: "Propietario", cls: "bg-slate-100 text-slate-600" };
+
+  const UserMenuContent = () => (
+    <div className="py-1">
+      {/* Header del menú */}
+      <div className="px-4 pt-3 pb-3 flex items-center gap-3">
+        <div className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center shrink-0 overflow-hidden">
+          {usuario?.fotoUrl
+            ? <img src={usuario.fotoUrl} alt="Avatar" className="w-full h-full object-cover" />
+            : <span className="text-sm font-bold text-white">{iniciales}</span>
+          }
+        </div>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-slate-800 truncate">{usuario?.nombreCompleto}</p>
+          <p className="text-xs text-slate-400 truncate">{usuario?.email}</p>
+          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${rolChip.cls}`}>
+              {rolChip.label}
+            </span>
+            {perfil?.planNombre && (
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700">
+                {perfil.planNombre}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+      <div className="h-px bg-slate-100 mx-3 my-1" />
+      {/* Mi perfil */}
+      <button
+        onClick={() => { navigate("/dashboard/mi-perfil"); setUserMenuOpen(false); cerrarSidebar(); }}
+        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 transition"
+      >
+        <UserCircle size={15} className="text-slate-400 shrink-0" />
+        Mi perfil
+      </button>
+      <div className="h-px bg-slate-100 mx-3 my-1" />
+      {/* Cerrar sesión */}
+      <button
+        onClick={() => { setUserMenuOpen(false); handleLogout(); }}
+        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition"
+      >
+        <LogOut size={15} className="shrink-0" />
+        Cerrar sesión
+      </button>
+      <div className="h-2" />
+    </div>
+  );
+
   // Resetea scroll al montar — iOS puede llegar con viewport desplazado por el teclado del login
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -125,7 +193,9 @@ export default function DashboardLayout() {
           className="relative px-5 py-3 border-b border-slate-100 flex items-center justify-center"
         >
           <div className="flex flex-col items-center gap-1">
-            <img src="/MasterLogo.png" alt="AppointVa" className="h-9 object-contain" />
+            <NavLink to="/dashboard" end onClick={cerrarSidebar}>
+              <img src="/MasterLogo.png" alt="AppointVa" className="h-9 object-contain" />
+            </NavLink>
             {esEmpleado && (
               <span className="text-[10px] font-bold bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full uppercase tracking-wide">
                 Empleado
@@ -196,26 +266,32 @@ export default function DashboardLayout() {
           </div>
         )}
 
-        {/* Usuario con avatar de iniciales — Apple Store / Cash App style */}
-        <div className="p-3 border-t border-slate-100 shrink-0">
-          <div className="flex items-center gap-3 px-2 py-2">
-            <div className="w-8 h-8 rounded-full bg-slate-900 flex items-center justify-center shrink-0">
-              <span className="text-[11px] font-bold text-white">{iniciales}</span>
+        {/* Usuario — popover hacia arriba */}
+        <div ref={sidebarUserRef} className="relative p-3 border-t border-slate-100 shrink-0">
+          {userMenuOpen && (
+            <div className="absolute bottom-full left-2 right-2 mb-2 bg-white rounded-2xl border border-slate-100 shadow-2xl overflow-hidden z-50">
+              <UserMenuContent />
             </div>
-            <div className="flex-1 min-w-0">
+          )}
+          <button
+            onClick={() => setUserMenuOpen((o) => !o)}
+            className="w-full flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-slate-50 transition group"
+          >
+            <div className="w-8 h-8 rounded-full bg-slate-900 flex items-center justify-center shrink-0 overflow-hidden">
+              {usuario?.fotoUrl
+                ? <img src={usuario.fotoUrl} alt="Avatar" className="w-full h-full object-cover" />
+                : <span className="text-[11px] font-bold text-white">{iniciales}</span>
+              }
+            </div>
+            <div className="flex-1 min-w-0 text-left">
               <p className="text-xs font-semibold text-slate-800 truncate">{usuario?.nombreCompleto}</p>
               <p className="text-[10px] text-slate-400 truncate">{usuario?.email}</p>
             </div>
-          </div>
-          <button
-            onClick={handleLogout}
-            className="mt-1 w-full text-left text-xs font-medium text-red-400 hover:text-red-500 transition pl-[44px]"
-          >
-            Cerrar sesión
+            <ChevronUp
+              size={13}
+              className={`text-slate-300 group-hover:text-slate-400 transition-transform shrink-0 ${userMenuOpen ? "" : "rotate-180"}`}
+            />
           </button>
-          <p className="mt-3 text-[10px] text-slate-300 text-center select-none">
-            AppointVa © {new Date().getFullYear()}
-          </p>
         </div>
       </aside>
 
@@ -232,21 +308,34 @@ export default function DashboardLayout() {
           >
             <Menu size={18} />
           </button>
-          <img src="/MasterLogo.png" alt="AppointVa" className="h-7 object-contain" />
+          <NavLink to="/dashboard" end>
+            <img src="/MasterLogo.png" alt="AppointVa" className="h-7 object-contain" />
+          </NavLink>
           {esEmpleado && (
             <span className="text-[10px] font-bold bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full uppercase tracking-wide">
               Empleado
             </span>
           )}
-          <div className="ml-auto flex items-center gap-2">
+          <div ref={headerUserRef} className="ml-auto flex items-center gap-2 relative">
             {pendientesCnt > 0 && (
               <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
                 {pendientesCnt > 9 ? "9+" : pendientesCnt}
               </span>
             )}
-            <div className="w-7 h-7 rounded-full bg-slate-900 flex items-center justify-center">
-              <span className="text-[10px] font-bold text-white">{iniciales}</span>
-            </div>
+            <button
+              onClick={() => setUserMenuOpen((o) => !o)}
+              className="w-8 h-8 rounded-full bg-slate-900 flex items-center justify-center overflow-hidden"
+            >
+              {usuario?.fotoUrl
+                ? <img src={usuario.fotoUrl} alt="Avatar" className="w-full h-full object-cover" />
+                : <span className="text-[10px] font-bold text-white">{iniciales}</span>
+              }
+            </button>
+            {userMenuOpen && (
+              <div className="absolute top-full right-0 mt-2 w-64 bg-white rounded-2xl border border-slate-100 shadow-2xl overflow-hidden z-50">
+                <UserMenuContent />
+              </div>
+            )}
           </div>
         </header>
 

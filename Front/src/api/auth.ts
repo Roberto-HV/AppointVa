@@ -31,6 +31,15 @@ export const authApi = {
     return data;
   },
 
+  subirFotoPerfil: async (archivo: File): Promise<{ fotoUrl: string }> => {
+    const form = new FormData();
+    form.append("archivo", archivo);
+    const { data } = await api.post("/auth/perfil/foto", form, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return data;
+  },
+
   // 2FA
   obtenerEstado2FA: async (): Promise<{ habilitado: boolean; tieneConfiguracion: boolean }> => {
     const { data } = await api.get("/auth/2fa/estado");

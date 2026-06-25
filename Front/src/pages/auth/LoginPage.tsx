@@ -95,8 +95,10 @@ export default function LoginPage() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Logo */}
-        <div className="text-center mb-8">
-          <img src="/MasterLogo.png" alt="AppointVa" className="h-24 object-contain mx-auto mb-2" />
+        <div className="text-center mb-5">
+          <div className="inline-flex items-center justify-center bg-white rounded-2xl shadow-sm border border-gray-100 p-2 mb-3">
+            <img src="/MasterLogo.png" alt="AppointVa" className="h-24 w-auto object-contain" />
+          </div>
           <p className="text-gray-500 text-sm">Panel de administración</p>
         </div>
 
@@ -210,6 +212,7 @@ export default function LoginPage() {
                     />
                     <button
                       type="button"
+                      onMouseDown={(e) => e.preventDefault()}
                       onClick={() => setMostrarPassword((v) => !v)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
                       tabIndex={-1}

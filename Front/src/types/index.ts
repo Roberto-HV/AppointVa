@@ -14,6 +14,7 @@ export interface UsuarioInfo {
   nombreCompleto: string;
   rol: string;
   negocioId: string | null;
+  fotoUrl?: string | null;
 }
 
 // ── Público (booking) ─────────────────────────────────────────────────────────

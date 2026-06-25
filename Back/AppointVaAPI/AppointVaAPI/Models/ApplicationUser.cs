@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using System.ComponentModel.DataAnnotations;
 
 namespace AppointVaAPI.Models
 {
@@ -11,5 +12,7 @@ namespace AppointVaAPI.Models
         public DateTime FechaCreacion { get; set; }
         public DateTime FechaActualizacion { get; set; }
         public bool Activo { get; set; }
+        [MaxLength(500)]
+        public string? FotoUrl { get; set; }
     }
 }

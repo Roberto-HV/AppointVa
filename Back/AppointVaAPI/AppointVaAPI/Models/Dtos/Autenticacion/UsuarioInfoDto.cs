@@ -7,5 +7,6 @@
         public string NombreCompleto { get; set; } = string.Empty;
         public string Rol { get; set; } = string.Empty;
         public Guid? NegocioId { get; set; }
+        public string? FotoUrl { get; set; }
     }
 }

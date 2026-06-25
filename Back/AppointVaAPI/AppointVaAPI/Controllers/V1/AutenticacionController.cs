@@ -1,4 +1,4 @@
-﻿using AppointVaAPI.Models;
+using AppointVaAPI.Models;
 using AppointVaAPI.Models.Dtos.Autenticacion;
 using AppointVaAPI.Services.IServices;
 using AppointVaAPI.Constants;
@@ -17,17 +17,20 @@ namespace AppointVaAPI.Controllers.V1
         private readonly IJwtService _jwtService;
         private readonly IEmailService _email;
         private readonly IConfiguration _config;
+        private readonly IBlobStorageService _storage;
 
         public AutenticacionController(
             UserManager<ApplicationUser> userManager,
             IJwtService jwtService,
             IEmailService email,
-            IConfiguration config)
+            IConfiguration config,
+            IBlobStorageService storage)
         {
             _userManager = userManager;
             _jwtService = jwtService;
             _email = email;
             _config = config;
+            _storage = storage;
         }
 
         // POST api/auth/login
@@ -73,7 +76,8 @@ namespace AppointVaAPI.Controllers.V1
                     Email = usuario.Email!,
                     NombreCompleto = $"{usuario.Nombre} {usuario.Apellido}".Trim(),
                     Rol = rol,
-                    NegocioId = usuario.NegocioId
+                    NegocioId = usuario.NegocioId,
+                    FotoUrl = usuario.FotoUrl
                 }
             });
         }
@@ -111,7 +115,8 @@ namespace AppointVaAPI.Controllers.V1
                     Email = usuario.Email!,
                     NombreCompleto = $"{usuario.Nombre} {usuario.Apellido}".Trim(),
                     Rol = rol,
-                    NegocioId = usuario.NegocioId
+                    NegocioId = usuario.NegocioId,
+                    FotoUrl = usuario.FotoUrl
                 }
             });
         }
@@ -143,8 +148,38 @@ namespace AppointVaAPI.Controllers.V1
                 Email = usuario.Email!,
                 NombreCompleto = $"{usuario.Nombre} {usuario.Apellido}".Trim(),
                 Rol = roles.FirstOrDefault() ?? string.Empty,
-                NegocioId = usuario.NegocioId
+                NegocioId = usuario.NegocioId,
+                FotoUrl = usuario.FotoUrl
             });
+        }
+
+        // POST api/auth/perfil/foto
+        [Authorize]
+        [HttpPost("perfil/foto")]
+        public async Task<IActionResult> SubirFoto(IFormFile archivo)
+        {
+            var usuarioId = User.FindFirst("sub")?.Value;
+            if (usuarioId is null) return Unauthorized();
+
+            var usuario = await _userManager.FindByIdAsync(usuarioId);
+            if (usuario is null) return NotFound();
+
+            if (archivo is null || archivo.Length == 0)
+                return BadRequest(new { mensaje = "Archivo requerido" });
+
+            var ext = Path.GetExtension(archivo.FileName).ToLowerInvariant();
+            if (!new[] { ".jpg", ".jpeg", ".png", ".webp" }.Contains(ext))
+                return BadRequest(new { mensaje = "Solo se permiten imágenes JPG, PNG o WEBP" });
+
+            if (archivo.Length > 5 * 1024 * 1024)
+                return BadRequest(new { mensaje = "El archivo no puede superar 5 MB" });
+
+            var url = await _storage.SubirImagenAsync(archivo, "usuarios/fotos");
+            usuario.FotoUrl = url;
+            usuario.FechaActualizacion = DateTime.UtcNow;
+            await _userManager.UpdateAsync(usuario);
+
+            return Ok(new { fotoUrl = url });
         }
 
         // POST api/auth/recuperar-contrasena
@@ -342,7 +377,8 @@ namespace AppointVaAPI.Controllers.V1
                     Email = usuario.Email!,
                     NombreCompleto = $"{usuario.Nombre} {usuario.Apellido}".Trim(),
                     Rol = rol,
-                    NegocioId = usuario.NegocioId
+                    NegocioId = usuario.NegocioId,
+                    FotoUrl = usuario.FotoUrl
                 }
             });
         }
