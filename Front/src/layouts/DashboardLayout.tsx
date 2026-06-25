@@ -16,7 +16,7 @@ const NAV_PROPIETARIO = [
   { to: "/dashboard/clientes", label: "Clientes", icon: UserCheck },
   { to: "/dashboard/perfil", label: "Mi negocio", icon: Building2 },
   { to: "/dashboard/galeria", label: "Galería", icon: Images },
-  { to: "/dashboard/espera", label: "Lista de espera", icon: Clock },
+  // { to: "/dashboard/espera", label: "Lista de espera", icon: Clock },
   { to: "/dashboard/intake", label: "Formulario", icon: ClipboardList },
   { to: "/dashboard/descuentos", label: "Descuentos", icon: Tag },
   { to: "/dashboard/reportes", label: "Reportes", icon: BarChart2 },
