@@ -137,7 +137,7 @@ namespace AppointVaAPI.Services
                 <!DOCTYPE html>
                 <html lang="es">
                 <body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#333;">
-                  <div style="background:#4F46E5;padding:24px;border-radius:8px 8px 0 0;text-align:center;">
+                  <div style="background:#1e293b;padding:24px;border-radius:8px 8px 0 0;text-align:center;">
                     <h1 style="color:#fff;margin:0;font-size:22px;">¡Cita confirmada!</h1>
                   </div>
                   <div style="background:#f9f9f9;padding:24px;border-radius:0 0 8px 8px;border:1px solid #e5e7eb;">
@@ -265,7 +265,7 @@ namespace AppointVaAPI.Services
                 <!DOCTYPE html>
                 <html lang="es">
                 <body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#333;">
-                  <div style="background:#4F46E5;padding:24px;border-radius:8px 8px 0 0;text-align:center;">
+                  <div style="background:#1e293b;padding:24px;border-radius:8px 8px 0 0;text-align:center;">
                     <h1 style="color:#fff;margin:0;font-size:22px;">Nueva cita agendada</h1>
                   </div>
                   <div style="background:#f9f9f9;padding:24px;border-radius:0 0 8px 8px;border:1px solid #e5e7eb;">
@@ -347,7 +347,7 @@ namespace AppointVaAPI.Services
                 <!DOCTYPE html>
                 <html lang="es">
                 <body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#333;">
-                  <div style="background:#7C3AED;padding:24px;border-radius:8px 8px 0 0;text-align:center;">
+                  <div style="background:#0369a1;padding:24px;border-radius:8px 8px 0 0;text-align:center;">
                     <h1 style="color:#fff;margin:0;font-size:22px;">Cita reagendada</h1>
                   </div>
                   <div style="background:#f9f9f9;padding:24px;border-radius:0 0 8px 8px;border:1px solid #e5e7eb;">
@@ -386,7 +386,7 @@ namespace AppointVaAPI.Services
                 <!DOCTYPE html>
                 <html lang="es">
                 <body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#333;">
-                  <div style="background:#059669;padding:24px;border-radius:8px 8px 0 0;text-align:center;">
+                  <div style="background:#b45309;padding:24px;border-radius:8px 8px 0 0;text-align:center;">
                     <h1 style="color:#fff;margin:0;font-size:22px;">Tienes una cita mañana</h1>
                   </div>
                   <div style="background:#f9f9f9;padding:24px;border-radius:0 0 8px 8px;border:1px solid #e5e7eb;">
@@ -426,7 +426,7 @@ namespace AppointVaAPI.Services
                 <!DOCTYPE html>
                 <html lang="es">
                 <body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#333;">
-                  <div style="background:#4F46E5;padding:24px;border-radius:8px 8px 0 0;text-align:center;">
+                  <div style="background:#1e293b;padding:24px;border-radius:8px 8px 0 0;text-align:center;">
                     <h1 style="color:#fff;margin:0;font-size:22px;">Verifica tu correo electrónico</h1>
                   </div>
                   <div style="background:#f9f9f9;padding:24px;border-radius:0 0 8px 8px;border:1px solid #e5e7eb;">
@@ -459,7 +459,7 @@ namespace AppointVaAPI.Services
                 <!DOCTYPE html>
                 <html lang="es">
                 <body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#333;">
-                  <div style="background:#059669;padding:24px;border-radius:8px 8px 0 0;text-align:center;">
+                  <div style="background:#b45309;padding:24px;border-radius:8px 8px 0 0;text-align:center;">
                     <h1 style="color:#fff;margin:0;font-size:22px;">Recordatorio de cita</h1>
                   </div>
                   <div style="background:#f9f9f9;padding:24px;border-radius:0 0 8px 8px;border:1px solid #e5e7eb;">
