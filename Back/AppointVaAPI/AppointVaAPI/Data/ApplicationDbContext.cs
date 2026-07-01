@@ -28,6 +28,7 @@ namespace AppointVaAPI.Data
         public DbSet<CampoIntake> CamposIntake { get; set; }
         public DbSet<RespuestaIntake> RespuestasIntake { get; set; }
         public DbSet<Descuento> Descuentos { get; set; }
+        public DbSet<EmailLog> EmailLogs { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -253,6 +254,15 @@ namespace AppointVaAPI.Data
             modelBuilder.Entity<Descuento>()
                 .HasIndex(d => new { d.NegocioId, d.Codigo })
                 .IsUnique();
+
+            modelBuilder.Entity<EmailLog>(e =>
+            {
+                e.HasOne(x => x.Negocio)
+                 .WithMany()
+                 .HasForeignKey(x => x.NegocioId)
+                 .OnDelete(DeleteBehavior.Cascade);
+                e.HasIndex(x => new { x.NegocioId, x.EnviadoEn });
+            });
         }
     }
 }
