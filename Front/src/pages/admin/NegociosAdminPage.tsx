@@ -5,10 +5,9 @@ import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Eye, EyeOff } from "lucide-react";
-import { adminApi } from "../../api/admin";
+import { adminApi, type NegocioMetricasDto, type PlanDto } from "../../api/admin";
 import Modal from "../../components/ui/Modal";
 import { useToastStore } from "../../store/toastStore";
-import type { NegocioDto } from "../../types";
 import { formatPrecio } from "../../utils/formatters";
 
 const schemaNegocio = z.object({
@@ -32,23 +31,153 @@ const schemaPropietario = z.object({
 });
 type PropietarioForm = z.infer<typeof schemaPropietario>;
 
+function BarraProgreso({ valor, maximo, label }: { valor: number; maximo: number; label: string }) {
+  const pct = maximo > 0 ? Math.min(Math.round((valor / maximo) * 100), 100) : 0;
+  const colorBarra = pct >= 85 ? "bg-red-500" : pct >= 60 ? "bg-amber-400" : "bg-emerald-500";
+  const colorTexto = pct >= 85 ? "text-red-600 font-semibold" : pct >= 60 ? "text-amber-600 font-semibold" : "text-gray-500";
+  return (
+    <div className="mb-2.5">
+      <div className="flex justify-between text-xs mb-1">
+        <span className="text-gray-400">{label}</span>
+        <span className={colorTexto}>{valor} / {maximo} <span className="text-gray-400">({pct}%)</span></span>
+      </div>
+      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+        <div className={`h-full rounded-full transition-all duration-500 ${colorBarra}`} style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  );
+}
+
+function TarjetaNegocio({
+  negocio,
+  onActivar,
+  onDesactivar,
+  onEliminar,
+  onCrearPropietario,
+  onColores,
+}: {
+  negocio: NegocioMetricasDto;
+  onActivar: () => void;
+  onDesactivar: () => void;
+  onEliminar: () => void;
+  onCrearPropietario: () => void;
+  onColores: () => void;
+}) {
+  const esActivo = negocio.activo === 1;
+  const iniciales = negocio.nombre.split(" ").slice(0, 2).map((p) => p[0]).join("").toUpperCase();
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col">
+      {/* Header */}
+      <div className="p-4 flex items-center gap-3">
+        <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center overflow-hidden shrink-0">
+          {negocio.logoUrl ? (
+            <img src={negocio.logoUrl} alt={negocio.nombre} className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-sm font-bold text-slate-600">{iniciales}</span>
+          )}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-gray-900 text-sm truncate">{negocio.nombre}</p>
+          <p className="text-xs text-gray-400 truncate">{negocio.slug}</p>
+        </div>
+        <span
+          className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
+            esActivo ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-600"
+          }`}
+        >
+          {esActivo ? "Activo" : "Inactivo"}
+        </span>
+      </div>
+
+      {/* Plan */}
+      <div className="px-4 pb-3">
+        <span className="text-[11px] font-semibold bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">
+          {negocio.planNombre ?? "Sin plan"}
+        </span>
+      </div>
+
+      {/* Métricas */}
+      <div className="px-4 pb-4 flex-1">
+        {negocio.maxCitasMes > 0 && (
+          <BarraProgreso valor={negocio.citasMes} maximo={negocio.maxCitasMes} label="Citas este mes" />
+        )}
+        {negocio.maxEmpleados > 0 && (
+          <BarraProgreso valor={negocio.empleadosActivos} maximo={negocio.maxEmpleados} label="Empleados" />
+        )}
+        <div className="flex items-center gap-1.5 mt-1">
+          <span className="text-xs text-gray-400">Emails este mes:</span>
+          <span
+            className={`text-xs font-semibold ${
+              negocio.emailsMes > 200 ? "text-red-600" : negocio.emailsMes > 100 ? "text-amber-600" : "text-gray-600"
+            }`}
+          >
+            {negocio.emailsMes}
+          </span>
+        </div>
+      </div>
+
+      {/* Acciones */}
+      <div className="border-t border-gray-100 px-4 py-3 flex flex-wrap gap-2">
+        <button
+          onClick={esActivo ? onDesactivar : onActivar}
+          className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition ${
+            esActivo
+              ? "bg-red-50 text-red-600 hover:bg-red-100"
+              : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+          }`}
+        >
+          {esActivo ? "Desactivar" : "Activar"}
+        </button>
+        <button
+          onClick={onColores}
+          className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-50 text-slate-600 hover:bg-slate-100 transition"
+        >
+          Colores
+        </button>
+        <button
+          onClick={onCrearPropietario}
+          className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-50 text-slate-600 hover:bg-slate-100 transition"
+        >
+          + Propietario
+        </button>
+        <a
+          href={`/b/${negocio.slug}`}
+          target="_blank"
+          rel="noreferrer"
+          className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-50 text-slate-600 hover:bg-slate-100 transition"
+        >
+          Ver booking
+        </a>
+        <button
+          onClick={onEliminar}
+          className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 transition ml-auto"
+        >
+          Eliminar
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function NegociosAdminPage() {
   const qc = useQueryClient();
   const { toast } = useToastStore();
   const [modalNegocio, setModalNegocio] = useState(false);
   const [modalPropietario, setModalPropietario] = useState(false);
   const [modalColores, setModalColores] = useState(false);
-  const [negocioSel, setNegocioSel] = useState<NegocioDto | null>(null);
-  const [negocioEliminar, setNegocioEliminar] = useState<NegocioDto | null>(null);
+  const [negocioSel, setNegocioSel] = useState<NegocioMetricasDto | null>(null);
+  const [negocioEliminar, setNegocioEliminar] = useState<NegocioMetricasDto | null>(null);
   const [errorPropietario, setErrorPropietario] = useState("");
   const [mostrarPasswordProp, setMostrarPasswordProp] = useState(false);
   const [busqueda, setBusqueda] = useState("");
   const [colorPrimario, setColorPrimario] = useState("#C8A961");
   const [colorSecundario, setColorSecundario] = useState("#a07830");
 
-  const { data: negocios = [], isLoading } = useQuery({
-    queryKey: ["admin-negocios"],
-    queryFn: adminApi.obtenerNegocios,
+  const { data: metricas = [], isLoading } = useQuery({
+    queryKey: ["admin-negocios-metricas"],
+    queryFn: adminApi.obtenerMetricas,
+    staleTime: 1000 * 60 * 2,
   });
 
   const { data: planes = [] } = useQuery({
@@ -59,6 +188,11 @@ export default function NegociosAdminPage() {
   const formNegocio = useForm<NegocioForm>({ resolver: zodResolver(schemaNegocio) });
   const formPropietario = useForm<PropietarioForm>({ resolver: zodResolver(schemaPropietario) as Resolver<PropietarioForm> });
 
+  const invalidar = () => {
+    qc.invalidateQueries({ queryKey: ["admin-negocios-metricas"] });
+    qc.invalidateQueries({ queryKey: ["admin-negocios"] });
+  };
+
   const { mutate: crearNegocio, isPending: creandoNegocio } = useMutation({
     mutationFn: (d: NegocioForm) =>
       adminApi.crearNegocio({
@@ -67,23 +201,27 @@ export default function NegociosAdminPage() {
         planId: d.planId || undefined,
       }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["admin-negocios"] });
+      invalidar();
       setModalNegocio(false);
       formNegocio.reset();
       toast("Negocio creado correctamente");
     },
   });
 
-  const { mutate: toggleEstado } = useMutation({
-    mutationFn: (neg: NegocioDto) =>
-      neg.activo ? adminApi.desactivar(neg.id) : adminApi.activar(neg.id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-negocios"] }),
+  const { mutate: activar } = useMutation({
+    mutationFn: (id: string) => adminApi.activar(id),
+    onSuccess: invalidar,
+  });
+
+  const { mutate: desactivar } = useMutation({
+    mutationFn: (id: string) => adminApi.desactivar(id),
+    onSuccess: invalidar,
   });
 
   const { mutate: eliminar, isPending: eliminando } = useMutation({
     mutationFn: (id: string) => adminApi.eliminar(id),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["admin-negocios"] });
+      invalidar();
       setNegocioEliminar(null);
       toast("Negocio eliminado");
     },
@@ -95,16 +233,14 @@ export default function NegociosAdminPage() {
         colorPrimario: colorPrimario || undefined,
         colorSecundario: colorSecundario || undefined,
       }),
-    onSuccess: (negocioActualizado) => {
-      qc.setQueryData<NegocioDto[]>(["admin-negocios"], (prev) =>
-        prev?.map((n) => (n.id === negocioActualizado.id ? negocioActualizado : n)) ?? prev
-      );
+    onSuccess: () => {
+      invalidar();
       setModalColores(false);
       toast("Colores actualizados");
     },
   });
 
-  const abrirColores = (neg: NegocioDto) => {
+  const abrirColores = (neg: NegocioMetricasDto) => {
     setNegocioSel(neg);
     setColorPrimario(neg.colorPrimario ?? "#C8A961");
     setColorSecundario(neg.colorSecundario ?? "#a07830");
@@ -129,14 +265,14 @@ export default function NegociosAdminPage() {
     },
   });
 
-  const abrirPropietario = (neg: NegocioDto) => {
+  const abrirPropietario = (neg: NegocioMetricasDto) => {
     setNegocioSel(neg);
     setErrorPropietario("");
     formPropietario.reset({ nombre: "", apellido: "", email: "", password: "" });
     setModalPropietario(true);
   };
 
-  const negociosFiltrados = negocios.filter(
+  const metricasFiltradas = metricas.filter(
     (n) =>
       n.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
       n.slug.toLowerCase().includes(busqueda.toLowerCase())
@@ -148,7 +284,7 @@ export default function NegociosAdminPage() {
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Negocios</h1>
-          <p className="text-sm text-gray-400 mt-0.5">{negocios.length} registrados en total</p>
+          <p className="text-sm text-gray-400 mt-0.5">{metricas.length} registrados en total</p>
         </div>
         <button
           onClick={() => { formNegocio.reset(); setModalNegocio(true); }}
@@ -167,101 +303,28 @@ export default function NegociosAdminPage() {
         className="w-full max-w-sm px-4 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-gray-400 mb-6"
       />
 
-      {/* Tabla */}
+      {/* Grid de tarjetas */}
       {isLoading ? (
         <p className="text-gray-400">Cargando negocios...</p>
-      ) : negociosFiltrados.length === 0 ? (
+      ) : metricasFiltradas.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-100 p-12 text-center">
           <p className="text-gray-400">
             {busqueda ? "Sin resultados para esa búsqueda" : "No hay negocios registrados"}
           </p>
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-gray-100 overflow-x-auto">
-          <table className="w-full text-sm min-w-[700px]">
-            <thead>
-              <tr className="border-b border-gray-100 text-xs text-gray-400 uppercase tracking-wide">
-                <th className="text-left px-5 py-3 font-medium">Negocio</th>
-                <th className="text-left px-5 py-3 font-medium">Slug</th>
-                <th className="text-left px-5 py-3 font-medium">Plan</th>
-                <th className="text-center px-5 py-3 font-medium">Estado</th>
-                <th className="px-5 py-3" />
-              </tr>
-            </thead>
-            <tbody>
-              {negociosFiltrados.map((neg) => (
-                <tr key={neg.id} className="border-b border-gray-50 hover:bg-gray-50 transition">
-                  <td className="px-5 py-3">
-                    <div className="flex items-center gap-3">
-                      {neg.logoUrl ? (
-                        <img src={neg.logoUrl} alt="" className="w-8 h-8 rounded-lg object-cover" />
-                      ) : (
-                        <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 font-bold text-sm">
-                          {neg.nombre.charAt(0)}
-                        </div>
-                      )}
-                      <div>
-                        <p className="font-medium text-gray-800">{neg.nombre}</p>
-                        {neg.email && <p className="text-xs text-gray-400">{neg.email}</p>}
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-5 py-3">
-                    <code className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-600">
-                      {neg.slug}
-                    </code>
-                  </td>
-                  <td className="px-5 py-3 text-gray-600">
-                    {neg.planNombre ?? <span className="text-gray-300">—</span>}
-                  </td>
-                  <td className="px-5 py-3 text-center">
-                    <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold
-                        ${neg.activo ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"}`}
-                    >
-                      {neg.activo ? "Activo" : "Inactivo"}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3">
-                    <div className="flex justify-end gap-2 flex-wrap">
-                      <button
-                        onClick={() => abrirColores(neg)}
-                        className="text-xs font-medium px-2.5 py-1 rounded-lg bg-purple-50 text-purple-600 hover:bg-purple-100 transition"
-                      >
-                        Colores
-                      </button>
-                      <button
-                        onClick={() => abrirPropietario(neg)}
-                        className="text-xs font-medium px-2.5 py-1 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition"
-                      >
-                        + Propietario
-                      </button>
-                      <button
-                        onClick={() => toggleEstado(neg)}
-                        className={`text-xs font-medium px-2.5 py-1 rounded-lg transition ${neg.activo ? "bg-red-50 text-red-500 hover:bg-red-100" : "bg-green-50 text-green-600 hover:bg-green-100"}`}
-                      >
-                        {neg.activo ? "Desactivar" : "Activar"}
-                      </button>
-                      <a
-                        href={`/b/${neg.slug}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-xs font-medium px-2.5 py-1 rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200 transition"
-                      >
-                        Ver booking
-                      </a>
-                      <button
-                        onClick={() => setNegocioEliminar(neg)}
-                        className="text-xs font-medium px-2.5 py-1 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 transition"
-                      >
-                        Eliminar
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+          {metricasFiltradas.map((neg) => (
+            <TarjetaNegocio
+              key={neg.id}
+              negocio={neg}
+              onActivar={() => activar(neg.id)}
+              onDesactivar={() => desactivar(neg.id)}
+              onEliminar={() => setNegocioEliminar(neg)}
+              onCrearPropietario={() => abrirPropietario(neg)}
+              onColores={() => abrirColores(neg)}
+            />
+          ))}
         </div>
       )}
 
@@ -325,7 +388,7 @@ export default function NegociosAdminPage() {
             <label className="block text-sm font-medium text-gray-700 mb-1">Plan</label>
             <Select {...formNegocio.register("planId")} className="w-full">
               <option value="">Sin plan asignado</option>
-              {planes.map((p) => (
+              {planes.map((p: PlanDto) => (
                 <option key={p.id} value={p.id}>
                   {p.nombre} — {formatPrecio(p.precioMensual)}/mes · {p.maxEmpleados} empleados
                 </option>

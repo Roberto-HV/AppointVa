@@ -16,6 +16,24 @@ export interface CrearPropietarioAdminDto {
   apellido: string;
 }
 
+export interface NegocioMetricasDto {
+  id: string;
+  nombre: string;
+  slug: string;
+  activo: number;
+  logoUrl?: string;
+  email?: string;
+  colorPrimario?: string;
+  colorSecundario?: string;
+  planNombre?: string;
+  planId?: string;
+  maxCitasMes: number;
+  maxEmpleados: number;
+  citasMes: number;
+  empleadosActivos: number;
+  emailsMes: number;
+}
+
 export const adminApi = {
   obtenerNegocios: async (): Promise<NegocioDto[]> => {
     const { data } = await api.get("/negocios");
@@ -53,6 +71,11 @@ export const adminApi = {
 
   obtenerPlanes: async (): Promise<PlanDto[]> => {
     const { data } = await api.get("/planes");
+    return data;
+  },
+
+  obtenerMetricas: async (): Promise<NegocioMetricasDto[]> => {
+    const { data } = await api.get("/admin/metricas/negocios");
     return data;
   },
 };

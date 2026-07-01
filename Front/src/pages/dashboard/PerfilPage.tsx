@@ -398,6 +398,25 @@ export default function PerfilPage() {
 
         {/* ── TAB: CONFIGURACIÓN ──────────────────────────────────────────────── */}
         <div className={tab !== "configuracion" ? "hidden" : "space-y-6"}>
+          {/* Tarjeta de suscripción */}
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Tu suscripción</p>
+            <p className="text-base font-bold text-slate-800">
+              {negocio?.planNombre ?? "Sin plan asignado"}
+            </p>
+            <p className="text-xs text-slate-400 mt-2">
+              ¿Quieres cambiar de plan?{" "}
+              <a
+                href="https://wa.me/521XXXXXXXXXX"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-slate-600 font-semibold underline"
+              >
+                Contáctanos por WhatsApp
+              </a>
+            </p>
+          </div>
+
           <div className="bg-white rounded-xl border border-gray-100 p-5 space-y-5">
             <h2 className="text-sm font-semibold text-gray-700">Ajustes de citas</h2>
 
