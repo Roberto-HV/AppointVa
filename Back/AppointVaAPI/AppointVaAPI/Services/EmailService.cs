@@ -1,6 +1,8 @@
 ﻿using AppointVaAPI.Constants;
+using AppointVaAPI.Data;
 using AppointVaAPI.Models;
 using AppointVaAPI.Services.IServices;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Resend;
 
@@ -11,12 +13,14 @@ namespace AppointVaAPI.Services
         private readonly IResend _resend;
         private readonly IConfiguration _config;
         private readonly ILogger<EmailService> _logger;
+        private readonly IServiceScopeFactory _scopeFactory;
 
-        public EmailService(IResend resend, IConfiguration config, ILogger<EmailService> logger)
+        public EmailService(IResend resend, IConfiguration config, ILogger<EmailService> logger, IServiceScopeFactory scopeFactory)
         {
             _resend = resend;
             _config = config;
             _logger = logger;
+            _scopeFactory = scopeFactory;
         }
 
         public async Task EnviarConfirmacionCitaAsync(Cita cita, string emailDestino, string nombreCliente, string? urlCita = null, string? icalUrl = null, string? googleCalUrl = null, string? urlCancelacion = null)
@@ -26,6 +30,7 @@ namespace AppointVaAPI.Services
             var asunto = $"¡Tu cita está confirmada! — {cita.Servicio?.Nombre ?? "AppointVa"}";
             var html = PlantillaConfirmacion(cita, nombreCliente, urlCita, icalUrl, googleCalUrl, urlCancelacion);
             await EnviarAsync(emailDestino, asunto, html);
+            if (cita.NegocioId != Guid.Empty) await RegistrarEmailAsync(cita.NegocioId, "Confirmacion");
         }
 
         public async Task EnviarCancelacionCitaAsync(Cita cita, string emailDestino, string nombreCliente)
@@ -35,6 +40,7 @@ namespace AppointVaAPI.Services
             var asunto = $"Cita cancelada — {cita.Servicio?.Nombre ?? "AppointVa"}";
             var html = PlantillaCancelacion(cita, nombreCliente);
             await EnviarAsync(emailDestino, asunto, html);
+            if (cita.NegocioId != Guid.Empty) await RegistrarEmailAsync(cita.NegocioId, "Cancelacion");
         }
 
         public async Task EnviarRecordatorioCitaAsync(Cita cita, string emailDestino, string nombreCliente, string? icalUrl = null, string? googleCalUrl = null)
@@ -44,6 +50,7 @@ namespace AppointVaAPI.Services
             var asunto = $"Recordatorio: tu cita es mañana — {cita.Servicio?.Nombre ?? "AppointVa"}";
             var html = PlantillaRecordatorio(cita, nombreCliente, icalUrl, googleCalUrl);
             await EnviarAsync(emailDestino, asunto, html);
+            if (cita.NegocioId != Guid.Empty) await RegistrarEmailAsync(cita.NegocioId, "Recordatorio");
         }
 
         public async Task EnviarNuevaCitaPropietarioAsync(Cita cita, string emailDestino)
@@ -51,6 +58,7 @@ namespace AppointVaAPI.Services
             if (!EstaHabilitado()) return;
             var asunto = $"Nueva cita agendada — {cita.Servicio?.Nombre ?? "AppointVa"}";
             await EnviarAsync(emailDestino, asunto, PlantillaNuevaCitaPropietario(cita));
+            if (cita.NegocioId != Guid.Empty) await RegistrarEmailAsync(cita.NegocioId, "NuevaCitaPropietario");
         }
 
         public async Task EnviarCancelacionClienteAlPropietarioAsync(Cita cita, string emailDestino)
@@ -58,6 +66,7 @@ namespace AppointVaAPI.Services
             if (!EstaHabilitado()) return;
             var asunto = $"Cita cancelada por el cliente — {cita.Servicio?.Nombre ?? "AppointVa"}";
             await EnviarAsync(emailDestino, asunto, PlantillaCancelacionPropietario(cita));
+            if (cita.NegocioId != Guid.Empty) await RegistrarEmailAsync(cita.NegocioId, "CancelacionPropietario");
         }
 
         public async Task EnviarReagendarCitaAsync(Cita cita, string emailDestino, string nombreCliente, DateTime fechaOriginal)
@@ -65,6 +74,7 @@ namespace AppointVaAPI.Services
             if (!EstaHabilitado()) return;
             var asunto = $"Tu cita ha sido reagendada — {cita.Servicio?.Nombre ?? "AppointVa"}";
             await EnviarAsync(emailDestino, asunto, PlantillaReagendar(cita, nombreCliente, fechaOriginal));
+            if (cita.NegocioId != Guid.Empty) await RegistrarEmailAsync(cita.NegocioId, "Reagendar");
         }
 
         public async Task EnviarRecordatorioEmpleadoAsync(Cita cita, string emailDestino)
@@ -72,6 +82,7 @@ namespace AppointVaAPI.Services
             if (!EstaHabilitado()) return;
             var asunto = $"Recordatorio: tienes una cita — {cita.Negocio?.Nombre ?? "AppointVa"}";
             await EnviarAsync(emailDestino, asunto, PlantillaRecordatorioEmpleado(cita));
+            if (cita.NegocioId != Guid.Empty) await RegistrarEmailAsync(cita.NegocioId, "RecordatorioEmpleado");
         }
 
         public async Task EnviarVerificacionEmailAsync(string emailDestino, string nombre, string urlVerificacion)
@@ -86,6 +97,7 @@ namespace AppointVaAPI.Services
             if (!EstaHabilitado()) return;
             var asunto = $"¿Cómo fue tu experiencia en {cita.Negocio?.Nombre ?? "el negocio"}?";
             await EnviarAsync(emailDestino, asunto, PlantillaSolicitudResena(cita, nombreCliente, urlResena));
+            if (cita.NegocioId != Guid.Empty) await RegistrarEmailAsync(cita.NegocioId, "SolicitudResena");
         }
 
         public async Task EnviarRecuperacionContrasenaAsync(string emailDestino, string nombre, string urlReset)
@@ -121,6 +133,27 @@ namespace AppointVaAPI.Services
         {
             var habilitado = _config["Email:Habilitado"];
             return habilitado != null && bool.TryParse(habilitado, out var val) && val;
+        }
+
+        private async Task RegistrarEmailAsync(Guid negocioId, string tipo)
+        {
+            try
+            {
+                using var scope = _scopeFactory.CreateScope();
+                var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                db.EmailLogs.Add(new EmailLog
+                {
+                    Id = Guid.NewGuid(),
+                    NegocioId = negocioId,
+                    Tipo = tipo,
+                    EnviadoEn = DateTime.UtcNow
+                });
+                await db.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "No se pudo registrar EmailLog para negocio {NegocioId}", negocioId);
+            }
         }
 
         private static string PlantillaConfirmacion(Cita cita, string nombreCliente, string? urlCita = null, string? icalUrl = null, string? googleCalUrl = null, string? urlCancelacion = null)
