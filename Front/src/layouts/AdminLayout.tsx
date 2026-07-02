@@ -86,6 +86,19 @@ export default function AdminLayout() {
           >
             Negocios
           </NavLink>
+          <NavLink
+            to="/admin/audit"
+            onClick={cerrarSidebar}
+            className={({ isActive }) =>
+              `block px-4 py-2.5 rounded-lg text-sm font-medium transition ${
+                isActive
+                  ? "bg-white/10 text-white"
+                  : "text-gray-400 hover:bg-white/5 hover:text-white"
+              }`
+            }
+          >
+            Audit Log
+          </NavLink>
         </nav>
 
         {/* Usuario */}

@@ -1,13 +1,16 @@
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
 import Select from "../../components/ui/Select";
 import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Copy, Check, Download, Mail } from "lucide-react";
+import { Copy, Check, Download, Mail, Trash2 } from "lucide-react";
 import { QRCodeCanvas } from "qrcode.react";
 import { negociosApi } from "../../api/negocios";
+import { authApi } from "../../api/auth";
+import { useAuthStore } from "../../store/authStore";
 import { useToastStore } from "../../store/toastStore";
 import { Skeleton } from "../../components/ui/Skeleton";
 import type { ActualizarNegocioDto, HorarioDto } from "../../types";
@@ -73,10 +76,14 @@ type Tab = "perfil" | "configuracion" | "horarios";
 export default function PerfilPage() {
   const qc = useQueryClient();
   const { toast } = useToastStore();
+  const navigate = useNavigate();
+  const { refreshToken, cerrarSesion } = useAuthStore();
   const logoRef = useRef<HTMLInputElement>(null);
   const portadaRef = useRef<HTMLInputElement>(null);
   const [tab, setTab] = useState<Tab>("perfil");
   const [urlCopiada, setUrlCopiada] = useState(false);
+  const [modalEliminar, setModalEliminar] = useState(false);
+  const [contrasenaEliminar, setContrasenaEliminar] = useState("");
 
   const { data: negocio, isLoading } = useQuery({
     queryKey: ["negocio-perfil"],
@@ -131,6 +138,16 @@ export default function PerfilPage() {
   const onSubmit = (data: PerfilForm) => {
     guardar({ ...data, email: data.email || undefined, telefono: data.telefono || undefined });
   };
+
+  const { mutate: eliminarCuenta, isPending: eliminando } = useMutation({
+    mutationFn: () => authApi.eliminarCuenta(contrasenaEliminar),
+    onSuccess: async () => {
+      try { if (refreshToken) await authApi.logout(refreshToken); } catch { /* ignored */ }
+      cerrarSesion();
+      navigate("/login");
+    },
+    onError: () => toast("Contraseña incorrecta o no se pudo eliminar la cuenta.", "error"),
+  });
 
   // ── Horarios ─────────────────────────────────────────────────────────────
   const [horarios, setHorarios] = useState<HorarioDto[]>([]);
@@ -522,8 +539,62 @@ export default function PerfilPage() {
           </div>
 
           {btnGuardar}
+
+          {/* Zona de peligro */}
+          <div className="border border-red-200 rounded-xl p-5">
+            <h2 className="text-sm font-semibold text-red-600 mb-1 flex items-center gap-2">
+              <Trash2 size={15} /> Zona de peligro
+            </h2>
+            <p className="text-xs text-gray-500 mb-4">
+              Eliminar tu cuenta es permanente. Todos tus datos personales serán eliminados de forma irreversible. El historial de citas se conservará de forma anonimizada.
+            </p>
+            <button
+              type="button"
+              onClick={() => { setContrasenaEliminar(""); setModalEliminar(true); }}
+              className="px-4 py-2 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm font-medium hover:bg-red-100 transition"
+            >
+              Eliminar mi cuenta
+            </button>
+          </div>
         </div>
       </form>
+
+      {/* ── Modal: eliminar cuenta ─────────────────────────────────────────── */}
+      {modalEliminar && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6">
+            <h3 className="text-base font-bold text-gray-900 mb-1">¿Eliminar tu cuenta?</h3>
+            <p className="text-sm text-gray-500 mb-4">
+              Esta acción es irreversible. Ingresa tu contraseña actual para confirmar.
+            </p>
+            <input
+              type="password"
+              autoFocus
+              placeholder="Contraseña actual"
+              value={contrasenaEliminar}
+              onChange={(e) => setContrasenaEliminar(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-red-400 mb-4"
+            />
+            <div className="flex gap-2 justify-end">
+              <button
+                type="button"
+                onClick={() => setModalEliminar(false)}
+                className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={!contrasenaEliminar || eliminando}
+                onClick={() => eliminarCuenta()}
+                className="px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 disabled:opacity-50 transition"
+              >
+                {eliminando ? "Eliminando..." : "Sí, eliminar cuenta"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── TAB: HORARIOS ───────────────────────────────────────────────────── */}
       {tab === "horarios" && (

@@ -1,3 +1,4 @@
+using AppointVaAPI.Data;
 using AppointVaAPI.Models;
 using AppointVaAPI.Models.Dtos.Autenticacion;
 using AppointVaAPI.Services.IServices;
@@ -6,6 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.EntityFrameworkCore;
 
 namespace AppointVaAPI.Controllers.V1
 {
@@ -18,19 +20,25 @@ namespace AppointVaAPI.Controllers.V1
         private readonly IEmailService _email;
         private readonly IConfiguration _config;
         private readonly IBlobStorageService _storage;
+        private readonly IAuditService _audit;
+        private readonly ApplicationDbContext _db;
 
         public AutenticacionController(
             UserManager<ApplicationUser> userManager,
             IJwtService jwtService,
             IEmailService email,
             IConfiguration config,
-            IBlobStorageService storage)
+            IBlobStorageService storage,
+            IAuditService audit,
+            ApplicationDbContext db)
         {
             _userManager = userManager;
             _jwtService = jwtService;
             _email = email;
             _config = config;
             _storage = storage;
+            _audit = audit;
+            _db = db;
         }
 
         // POST api/auth/login
@@ -48,6 +56,7 @@ namespace AppointVaAPI.Controllers.V1
             if (!await _userManager.CheckPasswordAsync(usuario, dto.Contrasena))
             {
                 await _userManager.AccessFailedAsync(usuario);
+                await _audit.RegistrarAsync("LoginFallido", detalles: "Contraseña incorrecta", usuarioId: usuario.Id);
                 return Unauthorized(new { mensaje = "Credenciales inválidas" });
             }
 
@@ -72,6 +81,8 @@ namespace AppointVaAPI.Controllers.V1
 
             var token = _jwtService.GenerarToken(usuario, rol);
             var refreshToken = await _jwtService.GenerarRefreshTokenAsync(usuario.Id);
+
+            await _audit.RegistrarAsync("Login", usuarioId: usuario.Id);
 
             return Ok(new LoginRespuestaDto
             {
@@ -135,6 +146,7 @@ namespace AppointVaAPI.Controllers.V1
         public async Task<IActionResult> Logout([FromBody] RefrescarTokenDto dto)
         {
             await _jwtService.RevocarRefreshTokenAsync(dto.RefreshToken);
+            await _audit.RegistrarAsync("Logout");
             return NoContent();
         }
 
@@ -240,6 +252,8 @@ namespace AppointVaAPI.Controllers.V1
             // Revocar todos los refresh tokens para forzar nuevo login
             await _jwtService.RevocarTodosRefreshTokensAsync(usuario.Id);
 
+            await _audit.RegistrarAsync("CambiarPassword");
+
             return Ok(new { mensaje = "Contraseña actualizada correctamente. Inicia sesión nuevamente." });
         }
 
@@ -339,6 +353,66 @@ namespace AppointVaAPI.Controllers.V1
             await _userManager.ResetAuthenticatorKeyAsync(usuario);
 
             return Ok(new { mensaje = "Autenticación de dos factores desactivada." });
+        }
+
+        // DELETE api/auth/cuenta — eliminar cuenta (anonimización LFPDPPP)
+        [Authorize]
+        [HttpDelete("cuenta")]
+        public async Task<IActionResult> EliminarCuenta([FromBody] EliminarCuentaDto dto)
+        {
+            var usuarioId = User.FindFirst("sub")?.Value;
+            if (usuarioId is null) return Unauthorized();
+
+            var usuario = await _userManager.FindByIdAsync(usuarioId);
+            if (usuario is null) return NotFound();
+
+            if (!await _userManager.CheckPasswordAsync(usuario, dto.Contrasena))
+                return BadRequest(new { mensaje = "Contraseña incorrecta." });
+
+            var roles = await _userManager.GetRolesAsync(usuario);
+
+            // El propietario debe cerrar su negocio antes de eliminar la cuenta
+            if (roles.Contains(Roles.Propietario) && usuario.NegocioId.HasValue)
+            {
+                var negocio = await _db.Negocios.FindAsync(usuario.NegocioId.Value);
+                if (negocio is not null && negocio.Activo == 1)
+                    return BadRequest(new
+                    {
+                        mensaje = "No puedes eliminar tu cuenta mientras tengas un negocio activo. Contacta a soporte@appointva.com para cerrar tu negocio primero."
+                    });
+            }
+
+            // Si es empleado: desvincular su cuenta del registro de empleado
+            if (roles.Contains(Roles.Empleado))
+            {
+                var empleado = await _db.Empleados
+                    .FirstOrDefaultAsync(e => e.UsuarioId == usuario.Id);
+                if (empleado is not null)
+                    empleado.UsuarioId = null;
+            }
+
+            // Revocar todos los tokens
+            await _jwtService.RevocarTodosRefreshTokensAsync(usuario.Id);
+
+            // Anonimizar datos personales (los registros históricos se conservan sin PII)
+            var anonEmail = $"{Guid.NewGuid():N}@eliminado.local";
+            usuario.Nombre = "Usuario";
+            usuario.Apellido = "Eliminado";
+            usuario.Email = anonEmail;
+            usuario.NormalizedEmail = anonEmail.ToUpperInvariant();
+            usuario.UserName = anonEmail;
+            usuario.NormalizedUserName = anonEmail.ToUpperInvariant();
+            usuario.PhoneNumber = null;
+            usuario.FotoUrl = null;
+            usuario.Activo = false;
+            usuario.FechaActualizacion = DateTime.UtcNow;
+
+            await _userManager.UpdateAsync(usuario);
+            await _db.SaveChangesAsync();
+
+            await _audit.RegistrarAsync("EliminarCuenta", usuarioId: usuario.Id);
+
+            return NoContent();
         }
 
         // POST api/auth/2fa/verificar — segundo factor durante el login

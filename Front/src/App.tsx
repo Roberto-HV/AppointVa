@@ -29,6 +29,7 @@ import PrivacidadPage from "./pages/publico/PrivacidadPage";
 import TerminosPage from "./pages/publico/TerminosPage";
 import CancelarCitaPage from "./pages/publico/CancelarCitaPage";
 import NegociosAdminPage from "./pages/admin/NegociosAdminPage";
+import AuditLogPage from "./pages/admin/AuditLogPage";
 import MiPerfilPage from "./pages/dashboard/MiPerfilPage";
 import GaleriaPage from "./pages/dashboard/GaleriaPage";
 import ListaEsperaPage from "./pages/dashboard/ListaEsperaPage";
@@ -97,6 +98,7 @@ export default function App() {
           <Route element={<RutaProtegida roles={["SuperAdmin"]} />}>
             <Route element={<AdminLayout />}>
               <Route path="/admin" element={<NegociosAdminPage />} />
+              <Route path="/admin/audit" element={<AuditLogPage />} />
             </Route>
           </Route>
 

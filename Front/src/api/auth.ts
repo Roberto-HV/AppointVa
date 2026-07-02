@@ -65,4 +65,8 @@ export const authApi = {
     const { data } = await api.post("/auth/2fa/verificar", { challengeToken, codigo });
     return data;
   },
+
+  eliminarCuenta: async (contrasena: string): Promise<void> => {
+    await api.delete("/auth/cuenta", { data: { contrasena } });
+  },
 };

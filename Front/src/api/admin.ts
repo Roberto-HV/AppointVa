@@ -1,6 +1,25 @@
 import { api } from "./axios";
 import type { NegocioDto, CrearNegocioDto, ActualizarColoresNegocioDto } from "../types";
 
+export interface AuditLogDto {
+  id: string;
+  usuarioId: string | null;
+  usuarioEmail: string | null;
+  accion: string;
+  entidad: string | null;
+  entidadId: string | null;
+  detalles: string | null;
+  ipAddress: string | null;
+  fechaEn: string;
+}
+
+export interface AuditLogsRespuesta {
+  total: number;
+  pagina: number;
+  tamano: number;
+  datos: AuditLogDto[];
+}
+
 export interface PlanDto {
   id: string;
   nombre: string;
@@ -76,6 +95,16 @@ export const adminApi = {
 
   obtenerMetricas: async (): Promise<NegocioMetricasDto[]> => {
     const { data } = await api.get("/admin/metricas/negocios");
+    return data;
+  },
+
+  obtenerAuditLogs: async (params?: {
+    pagina?: number;
+    tamano?: number;
+    accion?: string;
+    usuarioId?: string;
+  }): Promise<AuditLogsRespuesta> => {
+    const { data } = await api.get("/admin/audit", { params });
     return data;
   },
 };
