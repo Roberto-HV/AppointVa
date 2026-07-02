@@ -69,7 +69,20 @@ namespace AppointVaAPI.Services
 
             if (suscripcion is null) return;
 
-            await EnviarAsync(suscripcion, BuildPayloadNuevaCita(cita));
+            // Recargar con includes para tener todos los datos del payload
+            var citaCompleta = await _db.Citas
+                .Include(c => c.Cliente)
+                .Include(c => c.Servicio)
+                .Include(c => c.Negocio)
+                .Include(c => c.Empleado)
+                .FirstOrDefaultAsync(c => c.Id == cita.Id) ?? cita;
+
+            var backendUrl = _config["BackendUrl"] ?? string.Empty;
+            var icalUrl = string.IsNullOrWhiteSpace(backendUrl) ? null
+                : $"{backendUrl}/api/publico/citas/{citaCompleta.CodigoConfirmacion}/ical";
+            var googleCalUrl = BuildGoogleCalendarUrl(citaCompleta);
+
+            await EnviarAsync(suscripcion, BuildPayloadNuevaCita(citaCompleta, icalUrl, googleCalUrl));
         }
 
         private async Task EnviarAsync(PushSuscripcion suscripcion, string payload)
@@ -104,7 +117,7 @@ namespace AppointVaAPI.Services
             }
         }
 
-        private static string BuildPayloadNuevaCita(Cita cita)
+        private static string BuildPayloadNuevaCita(Cita cita, string? icalUrl, string? googleCalUrl)
         {
             var cliente = cita.Cliente?.NombreCompleto ?? "Un cliente";
             var servicio = cita.Servicio?.Nombre ?? "Servicio";
@@ -116,8 +129,21 @@ namespace AppointVaAPI.Services
             {
                 title = $"Nueva cita — {negocio}",
                 body = $"{cliente} · {servicio} · {fecha} {hora}",
-                url = "/citas"
+                url = "/citas",
+                icalUrl,
+                googleCalUrl
             });
+        }
+
+        private static string BuildGoogleCalendarUrl(Cita cita)
+        {
+            var titulo = Uri.EscapeDataString(
+                $"{cita.Servicio?.Nombre ?? "Cita"} — {cita.Negocio?.Nombre ?? "AppointVa"}");
+            var inicio = cita.InicioEn.ToString("yyyyMMddTHHmmssZ");
+            var fin = cita.FinEn.ToString("yyyyMMddTHHmmssZ");
+            var detalles = Uri.EscapeDataString(
+                $"Cliente: {cita.Cliente?.NombreCompleto ?? "—"}\nTel: {cita.Cliente?.Telefono ?? "—"}");
+            return $"https://calendar.google.com/calendar/render?action=TEMPLATE&text={titulo}&dates={inicio}/{fin}&details={detalles}";
         }
     }
 }

@@ -24,28 +24,43 @@ self.addEventListener("activate", (e) => {
 // ── Push notifications ────────────────────────────────────────────────────────
 
 self.addEventListener("push", (e) => {
-  let data = { title: "AppointVa", body: "Tienes una nueva notificación.", url: "/" };
+  let data = { title: "AppointVa", body: "Tienes una nueva notificación.", url: "/", icalUrl: null, googleCalUrl: null };
   try { data = { ...data, ...e.data.json() }; } catch (_) {}
+
+  const actions = [];
+  if (data.icalUrl)      actions.push({ action: "ical",   title: "📅 Al calendario" });
+  if (data.googleCalUrl) actions.push({ action: "gcal",   title: "📆 Google Calendar" });
+  actions.push(            { action: "ver",    title: "Ver cita" });
 
   e.waitUntil(
     self.registration.showNotification(data.title, {
       body: data.body,
       icon: "/icon-192.png",
       badge: "/icon-96.png",
-      data: { url: data.url },
+      data: { url: data.url, icalUrl: data.icalUrl, googleCalUrl: data.googleCalUrl },
       vibrate: [200, 100, 200],
+      actions,
     })
   );
 });
 
 self.addEventListener("notificationclick", (e) => {
   e.notification.close();
-  const url = e.notification.data?.url ?? "/";
+  const { url, icalUrl, googleCalUrl } = e.notification.data ?? {};
+
+  let target = url ?? "/";
+  if (e.action === "ical" && icalUrl)         target = icalUrl;
+  else if (e.action === "gcal" && googleCalUrl) target = googleCalUrl;
+
   e.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
-      const existing = list.find((c) => c.url.includes(url));
+      // Para URLs externas (gcal/ical) siempre abrir nueva ventana
+      if (target.startsWith("http") && !target.includes(self.location.origin)) {
+        return clients.openWindow(target);
+      }
+      const existing = list.find((c) => c.url.includes(target));
       if (existing) return existing.focus();
-      return clients.openWindow(url);
+      return clients.openWindow(target);
     })
   );
 });
