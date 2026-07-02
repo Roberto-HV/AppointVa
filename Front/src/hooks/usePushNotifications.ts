@@ -5,13 +5,14 @@ type PermisoState = "default" | "granted" | "denied" | "unsupported";
 
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined;
 
-function urlBase64ToUint8Array(base64String: string): Uint8Array {
+function urlBase64ToArrayBuffer(base64String: string): ArrayBuffer {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
   const raw = atob(base64);
-  const bytes = new Uint8Array(raw.length);
-  for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
-  return bytes;
+  const buffer = new ArrayBuffer(raw.length);
+  const view = new Uint8Array(buffer);
+  for (let i = 0; i < raw.length; i++) view[i] = raw.charCodeAt(i);
+  return buffer;
 }
 
 export function usePushNotifications() {
@@ -46,7 +47,7 @@ export function usePushNotifications() {
       const reg = await navigator.serviceWorker.ready;
       const sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+        applicationServerKey: urlBase64ToArrayBuffer(VAPID_PUBLIC_KEY),
       });
 
       const { endpoint, keys } = sub.toJSON() as {
