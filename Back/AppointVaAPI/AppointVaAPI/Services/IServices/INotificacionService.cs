@@ -17,12 +17,6 @@ namespace AppointVaAPI.Services.IServices
         Task EnviarRecordatorioCitaAsync(Cita cita, string emailDestino, string nombreCliente,
             string? icalUrl = null, string? googleCalUrl = null);
 
-        Task EnviarRecordatorioEmpleadoAsync(Cita cita, string emailDestino);
-
-        Task EnviarNuevaCitaPropietarioAsync(Cita cita, string emailDestino);
-
-        Task EnviarCancelacionClienteAlPropietarioAsync(Cita cita, string emailDestino);
-
         Task EnviarReagendarCitaAsync(Cita cita, string emailDestino, string nombreCliente,
             DateTime fechaOriginal);
 

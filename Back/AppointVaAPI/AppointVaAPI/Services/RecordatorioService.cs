@@ -41,9 +41,6 @@ namespace AppointVaAPI.Services
                 cita, emailCliente ?? string.Empty, cita.Cliente?.NombreCompleto ?? string.Empty,
                 icalUrl, googleCalUrl);
 
-            var emailEmpleado = cita.Empleado?.Email;
-            if (!string.IsNullOrWhiteSpace(emailEmpleado))
-                await _notificacion.EnviarRecordatorioEmpleadoAsync(cita, emailEmpleado);
         }
 
         private static string GenerarGoogleCalendarUrl(Models.Cita cita)

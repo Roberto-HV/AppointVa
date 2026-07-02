@@ -360,14 +360,6 @@ namespace AppointVaAPI.Controllers.V1
                 _ = Task.Run(() => _notificacion.EnviarConfirmacionCitaAsync(cita, dto.EmailCliente, cliente.NombreCompleto, urlCita, icalUrl, googleCalUrl, urlCancelacion));
             }
 
-            // Notificar al propietario del negocio
-            if (!string.IsNullOrWhiteSpace(negocio.Email))
-                _ = Task.Run(() => _notificacion.EnviarNuevaCitaPropietarioAsync(cita, negocio.Email));
-
-            // Notificar al empleado asignado (si tiene email distinto al del negocio)
-            if (!string.IsNullOrWhiteSpace(empleado?.Email) && empleado.Email != negocio.Email)
-                _ = Task.Run(() => _notificacion.EnviarNuevaCitaPropietarioAsync(cita, empleado.Email));
-
             // Agendar recordatorio configurable antes de la cita si el cliente tiene correo
             if (!string.IsNullOrWhiteSpace(dto.EmailCliente))
             {
@@ -499,11 +491,6 @@ namespace AppointVaAPI.Controllers.V1
             // Notificar al cliente
             if (!string.IsNullOrWhiteSpace(emailCliente))
                 _ = Task.Run(() => _notificacion.EnviarCancelacionCitaAsync(cita, emailCliente, cita.Cliente!.NombreCompleto));
-
-            // Notificar al propietario
-            var emailNegocio = cita.Negocio?.Email;
-            if (!string.IsNullOrWhiteSpace(emailNegocio))
-                _ = Task.Run(() => _notificacion.EnviarCancelacionClienteAlPropietarioAsync(cita, emailNegocio));
 
             return NoContent();
         }

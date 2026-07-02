@@ -185,24 +185,5 @@ namespace AppointVaAPI.Services
             }
         }
 
-        // ── Notificaciones al negocio/empleado (siempre por email) ─────────────
-
-        public async Task EnviarRecordatorioEmpleadoAsync(Cita cita, string emailDestino)
-        {
-            if (!string.IsNullOrWhiteSpace(emailDestino))
-                await _email.EnviarRecordatorioEmpleadoAsync(cita, emailDestino);
-        }
-
-        public async Task EnviarNuevaCitaPropietarioAsync(Cita cita, string emailDestino)
-        {
-            if (!string.IsNullOrWhiteSpace(emailDestino))
-                await _email.EnviarNuevaCitaPropietarioAsync(cita, emailDestino);
-        }
-
-        public async Task EnviarCancelacionClienteAlPropietarioAsync(Cita cita, string emailDestino)
-        {
-            if (!string.IsNullOrWhiteSpace(emailDestino))
-                await _email.EnviarCancelacionClienteAlPropietarioAsync(cita, emailDestino);
-        }
     }
 }

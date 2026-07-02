@@ -53,36 +53,12 @@ namespace AppointVaAPI.Services
             if (cita.NegocioId != Guid.Empty) await RegistrarEmailAsync(cita.NegocioId, "Recordatorio");
         }
 
-        public async Task EnviarNuevaCitaPropietarioAsync(Cita cita, string emailDestino)
-        {
-            if (!EstaHabilitado()) return;
-            var asunto = $"Nueva cita agendada — {cita.Servicio?.Nombre ?? "AppointVa"}";
-            await EnviarAsync(emailDestino, asunto, PlantillaNuevaCitaPropietario(cita));
-            if (cita.NegocioId != Guid.Empty) await RegistrarEmailAsync(cita.NegocioId, "NuevaCitaPropietario");
-        }
-
-        public async Task EnviarCancelacionClienteAlPropietarioAsync(Cita cita, string emailDestino)
-        {
-            if (!EstaHabilitado()) return;
-            var asunto = $"Cita cancelada por el cliente — {cita.Servicio?.Nombre ?? "AppointVa"}";
-            await EnviarAsync(emailDestino, asunto, PlantillaCancelacionPropietario(cita));
-            if (cita.NegocioId != Guid.Empty) await RegistrarEmailAsync(cita.NegocioId, "CancelacionPropietario");
-        }
-
         public async Task EnviarReagendarCitaAsync(Cita cita, string emailDestino, string nombreCliente, DateTime fechaOriginal)
         {
             if (!EstaHabilitado()) return;
             var asunto = $"Tu cita ha sido reagendada — {cita.Servicio?.Nombre ?? "AppointVa"}";
             await EnviarAsync(emailDestino, asunto, PlantillaReagendar(cita, nombreCliente, fechaOriginal));
             if (cita.NegocioId != Guid.Empty) await RegistrarEmailAsync(cita.NegocioId, "Reagendar");
-        }
-
-        public async Task EnviarRecordatorioEmpleadoAsync(Cita cita, string emailDestino)
-        {
-            if (!EstaHabilitado()) return;
-            var asunto = $"Recordatorio: tienes una cita — {cita.Negocio?.Nombre ?? "AppointVa"}";
-            await EnviarAsync(emailDestino, asunto, PlantillaRecordatorioEmpleado(cita));
-            if (cita.NegocioId != Guid.Empty) await RegistrarEmailAsync(cita.NegocioId, "RecordatorioEmpleado");
         }
 
         public async Task EnviarVerificacionEmailAsync(string emailDestino, string nombre, string urlVerificacion)
@@ -300,88 +276,6 @@ namespace AppointVaAPI.Services
                 """;
         }
 
-        private static string PlantillaNuevaCitaPropietario(Cita cita)
-        {
-            var cliente = cita.Cliente?.NombreCompleto ?? "Cliente";
-            var servicio = cita.Servicio?.Nombre ?? "Servicio";
-            var empleado = cita.Empleado?.Nombre ?? string.Empty;
-            var inicio = cita.InicioEn.ToString("dddd dd 'de' MMMM 'de' yyyy", new System.Globalization.CultureInfo("es-MX"));
-            var hora = cita.InicioEn.ToString("HH:mm");
-            var telefono = cita.Cliente?.Telefono ?? "—";
-            var email = cita.Cliente?.Email ?? "—";
-
-            return $"""
-                <!DOCTYPE html>
-                <html lang="es">
-                <body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#333;">
-                  <div style="background:#1e293b;padding:24px;border-radius:8px 8px 0 0;text-align:center;">
-                    <h1 style="color:#fff;margin:0;font-size:22px;">Nueva cita agendada</h1>
-                  </div>
-                  <div style="background:#f9f9f9;padding:24px;border-radius:0 0 8px 8px;border:1px solid #e5e7eb;">
-                    <p>Se ha agendado una nueva cita en tu negocio:</p>
-                    <table style="width:100%;border-collapse:collapse;margin:16px 0;">
-                      <tr style="border-bottom:1px solid #e5e7eb;">
-                        <td style="padding:10px 0;color:#6b7280;width:40%;">Cliente</td>
-                        <td style="padding:10px 0;font-weight:600;">{cliente}</td>
-                      </tr>
-                      <tr style="border-bottom:1px solid #e5e7eb;">
-                        <td style="padding:10px 0;color:#6b7280;">Teléfono</td>
-                        <td style="padding:10px 0;font-weight:600;">{telefono}</td>
-                      </tr>
-                      <tr style="border-bottom:1px solid #e5e7eb;">
-                        <td style="padding:10px 0;color:#6b7280;">Correo</td>
-                        <td style="padding:10px 0;font-weight:600;">{email}</td>
-                      </tr>
-                      <tr style="border-bottom:1px solid #e5e7eb;">
-                        <td style="padding:10px 0;color:#6b7280;">Servicio</td>
-                        <td style="padding:10px 0;font-weight:600;">{servicio}</td>
-                      </tr>
-                      {(string.IsNullOrEmpty(empleado) ? "" : $"""
-                      <tr style="border-bottom:1px solid #e5e7eb;">
-                        <td style="padding:10px 0;color:#6b7280;">Empleado</td>
-                        <td style="padding:10px 0;font-weight:600;">{empleado}</td>
-                      </tr>
-                      """)}
-                      <tr style="border-bottom:1px solid #e5e7eb;">
-                        <td style="padding:10px 0;color:#6b7280;">Fecha</td>
-                        <td style="padding:10px 0;font-weight:600;">{inicio}</td>
-                      </tr>
-                      <tr>
-                        <td style="padding:10px 0;color:#6b7280;">Hora</td>
-                        <td style="padding:10px 0;font-weight:600;">{hora}</td>
-                      </tr>
-                    </table>
-                    <p style="font-size:13px;color:#6b7280;">Código de confirmación: <strong>{cita.CodigoConfirmacion}</strong></p>
-                  </div>
-                </body>
-                </html>
-                """;
-        }
-
-        private static string PlantillaCancelacionPropietario(Cita cita)
-        {
-            var cliente = cita.Cliente?.NombreCompleto ?? "Cliente";
-            var servicio = cita.Servicio?.Nombre ?? "Servicio";
-            var inicio = cita.InicioEn.ToString("dddd dd 'de' MMMM 'de' yyyy HH:mm", new System.Globalization.CultureInfo("es-MX"));
-
-            return $"""
-                <!DOCTYPE html>
-                <html lang="es">
-                <body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#333;">
-                  <div style="background:#DC2626;padding:24px;border-radius:8px 8px 0 0;text-align:center;">
-                    <h1 style="color:#fff;margin:0;font-size:22px;">Cita cancelada por el cliente</h1>
-                  </div>
-                  <div style="background:#f9f9f9;padding:24px;border-radius:0 0 8px 8px;border:1px solid #e5e7eb;">
-                    <p>El cliente <strong>{cliente}</strong> ha cancelado su cita:</p>
-                    <p><strong>{servicio}</strong> — {inicio}</p>
-                    <p>Teléfono: <strong>{cita.Cliente?.Telefono ?? "—"}</strong></p>
-                    <p style="font-size:13px;color:#6b7280;">El horario ha quedado liberado.</p>
-                  </div>
-                </body>
-                </html>
-                """;
-        }
-
         private static string PlantillaReagendar(Cita cita, string nombreCliente, DateTime fechaOriginal)
         {
             nombreCliente = nombreCliente.Trim();
@@ -417,52 +311,6 @@ namespace AppointVaAPI.Services
                       </tr>
                     </table>
                     <p style="font-size:13px;color:#6b7280;">Tu código de confirmación sigue siendo: <strong>{cita.CodigoConfirmacion}</strong></p>
-                  </div>
-                </body>
-                </html>
-                """;
-        }
-
-        private static string PlantillaRecordatorioEmpleado(Cita cita)
-        {
-            var cliente = cita.Cliente?.NombreCompleto ?? "Cliente";
-            var servicio = cita.Servicio?.Nombre ?? "Servicio";
-            var hora = cita.InicioEn.ToString("HH:mm");
-            var fecha = cita.InicioEn.ToString("dddd dd 'de' MMMM 'de' yyyy", new System.Globalization.CultureInfo("es-MX"));
-            var telefono = cita.Cliente?.Telefono ?? "—";
-
-            return $"""
-                <!DOCTYPE html>
-                <html lang="es">
-                <body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#333;">
-                  <div style="background:#b45309;padding:24px;border-radius:8px 8px 0 0;text-align:center;">
-                    <h1 style="color:#fff;margin:0;font-size:22px;">Tienes una cita mañana</h1>
-                  </div>
-                  <div style="background:#f9f9f9;padding:24px;border-radius:0 0 8px 8px;border:1px solid #e5e7eb;">
-                    <p>Este es un recordatorio de tu próxima cita:</p>
-                    <table style="width:100%;border-collapse:collapse;margin:16px 0;">
-                      <tr style="border-bottom:1px solid #e5e7eb;">
-                        <td style="padding:10px 0;color:#6b7280;width:40%;">Cliente</td>
-                        <td style="padding:10px 0;font-weight:600;">{cliente}</td>
-                      </tr>
-                      <tr style="border-bottom:1px solid #e5e7eb;">
-                        <td style="padding:10px 0;color:#6b7280;">Teléfono</td>
-                        <td style="padding:10px 0;font-weight:600;">{telefono}</td>
-                      </tr>
-                      <tr style="border-bottom:1px solid #e5e7eb;">
-                        <td style="padding:10px 0;color:#6b7280;">Servicio</td>
-                        <td style="padding:10px 0;font-weight:600;">{servicio}</td>
-                      </tr>
-                      <tr style="border-bottom:1px solid #e5e7eb;">
-                        <td style="padding:10px 0;color:#6b7280;">Fecha</td>
-                        <td style="padding:10px 0;font-weight:600;">{fecha}</td>
-                      </tr>
-                      <tr>
-                        <td style="padding:10px 0;color:#6b7280;">Hora</td>
-                        <td style="padding:10px 0;font-weight:600;">{hora}</td>
-                      </tr>
-                    </table>
-                    <p style="font-size:13px;color:#6b7280;">Código de confirmación del cliente: <strong>{cita.CodigoConfirmacion}</strong></p>
                   </div>
                 </body>
                 </html>
