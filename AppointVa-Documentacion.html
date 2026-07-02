@@ -532,7 +532,7 @@
   │── Confirmar ─────────────────►│── POST /publico/citas ──►│
   │                               │                          │── Valida disponibilidad
   │                               │                          │── Crea cita en DB
-  │                               │                          │── Envía email + agenda recordatorio 24h
+  │                               │                          │── Envía email confirmación al cliente + push al empleado
   │                               │◄── {codigo, icalUrl, webcalUrl, googleCalUrl} ──│
   │◄── Página de Confirmación ────│                          │
   │    [Código | Link | WhatsApp | Apple Cal | Google Cal]   │
@@ -773,7 +773,74 @@
 
 <!-- ══════════════════ SECCIÓN 5: CAMBIOS ══════════════════ -->
 <div class="container page-break">
-  <h2>5. Registro de Cambios v2.0–v2.2 (hasta 10 de junio de 2026)</h2>
+  <h2>5. Registro de Cambios v2.0–v2.3 (hasta 2 de julio de 2026)</h2>
+
+  <!-- ── v2.3 ── -->
+  <h3>v2.3 — Notificaciones push PWA, suscripciones y limpieza de emails (2 jul 2026)</h3>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#dbeafe;">🔔</div>
+    <div>
+      <div class="change-title">Notificaciones push para empleados (Web Push API)</div>
+      <div class="change-desc">
+        Cuando se agenda una nueva cita con empleado asignado, el sistema envía una notificación push en tiempo real al empleado. La notificación incluye botones de acción: <strong>📅 Al calendario</strong> (iCal — iOS/Windows), <strong>📆 Google Calendar</strong> y <strong>Ver cita</strong>. Funciona en Android (Chrome) y en iOS si el PWA está instalado desde Safari (iOS 16.4+).
+      </div>
+      <div class="change-files">
+        <span class="file-chip">PushSuscripcion.cs</span>
+        <span class="file-chip">IPushService.cs</span>
+        <span class="file-chip">PushService.cs</span>
+        <span class="file-chip">MeController.cs</span>
+        <span class="file-chip">sw.js</span>
+        <span class="file-chip">usePushNotifications.ts</span>
+        <span class="file-chip">NotificacionBanner.tsx</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#fef9c3;">✂️</div>
+    <div>
+      <div class="change-title">Eliminación de correos innecesarios al empleado y propietario</div>
+      <div class="change-desc">
+        Se eliminaron 3 flujos de email: recordatorio al empleado, nueva cita al propietario y cancelación al propietario. El flujo ahora envía solo <strong>2 correos por cita</strong>: confirmación al cliente y recordatorio al cliente. El empleado y propietario se notifican vía push o revisando el panel.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">IEmailService.cs</span>
+        <span class="file-chip">INotificacionService.cs</span>
+        <span class="file-chip">NotificacionService.cs</span>
+        <span class="file-chip">EmailService.cs</span>
+        <span class="file-chip">RecordatorioService.cs</span>
+        <span class="file-chip">PublicoController.cs</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#dcfce7;">💳</div>
+    <div>
+      <div class="change-title">UI de gestión de suscripciones en panel admin</div>
+      <div class="change-desc">
+        Panel de super admin con modal completo de suscripción por negocio: historial de pagos, formulario para registrar nuevos pagos (1/3/6/12 meses con precio auto-calculado) y generación de comprobante imprimible en HTML.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">NegociosAdminPage.tsx</span>
+        <span class="file-chip">SuscripcionAdminController.cs</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#fce7f3;">🚀</div>
+    <div>
+      <div class="change-title">Fix deploy Render: PGGSSENCMODE + PendingModelChangesWarning</div>
+      <div class="change-desc">
+        Resueltos dos errores de arranque en producción: (1) Npgsql intentaba cargar <code>libgssapi_krb5.so.2</code> (Kerberos) en el contenedor Linux de Render — solución: variable de entorno <code>PGGSSENCMODE=disable</code>. (2) EF Core 10 lanza excepción por <code>PendingModelChangesWarning</code> — solución: <code>ConfigureWarnings(w => w.Log(...))</code> en <code>AddDbContext</code>.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">Program.cs</span>
+      </div>
+    </div>
+  </div>
 
   <!-- ── v2.2 ── -->
   <h3>v2.2 — Observabilidad, rendimiento y política de cancelación</h3>
