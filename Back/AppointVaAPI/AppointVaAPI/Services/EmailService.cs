@@ -2,22 +2,22 @@
 using AppointVaAPI.Data;
 using AppointVaAPI.Models;
 using AppointVaAPI.Services.IServices;
+using MailKit.Net.Smtp;
+using MailKit.Security;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Resend;
+using MimeKit;
 
 namespace AppointVaAPI.Services
 {
     public class EmailService : IEmailService
     {
-        private readonly IResend _resend;
         private readonly IConfiguration _config;
         private readonly ILogger<EmailService> _logger;
         private readonly IServiceScopeFactory _scopeFactory;
 
-        public EmailService(IResend resend, IConfiguration config, ILogger<EmailService> logger, IServiceScopeFactory scopeFactory)
+        public EmailService(IConfiguration config, ILogger<EmailService> logger, IServiceScopeFactory scopeFactory)
         {
-            _resend = resend;
             _config = config;
             _logger = logger;
             _scopeFactory = scopeFactory;
@@ -113,15 +113,24 @@ namespace AppointVaAPI.Services
         {
             try
             {
-                var mensaje = new EmailMessage
-                {
-                    From = _config["Email:Origen"]!,
-                    Subject = asunto,
-                    HtmlBody = html
-                };
-                mensaje.To.Add(destino);
+                var mensaje = new MimeMessage();
+                mensaje.From.Add(MailboxAddress.Parse(_config["Email:Origen"]!));
+                mensaje.To.Add(MailboxAddress.Parse(destino));
+                mensaje.Subject = asunto;
+                mensaje.Body = new TextPart("html") { Text = html };
 
-                await _resend.EmailSendAsync(mensaje);
+                using var smtp = new SmtpClient();
+                await smtp.ConnectAsync(
+                    _config["Email:SmtpHost"]!,
+                    int.Parse(_config["Email:SmtpPort"] ?? "587"),
+                    SecureSocketOptions.StartTls
+                );
+                await smtp.AuthenticateAsync(
+                    _config["Email:SmtpUser"]!,
+                    _config["Email:SmtpPassword"]!
+                );
+                await smtp.SendAsync(mensaje);
+                await smtp.DisconnectAsync(true);
             }
             catch (Exception ex)
             {

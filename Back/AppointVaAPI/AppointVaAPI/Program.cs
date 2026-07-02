@@ -14,7 +14,6 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.OpenApi;
 using Scalar.AspNetCore;
-using Resend;
 using Serilog;
 using System.Text;
 using System.Text.Json;
@@ -108,12 +107,6 @@ builder.Services.AddScoped<INotificacionService, NotificacionService>();
 builder.Services.AddScoped<IBlobStorageService, BlobStorageService>();
 builder.Services.AddScoped<IRecordatorioService, RecordatorioService>();
 builder.Services.AddHttpClient("WhatsApp");
-
-// ── Resend (email) ─────────────────────────────────────────────────────────────
-builder.Services.AddResend(opt =>
-{
-    opt.ApiToken = builder.Configuration["Email:ResendApiKey"] ?? string.Empty;
-});
 
 // ── Hangfire ───────────────────────────────────────────────────────────────────
 builder.Services.AddHangfire(config => config
