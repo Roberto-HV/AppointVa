@@ -8,6 +8,7 @@ import { authApi } from "../../api/auth";
 import PasswordStrengthBar from "../../components/PasswordStrengthBar";
 import { useAuthStore } from "../../store/authStore";
 import { useToastStore } from "../../store/toastStore";
+import { NotificacionPerfilSection } from "../../components/ui/NotificacionBanner";
 
 const schema = z
   .object({
@@ -227,6 +228,13 @@ export default function MiPerfilPage() {
         </div>
 
       </div>
+
+      {/* ── Notificaciones push ── */}
+      <div className="mt-6">
+        <h2 className="text-base font-semibold text-gray-800 mb-3">Notificaciones</h2>
+        <NotificacionPerfilSection />
+      </div>
+
     </div>
   );
 }

@@ -6,6 +6,7 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
 import { CheckCircle2, Circle, X, Scissors, Users, Link2, CalendarDays, BarChart2, UserCheck } from "lucide-react";
+import { NotificacionBanner } from "../../components/ui/NotificacionBanner";
 import { dashboardApi } from "../../api/dashboard";
 import { citasApi } from "../../api/citas";
 import { negociosApi } from "../../api/negocios";
@@ -432,6 +433,9 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
 
   return (
     <div className="p-4 sm:p-8 max-w-2xl">
+      {/* Banner de activación de notificaciones push */}
+      <NotificacionBanner />
+
       {/* Encabezado */}
       <div className="mb-6">
         <p className="text-sm text-slate-400 mb-0.5">{saludo}</p>

@@ -34,6 +34,7 @@ namespace AppointVaAPI.Controllers.V1
         private readonly IBackgroundJobClient _jobClient;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IBlobStorageService _blob;
+        private readonly IPushService _push;
 
         public PublicoController(
             ApplicationDbContext db,
@@ -46,7 +47,8 @@ namespace AppointVaAPI.Controllers.V1
             IConfiguration config,
             IBackgroundJobClient jobClient,
             UserManager<ApplicationUser> userManager,
-            IBlobStorageService blob)
+            IBlobStorageService blob,
+            IPushService push)
         {
             _db = db;
             _negocioRepo = negocioRepo;
@@ -59,6 +61,7 @@ namespace AppointVaAPI.Controllers.V1
             _jobClient = jobClient;
             _userManager = userManager;
             _blob = blob;
+            _push = push;
         }
 
         // GET api/publico/negocios/{slug}
@@ -359,6 +362,9 @@ namespace AppointVaAPI.Controllers.V1
                 var urlCancelacion = $"{frontendUrl}/cancelar/{codigo}";
                 _ = Task.Run(() => _notificacion.EnviarConfirmacionCitaAsync(cita, dto.EmailCliente, cliente.NombreCompleto, urlCita, icalUrl, googleCalUrl, urlCancelacion));
             }
+
+            // Notificación push al empleado asignado
+            _ = Task.Run(() => _push.EnviarNuevaCitaEmpleadoAsync(cita));
 
             // Agendar recordatorio configurable antes de la cita si el cliente tiene correo
             if (!string.IsNullOrWhiteSpace(dto.EmailCliente))

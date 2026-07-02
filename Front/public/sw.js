@@ -21,6 +21,37 @@ self.addEventListener("activate", (e) => {
   );
 });
 
+// ── Push notifications ────────────────────────────────────────────────────────
+
+self.addEventListener("push", (e) => {
+  let data = { title: "AppointVa", body: "Tienes una nueva notificación.", url: "/" };
+  try { data = { ...data, ...e.data.json() }; } catch (_) {}
+
+  e.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: "/icon-192.png",
+      badge: "/icon-96.png",
+      data: { url: data.url },
+      vibrate: [200, 100, 200],
+    })
+  );
+});
+
+self.addEventListener("notificationclick", (e) => {
+  e.notification.close();
+  const url = e.notification.data?.url ?? "/";
+  e.waitUntil(
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
+      const existing = list.find((c) => c.url.includes(url));
+      if (existing) return existing.focus();
+      return clients.openWindow(url);
+    })
+  );
+});
+
+// ── Fetch (cache strategy) ────────────────────────────────────────────────────
+
 self.addEventListener("fetch", (e) => {
   const { request } = e;
   if (request.method !== "GET") return;

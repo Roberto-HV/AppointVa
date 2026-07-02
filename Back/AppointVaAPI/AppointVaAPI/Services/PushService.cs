@@ -1,0 +1,123 @@
+using AppointVaAPI.Data;
+using AppointVaAPI.Models;
+using AppointVaAPI.Services.IServices;
+using Microsoft.EntityFrameworkCore;
+using WebPush;
+
+namespace AppointVaAPI.Services
+{
+    public class PushService : IPushService
+    {
+        private readonly ApplicationDbContext _db;
+        private readonly IConfiguration _config;
+        private readonly ILogger<PushService> _logger;
+
+        public PushService(ApplicationDbContext db, IConfiguration config, ILogger<PushService> logger)
+        {
+            _db = db;
+            _config = config;
+            _logger = logger;
+        }
+
+        public async Task GuardarSuscripcionAsync(Guid usuarioId, string endpoint, string p256dh, string auth)
+        {
+            var existente = await _db.PushSuscripciones.FirstOrDefaultAsync(s => s.UsuarioId == usuarioId);
+            if (existente is not null)
+            {
+                existente.Endpoint = endpoint;
+                existente.P256dh = p256dh;
+                existente.Auth = auth;
+                existente.ActualizadaEn = DateTime.UtcNow;
+            }
+            else
+            {
+                _db.PushSuscripciones.Add(new PushSuscripcion
+                {
+                    Id = Guid.NewGuid(),
+                    UsuarioId = usuarioId,
+                    Endpoint = endpoint,
+                    P256dh = p256dh,
+                    Auth = auth,
+                });
+            }
+            await _db.SaveChangesAsync();
+        }
+
+        public async Task EliminarSuscripcionAsync(Guid usuarioId)
+        {
+            var suscripcion = await _db.PushSuscripciones.FirstOrDefaultAsync(s => s.UsuarioId == usuarioId);
+            if (suscripcion is not null)
+            {
+                _db.PushSuscripciones.Remove(suscripcion);
+                await _db.SaveChangesAsync();
+            }
+        }
+
+        public async Task EnviarNuevaCitaEmpleadoAsync(Cita cita)
+        {
+            if (cita.EmpleadoId == Guid.Empty) return;
+
+            var empleado = await _db.Empleados
+                .FirstOrDefaultAsync(e => e.Id == cita.EmpleadoId);
+
+            if (empleado?.UsuarioId is null) return;
+
+            var usuarioId = empleado.UsuarioId.Value;
+
+            var suscripcion = await _db.PushSuscripciones
+                .FirstOrDefaultAsync(s => s.UsuarioId == usuarioId);
+
+            if (suscripcion is null) return;
+
+            await EnviarAsync(suscripcion, BuildPayloadNuevaCita(cita));
+        }
+
+        private async Task EnviarAsync(PushSuscripcion suscripcion, string payload)
+        {
+            var publicKey = _config["Push:VapidPublicKey"];
+            var privateKey = _config["Push:VapidPrivateKey"];
+            var subject = _config["Push:VapidSubject"] ?? "mailto:hola@appointva.com";
+
+            if (string.IsNullOrWhiteSpace(publicKey) || string.IsNullOrWhiteSpace(privateKey))
+            {
+                _logger.LogWarning("VAPID keys no configuradas. Push notification omitida.");
+                return;
+            }
+
+            try
+            {
+                var sub = new PushSubscription(suscripcion.Endpoint, suscripcion.P256dh, suscripcion.Auth);
+                var vapid = new VapidDetails(subject, publicKey, privateKey);
+                var client = new WebPushClient();
+                await client.SendNotificationAsync(sub, payload, vapid);
+            }
+            catch (WebPushException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Gone
+                                           || ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                // Suscripción expirada — limpiar
+                _db.PushSuscripciones.Remove(suscripcion);
+                await _db.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error enviando push notification a {Endpoint}", suscripcion.Endpoint);
+            }
+        }
+
+        private static string BuildPayloadNuevaCita(Cita cita)
+        {
+            var cliente = cita.Cliente?.NombreCompleto ?? "Un cliente";
+            var servicio = cita.Servicio?.Nombre ?? "Servicio";
+            var negocio = cita.Negocio?.Nombre ?? "AppointVa";
+            var hora = cita.InicioEn.ToString("HH:mm");
+            var fecha = cita.InicioEn.ToString("dd/MM/yyyy");
+
+            return System.Text.Json.JsonSerializer.Serialize(new
+            {
+                title = $"Nueva cita — {negocio}",
+                body = $"{cliente} · {servicio} · {fecha} {hora}",
+                url = "/citas"
+            });
+        }
+    }
+}

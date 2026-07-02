@@ -31,6 +31,7 @@ namespace AppointVaAPI.Data
         public DbSet<EmailLog> EmailLogs { get; set; }
         public DbSet<AuditLog> AuditLogs { get; set; }
         public DbSet<PagoSuscripcion> PagosSuscripcion { get; set; }
+        public DbSet<PushSuscripcion> PushSuscripciones { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

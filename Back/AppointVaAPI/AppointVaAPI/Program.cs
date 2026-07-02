@@ -112,6 +112,7 @@ builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddScoped<IWhatsAppService, WhatsAppService>();
 builder.Services.AddScoped<INotificacionService, NotificacionService>();
 builder.Services.AddScoped<IBlobStorageService, BlobStorageService>();
+builder.Services.AddScoped<IPushService, PushService>();
 builder.Services.AddScoped<IRecordatorioService, RecordatorioService>();
 builder.Services.AddHttpClient("WhatsApp");
 
