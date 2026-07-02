@@ -53,6 +53,37 @@ export interface NegocioMetricasDto {
   emailsMes: number;
 }
 
+export interface PagoSuscripcionDto {
+  id: string;
+  negocioId: string;
+  negocioNombre: string;
+  registradoPorEmail: string;
+  fechaPago: string;
+  periodoDesde: string;
+  periodoHasta: string;
+  mesesPagados: number;
+  monto: number;
+  notas: string | null;
+  numeroPago: number;
+}
+
+export interface SuscripcionResumenDto {
+  negocioId: string;
+  negocioNombre: string;
+  negocioSlug: string;
+  fechaVencimiento: string | null;
+  estado: "Activa" | "PorVencer" | "Vencida" | "SinSuscripcion";
+  diasRestantes: number | null;
+  totalPagos: number;
+  ultimoPago: PagoSuscripcionDto | null;
+}
+
+export interface RegistrarPagoDto {
+  mesesPagados: number;
+  monto: number;
+  notas?: string;
+}
+
 export const adminApi = {
   obtenerNegocios: async (): Promise<NegocioDto[]> => {
     const { data } = await api.get("/negocios");
@@ -105,6 +136,26 @@ export const adminApi = {
     usuarioId?: string;
   }): Promise<AuditLogsRespuesta> => {
     const { data } = await api.get("/admin/audit", { params });
+    return data;
+  },
+
+  obtenerSuscripciones: async (): Promise<SuscripcionResumenDto[]> => {
+    const { data } = await api.get("/admin/suscripciones");
+    return data;
+  },
+
+  obtenerPagos: async (negocioId: string): Promise<PagoSuscripcionDto[]> => {
+    const { data } = await api.get(`/admin/negocios/${negocioId}/pagos`);
+    return data;
+  },
+
+  registrarPago: async (negocioId: string, dto: RegistrarPagoDto): Promise<PagoSuscripcionDto> => {
+    const { data } = await api.post(`/admin/negocios/${negocioId}/pagos`, dto);
+    return data;
+  },
+
+  obtenerPago: async (pagoId: string): Promise<PagoSuscripcionDto> => {
+    const { data } = await api.get(`/admin/pagos/${pagoId}`);
     return data;
   },
 };

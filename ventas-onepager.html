@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AppointVa — Hoja de Presentación</title>
+  <style>
+    @media print {
+      body { margin: 0; }
+      .no-print { display: none !important; }
+      .page { box-shadow: none !important; margin: 0 !important; border-radius: 0 !important; }
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f0f0f0;
+      color: #1a1a1a;
+      padding: 24px;
+    }
+
+    .no-print {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .no-print button {
+      background: #1a1a1a;
+      color: #fff;
+      border: none;
+      padding: 10px 28px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      margin: 0 6px;
+    }
+
+    .no-print button:hover { background: #333; }
+
+    .page {
+      max-width: 800px;
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: #111;
+      color: #fff;
+      padding: 36px 40px 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 20px;
+    }
+
+    .logo {
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -1px;
+    }
+    .logo span { color: #C8A961; }
+
+    .tagline {
+      font-size: 13px;
+      color: #999;
+      margin-top: 4px;
+      font-weight: 400;
+    }
+
+    .contact-header {
+      text-align: right;
+      font-size: 12px;
+      color: #aaa;
+      line-height: 1.8;
+    }
+
+    .contact-header strong { color: #fff; font-size: 13px; }
+
+    /* ── Intro ── */
+    .intro {
+      background: #C8A961;
+      color: #fff;
+      padding: 20px 40px;
+    }
+
+    .intro p {
+      font-size: 15px;
+      font-weight: 500;
+      line-height: 1.5;
+    }
+
+    /* ── Body ── */
+    .body { padding: 32px 40px; }
+
+    /* Problema */
+    .problema {
+      background: #fafafa;
+      border-left: 4px solid #C8A961;
+      padding: 16px 20px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 28px;
+    }
+
+    .problema .label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #C8A961;
+      margin-bottom: 6px;
+    }
+
+    .problema p {
+      font-size: 14px;
+      color: #444;
+      line-height: 1.6;
+    }
+
+    /* Features */
+    h2 {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: #999;
+      margin-bottom: 16px;
+    }
+
+    .features {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .feature {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 14px 16px;
+      border: 1.5px solid #f0f0f0;
+      border-radius: 10px;
+    }
+
+    .feature-icon {
+      width: 36px;
+      height: 36px;
+      background: #111;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 17px;
+      flex-shrink: 0;
+    }
+
+    .feature-text .title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #111;
+      margin-bottom: 2px;
+    }
+
+    .feature-text .desc {
+      font-size: 11.5px;
+      color: #777;
+      line-height: 1.4;
+    }
+
+    /* Pricing */
+    .pricing-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .price-card {
+      border: 2px solid #f0f0f0;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      position: relative;
+    }
+
+    .price-card.destacado {
+      border-color: #C8A961;
+      background: #fffbf0;
+    }
+
+    .price-card .badge {
+      position: absolute;
+      top: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #C8A961;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 12px;
+      border-radius: 20px;
+      white-space: nowrap;
+      letter-spacing: 0.5px;
+    }
+
+    .price-card .plan-name {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #999;
+      margin-bottom: 8px;
+    }
+
+    .price-card .monto {
+      font-size: 30px;
+      font-weight: 800;
+      color: #111;
+      line-height: 1;
+    }
+
+    .price-card .monto span {
+      font-size: 14px;
+      font-weight: 400;
+      color: #888;
+    }
+
+    .price-card .detalle {
+      font-size: 12px;
+      color: #888;
+      margin-top: 6px;
+    }
+
+    .price-card .detalle strong { color: #C8A961; }
+
+    /* Incluido */
+    .incluido {
+      background: #f9f9f9;
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin-bottom: 28px;
+    }
+
+    .incluido ul {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      list-style: none;
+      margin-top: 8px;
+    }
+
+    .incluido ul li {
+      font-size: 12.5px;
+      color: #555;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .incluido ul li::before {
+      content: "✓";
+      color: #C8A961;
+      font-weight: 800;
+      font-size: 13px;
+    }
+
+    /* Footer CTA */
+    .footer-cta {
+      background: #111;
+      color: #fff;
+      padding: 24px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .footer-cta .cta-text {
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .footer-cta .cta-text span { color: #C8A961; }
+
+    .footer-cta .cta-sub {
+      font-size: 12px;
+      color: #aaa;
+      margin-top: 4px;
+    }
+
+    .footer-cta .links {
+      text-align: right;
+      font-size: 13px;
+      line-height: 2;
+    }
+
+    .footer-cta .links a {
+      color: #C8A961;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .footer-cta .links .wa {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      justify-content: flex-end;
+      color: #aaa;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Botones solo en pantalla -->
+  <div class="no-print">
+    <button onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
+  </div>
+
+  <div class="page">
+
+    <!-- Header -->
+    <div class="header">
+      <div>
+        <div class="logo">Appoint<span>Va</span></div>
+        <div class="tagline">Sistema de reservas para negocios locales</div>
+      </div>
+      <div class="contact-header">
+        <strong>appointva.com</strong><br>
+        hola@appointva.com<br>
+        WhatsApp: 722 256 4265
+      </div>
+    </div>
+
+    <!-- Intro -->
+    <div class="intro">
+      <p>Administra citas, empleados y clientes desde un solo lugar. Sin llamadas perdidas, sin agenda de papel, sin complicaciones.</p>
+    </div>
+
+    <!-- Body -->
+    <div class="body">
+
+      <!-- Problema -->
+      <div class="problema">
+        <div class="label">¿Te identificas?</div>
+        <p>Muchos negocios en Tejupilco siguen agendando por WhatsApp o de palabra — y pierden clientes por citas que se olvidan, empalmes o falta de confirmación. <strong>AppointVa</strong> lo resuelve de forma sencilla, sin que el cliente necesite descargar nada.</p>
+      </div>
+
+      <!-- Features -->
+      <h2>¿Qué incluye?</h2>
+      <div class="features">
+        <div class="feature">
+          <div class="feature-icon">📅</div>
+          <div class="feature-text">
+            <div class="title">Reservas en línea 24/7</div>
+            <div class="desc">Tu cliente elige su horario sin llamarte. Funciona desde cualquier celular.</div>
+          </div>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">🔔</div>
+          <div class="feature-text">
+            <div class="title">Recordatorios automáticos</div>
+            <div class="desc">Se envía un correo de confirmación y un aviso antes de la cita. Menos olvidos, menos "no shows".</div>
+          </div>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">👥</div>
+          <div class="feature-text">
+            <div class="title">Manejo de empleados</div>
+            <div class="desc">Cada empleado tiene su propio horario y servicios. El cliente elige con quién.</div>
+          </div>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">✂️</div>
+          <div class="feature-text">
+            <div class="title">Servicios y precios</div>
+            <div class="desc">Configura tus servicios con duración y precio. El sistema calcula los espacios solos.</div>
+          </div>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">📊</div>
+          <div class="feature-text">
+            <div class="title">Panel de control</div>
+            <div class="desc">Ve tus citas del día, historial de clientes y métricas en tiempo real.</div>
+          </div>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">🎨</div>
+          <div class="feature-text">
+            <div class="title">Tu marca, tus colores</div>
+            <div class="desc">La página de reservas lleva el nombre y los colores de tu negocio.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pricing -->
+      <h2>Inversión mensual</h2>
+      <div class="pricing-row">
+        <div class="price-card destacado">
+          <div class="badge">🎉 Oferta de lanzamiento</div>
+          <div class="plan-name">Primeros 3 meses</div>
+          <div class="monto">$149 <span>MXN/mes</span></div>
+          <div class="detalle">Después: <strong>$249/mes</strong></div>
+        </div>
+        <div class="price-card">
+          <div class="plan-name">Precio regular</div>
+          <div class="monto">$249 <span>MXN/mes</span></div>
+          <div class="detalle">Anual: $2,490 — <strong>¡2 meses gratis!</strong></div>
+        </div>
+      </div>
+
+      <!-- Incluido -->
+      <div class="incluido">
+        <h2 style="margin-bottom: 0">Todo esto ya incluido en el precio</h2>
+        <ul>
+          <li>Página de reservas personalizada</li>
+          <li>Hasta 5 empleados activos</li>
+          <li>Confirmaciones por correo</li>
+          <li>Historial completo de clientes</li>
+          <li>Recordatorios automáticos</li>
+          <li>Sin contratos, cancelas cuando quieras</li>
+          <li>Descuentos y códigos promocionales</li>
+          <li>Soporte directo por WhatsApp</li>
+        </ul>
+      </div>
+
+    </div>
+
+    <!-- Footer CTA -->
+    <div class="footer-cta">
+      <div>
+        <div class="cta-text">¿Lo probamos con tu <span>negocio</span>?</div>
+        <div class="cta-sub">Configuración sin costo. Sin letra pequeña.</div>
+      </div>
+      <div class="links">
+        <a href="https://appointva.com">appointva.com</a><br>
+        hola@appointva.com<br>
+        <div class="wa">
+          WhatsApp: 722 256 4265
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>

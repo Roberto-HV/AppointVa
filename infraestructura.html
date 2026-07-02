@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AppointVa — Infraestructura de Servicios</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', Arial, sans-serif; color: #1f2937; background: #f3f4f6; font-size: 13px; line-height: 1.6; }
+
+/* Header */
+.cover {
+  background: linear-gradient(135deg, #1f2937 0%, #374151 100%);
+  color: #fff;
+  padding: 40px 48px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.cover-logo {
+  width: 52px; height: 52px;
+  background: #C8A961;
+  border-radius: 13px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; font-weight: 900;
+  color: #1f2937;
+  flex-shrink: 0;
+  letter-spacing: -0.5px;
+}
+.cover-text h1 { font-size: 24px; font-weight: 800; letter-spacing: -0.4px; }
+.cover-text p  { font-size: 13px; color: #9ca3af; margin-top: 2px; }
+.cover-right   { margin-left: auto; text-align: right; }
+.cover-right .date { font-size: 12px; color: #6b7280; }
+.cover-right .badge {
+  display: inline-block;
+  background: rgba(200,169,97,0.2);
+  border: 1px solid #C8A961;
+  color: #C8A961;
+  padding: 3px 12px;
+  border-radius: 999px;
+  font-size: 11px; font-weight: 600;
+  margin-top: 6px;
+}
+
+/* Main */
+.main { max-width: 1080px; margin: 0 auto; padding: 28px 32px 52px; }
+
+/* Login banner */
+.login-banner {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-left: 4px solid #C8A961;
+  border-radius: 10px;
+  padding: 13px 18px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 13px;
+}
+.login-banner .lbl  { font-weight: 600; color: #374151; white-space: nowrap; }
+.login-banner .val  { font-family: 'Courier New', monospace; color: #111827; }
+.login-banner .note { margin-left: auto; color: #6b7280; font-size: 12px; white-space: nowrap; }
+
+/* Section label */
+.section-label {
+  font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  color: #9ca3af;
+  margin-bottom: 14px;
+  display: flex; align-items: center; gap: 10px;
+}
+.section-label::after { content: ''; flex: 1; height: 1px; background: #e5e7eb; }
+
+/* Card grid */
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 14px; margin-bottom: 28px; }
+.grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+
+/* Card */
+.card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; }
+.card-stripe { height: 4px; }
+
+.card-head {
+  padding: 13px 16px 11px;
+  border-bottom: 1px solid #f3f4f6;
+  display: flex; align-items: center; gap: 11px;
+}
+.svc-badge {
+  width: 34px; height: 34px;
+  border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 800; color: #fff;
+  flex-shrink: 0; letter-spacing: -0.2px;
+}
+.svc-name  { font-size: 14px; font-weight: 700; color: #111827; }
+.svc-role  { font-size: 11px; color: #6b7280; margin-top: 1px; }
+.plan-pill {
+  margin-left: auto;
+  font-size: 10px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.04em;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: #f3f4f6; color: #6b7280;
+  border: 1px solid #e5e7eb;
+}
+
+/* Card body */
+.card-body  { padding: 13px 16px; display: flex; flex-direction: column; gap: 10px; }
+.field      { display: flex; flex-direction: column; gap: 2px; }
+.field-lbl  { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #9ca3af; }
+.field-val  { font-family: 'Courier New', monospace; font-size: 12.5px; color: #111827; word-break: break-all; }
+.field-val.plain { font-family: 'Segoe UI', Arial, sans-serif; font-size: 13px; }
+.field-val a    { color: #2563eb; text-decoration: none; }
+.field-val a:hover { text-decoration: underline; }
+
+/* Tags */
+.tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 2px; }
+.tag {
+  font-family: 'Courier New', monospace; font-size: 11.5px;
+  padding: 2px 8px; border-radius: 5px;
+  background: #f3f4f6; color: #374151;
+  border: 1px solid #e5e7eb;
+}
+
+/* Separator */
+.sep { height: 1px; background: #f3f4f6; }
+
+/* Warning */
+.warn {
+  display: flex; align-items: flex-start; gap: 8px;
+  background: #fffbeb; border: 1px solid #fde68a;
+  border-radius: 8px; padding: 9px 12px;
+  font-size: 12px; color: #92400e; margin-top: 2px;
+}
+.warn strong { font-weight: 700; }
+
+/* Footer */
+footer {
+  text-align: center; padding: 20px;
+  font-size: 11px; color: #9ca3af;
+  border-top: 1px solid #e5e7eb;
+  background: #fff; margin-top: 8px;
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="cover">
+  <div class="cover-logo">AV</div>
+  <div class="cover-text">
+    <h1>AppointVa &mdash; Infraestructura</h1>
+    <p>Mapa de servicios, accesos y límites del sistema en producción</p>
+  </div>
+  <div class="cover-right">
+    <div class="date">Actualizado: Julio 2026</div>
+    <div class="badge">Producción</div>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- Login universal -->
+  <div class="login-banner">
+    <span class="lbl">Acceso universal</span>
+    <span class="val">appointva@outlook.com</span>
+    <span class="note">Todos los servicios usan este correo</span>
+  </div>
+
+  <!-- Infraestructura -->
+  <div class="section-label">Infraestructura principal</div>
+  <div class="grid">
+
+    <!-- Cloudflare -->
+    <div class="card">
+      <div class="card-stripe" style="background:#F6821F"></div>
+      <div class="card-head">
+        <div class="svc-badge" style="background:#F6821F">CF</div>
+        <div>
+          <div class="svc-name">Cloudflare</div>
+          <div class="svc-role">Dominio &middot; DNS &middot; Email Routing</div>
+        </div>
+        <div class="plan-pill">Free</div>
+      </div>
+      <div class="card-body">
+        <div class="field">
+          <span class="field-lbl">Dashboard</span>
+          <span class="field-val"><a href="https://dash.cloudflare.com">dash.cloudflare.com</a></span>
+        </div>
+        <div class="field">
+          <span class="field-lbl">Dominio registrado</span>
+          <span class="field-val">appointva.com</span>
+        </div>
+        <div class="sep"></div>
+        <div class="field">
+          <span class="field-lbl">Email Routing &rarr; appointva@outlook.com</span>
+          <div class="tags">
+            <span class="tag">hola@appointva.com</span>
+            <span class="tag">soporte@appointva.com</span>
+            <span class="tag">notificaciones@appointva.com</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Neon -->
+    <div class="card">
+      <div class="card-stripe" style="background:#00E599"></div>
+      <div class="card-head">
+        <div class="svc-badge" style="background:#00B87A">N</div>
+        <div>
+          <div class="svc-name">Neon</div>
+          <div class="svc-role">Base de datos PostgreSQL</div>
+        </div>
+        <div class="plan-pill">Free</div>
+      </div>
+      <div class="card-body">
+        <div class="field">
+          <span class="field-lbl">Dashboard</span>
+          <span class="field-val"><a href="https://console.neon.tech">console.neon.tech</a></span>
+        </div>
+        <div class="field">
+          <span class="field-lbl">Proyecto &middot; Branch &middot; Database</span>
+          <span class="field-val">Appointva &middot; production &middot; appointva</span>
+        </div>
+        <div class="field">
+          <span class="field-lbl">Versión &middot; Región</span>
+          <span class="field-val plain">PostgreSQL 16 &middot; AWS US East 1 (N. Virginia)</span>
+        </div>
+        <div class="sep"></div>
+        <div class="field">
+          <span class="field-lbl">Límites plan free</span>
+          <span class="field-val plain">100 CU-hrs/mes &middot; 0.5 GB storage &middot; Compute 0.25 ↔ 2 CU</span>
+        </div>
+        <div class="field">
+          <span class="field-lbl">Connection string</span>
+          <span class="field-val plain">Configurada en Render &rarr; Environment</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Render -->
+    <div class="card">
+      <div class="card-stripe" style="background:#7C3AED"></div>
+      <div class="card-head">
+        <div class="svc-badge" style="background:#7C3AED">R</div>
+        <div>
+          <div class="svc-name">Render</div>
+          <div class="svc-role">Backend API &middot; ASP.NET Core &middot; Docker</div>
+        </div>
+        <div class="plan-pill">Free</div>
+      </div>
+      <div class="card-body">
+        <div class="field">
+          <span class="field-lbl">Dashboard</span>
+          <span class="field-val"><a href="https://dashboard.render.com">dashboard.render.com</a></span>
+        </div>
+        <div class="field">
+          <span class="field-lbl">URL pública (API)</span>
+          <span class="field-val"><a href="https://appointva.onrender.com">https://appointva.onrender.com</a></span>
+        </div>
+        <div class="field">
+          <span class="field-lbl">Service ID</span>
+          <span class="field-val">srv-d8m61pjeo5us73ejlkhg</span>
+        </div>
+        <div class="sep"></div>
+        <div class="field">
+          <span class="field-lbl">Repositorio &middot; Branch</span>
+          <span class="field-val">Roberto-HV/AppointVa &middot; main</span>
+        </div>
+        <div class="field">
+          <span class="field-lbl">Variables de entorno</span>
+          <span class="field-val plain">Render &rarr; Environment (DB, Cloudinary, Brevo, JWT, etc.)</span>
+        </div>
+        <div class="warn">
+          <span>⚠</span>
+          <span>Plan Free: se duerme tras inactividad. El primer request puede tardar ~50 segundos al despertar.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Vercel -->
+    <div class="card">
+      <div class="card-stripe" style="background:#171717"></div>
+      <div class="card-head">
+        <div class="svc-badge" style="background:#171717">VC</div>
+        <div>
+          <div class="svc-name">Vercel</div>
+          <div class="svc-role">Frontend &middot; React + Vite + TypeScript</div>
+        </div>
+        <div class="plan-pill">Hobby</div>
+      </div>
+      <div class="card-body">
+        <div class="field">
+          <span class="field-lbl">Dashboard</span>
+          <span class="field-val"><a href="https://vercel.com">vercel.com</a></span>
+        </div>
+        <div class="field">
+          <span class="field-lbl">URL producción (dominio propio)</span>
+          <span class="field-val"><a href="https://appointva.com">https://appointva.com</a></span>
+        </div>
+        <div class="field">
+          <span class="field-lbl">URL Vercel</span>
+          <span class="field-val"><a href="https://appoint-va.vercel.app">https://appoint-va.vercel.app</a></span>
+        </div>
+        <div class="sep"></div>
+        <div class="field">
+          <span class="field-lbl">Proyecto &middot; Repositorio &middot; Branch</span>
+          <span class="field-val">appoint-va &middot; Roberto-HV/AppointVa &middot; main</span>
+        </div>
+        <div class="field">
+          <span class="field-lbl">Deploy</span>
+          <span class="field-val plain">Automático al hacer push a main</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cloudinary -->
+    <div class="card">
+      <div class="card-stripe" style="background:#3B82F6"></div>
+      <div class="card-head">
+        <div class="svc-badge" style="background:#3B82F6">CL</div>
+        <div>
+          <div class="svc-name">Cloudinary</div>
+          <div class="svc-role">Almacenamiento de imágenes</div>
+        </div>
+        <div class="plan-pill">Free</div>
+      </div>
+      <div class="card-body">
+        <div class="field">
+          <span class="field-lbl">Dashboard</span>
+          <span class="field-val"><a href="https://cloudinary.com">cloudinary.com</a></span>
+        </div>
+        <div class="field">
+          <span class="field-lbl">Cloud Name</span>
+          <span class="field-val">dssyaimvj</span>
+        </div>
+        <div class="field">
+          <span class="field-lbl">Uso</span>
+          <span class="field-val plain">Fotos de perfil &middot; Logos de negocios</span>
+        </div>
+        <div class="sep"></div>
+        <div class="field">
+          <span class="field-lbl">Límites plan free</span>
+          <span class="field-val plain">25 créditos/mes &middot; ~186 MB almacenados actualmente</span>
+        </div>
+        <div class="field">
+          <span class="field-lbl">Credenciales API</span>
+          <span class="field-val plain">Configuradas en Render &rarr; Environment</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Brevo -->
+    <div class="card">
+      <div class="card-stripe" style="background:#0EA5E9"></div>
+      <div class="card-head">
+        <div class="svc-badge" style="background:#0284C7">BR</div>
+        <div>
+          <div class="svc-name">Brevo</div>
+          <div class="svc-role">Envío de emails transaccionales (SMTP)</div>
+        </div>
+        <div class="plan-pill">Free</div>
+      </div>
+      <div class="card-body">
+        <div class="field">
+          <span class="field-lbl">Dashboard</span>
+          <span class="field-val"><a href="https://app.brevo.com">app.brevo.com</a></span>
+        </div>
+        <div class="field">
+          <span class="field-lbl">SMTP Host &middot; Puerto</span>
+          <span class="field-val">smtp-relay.brevo.com &middot; 587 (STARTTLS)</span>
+        </div>
+        <div class="field">
+          <span class="field-lbl">Usuario SMTP</span>
+          <span class="field-val">b0b28d001@smtp-brevo.com</span>
+        </div>
+        <div class="field">
+          <span class="field-lbl">Remitente</span>
+          <span class="field-val">AppointVa &lt;notificaciones@appointva.com&gt;</span>
+        </div>
+        <div class="sep"></div>
+        <div class="field">
+          <span class="field-lbl">Límites plan free</span>
+          <span class="field-val plain">300 emails/día &middot; 9,000 emails/mes</span>
+        </div>
+        <div class="warn">
+          <span>⚠</span>
+          <span><strong>Acción requerida:</strong> Regenerar la clave SMTP (fue compartida en el chat). Brevo &rarr; SMTP y API &rarr; Claves SMTP. Después actualizar en Render &rarr; Environment.</span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /grid -->
+
+  <!-- Repositorio -->
+  <div class="section-label">Control de versiones</div>
+  <div class="grid" style="grid-template-columns: repeat(auto-fill, minmax(460px, 1fr));">
+    <div class="card">
+      <div class="card-stripe" style="background:#24292f"></div>
+      <div class="card-head">
+        <div class="svc-badge" style="background:#24292f">GH</div>
+        <div>
+          <div class="svc-name">GitHub</div>
+          <div class="svc-role">Control de versiones &middot; Código fuente completo (Back + Front)</div>
+        </div>
+        <div class="plan-pill">Free</div>
+      </div>
+      <div class="card-body">
+        <div class="field">
+          <span class="field-lbl">Repositorio</span>
+          <span class="field-val"><a href="https://github.com/Roberto-HV/AppointVa">github.com/Roberto-HV/AppointVa</a></span>
+        </div>
+        <div class="field">
+          <span class="field-lbl">Estructura</span>
+          <div class="tags">
+            <span class="tag">Back/ → API ASP.NET Core</span>
+            <span class="tag">Front/ → React + Vite</span>
+          </div>
+        </div>
+        <div class="field">
+          <span class="field-lbl">Deploy automático al hacer push a main</span>
+          <div class="tags">
+            <span class="tag">Vercel (Frontend)</span>
+            <span class="tag">Render (Manual Deploy)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<footer>
+  AppointVa &mdash; Documento de infraestructura &middot; Julio 2026 &middot; Uso interno
+</footer>
+
+</body>
+</html>

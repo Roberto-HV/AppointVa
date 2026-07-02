@@ -51,5 +51,6 @@ namespace AppointVaAPI.Models
         [Required]
         public DateTime FechaActualizacion { get; set; }
         public DateTime? FechaEliminacion { get; set; }
+        public DateTime? FechaVencimiento { get; set; }
     }
 }

@@ -123,8 +123,8 @@
   <p style="color:#9ca3af;margin-top:16px;max-width:500px;">
     Sistema de reservas online para negocios de servicios — Backend .NET 10 + PostgreSQL, Frontend React + Vite
   </p>
-  <div class="badge">Versión de producción — Junio 2026</div>
-  <div class="date">Actualizado el 19 de junio de 2026 — v4.1</div>
+  <div class="badge">Versión de producción — Julio 2026</div>
+  <div class="date">Actualizado el 2 de julio de 2026 — v4.2</div>
 </div>
 
 <!-- ══════════════════ SECCIÓN 1: URLs ══════════════════ -->
@@ -190,11 +190,6 @@
     </div>
     <div class="url-item">
       <span class="url-badge">GET</span>
-      <span class="url-path">http://localhost:5173/dashboard/lista-espera</span>
-      <span class="url-desc">✨ v3.0 — Lista de espera — clientes pendientes de asignación de horario</span>
-    </div>
-    <div class="url-item">
-      <span class="url-badge">GET</span>
       <span class="url-path">http://localhost:5173/dashboard/intake</span>
       <span class="url-desc">✨ v3.0 — Formulario de admisión — preguntas configurables previas a la cita</span>
     </div>
@@ -207,6 +202,11 @@
       <span class="url-badge">GET</span>
       <span class="url-path">http://localhost:5173/admin</span>
       <span class="url-desc">Panel SuperAdmin — gestión de negocios</span>
+    </div>
+    <div class="url-item">
+      <span class="url-badge">GET</span>
+      <span class="url-path">http://localhost:5173/admin/audit</span>
+      <span class="url-desc">✨ v4.2 — Audit Log — historial de eventos de seguridad (solo SuperAdmin)</span>
     </div>
   </div>
 
@@ -364,6 +364,16 @@
       <span class="url-badge">GET</span>
       <span class="url-path">http://localhost:5048/api/publico/mis-citas?slug=&amp;email=&amp;telefono=&amp;pagina=1&amp;tamano=10</span>
       <span class="url-desc">✨ ACTUALIZADO — Paginación real con header X-Total-Count (máx 50 por página)</span>
+    </div>
+    <div class="url-item">
+      <span class="url-badge">GET</span>
+      <span class="url-path">http://localhost:5048/api/admin/audit?pagina=1&amp;tamano=50&amp;accion=&amp;usuarioId=</span>
+      <span class="url-desc">✨ v4.2 — Audit Log — solo SuperAdmin, paginado con filtros por acción y usuario</span>
+    </div>
+    <div class="url-item">
+      <span class="url-badge delete">DELETE</span>
+      <span class="url-path">http://localhost:5048/api/auth/cuenta</span>
+      <span class="url-desc">✨ v4.2 — Eliminar cuenta (anonimización LFPDPPP) — requiere contraseña en body</span>
     </div>
   </div>
 
@@ -1568,7 +1578,7 @@
     <div>
       <div class="change-title">Correo personalizado — notificaciones@appointva.com</div>
       <div class="change-desc">
-        Dominio <strong>appointva.com</strong> verificado en Resend con registros SPF, DKIM y DMARC configurados via Cloudflare. Todos los correos del sistema (confirmación, recordatorio, verificación, recuperación) se envían desde <code>notificaciones@appointva.com</code> en lugar de la dirección genérica de Resend.
+        Dominio <strong>appointva.com</strong> verificado con registros SPF, DKIM y DMARC configurados via Cloudflare. Todos los correos del sistema (confirmación, recordatorio, verificación, recuperación) se envían desde <code>notificaciones@appointva.com</code>. El proveedor fue <strong>Resend SDK</strong> en v4.0 y migrado a <strong>Brevo SMTP</strong> en v4.2.
       </div>
       <div class="change-files">
         <span class="file-chip">appsettings.Development.json (Email.Origen)</span>
@@ -1833,6 +1843,93 @@
 
 </div>
 
+<!-- ══════════════════ SECCIÓN 5e: CAMBIOS v4.2 ══════════════════ -->
+<div class="container page-break">
+  <h2>5e. Registro de Cambios — v4.2 (2 de julio de 2026)</h2>
+  <p style="color:#6b7280;margin-bottom:24px;">Sprint de seguridad: auditoría, bloqueo por intentos fallidos, eliminación de cuenta con anonimización, endurecimiento de contraseñas y migración a Brevo SMTP.</p>
+
+  <h3>v4.2 — Seguridad del sistema</h3>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#fee2e2;">🔒</div>
+    <div>
+      <div class="change-title">Bloqueo automático por intentos fallidos de login</div>
+      <div class="change-desc">
+        Configurado <strong>ASP.NET Identity lockout</strong> en <code>Program.cs</code>: 5 intentos fallidos bloquean la cuenta por 15 minutos. El endpoint <code>POST /api/auth/login</code> detecta el bloqueo activo y retorna <code>423 Locked</code> con mensaje legible que incluye el tiempo restante exacto.<br>
+        El <code>AuditService</code> registra cada intento fallido como acción <code>"LoginFallido"</code> con IP y email intentado.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">Program.cs (lockout config)</span>
+        <span class="file-chip">AutenticacionController.cs</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#dbeafe;">📋</div>
+    <div>
+      <div class="change-title">Audit Log — registro de eventos de seguridad</div>
+      <div class="change-desc">
+        Nueva tabla <code>AuditLogs</code> en PostgreSQL con campos: <code>UsuarioId</code> (nullable, FK con <code>SetNull</code>), <code>Accion</code>, <code>Entidad</code>, <code>EntidadId</code>, <code>Detalles</code>, <code>IpAddress</code>, <code>FechaEn</code>.<br>
+        <strong>Acciones registradas:</strong> Login, LoginFallido, Logout, CambiarPassword, EliminarCuenta, SubirFoto.<br>
+        <strong>IP real del cliente:</strong> se lee de la cabecera <code>X-Forwarded-For</code> (Render proxy) con fallback a <code>Connection.RemoteIpAddress</code>.<br>
+        <strong>Endpoint:</strong> <code>GET /api/admin/audit</code> (solo SuperAdmin) — paginado, filtrable por acción y usuarioId.<br>
+        <strong>Frontend:</strong> nueva página <code>AuditLogPage</code> en <code>/admin/audit</code> con filtros, tabla paginada y badges de color por tipo de acción. Enlace añadido en <code>AdminLayout</code> sidebar.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">Models/AuditLog.cs (NUEVO)</span>
+        <span class="file-chip">Services/AuditService.cs (NUEVO)</span>
+        <span class="file-chip">Services/IServices/IAuditService.cs (NUEVO)</span>
+        <span class="file-chip">Controllers/V1/AuditAdminController.cs (NUEVO)</span>
+        <span class="file-chip">Data/ApplicationDbContext.cs (DbSet + índices)</span>
+        <span class="file-chip">Migrations/AddAuditLog.cs (NUEVO)</span>
+        <span class="file-chip">Dtos/Admin/AuditLogDto.cs (NUEVO)</span>
+        <span class="file-chip">Program.cs (AddScoped IAuditService)</span>
+        <span class="file-chip">pages/admin/AuditLogPage.tsx (NUEVO)</span>
+        <span class="file-chip">layouts/AdminLayout.tsx (enlace Audit Log)</span>
+        <span class="file-chip">App.tsx (ruta /admin/audit)</span>
+        <span class="file-chip">api/admin.ts (obtenerAuditLogs + AuditLogDto)</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#fef2f2;">🗑️</div>
+    <div>
+      <div class="change-title">Eliminación de cuenta con anonimización (LFPDPPP)</div>
+      <div class="change-desc">
+        El usuario puede solicitar eliminar su cuenta desde <strong>Configuración → Zona de peligro</strong>. Requiere confirmar contraseña.<br>
+        <strong>Backend — <code>DELETE /api/auth/cuenta</code>:</strong><br>
+        • Si el propietario tiene un negocio activo, retorna <code>409</code> indicando que debe contactar soporte@appointva.com para cerrar primero.<br>
+        • De lo contrario: revoca todos los refresh tokens activos, anonimiza datos personales (<code>{guid}@eliminado.local</code>, nombre "Usuario Eliminado", foto null) y marca <code>Activo = false</code>. El historial de citas se preserva para integridad referencial.<br>
+        <strong>Frontend:</strong> sección "Zona de peligro" con borde rojo en tab Configuración, modal de confirmación con campo de contraseña. Al confirmar, cierra sesión y redirige a <code>/login</code>.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">AutenticacionController.cs (DELETE /auth/cuenta)</span>
+        <span class="file-chip">Dtos/Autenticacion/EliminarCuentaDto.cs (NUEVO)</span>
+        <span class="file-chip">pages/dashboard/PerfilPage.tsx (zona de peligro + modal)</span>
+        <span class="file-chip">api/auth.ts (eliminarCuenta)</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#f0fdf4;">✉️</div>
+    <div>
+      <div class="change-title">Migración de Resend SDK a Brevo SMTP</div>
+      <div class="change-desc">
+        El proveedor de correo fue cambiado de <strong>Resend SDK</strong> a <strong>Brevo SMTP</strong> (smtp-relay.brevo.com:587, STARTTLS) usando <code>MailKit / MimeKit</code>.<br>
+        Todos los correos del sistema (confirmación, recordatorio, verificación, recuperación, cancelación) siguen enviándose desde <code>notificaciones@appointva.com</code> sin cambios visibles para el usuario. El SPF/DKIM de appointva.com ya estaba configurado vía Cloudflare.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">Services/EmailService.cs (SMTP replace)</span>
+        <span class="file-chip">appsettings.json (Brevo SMTP config)</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
 <!-- ══════════════════ SECCIÓN 6: DATOS DEMO ══════════════════ -->
 <div class="container page-break">
   <h2>6. Datos Demo Precargados</h2>
@@ -1908,7 +2005,7 @@
     <tr><td>ORM provider</td><td>Npgsql.EntityFrameworkCore.PostgreSQL</td><td>—</td><td>—</td></tr>
     <tr><td>Autenticación</td><td>JWT Bearer + ASP.NET Identity</td><td>—</td><td>TOTP 2FA nativo</td></tr>
     <tr><td>Jobs</td><td>Hangfire + Hangfire.PostgreSql</td><td>—</td><td>Recordatorios 24h</td></tr>
-    <tr><td>Email</td><td>Resend SDK</td><td>0.5.1</td><td>✨ v4.0 — notificaciones@appointva.com</td></tr>
+    <tr><td>Email</td><td>Brevo SMTP (MailKit)</td><td>—</td><td>✨ v4.2 — notificaciones@appointva.com (reemplaza Resend)</td></tr>
     <tr><td>Imágenes</td><td>Cloudinary</td><td>1.29.1</td><td>Cloud: dssyaimvj</td></tr>
     <tr><td>Rate Limiting</td><td>ASP.NET Core RateLimiter</td><td>nativo .NET 10</td><td>Auth + endpoints públicos</td></tr>
     <tr><td>Output Cache</td><td>ASP.NET Core OutputCache</td><td>nativo .NET 10</td><td>GET /publico/negocios/:slug, 5 min TTL</td></tr>
@@ -1935,7 +2032,7 @@
     <tr><td><strong>Backend API</strong></td><td>Render (Free)</td><td>appointva.onrender.com · Virginia</td><td><span class="tag tag-new">✅ Activo</span></td></tr>
     <tr><td><strong>Base de datos</strong></td><td>Neon PostgreSQL</td><td>us-east-1 · Free tier</td><td><span class="tag tag-new">✅ Activo</span></td></tr>
     <tr><td><strong>Imágenes</strong></td><td>Cloudinary</td><td>Cloud: dssyaimvj</td><td><span class="tag tag-new">✅ Activo</span></td></tr>
-    <tr><td><strong>Emails</strong></td><td>Resend</td><td>notificaciones@appointva.com</td><td><span class="tag tag-new">✅ Activo</span></td></tr>
+    <tr><td><strong>Emails</strong></td><td>Brevo SMTP</td><td>notificaciones@appointva.com</td><td><span class="tag tag-new">✅ Activo</span></td></tr>
     <tr><td><strong>Keep-alive</strong></td><td>cron-job.org</td><td>GET /health cada 15 min</td><td><span class="tag tag-new">✅ Activo</span></td></tr>
   </table>
 
@@ -1948,7 +2045,8 @@
       CLOUDINARY_CLOUD_NAME=dssyaimvj<br>
       CLOUDINARY_API_KEY=...<br>
       CLOUDINARY_API_SECRET=...<br>
-      RESEND_API_KEY=re_...<br>
+      BREVO_SMTP_USER=...<br>
+      BREVO_SMTP_PASS=...<br>
       FRONTEND_URL=https://appointva.com<br>
       BACKEND_URL=https://api.appointva.com<br>
       CORS_ORIGENES=https://appointva.com
@@ -1991,10 +2089,13 @@
     <tr><td>Observabilidad</td><td>Serilog rolling daily + nivel Warning. Health check en /health</td><td><span class="tag tag-new">✅ v2.2</span></td></tr>
     <tr><td>Output cache</td><td>[OutputCache(Duration=300)] en GET /publico/negocios/:slug</td><td><span class="tag tag-new">✅ v2.2</span></td></tr>
     <tr><td>Política cancelación</td><td>HorasCancelacion en Negocio, validación en CancelarCita, UI en PerfilPage</td><td><span class="tag tag-new">✅ v2.2</span></td></tr>
-    <tr><td>Emails</td><td>Confirmación, recordatorio (cliente + empleado), verificación, recuperación, cancelación — desde notificaciones@appointva.com</td><td><span class="tag tag-new">✅ v4.0</span></td></tr>
+    <tr><td>Emails</td><td>Confirmación, recordatorio (cliente + empleado), verificación, recuperación, cancelación — desde notificaciones@appointva.com (Brevo SMTP)</td><td><span class="tag tag-new">✅ v4.2</span></td></tr>
     <tr><td>Imágenes</td><td>Cloudinary integrado, fallback local en dev</td><td><span class="tag tag-new">✅ v4.0</span></td></tr>
     <tr><td>Dominio</td><td>appointva.com en Cloudflare, Vercel custom domain, correo propio</td><td><span class="tag tag-new">✅ v4.0</span></td></tr>
     <tr><td>Keep-alive</td><td>cron-job.org ping /health cada 15 min — sin cold starts en Render</td><td><span class="tag tag-new">✅ v4.0</span></td></tr>
+    <tr><td>Bloqueo de cuentas</td><td>Identity lockout: 5 intentos → 15 min bloqueado, retorna 423 con tiempo restante</td><td><span class="tag tag-new">✅ v4.2</span></td></tr>
+    <tr><td>Audit Log</td><td>Tabla AuditLogs: Login, LoginFallido, Logout, CambiarPassword, EliminarCuenta — visible para SuperAdmin</td><td><span class="tag tag-new">✅ v4.2</span></td></tr>
+    <tr><td>Eliminación de cuenta</td><td>Anonimización LFPDPPP + revocación de refresh tokens + preservación de historial</td><td><span class="tag tag-new">✅ v4.2</span></td></tr>
   </table>
 
   <h3>Mejoras recomendadas para escalar a 10-20 clientes en producción</h3>
@@ -2025,7 +2126,7 @@
     <div>
       <div class="change-title">3. Retry en jobs de Hangfire si el email falla</div>
       <div class="change-desc">
-        Hangfire ya tiene reintentos automáticos (10 por defecto con backoff exponencial). Pero si el proveedor Resend está caído en el momento del recordatorio, el job falla y ya no re-intenta cuando Resend vuelve.<br>
+        Hangfire ya tiene reintentos automáticos (10 por defecto con backoff exponencial). Pero si el proveedor de correo (Brevo) está caído en el momento del recordatorio, el job falla y ya no re-intenta cuando el servicio vuelve.<br>
         Solución: configurar <code>AutomaticRetryAttribute</code> con más reintentos y alertas para jobs que fallen definitivamente. También considerar <code>DisableConcurrentExecution</code> en el job de recordatorios para evitar duplicados.
       </div>
     </div>
@@ -2075,7 +2176,7 @@
   <h3>Resumen de estado — pendientes para producción</h3>
   <table>
     <tr><th>#</th><th>Mejora</th><th>Impacto</th><th>Estado</th></tr>
-    <tr><td>1</td><td>Configurar Resend + Cloudinary (credenciales reales)</td><td style="color:#166534;font-weight:700;">Bloqueante para producción</td><td><span class="tag tag-new">✅ v4.0 — Producción</span></td></tr>
+    <tr><td>1</td><td>Configurar Brevo + Cloudinary (credenciales reales)</td><td style="color:#166534;font-weight:700;">Bloqueante para producción</td><td><span class="tag tag-new">✅ v4.0/v4.2 — Producción</span></td></tr>
     <tr><td>2</td><td>Health check endpoint /health</td><td style="color:#1e40af;font-weight:700;">Alto</td><td><span class="tag tag-new">✅ v2.2</span></td></tr>
     <tr><td>3</td><td>Serilog logging estructurado</td><td style="color:#1e40af;font-weight:700;">Alto</td><td><span class="tag tag-new">✅ v2.2</span></td></tr>
     <tr><td>4</td><td>Output cache en /publico/negocios/:slug</td><td style="color:#1e40af;font-weight:700;">Alto</td><td><span class="tag tag-new">✅ v2.2</span></td></tr>
