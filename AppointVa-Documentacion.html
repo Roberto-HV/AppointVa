@@ -111,6 +111,19 @@
     h2 { margin-top: 32px; }
     .user-grid { grid-template-columns: repeat(2, 1fr); }
   }
+
+  /* ── Responsive móvil ─────────────────────────────────────── */
+  @media (max-width: 640px) {
+    table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .cover { padding: 40px 20px; min-height: auto; }
+    .cover h1 { font-size: 28px; }
+    .container { padding: 28px 16px; }
+    .user-grid { grid-template-columns: 1fr; }
+    .mock-sidebar { display: none; }
+    .mock-layout { height: auto; min-height: 200px; }
+    .mock-content { overflow: visible; padding: 14px; }
+    .url-item { flex-wrap: wrap; gap: 8px; }
+  }
 </style>
 </head>
 <body>

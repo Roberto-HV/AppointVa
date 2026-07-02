@@ -282,6 +282,21 @@
       .feature-check { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       .section { page-break-inside: avoid; }
     }
+
+    /* ── Responsive móvil ─────────────────────────────────── */
+    @media (max-width: 640px) {
+      .hero { padding: 32px 20px 28px; }
+      .hero::before { display: none; }
+      .hero h1 { font-size: 26px; letter-spacing: -0.5px; }
+      .hero p { font-size: 14px; }
+      .page { padding: 0 16px; }
+      .grid-2 { grid-template-columns: 1fr; }
+      .grid-3 { grid-template-columns: 1fr; }
+      .flow { flex-direction: column; }
+      .flow-step { border-right: none; border-bottom: 1px solid #f3f4f6; }
+      .flow-step:last-child { border-bottom: none; }
+      .scope-box { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
