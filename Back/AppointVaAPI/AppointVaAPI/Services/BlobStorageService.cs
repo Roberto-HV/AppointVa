@@ -15,6 +15,15 @@ namespace AppointVaAPI.Services
         private static readonly string[] _tiposPermitidos =
             ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
+        // Magic bytes por tipo MIME para validar el contenido real del archivo
+        private static readonly Dictionary<string, byte[]> _firmasMime = new()
+        {
+            ["image/jpeg"] = [0xFF, 0xD8, 0xFF],
+            ["image/png"]  = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A],
+            ["image/webp"] = [0x52, 0x49, 0x46, 0x46], // "RIFF" + verificación "WEBP" en offset 8
+            ["image/gif"]  = [0x47, 0x49, 0x46, 0x38], // "GIF8"
+        };
+
         private const long MaxBytes = 5 * 1024 * 1024; // 5 MB
 
         public BlobStorageService(
@@ -63,9 +72,37 @@ namespace AppointVaAPI.Services
             if (!_tiposPermitidos.Contains(tipo))
                 throw new ArgumentException("Formato no permitido. Usa JPG, PNG, WEBP o GIF.");
 
+            if (!ValidarFirmaArchivo(archivo, tipo))
+                throw new ArgumentException("El contenido del archivo no corresponde al tipo declarado.");
+
             return _cloudinaryConfigurado
                 ? await SubirACloudinaryAsync(archivo, carpeta)
                 : await GuardarLocalAsync(archivo, carpeta);
+        }
+
+        private static bool ValidarFirmaArchivo(IFormFile archivo, string tipoMime)
+        {
+            if (!_firmasMime.TryGetValue(tipoMime, out var firma)) return false;
+
+            var bufLen = tipoMime == "image/webp" ? 12 : firma.Length;
+            Span<byte> buffer = stackalloc byte[bufLen];
+
+            using var stream = archivo.OpenReadStream();
+            var leidos = stream.Read(buffer);
+            if (leidos < bufLen) return false;
+
+            for (int i = 0; i < firma.Length; i++)
+                if (buffer[i] != firma[i]) return false;
+
+            if (tipoMime == "image/webp")
+            {
+                // bytes 8-11 deben ser "WEBP"
+                ReadOnlySpan<byte> webp = [0x57, 0x45, 0x42, 0x50];
+                for (int i = 0; i < 4; i++)
+                    if (buffer[8 + i] != webp[i]) return false;
+            }
+
+            return true;
         }
 
         private async Task<string> SubirACloudinaryAsync(IFormFile archivo, string carpeta)

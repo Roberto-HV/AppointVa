@@ -42,8 +42,16 @@ namespace AppointVaAPI.Controllers.V1
             if (usuario is null || !usuario.Activo)
                 return Unauthorized(new { mensaje = "Credenciales inválidas" });
 
+            if (await _userManager.IsLockedOutAsync(usuario))
+                return StatusCode(429, new { mensaje = "Cuenta bloqueada temporalmente. Intenta en 15 minutos." });
+
             if (!await _userManager.CheckPasswordAsync(usuario, dto.Contrasena))
+            {
+                await _userManager.AccessFailedAsync(usuario);
                 return Unauthorized(new { mensaje = "Credenciales inválidas" });
+            }
+
+            await _userManager.ResetAccessFailedCountAsync(usuario);
 
             if (!usuario.EmailConfirmed)
                 return StatusCode(403, new { mensaje = "Debes verificar tu correo antes de iniciar sesión.", codigoError = "EMAIL_NO_VERIFICADO" });
@@ -166,13 +174,6 @@ namespace AppointVaAPI.Controllers.V1
 
             if (archivo is null || archivo.Length == 0)
                 return BadRequest(new { mensaje = "Archivo requerido" });
-
-            var ext = Path.GetExtension(archivo.FileName).ToLowerInvariant();
-            if (!new[] { ".jpg", ".jpeg", ".png", ".webp" }.Contains(ext))
-                return BadRequest(new { mensaje = "Solo se permiten imágenes JPG, PNG o WEBP" });
-
-            if (archivo.Length > 5 * 1024 * 1024)
-                return BadRequest(new { mensaje = "El archivo no puede superar 5 MB" });
 
             var url = await _storage.SubirImagenAsync(archivo, "usuarios/fotos");
             usuario.FotoUrl = url;

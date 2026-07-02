@@ -134,8 +134,15 @@ namespace AppointVaAPI.Services
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Error al enviar email a {Destino}: {Mensaje}", destino, ex.Message);
+                _logger.LogWarning(ex, "Error al enviar email a {Destino}: {Mensaje}", MascarEmail(destino), ex.Message);
             }
+        }
+
+        private static string MascarEmail(string email)
+        {
+            var i = email.IndexOf('@');
+            if (i <= 1) return "***";
+            return $"{email[0]}***{email[i..]}";
         }
 
         private bool EstaHabilitado()
