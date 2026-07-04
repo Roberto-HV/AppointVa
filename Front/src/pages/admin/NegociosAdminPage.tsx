@@ -322,7 +322,6 @@ function TarjetaNegocio({
   suscripcion,
   onActivar,
   onDesactivar,
-  onEliminar,
   onCrearPropietario,
   onColores,
   onSuscripcion,
@@ -331,7 +330,6 @@ function TarjetaNegocio({
   suscripcion: SuscripcionResumenDto | undefined;
   onActivar: () => void;
   onDesactivar: () => void;
-  onEliminar: () => void;
   onCrearPropietario: () => void;
   onColores: () => void;
   onSuscripcion: () => void;
@@ -431,12 +429,6 @@ function TarjetaNegocio({
         >
           Ver booking
         </a>
-        <button
-          onClick={onEliminar}
-          className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 transition ml-auto"
-        >
-          Eliminar
-        </button>
       </div>
     </div>
   );
@@ -451,7 +443,6 @@ export default function NegociosAdminPage() {
   const [modalColores, setModalColores] = useState(false);
   const [modalSuscripcion, setModalSuscripcion] = useState(false);
   const [negocioSel, setNegocioSel] = useState<NegocioMetricasDto | null>(null);
-  const [negocioEliminar, setNegocioEliminar] = useState<NegocioMetricasDto | null>(null);
   const [errorPropietario, setErrorPropietario] = useState("");
   const [mostrarPasswordProp, setMostrarPasswordProp] = useState(false);
   const [busqueda, setBusqueda] = useState("");
@@ -508,15 +499,6 @@ export default function NegociosAdminPage() {
   const { mutate: desactivar } = useMutation({
     mutationFn: (id: string) => adminApi.desactivar(id),
     onSuccess: invalidar,
-  });
-
-  const { mutate: eliminar, isPending: eliminando } = useMutation({
-    mutationFn: (id: string) => adminApi.eliminar(id),
-    onSuccess: () => {
-      invalidar();
-      setNegocioEliminar(null);
-      toast("Negocio eliminado");
-    },
   });
 
   const { mutate: actualizarColores, isPending: guardandoColores } = useMutation({
@@ -618,7 +600,6 @@ export default function NegociosAdminPage() {
               suscripcion={suscripcionMap[neg.id]}
               onActivar={() => activar(neg.id)}
               onDesactivar={() => desactivar(neg.id)}
-              onEliminar={() => setNegocioEliminar(neg)}
               onCrearPropietario={() => abrirPropietario(neg)}
               onColores={() => abrirColores(neg)}
               onSuscripcion={() => abrirSuscripcion(neg)}
@@ -860,30 +841,6 @@ export default function NegociosAdminPage() {
         )}
       </Modal>
 
-      {/* Modal: confirmar eliminación */}
-      <Modal abierto={!!negocioEliminar} onCerrar={() => setNegocioEliminar(null)} titulo="Eliminar negocio" ancho="sm">
-        {negocioEliminar && (
-          <div>
-            <p className="text-sm text-gray-600 mb-1">
-              ¿Seguro que deseas eliminar{" "}
-              <span className="font-semibold text-gray-900">{negocioEliminar.nombre}</span>?
-            </p>
-            <p className="text-xs text-gray-400 mb-6">
-              El negocio quedará marcado como eliminado. Esta acción no se puede deshacer.
-            </p>
-            <div className="flex gap-3">
-              <button onClick={() => setNegocioEliminar(null)}
-                className="flex-1 py-2.5 rounded-xl border-2 border-gray-200 text-sm font-medium text-gray-600 hover:border-gray-300 transition">
-                Cancelar
-              </button>
-              <button onClick={() => eliminar(negocioEliminar.id)} disabled={eliminando}
-                className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 disabled:opacity-60 text-white text-sm font-semibold transition">
-                {eliminando ? "Eliminando..." : "Sí, eliminar"}
-              </button>
-            </div>
-          </div>
-        )}
-      </Modal>
     </div>
   );
 }
