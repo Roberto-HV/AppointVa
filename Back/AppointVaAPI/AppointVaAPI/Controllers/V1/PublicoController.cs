@@ -363,8 +363,8 @@ namespace AppointVaAPI.Controllers.V1
                 _ = Task.Run(() => _notificacion.EnviarConfirmacionCitaAsync(cita, dto.EmailCliente, cliente.NombreCompleto, urlCita, icalUrl, googleCalUrl, urlCancelacion));
             }
 
-            // Notificación push al empleado asignado
-            _ = Task.Run(() => _push.EnviarNuevaCitaEmpleadoAsync(cita));
+            // Notificación push al empleado asignado (Hangfire crea su propio scope/DbContext)
+            _jobClient.Enqueue<IPushService>(s => s.EnviarNuevaCitaEmpleadoAsync(cita.Id));
 
             // Agendar recordatorio configurable antes de la cita si el cliente tiene correo
             if (!string.IsNullOrWhiteSpace(dto.EmailCliente))

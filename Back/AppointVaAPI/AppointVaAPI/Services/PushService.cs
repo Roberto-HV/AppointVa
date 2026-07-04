@@ -53,36 +53,34 @@ namespace AppointVaAPI.Services
             }
         }
 
-        public async Task EnviarNuevaCitaEmpleadoAsync(Cita cita)
+        public async Task EnviarNuevaCitaEmpleadoAsync(Guid citaId)
         {
-            if (cita.EmpleadoId == Guid.Empty) return;
+            // Cargar cita completa — este método se ejecuta en un job de Hangfire (scope propio)
+            var cita = await _db.Citas
+                .Include(c => c.Cliente)
+                .Include(c => c.Servicio)
+                .Include(c => c.Negocio)
+                .Include(c => c.Empleado)
+                .FirstOrDefaultAsync(c => c.Id == citaId);
+
+            if (cita is null || cita.EmpleadoId == Guid.Empty) return;
 
             var empleado = await _db.Empleados
                 .FirstOrDefaultAsync(e => e.Id == cita.EmpleadoId);
 
             if (empleado?.UsuarioId is null) return;
 
-            var usuarioId = empleado.UsuarioId.Value;
-
             var suscripcion = await _db.PushSuscripciones
-                .FirstOrDefaultAsync(s => s.UsuarioId == usuarioId);
+                .FirstOrDefaultAsync(s => s.UsuarioId == empleado.UsuarioId.Value);
 
             if (suscripcion is null) return;
 
-            // Recargar con includes para tener todos los datos del payload
-            var citaCompleta = await _db.Citas
-                .Include(c => c.Cliente)
-                .Include(c => c.Servicio)
-                .Include(c => c.Negocio)
-                .Include(c => c.Empleado)
-                .FirstOrDefaultAsync(c => c.Id == cita.Id) ?? cita;
-
             var backendUrl = _config["BackendUrl"] ?? string.Empty;
             var icalUrl = string.IsNullOrWhiteSpace(backendUrl) ? null
-                : $"{backendUrl}/api/publico/citas/{citaCompleta.CodigoConfirmacion}/ical";
-            var googleCalUrl = BuildGoogleCalendarUrl(citaCompleta);
+                : $"{backendUrl}/api/publico/citas/{cita.CodigoConfirmacion}/ical";
+            var googleCalUrl = BuildGoogleCalendarUrl(cita);
 
-            await EnviarAsync(suscripcion, BuildPayloadNuevaCita(citaCompleta, icalUrl, googleCalUrl));
+            await EnviarAsync(suscripcion, BuildPayloadNuevaCita(cita, icalUrl, googleCalUrl));
         }
 
         private async Task EnviarAsync(PushSuscripcion suscripcion, string payload)
