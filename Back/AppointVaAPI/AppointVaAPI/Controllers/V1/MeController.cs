@@ -8,7 +8,7 @@ namespace AppointVaAPI.Controllers.V1
 {
     [ApiController]
     [Route("api/me")]
-    [Authorize(Roles = $"{Roles.Propietario},{Roles.Empleado},{Roles.SuperAdmin}")]
+    [Authorize(Roles = $"{Roles.Propietario},{Roles.Empleado}")]
     public class MeController : ControllerBase
     {
         private readonly IPushService _push;

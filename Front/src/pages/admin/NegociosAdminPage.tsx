@@ -174,7 +174,12 @@ function ModalSuscripcion({
       setNotas("");
       toast("Pago registrado correctamente");
     },
-    onError: () => toast("No se pudo registrar el pago.", "error"),
+    onError: (err: unknown) => {
+      const msg = (err as { response?: { data?: { mensaje?: string; title?: string } } })?.response?.data?.mensaje
+        ?? (err as { response?: { data?: { title?: string } } })?.response?.data?.title
+        ?? "No se pudo registrar el pago.";
+      toast(msg, "error");
+    },
   });
 
   const handleMesesChange = (val: number) => {
