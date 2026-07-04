@@ -48,13 +48,17 @@ namespace AppointVaAPI.Controllers.V1
                 .Select(g => new { NegocioId = g.Key, Total = g.Count() })
                 .ToListAsync();
 
-            var ultimosPagos = await _db.PagosSuscripcion
+            var todosPagos = await _db.PagosSuscripcion
                 .Include(p => p.RegistradoPor)
                 .Include(p => p.Negocio)
                 .Where(p => negocioIds.Contains(p.NegocioId))
-                .GroupBy(p => p.NegocioId)
-                .Select(g => g.OrderByDescending(p => p.FechaPago).First())
+                .OrderByDescending(p => p.FechaPago)
                 .ToListAsync();
+
+            var ultimosPagos = todosPagos
+                .GroupBy(p => p.NegocioId)
+                .Select(g => g.First())
+                .ToList();
 
             var resultado = negocios.Select(n =>
             {
@@ -145,13 +149,14 @@ namespace AppointVaAPI.Controllers.V1
             var negocio = await _db.Negocios.FindAsync(id);
             if (negocio == null) return NotFound();
 
-            var pagos = await _db.PagosSuscripcion
+            var pagos = (await _db.PagosSuscripcion
                 .Include(p => p.RegistradoPor)
                 .Include(p => p.Negocio)
                 .Where(p => p.NegocioId == id)
                 .OrderByDescending(p => p.FechaPago)
-                .Select(p => MapPago(p))
-                .ToListAsync();
+                .ToListAsync())
+                .Select(MapPago)
+                .ToList();
 
             return Ok(pagos);
         }
