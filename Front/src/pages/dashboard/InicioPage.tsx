@@ -142,6 +142,8 @@ function VistaPropietario({ nombre }: { nombre: string }) {
 
   return (
     <div className="p-4 sm:p-8">
+      <NotificacionBanner />
+
       {/* Encabezado — Apple Store style */}
       <div className="mb-6">
         <h1 className="text-3xl font-black text-slate-900 leading-none mb-1">Hola, {nombre}</h1>

@@ -1,3 +1,4 @@
+using AppointVaAPI.Constants;
 using AppointVaAPI.Data;
 using AppointVaAPI.Models;
 using AppointVaAPI.Services.IServices;
@@ -63,24 +64,53 @@ namespace AppointVaAPI.Services
                 .Include(c => c.Empleado)
                 .FirstOrDefaultAsync(c => c.Id == citaId);
 
-            if (cita is null || cita.EmpleadoId == Guid.Empty) return;
-
-            var empleado = await _db.Empleados
-                .FirstOrDefaultAsync(e => e.Id == cita.EmpleadoId);
-
-            if (empleado?.UsuarioId is null) return;
-
-            var suscripcion = await _db.PushSuscripciones
-                .FirstOrDefaultAsync(s => s.UsuarioId == empleado.UsuarioId.Value);
-
-            if (suscripcion is null) return;
+            if (cita is null) return;
 
             var backendUrl = _config["BackendUrl"] ?? string.Empty;
             var icalUrl = string.IsNullOrWhiteSpace(backendUrl) ? null
                 : $"{backendUrl}/api/publico/citas/{cita.CodigoConfirmacion}/ical";
             var googleCalUrl = BuildGoogleCalendarUrl(cita);
+            var payload = BuildPayloadNuevaCita(cita, icalUrl, googleCalUrl);
 
-            await EnviarAsync(suscripcion, BuildPayloadNuevaCita(cita, icalUrl, googleCalUrl));
+            // Notificar al empleado asignado (si aplica)
+            if (cita.EmpleadoId != Guid.Empty)
+            {
+                var empleado = await _db.Empleados
+                    .FirstOrDefaultAsync(e => e.Id == cita.EmpleadoId);
+
+                if (empleado?.UsuarioId is not null)
+                {
+                    var subEmpleado = await _db.PushSuscripciones
+                        .FirstOrDefaultAsync(s => s.UsuarioId == empleado.UsuarioId.Value);
+                    if (subEmpleado is not null)
+                        await EnviarAsync(subEmpleado, payload);
+                }
+            }
+
+            // Notificar al propietario del negocio
+            var roleId = await _db.Roles
+                .Where(r => r.Name == Constants.Roles.Propietario)
+                .Select(r => r.Id)
+                .FirstOrDefaultAsync();
+
+            if (roleId == Guid.Empty) return;
+
+            var propietarioIds = await _db.UserRoles
+                .Where(ur => ur.RoleId == roleId)
+                .Select(ur => ur.UserId)
+                .ToListAsync();
+
+            var propietarios = await _db.Users
+                .Where(u => u.NegocioId == cita.NegocioId && propietarioIds.Contains(u.Id) && u.Activo)
+                .ToListAsync();
+
+            foreach (var propietario in propietarios)
+            {
+                var subProp = await _db.PushSuscripciones
+                    .FirstOrDefaultAsync(s => s.UsuarioId == propietario.Id);
+                if (subProp is not null)
+                    await EnviarAsync(subProp, payload);
+            }
         }
 
         private async Task EnviarAsync(PushSuscripcion suscripcion, string payload)
