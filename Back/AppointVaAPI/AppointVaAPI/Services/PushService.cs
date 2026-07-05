@@ -121,27 +121,49 @@ namespace AppointVaAPI.Services
             if (suscripcion is null)
                 return "sin_suscripcion";
 
+            // Validar campos de la suscripción
+            if (string.IsNullOrWhiteSpace(suscripcion.P256dh))
+                throw new InvalidOperationException($"DIAGNÓSTICO: P256dh en BD es nulo/vacío (len={suscripcion.P256dh?.Length ?? -1})");
+            if (string.IsNullOrWhiteSpace(suscripcion.Auth))
+                throw new InvalidOperationException($"DIAGNÓSTICO: Auth en BD es nulo/vacío (len={suscripcion.Auth?.Length ?? -1})");
+            if (string.IsNullOrWhiteSpace(suscripcion.Endpoint))
+                throw new InvalidOperationException("DIAGNÓSTICO: Endpoint en BD es nulo/vacío");
+
             var publicKey = _config["Push:VapidPublicKey"];
             var privateKey = _config["Push:VapidPrivateKey"];
             var subject = _config["Push:VapidSubject"] ?? "mailto:hola@appointva.com";
 
-            if (string.IsNullOrWhiteSpace(publicKey) || string.IsNullOrWhiteSpace(privateKey))
-                throw new InvalidOperationException("VAPID keys no configuradas en el servidor (Push:VapidPublicKey / Push:VapidPrivateKey).");
+            if (string.IsNullOrWhiteSpace(publicKey))
+                throw new InvalidOperationException($"DIAGNÓSTICO: VAPID public key no configurada. Buscar: Push:VapidPublicKey / Push__VapidPublicKey");
+            if (string.IsNullOrWhiteSpace(privateKey))
+                throw new InvalidOperationException("DIAGNÓSTICO: VAPID private key no configurada. Buscar: Push:VapidPrivateKey / Push__VapidPrivateKey");
 
             var payload = System.Text.Json.JsonSerializer.Serialize(new
             {
-                title = "AppointVa · Prueba ✅",
-                body = "Las notificaciones push funcionan correctamente.",
+                title = "AppointVa · Prueba",
+                body = "Las notificaciones push funcionan.",
                 url = "/dashboard/perfil",
                 icalUrl = (string?)null,
                 googleCalUrl = (string?)null
             });
 
-            // No usamos EnviarAsync para que los errores se propaguen y sean visibles
-            var sub = new PushSubscription(suscripcion.Endpoint, suscripcion.P256dh, suscripcion.Auth);
-            var vapid = new VapidDetails(subject, publicKey, privateKey);
-            var client = new WebPushClient();
-            await client.SendNotificationAsync(sub, payload, vapid);
+            PushSubscription sub;
+            try { sub = new PushSubscription(suscripcion.Endpoint, suscripcion.P256dh, suscripcion.Auth); }
+            catch (Exception ex) { throw new InvalidOperationException($"DIAGNÓSTICO: Error en PushSubscription (endpoint.len={suscripcion.Endpoint.Length} p256dh.len={suscripcion.P256dh.Length} auth.len={suscripcion.Auth.Length}): {ex.Message}", ex); }
+
+            VapidDetails vapid;
+            try { vapid = new VapidDetails(subject, publicKey, privateKey); }
+            catch (Exception ex) { throw new InvalidOperationException($"DIAGNÓSTICO: Error en VapidDetails (pubkey.len={publicKey.Length} privkey.len={privateKey.Length}): {ex.Message}", ex); }
+
+            try
+            {
+                var client = new WebPushClient();
+                await client.SendNotificationAsync(sub, payload, vapid);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"DIAGNÓSTICO: Error en SendNotificationAsync: {ex.Message} | Inner: {ex.InnerException?.Message}", ex);
+            }
 
             return "enviada";
         }
