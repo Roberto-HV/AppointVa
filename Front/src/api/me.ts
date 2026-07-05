@@ -13,7 +13,17 @@ export const meApi = {
   eliminarPushSuscripcion: async () => {
     await api.delete("/me/push-subscription");
   },
-  probarPushNotificacion: async () => {
-    await api.post("/me/push-test");
+  probarPushNotificacion: async (): Promise<{ mensaje: string }> => {
+    const res = await api.post<{ mensaje: string }>("/me/push-test");
+    return res.data;
+  },
+  obtenerPushStatus: async (): Promise<{
+    suscriptoEnBd: boolean;
+    endpoint: string | null;
+    vapidPublicKey: boolean;
+    vapidPrivateKey: boolean;
+  }> => {
+    const res = await api.get("/me/push-status");
+    return res.data;
   },
 };

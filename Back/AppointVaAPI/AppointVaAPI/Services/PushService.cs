@@ -121,6 +121,13 @@ namespace AppointVaAPI.Services
             if (suscripcion is null)
                 return "sin_suscripcion";
 
+            var publicKey = _config["Push:VapidPublicKey"];
+            var privateKey = _config["Push:VapidPrivateKey"];
+            var subject = _config["Push:VapidSubject"] ?? "mailto:hola@appointva.com";
+
+            if (string.IsNullOrWhiteSpace(publicKey) || string.IsNullOrWhiteSpace(privateKey))
+                throw new InvalidOperationException("VAPID keys no configuradas en el servidor (Push:VapidPublicKey / Push:VapidPrivateKey).");
+
             var payload = System.Text.Json.JsonSerializer.Serialize(new
             {
                 title = "AppointVa · Prueba ✅",
@@ -130,7 +137,12 @@ namespace AppointVaAPI.Services
                 googleCalUrl = (string?)null
             });
 
-            await EnviarAsync(suscripcion, payload);
+            // No usamos EnviarAsync para que los errores se propaguen y sean visibles
+            var sub = new PushSubscription(suscripcion.Endpoint, suscripcion.P256dh, suscripcion.Auth);
+            var vapid = new VapidDetails(subject, publicKey, privateKey);
+            var client = new WebPushClient();
+            await client.SendNotificationAsync(sub, payload, vapid);
+
             return "enviada";
         }
 

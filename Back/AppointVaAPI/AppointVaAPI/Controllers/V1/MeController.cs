@@ -2,6 +2,7 @@ using AppointVaAPI.Constants;
 using AppointVaAPI.Services.IServices;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace AppointVaAPI.Controllers.V1
@@ -41,17 +42,41 @@ namespace AppointVaAPI.Controllers.V1
             return Ok(new { mensaje = "Suscripción eliminada." });
         }
 
+        // GET api/me/push-status
+        [HttpGet("push-status")]
+        public async Task<IActionResult> EstadoPush([FromServices] AppointVaAPI.Data.ApplicationDbContext db,
+                                                    [FromServices] IConfiguration config)
+        {
+            var suscripcion = await db.PushSuscripciones
+                .FirstOrDefaultAsync(s => s.UsuarioId == UserId);
+
+            return Ok(new
+            {
+                suscriptoEnBd = suscripcion is not null,
+                endpoint = suscripcion?.Endpoint?.Substring(0, Math.Min(60, suscripcion.Endpoint.Length)),
+                vapidPublicKey = !string.IsNullOrWhiteSpace(config["Push:VapidPublicKey"]),
+                vapidPrivateKey = !string.IsNullOrWhiteSpace(config["Push:VapidPrivateKey"]),
+            });
+        }
+
         // POST api/me/push-test
         [HttpPost("push-test")]
         public async Task<IActionResult> ProbarPush()
         {
-            var resultado = await _push.EnviarPruebaAsync(UserId);
-            return resultado switch
+            try
             {
-                "sin_suscripcion" => NotFound(new { mensaje = "No hay suscripción push guardada para este usuario." }),
-                "enviada" => Ok(new { mensaje = "Notificación de prueba enviada." }),
-                _ => StatusCode(500, new { mensaje = "Error desconocido." })
-            };
+                var resultado = await _push.EnviarPruebaAsync(UserId);
+                return resultado switch
+                {
+                    "sin_suscripcion" => NotFound(new { mensaje = "No hay suscripción push guardada para este usuario. Activa las notificaciones primero." }),
+                    "enviada" => Ok(new { mensaje = "Notificación de prueba enviada." }),
+                    _ => StatusCode(500, new { mensaje = "Error desconocido." })
+                };
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { mensaje = $"Error al enviar push: {ex.Message}" });
+            }
         }
     }
 
