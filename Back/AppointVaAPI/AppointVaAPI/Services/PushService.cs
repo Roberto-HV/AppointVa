@@ -2,8 +2,9 @@ using AppointVaAPI.Constants;
 using AppointVaAPI.Data;
 using AppointVaAPI.Models;
 using AppointVaAPI.Services.IServices;
+using Lib.Net.Http.WebPush;
+using Lib.Net.Http.WebPush.Authentication;
 using Microsoft.EntityFrameworkCore;
-using WebPush;
 
 namespace AppointVaAPI.Services
 {
@@ -56,7 +57,6 @@ namespace AppointVaAPI.Services
 
         public async Task EnviarNuevaCitaEmpleadoAsync(Guid citaId)
         {
-            // Cargar cita completa — este método se ejecuta en un job de Hangfire (scope propio)
             var cita = await _db.Citas
                 .Include(c => c.Cliente)
                 .Include(c => c.Servicio)
@@ -72,12 +72,9 @@ namespace AppointVaAPI.Services
             var googleCalUrl = BuildGoogleCalendarUrl(cita);
             var payload = BuildPayloadNuevaCita(cita, icalUrl, googleCalUrl);
 
-            // Notificar al empleado asignado (si aplica)
             if (cita.EmpleadoId != Guid.Empty)
             {
-                var empleado = await _db.Empleados
-                    .FirstOrDefaultAsync(e => e.Id == cita.EmpleadoId);
-
+                var empleado = await _db.Empleados.FirstOrDefaultAsync(e => e.Id == cita.EmpleadoId);
                 if (empleado?.UsuarioId is not null)
                 {
                     var subEmpleado = await _db.PushSuscripciones
@@ -87,7 +84,6 @@ namespace AppointVaAPI.Services
                 }
             }
 
-            // Notificar al propietario del negocio
             var roleId = await _db.Roles
                 .Where(r => r.Name == Constants.Roles.Propietario)
                 .Select(r => r.Id)
@@ -121,22 +117,20 @@ namespace AppointVaAPI.Services
             if (suscripcion is null)
                 return "sin_suscripcion";
 
-            // Validar campos de la suscripción
             if (string.IsNullOrWhiteSpace(suscripcion.P256dh))
-                throw new InvalidOperationException($"DIAGNÓSTICO: P256dh en BD es nulo/vacío (len={suscripcion.P256dh?.Length ?? -1})");
+                throw new InvalidOperationException("DIAGNÓSTICO: P256dh en BD está vacío");
             if (string.IsNullOrWhiteSpace(suscripcion.Auth))
-                throw new InvalidOperationException($"DIAGNÓSTICO: Auth en BD es nulo/vacío (len={suscripcion.Auth?.Length ?? -1})");
+                throw new InvalidOperationException("DIAGNÓSTICO: Auth en BD está vacío");
             if (string.IsNullOrWhiteSpace(suscripcion.Endpoint))
-                throw new InvalidOperationException("DIAGNÓSTICO: Endpoint en BD es nulo/vacío");
+                throw new InvalidOperationException("DIAGNÓSTICO: Endpoint en BD está vacío");
 
             var publicKey = _config["Push:VapidPublicKey"];
             var privateKey = _config["Push:VapidPrivateKey"];
-            var subject = _config["Push:VapidSubject"] ?? "mailto:hola@appointva.com";
 
             if (string.IsNullOrWhiteSpace(publicKey))
-                throw new InvalidOperationException($"DIAGNÓSTICO: VAPID public key no configurada. Buscar: Push:VapidPublicKey / Push__VapidPublicKey");
+                throw new InvalidOperationException("DIAGNÓSTICO: VAPID public key no configurada (Push__VapidPublicKey en Render)");
             if (string.IsNullOrWhiteSpace(privateKey))
-                throw new InvalidOperationException("DIAGNÓSTICO: VAPID private key no configurada. Buscar: Push:VapidPrivateKey / Push__VapidPrivateKey");
+                throw new InvalidOperationException("DIAGNÓSTICO: VAPID private key no configurada (Push__VapidPrivateKey en Render)");
 
             var payload = System.Text.Json.JsonSerializer.Serialize(new
             {
@@ -147,24 +141,8 @@ namespace AppointVaAPI.Services
                 googleCalUrl = (string?)null
             });
 
-            PushSubscription sub;
-            try { sub = new PushSubscription(suscripcion.Endpoint, suscripcion.P256dh, suscripcion.Auth); }
-            catch (Exception ex) { throw new InvalidOperationException($"DIAGNÓSTICO: Error en PushSubscription (endpoint.len={suscripcion.Endpoint.Length} p256dh.len={suscripcion.P256dh.Length} auth.len={suscripcion.Auth.Length}): {ex.Message}", ex); }
-
-            VapidDetails vapid;
-            try { vapid = new VapidDetails(subject, publicKey, privateKey); }
-            catch (Exception ex) { throw new InvalidOperationException($"DIAGNÓSTICO: Error en VapidDetails (pubkey.len={publicKey.Length} privkey.len={privateKey.Length}): {ex.Message}", ex); }
-
-            try
-            {
-                var client = new WebPushClient();
-                await client.SendNotificationAsync(sub, payload, vapid);
-            }
-            catch (Exception ex)
-            {
-                throw new InvalidOperationException($"DIAGNÓSTICO: Error en SendNotificationAsync: {ex.Message} | Inner: {ex.InnerException?.Message}", ex);
-            }
-
+            // Propagamos errores para que el controller los muestre
+            await EnviarConVapidAsync(suscripcion, payload, publicKey, privateKey);
             return "enviada";
         }
 
@@ -172,7 +150,6 @@ namespace AppointVaAPI.Services
         {
             var publicKey = _config["Push:VapidPublicKey"];
             var privateKey = _config["Push:VapidPrivateKey"];
-            var subject = _config["Push:VapidSubject"] ?? "mailto:hola@appointva.com";
 
             if (string.IsNullOrWhiteSpace(publicKey) || string.IsNullOrWhiteSpace(privateKey))
             {
@@ -182,15 +159,12 @@ namespace AppointVaAPI.Services
 
             try
             {
-                var sub = new PushSubscription(suscripcion.Endpoint, suscripcion.P256dh, suscripcion.Auth);
-                var vapid = new VapidDetails(subject, publicKey, privateKey);
-                var client = new WebPushClient();
-                await client.SendNotificationAsync(sub, payload, vapid);
+                await EnviarConVapidAsync(suscripcion, payload, publicKey, privateKey);
             }
-            catch (WebPushException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Gone
-                                           || ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+            catch (PushServiceClientException ex) when (
+                ex.StatusCode == System.Net.HttpStatusCode.Gone ||
+                ex.StatusCode == System.Net.HttpStatusCode.NotFound)
             {
-                // Suscripción expirada — limpiar
                 _db.PushSuscripciones.Remove(suscripcion);
                 await _db.SaveChangesAsync();
             }
@@ -200,19 +174,43 @@ namespace AppointVaAPI.Services
             }
         }
 
+        private static async Task EnviarConVapidAsync(PushSuscripcion suscripcion, string payload,
+                                                      string publicKey, string privateKey)
+        {
+            var subject = "mailto:hola@appointva.com";
+
+            var authentication = new VapidAuthentication(publicKey, privateKey)
+            {
+                Subject = subject
+            };
+
+            var sub = new Lib.Net.Http.WebPush.PushSubscription();
+            sub.Endpoint = suscripcion.Endpoint;
+            sub.SetKey(PushEncryptionKeyName.P256DH, suscripcion.P256dh);
+            sub.SetKey(PushEncryptionKeyName.Auth, suscripcion.Auth);
+
+            var message = new PushMessage(payload)
+            {
+                TimeToLive = 86400
+            };
+
+            var client = new PushServiceClient();
+            await client.RequestPushMessageDeliveryAsync(sub, message, authentication);
+        }
+
         private static string BuildPayloadNuevaCita(Cita cita, string? icalUrl, string? googleCalUrl)
         {
-            var cliente = cita.Cliente?.NombreCompleto ?? "Un cliente";
+            var cliente  = cita.Cliente?.NombreCompleto ?? "Un cliente";
             var servicio = cita.Servicio?.Nombre ?? "Servicio";
-            var negocio = cita.Negocio?.Nombre ?? "AppointVa";
-            var hora = cita.InicioEn.ToString("HH:mm");
+            var negocio  = cita.Negocio?.Nombre ?? "AppointVa";
+            var hora  = cita.InicioEn.ToString("HH:mm");
             var fecha = cita.InicioEn.ToString("dd/MM/yyyy");
 
             return System.Text.Json.JsonSerializer.Serialize(new
             {
                 title = $"Nueva cita — {negocio}",
-                body = $"{cliente} · {servicio} · {fecha} {hora}",
-                url = "/citas",
+                body  = $"{cliente} · {servicio} · {fecha} {hora}",
+                url   = "/citas",
                 icalUrl,
                 googleCalUrl
             });
@@ -222,8 +220,8 @@ namespace AppointVaAPI.Services
         {
             var titulo = Uri.EscapeDataString(
                 $"{cita.Servicio?.Nombre ?? "Cita"} — {cita.Negocio?.Nombre ?? "AppointVa"}");
-            var inicio = cita.InicioEn.ToString("yyyyMMddTHHmmssZ");
-            var fin = cita.FinEn.ToString("yyyyMMddTHHmmssZ");
+            var inicio   = cita.InicioEn.ToString("yyyyMMddTHHmmssZ");
+            var fin      = cita.FinEn.ToString("yyyyMMddTHHmmssZ");
             var detalles = Uri.EscapeDataString(
                 $"Cliente: {cita.Cliente?.NombreCompleto ?? "—"}\nTel: {cita.Cliente?.Telefono ?? "—"}");
             return $"https://calendar.google.com/calendar/render?action=TEMPLATE&text={titulo}&dates={inicio}/{fin}&details={detalles}";
