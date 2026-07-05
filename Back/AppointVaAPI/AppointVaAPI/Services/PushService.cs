@@ -113,6 +113,27 @@ namespace AppointVaAPI.Services
             }
         }
 
+        public async Task<string> EnviarPruebaAsync(Guid usuarioId)
+        {
+            var suscripcion = await _db.PushSuscripciones
+                .FirstOrDefaultAsync(s => s.UsuarioId == usuarioId);
+
+            if (suscripcion is null)
+                return "sin_suscripcion";
+
+            var payload = System.Text.Json.JsonSerializer.Serialize(new
+            {
+                title = "AppointVa · Prueba ✅",
+                body = "Las notificaciones push funcionan correctamente.",
+                url = "/dashboard/perfil",
+                icalUrl = (string?)null,
+                googleCalUrl = (string?)null
+            });
+
+            await EnviarAsync(suscripcion, payload);
+            return "enviada";
+        }
+
         private async Task EnviarAsync(PushSuscripcion suscripcion, string payload)
         {
             var publicKey = _config["Push:VapidPublicKey"];

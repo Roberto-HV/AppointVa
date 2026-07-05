@@ -1,5 +1,6 @@
 import { Bell, BellOff, X } from "lucide-react";
 import { useState } from "react";
+import { meApi } from "../../api/me";
 import { usePushNotifications } from "../../hooks/usePushNotifications";
 
 interface Props {
@@ -57,6 +58,24 @@ export function NotificacionBanner({ visible = true }: Props) {
 export function NotificacionPerfilSection() {
   const { permiso, suscrito, soportado, cargando, activar, desactivar } =
     usePushNotifications();
+  const [probando, setProbando] = useState(false);
+  const [resultadoPrueba, setResultadoPrueba] = useState<string | null>(null);
+
+  const probar = async () => {
+    setProbando(true);
+    setResultadoPrueba(null);
+    try {
+      await meApi.probarPushNotificacion();
+      setResultadoPrueba("Notificación enviada — revisa tu dispositivo.");
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { mensaje?: string } } })?.response?.data
+          ?.mensaje ?? "Error al enviar la prueba.";
+      setResultadoPrueba(msg);
+    } finally {
+      setProbando(false);
+    }
+  };
 
   if (!soportado) {
     return (
@@ -107,18 +126,32 @@ export function NotificacionPerfilSection() {
             </p>
           </div>
         </div>
-        <button
-          onClick={suscrito ? desactivar : activar}
-          disabled={cargando}
-          className={`rounded-md px-4 py-1.5 text-xs font-semibold transition-colors disabled:opacity-60 ${
-            suscrito
-              ? "border border-gray-300 text-gray-700 hover:bg-gray-50"
-              : "bg-blue-600 text-white hover:bg-blue-700"
-          }`}
-        >
-          {cargando ? "…" : suscrito ? "Desactivar" : "Activar"}
-        </button>
+        <div className="flex items-center gap-2">
+          {suscrito && (
+            <button
+              onClick={probar}
+              disabled={probando}
+              className="rounded-md border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-600 hover:bg-gray-50 disabled:opacity-60 transition-colors"
+            >
+              {probando ? "Enviando…" : "Probar"}
+            </button>
+          )}
+          <button
+            onClick={suscrito ? desactivar : activar}
+            disabled={cargando}
+            className={`rounded-md px-4 py-1.5 text-xs font-semibold transition-colors disabled:opacity-60 ${
+              suscrito
+                ? "border border-gray-300 text-gray-700 hover:bg-gray-50"
+                : "bg-blue-600 text-white hover:bg-blue-700"
+            }`}
+          >
+            {cargando ? "…" : suscrito ? "Desactivar" : "Activar"}
+          </button>
+        </div>
       </div>
+      {resultadoPrueba && (
+        <p className="mt-2 text-xs text-gray-500">{resultadoPrueba}</p>
+      )}
     </div>
   );
 }

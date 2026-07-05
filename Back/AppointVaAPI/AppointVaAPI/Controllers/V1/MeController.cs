@@ -40,6 +40,19 @@ namespace AppointVaAPI.Controllers.V1
             await _push.EliminarSuscripcionAsync(UserId);
             return Ok(new { mensaje = "Suscripción eliminada." });
         }
+
+        // POST api/me/push-test
+        [HttpPost("push-test")]
+        public async Task<IActionResult> ProbarPush()
+        {
+            var resultado = await _push.EnviarPruebaAsync(UserId);
+            return resultado switch
+            {
+                "sin_suscripcion" => NotFound(new { mensaje = "No hay suscripción push guardada para este usuario." }),
+                "enviada" => Ok(new { mensaje = "Notificación de prueba enviada." }),
+                _ => StatusCode(500, new { mensaje = "Error desconocido." })
+            };
+        }
     }
 
     public record PushSuscripcionDto(string Endpoint, string P256dh, string Auth);

@@ -13,4 +13,7 @@ export const meApi = {
   eliminarPushSuscripcion: async () => {
     await api.delete("/me/push-subscription");
   },
+  probarPushNotificacion: async () => {
+    await api.post("/me/push-test");
+  },
 };
