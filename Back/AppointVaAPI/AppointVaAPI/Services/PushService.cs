@@ -2,9 +2,11 @@ using AppointVaAPI.Constants;
 using AppointVaAPI.Data;
 using AppointVaAPI.Models;
 using AppointVaAPI.Services.IServices;
-using Lib.Net.Http.WebPush;
-using Lib.Net.Http.WebPush.Authentication;
 using Microsoft.EntityFrameworkCore;
+using System.Net.Http.Headers;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
 
 namespace AppointVaAPI.Services
 {
@@ -13,13 +15,18 @@ namespace AppointVaAPI.Services
         private readonly ApplicationDbContext _db;
         private readonly IConfiguration _config;
         private readonly ILogger<PushService> _logger;
+        private readonly HttpClient _http;
 
-        public PushService(ApplicationDbContext db, IConfiguration config, ILogger<PushService> logger)
+        public PushService(ApplicationDbContext db, IConfiguration config,
+                           ILogger<PushService> logger, IHttpClientFactory httpFactory)
         {
             _db = db;
             _config = config;
             _logger = logger;
+            _http = httpFactory.CreateClient("WebPush");
         }
+
+        // ── Guardar / eliminar suscripción ────────────────────────────────────────
 
         public async Task GuardarSuscripcionAsync(Guid usuarioId, string endpoint, string p256dh, string auth)
         {
@@ -55,6 +62,8 @@ namespace AppointVaAPI.Services
             }
         }
 
+        // ── Notificación de nueva cita ─────────────────────────────────────────────
+
         public async Task EnviarNuevaCitaEmpleadoAsync(Guid citaId)
         {
             var cita = await _db.Citas
@@ -85,7 +94,7 @@ namespace AppointVaAPI.Services
             }
 
             var roleId = await _db.Roles
-                .Where(r => r.Name == Constants.Roles.Propietario)
+                .Where(r => r.Name == Roles.Propietario)
                 .Select(r => r.Id)
                 .FirstOrDefaultAsync();
 
@@ -109,6 +118,8 @@ namespace AppointVaAPI.Services
             }
         }
 
+        // ── Prueba diagnóstica ────────────────────────────────────────────────────
+
         public async Task<string> EnviarPruebaAsync(Guid usuarioId)
         {
             var suscripcion = await _db.PushSuscripciones
@@ -124,7 +135,7 @@ namespace AppointVaAPI.Services
             if (string.IsNullOrWhiteSpace(suscripcion.Endpoint))
                 throw new InvalidOperationException("DIAGNÓSTICO: Endpoint en BD está vacío");
 
-            var publicKey = _config["Push:VapidPublicKey"];
+            var publicKey  = _config["Push:VapidPublicKey"];
             var privateKey = _config["Push:VapidPrivateKey"];
 
             if (string.IsNullOrWhiteSpace(publicKey))
@@ -132,23 +143,24 @@ namespace AppointVaAPI.Services
             if (string.IsNullOrWhiteSpace(privateKey))
                 throw new InvalidOperationException("DIAGNÓSTICO: VAPID private key no configurada (Push__VapidPrivateKey en Render)");
 
-            var payload = System.Text.Json.JsonSerializer.Serialize(new
+            var payload = JsonSerializer.Serialize(new
             {
                 title = "AppointVa · Prueba",
-                body = "Las notificaciones push funcionan.",
-                url = "/dashboard/perfil",
-                icalUrl = (string?)null,
+                body  = "Las notificaciones push funcionan.",
+                url   = "/dashboard/perfil",
+                icalUrl      = (string?)null,
                 googleCalUrl = (string?)null
             });
 
-            // Propagamos errores para que el controller los muestre
             await EnviarConVapidAsync(suscripcion, payload, publicKey, privateKey);
             return "enviada";
         }
 
+        // ── Internos ──────────────────────────────────────────────────────────────
+
         private async Task EnviarAsync(PushSuscripcion suscripcion, string payload)
         {
-            var publicKey = _config["Push:VapidPublicKey"];
+            var publicKey  = _config["Push:VapidPublicKey"];
             var privateKey = _config["Push:VapidPrivateKey"];
 
             if (string.IsNullOrWhiteSpace(publicKey) || string.IsNullOrWhiteSpace(privateKey))
@@ -161,52 +173,241 @@ namespace AppointVaAPI.Services
             {
                 await EnviarConVapidAsync(suscripcion, payload, publicKey, privateKey);
             }
-            catch (PushServiceClientException ex) when (
-                ex.StatusCode == System.Net.HttpStatusCode.Gone ||
-                ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+            catch (PushExpiredException)
             {
                 _db.PushSuscripciones.Remove(suscripcion);
                 await _db.SaveChangesAsync();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error enviando push notification a {Endpoint}", suscripcion.Endpoint);
+                _logger.LogError(ex, "Error enviando push a {Endpoint}", suscripcion.Endpoint);
             }
         }
 
-        private static async Task EnviarConVapidAsync(PushSuscripcion suscripcion, string payload,
-                                                      string publicKey, string privateKey)
+        private async Task EnviarConVapidAsync(PushSuscripcion suscripcion, string payload,
+                                               string publicKey, string privateKey)
         {
-            var subject = "mailto:hola@appointva.com";
+            const string subject = "mailto:hola@appointva.com";
 
-            var authentication = new VapidAuthentication(publicKey, privateKey)
+            var token           = GenerarVapidJwt(suscripcion.Endpoint, publicKey, privateKey, subject);
+            var contenidoCifrado = CifrarPayloadRfc8291(payload, suscripcion.P256dh, suscripcion.Auth);
+
+            using var request = new HttpRequestMessage(HttpMethod.Post, suscripcion.Endpoint);
+            request.Headers.Authorization = new AuthenticationHeaderValue("vapid",
+                $"t={token},k={publicKey}");
+            request.Headers.TryAddWithoutValidation("TTL", "86400");
+            request.Headers.TryAddWithoutValidation("Urgency", "high");
+
+            var content = new ByteArrayContent(contenidoCifrado);
+            content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+            content.Headers.TryAddWithoutValidation("Content-Encoding", "aes128gcm");
+            request.Content = content;
+
+            var response = await _http.SendAsync(request);
+
+            if (response.StatusCode is System.Net.HttpStatusCode.Gone
+                                    or System.Net.HttpStatusCode.NotFound)
+                throw new PushExpiredException();
+
+            if (!response.IsSuccessStatusCode)
             {
-                Subject = subject
-            };
-
-            var sub = new Lib.Net.Http.WebPush.PushSubscription();
-            sub.Endpoint = suscripcion.Endpoint;
-            sub.SetKey(PushEncryptionKeyName.P256DH, suscripcion.P256dh);
-            sub.SetKey(PushEncryptionKeyName.Auth, suscripcion.Auth);
-
-            var message = new PushMessage(payload)
-            {
-                TimeToLive = 86400
-            };
-
-            var client = new PushServiceClient();
-            await client.RequestPushMessageDeliveryAsync(sub, message, authentication);
+                var body = await response.Content.ReadAsStringAsync();
+                throw new InvalidOperationException(
+                    $"Push service {(int)response.StatusCode}: {body}");
+            }
         }
+
+        // ── VAPID JWT (ES256) usando ECDsa nativo de .NET ─────────────────────────
+
+        private static string GenerarVapidJwt(string endpoint, string publicKeyB64,
+                                              string privateKeyB64, string subject)
+        {
+            var privBytes = UrlBase64Decode(privateKeyB64); // 32 bytes (escalar D)
+            var pubBytes  = UrlBase64Decode(publicKeyB64);  // 65 bytes (0x04 || X || Y)
+
+            if (privBytes.Length != 32)
+                throw new InvalidOperationException(
+                    $"VAPID private key: se esperaban 32 bytes, hay {privBytes.Length}");
+            if (pubBytes.Length != 65 || pubBytes[0] != 0x04)
+                throw new InvalidOperationException(
+                    $"VAPID public key: se esperaban 65 bytes (0x04||X||Y), hay {pubBytes.Length}");
+
+            var ecParams = new ECParameters
+            {
+                Curve = ECCurve.NamedCurves.nistP256,
+                D = privBytes,
+                Q = new ECPoint
+                {
+                    X = pubBytes[1..33],
+                    Y = pubBytes[33..65]
+                }
+            };
+
+            using var ecdsa = ECDsa.Create(ecParams);
+
+            var audience = new Uri(endpoint).GetLeftPart(UriPartial.Authority);
+            var exp      = DateTimeOffset.UtcNow.AddHours(12).ToUnixTimeSeconds();
+
+            var header  = UrlBase64Encode(Encoding.UTF8.GetBytes("{\"typ\":\"JWT\",\"alg\":\"ES256\"}"));
+            var jwtBody = UrlBase64Encode(Encoding.UTF8.GetBytes(
+                $"{{\"aud\":\"{audience}\",\"exp\":{exp},\"sub\":\"{subject}\"}}"));
+            var entrada = $"{header}.{jwtBody}";
+
+            var firma = ecdsa.SignData(Encoding.UTF8.GetBytes(entrada),
+                HashAlgorithmName.SHA256,
+                DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
+
+            return $"{entrada}.{UrlBase64Encode(firma)}";
+        }
+
+        // ── Cifrado RFC 8291 (aes128gcm) con crypto nativo de .NET ───────────────
+
+        private static byte[] CifrarPayloadRfc8291(string plaintext, string p256dhB64, string authB64)
+        {
+            var authBytes     = UrlBase64Decode(authB64);   // 16 bytes
+            var receiverRaw   = UrlBase64Decode(p256dhB64); // 65 bytes normalmente
+
+            // Normalizar a punto no comprimido de 65 bytes (0x04 || X || Y)
+            byte[] receiverPub;
+            if (receiverRaw.Length == 64)
+            {
+                receiverPub = new byte[65];
+                receiverPub[0] = 0x04;
+                receiverRaw.CopyTo(receiverPub, 1);
+            }
+            else if (receiverRaw.Length == 65 && receiverRaw[0] == 0x04)
+            {
+                receiverPub = receiverRaw;
+            }
+            else
+            {
+                throw new InvalidOperationException(
+                    $"P256DH tiene formato inesperado: {receiverRaw.Length} bytes, primer byte 0x{receiverRaw[0]:X2}");
+            }
+
+            // Importar clave pública del receptor como ECDiffieHellman
+            var receiverParams = new ECParameters
+            {
+                Curve = ECCurve.NamedCurves.nistP256,
+                Q = new ECPoint
+                {
+                    X = receiverPub[1..33],
+                    Y = receiverPub[33..65]
+                }
+            };
+            using var receiverEcdh = ECDiffieHellman.Create(receiverParams);
+
+            // Generar par efímero ECDH
+            using var senderEcdh  = ECDiffieHellman.Create(ECCurve.NamedCurves.nistP256);
+            var senderPub         = ObtenerPuntoNoComprimido(senderEcdh); // 65 bytes
+
+            // ECDH: secreto compartido (coordenada X, 32 bytes)
+            var sharedSecret = senderEcdh.DeriveRawSecretAgreement(receiverEcdh.PublicKey);
+
+            // Salt aleatorio de 16 bytes
+            var salt = new byte[16];
+            RandomNumberGenerator.Fill(salt);
+
+            // RFC 8291 derivación de claves
+            // 1. PRK_key = HKDF-Extract(salt=auth_secret, IKM=ecdh_secret)
+            var prkKey = HKDF.Extract(HashAlgorithmName.SHA256, sharedSecret, authBytes);
+
+            // 2. key_info = "WebPush: info\0" || receiver_pub || sender_pub
+            var labelInfo = Encoding.UTF8.GetBytes("WebPush: info\0");
+            var keyInfo   = new byte[labelInfo.Length + receiverPub.Length + senderPub.Length];
+            labelInfo.CopyTo(keyInfo, 0);
+            receiverPub.CopyTo(keyInfo, labelInfo.Length);
+            senderPub.CopyTo(keyInfo, labelInfo.Length + receiverPub.Length);
+
+            // 3. IKM = HKDF-Expand(PRK_key, key_info, 32)
+            var ikm = HKDF.Expand(HashAlgorithmName.SHA256, prkKey, 32, keyInfo);
+
+            // 4. PRK = HKDF-Extract(salt=salt, IKM=ikm)
+            var prk = HKDF.Extract(HashAlgorithmName.SHA256, ikm, salt);
+
+            // 5. CEK = HKDF-Expand(PRK, "Content-Encoding: aes128gcm\0\x01", 16)
+            var cekInfo = BuildInfo("Content-Encoding: aes128gcm");
+            var cek     = HKDF.Expand(HashAlgorithmName.SHA256, prk, 16, cekInfo);
+
+            // 6. NONCE = HKDF-Expand(PRK, "Content-Encoding: nonce\0\x01", 12)
+            var nonceInfo = BuildInfo("Content-Encoding: nonce");
+            var nonce     = HKDF.Expand(HashAlgorithmName.SHA256, prk, 12, nonceInfo);
+
+            // 7. Cifrar con AES-128-GCM
+            // Padding: plaintext_bytes || 0x02 (sin padding adicional)
+            var plaintextBytes = Encoding.UTF8.GetBytes(plaintext);
+            var padded         = new byte[plaintextBytes.Length + 1];
+            plaintextBytes.CopyTo(padded, 0);
+            padded[^1] = 0x02;
+
+            using var aesGcm     = new AesGcm(cek, tagSizeInBytes: 16);
+            var ciphertext       = new byte[padded.Length];
+            var authTag          = new byte[16];
+            aesGcm.Encrypt(nonce, padded, ciphertext, authTag);
+
+            // 8. Formato aes128gcm:
+            //    salt(16) || record_size(4 BE) || keylen(1=65) || sender_pub(65) || ciphertext || tag
+            int recordSize = 4096;
+            var result = new byte[16 + 4 + 1 + 65 + ciphertext.Length + 16];
+            int pos = 0;
+
+            salt.CopyTo(result, pos);                               pos += 16;
+            result[pos++] = (byte)(recordSize >> 24);
+            result[pos++] = (byte)(recordSize >> 16);
+            result[pos++] = (byte)(recordSize >> 8);
+            result[pos++] = (byte)recordSize;
+            result[pos++] = 65;                                     // keylen
+            senderPub.CopyTo(result, pos);                          pos += 65;
+            ciphertext.CopyTo(result, pos);                         pos += ciphertext.Length;
+            authTag.CopyTo(result, pos);
+
+            return result;
+        }
+
+        // ── Helpers crypto ────────────────────────────────────────────────────────
+
+        private static byte[] ObtenerPuntoNoComprimido(ECDiffieHellman key)
+        {
+            var p = key.ExportParameters(false);
+            var result = new byte[65];
+            result[0] = 0x04;
+            p.Q.X!.CopyTo(result, 1);
+            p.Q.Y!.CopyTo(result, 33);
+            return result;
+        }
+
+        // Construye el info label HKDF: label_utf8 || 0x00 || 0x01
+        private static byte[] BuildInfo(string label)
+        {
+            var labelBytes = Encoding.UTF8.GetBytes(label);
+            var info       = new byte[labelBytes.Length + 2];
+            labelBytes.CopyTo(info, 0);
+            info[^2] = 0x00;
+            info[^1] = 0x01;
+            return info;
+        }
+
+        private static byte[] UrlBase64Decode(string input)
+        {
+            var s = input.Replace('-', '+').Replace('_', '/');
+            s = s.PadRight(s.Length + (4 - s.Length % 4) % 4, '=');
+            return Convert.FromBase64String(s);
+        }
+
+        private static string UrlBase64Encode(byte[] input)
+            => Convert.ToBase64String(input).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+
+        // ── Payload builders ──────────────────────────────────────────────────────
 
         private static string BuildPayloadNuevaCita(Cita cita, string? icalUrl, string? googleCalUrl)
         {
             var cliente  = cita.Cliente?.NombreCompleto ?? "Un cliente";
             var servicio = cita.Servicio?.Nombre ?? "Servicio";
             var negocio  = cita.Negocio?.Nombre ?? "AppointVa";
-            var hora  = cita.InicioEn.ToString("HH:mm");
-            var fecha = cita.InicioEn.ToString("dd/MM/yyyy");
+            var hora     = cita.InicioEn.ToString("HH:mm");
+            var fecha    = cita.InicioEn.ToString("dd/MM/yyyy");
 
-            return System.Text.Json.JsonSerializer.Serialize(new
+            return JsonSerializer.Serialize(new
             {
                 title = $"Nueva cita — {negocio}",
                 body  = $"{cliente} · {servicio} · {fecha} {hora}",
@@ -226,5 +427,9 @@ namespace AppointVaAPI.Services
                 $"Cliente: {cita.Cliente?.NombreCompleto ?? "—"}\nTel: {cita.Cliente?.Telefono ?? "—"}");
             return $"https://calendar.google.com/calendar/render?action=TEMPLATE&text={titulo}&dates={inicio}/{fin}&details={detalles}";
         }
+
+        // ── Excepción privada para suscripción expirada ───────────────────────────
+
+        private sealed class PushExpiredException : Exception { }
     }
 }

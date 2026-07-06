@@ -115,6 +115,7 @@ builder.Services.AddScoped<IBlobStorageService, BlobStorageService>();
 builder.Services.AddScoped<IPushService, PushService>();
 builder.Services.AddScoped<IRecordatorioService, RecordatorioService>();
 builder.Services.AddHttpClient("WhatsApp");
+builder.Services.AddHttpClient("WebPush");
 
 // ── Hangfire ───────────────────────────────────────────────────────────────────
 builder.Services.AddHangfire(config => config
