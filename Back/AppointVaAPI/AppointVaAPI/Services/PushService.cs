@@ -208,8 +208,14 @@ namespace AppointVaAPI.Services
         {
             const string subject = "mailto:hola@appointva.com";
 
-            var token           = GenerarVapidJwt(suscripcion.Endpoint, publicKey, privateKey, subject);
-            var contenidoCifrado = CifrarPayloadRfc8291(payload, suscripcion.P256dh, suscripcion.Auth);
+            string token;
+            try { token = GenerarVapidJwt(suscripcion.Endpoint, publicKey, privateKey, subject); }
+            catch (Exception ex) { throw new InvalidOperationException($"PASO-1-JWT [{ex.GetType().Name}]: {ex.Message}"); }
+
+            byte[] contenidoCifrado;
+            try { contenidoCifrado = CifrarPayloadRfc8291(payload, suscripcion.P256dh, suscripcion.Auth); }
+            catch (InvalidOperationException) { throw; }
+            catch (Exception ex) { throw new InvalidOperationException($"PASO-2-CIFRADO [{ex.GetType().Name}]: {ex.Message}"); }
 
             using var request = new HttpRequestMessage(HttpMethod.Post, suscripcion.Endpoint);
             request.Headers.Authorization = new AuthenticationHeaderValue("vapid",
@@ -304,77 +310,78 @@ namespace AppointVaAPI.Services
                     $"P256DH tiene formato inesperado: {receiverRaw.Length} bytes, primer byte 0x{receiverRaw[0]:X2}");
             }
 
-            // Importar clave pública del receptor vía SubjectPublicKeyInfo DER
-            // (más confiable que ECParameters en Linux/OpenSSL cuando no hay clave privada)
-            var spki = BuildP256Spki(receiverPub);
-            using var receiverEcdh = ECDiffieHellman.Create();
-            receiverEcdh.ImportSubjectPublicKeyInfo(spki, out _);
+            // PASO-B: Importar clave pública del receptor vía SubjectPublicKeyInfo DER
+            ECDiffieHellman receiverEcdh;
+            try
+            {
+                var spki = BuildP256Spki(receiverPub);
+                var temp = ECDiffieHellman.Create();
+                temp.ImportSubjectPublicKeyInfo(spki, out _);
+                receiverEcdh = temp;
+            }
+            catch (Exception ex) { throw new InvalidOperationException($"PASO-B-SPKI [{ex.GetType().Name}]: {ex.Message}"); }
 
-            // Generar par efímero ECDH
-            using var senderEcdh  = ECDiffieHellman.Create(ECCurve.NamedCurves.nistP256);
-            var senderPub         = ObtenerPuntoNoComprimido(senderEcdh); // 65 bytes
+            using (receiverEcdh)
+            {
+                // PASO-C: Generar par efímero + ECDH
+                byte[] sharedSecret, senderPub;
+                try
+                {
+                    using var senderEcdh = ECDiffieHellman.Create(ECCurve.NamedCurves.nistP256);
+                    senderPub    = ObtenerPuntoNoComprimido(senderEcdh);
+                    sharedSecret = senderEcdh.DeriveRawSecretAgreement(receiverEcdh.PublicKey);
+                }
+                catch (Exception ex) { throw new InvalidOperationException($"PASO-C-ECDH [{ex.GetType().Name}]: {ex.Message}"); }
 
-            // ECDH: secreto compartido (coordenada X, 32 bytes)
-            var sharedSecret = senderEcdh.DeriveRawSecretAgreement(receiverEcdh.PublicKey);
+                // PASO-D: HKDF (RFC 8291)
+                byte[] cek, nonce, senderPubLocal = senderPub;
+                try
+                {
+                    var salt = new byte[16];
+                    RandomNumberGenerator.Fill(salt);
 
-            // Salt aleatorio de 16 bytes
-            var salt = new byte[16];
-            RandomNumberGenerator.Fill(salt);
+                    var prkKey    = HKDF.Extract(HashAlgorithmName.SHA256, sharedSecret, authBytes);
+                    var labelInfo = Encoding.UTF8.GetBytes("WebPush: info\0");
+                    var keyInfo   = new byte[labelInfo.Length + receiverPub.Length + senderPubLocal.Length];
+                    labelInfo.CopyTo(keyInfo, 0);
+                    receiverPub.CopyTo(keyInfo, labelInfo.Length);
+                    senderPubLocal.CopyTo(keyInfo, labelInfo.Length + receiverPub.Length);
 
-            // RFC 8291 derivación de claves
-            // 1. PRK_key = HKDF-Extract(salt=auth_secret, IKM=ecdh_secret)
-            var prkKey = HKDF.Extract(HashAlgorithmName.SHA256, sharedSecret, authBytes);
+                    var ikm    = HKDF.Expand(HashAlgorithmName.SHA256, prkKey, 32, keyInfo);
+                    var prk    = HKDF.Extract(HashAlgorithmName.SHA256, ikm, salt);
+                    cek        = HKDF.Expand(HashAlgorithmName.SHA256, prk, 16, BuildInfo("Content-Encoding: aes128gcm"));
+                    nonce      = HKDF.Expand(HashAlgorithmName.SHA256, prk, 12, BuildInfo("Content-Encoding: nonce"));
 
-            // 2. key_info = "WebPush: info\0" || receiver_pub || sender_pub
-            var labelInfo = Encoding.UTF8.GetBytes("WebPush: info\0");
-            var keyInfo   = new byte[labelInfo.Length + receiverPub.Length + senderPub.Length];
-            labelInfo.CopyTo(keyInfo, 0);
-            receiverPub.CopyTo(keyInfo, labelInfo.Length);
-            senderPub.CopyTo(keyInfo, labelInfo.Length + receiverPub.Length);
+                    // PASO-E: AES-128-GCM
+                    var plaintextBytes = Encoding.UTF8.GetBytes(plaintext);
+                    var padded         = new byte[plaintextBytes.Length + 1];
+                    plaintextBytes.CopyTo(padded, 0);
+                    padded[^1] = 0x02;
 
-            // 3. IKM = HKDF-Expand(PRK_key, key_info, 32)
-            var ikm = HKDF.Expand(HashAlgorithmName.SHA256, prkKey, 32, keyInfo);
+                    using var aesGcm = new AesGcm(cek, tagSizeInBytes: 16);
+                    var ciphertext   = new byte[padded.Length];
+                    var authTag      = new byte[16];
+                    aesGcm.Encrypt(nonce, padded, ciphertext, authTag);
 
-            // 4. PRK = HKDF-Extract(salt=salt, IKM=ikm)
-            var prk = HKDF.Extract(HashAlgorithmName.SHA256, ikm, salt);
+                    // Formato aes128gcm: salt(16) || rs(4 BE) || keylen(1=65) || sender_pub(65) || cipher || tag
+                    int recordSize = 4096;
+                    var result = new byte[16 + 4 + 1 + 65 + ciphertext.Length + 16];
+                    int pos = 0;
+                    salt.CopyTo(result, pos);                    pos += 16;
+                    result[pos++] = (byte)(recordSize >> 24);
+                    result[pos++] = (byte)(recordSize >> 16);
+                    result[pos++] = (byte)(recordSize >> 8);
+                    result[pos++] = (byte)recordSize;
+                    result[pos++] = 65;
+                    senderPubLocal.CopyTo(result, pos);          pos += 65;
+                    ciphertext.CopyTo(result, pos);              pos += ciphertext.Length;
+                    authTag.CopyTo(result, pos);
 
-            // 5. CEK = HKDF-Expand(PRK, "Content-Encoding: aes128gcm\0\x01", 16)
-            var cekInfo = BuildInfo("Content-Encoding: aes128gcm");
-            var cek     = HKDF.Expand(HashAlgorithmName.SHA256, prk, 16, cekInfo);
-
-            // 6. NONCE = HKDF-Expand(PRK, "Content-Encoding: nonce\0\x01", 12)
-            var nonceInfo = BuildInfo("Content-Encoding: nonce");
-            var nonce     = HKDF.Expand(HashAlgorithmName.SHA256, prk, 12, nonceInfo);
-
-            // 7. Cifrar con AES-128-GCM
-            // Padding: plaintext_bytes || 0x02 (sin padding adicional)
-            var plaintextBytes = Encoding.UTF8.GetBytes(plaintext);
-            var padded         = new byte[plaintextBytes.Length + 1];
-            plaintextBytes.CopyTo(padded, 0);
-            padded[^1] = 0x02;
-
-            using var aesGcm     = new AesGcm(cek, tagSizeInBytes: 16);
-            var ciphertext       = new byte[padded.Length];
-            var authTag          = new byte[16];
-            aesGcm.Encrypt(nonce, padded, ciphertext, authTag);
-
-            // 8. Formato aes128gcm:
-            //    salt(16) || record_size(4 BE) || keylen(1=65) || sender_pub(65) || ciphertext || tag
-            int recordSize = 4096;
-            var result = new byte[16 + 4 + 1 + 65 + ciphertext.Length + 16];
-            int pos = 0;
-
-            salt.CopyTo(result, pos);                               pos += 16;
-            result[pos++] = (byte)(recordSize >> 24);
-            result[pos++] = (byte)(recordSize >> 16);
-            result[pos++] = (byte)(recordSize >> 8);
-            result[pos++] = (byte)recordSize;
-            result[pos++] = 65;                                     // keylen
-            senderPub.CopyTo(result, pos);                          pos += 65;
-            ciphertext.CopyTo(result, pos);                         pos += ciphertext.Length;
-            authTag.CopyTo(result, pos);
-
-            return result;
+                    return result;
+                }
+                catch (InvalidOperationException) { throw; }
+                catch (Exception ex) { throw new InvalidOperationException($"PASO-D/E-HKDF-AESGCM [{ex.GetType().Name}]: {ex.Message}"); }
+            }
         }
 
         // ── Helpers crypto ────────────────────────────────────────────────────────
