@@ -183,6 +183,49 @@ namespace AppointVaAPI.Services
             return "enviada";
         }
 
+        // ── Prueba sin payload (diagnóstico SW) ───────────────────────────────────
+
+        public async Task<string> EnviarPruebaVaciaAsync(Guid usuarioId)
+        {
+            _logger.LogWarning("PUSH-EMPTY: inicio para usuario {UserId}", usuarioId);
+
+            var suscripcion = await _db.PushSuscripciones
+                .FirstOrDefaultAsync(s => s.UsuarioId == usuarioId);
+
+            if (suscripcion is null)
+            {
+                _logger.LogWarning("PUSH-EMPTY: sin suscripción en BD");
+                return "sin_suscripcion";
+            }
+
+            var publicKey  = _config["Push:VapidPublicKey"];
+            var privateKey = _config["Push:VapidPrivateKey"];
+
+            if (string.IsNullOrWhiteSpace(publicKey) || string.IsNullOrWhiteSpace(privateKey))
+                throw new InvalidOperationException("VAPID keys no configuradas");
+
+            var token = GenerarVapidJwt(suscripcion.Endpoint, publicKey, privateKey, "mailto:hola@appointva.com");
+
+            using var request = new HttpRequestMessage(HttpMethod.Post, suscripcion.Endpoint);
+            request.Headers.Authorization = new AuthenticationHeaderValue("vapid",
+                $"t={token},k={publicKey}");
+            request.Headers.TryAddWithoutValidation("TTL", "86400");
+            request.Headers.TryAddWithoutValidation("Urgency", "high");
+            // Sin body, sin Content-Encoding → push vacío, e.data === null en el SW
+
+            var response = await _http.SendAsync(request);
+            var body = await response.Content.ReadAsStringAsync();
+
+            _logger.LogWarning("PUSH-EMPTY-APNS: HTTP {Status} | body={Body}",
+                (int)response.StatusCode,
+                string.IsNullOrWhiteSpace(body) ? "(vacío)" : body);
+
+            if (!response.IsSuccessStatusCode)
+                throw new InvalidOperationException($"APNs {(int)response.StatusCode}: {body}");
+
+            return "enviada";
+        }
+
         // ── Internos ──────────────────────────────────────────────────────────────
 
         private async Task EnviarAsync(PushSuscripcion suscripcion, string payload)

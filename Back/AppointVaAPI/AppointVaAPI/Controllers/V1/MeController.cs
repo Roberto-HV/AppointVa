@@ -103,5 +103,26 @@ namespace AppointVaAPI.Controllers.V1
         }
     }
 
+        // POST api/me/push-test-empty  — push sin payload para diagnosticar el SW
+        [HttpPost("push-test-empty")]
+        public async Task<IActionResult> ProbarPushVacio()
+        {
+            try
+            {
+                var resultado = await _push.EnviarPruebaVaciaAsync(UserId);
+                return resultado switch
+                {
+                    "sin_suscripcion" => NotFound(new { mensaje = "No hay suscripción guardada. Activa las notificaciones primero." }),
+                    "enviada" => Ok(new { mensaje = "Push vacío enviado — si el SW funciona verás notif con texto genérico." }),
+                    _ => StatusCode(500, new { mensaje = "Error desconocido." })
+                };
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { mensaje = $"Error: {ex.Message}" });
+            }
+        }
+    }
+
     public record PushSuscripcionDto(string Endpoint, string P256dh, string Auth);
 }
