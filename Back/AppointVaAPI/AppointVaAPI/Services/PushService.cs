@@ -341,11 +341,15 @@ namespace AppointVaAPI.Services
                     RandomNumberGenerator.Fill(salt);
 
                     var prkKey    = HKDF.Extract(HashAlgorithmName.SHA256, sharedSecret, authBytes);
+
+                    // key_info = "WebPush: info" || 0x00 || ua_pub(65) || as_pub(65)
+                    // RFC 8291 §3.3: info pasado a Expand debe ser key_info || 0x01
                     var labelInfo = Encoding.UTF8.GetBytes("WebPush: info\0");
-                    var keyInfo   = new byte[labelInfo.Length + receiverPub.Length + senderPubLocal.Length];
+                    var keyInfo   = new byte[labelInfo.Length + receiverPub.Length + senderPubLocal.Length + 1];
                     labelInfo.CopyTo(keyInfo, 0);
                     receiverPub.CopyTo(keyInfo, labelInfo.Length);
                     senderPubLocal.CopyTo(keyInfo, labelInfo.Length + receiverPub.Length);
+                    keyInfo[^1] = 0x01;
 
                     var ikm    = HKDF.Expand(HashAlgorithmName.SHA256, prkKey, 32, keyInfo);
                     var prk    = HKDF.Extract(HashAlgorithmName.SHA256, ikm, salt);
