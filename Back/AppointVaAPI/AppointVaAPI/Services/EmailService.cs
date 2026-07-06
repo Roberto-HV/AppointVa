@@ -2,11 +2,10 @@
 using AppointVaAPI.Data;
 using AppointVaAPI.Models;
 using AppointVaAPI.Services.IServices;
-using MailKit.Net.Smtp;
-using MailKit.Security;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using MimeKit;
+using System.Text;
+using System.Text.Json;
 
 namespace AppointVaAPI.Services
 {
@@ -15,12 +14,15 @@ namespace AppointVaAPI.Services
         private readonly IConfiguration _config;
         private readonly ILogger<EmailService> _logger;
         private readonly IServiceScopeFactory _scopeFactory;
+        private readonly HttpClient _http;
 
-        public EmailService(IConfiguration config, ILogger<EmailService> logger, IServiceScopeFactory scopeFactory)
+        public EmailService(IConfiguration config, ILogger<EmailService> logger,
+                            IServiceScopeFactory scopeFactory, IHttpClientFactory httpFactory)
         {
             _config = config;
             _logger = logger;
             _scopeFactory = scopeFactory;
+            _http = httpFactory.CreateClient("Brevo");
         }
 
         public async Task EnviarConfirmacionCitaAsync(Cita cita, string emailDestino, string nombreCliente, string? urlCita = null, string? icalUrl = null, string? googleCalUrl = null, string? urlCancelacion = null)
@@ -89,28 +91,49 @@ namespace AppointVaAPI.Services
         {
             try
             {
-                var mensaje = new MimeMessage();
-                mensaje.From.Add(MailboxAddress.Parse(_config["Email:Origen"]!));
-                mensaje.To.Add(MailboxAddress.Parse(destino));
-                mensaje.Subject = asunto;
-                mensaje.Body = new TextPart("html") { Text = html };
+                var apiKey = _config["Email:ApiKey"];
+                if (string.IsNullOrWhiteSpace(apiKey))
+                {
+                    _logger.LogWarning("Email:ApiKey no configurada — email omitido.");
+                    return;
+                }
 
-                using var smtp = new SmtpClient();
-                await smtp.ConnectAsync(
-                    _config["Email:SmtpHost"]!,
-                    int.Parse(_config["Email:SmtpPort"] ?? "587"),
-                    SecureSocketOptions.StartTls
-                );
-                await smtp.AuthenticateAsync(
-                    _config["Email:SmtpUser"]!,
-                    _config["Email:SmtpPassword"]!
-                );
-                await smtp.SendAsync(mensaje);
-                await smtp.DisconnectAsync(true);
+                var origen = _config["Email:Origen"] ?? "AppointVa <notificaciones@appointva.com>";
+                // Parsear "Nombre <email>" → separar nombre y dirección
+                string senderName = "AppointVa", senderEmail = origen;
+                var lt = origen.IndexOf('<');
+                if (lt >= 0 && origen.EndsWith('>'))
+                {
+                    senderName  = origen[..lt].Trim();
+                    senderEmail = origen[(lt + 1)..^1].Trim();
+                }
+
+                var body = new
+                {
+                    sender  = new { name = senderName, email = senderEmail },
+                    to      = new[] { new { email = destino } },
+                    subject = asunto,
+                    htmlContent = html
+                };
+
+                using var req = new HttpRequestMessage(HttpMethod.Post,
+                    "https://api.brevo.com/v3/smtp/email");
+                req.Headers.Add("api-key", apiKey);
+                req.Content = new StringContent(
+                    JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
+
+                var response = await _http.SendAsync(req);
+                if (!response.IsSuccessStatusCode)
+                {
+                    var err = await response.Content.ReadAsStringAsync();
+                    _logger.LogWarning("Brevo API {Status} al enviar a {Destino}: {Error}",
+                        (int)response.StatusCode, MascarEmail(destino), err);
+                }
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Error al enviar email a {Destino}: {Mensaje}", MascarEmail(destino), ex.Message);
+                _logger.LogWarning(ex, "Error al enviar email a {Destino}: {Mensaje}",
+                    MascarEmail(destino), ex.Message);
             }
         }
 

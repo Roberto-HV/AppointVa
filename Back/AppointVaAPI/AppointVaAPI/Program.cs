@@ -116,6 +116,7 @@ builder.Services.AddScoped<IPushService, PushService>();
 builder.Services.AddScoped<IRecordatorioService, RecordatorioService>();
 builder.Services.AddHttpClient("WhatsApp");
 builder.Services.AddHttpClient("WebPush");
+builder.Services.AddHttpClient("Brevo");
 
 // ── Hangfire ───────────────────────────────────────────────────────────────────
 builder.Services.AddHangfire(config => config

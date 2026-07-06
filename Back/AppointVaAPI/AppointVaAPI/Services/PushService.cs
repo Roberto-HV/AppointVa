@@ -118,57 +118,20 @@ namespace AppointVaAPI.Services
             }
         }
 
-        // ── Prueba diagnóstica ────────────────────────────────────────────────────
+        // ── Prueba manual desde perfil ────────────────────────────────────────────
 
         public async Task<string> EnviarPruebaAsync(Guid usuarioId)
         {
-            _logger.LogWarning("PUSH-TEST: inicio para usuario {UserId}", usuarioId);
-
             var suscripcion = await _db.PushSuscripciones
                 .FirstOrDefaultAsync(s => s.UsuarioId == usuarioId);
 
-            if (suscripcion is null)
-            {
-                _logger.LogWarning("PUSH-TEST: sin suscripción en BD para {UserId}", usuarioId);
-                return "sin_suscripcion";
-            }
-
-            _logger.LogWarning("PUSH-TEST: suscripción encontrada, endpoint={Endpoint}",
-                suscripcion.Endpoint[..Math.Min(60, suscripcion.Endpoint.Length)]);
-
-            if (string.IsNullOrWhiteSpace(suscripcion.P256dh))
-                throw new InvalidOperationException("DIAGNÓSTICO: P256dh en BD está vacío");
-            if (string.IsNullOrWhiteSpace(suscripcion.Auth))
-                throw new InvalidOperationException("DIAGNÓSTICO: Auth en BD está vacío");
-            if (string.IsNullOrWhiteSpace(suscripcion.Endpoint))
-                throw new InvalidOperationException("DIAGNÓSTICO: Endpoint en BD está vacío");
+            if (suscripcion is null) return "sin_suscripcion";
 
             var publicKey  = _config["Push:VapidPublicKey"];
             var privateKey = _config["Push:VapidPrivateKey"];
 
-            if (string.IsNullOrWhiteSpace(publicKey))
-                throw new InvalidOperationException("DIAGNÓSTICO: VAPID public key no configurada (Push__VapidPublicKey en Render)");
-            if (string.IsNullOrWhiteSpace(privateKey))
-                throw new InvalidOperationException("DIAGNÓSTICO: VAPID private key no configurada (Push__VapidPrivateKey en Render)");
-
-            // Verificar tamaños de claves antes de operar
-            var p256dhBytes  = UrlBase64Decode(suscripcion.P256dh);
-            var authBytesDx  = UrlBase64Decode(suscripcion.Auth);
-            var pubKeyBytes  = UrlBase64Decode(publicKey);
-            var privKeyBytes = UrlBase64Decode(privateKey);
-
-            if (p256dhBytes.Length != 65 && p256dhBytes.Length != 64)
-                throw new InvalidOperationException(
-                    $"DIAGNÓSTICO: P256dh tiene {p256dhBytes.Length} bytes (esperado 64 ó 65)");
-            if (authBytesDx.Length != 16)
-                throw new InvalidOperationException(
-                    $"DIAGNÓSTICO: Auth tiene {authBytesDx.Length} bytes (esperado 16)");
-            if (pubKeyBytes.Length != 65)
-                throw new InvalidOperationException(
-                    $"DIAGNÓSTICO: VAPID public key tiene {pubKeyBytes.Length} bytes (esperado 65)");
-            if (privKeyBytes.Length != 32)
-                throw new InvalidOperationException(
-                    $"DIAGNÓSTICO: VAPID private key tiene {privKeyBytes.Length} bytes (esperado 32)");
+            if (string.IsNullOrWhiteSpace(publicKey) || string.IsNullOrWhiteSpace(privateKey))
+                throw new InvalidOperationException("VAPID keys no configuradas.");
 
             var payload = JsonSerializer.Serialize(new
             {
@@ -180,49 +143,6 @@ namespace AppointVaAPI.Services
             });
 
             await EnviarConVapidAsync(suscripcion, payload, publicKey, privateKey);
-            return "enviada";
-        }
-
-        // ── Prueba sin payload (diagnóstico SW) ───────────────────────────────────
-
-        public async Task<string> EnviarPruebaVaciaAsync(Guid usuarioId)
-        {
-            _logger.LogWarning("PUSH-EMPTY: inicio para usuario {UserId}", usuarioId);
-
-            var suscripcion = await _db.PushSuscripciones
-                .FirstOrDefaultAsync(s => s.UsuarioId == usuarioId);
-
-            if (suscripcion is null)
-            {
-                _logger.LogWarning("PUSH-EMPTY: sin suscripción en BD");
-                return "sin_suscripcion";
-            }
-
-            var publicKey  = _config["Push:VapidPublicKey"];
-            var privateKey = _config["Push:VapidPrivateKey"];
-
-            if (string.IsNullOrWhiteSpace(publicKey) || string.IsNullOrWhiteSpace(privateKey))
-                throw new InvalidOperationException("VAPID keys no configuradas");
-
-            var token = GenerarVapidJwt(suscripcion.Endpoint, publicKey, privateKey, "mailto:hola@appointva.com");
-
-            using var request = new HttpRequestMessage(HttpMethod.Post, suscripcion.Endpoint);
-            request.Headers.Authorization = new AuthenticationHeaderValue("vapid",
-                $"t={token},k={publicKey}");
-            request.Headers.TryAddWithoutValidation("TTL", "86400");
-            request.Headers.TryAddWithoutValidation("Urgency", "high");
-            // Sin body, sin Content-Encoding → push vacío, e.data === null en el SW
-
-            var response = await _http.SendAsync(request);
-            var body = await response.Content.ReadAsStringAsync();
-
-            _logger.LogWarning("PUSH-EMPTY-APNS: HTTP {Status} | body={Body}",
-                (int)response.StatusCode,
-                string.IsNullOrWhiteSpace(body) ? "(vacío)" : body);
-
-            if (!response.IsSuccessStatusCode)
-                throw new InvalidOperationException($"APNs {(int)response.StatusCode}: {body}");
-
             return "enviada";
         }
 
@@ -282,10 +202,9 @@ namespace AppointVaAPI.Services
             var response = await _http.SendAsync(request);
             var responseBody = await response.Content.ReadAsStringAsync();
 
-            _logger.LogWarning("PUSH-APNS: HTTP {Status} → endpoint={Endpoint} | body={Body}",
+            _logger.LogInformation("Push → HTTP {Status} {Endpoint}",
                 (int)response.StatusCode,
-                suscripcion.Endpoint[..Math.Min(60, suscripcion.Endpoint.Length)],
-                string.IsNullOrWhiteSpace(responseBody) ? "(vacío)" : responseBody);
+                suscripcion.Endpoint[..Math.Min(60, suscripcion.Endpoint.Length)]);
 
             if (response.StatusCode is System.Net.HttpStatusCode.Gone
                                     or System.Net.HttpStatusCode.NotFound)
