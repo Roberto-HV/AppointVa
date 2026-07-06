@@ -13,10 +13,23 @@ namespace AppointVaAPI.Controllers.V1
     public class MeController : ControllerBase
     {
         private readonly IPushService _push;
+        private readonly IConfiguration _config;
 
-        public MeController(IPushService push)
+        public MeController(IPushService push, IConfiguration config)
         {
             _push = push;
+            _config = config;
+        }
+
+        // GET api/me/push-vapid-key  — sin autenticación (la public key no es secreta)
+        [HttpGet("push-vapid-key")]
+        [AllowAnonymous]
+        public IActionResult ObtenerVapidKey()
+        {
+            var key = _config["Push:VapidPublicKey"];
+            if (string.IsNullOrWhiteSpace(key))
+                return NotFound(new { mensaje = "VAPID public key no configurada." });
+            return Ok(new { vapidPublicKey = key });
         }
 
         private Guid UserId => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
@@ -44,8 +57,7 @@ namespace AppointVaAPI.Controllers.V1
 
         // GET api/me/push-status
         [HttpGet("push-status")]
-        public async Task<IActionResult> EstadoPush([FromServices] AppointVaAPI.Data.ApplicationDbContext db,
-                                                    [FromServices] IConfiguration config)
+        public async Task<IActionResult> EstadoPush([FromServices] AppointVaAPI.Data.ApplicationDbContext db)
         {
             var suscripcion = await db.PushSuscripciones
                 .FirstOrDefaultAsync(s => s.UsuarioId == UserId);
@@ -54,8 +66,8 @@ namespace AppointVaAPI.Controllers.V1
             {
                 suscriptoEnBd = suscripcion is not null,
                 endpoint = suscripcion?.Endpoint?.Substring(0, Math.Min(60, suscripcion.Endpoint.Length)),
-                vapidPublicKey = !string.IsNullOrWhiteSpace(config["Push:VapidPublicKey"]),
-                vapidPrivateKey = !string.IsNullOrWhiteSpace(config["Push:VapidPrivateKey"]),
+                vapidPublicKey = !string.IsNullOrWhiteSpace(_config["Push:VapidPublicKey"]),
+                vapidPrivateKey = !string.IsNullOrWhiteSpace(_config["Push:VapidPrivateKey"]),
             });
         }
 
