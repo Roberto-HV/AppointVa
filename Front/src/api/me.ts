@@ -26,4 +26,12 @@ export const meApi = {
     const res = await api.get("/me/push-status");
     return res.data;
   },
+  obtenerVapidPublicKey: async (): Promise<string | null> => {
+    try {
+      const res = await api.get<{ vapidPublicKey: string }>("/me/push-vapid-key");
+      return res.data.vapidPublicKey;
+    } catch {
+      return null;
+    }
+  },
 };

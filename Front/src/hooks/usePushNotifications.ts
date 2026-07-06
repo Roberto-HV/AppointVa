@@ -1,9 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { meApi } from "../api/me";
 
 type PermisoState = "default" | "granted" | "denied" | "unsupported";
-
-const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined;
 
 function urlBase64ToArrayBuffer(base64String: string): ArrayBuffer {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -19,6 +17,7 @@ export function usePushNotifications() {
   const [permiso, setPermiso] = useState<PermisoState>("unsupported");
   const [suscrito, setSuscrito] = useState(false);
   const [cargando, setCargando] = useState(false);
+  const vapidKey = useRef<string | null>(null);
 
   const soportado =
     typeof window !== "undefined" &&
@@ -30,14 +29,28 @@ export function usePushNotifications() {
     if (!soportado) return;
     setPermiso(Notification.permission as PermisoState);
 
-    // Detectar si ya hay suscripción activa
     navigator.serviceWorker.ready.then((reg) =>
       reg.pushManager.getSubscription().then((sub) => setSuscrito(!!sub))
     );
+
+    // Obtener la VAPID public key desde el backend (no es secreta, puede ser anónima)
+    meApi.obtenerVapidPublicKey().then((key) => {
+      vapidKey.current = key;
+    });
   }, [soportado]);
 
   const activar = useCallback(async () => {
-    if (!soportado || !VAPID_PUBLIC_KEY) return;
+    if (!soportado) return;
+
+    // Si la key aún no llegó, intentar obtenerla ahora
+    if (!vapidKey.current) {
+      vapidKey.current = await meApi.obtenerVapidPublicKey();
+    }
+    if (!vapidKey.current) {
+      console.error("VAPID public key no disponible. Verifica Push__VapidPublicKey en Render.");
+      return;
+    }
+
     setCargando(true);
     try {
       const result = await Notification.requestPermission();
@@ -47,7 +60,7 @@ export function usePushNotifications() {
       const reg = await navigator.serviceWorker.ready;
       const sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToArrayBuffer(VAPID_PUBLIC_KEY),
+        applicationServerKey: urlBase64ToArrayBuffer(vapidKey.current),
       });
 
       const { endpoint, keys } = sub.toJSON() as {
