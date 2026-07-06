@@ -56,7 +56,7 @@ export function NotificacionBanner({ visible = true }: Props) {
 
 /** Sección para la página de perfil — muestra el estado actual y permite activar/desactivar */
 export function NotificacionPerfilSection() {
-  const { permiso, suscrito, soportado, cargando, activar, desactivar } =
+  const { permiso, suscrito, soportado, cargando, error, setError, activar, desactivar } =
     usePushNotifications();
   const [probando, setProbando] = useState(false);
   const [resultadoPrueba, setResultadoPrueba] = useState<string | null>(null);
@@ -149,6 +149,12 @@ export function NotificacionPerfilSection() {
           </button>
         </div>
       </div>
+      {error && (
+        <div className="mt-3 flex items-start gap-2 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+          <span className="text-xs text-red-700 flex-1">{error}</span>
+          <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600 text-xs leading-none mt-0.5">✕</button>
+        </div>
+      )}
       {resultadoPrueba && (
         <p className="mt-2 text-xs text-gray-500">{resultadoPrueba}</p>
       )}

@@ -17,6 +17,7 @@ export function usePushNotifications() {
   const [permiso, setPermiso] = useState<PermisoState>("unsupported");
   const [suscrito, setSuscrito] = useState(false);
   const [cargando, setCargando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const vapidKey = useRef<string | null>(null);
 
   const soportado =
@@ -33,7 +34,6 @@ export function usePushNotifications() {
       reg.pushManager.getSubscription().then((sub) => setSuscrito(!!sub))
     );
 
-    // Obtener la VAPID public key desde el backend (no es secreta, puede ser anónima)
     meApi.obtenerVapidPublicKey().then((key) => {
       vapidKey.current = key;
     });
@@ -41,13 +41,13 @@ export function usePushNotifications() {
 
   const activar = useCallback(async () => {
     if (!soportado) return;
+    setError(null);
 
-    // Si la key aún no llegó, intentar obtenerla ahora
     if (!vapidKey.current) {
       vapidKey.current = await meApi.obtenerVapidPublicKey();
     }
     if (!vapidKey.current) {
-      console.error("VAPID public key no disponible. Verifica Push__VapidPublicKey en Render.");
+      setError("No se pudo obtener la clave VAPID del servidor. Recarga la página e intenta de nuevo.");
       return;
     }
 
@@ -76,7 +76,8 @@ export function usePushNotifications() {
 
       setSuscrito(true);
     } catch (err) {
-      console.error("Error activando push:", err);
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(`Error al activar: ${msg}`);
     } finally {
       setCargando(false);
     }
@@ -84,19 +85,25 @@ export function usePushNotifications() {
 
   const desactivar = useCallback(async () => {
     if (!soportado) return;
+    setError(null);
     setCargando(true);
+    let browserUnsubscribed = false;
     try {
       const reg = await navigator.serviceWorker.ready;
       const sub = await reg.pushManager.getSubscription();
-      await sub?.unsubscribe();
+      if (sub) await sub.unsubscribe();
+      browserUnsubscribed = true;
       await meApi.eliminarPushSuscripcion();
       setSuscrito(false);
     } catch (err) {
-      console.error("Error desactivando push:", err);
+      // Si el navegador ya lo desuscribió, actualizamos la UI de todos modos
+      if (browserUnsubscribed) setSuscrito(false);
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(`Error al desactivar: ${msg}`);
     } finally {
       setCargando(false);
     }
   }, [soportado]);
 
-  return { permiso, suscrito, soportado, cargando, activar, desactivar };
+  return { permiso, suscrito, soportado, cargando, error, setError, activar, desactivar };
 }
