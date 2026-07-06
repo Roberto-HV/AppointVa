@@ -143,6 +143,25 @@ namespace AppointVaAPI.Services
             if (string.IsNullOrWhiteSpace(privateKey))
                 throw new InvalidOperationException("DIAGNÓSTICO: VAPID private key no configurada (Push__VapidPrivateKey en Render)");
 
+            // Verificar tamaños de claves antes de operar
+            var p256dhBytes  = UrlBase64Decode(suscripcion.P256dh);
+            var authBytesDx  = UrlBase64Decode(suscripcion.Auth);
+            var pubKeyBytes  = UrlBase64Decode(publicKey);
+            var privKeyBytes = UrlBase64Decode(privateKey);
+
+            if (p256dhBytes.Length != 65 && p256dhBytes.Length != 64)
+                throw new InvalidOperationException(
+                    $"DIAGNÓSTICO: P256dh tiene {p256dhBytes.Length} bytes (esperado 64 ó 65)");
+            if (authBytesDx.Length != 16)
+                throw new InvalidOperationException(
+                    $"DIAGNÓSTICO: Auth tiene {authBytesDx.Length} bytes (esperado 16)");
+            if (pubKeyBytes.Length != 65)
+                throw new InvalidOperationException(
+                    $"DIAGNÓSTICO: VAPID public key tiene {pubKeyBytes.Length} bytes (esperado 65)");
+            if (privKeyBytes.Length != 32)
+                throw new InvalidOperationException(
+                    $"DIAGNÓSTICO: VAPID private key tiene {privKeyBytes.Length} bytes (esperado 32)");
+
             var payload = JsonSerializer.Serialize(new
             {
                 title = "AppointVa · Prueba",
@@ -285,17 +304,11 @@ namespace AppointVaAPI.Services
                     $"P256DH tiene formato inesperado: {receiverRaw.Length} bytes, primer byte 0x{receiverRaw[0]:X2}");
             }
 
-            // Importar clave pública del receptor como ECDiffieHellman
-            var receiverParams = new ECParameters
-            {
-                Curve = ECCurve.NamedCurves.nistP256,
-                Q = new ECPoint
-                {
-                    X = receiverPub[1..33],
-                    Y = receiverPub[33..65]
-                }
-            };
-            using var receiverEcdh = ECDiffieHellman.Create(receiverParams);
+            // Importar clave pública del receptor vía SubjectPublicKeyInfo DER
+            // (más confiable que ECParameters en Linux/OpenSSL cuando no hay clave privada)
+            var spki = BuildP256Spki(receiverPub);
+            using var receiverEcdh = ECDiffieHellman.Create();
+            receiverEcdh.ImportSubjectPublicKeyInfo(spki, out _);
 
             // Generar par efímero ECDH
             using var senderEcdh  = ECDiffieHellman.Create(ECCurve.NamedCurves.nistP256);
@@ -365,6 +378,29 @@ namespace AppointVaAPI.Services
         }
 
         // ── Helpers crypto ────────────────────────────────────────────────────────
+
+        // Construye el DER SubjectPublicKeyInfo (91 bytes) para P-256 uncompressed
+        private static byte[] BuildP256Spki(byte[] uncompressedPoint)
+        {
+            // Estructura ASN.1:
+            // 30 59 SEQUENCE (89 bytes)
+            //   30 13 SEQUENCE (19 bytes)  ← AlgorithmIdentifier
+            //     06 07 2A 86 48 CE 3D 02 01  ← OID ecPublicKey
+            //     06 08 2A 86 48 CE 3D 03 01 07  ← OID prime256v1
+            //   03 42 00  ← BIT STRING (66 bytes, 0 unused bits)
+            //     04 [X(32)] [Y(32)]  ← uncompressed point
+            ReadOnlySpan<byte> prefix = [
+                0x30, 0x59,
+                0x30, 0x13,
+                0x06, 0x07, 0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x02, 0x01,
+                0x06, 0x08, 0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x03, 0x01, 0x07,
+                0x03, 0x42, 0x00
+            ];
+            var spki = new byte[prefix.Length + uncompressedPoint.Length]; // 26 + 65 = 91 bytes
+            prefix.CopyTo(spki);
+            uncompressedPoint.CopyTo(spki, prefix.Length);
+            return spki;
+        }
 
         private static byte[] ObtenerPuntoNoComprimido(ECDiffieHellman key)
         {

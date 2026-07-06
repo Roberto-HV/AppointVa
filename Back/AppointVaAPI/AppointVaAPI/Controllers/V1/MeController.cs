@@ -87,7 +87,8 @@ namespace AppointVaAPI.Controllers.V1
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { mensaje = $"Error al enviar push: {ex.Message}" });
+                var inner = ex.InnerException is not null ? $" | inner: {ex.InnerException.GetType().Name}: {ex.InnerException.Message}" : "";
+                return StatusCode(500, new { mensaje = $"Error [{ex.GetType().Name}]: {ex.Message}{inner}" });
             }
         }
     }
