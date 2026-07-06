@@ -1,4 +1,4 @@
-const CACHE = "appointva-v1";
+const CACHE = "appointva-v2";
 const STATIC = [
   "/",
   "/index.html",
@@ -27,20 +27,28 @@ self.addEventListener("push", (e) => {
   let data = { title: "AppointVa", body: "Tienes una nueva notificación.", url: "/", icalUrl: null, googleCalUrl: null };
   try { data = { ...data, ...e.data.json() }; } catch (_) {}
 
+  // iOS no soporta action buttons (Notification.maxActions === 0 o undefined)
+  const maxActions = (self.Notification && self.Notification.maxActions) || 0;
   const actions = [];
-  if (data.icalUrl)      actions.push({ action: "ical",   title: "📅 Al calendario" });
-  if (data.googleCalUrl) actions.push({ action: "gcal",   title: "📆 Google Calendar" });
-  actions.push(            { action: "ver",    title: "Ver cita" });
+  if (maxActions > 0) {
+    if (data.icalUrl)      actions.push({ action: "ical",   title: "📅 Al calendario" });
+    if (data.googleCalUrl) actions.push({ action: "gcal",   title: "📆 Google Calendar" });
+    actions.push(            { action: "ver",    title: "Ver cita" });
+  }
 
+  const options = {
+    body: data.body,
+    icon: "/icon-192.png",
+    badge: "/icon-96.png",
+    data: { url: data.url, icalUrl: data.icalUrl, googleCalUrl: data.googleCalUrl },
+  };
+  if (actions.length > 0) options.actions = actions;
+
+  // Fallback: si showNotification falla por opciones no soportadas, muestra notif mínima
   e.waitUntil(
-    self.registration.showNotification(data.title, {
-      body: data.body,
-      icon: "/icon-192.png",
-      badge: "/icon-96.png",
-      data: { url: data.url, icalUrl: data.icalUrl, googleCalUrl: data.googleCalUrl },
-      vibrate: [200, 100, 200],
-      actions,
-    })
+    self.registration.showNotification(data.title, options).catch(() =>
+      self.registration.showNotification(data.title, { body: data.body })
+    )
   );
 });
 
