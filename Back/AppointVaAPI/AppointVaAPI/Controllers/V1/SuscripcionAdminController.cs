@@ -101,7 +101,7 @@ namespace AppointVaAPI.Controllers.V1
             var negocio = await _db.Negocios.FindAsync(id);
             if (negocio == null) return NotFound();
 
-            var adminId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var adminId = Guid.Parse(User.FindFirstValue("sub")!);
 
             var hoy = DateTime.UtcNow.Date;
 

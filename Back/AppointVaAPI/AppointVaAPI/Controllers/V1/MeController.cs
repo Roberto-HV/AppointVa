@@ -32,7 +32,7 @@ namespace AppointVaAPI.Controllers.V1
             return Ok(new { vapidPublicKey = key });
         }
 
-        private Guid UserId => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        private Guid UserId => Guid.Parse(User.FindFirstValue("sub")!);
 
         // POST api/me/push-subscription
         [HttpPost("push-subscription")]
