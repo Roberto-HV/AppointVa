@@ -396,14 +396,13 @@ namespace AppointVaAPI.Services
 
                     var prkKey    = HKDF.Extract(HashAlgorithmName.SHA256, sharedSecret, authBytes);
 
-                    // key_info = "WebPush: info" || 0x00 || ua_pub(65) || as_pub(65)
-                    // RFC 8291 §3.3: info pasado a Expand debe ser key_info || 0x01
+                    // key_info = "WebPush: info\0" || ua_pub(65) || as_pub(65)
+                    // .NET HKDF.Expand ya agrega el byte 0x01 de contador (RFC 5869) — NO agregar manualmente
                     var labelInfo = Encoding.UTF8.GetBytes("WebPush: info\0");
-                    var keyInfo   = new byte[labelInfo.Length + receiverPub.Length + senderPubLocal.Length + 1];
+                    var keyInfo   = new byte[labelInfo.Length + receiverPub.Length + senderPubLocal.Length];
                     labelInfo.CopyTo(keyInfo, 0);
                     receiverPub.CopyTo(keyInfo, labelInfo.Length);
                     senderPubLocal.CopyTo(keyInfo, labelInfo.Length + receiverPub.Length);
-                    keyInfo[^1] = 0x01;
 
                     var ikm    = HKDF.Expand(HashAlgorithmName.SHA256, prkKey, 32, keyInfo);
                     var prk    = HKDF.Extract(HashAlgorithmName.SHA256, ikm, salt);
@@ -477,14 +476,14 @@ namespace AppointVaAPI.Services
             return result;
         }
 
-        // Construye el info label HKDF: label_utf8 || 0x00 || 0x01
+        // Construye el info label HKDF: label_utf8 || 0x00
+        // .NET HKDF.Expand agrega el byte 0x01 de contador internamente (RFC 5869)
         private static byte[] BuildInfo(string label)
         {
             var labelBytes = Encoding.UTF8.GetBytes(label);
-            var info       = new byte[labelBytes.Length + 2];
+            var info       = new byte[labelBytes.Length + 1];
             labelBytes.CopyTo(info, 0);
-            info[^2] = 0x00;
-            info[^1] = 0x01;
+            // info[^1] ya es 0x00 por defecto (new byte[])
             return info;
         }
 
