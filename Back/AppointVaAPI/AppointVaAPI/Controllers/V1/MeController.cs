@@ -101,7 +101,6 @@ namespace AppointVaAPI.Controllers.V1
                 return StatusCode(500, new { mensaje = $"Error [{ex.GetType().Name}]: {ex.Message}{inner}" });
             }
         }
-    }
 
         // POST api/me/push-test-empty  — push sin payload para diagnosticar el SW
         [HttpPost("push-test-empty")]
