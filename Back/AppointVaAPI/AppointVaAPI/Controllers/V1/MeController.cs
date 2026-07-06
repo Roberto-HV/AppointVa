@@ -43,8 +43,18 @@ namespace AppointVaAPI.Controllers.V1
                 string.IsNullOrWhiteSpace(dto.Auth))
                 return BadRequest("Suscripción incompleta.");
 
-            await _push.GuardarSuscripcionAsync(UserId, dto.Endpoint, dto.P256dh, dto.Auth);
-            return Ok(new { mensaje = "Suscripción guardada." });
+            try
+            {
+                await _push.GuardarSuscripcionAsync(UserId, dto.Endpoint, dto.P256dh, dto.Auth);
+                return Ok(new { mensaje = "Suscripción guardada." });
+            }
+            catch (Exception ex)
+            {
+                var inner = ex.InnerException is not null
+                    ? $" | inner: {ex.InnerException.GetType().Name}: {ex.InnerException.Message}"
+                    : "";
+                return StatusCode(500, new { mensaje = $"Error guardando suscripción [{ex.GetType().Name}]: {ex.Message}{inner}" });
+            }
         }
 
         // DELETE api/me/push-subscription

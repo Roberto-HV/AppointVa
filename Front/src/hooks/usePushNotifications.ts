@@ -76,7 +76,8 @@ export function usePushNotifications() {
 
       setSuscrito(true);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
+      const serverMsg = (err as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje;
+      const msg = serverMsg ?? (err instanceof Error ? err.message : String(err));
       setError(`Error al activar: ${msg}`);
     } finally {
       setCargando(false);
