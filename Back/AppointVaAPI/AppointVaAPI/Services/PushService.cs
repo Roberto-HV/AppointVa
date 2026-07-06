@@ -122,11 +122,19 @@ namespace AppointVaAPI.Services
 
         public async Task<string> EnviarPruebaAsync(Guid usuarioId)
         {
+            _logger.LogWarning("PUSH-TEST: inicio para usuario {UserId}", usuarioId);
+
             var suscripcion = await _db.PushSuscripciones
                 .FirstOrDefaultAsync(s => s.UsuarioId == usuarioId);
 
             if (suscripcion is null)
+            {
+                _logger.LogWarning("PUSH-TEST: sin suscripción en BD para {UserId}", usuarioId);
                 return "sin_suscripcion";
+            }
+
+            _logger.LogWarning("PUSH-TEST: suscripción encontrada, endpoint={Endpoint}",
+                suscripcion.Endpoint[..Math.Min(60, suscripcion.Endpoint.Length)]);
 
             if (string.IsNullOrWhiteSpace(suscripcion.P256dh))
                 throw new InvalidOperationException("DIAGNÓSTICO: P256dh en BD está vacío");
@@ -231,9 +239,9 @@ namespace AppointVaAPI.Services
             var response = await _http.SendAsync(request);
             var responseBody = await response.Content.ReadAsStringAsync();
 
-            _logger.LogInformation("Push enviado a {Endpoint} → HTTP {Status} | body: {Body}",
-                suscripcion.Endpoint[..Math.Min(60, suscripcion.Endpoint.Length)],
+            _logger.LogWarning("PUSH-APNS: HTTP {Status} → endpoint={Endpoint} | body={Body}",
                 (int)response.StatusCode,
+                suscripcion.Endpoint[..Math.Min(60, suscripcion.Endpoint.Length)],
                 string.IsNullOrWhiteSpace(responseBody) ? "(vacío)" : responseBody);
 
             if (response.StatusCode is System.Net.HttpStatusCode.Gone
