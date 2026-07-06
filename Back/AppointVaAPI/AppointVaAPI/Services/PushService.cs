@@ -229,17 +229,20 @@ namespace AppointVaAPI.Services
             request.Content = content;
 
             var response = await _http.SendAsync(request);
+            var responseBody = await response.Content.ReadAsStringAsync();
+
+            _logger.LogInformation("Push enviado a {Endpoint} → HTTP {Status} | body: {Body}",
+                suscripcion.Endpoint[..Math.Min(60, suscripcion.Endpoint.Length)],
+                (int)response.StatusCode,
+                string.IsNullOrWhiteSpace(responseBody) ? "(vacío)" : responseBody);
 
             if (response.StatusCode is System.Net.HttpStatusCode.Gone
                                     or System.Net.HttpStatusCode.NotFound)
                 throw new PushExpiredException();
 
             if (!response.IsSuccessStatusCode)
-            {
-                var body = await response.Content.ReadAsStringAsync();
                 throw new InvalidOperationException(
-                    $"Push service {(int)response.StatusCode}: {body}");
-            }
+                    $"Push service {(int)response.StatusCode}: {responseBody}");
         }
 
         // ── VAPID JWT (ES256) usando ECDsa nativo de .NET ─────────────────────────
