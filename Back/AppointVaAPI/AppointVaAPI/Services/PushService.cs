@@ -137,7 +137,7 @@ namespace AppointVaAPI.Services
             {
                 title = "AppointVa · Prueba",
                 body  = "Las notificaciones push funcionan.",
-                url   = "/dashboard/perfil",
+                url   = "/dashboard",
                 icalUrl      = (string?)null,
                 googleCalUrl = (string?)null
             });
@@ -430,7 +430,7 @@ namespace AppointVaAPI.Services
             {
                 title = $"Nueva cita — {negocio}",
                 body  = $"{cliente} · {servicio} · {fecha} {hora}",
-                url   = "/citas",
+                url   = "/dashboard/citas",
                 icalUrl,
                 googleCalUrl
             });
