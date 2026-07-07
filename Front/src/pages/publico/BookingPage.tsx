@@ -357,6 +357,8 @@ export default function BookingPage() {
         setErrorEnvio("Este horario ya fue reservado por alguien más. Por favor elige otra fecha u hora.");
         setPaso(3);
         setSlot(null);
+      } else if (status === 402) {
+        setErrorEnvio(msg ?? "Este negocio ha alcanzado su límite de citas para este mes. Por favor contáctalo directamente para más información.");
       } else {
         setErrorEnvio(msg ?? "No se pudo confirmar la cita. Intenta de nuevo.");
       }

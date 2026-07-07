@@ -19,6 +19,7 @@ using Serilog;
 using System.Text;
 using System.Text.Json;
 using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.ResponseCompression;
 
 // ── Serilog ────────────────────────────────────────────────────────────────────
 Serilog.Log.Logger = new LoggerConfiguration()
@@ -218,6 +219,20 @@ builder.Services.AddOutputCache(opt =>
     opt.AddBasePolicy(policy => policy.Expire(TimeSpan.FromMinutes(5)));
 });
 
+// ── Compresión HTTP (Brotli + Gzip) ───────────────────────────────────────────
+builder.Services.AddResponseCompression(opt =>
+{
+    opt.EnableForHttps = true;
+    opt.Providers.Add<BrotliCompressionProvider>();
+    opt.Providers.Add<GzipCompressionProvider>();
+    opt.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
+        ["application/json", "application/problem+json"]);
+});
+builder.Services.Configure<BrotliCompressionProviderOptions>(opt =>
+    opt.Level = System.IO.Compression.CompressionLevel.Fastest);
+builder.Services.Configure<GzipCompressionProviderOptions>(opt =>
+    opt.Level = System.IO.Compression.CompressionLevel.Fastest);
+
 // ── Controllers + OpenAPI ─────────────────────────────────────────────────────
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
@@ -241,6 +256,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseMiddleware<AppointVaAPI.Middleware.ExceptionHandlingMiddleware>();
+app.UseResponseCompression();
 app.UseHttpsRedirection();
 app.UseCors("FrontendPolicy");
 if (!string.IsNullOrEmpty(sentryDsn)) app.UseSentryTracing();

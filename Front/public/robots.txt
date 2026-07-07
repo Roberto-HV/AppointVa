@@ -1,0 +1,15 @@
+User-agent: *
+Allow: /b/
+Allow: /privacidad
+Allow: /terminos
+
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /login
+Disallow: /registro
+Disallow: /recuperar-contrasena
+Disallow: /restablecer-contrasena
+Disallow: /verificar-email
+Disallow: /cancelar/
+Disallow: /resena/
+Disallow: /cita/
