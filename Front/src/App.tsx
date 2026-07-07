@@ -31,6 +31,7 @@ import CancelarCitaPage from "./pages/publico/CancelarCitaPage";
 import NegociosAdminPage from "./pages/admin/NegociosAdminPage";
 import AuditLogPage from "./pages/admin/AuditLogPage";
 import MiPerfilPage from "./pages/dashboard/MiPerfilPage";
+import CitaDetallePage from "./pages/dashboard/CitaDetallePage";
 import GaleriaPage from "./pages/dashboard/GaleriaPage";
 import ListaEsperaPage from "./pages/dashboard/ListaEsperaPage";
 import IntakePage from "./pages/dashboard/IntakePage";
@@ -76,6 +77,7 @@ export default function App() {
               {/* Accesibles para ambos roles */}
               <Route path="/dashboard" element={<InicioPage />} />
               <Route path="/dashboard/citas" element={<CitasPage />} />
+              <Route path="/dashboard/citas/:id" element={<CitaDetallePage />} />
               <Route path="/dashboard/seguridad" element={<DosFactoresPage />} />
               <Route path="/dashboard/mi-perfil" element={<MiPerfilPage />} />
 

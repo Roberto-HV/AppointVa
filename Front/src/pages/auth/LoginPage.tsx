@@ -20,7 +20,9 @@ export default function LoginPage() {
   const iniciarSesion = useAuthStore((s) => s.iniciarSesion);
   const [errorGeneral, setErrorGeneral] = useState("");
   const [mostrarPassword, setMostrarPassword] = useState(false);
-  const registroExitoso = (location.state as { registroExitoso?: boolean })?.registroExitoso ?? false;
+  const locationState = location.state as { registroExitoso?: boolean; returnUrl?: string } | null;
+  const registroExitoso = locationState?.registroExitoso ?? false;
+  const returnUrl = locationState?.returnUrl;
   const [emailNoVerificado, setEmailNoVerificado] = useState<string | null>(null);
   const [reenvioEnviado, setReenvioEnviado] = useState(false);
   const [reenvioEnviando, setReenvioEnviando] = useState(false);
@@ -46,7 +48,8 @@ export default function LoginPage() {
       }
       iniciarSesion(respuesta.token, respuesta.refreshToken, respuesta.usuario);
       (document.activeElement as HTMLElement)?.blur();
-      navigate(respuesta.usuario.rol === "SuperAdmin" ? "/admin" : "/dashboard");
+      if (respuesta.usuario.rol === "SuperAdmin") navigate("/admin");
+      else navigate(returnUrl ?? "/dashboard");
     } catch (err: unknown) {
       const codigoError = (err as { response?: { data?: { codigoError?: string } } })?.response?.data?.codigoError;
       if (codigoError === "EMAIL_NO_VERIFICADO") {
@@ -80,7 +83,8 @@ export default function LoginPage() {
       const respuesta = await authApi.verificar2FA(challengeToken, codigo2FA.trim());
       iniciarSesion(respuesta.token, respuesta.refreshToken, respuesta.usuario);
       (document.activeElement as HTMLElement)?.blur();
-      navigate(respuesta.usuario.rol === "SuperAdmin" ? "/admin" : "/dashboard");
+      if (respuesta.usuario.rol === "SuperAdmin") navigate("/admin");
+      else navigate(returnUrl ?? "/dashboard");
     } catch (err: unknown) {
       const mensaje =
         (err as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje

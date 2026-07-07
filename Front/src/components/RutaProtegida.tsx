@@ -1,4 +1,4 @@
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
 
 interface Props {
@@ -7,8 +7,9 @@ interface Props {
 
 export default function RutaProtegida({ roles }: Props) {
   const { token, usuario } = useAuthStore();
+  const location = useLocation();
 
-  if (!token) return <Navigate to="/login" replace />;
+  if (!token) return <Navigate to="/login" state={{ returnUrl: location.pathname }} replace />;
 
   if (roles && usuario && !roles.includes(usuario.rol))
     return <Navigate to="/dashboard" replace />;

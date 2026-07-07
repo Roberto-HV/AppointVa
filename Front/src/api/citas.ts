@@ -35,6 +35,11 @@ export const METODOS_PAGO = ["Efectivo", "Tarjeta", "Transferencia"] as const;
 export type MetodoPago = (typeof METODOS_PAGO)[number];
 
 export const citasApi = {
+  obtenerPorId: async (id: string): Promise<CitaDto> => {
+    const { data } = await api.get(`/citas/${id}`);
+    return data;
+  },
+
   obtenerTodas: async (filtros?: FiltrosCitas): Promise<PaginaCitas> => {
     const { data, headers } = await api.get("/citas", { params: filtros });
     const total = parseInt(headers["x-total-count"] ?? "0", 10);

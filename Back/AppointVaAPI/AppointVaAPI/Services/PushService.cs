@@ -430,7 +430,7 @@ namespace AppointVaAPI.Services
             {
                 title = $"Nueva cita — {negocio}",
                 body  = $"{cliente} · {servicio} · {fecha} {hora}",
-                url   = "/dashboard/citas",
+                url   = $"/dashboard/citas/{cita.Id}",
                 icalUrl,
                 googleCalUrl
             });
