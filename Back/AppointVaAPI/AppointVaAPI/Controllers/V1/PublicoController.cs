@@ -217,6 +217,20 @@ namespace AppointVaAPI.Controllers.V1
             if (negocio is null || negocio.Activo != 1)
                 return NotFound(new { mensaje = "Negocio no encontrado" });
 
+            // Verificar límite de citas del plan
+            var planLimite = await _db.Negocios
+                .Where(n => n.Id == negocio.Id)
+                .Select(n => n.Plan != null ? n.Plan.MaxCitasMes : 0)
+                .FirstOrDefaultAsync();
+            if (planLimite > 0)
+            {
+                var ahora = DateTime.UtcNow;
+                var inicioMes = new DateTime(ahora.Year, ahora.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+                var citasMes = await _db.Citas.CountAsync(c => c.NegocioId == negocio.Id && c.InicioEn >= inicioMes);
+                if (citasMes >= planLimite)
+                    return StatusCode(402, new { mensaje = "Este negocio ha alcanzado su límite de citas para este mes. Por favor contáctalo directamente." });
+            }
+
             var servicio = await _db.Servicios
                 .FirstOrDefaultAsync(s => s.Id == dto.ServicioId && s.NegocioId == negocio.Id && s.Activo == 1);
             if (servicio is null)

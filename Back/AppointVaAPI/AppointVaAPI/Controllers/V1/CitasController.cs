@@ -106,10 +106,23 @@ namespace AppointVaAPI.Controllers.V1
         {
             if (_contexto.NegocioId is null) return Unauthorized();
 
-            if (dto.InicioEn <= DateTime.Now)
+            if (dto.InicioEn <= DateTime.UtcNow)
                 return BadRequest(new { mensaje = "La fecha de la cita debe ser en el futuro" });
 
             var negocioId = _contexto.NegocioId.Value;
+
+            // Verificar límite de citas del plan
+            var planLimite = await _db.Negocios
+                .Where(n => n.Id == negocioId)
+                .Select(n => n.Plan != null ? n.Plan.MaxCitasMes : 0)
+                .FirstOrDefaultAsync();
+            if (planLimite > 0)
+            {
+                var inicioMes = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+                var citasMes = await _db.Citas.CountAsync(c => c.NegocioId == negocioId && c.InicioEn >= inicioMes);
+                if (citasMes >= planLimite)
+                    return StatusCode(402, new { mensaje = $"Has alcanzado el límite de {planLimite} citas para este mes. Actualiza tu plan para continuar." });
+            }
 
             var servicio = await _servicioRepo.ObtenerPorIdAsync(dto.ServicioId, negocioId);
             if (servicio is null)

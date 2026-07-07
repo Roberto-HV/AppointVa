@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+﻿import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -227,6 +227,33 @@ export default function BookingPage() {
     queryFn: () => intakePublicoApi.getCampos(slug!, servicio?.id),
     enabled: !!slug && !!servicio,
   });
+
+  // SEO + Open Graph dinámico
+  useEffect(() => {
+    if (!negocio) return;
+    const titulo = `Reservar en ${negocio.nombre} — AppointVa`;
+    document.title = titulo;
+
+    const setMeta = (property: string, content: string) => {
+      let el = document.querySelector<HTMLMetaElement>(`meta[property="${property}"]`);
+      if (!el) {
+        el = document.createElement("meta");
+        el.setAttribute("property", property);
+        document.head.appendChild(el);
+      }
+      el.setAttribute("content", content);
+    };
+
+    const desc = negocio.descripcion?.trim() || `Agenda tu cita en ${negocio.nombre} en línea, rápido y sin llamadas.`;
+    setMeta("og:title", titulo);
+    setMeta("og:description", desc);
+    setMeta("og:type", "website");
+    setMeta("og:url", window.location.href);
+    if (negocio.portadaUrl || negocio.logoUrl)
+      setMeta("og:image", (negocio.portadaUrl || negocio.logoUrl)!);
+
+    return () => { document.title = "AppointVa"; };
+  }, [negocio]);
 
   const irSiguiente = () => {
     (document.activeElement as HTMLElement)?.blur();

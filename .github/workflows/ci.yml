@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend:
+    name: Backend — build & test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.x'
+
+      - name: Restore
+        run: dotnet restore
+        working-directory: Back/AppointVaAPI
+
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+        working-directory: Back/AppointVaAPI
+
+      - name: Test
+        run: dotnet test --no-build --configuration Release --verbosity normal
+        working-directory: Back/AppointVaAPI
+
+  frontend:
+    name: Frontend — build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: Front/package-lock.json
+
+      - name: Install
+        run: npm ci
+        working-directory: Front
+
+      - name: Build
+        run: npm run build
+        working-directory: Front
+        env:
+          VITE_API_URL: https://appointva.onrender.com
