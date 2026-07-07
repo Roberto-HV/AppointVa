@@ -7,14 +7,18 @@ export function formatPrecio(n: number): string {
 
 /** Solo fecha, sin hora: "15 de junio de 2026" */
 export function formatFecha(iso: string): string {
-  return new Date(iso).toLocaleDateString("es-MX", {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString("es-MX", {
     day: "2-digit", month: "long", year: "numeric",
   }).replace(/\bDe\b/g, "de");
 }
 
 /** Fecha con día de semana completo, sin hora: "Martes, 15 de junio de 2026" */
 export function formatFechaLarga(iso: string): string {
-  const s = new Date(iso).toLocaleDateString("es-MX", {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "—";
+  const s = d.toLocaleDateString("es-MX", {
     weekday: "long", day: "numeric", month: "long", year: "numeric",
   }).replace(/\bDe\b/g, "de");
   return s.charAt(0).toUpperCase() + s.slice(1);
@@ -24,7 +28,9 @@ export function formatFechaLarga(iso: string): string {
 
 /** Fecha + hora compacta para tablas: "15 jun 2026, 10:00 a. m." */
 export function formatFechaHoraCorta(iso: string): string {
-  return new Date(iso).toLocaleString("es-MX", {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "—";
+  return d.toLocaleString("es-MX", {
     day: "2-digit", month: "short", year: "numeric",
     hour: "2-digit", minute: "2-digit", hour12: true,
   });
@@ -32,7 +38,9 @@ export function formatFechaHoraCorta(iso: string): string {
 
 /** Fecha + hora estándar para vistas detalle: "15 de junio de 2026, 10:00 a. m." */
 export function formatFechaHora(iso: string): string {
-  return new Date(iso).toLocaleString("es-MX", {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "—";
+  return d.toLocaleString("es-MX", {
     day: "2-digit", month: "long", year: "numeric",
     hour: "2-digit", minute: "2-digit", hour12: true,
   }).replace(/\bDe\b/g, "de");
@@ -40,7 +48,9 @@ export function formatFechaHora(iso: string): string {
 
 /** Fecha + hora con día de semana abreviado para dashboards: "Mar. 15 de junio..." */
 export function formatFechaHoraResumen(iso: string): string {
-  const s = new Date(iso).toLocaleString("es-MX", {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "—";
+  const s = d.toLocaleString("es-MX", {
     weekday: "short", day: "numeric", month: "long", year: "numeric",
     hour: "2-digit", minute: "2-digit", hour12: true,
   }).replace(/\bDe\b/g, "de");
@@ -49,7 +59,9 @@ export function formatFechaHoraResumen(iso: string): string {
 
 /** Fecha + hora completa para comprobantes: "Martes, 15 de junio de 2026..." */
 export function formatFechaHoraCompleta(iso: string): string {
-  const s = new Date(iso).toLocaleString("es-MX", {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "—";
+  const s = d.toLocaleString("es-MX", {
     weekday: "long", day: "numeric", month: "long", year: "numeric",
     hour: "2-digit", minute: "2-digit", hour12: true,
   }).replace(/\bDe\b/g, "de");

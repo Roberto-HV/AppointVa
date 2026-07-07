@@ -71,7 +71,7 @@ export const publicoApi = {
     return data;
   },
 
-  buscarClienteDatos: async (email: string, slug: string): Promise<{ nombreCliente: string; telefonoCliente: string; emailCliente: string }> => {
+  buscarClienteDatos: async (email: string, slug: string): Promise<{ nombreCliente: string; emailCliente: string }> => {
     const { data } = await api.get("/publico/cliente", { params: { email, slug } });
     return data;
   },

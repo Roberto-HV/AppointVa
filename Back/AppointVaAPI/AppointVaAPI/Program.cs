@@ -1,8 +1,8 @@
 using AppointVaAPI.Data;
+using AppointVaAPI.Jobs;
 using AppointVaAPI.Models;
 using AppointVaAPI.Repository;
 using AppointVaAPI.Repository.IRepository;
-using AppointVaAPI.Services;
 using AppointVaAPI.Services;
 using AppointVaAPI.Services.IServices;
 using Hangfire;
@@ -34,6 +34,19 @@ Serilog.Log.Logger = new LoggerConfiguration()
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Host.UseSerilog();
+
+// ── Sentry ─────────────────────────────────────────────────────────────────────
+var sentryDsn = builder.Configuration["Sentry:Dsn"];
+if (!string.IsNullOrEmpty(sentryDsn))
+{
+    builder.WebHost.UseSentry(o =>
+    {
+        o.Dsn = sentryDsn;
+        o.Environment = builder.Environment.EnvironmentName;
+        o.TracesSampleRate = 0.1;
+        o.SendDefaultPii = false;
+    });
+}
 
 // ── Base de datos ──────────────────────────────────────────────────────────────
 // Compatibilidad de timestamps DateTime con PostgreSQL (comportamiento pre-6.0)
@@ -114,6 +127,7 @@ builder.Services.AddScoped<INotificacionService, NotificacionService>();
 builder.Services.AddScoped<IBlobStorageService, BlobStorageService>();
 builder.Services.AddScoped<IPushService, PushService>();
 builder.Services.AddScoped<IRecordatorioService, RecordatorioService>();
+builder.Services.AddScoped<NotificacionJob>();
 builder.Services.AddHttpClient("WhatsApp");
 builder.Services.AddHttpClient("WebPush");
 builder.Services.AddHttpClient("Brevo");
@@ -229,6 +243,7 @@ if (app.Environment.IsDevelopment())
 app.UseMiddleware<AppointVaAPI.Middleware.ExceptionHandlingMiddleware>();
 app.UseHttpsRedirection();
 app.UseCors("FrontendPolicy");
+if (!string.IsNullOrEmpty(sentryDsn)) app.UseSentryTracing();
 app.UseStaticFiles(); // sirve wwwroot/uploads/ cuando Cloudinary no está configurado
 app.UseRateLimiter();
 app.UseAuthentication();

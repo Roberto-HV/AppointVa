@@ -8,7 +8,7 @@ import { CalendarDays, User, Clock, Tag } from "lucide-react";
 
 const schema = z.object({
   nombreCliente: z.string().min(2, "Ingresa tu nombre completo"),
-  telefonoCliente: z.string().min(10, "Ingresa un teléfono válido de 10 dígitos").max(15),
+  telefonoCliente: z.string().min(10, "Ingresa un teléfono válido de 10 dígitos").max(15).regex(/^\+?[\d\s\-().]+$/, "Solo dígitos, +, - o espacios"),
   emailCliente: z.string().email("Correo inválido").optional().or(z.literal("")),
   notas: z.string().max(300).optional(),
 });

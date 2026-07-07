@@ -74,7 +74,7 @@ export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, on
     setFechaSel(fechaISO(dia));
   };
 
-  const { data: slots = [], isFetching, isError } = useQuery({
+  const { data: slots = [], isFetching, isError, refetch } = useQuery({
     queryKey: ["slots", servicioId, empleadoId, fechaSel],
     queryFn: () => publicoApi.obtenerDisponibilidad(servicioId, empleadoId, fechaSel!),
     enabled: !!fechaSel,
@@ -167,7 +167,7 @@ export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, on
             <div className="bg-red-50 border border-red-100 rounded-2xl px-4 py-4 text-center">
               <p className="text-sm text-red-600 mb-2">No se pudieron cargar los horarios.</p>
               <button
-                onClick={() => setFechaSel(fechaSel)}
+                onClick={() => refetch()}
                 className="text-xs text-red-500 font-semibold hover:underline"
               >
                 Intentar de nuevo

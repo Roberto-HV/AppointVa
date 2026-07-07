@@ -152,10 +152,13 @@ namespace AppointVaAPI.Controllers.V1
             var empleado = await _repo.ObtenerPorIdAsync(id, _contexto.NegocioId.Value);
             if (empleado is null) return NotFound(new { mensaje = "Empleado no encontrado" });
 
+            if (dtos.Any(d => !TimeSpan.TryParse(d.HoraInicio, out _) || !TimeSpan.TryParse(d.HoraFin, out _)))
+                return BadRequest(new { mensaje = "Formato de hora inválido." });
+
             foreach (var dto in dtos.Where(d => d.Activo))
             {
-                var ini = TimeSpan.Parse(dto.HoraInicio);
-                var fin = TimeSpan.Parse(dto.HoraFin);
+                TimeSpan.TryParse(dto.HoraInicio, out var ini);
+                TimeSpan.TryParse(dto.HoraFin, out var fin);
                 if (fin <= ini)
                     return BadRequest(new { mensaje = $"La hora de fin del {(DayOfWeek)(byte)dto.DiaSemana} debe ser posterior a la de inicio" });
             }

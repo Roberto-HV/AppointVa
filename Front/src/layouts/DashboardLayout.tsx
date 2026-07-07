@@ -8,6 +8,61 @@ import { negociosApi } from "../api/negocios";
 import { citasApi, ESTADOS } from "../api/citas";
 import { useToastStore } from "../store/toastStore";
 
+interface UserMenuContentProps {
+  usuario: { fotoUrl?: string | null; nombreCompleto: string; email: string; rol: string } | null;
+  perfil?: { planNombre?: string | null } | null;
+  iniciales: string;
+  rolChip: { label: string; cls: string };
+  onProfile: () => void;
+  onLogout: () => void;
+}
+
+function UserMenuContent({ usuario, perfil, iniciales, rolChip, onProfile, onLogout }: UserMenuContentProps) {
+  return (
+    <div className="py-1">
+      <div className="px-4 pt-3 pb-3 flex items-center gap-3">
+        <div className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center shrink-0 overflow-hidden">
+          {usuario?.fotoUrl
+            ? <img src={usuario.fotoUrl} alt="Avatar" className="w-full h-full object-cover" />
+            : <span className="text-sm font-bold text-white">{iniciales}</span>
+          }
+        </div>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-slate-800 truncate">{usuario?.nombreCompleto}</p>
+          <p className="text-xs text-slate-400 truncate">{usuario?.email}</p>
+          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${rolChip.cls}`}>
+              {rolChip.label}
+            </span>
+            {perfil?.planNombre && (
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700">
+                {perfil.planNombre}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+      <div className="h-px bg-slate-100 mx-3 my-1" />
+      <button
+        onClick={onProfile}
+        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 transition"
+      >
+        <UserCircle size={15} className="text-slate-400 shrink-0" />
+        Mi perfil
+      </button>
+      <div className="h-px bg-slate-100 mx-3 my-1" />
+      <button
+        onClick={onLogout}
+        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition"
+      >
+        <LogOut size={15} className="shrink-0" />
+        Cerrar sesión
+      </button>
+      <div className="h-2" />
+    </div>
+  );
+}
+
 const NAV_PROPIETARIO = [
   { to: "/dashboard", label: "Inicio", end: true, icon: LayoutDashboard },
   { to: "/dashboard/citas", label: "Citas", icon: CalendarDays },
@@ -112,52 +167,14 @@ export default function DashboardLayout() {
     ? { label: "Super Admin", cls: "bg-purple-100 text-purple-700" }
     : { label: "Propietario", cls: "bg-slate-100 text-slate-600" };
 
-  const UserMenuContent = () => (
-    <div className="py-1">
-      {/* Header del menú */}
-      <div className="px-4 pt-3 pb-3 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center shrink-0 overflow-hidden">
-          {usuario?.fotoUrl
-            ? <img src={usuario.fotoUrl} alt="Avatar" className="w-full h-full object-cover" />
-            : <span className="text-sm font-bold text-white">{iniciales}</span>
-          }
-        </div>
-        <div className="min-w-0">
-          <p className="text-sm font-semibold text-slate-800 truncate">{usuario?.nombreCompleto}</p>
-          <p className="text-xs text-slate-400 truncate">{usuario?.email}</p>
-          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${rolChip.cls}`}>
-              {rolChip.label}
-            </span>
-            {perfil?.planNombre && (
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700">
-                {perfil.planNombre}
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
-      <div className="h-px bg-slate-100 mx-3 my-1" />
-      {/* Mi perfil */}
-      <button
-        onClick={() => { navigate("/dashboard/mi-perfil"); setUserMenuOpen(false); cerrarSidebar(); }}
-        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 transition"
-      >
-        <UserCircle size={15} className="text-slate-400 shrink-0" />
-        Mi perfil
-      </button>
-      <div className="h-px bg-slate-100 mx-3 my-1" />
-      {/* Cerrar sesión */}
-      <button
-        onClick={() => { setUserMenuOpen(false); handleLogout(); }}
-        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition"
-      >
-        <LogOut size={15} className="shrink-0" />
-        Cerrar sesión
-      </button>
-      <div className="h-2" />
-    </div>
-  );
+  const menuProps = {
+    usuario,
+    perfil,
+    iniciales,
+    rolChip,
+    onProfile: () => { navigate("/dashboard/mi-perfil"); setUserMenuOpen(false); cerrarSidebar(); },
+    onLogout: () => { setUserMenuOpen(false); handleLogout(); },
+  };
 
   // Resetea scroll al montar — iOS puede llegar con viewport desplazado por el teclado del login
   useEffect(() => {
@@ -270,7 +287,7 @@ export default function DashboardLayout() {
         <div ref={sidebarUserRef} className="relative p-3 border-t border-slate-100 shrink-0">
           {userMenuOpen && (
             <div className="absolute bottom-full left-2 right-2 mb-2 bg-white rounded-2xl border border-slate-100 shadow-2xl overflow-hidden z-50">
-              <UserMenuContent />
+              <UserMenuContent {...menuProps} />
             </div>
           )}
           <button
@@ -333,7 +350,7 @@ export default function DashboardLayout() {
             </button>
             {userMenuOpen && (
               <div className="absolute top-full right-0 mt-2 w-64 bg-white rounded-2xl border border-slate-100 shadow-2xl overflow-hidden z-50">
-                <UserMenuContent />
+                <UserMenuContent {...menuProps} />
               </div>
             )}
           </div>

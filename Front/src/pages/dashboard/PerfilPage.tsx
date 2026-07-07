@@ -119,7 +119,11 @@ export default function PerfilPage() {
 
   const { mutate: guardar } = useMutation({
     mutationFn: (dto: ActualizarNegocioDto) => negociosApi.actualizarPerfil(dto),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["negocio-perfil"] }); toast("Cambios guardados"); },
+    onSuccess: (_, variables) => {
+      reset(variables as unknown as PerfilForm);
+      qc.invalidateQueries({ queryKey: ["negocio-perfil"] });
+      toast("Cambios guardados");
+    },
     onError: () => toast("No se pudieron guardar los cambios. Intenta de nuevo.", "error"),
   });
 

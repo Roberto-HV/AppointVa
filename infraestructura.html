@@ -289,34 +289,34 @@ footer {
       </div>
     </div>
 
-    <!-- Vercel -->
+    <!-- Render Frontend -->
     <div class="card">
-      <div class="card-stripe" style="background:#171717"></div>
+      <div class="card-stripe" style="background:#7C3AED"></div>
       <div class="card-head">
-        <div class="svc-badge" style="background:#171717">VC</div>
+        <div class="svc-badge" style="background:#7C3AED">R</div>
         <div>
-          <div class="svc-name">Vercel</div>
-          <div class="svc-role">Frontend &middot; React + Vite + TypeScript</div>
+          <div class="svc-name">Render (Frontend)</div>
+          <div class="svc-role">Static Site &middot; React + Vite + TypeScript</div>
         </div>
-        <div class="plan-pill">Hobby</div>
+        <div class="plan-pill">Free</div>
       </div>
       <div class="card-body">
         <div class="field">
           <span class="field-lbl">Dashboard</span>
-          <span class="field-val"><a href="https://vercel.com">vercel.com</a></span>
+          <span class="field-val"><a href="https://dashboard.render.com">dashboard.render.com</a></span>
         </div>
         <div class="field">
           <span class="field-lbl">URL producción (dominio propio)</span>
           <span class="field-val"><a href="https://appointva.com">https://appointva.com</a></span>
         </div>
-        <div class="field">
-          <span class="field-lbl">URL Vercel</span>
-          <span class="field-val"><a href="https://appoint-va.vercel.app">https://appoint-va.vercel.app</a></span>
-        </div>
         <div class="sep"></div>
         <div class="field">
-          <span class="field-lbl">Proyecto &middot; Repositorio &middot; Branch</span>
-          <span class="field-val">appoint-va &middot; Roberto-HV/AppointVa &middot; main</span>
+          <span class="field-lbl">Repositorio &middot; Branch</span>
+          <span class="field-val">Roberto-HV/AppointVa &middot; main</span>
+        </div>
+        <div class="field">
+          <span class="field-lbl">Build command</span>
+          <span class="field-val">npm run build</span>
         </div>
         <div class="field">
           <span class="field-lbl">Deploy</span>
@@ -368,7 +368,7 @@ footer {
         <div class="svc-badge" style="background:#0284C7">BR</div>
         <div>
           <div class="svc-name">Brevo</div>
-          <div class="svc-role">Envío de emails transaccionales (SMTP)</div>
+          <div class="svc-role">Envío de emails transaccionales (HTTP API)</div>
         </div>
         <div class="plan-pill">Free</div>
       </div>
@@ -378,12 +378,12 @@ footer {
           <span class="field-val"><a href="https://app.brevo.com">app.brevo.com</a></span>
         </div>
         <div class="field">
-          <span class="field-lbl">SMTP Host &middot; Puerto</span>
-          <span class="field-val">smtp-relay.brevo.com &middot; 587 (STARTTLS)</span>
+          <span class="field-lbl">Integración</span>
+          <span class="field-val plain">Transactional Email HTTP API (v3)</span>
         </div>
         <div class="field">
-          <span class="field-lbl">Usuario SMTP</span>
-          <span class="field-val">b0b28d001@smtp-brevo.com</span>
+          <span class="field-lbl">API Key</span>
+          <span class="field-val plain">Configurada en Render &rarr; Environment (Email__ApiKey)</span>
         </div>
         <div class="field">
           <span class="field-lbl">Remitente</span>
@@ -394,9 +394,40 @@ footer {
           <span class="field-lbl">Límites plan free</span>
           <span class="field-val plain">300 emails/día &middot; 9,000 emails/mes</span>
         </div>
-        <div class="warn">
-          <span>⚠</span>
-          <span><strong>Acción requerida:</strong> Regenerar la clave SMTP (fue compartida en el chat). Brevo &rarr; SMTP y API &rarr; Claves SMTP. Después actualizar en Render &rarr; Environment.</span>
+      </div>
+    </div>
+
+    <!-- Sentry -->
+    <div class="card">
+      <div class="card-stripe" style="background:#362D59"></div>
+      <div class="card-head">
+        <div class="svc-badge" style="background:#362D59">SE</div>
+        <div>
+          <div class="svc-name">Sentry</div>
+          <div class="svc-role">Monitoreo de errores &middot; Frontend + Backend</div>
+        </div>
+        <div class="plan-pill">Free</div>
+      </div>
+      <div class="card-body">
+        <div class="field">
+          <span class="field-lbl">Dashboard</span>
+          <span class="field-val"><a href="https://sentry.io">sentry.io</a></span>
+        </div>
+        <div class="field">
+          <span class="field-lbl">Proyectos</span>
+          <div class="tags">
+            <span class="tag">javascript (Frontend)</span>
+            <span class="tag">dotnet-aspnetcore (Backend)</span>
+          </div>
+        </div>
+        <div class="field">
+          <span class="field-lbl">DSN</span>
+          <span class="field-val plain">Configurado en Render &rarr; Environment (Sentry__Dsn / VITE_SENTRY_DSN)</span>
+        </div>
+        <div class="sep"></div>
+        <div class="field">
+          <span class="field-lbl">Límites plan free</span>
+          <span class="field-val plain">5,000 errores/mes &middot; 30 días historial</span>
         </div>
       </div>
     </div>
@@ -431,8 +462,8 @@ footer {
         <div class="field">
           <span class="field-lbl">Deploy automático al hacer push a main</span>
           <div class="tags">
-            <span class="tag">Vercel (Frontend)</span>
-            <span class="tag">Render (Manual Deploy)</span>
+            <span class="tag">Render Static Site (Frontend)</span>
+            <span class="tag">Render Web Service (Backend)</span>
           </div>
         </div>
       </div>

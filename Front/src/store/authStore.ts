@@ -14,6 +14,7 @@ interface AuthState {
   token: string | null;
   refreshToken: string | null;
   usuario: UsuarioInfo | null;
+  _hasHydrated: boolean;
   iniciarSesion: (token: string, refreshToken: string, usuario: UsuarioInfo) => void;
   cerrarSesion: () => void;
   estaAutenticado: () => boolean;
@@ -26,6 +27,7 @@ export const useAuthStore = create<AuthState>()(
       token: null,
       refreshToken: null,
       usuario: null,
+      _hasHydrated: false,
       iniciarSesion: (token, refreshToken, usuario) =>
         set({ token, refreshToken, usuario }),
       cerrarSesion: () =>
@@ -34,6 +36,11 @@ export const useAuthStore = create<AuthState>()(
       actualizarFoto: (fotoUrl) =>
         set((s) => ({ usuario: s.usuario ? { ...s.usuario, fotoUrl } : null })),
     }),
-    { name: "appointva-auth" }
+    {
+      name: "appointva-auth",
+      onRehydrateStorage: () => () => {
+        useAuthStore.setState({ _hasHydrated: true });
+      },
+    }
   )
 );

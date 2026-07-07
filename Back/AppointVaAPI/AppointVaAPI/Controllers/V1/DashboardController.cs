@@ -1,4 +1,4 @@
-﻿using AppointVaAPI.Constants;
+using AppointVaAPI.Constants;
 using AppointVaAPI.Data;
 using AppointVaAPI.Models.Dtos.Dashboard;
 using AppointVaAPI.Services.IServices;
@@ -30,75 +30,64 @@ namespace AppointVaAPI.Controllers.V1
             if (_contexto.NegocioId is null) return Unauthorized();
             var negocioId = _contexto.NegocioId.Value;
 
-            var ahora = DateTime.Today;
-            var finHoy = ahora.AddDays(1);
-            var diaSemana = (int)ahora.DayOfWeek;
-            var inicioSemana = ahora.AddDays(diaSemana == 0 ? -6 : -(diaSemana - 1));
-            var inicioMes = new DateTime(ahora.Year, ahora.Month, 1);
+            var ahora = DateTime.UtcNow;
+            var hoyInicio = ahora.Date;
+            var hoyFin = hoyInicio.AddDays(1);
+            var diaSemana = (int)hoyInicio.DayOfWeek;
+            var inicioSemana = hoyInicio.AddDays(diaSemana == 0 ? -6 : -(diaSemana - 1));
+            var inicioMes = new DateTime(hoyInicio.Year, hoyInicio.Month, 1, 0, 0, 0, DateTimeKind.Utc);
 
-            var todasCitas = await _db.Citas
-                .Include(c => c.Cliente)
-                .Include(c => c.Empleado)
-                .Include(c => c.Servicio)
-                .Where(c => c.NegocioId == negocioId && c.InicioEn >= inicioMes)
-                .ToListAsync();
+            var base_ = _db.Citas.Where(c => c.NegocioId == negocioId);
 
-            var completadasHoy = todasCitas.Where(c =>
-                c.Estado == EstadosCitas.Completada &&
-                c.InicioEn >= ahora && c.InicioEn < finHoy).ToList();
+            // Conteos — SQL COUNT
+            var citasHoy     = await base_.CountAsync(c => c.InicioEn >= hoyInicio && c.InicioEn < hoyFin);
+            var citasSemana  = await base_.CountAsync(c => c.InicioEn >= inicioSemana);
+            var citasMes     = await base_.CountAsync(c => c.InicioEn >= inicioMes);
 
-            var completadasSemana = todasCitas.Where(c =>
-                c.Estado == EstadosCitas.Completada &&
-                c.InicioEn >= inicioSemana).ToList();
+            // Ingresos — SQL SUM sobre completadas
+            var completadasBase = base_.Where(c => c.Estado == EstadosCitas.Completada);
+            var ingresosHoy    = await completadasBase.Where(c => c.InicioEn >= hoyInicio && c.InicioEn < hoyFin).SumAsync(c => c.Precio);
+            var ingresosSemana = await completadasBase.Where(c => c.InicioEn >= inicioSemana).SumAsync(c => c.Precio);
+            var ingresosMes    = await completadasBase.Where(c => c.InicioEn >= inicioMes).SumAsync(c => c.Precio);
 
-            var completadasMes = todasCitas.Where(c =>
-                c.Estado == EstadosCitas.Completada).ToList();
-
-            var citasHoy = todasCitas.Count(c => c.InicioEn >= ahora && c.InicioEn < finHoy);
-            var citasSemana = todasCitas.Count(c => c.InicioEn >= inicioSemana);
-            var citasMes = todasCitas.Count;
-
-            var proximas = todasCitas
-                .Where(c =>
-                    c.InicioEn >= DateTime.Now &&
-                    (c.Estado == EstadosCitas.Pendiente || c.Estado == EstadosCitas.Confirmada))
+            // Próximas 5 citas — carga mínima con proyección
+            var proximas = await base_
+                .Where(c => c.InicioEn >= ahora &&
+                            (c.Estado == EstadosCitas.Pendiente || c.Estado == EstadosCitas.Confirmada))
                 .OrderBy(c => c.InicioEn)
                 .Take(5)
                 .Select(c => new CitaResumenDto
                 {
                     Id = c.Id,
                     CodigoConfirmacion = c.CodigoConfirmacion,
-                    NombreCliente = c.Cliente?.NombreCompleto ?? string.Empty,
-                    NombreServicio = c.Servicio?.Nombre ?? string.Empty,
-                    NombreEmpleado = c.Empleado?.Nombre ?? string.Empty,
-                    InicioEn = c.InicioEn,
-                    Estado = c.Estado,
+                    NombreCliente  = c.Cliente != null ? c.Cliente.NombreCompleto : string.Empty,
+                    NombreServicio = c.Servicio != null ? c.Servicio.Nombre : string.Empty,
+                    NombreEmpleado = c.Empleado != null ? c.Empleado.Nombre : string.Empty,
+                    InicioEn   = c.InicioEn,
+                    Estado     = c.Estado,
                     EstadoTexto = PublicoController.ObtenerEstadoTexto(c.Estado)
                 })
-                .ToList();
+                .ToListAsync();
 
-            var topServicios = todasCitas
-                .Where(c => c.Servicio is not null)
+            // Top 5 servicios — GROUP BY en SQL
+            var topServicios = await base_
+                .Where(c => c.InicioEn >= inicioMes && c.Servicio != null)
                 .GroupBy(c => c.Servicio!.Nombre)
-                .Select(g => new ServicioPopularDto
-                {
-                    Nombre = g.Key,
-                    TotalCitas = g.Count()
-                })
+                .Select(g => new ServicioPopularDto { Nombre = g.Key, TotalCitas = g.Count() })
                 .OrderByDescending(s => s.TotalCitas)
                 .Take(5)
-                .ToList();
+                .ToListAsync();
 
             return Ok(new ResumenDashboardDto
             {
-                CitasHoy = citasHoy,
-                CitasSemana = citasSemana,
-                CitasMes = citasMes,
-                IngresosHoy = completadasHoy.Sum(c => c.Precio),
-                IngresosSemana = completadasSemana.Sum(c => c.Precio),
-                IngresosMes = completadasMes.Sum(c => c.Precio),
+                CitasHoy      = citasHoy,
+                CitasSemana   = citasSemana,
+                CitasMes      = citasMes,
+                IngresosHoy   = ingresosHoy,
+                IngresosSemana = ingresosSemana,
+                IngresosMes   = ingresosMes,
                 ProximasCitas = proximas,
-                TopServicios = topServicios
+                TopServicios  = topServicios
             });
         }
 
@@ -110,30 +99,29 @@ namespace AppointVaAPI.Controllers.V1
             if (_contexto.NegocioId is null) return Unauthorized();
             var negocioId = _contexto.NegocioId.Value;
 
-            var inicio = DateTime.Today.AddDays(-(dias - 1));
+            dias = Math.Clamp(dias, 1, 90);
+            var hoyUtc = DateTime.UtcNow.Date;
+            var inicio = hoyUtc.AddDays(-(dias - 1));
 
             var citas = await _db.Citas
                 .Where(c => c.NegocioId == negocioId &&
                             c.InicioEn >= inicio &&
-                            c.InicioEn < DateTime.Today.AddDays(1))
+                            c.InicioEn < hoyUtc.AddDays(1))
                 .Select(c => new { c.InicioEn, c.Estado, c.Precio })
                 .ToListAsync();
 
-            var datos = new List<PuntoDatosDto>();
             var cultura = new CultureInfo("es-MX");
-            for (var i = 0; i < dias; i++)
+            var datos = Enumerable.Range(0, dias).Select(i =>
             {
                 var fecha = inicio.AddDays(i);
                 var delDia = citas.Where(c => c.InicioEn.Date == fecha.Date).ToList();
-                datos.Add(new PuntoDatosDto
+                return new PuntoDatosDto
                 {
                     Etiqueta = fecha.ToString("dd/MM", cultura),
-                    Citas = delDia.Count,
-                    Ingresos = delDia
-                        .Where(c => c.Estado == EstadosCitas.Completada)
-                        .Sum(c => c.Precio)
-                });
-            }
+                    Citas    = delDia.Count,
+                    Ingresos = delDia.Where(c => c.Estado == EstadosCitas.Completada).Sum(c => c.Precio)
+                };
+            }).ToList();
 
             return Ok(datos);
         }

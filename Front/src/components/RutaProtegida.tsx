@@ -6,12 +6,14 @@ interface Props {
 }
 
 export default function RutaProtegida({ roles }: Props) {
-  const { token, usuario } = useAuthStore();
+  const { token, usuario, _hasHydrated } = useAuthStore();
   const location = useLocation();
+
+  if (!_hasHydrated) return null;
 
   if (!token) return <Navigate to="/login" state={{ returnUrl: location.pathname }} replace />;
 
-  if (roles && usuario && !roles.includes(usuario.rol))
+  if (roles && !roles.includes(usuario?.rol ?? ""))
     return <Navigate to="/dashboard" replace />;
 
   return <Outlet />;

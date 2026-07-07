@@ -1,5 +1,6 @@
 ﻿using AppointVaAPI.Constants;
 using AppointVaAPI.Data;
+using AppointVaAPI.Jobs;
 using AppointVaAPI.Models;
 using AppointVaAPI.Models.Dtos.Citas;
 using AppointVaAPI.Models.Dtos.Negocios;
@@ -465,13 +466,15 @@ namespace AppointVaAPI.Controllers.V1
         [EnableRateLimiting("PublicoEstricto")]
         public async Task<IActionResult> CancelarCita(string codigo, [FromQuery] string? email)
         {
+            if (string.IsNullOrWhiteSpace(email))
+                return BadRequest(new { mensaje = "El correo es requerido para cancelar la cita." });
+
             var cita = await _citaRepo.ObtenerPorCodigoAsync(codigo);
             if (cita is null)
                 return NotFound(new { mensaje = "Cita no encontrada" });
 
-            // Si se proporciona email, verificar que coincide con el del cliente
             var emailCliente = cita.Cliente?.Email ?? string.Empty;
-            if (!string.IsNullOrWhiteSpace(email) && !emailCliente.Equals(email.Trim(), StringComparison.OrdinalIgnoreCase))
+            if (!emailCliente.Equals(email.Trim(), StringComparison.OrdinalIgnoreCase))
                 return Forbid();
 
             if (cita.Estado == EstadosCitas.Cancelada)
@@ -484,7 +487,7 @@ namespace AppointVaAPI.Controllers.V1
             var horasCancelacion = cita.Negocio?.HorasCancelacion ?? 0;
             if (horasCancelacion > 0)
             {
-                var tiempoRestante = cita.InicioEn - DateTime.Now;
+                var tiempoRestante = cita.InicioEn - DateTime.UtcNow;
                 if (tiempoRestante.TotalHours < horasCancelacion)
                     return BadRequest(new { mensaje = $"No se puede cancelar con menos de {horasCancelacion} hora{(horasCancelacion == 1 ? "" : "s")} de anticipación." });
             }
@@ -494,9 +497,8 @@ namespace AppointVaAPI.Controllers.V1
             cita.FechaActualizacion = DateTime.UtcNow;
             await _citaRepo.ActualizarAsync(cita);
 
-            // Notificar al cliente
             if (!string.IsNullOrWhiteSpace(emailCliente))
-                _ = Task.Run(() => _notificacion.EnviarCancelacionCitaAsync(cita, emailCliente, cita.Cliente!.NombreCompleto));
+                _jobClient.Enqueue<NotificacionJob>(j => j.EnviarCancelacionAsync(cita.Id, emailCliente, cita.Cliente!.NombreCompleto));
 
             return NoContent();
         }
@@ -531,20 +533,22 @@ namespace AppointVaAPI.Controllers.V1
         [EnableRateLimiting("PublicoEstricto")]
         public async Task<IActionResult> ReagendarPublico(string codigo, [FromQuery] string? email, [FromBody] ReagendarCitaDto dto)
         {
+            if (string.IsNullOrWhiteSpace(email))
+                return BadRequest(new { mensaje = "El correo es requerido para reagendar la cita." });
+
             var cita = await _citaRepo.ObtenerPorCodigoAsync(codigo);
             if (cita is null)
                 return NotFound(new { mensaje = "Cita no encontrada" });
 
-            // Si se proporciona email, verificar que coincide con el del cliente
             var emailCliente = cita.Cliente?.Email ?? string.Empty;
-            if (!string.IsNullOrWhiteSpace(email) && !emailCliente.Equals(email.Trim(), StringComparison.OrdinalIgnoreCase))
+            if (!emailCliente.Equals(email.Trim(), StringComparison.OrdinalIgnoreCase))
                 return Forbid();
 
             if (cita.Estado == EstadosCitas.Cancelada || cita.Estado == EstadosCitas.Completada)
                 return BadRequest(new { mensaje = "No se puede reagendar esta cita" });
 
             var horasCancelacion = cita.Negocio?.HorasCancelacion ?? 0;
-            if (horasCancelacion > 0 && (cita.InicioEn - DateTime.Now).TotalHours < horasCancelacion)
+            if (horasCancelacion > 0 && (cita.InicioEn - DateTime.UtcNow).TotalHours < horasCancelacion)
                 return BadRequest(new { mensaje = $"No puedes reagendar con menos de {horasCancelacion} hora{(horasCancelacion == 1 ? "" : "s")} de anticipación." });
 
             var duracion = (int)(cita.FinEn - cita.InicioEn).TotalMinutes;
@@ -561,7 +565,7 @@ namespace AppointVaAPI.Controllers.V1
             await _citaRepo.ActualizarAsync(cita);
 
             if (!string.IsNullOrWhiteSpace(emailCliente))
-                _ = Task.Run(() => _notificacion.EnviarReagendarCitaAsync(cita, emailCliente, cita.Cliente!.NombreCompleto, fechaOriginal));
+                _jobClient.Enqueue<NotificacionJob>(j => j.EnviarReagendaAsync(cita.Id, emailCliente, cita.Cliente!.NombreCompleto, fechaOriginal));
 
             return Ok(new { mensaje = "¡Cita reagendada exitosamente!" });
         }
@@ -795,7 +799,6 @@ namespace AppointVaAPI.Controllers.V1
             return Ok(new
             {
                 nombreCliente = cliente.NombreCompleto,
-                telefonoCliente = cliente.Telefono,
                 emailCliente = cliente.Email,
             });
         }

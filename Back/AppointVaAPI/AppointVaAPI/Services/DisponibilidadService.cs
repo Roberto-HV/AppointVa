@@ -79,7 +79,7 @@ namespace AppointVaAPI.Services
 
             var duracion = TimeSpan.FromMinutes(servicio.DuracionMinutos);
             var buffer = TimeSpan.FromMinutes(servicio.BufferMinutos);
-            var ahora = DateTime.Now;
+            var ahora = DateTime.UtcNow;
             var todos = new List<SlotDisponibleDto>();
 
             foreach (var emp in empleadosActivos)
@@ -148,7 +148,7 @@ namespace AppointVaAPI.Services
 
             var duracion = TimeSpan.FromMinutes(servicio.DuracionMinutos);
             var buffer = TimeSpan.FromMinutes(servicio.BufferMinutos);
-            var ahora = DateTime.Now;
+            var ahora = DateTime.UtcNow;
             var slots = new List<SlotDisponibleDto>();
 
             var slotInicio = fechaDt.Add(horario.HoraInicio);

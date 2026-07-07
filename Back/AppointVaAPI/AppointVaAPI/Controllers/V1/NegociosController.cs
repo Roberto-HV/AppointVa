@@ -296,6 +296,9 @@ namespace AppointVaAPI.Controllers.V1
                 .Where(h => h.NegocioId == _contexto.NegocioId.Value)
                 .ToListAsync();
 
+            if (horarios.Any(h => !TimeSpan.TryParse(h.HoraInicio, out _) || !TimeSpan.TryParse(h.HoraFin, out _)))
+                return BadRequest(new { mensaje = "Formato de hora inválido." });
+
             foreach (var dto in horarios)
             {
                 var existente = existentes.FirstOrDefault(h => h.DiaSemana == dto.DiaSemana);

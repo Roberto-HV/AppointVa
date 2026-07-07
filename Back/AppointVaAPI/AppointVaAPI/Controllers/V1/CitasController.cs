@@ -1,5 +1,6 @@
 ﻿using AppointVaAPI.Constants;
 using AppointVaAPI.Data;
+using AppointVaAPI.Jobs;
 using AppointVaAPI.Models;
 using AppointVaAPI.Models.Dtos.Citas;
 using AppointVaAPI.Models.Dtos.Clientes;
@@ -249,7 +250,7 @@ namespace AppointVaAPI.Controllers.V1
             if (!string.IsNullOrWhiteSpace(emailDestino))
             {
                 if (dto.NuevoEstado == EstadosCitas.Cancelada)
-                    _ = Task.Run(() => _notificacion.EnviarCancelacionCitaAsync(cita, emailDestino, cita.Cliente!.NombreCompleto));
+                    _jobClient.Enqueue<NotificacionJob>(j => j.EnviarCancelacionAsync(cita.Id, emailDestino, cita.Cliente!.NombreCompleto));
 
                 if (dto.NuevoEstado == EstadosCitas.Completada && estadoAnterior != EstadosCitas.Completada)
                 {
@@ -271,7 +272,7 @@ namespace AppointVaAPI.Controllers.V1
 
                     var frontendUrl = _config["FrontendUrl"] ?? "http://localhost:5173";
                     var urlResena = $"{frontendUrl}/resena/{token}";
-                    _ = Task.Run(() => _notificacion.EnviarSolicitudResenaAsync(cita, emailDestino, cita.Cliente!.NombreCompleto, urlResena));
+                    _jobClient.Enqueue<NotificacionJob>(j => j.EnviarSolicitudResenaAsync(cita.Id, emailDestino, cita.Cliente!.NombreCompleto, urlResena));
                 }
             }
 
@@ -339,7 +340,7 @@ namespace AppointVaAPI.Controllers.V1
 
             var emailCliente = cita.Cliente?.Email;
             if (!string.IsNullOrWhiteSpace(emailCliente))
-                _ = Task.Run(() => _notificacion.EnviarReagendarCitaAsync(cita, emailCliente, cita.Cliente!.NombreCompleto, fechaOriginal));
+                _jobClient.Enqueue<NotificacionJob>(j => j.EnviarReagendaAsync(cita.Id, emailCliente, cita.Cliente!.NombreCompleto, fechaOriginal));
 
             return Ok(MapearDto(cita));
         }

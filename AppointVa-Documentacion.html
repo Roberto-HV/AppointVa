@@ -1926,7 +1926,7 @@
 <!-- ══════════════════ SECCIÓN 5e: CAMBIOS v4.2 ══════════════════ -->
 <div class="container page-break">
   <h2>5e. Registro de Cambios — v4.2 (2 de julio de 2026)</h2>
-  <p style="color:#6b7280;margin-bottom:24px;">Sprint de seguridad: auditoría, bloqueo por intentos fallidos, eliminación de cuenta con anonimización, endurecimiento de contraseñas y migración a Brevo SMTP.</p>
+  <p style="color:#6b7280;margin-bottom:24px;">Sprint de seguridad: auditoría, bloqueo por intentos fallidos, eliminación de cuenta con anonimización, endurecimiento de contraseñas y migración a Brevo (inicialmente SMTP, luego HTTP API en v4.3).</p>
 
   <h3>v4.2 — Seguridad del sistema</h3>
 
@@ -1996,14 +1996,151 @@
   <div class="change-item">
     <div class="change-icon" style="background:#f0fdf4;">✉️</div>
     <div>
-      <div class="change-title">Migración de Resend SDK a Brevo SMTP</div>
+      <div class="change-title">Migración de Resend SDK a Brevo (SMTP → HTTP API en v4.3)</div>
       <div class="change-desc">
-        El proveedor de correo fue cambiado de <strong>Resend SDK</strong> a <strong>Brevo SMTP</strong> (smtp-relay.brevo.com:587, STARTTLS) usando <code>MailKit / MimeKit</code>.<br>
-        Todos los correos del sistema (confirmación, recordatorio, verificación, recuperación, cancelación) siguen enviándose desde <code>notificaciones@appointva.com</code> sin cambios visibles para el usuario. El SPF/DKIM de appointva.com ya estaba configurado vía Cloudflare.
+        El proveedor de correo fue cambiado de <strong>Resend SDK</strong> a <strong>Brevo SMTP</strong> (smtp-relay.brevo.com:587, STARTTLS) usando <code>MailKit / MimeKit</code>. En v4.3 se migró completamente a la <strong>Brevo HTTP API v3</strong> eliminando la dependencia de MailKit.<br>
+        Todos los correos del sistema (confirmación, recordatorio, verificación, recuperación, cancelación) siguen enviándose desde <code>notificaciones@appointva.com</code> sin cambios visibles para el usuario.
       </div>
       <div class="change-files">
-        <span class="file-chip">Services/EmailService.cs (SMTP replace)</span>
-        <span class="file-chip">appsettings.json (Brevo SMTP config)</span>
+        <span class="file-chip">Services/EmailService.cs (HTTP API)</span>
+        <span class="file-chip">appsettings.json (Email:ApiKey)</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════ SECCIÓN 5f: CAMBIOS v4.3 ══════════════════ -->
+<div class="container page-break">
+  <h2>5f. Registro de Cambios — v4.3 (7 de julio de 2026)</h2>
+  <p style="color:#6b7280;margin-bottom:24px;">Sprint de calidad y monitoreo: Sentry, fix de serialización Hangfire, optimización SQL del dashboard, seguridad JWT, correcciones UTC, validaciones y tests.</p>
+
+  <h3>v4.3 — Calidad, monitoreo y correcciones críticas</h3>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#ede9fe;">🔍</div>
+    <div>
+      <div class="change-title">Sentry — monitoreo de errores en producción <span class="tag tag-new" style="vertical-align:middle;">Nuevo</span></div>
+      <div class="change-desc">
+        Integración de <strong>Sentry</strong> en frontend (<code>@sentry/react</code>) y backend (<code>Sentry.AspNetCore</code>). Captura automática de excepciones con stack trace, alertas por email y 5,000 errores/mes gratuitos. Solo activo en producción cuando el DSN está configurado en Render.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">Front/src/main.tsx</span>
+        <span class="file-chip">Program.cs (UseSentry, UseSentryTracing)</span>
+        <span class="file-chip">AppointVaAPI.csproj (Sentry.AspNetCore 5.8.0)</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#fee2e2;">🔧</div>
+    <div>
+      <div class="change-title">Fix crítico: serialización de entidades EF en Hangfire <span class="tag tag-fix" style="vertical-align:middle;">Fix</span></div>
+      <div class="change-desc">
+        Los jobs de Hangfire serializaban entidades EF (<code>Cita</code>, <code>Cliente</code>) directamente — riesgo de errores por referencias circulares y contexto de BD obsoleto. Se creó <code>NotificacionJob</code> que solo acepta <code>Guid + string + DateTime</code> y recarga la entidad fresca desde la BD, siguiendo el patrón de <code>RecordatorioService</code>.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">Jobs/NotificacionJob.cs (nuevo)</span>
+        <span class="file-chip">Controllers/V1/CitasController.cs</span>
+        <span class="file-chip">Controllers/V1/PublicoController.cs</span>
+        <span class="file-chip">Program.cs (AddScoped&lt;NotificacionJob&gt;)</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#f0fdf4;">⚡</div>
+    <div>
+      <div class="change-title">DashboardController — queries SQL en lugar de memoria <span class="tag tag-mod" style="vertical-align:middle;">Optimización</span></div>
+      <div class="change-desc">
+        El endpoint <code>GET /api/dashboard/resumen</code> cargaba todas las citas del mes en memoria y hacía filtros en C#. Se reescribió usando <code>CountAsync</code>, <code>SumAsync</code> y <code>GroupBy</code> directamente en SQL. Las próximas 5 citas se proyectan con <code>Select</code> sin <code>Include</code>.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">Controllers/V1/DashboardController.cs</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#fef3c7;">🔒</div>
+    <div>
+      <div class="change-title">JWT secret via variable de entorno <span class="tag tag-fix" style="vertical-align:middle;">Seguridad</span></div>
+      <div class="change-desc">
+        La clave JWT estaba hardcodeada en <code>appsettings.json</code>. Se reemplazó por el placeholder <code>REEMPLAZAR_CON_CLAVE_JWT_DE_AL_MENOS_32_CARACTERES</code>. En Render se configura como <code>Jwt__Clave</code> con la clave real.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">appsettings.json (placeholder)</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#eff6ff;">🕐</div>
+    <div>
+      <div class="change-title">DateTime.UtcNow en todo el backend <span class="tag tag-fix" style="vertical-align:middle;">Fix</span></div>
+      <div class="change-desc">
+        Se reemplazaron todos los usos de <code>DateTime.Now</code> y <code>DateTime.Today</code> por <code>DateTime.UtcNow</code>. En Linux (Render) el servidor corre en UTC — usar <code>Now</code> daba resultados incorrectos. Afectaba a DashboardController, DisponibilidadService, CitasController y PublicoController.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">Controllers/V1/DashboardController.cs</span>
+        <span class="file-chip">Controllers/V1/CitasController.cs</span>
+        <span class="file-chip">Controllers/V1/PublicoController.cs</span>
+        <span class="file-chip">Services/DisponibilidadService.cs</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#f0fdf4;">✅</div>
+    <div>
+      <div class="change-title">Validaciones adicionales y correcciones frontend <span class="tag tag-mod" style="vertical-align:middle;">Mejora</span></div>
+      <div class="change-desc">
+        <strong>TimeSpan.TryParse</strong> en NegociosController y EmpleadosController para evitar 500 en formato de hora inválido.<br>
+        <strong>Zustand hydration</strong>: flag <code>_hasHydrated</code> en authStore — evita bypass de roles antes de que el store se rehidrate del localStorage.<br>
+        <strong>PII fix</strong>: <code>buscarClienteDatos</code> ya no retorna el teléfono del cliente (solo nombre y email).<br>
+        <strong>Formatters</strong>: guard <code>isNaN</code> en las 6 funciones de formato de fecha — retorna "—" en lugar de "Invalid Date".<br>
+        <strong>Phone validation</strong>: regex en <code>PasoDatosCliente.tsx</code> — solo dígitos, +, -, espacios y paréntesis.<br>
+        <strong>isDirty reset</strong>: <code>PerfilPage</code> llama <code>reset(variables)</code> en <code>onSuccess</code> para limpiar el estado de cambios inmediatamente.<br>
+        <strong>Retry button</strong>: <code>PasoFechaHora</code> ahora llama <code>refetch()</code> directamente en lugar de <code>setFechaSel(fechaSel)</code> que no disparaba el re-fetch.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">Controllers/V1/NegociosController.cs</span>
+        <span class="file-chip">Controllers/V1/EmpleadosController.cs</span>
+        <span class="file-chip">store/authStore.ts</span>
+        <span class="file-chip">components/RutaProtegida.tsx</span>
+        <span class="file-chip">api/publico.ts</span>
+        <span class="file-chip">utils/formatters.ts</span>
+        <span class="file-chip">components/booking/PasoDatosCliente.tsx</span>
+        <span class="file-chip">pages/dashboard/PerfilPage.tsx</span>
+        <span class="file-chip">components/booking/PasoFechaHora.tsx</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#f0fdf4;">🧪</div>
+    <div>
+      <div class="change-title">Tests unitarios backend <span class="tag tag-new" style="vertical-align:middle;">Nuevo</span></div>
+      <div class="change-desc">
+        Primeros tests unitarios del proyecto con xUnit + FluentAssertions. Cubren la lógica de validación de horarios (<code>TimeSpan.TryParse</code>) y los cálculos de rangos UTC del dashboard.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">AppointVaAPI.Tests/ValidacionHorasTests.cs</span>
+        <span class="file-chip">AppointVaAPI.Tests/CalculosUtcTests.cs</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#eff6ff;">✉️</div>
+    <div>
+      <div class="change-title">Brevo SMTP → HTTP API <span class="tag tag-fix" style="vertical-align:middle;">Migración</span></div>
+      <div class="change-desc">
+        Se eliminó la dependencia de SMTP/MailKit y se migró a la <strong>Brevo Transactional Email HTTP API v3</strong>. La variable de entorno cambió de <code>Email__SmtpPassword</code> a <code>Email__ApiKey</code> (xkeysib-...).
+      </div>
+      <div class="change-files">
+        <span class="file-chip">Services/EmailService.cs</span>
+        <span class="file-chip">appsettings.json (Email:ApiKey)</span>
       </div>
     </div>
   </div>
@@ -2085,17 +2222,18 @@
     <tr><td>ORM provider</td><td>Npgsql.EntityFrameworkCore.PostgreSQL</td><td>—</td><td>—</td></tr>
     <tr><td>Autenticación</td><td>JWT Bearer + ASP.NET Identity</td><td>—</td><td>TOTP 2FA nativo</td></tr>
     <tr><td>Jobs</td><td>Hangfire + Hangfire.PostgreSql</td><td>—</td><td>Recordatorios 24h</td></tr>
-    <tr><td>Email</td><td>Brevo SMTP (MailKit)</td><td>—</td><td>✨ v4.2 — notificaciones@appointva.com (reemplaza Resend)</td></tr>
+    <tr><td>Email</td><td>Brevo HTTP API</td><td>—</td><td>✨ v4.2/v4.3 — notificaciones@appointva.com (HTTP API reemplaza SMTP)</td></tr>
     <tr><td>Imágenes</td><td>Cloudinary</td><td>1.29.1</td><td>Cloud: dssyaimvj</td></tr>
     <tr><td>Rate Limiting</td><td>ASP.NET Core RateLimiter</td><td>nativo .NET 10</td><td>Auth + endpoints públicos</td></tr>
     <tr><td>Output Cache</td><td>ASP.NET Core OutputCache</td><td>nativo .NET 10</td><td>GET /publico/negocios/:slug, 5 min TTL</td></tr>
     <tr><td>Logging</td><td>Serilog</td><td>—</td><td>Console + rolling file diario, nivel Warning+</td></tr>
     <tr><td>Health Checks</td><td>Microsoft.Extensions.Diagnostics.HealthChecks</td><td>—</td><td>GET /health verifica DB</td></tr>
     <tr><td>Dominio</td><td>Cloudflare</td><td>—</td><td>✨ v4.0 — appointva.com, auto-renovación anual</td></tr>
-    <tr><td>Hosting Frontend</td><td>Vercel</td><td>—</td><td>✨ v4.0 — appointva.com + www.appointva.com</td></tr>
+    <tr><td>Hosting Frontend</td><td>Render (Static Site)</td><td>—</td><td>✨ v4.3 — appointva.com (migrado de Vercel)</td></tr>
     <tr><td>Hosting Backend</td><td>Render (Free)</td><td>—</td><td>✨ v4.0 — appointva.onrender.com</td></tr>
     <tr><td>Base de datos prod</td><td>Neon PostgreSQL</td><td>—</td><td>✨ v4.0 — us-east-1, Free tier</td></tr>
     <tr><td>Keep-alive</td><td>cron-job.org</td><td>—</td><td>✨ v4.0 — Ping /health cada 15 min (sin cold starts)</td></tr>
+    <tr><td>Monitoreo de errores</td><td>Sentry</td><td>—</td><td>✨ v4.3 — Frontend + Backend, 5,000 errores/mes</td></tr>
   </table>
 
   <h2>8. Infraestructura de Producción</h2>
@@ -2108,11 +2246,12 @@
   <table>
     <tr><th>Componente</th><th>Servicio</th><th>URL / Detalles</th><th>Estado</th></tr>
     <tr><td><strong>Dominio</strong></td><td>Cloudflare</td><td>appointva.com · auto-renovación anual</td><td><span class="tag tag-new">✅ Activo</span></td></tr>
-    <tr><td><strong>Frontend</strong></td><td>Vercel</td><td>appointva.com + www.appointva.com</td><td><span class="tag tag-new">✅ Activo</span></td></tr>
+    <tr><td><strong>Frontend</strong></td><td>Render (Static Site)</td><td>appointva.com</td><td><span class="tag tag-new">✅ Activo</span></td></tr>
     <tr><td><strong>Backend API</strong></td><td>Render (Free)</td><td>appointva.onrender.com · Virginia</td><td><span class="tag tag-new">✅ Activo</span></td></tr>
     <tr><td><strong>Base de datos</strong></td><td>Neon PostgreSQL</td><td>us-east-1 · Free tier</td><td><span class="tag tag-new">✅ Activo</span></td></tr>
     <tr><td><strong>Imágenes</strong></td><td>Cloudinary</td><td>Cloud: dssyaimvj</td><td><span class="tag tag-new">✅ Activo</span></td></tr>
-    <tr><td><strong>Emails</strong></td><td>Brevo SMTP</td><td>notificaciones@appointva.com</td><td><span class="tag tag-new">✅ Activo</span></td></tr>
+    <tr><td><strong>Emails</strong></td><td>Brevo HTTP API</td><td>notificaciones@appointva.com</td><td><span class="tag tag-new">✅ Activo</span></td></tr>
+    <tr><td><strong>Monitoreo</strong></td><td>Sentry</td><td>sentry.io · Frontend + Backend</td><td><span class="tag tag-new">✅ Activo</span></td></tr>
     <tr><td><strong>Keep-alive</strong></td><td>cron-job.org</td><td>GET /health cada 15 min</td><td><span class="tag tag-new">✅ Activo</span></td></tr>
   </table>
 
@@ -2125,8 +2264,9 @@
       CLOUDINARY_CLOUD_NAME=dssyaimvj<br>
       CLOUDINARY_API_KEY=...<br>
       CLOUDINARY_API_SECRET=...<br>
-      BREVO_SMTP_USER=...<br>
-      BREVO_SMTP_PASS=...<br>
+      Email__ApiKey=xkeysib-...<br>
+      Sentry__Dsn=https://...@sentry.io/...<br>
+      VITE_SENTRY_DSN=https://...@sentry.io/...<br>
       FRONTEND_URL=https://appointva.com<br>
       BACKEND_URL=https://api.appointva.com<br>
       CORS_ORIGENES=https://appointva.com
@@ -2169,10 +2309,11 @@
     <tr><td>Observabilidad</td><td>Serilog rolling daily + nivel Warning. Health check en /health</td><td><span class="tag tag-new">✅ v2.2</span></td></tr>
     <tr><td>Output cache</td><td>[OutputCache(Duration=300)] en GET /publico/negocios/:slug</td><td><span class="tag tag-new">✅ v2.2</span></td></tr>
     <tr><td>Política cancelación</td><td>HorasCancelacion en Negocio, validación en CancelarCita, UI en PerfilPage</td><td><span class="tag tag-new">✅ v2.2</span></td></tr>
-    <tr><td>Emails</td><td>Confirmación, recordatorio (cliente + empleado), verificación, recuperación, cancelación — desde notificaciones@appointva.com (Brevo SMTP)</td><td><span class="tag tag-new">✅ v4.2</span></td></tr>
+    <tr><td>Emails</td><td>Confirmación, recordatorio (cliente + empleado), verificación, recuperación, cancelación — desde notificaciones@appointva.com (Brevo HTTP API)</td><td><span class="tag tag-new">✅ v4.3</span></td></tr>
     <tr><td>Imágenes</td><td>Cloudinary integrado, fallback local en dev</td><td><span class="tag tag-new">✅ v4.0</span></td></tr>
-    <tr><td>Dominio</td><td>appointva.com en Cloudflare, Vercel custom domain, correo propio</td><td><span class="tag tag-new">✅ v4.0</span></td></tr>
+    <tr><td>Dominio</td><td>appointva.com en Cloudflare, Render Static Site (Frontend), correo propio</td><td><span class="tag tag-new">✅ v4.3</span></td></tr>
     <tr><td>Keep-alive</td><td>cron-job.org ping /health cada 15 min — sin cold starts en Render</td><td><span class="tag tag-new">✅ v4.0</span></td></tr>
+    <tr><td>Monitoreo de errores</td><td>Sentry — captura excepciones en Frontend y Backend, alertas por email, 5,000 errores/mes gratis</td><td><span class="tag tag-new">✅ v4.3</span></td></tr>
     <tr><td>Bloqueo de cuentas</td><td>Identity lockout: 5 intentos → 15 min bloqueado, retorna 423 con tiempo restante</td><td><span class="tag tag-new">✅ v4.2</span></td></tr>
     <tr><td>Audit Log</td><td>Tabla AuditLogs: Login, LoginFallido, Logout, CambiarPassword, EliminarCuenta — visible para SuperAdmin</td><td><span class="tag tag-new">✅ v4.2</span></td></tr>
     <tr><td>Eliminación de cuenta</td><td>Anonimización LFPDPPP + revocación de refresh tokens + preservación de historial</td><td><span class="tag tag-new">✅ v4.2</span></td></tr>
@@ -2263,7 +2404,11 @@
     <tr><td>5</td><td>Política de cancelación configurable</td><td style="color:#92400e;font-weight:700;">Medio</td><td><span class="tag tag-new">✅ v2.2</span></td></tr>
     <tr><td>6</td><td>Botón WhatsApp en ConfirmacionPage</td><td style="color:#92400e;font-weight:700;">Medio</td><td><span class="tag tag-new">✅ Previo</span></td></tr>
     <tr><td>7</td><td>Validación límite de citas por plan</td><td style="color:#92400e;font-weight:700;">Medio</td><td><span class="tag tag-fix">Pendiente</span></td></tr>
-    <tr><td>8</td><td>Retry mejorado en Hangfire jobs</td><td style="color:#6b7280;font-weight:700;">Bajo</td><td><span class="tag tag-fix">Pendiente</span></td></tr>
+    <tr><td>8</td><td>Retry en Hangfire (3 intentos: 60/300/600s)</td><td style="color:#6b7280;font-weight:700;">Bajo</td><td><span class="tag tag-new">✅ v4.3</span></td></tr>
+    <tr><td>9</td><td>Monitoreo de errores con Sentry</td><td style="color:#1e40af;font-weight:700;">Alto</td><td><span class="tag tag-new">✅ v4.3</span></td></tr>
+    <tr><td>10</td><td>Fix serialización EF en Hangfire (NotificacionJob)</td><td style="color:#991b1b;font-weight:700;">Crítico</td><td><span class="tag tag-new">✅ v4.3</span></td></tr>
+    <tr><td>11</td><td>DashboardController SQL (sin carga en memoria)</td><td style="color:#1e40af;font-weight:700;">Alto</td><td><span class="tag tag-new">✅ v4.3</span></td></tr>
+    <tr><td>12</td><td>Lista de espera (WaitlistPage)</td><td style="color:#92400e;font-weight:700;">Medio</td><td><span class="tag tag-fix">Pendiente — requiere definición</span></td></tr>
   </table>
 
 </div>
