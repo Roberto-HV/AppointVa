@@ -47,7 +47,7 @@ function formatFechaMx(iso: string) {
 }
 
 function generarHTMLComprobante(pago: PagoSuscripcionDto): string {
-  const mesesLabel = pago.mesesPagados === 1 ? "1 mes" : `${pago.mesesPagados} meses`;
+  const mesesLabel = pago.mesesPagados >= 600 ? "De por vida" : pago.mesesPagados === 1 ? "1 mes" : `${pago.mesesPagados} meses`;
   const folio = `PAGO-${String(pago.numeroPago).padStart(3, "0")}`;
   return `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"/>
 <title>Comprobante ${folio}</title>
@@ -166,9 +166,15 @@ function ModalSuscripcion({
     },
   });
 
+  const LIFETIME = 1200;
+
   const handleMesesChange = (val: number) => {
     setMeses(val);
-    setMonto(val === 12 ? String(PRECIO_ANUAL) : String(PRECIO_MES * val));
+    if (val === LIFETIME) {
+      setMonto("0");
+    } else {
+      setMonto(val === 12 ? String(PRECIO_ANUAL) : String(PRECIO_MES * val));
+    }
   };
 
   const estado = suscripcion?.estado ?? "SinSuscripcion";
@@ -195,7 +201,7 @@ function ModalSuscripcion({
         <p className="text-sm font-semibold text-gray-700 mb-3">Registrar nuevo pago</p>
 
         {/* Selector de meses */}
-        <div className="flex gap-2 mb-3">
+        <div className="flex gap-2 mb-2">
           {[1, 3, 6, 12].map((m) => (
             <button
               key={m}
@@ -210,6 +216,16 @@ function ModalSuscripcion({
             </button>
           ))}
         </div>
+        <button
+          onClick={() => handleMesesChange(LIFETIME)}
+          className={`w-full py-2 rounded-lg text-xs font-bold border transition mb-3 ${
+            meses === LIFETIME
+              ? "bg-amber-600 text-white border-amber-600"
+              : "bg-white text-amber-700 border-amber-300 hover:bg-amber-50"
+          }`}
+        >
+          ♾ De por vida
+        </button>
 
         <div className="grid grid-cols-2 gap-3 mb-3">
           <div>
@@ -224,6 +240,9 @@ function ModalSuscripcion({
             />
             {meses === 12 && (
               <p className="text-[10px] text-emerald-600 mt-1 font-medium">2 meses gratis vs precio mensual</p>
+            )}
+            {meses === LIFETIME && (
+              <p className="text-[10px] text-amber-600 mt-1 font-medium">Acceso permanente — sin vencimiento</p>
             )}
           </div>
           <div>
@@ -245,6 +264,8 @@ function ModalSuscripcion({
         >
           {registrando
             ? "Registrando..."
+            : meses === LIFETIME
+            ? "Registrar acceso de por vida"
             : `Registrar pago · $${parseFloat(monto || "0").toLocaleString("es-MX", { minimumFractionDigits: 2 })} MXN`}
         </button>
       </div>
@@ -269,7 +290,7 @@ function ModalSuscripcion({
                       ${pago.monto.toLocaleString("es-MX", { minimumFractionDigits: 2 })} MXN
                     </span>
                     <span className="text-[10px] text-gray-400">
-                      · {pago.mesesPagados === 1 ? "1 mes" : `${pago.mesesPagados} meses`}
+                      · {pago.mesesPagados >= 600 ? "♾ De por vida" : pago.mesesPagados === 1 ? "1 mes" : `${pago.mesesPagados} meses`}
                     </span>
                   </div>
                   <p className="text-[11px] text-gray-400 mt-0.5">

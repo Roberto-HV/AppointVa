@@ -5,7 +5,7 @@ namespace AppointVaAPI.Models.Dtos.Admin
     public class RegistrarPagoDto
     {
         [Required]
-        [Range(1, 24)]
+        [Range(1, 1200)]
         public int MesesPagados { get; set; }
 
         [Required]
