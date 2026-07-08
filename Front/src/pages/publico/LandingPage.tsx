@@ -600,7 +600,7 @@ export default function LandingPage() {
               </div>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-5 items-start md:items-center">
+            <div className="grid md:grid-cols-3 gap-5 items-stretch">
               <PricingCard
                 delay={0} name="Básico" price={199} annualPrice={159} employees={3} citas="200"
                 highlighted billedAnnually={billedAnnually}
