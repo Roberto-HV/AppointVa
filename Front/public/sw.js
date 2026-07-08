@@ -1,4 +1,4 @@
-const CACHE = "appointva-v3";
+const CACHE = "appointva-v4";
 const STATIC = [
   "/",
   "/index.html",
@@ -112,7 +112,8 @@ self.addEventListener("fetch", (e) => {
       return fetch(request)
         .then((response) => {
           if (response.ok) {
-            caches.open(CACHE).then((c) => c.put(request, response.clone()));
+            const clone = response.clone(); // clonar ANTES del gap async
+            caches.open(CACHE).then((c) => c.put(request, clone));
           }
           return response;
         })
