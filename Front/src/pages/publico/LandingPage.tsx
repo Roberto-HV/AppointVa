@@ -324,10 +324,10 @@ function StepCard({ number, title, desc, delay }: { number: string; title: strin
 
 // ─── Pricing card ─────────────────────────────────────────────────────────────
 function PricingCard({
-  name, price, employees, citas, features, highlighted = false, delay = 0,
+  name, price, employees, citas, features, highlighted = false, delay = 0, comingSoon = false,
 }: {
   name: string; price: number; employees: number; citas: string;
-  features: string[]; highlighted?: boolean; delay?: number;
+  features: string[]; highlighted?: boolean; delay?: number; comingSoon?: boolean;
 }) {
   const fade = useFadeInUp(delay);
   return (
@@ -357,15 +357,30 @@ function PricingCard({
         <p className={`text-xs font-bold uppercase tracking-widest mb-3 ${highlighted ? "text-amber-400" : "text-slate-400"}`}>
           {name}
         </p>
-        <div className="flex items-baseline gap-1.5 mb-1">
-          <span className={`text-5xl font-black ${highlighted ? "text-white" : "text-slate-900"}`}>
-            ${price.toLocaleString()}
-          </span>
-          <span className="text-sm text-slate-400">/mes</span>
-        </div>
-        <p className={`text-xs ${highlighted ? "text-slate-400" : "text-slate-400"}`}>
-          {employees} empleados · {citas} citas/mes
-        </p>
+
+        {comingSoon ? (
+          <div className="mb-1">
+            <span
+              className="inline-block px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-widest"
+              style={{ backgroundColor: highlighted ? "#1E293B" : "#F8FAFC", color: highlighted ? GOLD : "#94A3B8", border: `1px solid ${highlighted ? "#334155" : "#E2E8F0"}` }}
+            >
+              Próximamente
+            </span>
+            <p className="text-xs text-slate-400 mt-2">{employees} empleados · {citas} citas/mes</p>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-baseline gap-1.5 mb-1">
+              <span className={`text-5xl font-black ${highlighted ? "text-white" : "text-slate-900"}`}>
+                ${price.toLocaleString()}
+              </span>
+              <span className="text-sm text-slate-400">/mes</span>
+            </div>
+            <p className="text-xs text-slate-400">
+              {employees} empleados · {citas} citas/mes
+            </p>
+          </>
+        )}
       </div>
 
       <ul className="flex flex-col gap-3 mb-8 flex-1">
@@ -379,16 +394,29 @@ function PricingCard({
         ))}
       </ul>
 
-      <Link
-        to="/registro"
-        className="block text-center py-3 rounded-xl text-sm font-bold transition-all hover:opacity-90 active:scale-95"
-        style={{
-          backgroundColor: highlighted ? GOLD : SLATE_700,
-          color: highlighted ? DARK : "white",
-        }}
-      >
-        Empezar con {name} →
-      </Link>
+      {comingSoon ? (
+        <div
+          className="block text-center py-3 rounded-xl text-sm font-bold cursor-not-allowed select-none"
+          style={{
+            backgroundColor: highlighted ? "#1E293B" : "#F1F5F9",
+            color: highlighted ? "#475569" : "#94A3B8",
+            border: `1px solid ${highlighted ? "#334155" : "#E2E8F0"}`,
+          }}
+        >
+          Próximamente disponible
+        </div>
+      ) : (
+        <Link
+          to="/registro"
+          className="block text-center py-3 rounded-xl text-sm font-bold transition-all hover:opacity-90 active:scale-95"
+          style={{
+            backgroundColor: highlighted ? GOLD : SLATE_700,
+            color: highlighted ? DARK : "white",
+          }}
+        >
+          Empezar con {name} →
+        </Link>
+      )}
     </div>
   );
 }
@@ -582,7 +610,7 @@ export default function LandingPage() {
                 ]}
               />
               <PricingCard
-                delay={100} name="Pro" price={399} employees={10} citas="1,000" highlighted
+                delay={100} name="Pro" price={399} employees={10} citas="1,000" highlighted comingSoon
                 features={[
                   "Todo lo del plan Básico",
                   "10 empleados",
@@ -595,7 +623,7 @@ export default function LandingPage() {
                 ]}
               />
               <PricingCard
-                delay={200} name="Premium" price={799} employees={50} citas="10,000"
+                delay={200} name="Premium" price={799} employees={50} citas="10,000" comingSoon
                 features={[
                   "Todo lo del plan Pro",
                   "50 empleados",
