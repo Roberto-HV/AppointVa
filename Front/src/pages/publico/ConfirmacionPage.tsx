@@ -1,4 +1,4 @@
-﻿import { useRef, useState } from "react";
+﻿import { useRef, useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { publicoApi } from "../../api/publico";
@@ -57,6 +57,23 @@ export default function ConfirmacionPage() {
 
   const negocioSlug = slug ?? cita?.negocioSlug ?? "";
   const linkCita = `${window.location.origin}/cita/${codigo}`;
+
+  // OG meta tags dinámicos para compartir en redes sociales
+  useEffect(() => {
+    if (!cita) return;
+    const title = `Tu cita en ${cita.nombreNegocio} — AppointVa`;
+    const desc = `Cita confirmada: ${cita.nombreServicio} con ${cita.nombreEmpleado}. Gestiona tu reserva en línea.`;
+    document.title = title;
+    const setMeta = (prop: string, val: string) => {
+      let el = document.querySelector(`meta[property="${prop}"]`);
+      if (!el) { el = document.createElement("meta"); el.setAttribute("property", prop); document.head.appendChild(el); }
+      el.setAttribute("content", val);
+    };
+    setMeta("og:title", title);
+    setMeta("og:description", desc);
+    setMeta("og:url", linkCita);
+    return () => { document.title = "AppointVa — Tu agenda online. Sin llamadas."; };
+  }, [cita, linkCita]);
 
   const copiarLink = () => {
     navigator.clipboard.writeText(linkCita);

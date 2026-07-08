@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+﻿import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { publicoApi } from "../../api/publico";
@@ -24,6 +24,22 @@ export default function ResenaPage() {
   });
 
   const errorMsg = (error as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje;
+
+  // OG meta tags dinámicos
+  useEffect(() => {
+    if (!info) return;
+    const title = `Califica tu cita en ${info.negocioNombre} — AppointVa`;
+    const desc = `Cuéntanos cómo fue tu experiencia con ${info.negocioNombre}. Tu opinión ayuda a otros clientes.`;
+    document.title = title;
+    const setMeta = (prop: string, val: string) => {
+      let el = document.querySelector(`meta[property="${prop}"]`);
+      if (!el) { el = document.createElement("meta"); el.setAttribute("property", prop); document.head.appendChild(el); }
+      el.setAttribute("content", val);
+    };
+    setMeta("og:title", title);
+    setMeta("og:description", desc);
+    return () => { document.title = "AppointVa — Tu agenda online. Sin llamadas."; };
+  }, [info]);
 
   if (isLoading) {
     return (

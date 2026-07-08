@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import RutaProtegida from "./components/RutaProtegida";
@@ -50,6 +50,9 @@ const DescuentosPage = lazy(() => import("./pages/dashboard/DescuentosPage"));
 // ── Admin ─────────────────────────────────────────────────────────────────
 const NegociosAdminPage = lazy(() => import("./pages/admin/NegociosAdminPage"));
 const AuditLogPage = lazy(() => import("./pages/admin/AuditLogPage"));
+
+// ── Landing ───────────────────────────────────────────────────────────────
+const LandingPage = lazy(() => import("./pages/publico/LandingPage"));
 
 // ── 404 ───────────────────────────────────────────────────────────────────
 const NotFoundPage = lazy(() => import("./pages/NotFoundPage"));
@@ -120,8 +123,8 @@ export default function App() {
                   </Route>
                 </Route>
 
-                {/* Default */}
-                <Route path="/" element={<Navigate to="/login" replace />} />
+                {/* Landing */}
+                <Route path="/" element={<LandingPage />} />
                 <Route path="*" element={<NotFoundPage />} />
               </Routes>
             </Suspense>

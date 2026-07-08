@@ -255,6 +255,16 @@ if (app.Environment.IsDevelopment())
     app.UseHangfireDashboard("/hangfire");
 }
 
+// ── Security headers ──────────────────────────────────────────────────────────
+app.Use(async (ctx, next) =>
+{
+    ctx.Response.Headers.Append("X-Content-Type-Options", "nosniff");
+    ctx.Response.Headers.Append("X-Frame-Options", "DENY");
+    ctx.Response.Headers.Append("Referrer-Policy", "strict-origin-when-cross-origin");
+    ctx.Response.Headers.Append("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+    ctx.Response.Headers.Append("X-XSS-Protection", "0"); // CSP is the modern replacement
+    await next();
+});
 app.UseMiddleware<AppointVaAPI.Middleware.ExceptionHandlingMiddleware>();
 app.UseResponseCompression();
 app.UseHttpsRedirection();
@@ -279,4 +289,24 @@ app.MapHealthChecks("/health", new HealthCheckOptions
         await ctx.Response.WriteAsync(result);
     }
 });
+// ── Sitemap dinámico ──────────────────────────────────────────────────────────
+app.MapGet("/sitemap.xml", async (ApplicationDbContext db) =>
+{
+    var slugs = await db.Negocios
+        .Where(n => n.FechaEliminacion == null && n.Activo == 1)
+        .Select(n => n.Slug)
+        .ToListAsync();
+
+    var sb = new System.Text.StringBuilder();
+    sb.AppendLine("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+    sb.AppendLine("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">");
+    foreach (var path in new[] { "/", "/privacidad", "/terminos" })
+        sb.AppendLine($"  <url><loc>https://appointva.com{path}</loc><changefreq>monthly</changefreq></url>");
+    foreach (var slug in slugs)
+        sb.AppendLine($"  <url><loc>https://appointva.com/b/{slug}</loc><changefreq>weekly</changefreq></url>");
+    sb.AppendLine("</urlset>");
+
+    return Results.Content(sb.ToString(), "application/xml; charset=utf-8");
+});
+
 app.Run();
