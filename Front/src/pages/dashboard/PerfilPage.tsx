@@ -428,12 +428,10 @@ export default function PerfilPage() {
             <p className="text-xs text-slate-400 mt-2">
               ¿Quieres cambiar de plan?{" "}
               <a
-                href="https://wa.me/521XXXXXXXXXX"
-                target="_blank"
-                rel="noopener noreferrer"
+                href="mailto:hola@appointva.com"
                 className="text-slate-600 font-semibold underline"
               >
-                Contáctanos por WhatsApp
+                Contáctanos por correo
               </a>
             </p>
           </div>
