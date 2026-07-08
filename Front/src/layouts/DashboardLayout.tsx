@@ -1,6 +1,6 @@
 ﻿import { useState, useRef, useEffect } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { Menu, X, LayoutDashboard, CalendarDays, Users, Scissors, UserCheck, Building2, Link, Copy, Check, BarChart2, ShieldCheck, UserCircle, Images, ClipboardList, Tag, LogOut, ChevronUp } from "lucide-react";
+import { Menu, X, LayoutDashboard, CalendarDays, Users, Scissors, UserCheck, Building2, Link, Copy, Check, BarChart2, ShieldCheck, UserCircle, Images, ClipboardList, Tag, LogOut, ChevronUp, Mail } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "../store/authStore";
 import { authApi } from "../api/auth";
@@ -355,6 +355,22 @@ export default function DashboardLayout() {
             )}
           </div>
         </header>
+
+        {/* ── Banner cuenta inactiva ── */}
+        {!esEmpleado && perfil && !perfil.activo && (
+          <div className="shrink-0 bg-amber-50 border-b border-amber-200 px-4 py-2.5 flex items-center gap-2.5">
+            <div className="w-5 h-5 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+              <Mail size={11} className="text-amber-600" />
+            </div>
+            <p className="text-xs text-amber-800 font-medium">
+              Tu negocio está pendiente de activación.{" "}
+              <a href="mailto:hola@appointva.com" className="underline font-semibold hover:text-amber-900 transition-colors">
+                Escríbenos a hola@appointva.com
+              </a>{" "}
+              para habilitarlo.
+            </p>
+          </div>
+        )}
 
         {/* ── Contenido principal ── */}
         <main className="flex-1 overflow-y-auto overscroll-y-none bg-white">
