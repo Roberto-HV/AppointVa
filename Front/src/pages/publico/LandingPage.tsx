@@ -599,7 +599,7 @@ export default function LandingPage() {
 
             <div className="grid md:grid-cols-3 gap-5 items-start md:items-center">
               <PricingCard
-                delay={0} name="Básico" price={199} employees={3} citas="200"
+                delay={0} name="Básico" price={199} employees={3} citas="200" highlighted
                 features={[
                   "Portal de reservas público",
                   "3 empleados",
@@ -610,7 +610,7 @@ export default function LandingPage() {
                 ]}
               />
               <PricingCard
-                delay={100} name="Pro" price={399} employees={10} citas="1,000" highlighted comingSoon
+                delay={100} name="Pro" price={399} employees={10} citas="1,000" comingSoon
                 features={[
                   "Todo lo del plan Básico",
                   "10 empleados",
