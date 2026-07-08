@@ -1,7 +1,10 @@
 import { useNavigate } from "react-router-dom";
+import { useAuthStore } from "../store/authStore";
 
 export default function NotFoundPage() {
   const navigate = useNavigate();
+  const token = useAuthStore((s) => s.token);
+  const usuario = useAuthStore((s) => s.usuario);
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
@@ -24,7 +27,11 @@ export default function NotFoundPage() {
             ← Volver
           </button>
           <button
-            onClick={() => navigate("/dashboard")}
+            onClick={() => {
+              if (!token) navigate("/");
+              else if (usuario?.rol === "SuperAdmin") navigate("/admin");
+              else navigate("/dashboard");
+            }}
             className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-primary hover:bg-primary-dark text-white text-sm font-semibold transition"
           >
             Ir al inicio

@@ -10,6 +10,7 @@ import { NotificacionBanner } from "../../components/ui/NotificacionBanner";
 import { dashboardApi } from "../../api/dashboard";
 import { citasApi } from "../../api/citas";
 import { negociosApi } from "../../api/negocios";
+import { empleadosApi } from "../../api/empleados";
 import { useAuthStore } from "../../store/authStore";
 import EstadoBadge from "../../components/ui/EstadoBadge";
 import { Skeleton } from "../../components/ui/Skeleton";
@@ -47,9 +48,10 @@ interface OnboardingProps {
   slug: string;
   tieneCitas: boolean;
   tieneServicios: boolean;
+  tieneEmpleados: boolean;
 }
 
-function WizardOnboarding({ negocioId, slug, tieneCitas, tieneServicios }: OnboardingProps) {
+function WizardOnboarding({ negocioId, slug, tieneCitas, tieneServicios, tieneEmpleados }: OnboardingProps) {
   const keyStorage = `onboarding-ok-${negocioId}`;
   const [cerrado, setCerrado] = useState(() => !!localStorage.getItem(keyStorage));
 
@@ -61,10 +63,10 @@ function WizardOnboarding({ negocioId, slug, tieneCitas, tieneServicios }: Onboa
   };
 
   const pasos = [
-    { hecho: true,           icono: CheckCircle2, label: "Cuenta creada", desc: "Tu negocio está registrado en AppointVa", accion: null },
-    { hecho: tieneServicios, icono: Scissors,     label: "Agrega servicios", desc: "Define los servicios que ofreces y sus precios", accion: { href: "/dashboard/servicios", texto: "Ir a Servicios" } },
-    { hecho: false,          icono: Users,         label: "Agrega tu equipo", desc: "Registra empleados para asignar citas", accion: { href: "/dashboard/empleados", texto: "Ir a Empleados" } },
-    { hecho: false,          icono: Link2,          label: "Comparte tu enlace", desc: `Envía este link a tus clientes para que reserven`, accion: null, link: `${window.location.origin}/b/${slug}` },
+    { hecho: true,            icono: CheckCircle2, label: "Cuenta creada",      desc: "Tu negocio está registrado en AppointVa",                        accion: null },
+    { hecho: tieneServicios,  icono: Scissors,     label: "Agrega servicios",  desc: "Define los servicios que ofreces y sus precios",                  accion: { href: "/dashboard/servicios", texto: "Ir a Servicios" } },
+    { hecho: tieneEmpleados,  icono: Users,        label: "Agrega tu equipo",  desc: "Registra empleados para asignar citas",                           accion: { href: "/dashboard/empleados", texto: "Ir a Empleados" } },
+    { hecho: !!slug,          icono: Link2,         label: "Comparte tu enlace", desc: `Envía este link a tus clientes para que reserven`,              accion: null, link: `${window.location.origin}/b/${slug}` },
   ];
 
   const hechos = pasos.filter((p) => p.hecho).length;
@@ -140,6 +142,12 @@ function VistaPropietario({ nombre }: { nombre: string }) {
     queryFn: () => dashboardApi.obtenerTendencia(dias),
   });
 
+  const { data: empleados = [] } = useQuery({
+    queryKey: ["empleados-wizard"],
+    queryFn: () => empleadosApi.obtenerTodos(),
+    staleTime: 1000 * 60 * 10,
+  });
+
   return (
     <div className="p-4 sm:p-8">
       <NotificacionBanner />
@@ -186,6 +194,7 @@ function VistaPropietario({ nombre }: { nombre: string }) {
           slug={negocio.slug}
           tieneCitas={(data?.citasMes ?? 0) > 0}
           tieneServicios={(data?.topServicios?.length ?? 0) > 0}
+          tieneEmpleados={empleados.length > 0}
         />
       )}
 

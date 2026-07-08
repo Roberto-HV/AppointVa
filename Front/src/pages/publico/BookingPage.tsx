@@ -216,10 +216,16 @@ export default function BookingPage() {
   const [validandoCupon, setValidandoCupon] = useState(false);
   const [errorCupon, setErrorCupon] = useState("");
 
-  const { data: negocio, isLoading, isError } = useQuery({
+  const { data: negocio, isLoading, isError, error } = useQuery({
     queryKey: ["negocio", slug],
     queryFn: () => publicoApi.obtenerNegocio(slug!),
     enabled: !!slug,
+    retry: (count, err) => {
+      // No reintentar si el negocio no existe o está inactivo (404)
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      if (status === 404) return false;
+      return count < 1;
+    },
   });
 
   const { data: camposIntake = [] } = useQuery<CampoIntake[]>({
@@ -357,6 +363,7 @@ export default function BookingPage() {
         setErrorEnvio("Este horario ya fue reservado por alguien más. Por favor elige otra fecha u hora.");
         setPaso(3);
         setSlot(null);
+        setMostrarIntake(false);
       } else if (status === 402) {
         setErrorEnvio(msg ?? "Este negocio ha alcanzado su límite de citas para este mes. Por favor contáctalo directamente para más información.");
       } else {
@@ -384,22 +391,38 @@ export default function BookingPage() {
   }
 
   if (isError) {
+    const status = (error as { response?: { status?: number } })?.response?.status;
+    const esInactivo = status === 404;
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-        <div className="text-center">
-          <div className="w-14 h-14 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <svg className="w-7 h-7 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-            </svg>
+        <div className="text-center max-w-xs">
+          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 ${esInactivo ? "bg-amber-100" : "bg-red-100"}`}>
+            {esInactivo ? (
+              <svg className="w-7 h-7 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 10.5V6.75a4.5 4.5 0 119 0v3.75M3.75 21.75h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H3.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+              </svg>
+            ) : (
+              <svg className="w-7 h-7 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+              </svg>
+            )}
           </div>
-          <p className="text-slate-700 font-semibold mb-1">No se pudo cargar la página</p>
-          <p className="text-slate-400 text-sm mb-5">Verifica tu conexión e intenta de nuevo.</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="text-sm bg-slate-700 hover:bg-slate-800 text-white font-semibold px-5 py-2.5 rounded-xl transition"
-          >
-            Reintentar
-          </button>
+          <p className="text-slate-700 font-semibold mb-1">
+            {esInactivo ? "Este negocio no está disponible" : "No se pudo cargar la página"}
+          </p>
+          <p className="text-slate-400 text-sm mb-5">
+            {esInactivo
+              ? "La página de reservas de este negocio no está activa por el momento. Contacta directamente al negocio para más información."
+              : "Verifica tu conexión e intenta de nuevo."}
+          </p>
+          {!esInactivo && (
+            <button
+              onClick={() => window.location.reload()}
+              className="text-sm bg-slate-700 hover:bg-slate-800 text-white font-semibold px-5 py-2.5 rounded-xl transition"
+            >
+              Reintentar
+            </button>
+          )}
         </div>
       </div>
     );
