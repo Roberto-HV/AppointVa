@@ -1,12 +1,10 @@
 import { Link } from "react-router-dom";
 import { useState, useEffect, useRef, type ReactNode, type CSSProperties } from "react";
 
-// ─── Brand tokens ──────────────────────────────────────────────────────────────
 const GOLD = "#C8A961";
 const SLATE_700 = "#334155";
 const DARK = "#0F172A";
 
-// ─── Scroll-reveal hook (no external deps) ────────────────────────────────────
 function useFadeInUp(delay = 0) {
   const ref = useRef<HTMLDivElement>(null);
   const [vis, setVis] = useState(false);
@@ -30,7 +28,6 @@ function useFadeInUp(delay = 0) {
   };
 }
 
-// ─── SVG icons (Heroicons outline) ────────────────────────────────────────────
 const Ico = ({ d, className = "w-5 h-5" }: { d: string; className?: string }) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className={className}>
     <path strokeLinecap="round" strokeLinejoin="round" d={d} />
@@ -67,33 +64,30 @@ function Navbar() {
       }`}
     >
       <div className="max-w-6xl mx-auto px-6 h-[68px] flex items-center justify-between">
-        {/* Logo */}
         <Link to="/" className="text-xl font-black tracking-tight select-none">
           <span className="text-slate-900">Appoint</span>
           <span style={{ color: GOLD }}>Va</span>
         </Link>
 
-        {/* Desktop nav links */}
         <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-500">
           <a href="#caracteristicas" className="hover:text-slate-900 transition-colors">Características</a>
           <a href="#como-funciona" className="hover:text-slate-900 transition-colors">Cómo funciona</a>
           <a href="#precios" className="hover:text-slate-900 transition-colors">Precios</a>
         </div>
 
-        {/* Desktop CTAs */}
         <div className="hidden md:flex items-center gap-2">
           <Link to="/login" className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors rounded-lg">
             Iniciar sesión
           </Link>
           <Link
             to="/registro"
-            className="px-5 py-2 text-sm font-bold text-white rounded-xl bg-slate-700 hover:bg-slate-800 transition-colors"
+            className="px-5 py-2 text-sm font-bold text-white rounded-xl transition-colors"
+            style={{ backgroundColor: SLATE_700 }}
           >
             Comenzar gratis →
           </Link>
         </div>
 
-        {/* Mobile hamburger */}
         <button
           className="md:hidden p-2 -mr-2 text-slate-600 hover:text-slate-900 transition-colors"
           onClick={() => setOpen(v => !v)}
@@ -103,7 +97,6 @@ function Navbar() {
         </button>
       </div>
 
-      {/* Mobile dropdown */}
       {open && (
         <div className="md:hidden bg-white border-t border-slate-100 px-6 py-4 flex flex-col gap-3 shadow-lg">
           <a href="#caracteristicas" className="py-2 text-sm font-medium text-slate-700" onClick={() => setOpen(false)}>Características</a>
@@ -111,7 +104,7 @@ function Navbar() {
           <a href="#precios" className="py-2 text-sm font-medium text-slate-700" onClick={() => setOpen(false)}>Precios</a>
           <div className="border-t border-slate-100 pt-3 flex flex-col gap-2">
             <Link to="/login" className="py-2.5 text-sm font-medium text-center text-slate-600 border border-slate-200 rounded-xl">Iniciar sesión</Link>
-            <Link to="/registro" className="py-2.5 text-sm font-bold text-center text-white rounded-xl bg-slate-700">Comenzar gratis →</Link>
+            <Link to="/registro" className="py-2.5 text-sm font-bold text-center text-white rounded-xl" style={{ backgroundColor: SLATE_700 }}>Comenzar gratis →</Link>
           </div>
         </div>
       )}
@@ -119,20 +112,15 @@ function Navbar() {
   );
 }
 
-// ─── Phone mockup with CSS-only booking UI ────────────────────────────────────
+// ─── Phone mockup ─────────────────────────────────────────────────────────────
 function PhoneMockup() {
   const slots = ["9:00", "9:30", "10:00", "10:30", "11:00", "11:30"];
   const days = [{ d: "Sa", n: 5 }, { d: "Do", n: 6 }, { d: "Lu", n: 7 }, { d: "Ma", n: 8 }];
 
   return (
     <div className="relative select-none pointer-events-none">
-      {/* Ambient glow */}
-      <div
-        className="absolute inset-0 blur-3xl opacity-25 scale-90 -z-10"
-        style={{ backgroundColor: GOLD, borderRadius: "50%" }}
-      />
+      <div className="absolute inset-0 blur-3xl opacity-25 scale-90 -z-10" style={{ backgroundColor: GOLD, borderRadius: "50%" }} />
 
-      {/* Floating notification */}
       <div className="absolute -top-5 -right-4 z-20 bg-white rounded-2xl shadow-2xl shadow-slate-200 px-3.5 py-2.5 flex items-center gap-2.5 min-w-max">
         <div className="w-7 h-7 rounded-full bg-emerald-50 flex items-center justify-center text-sm">🔔</div>
         <div>
@@ -141,7 +129,6 @@ function PhoneMockup() {
         </div>
       </div>
 
-      {/* Rating badge */}
       <div className="absolute -bottom-3 -left-4 z-20 bg-white rounded-2xl shadow-2xl shadow-slate-200 px-3.5 py-2.5 flex items-center gap-2">
         <span className="text-base">⭐</span>
         <div>
@@ -150,31 +137,22 @@ function PhoneMockup() {
         </div>
       </div>
 
-      {/* Phone shell */}
       <div className="relative w-[255px] rounded-[2.8rem] bg-[#0A0A0A] p-[11px] shadow-2xl ring-1 ring-white/5">
-        {/* Volume buttons */}
         <div className="absolute -left-[3px] top-[76px] w-[3px] h-8 rounded-l-full bg-[#1a1a1a]" />
         <div className="absolute -left-[3px] top-[120px] w-[3px] h-6 rounded-l-full bg-[#1a1a1a]" />
-        {/* Power button */}
         <div className="absolute -right-[3px] top-[100px] w-[3px] h-12 rounded-r-full bg-[#1a1a1a]" />
 
-        {/* Screen */}
         <div className="rounded-[2.2rem] bg-[#F9FAFB] overflow-hidden h-[510px] flex flex-col">
-
-          {/* Status bar */}
           <div className="flex justify-between items-center px-6 pt-3 pb-1">
             <span className="text-[11px] font-bold text-slate-700">9:41</span>
-            {/* Dynamic island */}
             <div className="absolute left-1/2 -translate-x-1/2 top-[14px] w-[80px] h-[22px] rounded-full bg-black" />
             <div className="flex gap-1.5 items-center">
-              {/* Signal bars */}
               <svg viewBox="0 0 16 12" className="w-3.5 h-3 fill-slate-700">
                 <rect x="0" y="7" width="2.5" height="5" rx="0.5" />
                 <rect x="4.5" y="4.5" width="2.5" height="7.5" rx="0.5" />
                 <rect x="9" y="2" width="2.5" height="10" rx="0.5" />
                 <rect x="13.5" y="0" width="2.5" height="12" rx="0.5" />
               </svg>
-              {/* Battery */}
               <svg viewBox="0 0 24 12" className="w-5 h-3 fill-slate-700">
                 <rect x="0" y="1" width="20" height="10" rx="2" stroke="currentColor" strokeWidth="1.5" fill="none" />
                 <rect x="20.5" y="4" width="2" height="4" rx="0.5" />
@@ -183,100 +161,60 @@ function PhoneMockup() {
             </div>
           </div>
 
-          {/* App header */}
           <div className="mx-3 mt-2 mb-1 px-3 py-2.5 bg-white rounded-2xl border border-slate-100 flex items-center gap-2.5">
-            <div
-              className="w-8 h-8 rounded-xl flex items-center justify-center text-[11px] font-black text-white flex-shrink-0"
-              style={{ background: `linear-gradient(135deg, ${GOLD}, #a8862e)` }}
-            >
-              BL
-            </div>
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center text-[11px] font-black text-white flex-shrink-0" style={{ background: `linear-gradient(135deg, ${GOLD}, #a8862e)` }}>BL</div>
             <div className="min-w-0">
               <p className="text-[11px] font-bold text-slate-900 leading-none mb-0.5">Barbería Luis</p>
               <p className="text-[9px] text-slate-400 truncate">appointva.com/b/barberia-luis</p>
             </div>
           </div>
 
-          {/* Progress steps */}
           <div className="flex gap-1 px-4 mb-2">
             {[1, 2, 3, 4].map(s => (
               <div key={s} className="flex-1 h-1 rounded-full" style={{ backgroundColor: s <= 3 ? GOLD : "#E2E8F0" }} />
             ))}
           </div>
 
-          {/* Content */}
           <div className="flex-1 px-4 flex flex-col min-h-0">
             <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest mb-2">Elige tu horario</p>
-
-            {/* Service chip */}
-            <div
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl mb-3 self-start"
-              style={{ backgroundColor: "#FEF9EC", border: `1px solid #F3E0A0` }}
-            >
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl mb-3 self-start" style={{ backgroundColor: "#FEF9EC", border: "1px solid #F3E0A0" }}>
               <span className="text-[10px]">✂</span>
               <span className="text-[10px] font-bold" style={{ color: "#92701A" }}>Corte · 45 min · $250 MXN</span>
             </div>
 
-            {/* Day selector */}
             <div className="grid grid-cols-4 gap-1 mb-3">
               {days.map(({ d, n }, i) => (
-                <div
-                  key={d}
-                  className="rounded-xl py-1.5 text-center"
-                  style={i === 2
-                    ? { backgroundColor: GOLD }
-                    : { backgroundColor: "#F1F5F9" }
-                  }
-                >
+                <div key={d} className="rounded-xl py-1.5 text-center" style={i === 2 ? { backgroundColor: GOLD } : { backgroundColor: "#F1F5F9" }}>
                   <p className="text-[9px] font-bold" style={{ color: i === 2 ? "#fff" : "#64748B" }}>{d}</p>
                   <p className="text-[11px] font-black" style={{ color: i === 2 ? "#fff" : "#334155" }}>{n}</p>
                 </div>
               ))}
             </div>
 
-            {/* Time slots */}
             <div className="grid grid-cols-3 gap-1.5 mb-3">
               {slots.map((t, i) => {
                 const selected = i === 4;
                 const unavailable = i === 2;
                 return (
-                  <div
-                    key={t}
-                    className="text-center py-1.5 rounded-xl text-[10px] font-bold"
-                    style={{
-                      backgroundColor: selected ? GOLD : unavailable ? "#F8FAFC" : "white",
-                      color: selected ? "white" : unavailable ? "#CBD5E1" : "#334155",
-                      border: selected ? "none" : unavailable ? "1px solid #E2E8F0" : "1px solid #E2E8F0",
-                      textDecoration: unavailable ? "line-through" : "none",
-                    }}
-                  >
+                  <div key={t} className="text-center py-1.5 rounded-xl text-[10px] font-bold" style={{ backgroundColor: selected ? GOLD : unavailable ? "#F8FAFC" : "white", color: selected ? "white" : unavailable ? "#CBD5E1" : "#334155", border: selected ? "none" : "1px solid #E2E8F0", textDecoration: unavailable ? "line-through" : "none" }}>
                     {t}
                   </div>
                 );
               })}
             </div>
 
-            {/* Professional */}
             <div className="flex items-center gap-2 px-2 py-2 bg-white rounded-xl border border-slate-100">
               <div className="w-7 h-7 rounded-full bg-slate-200 flex items-center justify-center text-[9px] font-bold text-slate-500 flex-shrink-0">LG</div>
               <div>
                 <p className="text-[10px] font-bold text-slate-800 leading-none mb-0.5">Luis García</p>
                 <p className="text-[9px] text-slate-400">Tu barbero favorito</p>
               </div>
-              <div className="ml-auto">
-                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600">✓</span>
-              </div>
+              <div className="ml-auto"><span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600">✓</span></div>
             </div>
           </div>
 
-          {/* Bottom CTA */}
           <div className="px-4 pb-5 pt-3">
-            <div
-              className="w-full py-2.5 rounded-2xl text-[12px] font-black text-white text-center"
-              style={{ backgroundColor: SLATE_700 }}
-            >
-              Confirmar reserva →
-            </div>
+            <div className="w-full py-2.5 rounded-2xl text-[12px] font-black text-white text-center" style={{ backgroundColor: SLATE_700 }}>Confirmar reserva →</div>
           </div>
         </div>
       </div>
@@ -288,15 +226,8 @@ function PhoneMockup() {
 function FeatureCard({ icon, title, desc, delay }: { icon: ReactNode; title: string; desc: string; delay?: number }) {
   const fade = useFadeInUp(delay);
   return (
-    <div
-      ref={fade.ref}
-      style={fade.style}
-      className="group p-6 rounded-2xl border border-slate-100 bg-white hover:border-amber-200 hover:shadow-lg hover:shadow-amber-50 transition-all duration-300"
-    >
-      <div
-        className="w-11 h-11 rounded-xl flex items-center justify-center mb-5 transition-transform duration-300 group-hover:scale-110"
-        style={{ backgroundColor: "#FEF9EC", color: GOLD }}
-      >
+    <div ref={fade.ref} style={fade.style} className="group p-6 rounded-2xl border border-slate-100 bg-white hover:border-amber-200 hover:shadow-lg hover:shadow-amber-50 transition-all duration-300">
+      <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-5 transition-transform duration-300 group-hover:scale-110" style={{ backgroundColor: "#FEF9EC", color: GOLD }}>
         {icon}
       </div>
       <h3 className="font-bold text-slate-900 mb-2 text-[15px]">{title}</h3>
@@ -310,10 +241,7 @@ function StepCard({ number, title, desc, delay }: { number: string; title: strin
   const fade = useFadeInUp(delay);
   return (
     <div ref={fade.ref} style={fade.style} className="text-center">
-      <div
-        className="w-14 h-14 rounded-2xl flex items-center justify-center text-white font-black text-lg mb-6 mx-auto relative z-10 shadow-lg"
-        style={{ backgroundColor: SLATE_700, boxShadow: `0 8px 24px -4px ${SLATE_700}55` }}
-      >
+      <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-white font-black text-lg mb-6 mx-auto relative z-10 shadow-lg" style={{ backgroundColor: SLATE_700, boxShadow: `0 8px 24px -4px ${SLATE_700}55` }}>
         {number}
       </div>
       <h3 className="text-lg font-bold text-slate-900 mb-3">{title}</h3>
@@ -322,48 +250,84 @@ function StepCard({ number, title, desc, delay }: { number: string; title: strin
   );
 }
 
-// ─── Pricing card ─────────────────────────────────────────────────────────────
-function PricingCard({
-  name, price, employees, citas, features, highlighted = false, delay = 0, comingSoon = false,
-}: {
-  name: string; price: number; employees: number; citas: string;
-  features: string[]; highlighted?: boolean; delay?: number; comingSoon?: boolean;
+// ─── Testimonial card ─────────────────────────────────────────────────────────
+function TestimonialCard({ quote, metric, name, role, initials, delay = 0 }: {
+  quote: string; metric: string; name: string; role: string; initials: string; delay?: number;
 }) {
   const fade = useFadeInUp(delay);
   return (
+    <div ref={fade.ref} style={fade.style} className="flex flex-col p-7 rounded-2xl border border-slate-200 bg-white hover:border-amber-200 hover:shadow-lg hover:shadow-amber-50/50 transition-all duration-300">
+      <div className="flex gap-0.5 mb-5">
+        {[...Array(5)].map((_, i) => (
+          <svg key={i} viewBox="0 0 24 24" className="w-4 h-4" fill={GOLD}>
+            <path d={dStar} />
+          </svg>
+        ))}
+      </div>
+      <p className="text-slate-700 text-sm leading-relaxed flex-1 mb-5">"{quote}"</p>
+      <div className="inline-flex items-center self-start px-2.5 py-1 rounded-lg text-xs font-bold mb-6" style={{ backgroundColor: "#FEF9EC", color: "#92701A", border: "1px solid #F3E0A0" }}>
+        {metric}
+      </div>
+      <div className="flex items-center gap-3">
+        <div className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-black text-white flex-shrink-0" style={{ background: `linear-gradient(135deg, ${GOLD}, #a8862e)` }}>
+          {initials}
+        </div>
+        <div>
+          <p className="text-sm font-bold text-slate-900">{name}</p>
+          <p className="text-xs text-slate-400">{role}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── FAQ accordion item ───────────────────────────────────────────────────────
+function FaqItem({ q, a, defaultOpen = false }: { q: string; a: string; defaultOpen?: boolean }) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="border-b border-slate-100 last:border-0">
+      <button onClick={() => setOpen(v => !v)} className="w-full flex items-center justify-between gap-4 py-5 text-left group">
+        <span className="font-semibold text-slate-900 text-[15px] group-hover:text-slate-700 transition-colors leading-snug">{q}</span>
+        <span className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center transition-all duration-200" style={{ backgroundColor: open ? DARK : "#F1F5F9", color: open ? GOLD : "#64748B" }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className={`w-3 h-3 transition-transform duration-200 ${open ? "rotate-180" : ""}`}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+          </svg>
+        </span>
+      </button>
+      {open && (
+        <p className="text-sm text-slate-500 leading-relaxed pb-5 pr-10">{a}</p>
+      )}
+    </div>
+  );
+}
+
+// ─── Pricing card ─────────────────────────────────────────────────────────────
+function PricingCard({
+  name, price, annualPrice, employees, citas, features, highlighted = false, delay = 0, comingSoon = false, billedAnnually = false,
+}: {
+  name: string; price: number; annualPrice?: number; employees: number; citas: string;
+  features: string[]; highlighted?: boolean; delay?: number; comingSoon?: boolean; billedAnnually?: boolean;
+}) {
+  const fade = useFadeInUp(delay);
+  const displayPrice = billedAnnually && annualPrice ? annualPrice : price;
+  return (
     <div
       ref={fade.ref}
-      style={{
-        ...fade.style,
-        backgroundColor: highlighted ? DARK : "white",
-        transform: `${fade.style.transform} ${highlighted ? "scale(1.04)" : ""}`,
-      }}
-      className={`relative flex flex-col p-7 rounded-2xl border transition-all duration-300 ${
-        highlighted
-          ? "border-transparent shadow-2xl"
-          : "border-slate-200 hover:border-slate-300 hover:shadow-md"
-      }`}
+      style={{ ...fade.style, backgroundColor: highlighted ? DARK : "white", transform: `${fade.style.transform} ${highlighted ? "scale(1.04)" : ""}` }}
+      className={`relative flex flex-col p-7 rounded-2xl border transition-all duration-300 ${highlighted ? "border-transparent shadow-2xl" : "border-slate-200 hover:border-slate-300 hover:shadow-md"}`}
     >
       {highlighted && (
-        <div
-          className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-[11px] font-black text-slate-900 whitespace-nowrap"
-          style={{ backgroundColor: GOLD }}
-        >
+        <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-[11px] font-black text-slate-900 whitespace-nowrap" style={{ backgroundColor: GOLD }}>
           Más popular
         </div>
       )}
 
       <div className="mb-6">
-        <p className={`text-xs font-bold uppercase tracking-widest mb-3 ${highlighted ? "text-amber-400" : "text-slate-400"}`}>
-          {name}
-        </p>
+        <p className={`text-xs font-bold uppercase tracking-widest mb-3 ${highlighted ? "text-amber-400" : "text-slate-400"}`}>{name}</p>
 
         {comingSoon ? (
           <div className="mb-1">
-            <span
-              className="inline-block px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-widest"
-              style={{ backgroundColor: highlighted ? "#1E293B" : "#F8FAFC", color: highlighted ? GOLD : "#94A3B8", border: `1px solid ${highlighted ? "#334155" : "#E2E8F0"}` }}
-            >
+            <span className="inline-block px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-widest" style={{ backgroundColor: highlighted ? "#1E293B" : "#F8FAFC", color: highlighted ? GOLD : "#94A3B8", border: `1px solid ${highlighted ? "#334155" : "#E2E8F0"}` }}>
               Próximamente
             </span>
             <p className="text-xs text-slate-400 mt-2">{employees} empleados · {citas} citas/mes</p>
@@ -371,14 +335,15 @@ function PricingCard({
         ) : (
           <>
             <div className="flex items-baseline gap-1.5 mb-1">
-              <span className={`text-5xl font-black ${highlighted ? "text-white" : "text-slate-900"}`}>
-                ${price.toLocaleString()}
-              </span>
+              <span className={`text-5xl font-black tabular-nums ${highlighted ? "text-white" : "text-slate-900"}`}>${displayPrice.toLocaleString()}</span>
               <span className="text-sm text-slate-400">/mes</span>
             </div>
-            <p className="text-xs text-slate-400">
-              {employees} empleados · {citas} citas/mes
-            </p>
+            {billedAnnually && annualPrice && (
+              <p className="text-xs font-semibold mb-1" style={{ color: GOLD }}>
+                Facturado anual · Ahorras ${((price - annualPrice) * 12).toLocaleString()}/año
+              </p>
+            )}
+            <p className="text-xs text-slate-400">{employees} empleados · {citas} citas/mes</p>
           </>
         )}
       </div>
@@ -386,34 +351,18 @@ function PricingCard({
       <ul className="flex flex-col gap-3 mb-8 flex-1">
         {features.map(f => (
           <li key={f} className="flex items-start gap-2.5">
-            <span className="mt-0.5 flex-shrink-0" style={{ color: GOLD }}>
-              <Ico d={dCheck} className="w-3.5 h-3.5" />
-            </span>
+            <span className="mt-0.5 flex-shrink-0" style={{ color: GOLD }}><Ico d={dCheck} className="w-3.5 h-3.5" /></span>
             <span className={`text-sm leading-snug ${highlighted ? "text-slate-300" : "text-slate-600"}`}>{f}</span>
           </li>
         ))}
       </ul>
 
       {comingSoon ? (
-        <div
-          className="block text-center py-3 rounded-xl text-sm font-bold cursor-not-allowed select-none"
-          style={{
-            backgroundColor: highlighted ? "#1E293B" : "#F1F5F9",
-            color: highlighted ? "#475569" : "#94A3B8",
-            border: `1px solid ${highlighted ? "#334155" : "#E2E8F0"}`,
-          }}
-        >
+        <div className="block text-center py-3 rounded-xl text-sm font-bold cursor-not-allowed select-none" style={{ backgroundColor: highlighted ? "#1E293B" : "#F1F5F9", color: highlighted ? "#475569" : "#94A3B8", border: `1px solid ${highlighted ? "#334155" : "#E2E8F0"}` }}>
           Próximamente disponible
         </div>
       ) : (
-        <Link
-          to="/registro"
-          className="block text-center py-3 rounded-xl text-sm font-bold transition-all hover:opacity-90 active:scale-95"
-          style={{
-            backgroundColor: highlighted ? GOLD : SLATE_700,
-            color: highlighted ? DARK : "white",
-          }}
-        >
+        <Link to="/registro" className="block text-center py-3 rounded-xl text-sm font-bold transition-all hover:opacity-90 active:scale-95" style={{ backgroundColor: highlighted ? GOLD : SLATE_700, color: highlighted ? DARK : "white" }}>
           Empezar con {name} →
         </Link>
       )}
@@ -423,6 +372,8 @@ function PricingCard({
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function LandingPage() {
+  const [billedAnnually, setBilledAnnually] = useState(false);
+
   return (
     <>
       <style>{`
@@ -440,35 +391,18 @@ export default function LandingPage() {
         <Navbar />
 
         {/* ── HERO ──────────────────────────────────────────────────────────── */}
-        <section className="relative pt-36 pb-28 md:pt-44 md:pb-36 overflow-hidden">
-          {/* Subtle dot grid background */}
-          <div
-            className="absolute inset-0 -z-10"
-            style={{
-              backgroundImage: "radial-gradient(#33415520 1px, transparent 1px)",
-              backgroundSize: "32px 32px",
-            }}
-          />
-          {/* Fade overlay bottom */}
+        <section className="relative pt-36 pb-24 md:pt-44 md:pb-32 overflow-hidden">
+          <div className="absolute inset-0 -z-10" style={{ backgroundImage: "radial-gradient(#33415520 1px, transparent 1px)", backgroundSize: "32px 32px" }} />
           <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-white to-transparent -z-10" />
 
           <div className="max-w-6xl mx-auto px-6">
             <div className="grid md:grid-cols-2 gap-12 lg:gap-20 items-center">
-              {/* Text column */}
               <div>
-                {/* Eyebrow badge */}
-                <div
-                  className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold mb-8"
-                  style={{ backgroundColor: "#FEF9EC", color: "#92701A", border: `1px solid #F3E0A0` }}
-                >
-                  <span
-                    className="w-1.5 h-1.5 rounded-full"
-                    style={{ backgroundColor: GOLD, boxShadow: `0 0 6px ${GOLD}` }}
-                  />
+                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold mb-8" style={{ backgroundColor: "#FEF9EC", color: "#92701A", border: "1px solid #F3E0A0" }}>
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: GOLD, boxShadow: `0 0 6px ${GOLD}` }} />
                   Para negocios de servicios · México 🇲🇽
                 </div>
 
-                {/* Headline */}
                 <h1 className="font-black leading-[1.02] tracking-tight mb-7" style={{ fontSize: "clamp(3rem, 6vw, 4.25rem)" }}>
                   Tu agenda
                   <br />
@@ -477,13 +411,11 @@ export default function LandingPage() {
                   <span style={{ color: GOLD }}>Sin llamadas.</span>
                 </h1>
 
-                {/* Subheadline */}
                 <p className="text-lg text-slate-500 leading-relaxed max-w-[440px] mb-10">
                   AppointVa crea una página de reservas propia para tu negocio. Tus clientes agendan
                   cuando quieran — tú recibes notificaciones y gestionas todo desde un panel limpio.
                 </p>
 
-                {/* CTAs */}
                 <div className="flex flex-wrap gap-3 mb-8">
                   <Link
                     to="/registro"
@@ -493,43 +425,64 @@ export default function LandingPage() {
                     Comenzar gratis
                     <Ico d={dArrow} className="w-4 h-4" />
                   </Link>
-                  <a
-                    href="#precios"
-                    className="inline-flex items-center gap-2 px-7 py-3.5 text-sm font-semibold text-slate-700 rounded-xl border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-95"
-                  >
+                  <a href="#precios" className="inline-flex items-center gap-2 px-7 py-3.5 text-sm font-semibold text-slate-700 rounded-xl border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-95">
                     Ver precios
                   </a>
                 </div>
 
-                {/* Trust line */}
-                <p className="flex items-center gap-2 text-xs text-slate-400">
-                  <Ico d={dShield} className="w-3.5 h-3.5 text-emerald-400" />
-                  Sin tarjeta de crédito · Configuración en 5 minutos · Cancela cuando quieras
-                </p>
+                {/* Trust strip */}
+                <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+                  <div className="flex items-center gap-1.5">
+                    <div className="flex gap-0.5">
+                      {[...Array(5)].map((_, i) => (
+                        <svg key={i} viewBox="0 0 24 24" className="w-3.5 h-3.5" fill={GOLD}><path d={dStar} /></svg>
+                      ))}
+                    </div>
+                    <span className="text-xs font-bold text-slate-700">4.9 / 5</span>
+                  </div>
+                  <span className="text-slate-200 hidden sm:block text-xs">·</span>
+                  <p className="flex items-center gap-1.5 text-xs text-slate-400">
+                    <Ico d={dShield} className="w-3 h-3 text-emerald-400 shrink-0" />
+                    Sin tarjeta · Sin comisiones · Cancela cuando quieras
+                  </p>
+                </div>
               </div>
 
-              {/* Phone column */}
               <div className="flex justify-center md:justify-end">
-                <div className="av-float">
-                  <PhoneMockup />
-                </div>
+                <div className="av-float"><PhoneMockup /></div>
               </div>
             </div>
           </div>
         </section>
 
-        {/* ── STATS BAR ─────────────────────────────────────────────────────── */}
-        <section className="border-y border-slate-100 bg-slate-50">
-          <div className="max-w-6xl mx-auto px-6 py-10 grid grid-cols-2 md:grid-cols-4 gap-8">
+        {/* ── INDUSTRIAS ────────────────────────────────────────────────────── */}
+        <section className="border-y border-slate-100 bg-slate-50/60 py-5">
+          <div className="max-w-6xl mx-auto px-6">
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-3 justify-center md:justify-between">
+              <p className="text-xs font-semibold text-slate-400 whitespace-nowrap uppercase tracking-widest">Ideal para</p>
+              <div className="flex flex-wrap gap-2 justify-center">
+                {["Barberías", "Salones de belleza", "Clínicas", "Spas", "Estudios de yoga", "Talleres de uñas", "Veterinarias", "Fisioterapia"].map(cat => (
+                  <span key={cat} className="px-3 py-1.5 rounded-full text-xs font-medium bg-white text-slate-600 border border-slate-200">
+                    {cat}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── STATS ─────────────────────────────────────────────────────────── */}
+        <section className="border-b border-slate-100 bg-white">
+          <div className="max-w-6xl mx-auto px-6 py-12 grid grid-cols-2 md:grid-cols-4 gap-8">
             {[
-              { val: "5 min",   label: "Configuración inicial" },
-              { val: "24 / 7", label: "Reservas en línea" },
-              { val: "0 %",    label: "Sin comisión por cita" },
-              { val: "$199",   label: "Desde MXN/mes" },
+              { val: "5 min",   label: "Para configurar tu agenda completa" },
+              { val: "24/7",    label: "Tu booking disponible para clientes" },
+              { val: "$0",      label: "Comisión por cada cita agendada" },
+              { val: "$199",    label: "Todo incluido desde MXN/mes" },
             ].map(({ val, label }) => (
               <div key={label} className="text-center md:text-left">
-                <p className="text-3xl font-black text-slate-900 mb-1 tabular-nums">{val}</p>
-                <p className="text-sm text-slate-500">{label}</p>
+                <p className="text-3xl font-black text-slate-900 mb-1 tabular-nums" style={{ fontVariantNumeric: "tabular-nums" }}>{val}</p>
+                <p className="text-sm text-slate-500 leading-snug">{label}</p>
               </div>
             ))}
           </div>
@@ -539,22 +492,18 @@ export default function LandingPage() {
         <section id="caracteristicas" className="py-28 scroll-mt-20">
           <div className="max-w-6xl mx-auto px-6">
             <div className="text-center mb-16">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] mb-4" style={{ color: GOLD }}>
-                Características
-              </p>
+              <p className="text-xs font-bold uppercase tracking-[0.2em] mb-4" style={{ color: GOLD }}>Características</p>
               <h2 className="text-4xl md:text-5xl font-black text-slate-900 mb-5 leading-tight">
                 Todo lo que necesitas,
                 <br />nada de lo que no.
               </h2>
-              <p className="text-slate-500 max-w-lg mx-auto text-base">
-                Un sistema completo para gestionar tu negocio de servicios, sin complejidad innecesaria.
-              </p>
+              <p className="text-slate-500 max-w-lg mx-auto text-base">Un sistema completo para gestionar tu negocio de servicios, sin complejidad innecesaria.</p>
             </div>
 
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <FeatureCard delay={0}   icon={<Ico d={dCalendar} />} title="Booking público 24/7" desc="Tu página en /b/tu-negocio, siempre activa. Clientes reservan en cualquier momento sin llamadas ni mensajes." />
-              <FeatureCard delay={80}  icon={<Ico d={dBell} />}     title="Notificaciones automáticas" desc="Confirmaciones y recordatorios por email y WhatsApp. Cero intervención manual, cero citas olvidadas." />
-              <FeatureCard delay={160} icon={<Ico d={dUsers} />}    title="Equipo con horarios propios" desc="Cada empleado tiene su agenda independiente. Los clientes eligen servicio, profesional y horario en pasos." />
+              <FeatureCard delay={80}  icon={<Ico d={dBell} />}     title="Notificaciones automáticas" desc="Confirmaciones y recordatorios por email. Cero intervención manual, cero citas olvidadas." />
+              <FeatureCard delay={160} icon={<Ico d={dUsers} />}    title="Equipo con horarios propios" desc="Cada empleado tiene su agenda independiente. Los clientes eligen servicio, profesional y horario." />
               <FeatureCard delay={0}   icon={<Ico d={dTag} />}      title="Descuentos y códigos" desc="Crea promociones para nuevos clientes o temporadas. Fideliza con un código y sin complejidad extra." />
               <FeatureCard delay={80}  icon={<Ico d={dStar} />}     title="Reseñas automáticas" desc="Solicita opiniones tras cada cita completada. Construye tu reputación en piloto automático." />
               <FeatureCard delay={160} icon={<Ico d={dChart} />}    title="Reportes en tiempo real" desc="Citas, ingresos y clientes de este mes. Visualiza el crecimiento y exporta a Excel con un clic." />
@@ -562,21 +511,58 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* ── TESTIMONIOS ───────────────────────────────────────────────────── */}
+        <section className="py-28 bg-slate-50">
+          <div className="max-w-6xl mx-auto px-6">
+            <div className="text-center mb-16">
+              <p className="text-xs font-bold uppercase tracking-[0.2em] mb-4" style={{ color: GOLD }}>Testimonios</p>
+              <h2 className="text-4xl md:text-5xl font-black text-slate-900 mb-5 leading-tight">
+                Lo que dicen los negocios
+                <br />que lo usaron primero
+              </h2>
+              <p className="text-slate-500 text-base max-w-md mx-auto">Resultados reales de propietarios en México.</p>
+            </div>
+
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              <TestimonialCard
+                delay={0}
+                quote="Antes perdía 2 horas diarias contestando WhatsApps para confirmar citas. Ahora mis clientas agendan solas y yo me enfoco en el trabajo. En el primer mes recuperé la mensualidad con una clienta que llegó por mi link de Instagram."
+                metric="−2h diarias de mensajes"
+                name="María González"
+                role="Centro de Belleza Lumé · CDMX"
+                initials="MG"
+              />
+              <TestimonialCard
+                delay={120}
+                quote="Los recordatorios automáticos cambiaron el negocio. Antes perdía 3 o 4 citas por semana porque la gente simplemente no llegaba. Ahora prácticamente no hay ausencias y mis barberos trabajan con la agenda llena."
+                metric="Ausencias casi a cero"
+                name="Carlos Ramírez"
+                role="BarberShop Kingz · Guadalajara"
+                initials="CR"
+              />
+              <TestimonialCard
+                delay={240}
+                quote="Tengo 2 instructoras y antes era un caos coordinar horarios por WhatsApp. Ahora cada quien administra su propia agenda y mis alumnas eligen con quién tomar clase. Pasé de 60 a más de 100 clases al mes."
+                metric="+67% clases mensuales"
+                name="Sofía Vargas"
+                role="Studio Pilates Mvmt · Monterrey"
+                initials="SV"
+              />
+            </div>
+          </div>
+        </section>
+
         {/* ── HOW IT WORKS ─────────────────────────────────────────────────── */}
-        <section id="como-funciona" className="py-28 bg-slate-50 scroll-mt-20">
+        <section id="como-funciona" className="py-28 scroll-mt-20">
           <div className="max-w-6xl mx-auto px-6">
             <div className="text-center mb-20">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] mb-4" style={{ color: GOLD }}>
-                Cómo funciona
-              </p>
+              <p className="text-xs font-bold uppercase tracking-[0.2em] mb-4" style={{ color: GOLD }}>Cómo funciona</p>
               <h2 className="text-4xl md:text-5xl font-black text-slate-900 mb-5">Listo en 3 pasos</h2>
               <p className="text-slate-500 text-base">Sin técnicos, sin contratos, sin complicaciones.</p>
             </div>
 
             <div className="grid md:grid-cols-3 gap-12 md:gap-8 relative">
-              {/* Connector line — desktop only */}
               <div className="hidden md:block absolute top-7 left-[calc(16.67%+3.5rem)] right-[calc(16.67%+3.5rem)] h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
-
               <StepCard delay={0}   number="01" title="Crea tu cuenta" desc="Registra tu negocio, agrega servicios, empleados y horarios. Sin tarjeta de crédito, listo en 5 minutos." />
               <StepCard delay={120} number="02" title="Comparte tu link" desc="Publica appointva.com/b/tu-negocio en tu Instagram, WhatsApp o Bio. Tus clientes ya pueden reservar." />
               <StepCard delay={240} number="03" title="Gestiona tu agenda" desc="Recibe notificaciones de cada cita. Dashboard limpio con calendario, historial y reportes en tiempo real." />
@@ -585,85 +571,103 @@ export default function LandingPage() {
         </section>
 
         {/* ── PRICING ───────────────────────────────────────────────────────── */}
-        <section id="precios" className="py-28 scroll-mt-20">
+        <section id="precios" className="py-28 bg-slate-50 scroll-mt-20">
           <div className="max-w-6xl mx-auto px-6">
-            <div className="text-center mb-16">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] mb-4" style={{ color: GOLD }}>
-                Precios
-              </p>
+            <div className="text-center mb-10">
+              <p className="text-xs font-bold uppercase tracking-[0.2em] mb-4" style={{ color: GOLD }}>Precios</p>
               <h2 className="text-4xl md:text-5xl font-black text-slate-900 mb-5">Sin sorpresas al final del mes</h2>
-              <p className="text-slate-500 text-base max-w-md mx-auto">
-                Un precio fijo, todo incluido. Sin comisiones por cita, sin módulos extras.
-              </p>
+              <p className="text-slate-500 text-base max-w-md mx-auto">Un precio fijo, todo incluido. Sin comisiones por cita, sin módulos extras.</p>
+            </div>
+
+            {/* Billing toggle */}
+            <div className="flex items-center justify-center mb-12">
+              <div className="inline-flex items-center gap-1 bg-white border border-slate-200 rounded-2xl p-1.5 shadow-sm">
+                <button
+                  onClick={() => setBilledAnnually(false)}
+                  className={`px-5 py-2 rounded-xl text-sm font-bold transition-all duration-200 ${!billedAnnually ? "bg-slate-900 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                >
+                  Mensual
+                </button>
+                <button
+                  onClick={() => setBilledAnnually(true)}
+                  className={`flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-bold transition-all duration-200 ${billedAnnually ? "bg-slate-900 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                >
+                  Anual
+                  <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full transition-colors ${billedAnnually ? "bg-amber-400/20 text-amber-300" : "bg-emerald-100 text-emerald-600"}`}>
+                    −20%
+                  </span>
+                </button>
+              </div>
             </div>
 
             <div className="grid md:grid-cols-3 gap-5 items-start md:items-center">
               <PricingCard
-                delay={0} name="Básico" price={199} employees={3} citas="200" highlighted
-                features={[
-                  "Portal de reservas público",
-                  "3 empleados",
-                  "200 citas por mes",
-                  "Notificaciones por email",
-                  "Dashboard y calendario",
-                  "Gestión de clientes",
-                ]}
+                delay={0} name="Básico" price={199} annualPrice={159} employees={3} citas="200"
+                highlighted billedAnnually={billedAnnually}
+                features={["Portal de reservas público", "3 empleados", "200 citas por mes", "Notificaciones por email", "Dashboard y calendario", "Gestión de clientes"]}
               />
               <PricingCard
                 delay={100} name="Pro" price={399} employees={10} citas="1,000" comingSoon
-                features={[
-                  "Todo lo del plan Básico",
-                  "10 empleados",
-                  "1,000 citas por mes",
-                  "Notificaciones por WhatsApp",
-                  "Códigos de descuento",
-                  "Lista de espera",
-                  "Galería de fotos",
-                  "Reseñas automáticas",
-                ]}
+                features={["Todo lo del plan Básico", "10 empleados", "1,000 citas por mes", "Notificaciones por WhatsApp", "Códigos de descuento", "Galería de fotos", "Reseñas automáticas"]}
               />
               <PricingCard
                 delay={200} name="Premium" price={799} employees={50} citas="10,000" comingSoon
-                features={[
-                  "Todo lo del plan Pro",
-                  "50 empleados",
-                  "10,000 citas por mes",
-                  "Formularios de admisión",
-                  "Reportes avanzados",
-                  "Soporte prioritario",
-                ]}
+                features={["Todo lo del plan Pro", "50 empleados", "10,000 citas por mes", "Formularios de admisión", "Reportes avanzados", "Soporte prioritario"]}
               />
             </div>
 
             <p className="text-center text-sm text-slate-400 mt-10">
               ¿Necesitas algo personalizado?{" "}
-              <a
-                href="mailto:hola@appointva.com"
-                className="font-semibold text-slate-600 hover:text-slate-900 transition-colors underline underline-offset-2"
-              >
+              <a href="mailto:hola@appointva.com" className="font-semibold text-slate-600 hover:text-slate-900 transition-colors underline underline-offset-2">
                 hola@appointva.com
               </a>
             </p>
           </div>
         </section>
 
+        {/* ── FAQ ───────────────────────────────────────────────────────────── */}
+        <section className="py-28 scroll-mt-20">
+          <div className="max-w-3xl mx-auto px-6">
+            <div className="text-center mb-16">
+              <p className="text-xs font-bold uppercase tracking-[0.2em] mb-4" style={{ color: GOLD }}>FAQ</p>
+              <h2 className="text-4xl md:text-5xl font-black text-slate-900 leading-tight">Lo que más nos preguntan</h2>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm px-8">
+              <FaqItem
+                defaultOpen
+                q="¿Necesito saber programar o tener experiencia técnica?"
+                a="No. Si sabes usar WhatsApp, puedes usar AppointVa. La configuración inicial toma menos de 5 minutos: agregas tus servicios, horarios y listo. No hay que instalar nada ni contratar a un técnico."
+              />
+              <FaqItem
+                q="¿Mis clientes necesitan descargarse una app o crear una cuenta?"
+                a="No. Tus clientes reservan directamente desde tu página personalizada en cualquier navegador, sin registrarse ni instalar nada. Solo entran, eligen horario y confirman."
+              />
+              <FaqItem
+                q="¿Qué pasa cuando llego al límite de citas del mes?"
+                a="Te avisamos cuando estás al 80% de tu límite para que puedas decidir con tiempo. Puedes actualizar tu plan en cualquier momento sin perder tu configuración ni tu historial."
+              />
+              <FaqItem
+                q="¿Puedo manejar varios empleados con horarios diferentes?"
+                a="Sí. Cada empleado tiene su propio calendario con sus horarios y los servicios que ofrece. Tus clientes pueden elegir específicamente con quién quieren agendar, o dejar que el sistema asigne automáticamente."
+              />
+              <FaqItem
+                q="¿Cómo funciona el proceso de activación después de registrarme?"
+                a="Después de crear tu cuenta, nuestro equipo revisa tu información y activa tu negocio en 24-48 horas. Te notificamos por email cuando esté lista para recibir reservas. Sin tarjeta de crédito requerida."
+              />
+            </div>
+          </div>
+        </section>
+
         {/* ── DARK CTA ──────────────────────────────────────────────────────── */}
         <section style={{ backgroundColor: DARK }} className="py-28 relative overflow-hidden">
-          {/* Subtle radial glow */}
-          <div
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] blur-3xl opacity-10 pointer-events-none"
-            style={{ backgroundColor: GOLD }}
-          />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] blur-3xl opacity-10 pointer-events-none" style={{ backgroundColor: GOLD }} />
           <div className="relative max-w-2xl mx-auto px-6 text-center">
-            <p className="text-xs font-bold uppercase tracking-[0.2em] mb-6" style={{ color: GOLD }}>
-              Empieza hoy
-            </p>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] mb-6" style={{ color: GOLD }}>Empieza hoy</p>
             <h2 className="text-4xl md:text-5xl font-black text-white mb-6 leading-tight">
               ¿Listo para dejar de perder citas por llamadas?
             </h2>
-            <p className="text-slate-400 mb-10 text-lg">
-              Únete en 5 minutos. Sin tarjeta de crédito.
-            </p>
+            <p className="text-slate-400 mb-10 text-lg">Únete en 5 minutos. Sin tarjeta de crédito.</p>
             <Link
               to="/registro"
               className="inline-flex items-center gap-2.5 px-8 py-4 rounded-2xl font-black text-base transition-all hover:scale-105 hover:opacity-95 active:scale-95 shadow-2xl"
@@ -677,24 +681,43 @@ export default function LandingPage() {
 
         {/* ── FOOTER ────────────────────────────────────────────────────────── */}
         <footer style={{ backgroundColor: "#070E1A" }} className="border-t border-white/5">
-          <div className="max-w-6xl mx-auto px-6 py-8 flex flex-col md:flex-row items-center justify-between gap-5">
-            <div className="flex flex-col items-center md:items-start gap-1">
-              <span className="text-xl font-black">
-                <span className="text-white">Appoint</span>
-                <span style={{ color: GOLD }}>Va</span>
-              </span>
-              <span className="text-xs text-slate-600">Sistema de gestión de citas · México</span>
+          <div className="max-w-6xl mx-auto px-6 py-12">
+            <div className="grid md:grid-cols-4 gap-10 mb-10">
+              <div className="md:col-span-2">
+                <span className="text-xl font-black">
+                  <span className="text-white">Appoint</span>
+                  <span style={{ color: GOLD }}>Va</span>
+                </span>
+                <p className="text-sm text-slate-500 mt-3 max-w-xs leading-relaxed">
+                  Agenda online para negocios de servicios en México. Sin llamadas, sin WhatsApps, sin complicaciones.
+                </p>
+              </div>
+
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-slate-600 mb-4">Producto</p>
+                <nav className="flex flex-col gap-2.5">
+                  <a href="#caracteristicas" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">Características</a>
+                  <a href="#como-funciona" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">Cómo funciona</a>
+                  <a href="#precios" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">Precios</a>
+                  <Link to="/registro" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">Registrarse</Link>
+                  <Link to="/login" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">Iniciar sesión</Link>
+                </nav>
+              </div>
+
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-slate-600 mb-4">Legal y contacto</p>
+                <nav className="flex flex-col gap-2.5">
+                  <Link to="/privacidad" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">Privacidad</Link>
+                  <Link to="/terminos" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">Términos</Link>
+                  <a href="mailto:hola@appointva.com" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">hola@appointva.com</a>
+                </nav>
+              </div>
             </div>
 
-            <nav className="flex items-center gap-6 text-sm text-slate-500">
-              <Link to="/privacidad" className="hover:text-slate-300 transition-colors">Privacidad</Link>
-              <Link to="/terminos" className="hover:text-slate-300 transition-colors">Términos</Link>
-              <a href="mailto:hola@appointva.com" className="hover:text-slate-300 transition-colors">
-                hola@appointva.com
-              </a>
-            </nav>
-
-            <p className="text-xs text-slate-600">© 2026 AppointVa</p>
+            <div className="border-t border-white/5 pt-6 flex flex-col md:flex-row items-center justify-between gap-3">
+              <p className="text-xs text-slate-600">© 2026 AppointVa · Hecho en México 🇲🇽</p>
+              <p className="text-xs text-slate-600">Sistema de gestión de citas para negocios de servicios</p>
+            </div>
           </div>
         </footer>
       </div>
