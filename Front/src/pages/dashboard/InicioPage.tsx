@@ -5,7 +5,8 @@ import { Link } from "react-router-dom";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
-import { CheckCircle2, Circle, X, Scissors, Users, Link2, CalendarDays, BarChart2, UserCheck } from "lucide-react";
+import { CheckCircle2, Circle, X, Scissors, Users, Link2, CalendarDays, BarChart2, UserCheck, ChevronRight, Clock, TrendingUp } from "lucide-react";
+import { clientesApi } from "../../api/clientes";
 import { NotificacionBanner } from "../../components/ui/NotificacionBanner";
 import { dashboardApi } from "../../api/dashboard";
 import { citasApi } from "../../api/citas";
@@ -399,6 +400,15 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
   const manana = new Date(new Date().setDate(ahora.getDate() + 1)).toISOString().slice(0, 10);
   const saludo = ahora.getHours() < 12 ? "Buenos días" : ahora.getHours() < 19 ? "Buenas tardes" : "Buenas noches";
 
+  // Inicio y fin de semana (lunes–domingo)
+  const diaSemana = ahora.getDay() === 0 ? 6 : ahora.getDay() - 1;
+  const inicioSemana = new Date(ahora); inicioSemana.setDate(ahora.getDate() - diaSemana);
+  const finSemana = new Date(inicioSemana); finSemana.setDate(inicioSemana.getDate() + 6);
+  const inicioSemanaStr = inicioSemana.toISOString().slice(0, 10);
+  const finSemanaStr = finSemana.toISOString().slice(0, 10);
+
+  const [clienteSel, setClienteSel] = useState<{ id: string; nombre: string } | null>(null);
+
   const { data: citasHoy = [], isLoading: cargandoHoy } = useQuery({
     queryKey: ["mis-citas-hoy"],
     queryFn: () => citasApi.obtenerTodas({ desde: hoy, hasta: hoy }),
@@ -415,9 +425,28 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
     refetchInterval: 30_000,
   });
 
+  const { data: citasSemana = [] } = useQuery({
+    queryKey: ["mis-citas-semana", inicioSemanaStr],
+    queryFn: () => citasApi.obtenerTodas({ desde: inicioSemanaStr, hasta: finSemanaStr, tamano: 200 }),
+    select: (p) => p.datos,
+    staleTime: 0,
+  });
+
+  const { data: historialCliente = [], isLoading: cargandoHistorial } = useQuery({
+    queryKey: ["historial-cliente", clienteSel?.id],
+    queryFn: () => clientesApi.obtenerCitas(clienteSel!.id),
+    enabled: !!clienteSel,
+    staleTime: 1000 * 60,
+  });
+
   const pendientesOConfirmadas = citasProximas.filter(
     (c) => c.estadoTexto === "Pendiente" || c.estadoTexto === "Confirmada"
   ).slice(0, 10);
+
+  // Stats semana
+  const completadasSemana = citasSemana.filter((c) => c.estadoTexto === "Completada");
+  const ingresosSemana = completadasSemana.reduce((s, c) => s + c.precio, 0);
+  const totalSemana = citasSemana.filter((c) => c.estadoTexto !== "Cancelada" && c.estadoTexto !== "Inasistencia").length;
 
   // Stats computados
   const completadas = citasHoy.filter((c) => c.estadoTexto === "Completada");
@@ -443,7 +472,7 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
     new Date(iso).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", hour12: true });
 
   return (
-    <div className="p-4 sm:p-8 max-w-2xl">
+    <div className="p-4 sm:p-8">
       {/* Banner de activación de notificaciones push */}
       <NotificacionBanner />
 
@@ -453,8 +482,8 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
         <h1 className="text-3xl font-black text-slate-900 leading-none">{nombre}</h1>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-6">
+      {/* Stats hoy */}
+      <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-4">
         <div className="bg-white rounded-2xl border border-slate-100 p-3 sm:p-4">
           <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1.5">Citas hoy</p>
           <p className="text-2xl font-black text-slate-900 leading-none">
@@ -473,6 +502,28 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
             {cargandoHoy ? "—" : ingresosHoy >= 10000
               ? `$${Math.round(ingresosHoy / 1000)}k`
               : `$${Math.round(ingresosHoy).toLocaleString("es-MX")}`}
+          </p>
+        </div>
+      </div>
+
+      {/* Resumen semanal */}
+      <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 mb-6 flex items-center gap-4">
+        <div className="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
+          <TrendingUp size={18} className="text-emerald-600" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-600 mb-0.5">Esta semana</p>
+          <p className="text-sm text-slate-700">
+            <span className="font-black">{completadasSemana.length}</span> completadas de{" "}
+            <span className="font-bold">{totalSemana}</span> citas
+          </p>
+        </div>
+        <div className="text-right shrink-0">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-600 mb-0.5">Ingresos</p>
+          <p className="text-base font-black text-slate-900">
+            {ingresosSemana >= 10000
+              ? `$${Math.round(ingresosSemana / 1000)}k`
+              : `$${Math.round(ingresosSemana).toLocaleString("es-MX")}`}
           </p>
         </div>
       </div>
@@ -516,14 +567,15 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
               const enCurso = inicio <= ahora && ahora < fin;
               const terminada = ahora >= fin || c.estadoTexto === "Completada" || c.estadoTexto === "Cancelada";
               return (
-                <div
+                <button
                   key={c.id}
-                  className={`flex items-center gap-3 p-3 rounded-xl transition-all ${
+                  onClick={() => setClienteSel({ id: c.clienteId, nombre: c.nombreCliente })}
+                  className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all text-left ${
                     enCurso
-                      ? "bg-emerald-50 border border-emerald-200"
+                      ? "bg-emerald-50 border border-emerald-200 hover:bg-emerald-100"
                       : terminada
-                      ? "opacity-55 bg-gray-50"
-                      : "bg-slate-50"
+                      ? "opacity-55 bg-gray-50 hover:opacity-75"
+                      : "bg-slate-50 hover:bg-slate-100"
                   }`}
                 >
                   <div className="shrink-0 text-right w-[52px]">
@@ -542,11 +594,14 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
                     <p className="text-sm font-semibold text-gray-800 truncate">{c.nombreCliente}</p>
                     <p className="text-xs text-gray-500 truncate">{c.nombreServicio}</p>
                   </div>
-                  <div className="shrink-0 text-right">
-                    <EstadoBadge estado={c.estadoTexto} />
-                    <p className="text-xs font-semibold text-gray-500 mt-0.5">{formatPrecio(c.precio)}</p>
+                  <div className="shrink-0 flex items-center gap-2">
+                    <div className="text-right">
+                      <EstadoBadge estado={c.estadoTexto} />
+                      <p className="text-xs font-semibold text-gray-500 mt-0.5">{formatPrecio(c.precio)}</p>
+                    </div>
+                    <ChevronRight size={14} className="text-slate-300" />
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>
@@ -577,6 +632,68 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
           </div>
         )}
       </div>
+
+      {/* Panel historial del cliente */}
+      {clienteSel && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setClienteSel(null)} />
+          <div className="relative bg-white rounded-t-3xl sm:rounded-2xl w-full sm:max-w-md max-h-[80vh] flex flex-col shadow-2xl">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+              <div>
+                <h3 className="font-bold text-slate-900">{clienteSel.nombre}</h3>
+                <p className="text-xs text-slate-400 mt-0.5">Historial de visitas</p>
+              </div>
+              <button
+                onClick={() => setClienteSel(null)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition"
+              >
+                <X size={14} className="text-slate-500" />
+              </button>
+            </div>
+            <div className="overflow-y-auto flex-1 p-4 space-y-2">
+              {cargandoHistorial ? (
+                <div className="space-y-2">
+                  {[0, 1, 2].map((i) => <Skeleton key={i} className="h-14 rounded-xl" />)}
+                </div>
+              ) : historialCliente.length === 0 ? (
+                <p className="text-slate-400 text-sm text-center py-8">Primera visita del cliente</p>
+              ) : (
+                historialCliente.map((h: any) => (
+                  <div key={h.id} className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
+                    <div className="w-8 h-8 rounded-lg bg-slate-200 flex items-center justify-center shrink-0">
+                      <Clock size={14} className="text-slate-500" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-slate-800 truncate">{h.nombreServicio}</p>
+                      <p className="text-xs text-slate-400">
+                        {new Date(h.inicioEn).toLocaleDateString("es-MX", {
+                          day: "numeric", month: "short", year: "numeric",
+                        })}
+                        {h.nombreEmpleado ? ` · ${h.nombreEmpleado}` : ""}
+                      </p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-xs font-semibold text-slate-600">{formatPrecio(h.precio)}</p>
+                      <span className={`text-[10px] font-bold ${
+                        h.estadoTexto === "Completada" ? "text-blue-500"
+                        : h.estadoTexto === "Cancelada" ? "text-red-400"
+                        : "text-emerald-500"
+                      }`}>{h.estadoTexto}</span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+            {historialCliente.length > 0 && (
+              <div className="px-5 py-3 border-t border-slate-100 bg-slate-50 rounded-b-2xl">
+                <p className="text-xs text-slate-400 text-center">
+                  {historialCliente.length} visita{historialCliente.length !== 1 ? "s" : ""} en total
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

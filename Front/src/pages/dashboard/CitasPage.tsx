@@ -1,14 +1,26 @@
 ﻿import { useState } from "react";
 
-function hoy() { return new Date().toISOString().split("T")[0]; }
+function fechaStr(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+function hoy() { return fechaStr(new Date()); }
 function inicioSemana() {
-  const d = new Date(), dia = d.getDay(), lunes = new Date(d);
-  lunes.setDate(d.getDate() - (dia === 0 ? 6 : dia - 1));
-  return lunes.toISOString().split("T")[0];
+  const d = new Date();
+  const diff = d.getDay() === 0 ? 6 : d.getDay() - 1;
+  return fechaStr(new Date(d.getFullYear(), d.getMonth(), d.getDate() - diff));
+}
+function finSemana() {
+  const d = new Date();
+  const diff = d.getDay() === 0 ? 0 : 7 - d.getDay();
+  return fechaStr(new Date(d.getFullYear(), d.getMonth(), d.getDate() + diff));
 }
 function inicioMes() {
   const d = new Date();
-  return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split("T")[0];
+  return fechaStr(new Date(d.getFullYear(), d.getMonth(), 1));
+}
+function finMes() {
+  const d = new Date();
+  return fechaStr(new Date(d.getFullYear(), d.getMonth() + 1, 0));
 }
 import { Calendar } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -22,6 +34,7 @@ import { api } from "../../api/axios";
 import EstadoBadge from "../../components/ui/EstadoBadge";
 import Modal from "../../components/ui/Modal";
 import CalendarioCitas from "../../components/dashboard/CalendarioCitas";
+import GanttCitas from "../../components/dashboard/GanttCitas";
 import { useToastStore } from "../../store/toastStore";
 import type { CitaDto, SlotDisponible } from "../../types";
 import { SkeletonTableRows } from "../../components/ui/Skeleton";
@@ -53,9 +66,9 @@ export default function CitasPage() {
   const qc = useQueryClient();
   const { toast } = useToastStore();
 
-  const [vista, setVista] = useState<"lista" | "calendario">("lista");
-  const [desde, setDesde] = useState(() => new Date().toISOString().split("T")[0]);
-  const [hasta, setHasta] = useState(() => new Date().toISOString().split("T")[0]);
+  const [vista, setVista] = useState<"lista" | "calendario" | "gantt">("lista");
+  const [desde, setDesde] = useState(() => hoy());
+  const [hasta, setHasta] = useState(() => hoy());
   const [empleadoId, setEmpleadoId] = useState("");
   const [busqueda, setBusqueda] = useState("");
   const [estadoFiltro, setEstadoFiltro] = useState("");
@@ -172,6 +185,7 @@ export default function CitasPage() {
       qc.invalidateQueries({ queryKey: ["citas"] });
       qc.invalidateQueries({ queryKey: ["citas-cal"] });
       qc.invalidateQueries({ queryKey: ["citas-badge"] });
+      qc.invalidateQueries({ queryKey: ["citas-gantt"] });
       qc.invalidateQueries({ queryKey: ["dashboard-resumen"] });
       setCitaReag(null); setFechaReag(""); setSlotReag("");
       toast("Cita reagendada");
@@ -214,6 +228,7 @@ export default function CitasPage() {
       qc.invalidateQueries({ queryKey: ["citas"] });
       qc.invalidateQueries({ queryKey: ["citas-cal"] });
       qc.invalidateQueries({ queryKey: ["citas-badge"] });
+      qc.invalidateQueries({ queryKey: ["citas-gantt"] });
       qc.invalidateQueries({ queryKey: ["dashboard-resumen"] });
       qc.invalidateQueries({ queryKey: ["clientes"] });
       setModalNueva(false);
@@ -257,6 +272,7 @@ export default function CitasPage() {
       qc.invalidateQueries({ queryKey: ["citas"] });
       qc.invalidateQueries({ queryKey: ["citas-cal"] });
       qc.invalidateQueries({ queryKey: ["citas-badge"] });
+      qc.invalidateQueries({ queryKey: ["citas-gantt"] });
       qc.invalidateQueries({ queryKey: ["dashboard-resumen"] });
       setCitaSel(null); setNuevoEstado(null); setMotivo("");
       toast("Estado actualizado");
@@ -357,6 +373,15 @@ export default function CitasPage() {
           >
             + Nueva cita
           </button>
+          <Link
+            to="/dashboard/kiosk"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="p-2 text-gray-400 hover:text-gray-600 border border-gray-200 hover:border-gray-300 rounded-lg transition flex items-center gap-1.5 text-xs font-medium"
+            title="Abrir pantalla de recepción"
+          >
+            🖥 Recepción
+          </Link>
           <div className="flex bg-gray-100 rounded-lg p-1 gap-1">
             <button
               onClick={() => setVista("lista")}
@@ -373,6 +398,14 @@ export default function CitasPage() {
               }`}
             >
               Calendario
+            </button>
+            <button
+              onClick={() => setVista("gantt")}
+              className={`px-4 py-1.5 text-sm font-medium rounded-md transition ${
+                vista === "gantt" ? "bg-white text-gray-800 shadow-sm" : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              Línea de tiempo
             </button>
           </div>
         </div>
@@ -430,8 +463,8 @@ export default function CitasPage() {
           <div className="col-span-2 flex flex-wrap gap-1.5">
             {([
               { label: "Hoy",    d: hoy(),        h: hoy() },
-              { label: "Semana", d: inicioSemana(), h: hoy() },
-              { label: "Mes",    d: inicioMes(),   h: hoy() },
+              { label: "Semana", d: inicioSemana(), h: finSemana() },
+              { label: "Mes",    d: inicioMes(),   h: finMes() },
             ] as const).map((p) => (
               <button
                 key={p.label}
@@ -496,6 +529,11 @@ export default function CitasPage() {
             }
           }}
         />
+      )}
+
+      {/* Vista línea de tiempo (Gantt) */}
+      {vista === "gantt" && (
+        <GanttCitas onCitaClick={abrirCambioEstado} />
       )}
 
       {/* Vista lista */}

@@ -46,6 +46,7 @@ const GaleriaPage = lazy(() => import("./pages/dashboard/GaleriaPage"));
 const ListaEsperaPage = lazy(() => import("./pages/dashboard/ListaEsperaPage"));
 const IntakePage = lazy(() => import("./pages/dashboard/IntakePage"));
 const DescuentosPage = lazy(() => import("./pages/dashboard/DescuentosPage"));
+const KioskPage = lazy(() => import("./pages/dashboard/KioskPage"));
 
 // ── Admin ─────────────────────────────────────────────────────────────────
 const NegociosAdminPage = lazy(() => import("./pages/admin/NegociosAdminPage"));
@@ -113,6 +114,9 @@ export default function App() {
                       <Route path="/dashboard/reportes" element={<ReportesPage />} />
                     </Route>
                   </Route>
+
+                  {/* Kiosk: pantalla completa, sin DashboardLayout */}
+                  <Route path="/dashboard/kiosk" element={<KioskPage />} />
                 </Route>
 
                 {/* ── Admin (solo SuperAdmin) ── */}

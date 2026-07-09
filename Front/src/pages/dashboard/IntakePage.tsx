@@ -122,7 +122,7 @@ export default function IntakePage() {
     <div className="p-6 max-w-3xl mx-auto space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Formulario de intake</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Cuestionario</h1>
           <p className="text-gray-500 text-sm mt-1">
             Preguntas adicionales que verá el cliente al reservar
           </p>

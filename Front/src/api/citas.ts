@@ -41,7 +41,11 @@ export const citasApi = {
   },
 
   obtenerTodas: async (filtros?: FiltrosCitas): Promise<PaginaCitas> => {
-    const { data, headers } = await api.get("/citas", { params: filtros });
+    const params = filtros ? { ...filtros } : undefined;
+    if (params?.hasta && params.hasta.length === 10) {
+      params.hasta = `${params.hasta}T23:59:59`;
+    }
+    const { data, headers } = await api.get("/citas", { params });
     const total = parseInt(headers["x-total-count"] ?? "0", 10);
     return {
       datos: data,

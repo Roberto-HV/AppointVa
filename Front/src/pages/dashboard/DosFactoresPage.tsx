@@ -91,7 +91,8 @@ export default function DosFactoresPage() {
   );
 
   return (
-    <div className="p-6 max-w-lg mx-auto space-y-6">
+    <div className="p-6 w-full flex flex-col items-center">
+    <div className="w-full max-w-lg space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Seguridad</h1>
         <p className="text-sm text-gray-500 mt-0.5">Autenticación de dos factores (2FA)</p>
@@ -210,6 +211,7 @@ export default function DosFactoresPage() {
           </button>
         </div>
       )}
+    </div>
     </div>
   );
 }
