@@ -28,5 +28,6 @@ namespace AppointVaAPI.Models.Dtos.Publico
         public string? InstagramUrl { get; set; }
         public string? FacebookUrl { get; set; }
         public string? TiktokUrl { get; set; }
+        public string ColorPrimario { get; set; } = "#334155";
     }
 }

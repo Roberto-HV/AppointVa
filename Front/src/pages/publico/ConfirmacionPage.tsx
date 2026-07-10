@@ -8,6 +8,12 @@ import WhatsAppIcon from "../../components/icons/WhatsAppIcon";
 import PublicFooter from "../../components/PublicFooter";
 import { formatPrecio, formatFechaHoraCompleta as formatFechaHora } from "../../utils/formatters";
 
+const DEFAULT_COLOR = "#334155";
+function hexToChannels(hex: string): string {
+  const h = (hex ?? DEFAULT_COLOR).replace("#", "").padEnd(6, "0");
+  return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16)).join(" ");
+}
+
 export default function ConfirmacionPage() {
   const { slug, codigo } = useParams<{ slug?: string; codigo: string }>();
   const navigate = useNavigate();
@@ -163,8 +169,10 @@ export default function ConfirmacionPage() {
   }
 
   // ── Cita activa (Pendiente / Confirmada) ────────────────────────────────────
+  const color = cita.colorPrimario ?? DEFAULT_COLOR;
+
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 print:bg-white">
+    <div className="min-h-screen bg-[#F8FAFC] print:bg-white">
       <style>{`
         @media print {
           body { background: white !important; margin: 0; }
@@ -178,15 +186,25 @@ export default function ConfirmacionPage() {
         }
       `}</style>
 
-      <div className="w-full max-w-md">
-        {/* Hero de confirmación */}
-        <div className="text-center mb-6 print:hidden">
-          <div className="w-18 h-18 bg-emerald-100 rounded-3xl flex items-center justify-center mx-auto mb-4" style={{width: 72, height: 72}}>
-            <CheckCircle2 size={36} className="text-emerald-500" />
+      {/* Header oscuro Style C */}
+      <div className="relative flex flex-col items-center justify-center py-10 px-4 print:hidden overflow-hidden"
+        style={{ background: "#0C0C0F" }}>
+        <div className="absolute inset-0 pointer-events-none" style={{
+          background: `radial-gradient(ellipse 70% 80% at 50% 0%, rgb(${hexToChannels(color)} / 0.28) 0%, transparent 100%)`,
+        }} />
+        <div className="relative z-10 flex flex-col items-center gap-3 text-center">
+          <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
+            style={{ background: `rgb(${hexToChannels(color)} / 0.18)`, border: `1.5px solid rgb(${hexToChannels(color)} / 0.35)` }}>
+            <CheckCircle2 size={32} style={{ color }} />
           </div>
-          <h1 className="text-2xl font-bold text-slate-900">¡Cita confirmada!</h1>
-          <p className="text-slate-400 text-sm mt-1">Guarda tu código o comparte por WhatsApp</p>
+          <h1 className="text-2xl font-bold text-white">¡Cita confirmada!</h1>
+          <p className="text-sm" style={{ color: "rgba(255,255,255,0.45)" }}>
+            Guarda tu código o comparte por WhatsApp
+          </p>
         </div>
+      </div>
+
+      <div className="max-w-md mx-auto px-4 py-5">
 
         {/* Comprobante */}
         <div id="comprobante-cita" className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
@@ -198,8 +216,9 @@ export default function ConfirmacionPage() {
           </div>
 
           {/* Código de confirmación */}
-          <div className="flex flex-col items-center py-5 bg-slate-900">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-2">Código de confirmación</p>
+          <div className="flex flex-col items-center py-5" style={{ background: "#0C0C0F" }}>
+            <p className="text-xs font-semibold uppercase tracking-widest mb-2"
+              style={{ color: "rgba(255,255,255,0.35)" }}>Código de confirmación</p>
             <span className="font-mono text-2xl font-black text-white tracking-[0.2em]">
               {cita.codigoConfirmacion}
             </span>
@@ -406,7 +425,8 @@ export default function ConfirmacionPage() {
           {/* Guardar comprobante */}
           <button
             onClick={() => window.print()}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold transition"
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-white text-sm font-semibold transition hover:opacity-90"
+            style={{ background: "#0C0C0F" }}
           >
             <Download size={15} />
             Guardar comprobante
@@ -588,3 +608,4 @@ export default function ConfirmacionPage() {
     </div>
   );
 }
+

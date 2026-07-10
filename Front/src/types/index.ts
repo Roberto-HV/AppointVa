@@ -117,6 +117,7 @@ export interface ConfirmacionCita {
   instagramUrl?: string;
   facebookUrl?: string;
   tiktokUrl?: string;
+  colorPrimario?: string;
 }
 
 // ── Dashboard ─────────────────────────────────────────────────────────────────

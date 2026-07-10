@@ -114,6 +114,9 @@ export default function PerfilPage() {
         facebookUrl: negocio.facebookUrl ?? "",
         tiktokUrl: negocio.tiktokUrl ?? "",
       });
+      const c = negocio.colorPrimario ?? "#334155";
+      setColorPrimario(c);
+      setColorGuardado(c);
     }
   }, [negocio, reset]);
 
@@ -154,6 +157,19 @@ export default function PerfilPage() {
   });
 
   // ── Horarios ─────────────────────────────────────────────────────────────
+  const [colorPrimario, setColorPrimario] = useState("#334155");
+  const [colorGuardado, setColorGuardado] = useState("#334155");
+
+  const { mutate: guardarColores, isPending: guardandoColores } = useMutation({
+    mutationFn: () => negociosApi.actualizarColores(colorPrimario),
+    onSuccess: () => {
+      setColorGuardado(colorPrimario);
+      qc.invalidateQueries({ queryKey: ["negocio-perfil"] });
+      toast("Color actualizado");
+    },
+    onError: () => toast("No se pudo guardar el color. Intenta de nuevo.", "error"),
+  });
+
   const [horarios, setHorarios] = useState<HorarioDto[]>([]);
   const [horariosDirty, setHorariosDirty] = useState(false);
 
@@ -345,6 +361,76 @@ export default function PerfilPage() {
                 </button>
               </div>
             </div>
+          </div>
+
+          {/* Color del booking */}
+          <div className="bg-white rounded-xl border border-gray-100 p-5">
+            <h2 className="text-sm font-semibold text-gray-700 mb-1">Color de tu página de reservas</h2>
+            <p className="text-xs text-gray-400 mb-4">Se usa en botones, selección de servicios, fechas y el encabezado de tu página.</p>
+            <div className="flex gap-3 items-center mb-4">
+              <input
+                type="color"
+                value={colorPrimario}
+                onChange={(e) => setColorPrimario(e.target.value)}
+                className="w-12 h-12 rounded-lg cursor-pointer border border-gray-200 p-0.5 shrink-0"
+              />
+              <input
+                type="text"
+                value={colorPrimario}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (/^#[0-9A-Fa-f]{0,6}$/.test(v)) setColorPrimario(v);
+                }}
+                className="w-32 px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700 font-mono uppercase"
+                maxLength={7}
+                placeholder="#334155"
+              />
+              <div className="w-10 h-10 rounded-lg border border-gray-200 shrink-0" style={{ backgroundColor: colorPrimario }} />
+            </div>
+            {/* Vista previa del header del booking */}
+            <div className="rounded-xl overflow-hidden border border-gray-100 mb-4">
+              <div className="px-4 pt-3 pb-3 flex items-start gap-3 relative"
+                style={{ background: "#0C0C0F" }}>
+                <div className="absolute inset-0 pointer-events-none"
+                  style={{ background: `radial-gradient(ellipse 80% 120% at 0% 0%, ${colorPrimario}38 0%, transparent 70%)` }} />
+                <div className="w-10 h-10 rounded-xl shrink-0 relative z-10"
+                  style={{ background: `${colorPrimario}28`, border: `1.5px solid ${colorPrimario}60` }} />
+                <div className="relative z-10">
+                  <div className="text-white text-sm font-bold leading-tight">Tu negocio</div>
+                  <div className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>Descripción breve...</div>
+                </div>
+              </div>
+              <div className="px-4 py-2.5 flex items-center gap-1.5" style={{ background: "#18181B" }}>
+                {[1,2,3,4].map((i) => (
+                  <div key={i} style={{
+                    height: "3px", borderRadius: "2px",
+                    width: i === 1 ? "34px" : "22px",
+                    background: i === 1 ? colorPrimario : "rgba(255,255,255,0.1)",
+                  }} />
+                ))}
+              </div>
+              <div className="bg-white px-4 py-3">
+                <div className="h-2.5 w-3/4 rounded bg-slate-100 mb-1.5" />
+                <div className="h-2 w-1/2 rounded bg-slate-50 mb-3" />
+                <div className="rounded-xl border-2 px-3 py-2.5 flex items-center gap-3"
+                  style={{ borderColor: colorPrimario, background: `${colorPrimario}0D` }}>
+                  <div className="w-10 h-10 rounded-lg bg-slate-100 shrink-0" />
+                  <div className="flex-1">
+                    <div className="h-2.5 w-24 rounded mb-1" style={{ background: colorPrimario, opacity: 0.8 }} />
+                    <div className="h-2 w-16 rounded bg-slate-100" />
+                  </div>
+                  <div className="h-3 w-12 rounded font-bold text-xs" style={{ background: colorPrimario, opacity: 0.8 }} />
+                </div>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => guardarColores()}
+              disabled={guardandoColores || colorPrimario === colorGuardado || colorPrimario.length < 4}
+              className="px-5 py-2 rounded-lg bg-slate-900 hover:bg-slate-700 disabled:opacity-40 text-white text-sm font-semibold transition"
+            >
+              {guardandoColores ? "Guardando..." : "Guardar color"}
+            </button>
           </div>
 
           {/* Redes sociales */}
