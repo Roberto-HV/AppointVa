@@ -21,13 +21,6 @@ function hexToChannels(hex: string): string {
   const h = (hex ?? DEFAULT_COLOR).replace("#", "").padEnd(6, "0");
   return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16)).join(" ");
 }
-function adjustHex(hex: string, factor: number): string {
-  const h = (hex ?? DEFAULT_COLOR).replace("#", "").padEnd(6, "0");
-  return "#" + [0, 2, 4]
-    .map((i) => Math.min(255, Math.max(0, Math.round(parseInt(h.slice(i, i + 2), 16) * factor)))
-      .toString(16).padStart(2, "0"))
-    .join("");
-}
 
 function GaleriaSection({ imagenes }: { imagenes: ImagenGaleria[] }) {
   const [lightbox, setLightbox] = useState<string | null>(null);

@@ -93,6 +93,8 @@ export default function EmpleadosPage() {
     queryFn: negociosApi.obtenerHorarios,
   });
 
+  const formBloqueo = useForm<BloqueoForm>({ resolver: zodResolver(schemaBloqueo) });
+
   const fbFechaInicio = formBloqueo.watch("fechaInicio");
   const fbFechaFin    = formBloqueo.watch("fechaFin");
 
@@ -149,8 +151,6 @@ export default function EmpleadosPage() {
   });
 
   const formInvitar = useForm<InvitarForm>({ resolver: zodResolver(schemaInvitar) });
-
-  const formBloqueo = useForm<BloqueoForm>({ resolver: zodResolver(schemaBloqueo) });
 
   const abrirCrear = () => {
     setEmpleadoEdit(null);
