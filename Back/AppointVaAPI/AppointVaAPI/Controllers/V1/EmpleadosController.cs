@@ -202,6 +202,7 @@ namespace AppointVaAPI.Controllers.V1
 
         // POST api/empleados/{id}/bloqueo
         [HttpPost("{id:guid}/bloqueo")]
+        [Authorize(Roles = $"{Roles.Propietario},{Roles.Empleado},{Roles.SuperAdmin}")]
         public async Task<IActionResult> CrearBloqueo(Guid id, [FromBody] BloqueoHorarioDto dto)
         {
             if (_contexto.NegocioId is null) return Unauthorized();
@@ -229,6 +230,7 @@ namespace AppointVaAPI.Controllers.V1
 
         // DELETE api/empleados/{id}/bloqueo/{bloqueoId}
         [HttpDelete("{id:guid}/bloqueo/{bloqueoId:guid}")]
+        [Authorize(Roles = $"{Roles.Propietario},{Roles.Empleado},{Roles.SuperAdmin}")]
         public async Task<IActionResult> EliminarBloqueo(Guid id, Guid bloqueoId)
         {
             if (_contexto.NegocioId is null) return Unauthorized();
@@ -316,6 +318,7 @@ namespace AppointVaAPI.Controllers.V1
         // ── Foto del empleado ──────────────────────────────────────────────────
         // POST api/empleados/{id}/foto
         [HttpPost("{id:guid}/foto")]
+        [Authorize(Roles = $"{Roles.Propietario},{Roles.SuperAdmin}")]
         public async Task<IActionResult> SubirFoto(Guid id, IFormFile archivo)
         {
             if (_contexto.NegocioId is null) return Unauthorized();
