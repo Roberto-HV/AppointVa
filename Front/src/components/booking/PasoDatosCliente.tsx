@@ -22,9 +22,10 @@ interface Props {
   enviando: boolean;
   datosIniciales?: Partial<DatosClienteForm>;
   onEnviar: (datos: DatosClienteForm) => void;
+  color?: string;
 }
 
-export default function PasoDatosCliente({ servicio, empleado, slot, enviando, datosIniciales, onEnviar }: Props) {
+export default function PasoDatosCliente({ servicio, empleado, slot, enviando, datosIniciales, onEnviar, color = "#334155" }: Props) {
   const { register, handleSubmit, formState: { errors } } = useForm<DatosClienteForm>({
     resolver: zodResolver(schema),
     defaultValues: datosIniciales,
@@ -143,7 +144,8 @@ export default function PasoDatosCliente({ servicio, empleado, slot, enviando, d
         <button
           type="submit"
           disabled={enviando}
-          className="w-full bg-slate-700 hover:bg-slate-800 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-2xl transition-all text-sm tracking-wide"
+          className="w-full disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-2xl transition-all text-sm tracking-wide hover:opacity-90"
+          style={{ background: color }}
         >
           {enviando ? "Confirmando…" : "Confirmar cita"}
         </button>

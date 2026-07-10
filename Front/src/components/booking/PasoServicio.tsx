@@ -6,9 +6,10 @@ interface Props {
   servicios: ServicioPublico[];
   seleccionado: ServicioPublico | null;
   onSeleccionar: (s: ServicioPublico) => void;
+  color?: string;
 }
 
-export default function PasoServicio({ servicios, seleccionado, onSeleccionar }: Props) {
+export default function PasoServicio({ servicios, seleccionado, onSeleccionar, color = "#334155" }: Props) {
   const categorias = Array.from(new Set(servicios.map((s) => s.categoriaNombre ?? "Servicios")));
 
   const masPopularId = servicios.length > 0
@@ -34,12 +35,22 @@ export default function PasoServicio({ servicios, seleccionado, onSeleccionar }:
                     <button
                       key={servicio.id}
                       onClick={() => onSeleccionar(servicio)}
-                      className={`w-full text-left rounded-2xl border-2 transition-all duration-150 flex items-center gap-4 p-3.5
+                      className={`w-full text-left rounded-2xl border-2 transition-all duration-150 flex items-center gap-4 p-3.5 relative overflow-hidden
                         ${activo
-                          ? "border-slate-700 bg-slate-700/5 shadow-sm"
+                          ? "shadow-sm"
                           : "border-slate-100 hover:border-slate-300 bg-white hover:shadow-sm"
                         }`}
+                      style={activo ? {
+                        borderColor: color,
+                        background: `${color}0D`,
+                      } : undefined}
                     >
+                      {activo && (
+                        <div
+                          className="absolute left-0 top-0 bottom-0 w-1 rounded-r-sm"
+                          style={{ background: color }}
+                        />
+                      )}
                       {servicio.imagenUrl && (
                         <img
                           src={servicio.imagenUrl}
@@ -50,7 +61,10 @@ export default function PasoServicio({ servicios, seleccionado, onSeleccionar }:
                       )}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                          <p className={`font-semibold text-sm ${activo ? "text-slate-700" : "text-slate-800"}`}>
+                          <p
+                            className="font-semibold text-sm"
+                            style={{ color: activo ? color : undefined }}
+                          >
                             {servicio.nombre}
                           </p>
                           {esPopular && (
@@ -68,7 +82,10 @@ export default function PasoServicio({ servicios, seleccionado, onSeleccionar }:
                         </span>
                       </div>
                       <div className="shrink-0 text-right">
-                        <span className={`text-base font-bold ${activo ? "text-slate-700" : "text-slate-800"}`}>
+                        <span
+                          className="text-base font-bold"
+                          style={{ color: activo ? color : undefined }}
+                        >
                           {formatPrecio(servicio.precio)}
                         </span>
                       </div>

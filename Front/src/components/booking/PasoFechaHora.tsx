@@ -9,6 +9,7 @@ interface Props {
   empleadoId: string | null;
   seleccionado: SlotDisponible | null;
   onSeleccionar: (slot: SlotDisponible) => void;
+  color?: string;
 }
 
 const DIAS_CORTOS = ["Do", "Lu", "Ma", "Mi", "Ju", "Vi", "Sá"];
@@ -41,7 +42,7 @@ function textoMesSemana(dias: Date[]): string {
   return `${MESES[mes0]} ${anio}`;
 }
 
-export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, onSeleccionar }: Props) {
+export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, onSeleccionar, color = "#334155" }: Props) {
   const [semanaRef, setSemanaRef] = useState(() => lunesDeSemanaDe(new Date()));
   const [fechaSel, setFechaSel] = useState<string | null>(null);
 
@@ -133,14 +134,21 @@ export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, on
               onClick={() => seleccionarFecha(dia)}
               disabled={pasado}
               className={`flex flex-col items-center py-2.5 rounded-2xl transition-all duration-150
-                ${seleccionada
-                  ? "bg-slate-700 text-white shadow-md"
-                  : pasado
-                  ? "opacity-30 cursor-not-allowed"
-                  : esHoy
-                  ? "bg-white border-2 border-slate-700 text-slate-800 hover:bg-slate-700/5"
-                  : "bg-white border border-slate-100 text-slate-700 hover:border-slate-300 hover:shadow-sm"
+                ${pasado
+                  ? "opacity-30 cursor-not-allowed bg-white border border-slate-100"
+                  : esHoy && !seleccionada
+                  ? "bg-white border-2 text-slate-800"
+                  : !seleccionada
+                  ? "bg-white border border-slate-100 text-slate-700 hover:border-slate-300 hover:shadow-sm"
+                  : ""
                 }`}
+              style={
+                seleccionada
+                  ? { background: color, color: "#fff", boxShadow: `0 4px 12px ${color}40` }
+                  : esHoy && !seleccionada
+                  ? { borderColor: color }
+                  : undefined
+              }
             >
               <span className={`text-[9px] font-semibold uppercase mb-1 tracking-wide
                 ${seleccionada ? "text-white/70" : "text-slate-400"}`}>
@@ -198,11 +206,10 @@ export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, on
                         <button
                           key={slot.inicio}
                           onClick={() => onSeleccionar(slot)}
-                          className={`py-2 rounded-xl text-xs font-semibold border-2 transition-all
-                            ${activo
-                              ? "border-slate-700 bg-slate-700 text-white shadow-sm"
-                              : "border-slate-100 bg-white hover:border-slate-700 text-slate-700 hover:shadow-sm"
-                            }`}
+                          className="py-2 rounded-xl text-xs font-semibold border-2 transition-all"
+                          style={activo
+                            ? { borderColor: color, background: color, color: "#fff", boxShadow: `0 2px 8px ${color}40` }
+                            : { borderColor: "#f1f5f9", background: "#fff", color: "#475569" }}
                         >
                           {slot.horaTexto}
                         </button>

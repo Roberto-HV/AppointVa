@@ -473,55 +473,105 @@ export default function BookingPage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Header del negocio */}
-      <div className="relative">
-        {negocio.portadaUrl ? (
-          <div className="h-48 overflow-hidden">
-            <img src={negocio.portadaUrl} alt="" className="w-full h-full object-cover" loading="lazy" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
-          </div>
-        ) : (
-          <div className="h-48" style={{ background: `linear-gradient(135deg, rgb(${hexToChannels(color)}), rgb(${hexToChannels(adjustHex(color, 0.7))}))` }} />
+      {/* Header oscuro del negocio — Estilo C */}
+      <div
+        className="relative h-48 overflow-hidden flex flex-col items-center justify-center gap-1"
+        style={{ background: "#0C0C0F", paddingTop: "18px" }}
+      >
+        {/* Portada como textura muy sutil si existe */}
+        {negocio.portadaUrl && (
+          <img
+            src={negocio.portadaUrl}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover opacity-15 pointer-events-none"
+            loading="lazy"
+          />
         )}
-        <div className="absolute bottom-0 left-0 right-0 px-5 pb-5 flex items-end gap-3">
-          {negocio.logoUrl && (
+        {/* Glow radial con el color de marca */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: `radial-gradient(ellipse 65% 70% at 50% 0%, rgb(${hexToChannels(color)} / 0.25) 0%, transparent 100%)`,
+          }}
+        />
+        {/* Logo */}
+        <div className="relative z-10">
+          {negocio.logoUrl ? (
             <img
               src={negocio.logoUrl}
               alt={negocio.nombre}
-              className="w-14 h-14 rounded-2xl border-2 border-white object-cover shadow-lg shrink-0"
+              className="w-12 h-12 rounded-2xl object-cover"
+              style={{
+                border: `1.5px solid rgb(${hexToChannels(color)} / 0.38)`,
+                boxShadow: `0 2px 14px rgb(${hexToChannels(color)} / 0.20)`,
+              }}
               loading="lazy"
             />
+          ) : (
+            <div
+              className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl"
+              style={{
+                background: `rgb(${hexToChannels(color)} / 0.15)`,
+                border: `1.5px solid rgb(${hexToChannels(color)} / 0.35)`,
+              }}
+            >
+              🏪
+            </div>
           )}
-          <div className="flex-1 min-w-0">
-            <h1 className="text-white text-xl font-bold drop-shadow-sm">{negocio.nombre}</h1>
-            {negocio.descripcion && (
-              <p className="text-white/75 text-xs mt-0.5 line-clamp-1">{negocio.descripcion}</p>
+        </div>
+        {/* Nombre y descripción */}
+        <div className="relative z-10 text-center px-6">
+          <h1 className="text-white font-black text-[1.05rem] leading-tight tracking-tight">
+            {negocio.nombre}
+          </h1>
+          {negocio.descripcion && (
+            <p className="text-xs mt-0.5 line-clamp-1" style={{ color: "rgba(255,255,255,0.35)" }}>
+              {negocio.descripcion}
+            </p>
+          )}
+        </div>
+        {/* Rating pill */}
+        {(negocio.totalResenas ?? 0) > 0 && (
+          <div
+            className="relative z-10 flex items-center gap-1 rounded-full px-2.5 py-1"
+            style={{ background: "rgba(255,255,255,0.06)" }}
+          >
+            <Star size={10} fill="#F59E0B" stroke="#F59E0B" strokeWidth={0} />
+            <span className="text-[11px]" style={{ color: "rgba(255,255,255,0.45)" }}>
+              {(negocio.promedioResenas ?? 0).toFixed(1)} · {negocio.totalResenas} reseñas
+            </span>
+          </div>
+        )}
+        {/* Redes sociales */}
+        {(negocio.instagramUrl || negocio.facebookUrl || negocio.tiktokUrl) && (
+          <div className="relative z-10 flex gap-2">
+            {negocio.instagramUrl && (
+              <a href={negocio.instagramUrl} target="_blank" rel="noreferrer"
+                className="w-6 h-6 rounded-full flex items-center justify-center transition hover:opacity-80"
+                style={{ background: "rgba(255,255,255,0.12)" }}>
+                <svg className="w-3.5 h-3.5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+              </a>
             )}
-            {(negocio.instagramUrl || negocio.facebookUrl || negocio.tiktokUrl) && (
-              <div className="flex gap-2 mt-1.5">
-                {negocio.instagramUrl && (
-                  <a href={negocio.instagramUrl} target="_blank" rel="noreferrer"
-                    className="w-6 h-6 rounded-full bg-white/20 hover:bg-white/35 flex items-center justify-center transition">
-                    <svg className="w-3.5 h-3.5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
-                  </a>
-                )}
-                {negocio.facebookUrl && (
-                  <a href={negocio.facebookUrl} target="_blank" rel="noreferrer"
-                    className="w-6 h-6 rounded-full bg-white/20 hover:bg-white/35 flex items-center justify-center transition">
-                    <svg className="w-3.5 h-3.5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-                  </a>
-                )}
-                {negocio.tiktokUrl && (
-                  <a href={negocio.tiktokUrl} target="_blank" rel="noreferrer"
-                    className="w-6 h-6 rounded-full bg-white/20 hover:bg-white/35 flex items-center justify-center transition">
-                    <svg className="w-3.5 h-3.5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.18 8.18 0 004.78 1.52V6.76a4.85 4.85 0 01-1.01-.07z"/></svg>
-                  </a>
-                )}
-              </div>
+            {negocio.facebookUrl && (
+              <a href={negocio.facebookUrl} target="_blank" rel="noreferrer"
+                className="w-6 h-6 rounded-full flex items-center justify-center transition hover:opacity-80"
+                style={{ background: "rgba(255,255,255,0.12)" }}>
+                <svg className="w-3.5 h-3.5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+              </a>
+            )}
+            {negocio.tiktokUrl && (
+              <a href={negocio.tiktokUrl} target="_blank" rel="noreferrer"
+                className="w-6 h-6 rounded-full flex items-center justify-center transition hover:opacity-80"
+                style={{ background: "rgba(255,255,255,0.12)" }}>
+                <svg className="w-3.5 h-3.5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.18 8.18 0 004.78 1.52V6.76a4.85 4.85 0 01-1.01-.07z"/></svg>
+              </a>
             )}
           </div>
-        </div>
+        )}
       </div>
+
+      {/* Tira de pasos — full width, fondo oscuro */}
+      <IndicadorPasos pasoActual={paso} pasos={PASOS} color={color} />
 
       {/* Sub-header: acciones del negocio */}
       <div className="bg-white border-b border-slate-100 px-5 py-2.5 flex items-center justify-between">
@@ -546,7 +596,6 @@ export default function BookingPage() {
 
       {/* Contenido */}
       <div className="max-w-lg mx-auto px-4 pt-5 pb-10">
-        <IndicadorPasos pasoActual={paso} pasos={PASOS} />
 
         {/* Mini-resumen breadcrumb */}
         {paso >= 2 && (servicio || empleado) && (
@@ -590,11 +639,13 @@ export default function BookingPage() {
               servicios={negocio.servicios}
               seleccionado={servicio}
               onSeleccionar={setServicio}
+              color={color}
             />
             <button
               onClick={irSiguiente}
               disabled={!servicio}
-              className="mt-6 w-full bg-slate-700 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-2xl transition text-sm tracking-wide"
+              className="mt-6 w-full disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-2xl transition text-sm tracking-wide hover:opacity-90"
+              style={{ background: color }}
             >
               Continuar
             </button>
@@ -618,6 +669,7 @@ export default function BookingPage() {
               servicioId={servicio.id}
               seleccionado={empleado}
               onSeleccionar={setEmpleado}
+              color={color}
             />
             <div className="mt-6 flex gap-3">
               <button onClick={irAtras} className="flex-1 py-3 rounded-xl border-2 border-gray-200 text-sm font-medium text-gray-600 hover:border-gray-300 transition">
@@ -626,7 +678,8 @@ export default function BookingPage() {
               <button
                 onClick={irSiguiente}
                 disabled={!empleado}
-                className="flex-1 bg-slate-700 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-3 rounded-2xl transition text-sm"
+                className="flex-1 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-3 rounded-2xl transition text-sm hover:opacity-90"
+                style={{ background: color }}
               >
                 Continuar
               </button>
@@ -642,6 +695,7 @@ export default function BookingPage() {
               empleadoId={sinPreferencia ? null : empleado.id}
               seleccionado={slot}
               onSeleccionar={setSlot}
+              color={color}
             />
             {slot && (negocio.horasCancelacion ?? 0) > 0 && (
               <div className="mt-4 flex items-center gap-2 text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5">
@@ -662,7 +716,8 @@ export default function BookingPage() {
               <button
                 onClick={irSiguiente}
                 disabled={!slot}
-                className="flex-1 bg-slate-700 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-3 rounded-2xl transition text-sm"
+                className="flex-1 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-3 rounded-2xl transition text-sm hover:opacity-90"
+                style={{ background: color }}
               >
                 Continuar
               </button>
@@ -703,7 +758,8 @@ export default function BookingPage() {
                 disabled={camposIntake
                   .filter((c) => c.requerido)
                   .some((c) => !respuestasIntake[c.id]?.trim())}
-                className="flex-1 bg-slate-700 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-3 rounded-2xl transition text-sm"
+                className="flex-1 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-3 rounded-2xl transition text-sm hover:opacity-90"
+                style={{ background: color }}
               >
                 Continuar
               </button>
@@ -780,7 +836,8 @@ export default function BookingPage() {
             <button
               onClick={buscarCliente}
               disabled={buscandoCliente || !emailBusqueda.includes("@")}
-              className="mt-4 w-full bg-slate-700 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-2xl transition text-sm"
+              className="mt-4 w-full disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-2xl transition text-sm hover:opacity-90"
+              style={{ background: color }}
             >
               {buscandoCliente ? "Buscando…" : "Buscar mis datos"}
             </button>
@@ -848,7 +905,8 @@ export default function BookingPage() {
                     <button
                       onClick={validarCupon}
                       disabled={validandoCupon || !codigoInput.trim()}
-                      className="px-4 py-2 bg-slate-700 text-white text-sm font-semibold rounded-lg disabled:opacity-50 hover:opacity-90 transition"
+                      className="px-4 py-2 text-white text-sm font-semibold rounded-lg disabled:opacity-50 hover:opacity-90 transition"
+                      style={{ background: color }}
                     >
                       {validandoCupon ? "..." : "Aplicar"}
                     </button>
@@ -897,6 +955,7 @@ export default function BookingPage() {
               enviando={enviando}
               datosIniciales={datosPreRellenos ?? undefined}
               onEnviar={confirmarCita}
+              color={color}
             />
             {errorEnvio && (
               <div className="mt-4 flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
