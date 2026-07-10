@@ -283,7 +283,7 @@ namespace AppointVaAPI.Controllers.V1
                     await _db.Resenas.AddAsync(resena);
                     await _db.SaveChangesAsync();
 
-                    var frontendUrl = _config["FrontendUrl"] ?? "http://localhost:5173";
+                    var frontendUrl = _config["FrontendUrl"] ?? "https://appointva.com";
                     var urlResena = $"{frontendUrl}/resena/{token}";
                     _jobClient.Enqueue<NotificacionJob>(j => j.EnviarSolicitudResenaAsync(cita.Id, emailDestino, cita.Cliente!.NombreCompleto, urlResena));
                 }
@@ -405,3 +405,4 @@ namespace AppointVaAPI.Controllers.V1
         };
     }
 }
+

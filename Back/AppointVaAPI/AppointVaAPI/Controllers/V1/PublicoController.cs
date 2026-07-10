@@ -372,7 +372,7 @@ namespace AppointVaAPI.Controllers.V1
             // Enviar email de confirmación si el cliente tiene correo
             if (!string.IsNullOrWhiteSpace(dto.EmailCliente))
             {
-                var frontendUrl = _config["FrontendUrl"] ?? "http://localhost:5173";
+                var frontendUrl = _config["FrontendUrl"] ?? "https://appointva.com";
                 var urlCita = $"{frontendUrl}/b/{negocio.Slug}/confirmacion/{codigo}";
                 var urlCancelacion = $"{frontendUrl}/cancelar/{codigo}";
                 _ = Task.Run(() => _notificacion.EnviarConfirmacionCitaAsync(cita, dto.EmailCliente, cliente.NombreCompleto, urlCita, icalUrl, googleCalUrl, urlCancelacion));
@@ -429,7 +429,8 @@ namespace AppointVaAPI.Controllers.V1
                 HorasCancelacion = cita.Negocio?.HorasCancelacion ?? 0,
                 InstagramUrl = cita.Negocio?.InstagramUrl,
                 FacebookUrl = cita.Negocio?.FacebookUrl,
-                TiktokUrl = cita.Negocio?.TiktokUrl
+                TiktokUrl = cita.Negocio?.TiktokUrl,
+                ColorPrimario = cita.Negocio?.ColorPrimario ?? "#334155"
             });
         }
 
@@ -706,7 +707,7 @@ namespace AppointVaAPI.Controllers.V1
 
             var token = await _userManager.GenerateEmailConfirmationTokenAsync(usuario);
             var tokenEncoded = Uri.EscapeDataString(token);
-            var frontendUrl = _config["FrontendUrl"] ?? "http://localhost:5173";
+            var frontendUrl = _config["FrontendUrl"] ?? "https://appointva.com";
             var urlVerificacion = $"{frontendUrl}/verificar-email?userId={usuario.Id}&token={tokenEncoded}";
             _ = Task.Run(() => _email.EnviarVerificacionEmailAsync(dto.Email, dto.NombrePropietario, urlVerificacion));
 
@@ -829,7 +830,7 @@ namespace AppointVaAPI.Controllers.V1
 
             var token = await _userManager.GenerateEmailConfirmationTokenAsync(usuario);
             var tokenEncoded = Uri.EscapeDataString(token);
-            var frontendUrl = _config["FrontendUrl"] ?? "http://localhost:5173";
+            var frontendUrl = _config["FrontendUrl"] ?? "https://appointva.com";
             var url = $"{frontendUrl}/verificar-email?userId={usuario.Id}&token={tokenEncoded}";
             _ = Task.Run(() => _email.EnviarVerificacionEmailAsync(dto.Email, usuario.Nombre ?? dto.Email, url));
 
@@ -910,3 +911,4 @@ namespace AppointVaAPI.Controllers.V1
         };
     }
 }
+
