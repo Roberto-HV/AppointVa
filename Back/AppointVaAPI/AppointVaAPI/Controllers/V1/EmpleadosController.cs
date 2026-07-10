@@ -11,7 +11,7 @@ namespace AppointVaAPI.Controllers.V1
 {
     [ApiController]
     [Route("api/empleados")]
-    [Authorize(Roles = $"{Roles.Propietario},{Roles.SuperAdmin}")]
+    [Authorize]
     public class EmpleadosController : ControllerBase
     {
         private readonly IEmpleadoRepository _repo;
@@ -63,6 +63,7 @@ namespace AppointVaAPI.Controllers.V1
 
         // POST api/empleados
         [HttpPost]
+        [Authorize(Roles = $"{Roles.Propietario},{Roles.SuperAdmin}")]
         public async Task<IActionResult> Crear([FromBody] CrearEmpleadoDto dto)
         {
             if (_contexto.NegocioId is null) return Unauthorized();
@@ -91,6 +92,7 @@ namespace AppointVaAPI.Controllers.V1
 
         // PUT api/empleados/{id}
         [HttpPut("{id:guid}")]
+        [Authorize(Roles = $"{Roles.Propietario},{Roles.SuperAdmin}")]
         public async Task<IActionResult> Actualizar(Guid id, [FromBody] CrearEmpleadoDto dto)
         {
             if (_contexto.NegocioId is null) return Unauthorized();
@@ -112,6 +114,7 @@ namespace AppointVaAPI.Controllers.V1
 
         // DELETE api/empleados/{id}
         [HttpDelete("{id:guid}")]
+        [Authorize(Roles = $"{Roles.Propietario},{Roles.SuperAdmin}")]
         public async Task<IActionResult> Eliminar(Guid id)
         {
             if (_contexto.NegocioId is null) return Unauthorized();
@@ -145,6 +148,7 @@ namespace AppointVaAPI.Controllers.V1
 
         // PUT api/empleados/{id}/horario
         [HttpPut("{id:guid}/horario")]
+        [Authorize(Roles = $"{Roles.Propietario},{Roles.SuperAdmin}")]
         public async Task<IActionResult> ActualizarHorario(Guid id, [FromBody] List<HorarioDto> dtos)
         {
             if (_contexto.NegocioId is null) return Unauthorized();
