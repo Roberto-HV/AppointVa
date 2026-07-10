@@ -405,61 +405,66 @@ export default function CitasPage() {
   return (
     <div className="p-4 sm:p-8 overflow-x-hidden">
       {/* Encabezado */}
-      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-        <div className="flex items-center gap-3">
+      <div className="mb-6 space-y-3">
+
+        {/* Fila 1 — título + acciones desktop */}
+        <div className="flex items-center justify-between gap-3">
           <h1 className="text-2xl font-bold text-gray-900">Citas</h1>
-          {citasFiltradas.length > 0 && vista === "lista" && (
-            <button
-              onClick={exportarCSV}
-              className="text-xs text-gray-500 hover:text-gray-700 border border-gray-200 hover:border-gray-300 px-3 py-1.5 rounded-lg transition"
+          <div className="flex items-center gap-2">
+            {/* Recepción y Exportar: solo desktop */}
+            <Link
+              to="/dashboard/kiosk"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden sm:flex p-2 text-gray-400 hover:text-gray-600 border border-gray-200 hover:border-gray-300 rounded-lg transition items-center gap-1.5 text-xs font-medium"
             >
-              Exportar Excel
-            </button>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={abrirNuevaCita}
-            className="px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white text-sm font-semibold rounded-lg transition"
-          >
-            + Nueva cita
-          </button>
-          <Link
-            to="/dashboard/kiosk"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="p-2 text-gray-400 hover:text-gray-600 border border-gray-200 hover:border-gray-300 rounded-lg transition flex items-center gap-1.5 text-xs font-medium"
-            title="Abrir pantalla de recepción"
-          >
-            🖥 Recepción
-          </Link>
-          <div className="flex bg-gray-100 rounded-lg p-1 gap-1">
+              🖥 Recepción
+            </Link>
+            {citasFiltradas.length > 0 && vista === "lista" && (
+              <button
+                onClick={exportarCSV}
+                className="hidden sm:block text-xs text-gray-500 hover:text-gray-700 border border-gray-200 hover:border-gray-300 px-3 py-1.5 rounded-lg transition"
+              >
+                Exportar Excel
+              </button>
+            )}
             <button
-              onClick={() => setVista("lista")}
-              className={`px-4 py-1.5 text-sm font-medium rounded-md transition ${
-                vista === "lista" ? "bg-white text-gray-800 shadow-sm" : "text-gray-500 hover:text-gray-700"
-              }`}
+              onClick={abrirNuevaCita}
+              className="whitespace-nowrap px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white text-sm font-semibold rounded-lg transition"
             >
-              Lista
-            </button>
-            <button
-              onClick={() => setVista("calendario")}
-              className={`px-4 py-1.5 text-sm font-medium rounded-md transition ${
-                vista === "calendario" ? "bg-white text-gray-800 shadow-sm" : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              Calendario
-            </button>
-            <button
-              onClick={() => setVista("gantt")}
-              className={`px-4 py-1.5 text-sm font-medium rounded-md transition ${
-                vista === "gantt" ? "bg-white text-gray-800 shadow-sm" : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              Línea de tiempo
+              + Nueva cita
             </button>
           </div>
         </div>
+
+        {/* Fila 2 — tabs: ancho completo en móvil, auto en desktop */}
+        <div className="flex bg-gray-100 rounded-lg p-1 gap-1">
+          <button
+            onClick={() => setVista("lista")}
+            className={`flex-1 py-1.5 text-sm font-medium rounded-md transition whitespace-nowrap ${
+              vista === "lista" ? "bg-white text-gray-800 shadow-sm" : "text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            Lista
+          </button>
+          <button
+            onClick={() => setVista("calendario")}
+            className={`flex-1 py-1.5 text-sm font-medium rounded-md transition whitespace-nowrap ${
+              vista === "calendario" ? "bg-white text-gray-800 shadow-sm" : "text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            Calendario
+          </button>
+          <button
+            onClick={() => setVista("gantt")}
+            className={`flex-1 py-1.5 text-sm font-medium rounded-md transition whitespace-nowrap ${
+              vista === "gantt" ? "bg-white text-gray-800 shadow-sm" : "text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            Línea de tiempo
+          </button>
+        </div>
+
       </div>
 
       {/* Filtros */}
@@ -908,25 +913,32 @@ export default function CitasPage() {
       </Modal>
 
       {/* ── Modal: Nueva cita ── */}
-      <Modal abierto={modalNueva} onCerrar={() => setModalNueva(false)} titulo="Nueva cita" ancho="sm">
+      <Modal abierto={modalNueva} onCerrar={() => setModalNueva(false)} titulo="Nueva cita" ancho="md">
         {/* Paso 1 — Servicio, empleado, fecha, slot */}
         {pasoCita === 1 && (
           <div className="space-y-4">
             {/* Servicio */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Servicio</label>
-              <Select
-                value={svcSel}
-                onChange={(e) => { setSvcSel(e.target.value); setEmpSel(""); setFechaNueva(""); setSlotNuevo(""); }}
-                className="w-full"
-              >
-                <option value="">— Selecciona un servicio —</option>
+              <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-lg divide-y divide-gray-100">
                 {servicios.filter((s) => s.activo).map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.nombre} · {s.duracionMinutos} min · {formatPrecio(s.precio)}
-                  </option>
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => { setSvcSel(s.id); setEmpSel(""); setFechaNueva(""); setSlotNuevo(""); }}
+                    className={`w-full text-left px-3 py-2.5 text-sm transition ${
+                      svcSel === s.id
+                        ? "bg-slate-700 text-white"
+                        : "hover:bg-gray-50 text-gray-700"
+                    }`}
+                  >
+                    <span className="font-medium">{s.nombre}</span>
+                    <span className={`ml-2 text-xs ${svcSel === s.id ? "text-slate-300" : "text-gray-400"}`}>
+                      {s.duracionMinutos} min · {formatPrecio(s.precio)}
+                    </span>
+                  </button>
                 ))}
-              </Select>
+              </div>
             </div>
 
             {/* Empleado */}
@@ -936,16 +948,22 @@ export default function CitasPage() {
                 {empleadosFiltrados.length === 0 ? (
                   <p className="text-sm text-gray-400">Ningún empleado ofrece este servicio</p>
                 ) : (
-                  <Select
-                    value={empSel}
-                    onChange={(e) => { setEmpSel(e.target.value); setFechaNueva(""); setSlotNuevo(""); }}
-                    className="w-full"
-                  >
-                    <option value="">— Selecciona un profesional —</option>
+                  <div className="max-h-36 overflow-y-auto border border-gray-200 rounded-lg divide-y divide-gray-100">
                     {empleadosFiltrados.map((e) => (
-                      <option key={e.id} value={e.id}>{e.nombre}</option>
+                      <button
+                        key={e.id}
+                        type="button"
+                        onClick={() => { setEmpSel(e.id); setFechaNueva(""); setSlotNuevo(""); }}
+                        className={`w-full text-left px-3 py-2.5 text-sm transition ${
+                          empSel === e.id
+                            ? "bg-slate-700 text-white"
+                            : "hover:bg-gray-50 text-gray-700"
+                        }`}
+                      >
+                        {e.nombre}
+                      </button>
                     ))}
-                  </Select>
+                  </div>
                 )}
               </div>
             )}

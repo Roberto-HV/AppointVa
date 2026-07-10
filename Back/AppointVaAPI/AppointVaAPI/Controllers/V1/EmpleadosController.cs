@@ -1,4 +1,5 @@
 ﻿using AppointVaAPI.Constants;
+using AppointVaAPI.Data;
 using AppointVaAPI.Models;
 using AppointVaAPI.Models.Dtos.Empleados;
 using AppointVaAPI.Repository.IRepository;
@@ -6,6 +7,7 @@ using AppointVaAPI.Services.IServices;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace AppointVaAPI.Controllers.V1
 {
@@ -203,7 +205,8 @@ namespace AppointVaAPI.Controllers.V1
         // POST api/empleados/{id}/bloqueo
         [HttpPost("{id:guid}/bloqueo")]
         [Authorize(Roles = $"{Roles.Propietario},{Roles.Empleado},{Roles.SuperAdmin}")]
-        public async Task<IActionResult> CrearBloqueo(Guid id, [FromBody] BloqueoHorarioDto dto)
+        public async Task<IActionResult> CrearBloqueo(Guid id, [FromBody] BloqueoHorarioDto dto,
+            [FromServices] ApplicationDbContext db)
         {
             if (_contexto.NegocioId is null) return Unauthorized();
 
@@ -213,12 +216,26 @@ namespace AppointVaAPI.Controllers.V1
             if (dto.FinEn <= dto.InicioEn)
                 return BadRequest(new { mensaje = "La fecha de fin debe ser posterior a la de inicio" });
 
+            var inicioUtc = dto.InicioEn.ToUniversalTime();
+            var finUtc    = dto.FinEn.ToUniversalTime();
+
+            var conflicto = await db.Citas.AnyAsync(c =>
+                c.EmpleadoId == id &&
+                c.NegocioId  == _contexto.NegocioId.Value &&
+                c.Estado != EstadosCitas.Cancelada &&
+                c.Estado != EstadosCitas.Inasistencia &&
+                c.InicioEn < finUtc &&
+                c.FinEn    > inicioUtc);
+
+            if (conflicto)
+                return Conflict(new { mensaje = "El empleado tiene citas en ese horario. Cancélalas antes de bloquearlo." });
+
             var bloqueo = new BloqueoHorario
             {
                 Id = Guid.NewGuid(),
                 EmpleadoId = id,
-                InicioEn = dto.InicioEn.ToUniversalTime(),
-                FinEn = dto.FinEn.ToUniversalTime(),
+                InicioEn = inicioUtc,
+                FinEn = finUtc,
                 Motivo = dto.Motivo,
                 FechaCreacion = DateTime.UtcNow
             };

@@ -13,9 +13,14 @@ export default defineConfig({
     },
   },
   server: {
+    hmr: {
+      protocol: "ws",
+      host: "localhost",
+      port: 5173,
+    },
     proxy: {
       "/api": {
-        target: "https://appointva.onrender.com",
+        target: "http://localhost:5048",
         changeOrigin: true,
         secure: false,
       },

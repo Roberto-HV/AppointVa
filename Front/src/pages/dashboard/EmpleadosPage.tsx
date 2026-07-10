@@ -7,7 +7,10 @@ import { z } from "zod";
 import { Eye, EyeOff } from "lucide-react";
 import { empleadosApi } from "../../api/empleados";
 import { serviciosApi } from "../../api/servicios";
+import { negociosApi } from "../../api/negocios";
+import { citasApi } from "../../api/citas";
 import Modal from "../../components/ui/Modal";
+import { DatePicker, TimePicker, citasABusySlots } from "../../components/ui/DateTimePicker";
 import { SkeletonCards } from "../../components/ui/Skeleton";
 import { useToastStore } from "../../store/toastStore";
 import type { EmpleadoDto, HorarioDto } from "../../types";
@@ -37,15 +40,17 @@ const schemaInvitar = z.object({
 type InvitarForm = z.infer<typeof schemaInvitar>;
 
 const schemaBloqueo = z.object({
-  fechaInicio: z.string().min(1, "Fecha requerida"),
-  horaInicio: z.string().min(1, "Hora requerida"),
-  fechaFin: z.string().min(1, "Fecha requerida"),
-  horaFin: z.string().min(1, "Hora requerida"),
-  motivo: z.string().optional(),
-}).refine(
-  (d) => `${d.fechaFin}T${d.horaFin}` > `${d.fechaInicio}T${d.horaInicio}`,
-  { message: "El fin debe ser posterior al inicio", path: ["horaFin"] }
-);
+  fechaInicio: z.string().min(1, "Selecciona una fecha"),
+  horaInicio:  z.string().min(1, "Selecciona una hora"),
+  fechaFin:    z.string().min(1, "Selecciona una fecha"),
+  horaFin:     z.string().min(1, "Selecciona una hora"),
+  motivo:      z.string().optional(),
+}).refine((d) => {
+  if (!d.fechaInicio || !d.horaInicio || !d.fechaFin || !d.horaFin) return true;
+  const inicio = new Date(`${d.fechaInicio}T${d.horaInicio}`);
+  const fin    = new Date(`${d.fechaFin}T${d.horaFin}`);
+  return (fin.getTime() - inicio.getTime()) >= 60 * 60 * 1000;
+}, { message: "El bloqueo debe durar al menos 1 hora", path: ["horaFin"] });
 type BloqueoForm = z.infer<typeof schemaBloqueo>;
 
 export default function EmpleadosPage() {
@@ -82,6 +87,61 @@ export default function EmpleadosPage() {
     queryFn: () => empleadosApi.obtenerBloqueos(empleadoBloqueo!.id),
     enabled: modalBloqueo && !!empleadoBloqueo,
   });
+
+  const { data: horariosNegocio = [] } = useQuery({
+    queryKey: ["horarios-negocio"],
+    queryFn: negociosApi.obtenerHorarios,
+  });
+
+  const fbFechaInicio = formBloqueo.watch("fechaInicio");
+  const fbFechaFin    = formBloqueo.watch("fechaFin");
+
+  const { data: citasDiaInicio = [] } = useQuery({
+    queryKey: ["citas-dia", empleadoBloqueo?.id, fbFechaInicio],
+    queryFn: () => citasApi.obtenerTodas({
+      empleadoId: empleadoBloqueo!.id,
+      desde: fbFechaInicio,
+      hasta: fbFechaInicio,
+      tamano: 50,
+    }).then((r) => r.datos),
+    enabled: modalBloqueo && !!empleadoBloqueo && fbFechaInicio.length > 0,
+  });
+
+  const { data: citasDiaFin = [] } = useQuery({
+    queryKey: ["citas-dia", empleadoBloqueo?.id, fbFechaFin],
+    queryFn: () => citasApi.obtenerTodas({
+      empleadoId: empleadoBloqueo!.id,
+      desde: fbFechaFin,
+      hasta: fbFechaFin,
+      tamano: 50,
+    }).then((r) => r.datos),
+    enabled: modalBloqueo && !!empleadoBloqueo && fbFechaFin.length > 0 && fbFechaFin !== fbFechaInicio,
+  });
+
+  const busySlotsInicio = citasABusySlots(citasDiaInicio);
+  const busySlotsFin    = citasABusySlots(fbFechaFin === fbFechaInicio ? citasDiaInicio : citasDiaFin);
+
+  // Hora actual redondeada al siguiente slot de 30 min ("HH:MM")
+  const ahoraMin = (): string => {
+    const n = new Date();
+    const total = n.getHours() * 60 + n.getMinutes();
+    const siguiente = Math.ceil(total / 30) * 30;
+    return `${String(Math.floor(siguiente / 60) % 24).padStart(2,"0")}:${String(siguiente % 60).padStart(2,"0")}`;
+  };
+
+  // Devuelve { min, max } para el picker de hora dado una fecha
+  const rangoHorario = (fecha: string): { min: string; max: string } | null => {
+    if (!fecha) return null;
+    const dia = new Date(fecha + "T12:00").getDay();
+    const h = horariosNegocio.find((x) => x.diaSemana === dia);
+    const hoy = new Date().toISOString().slice(0, 10);
+    const minNegocio = (h?.activo ? h.horaInicio : null) ?? "00:00";
+    const maxNegocio = (h?.activo ? h.horaFin    : null) ?? "23:30";
+    const minEfectivo = fecha === hoy
+      ? (ahoraMin() > minNegocio ? ahoraMin() : minNegocio)
+      : minNegocio;
+    return { min: minEfectivo, max: maxNegocio };
+  };
 
   const formEmpleado = useForm<EmpleadoForm>({
     resolver: zodResolver(schemaEmpleado),
@@ -180,8 +240,8 @@ export default function EmpleadosPage() {
     mutationFn: (data: BloqueoForm) =>
       empleadosApi.crearBloqueo(empleadoBloqueo!.id, {
         inicioEn: `${data.fechaInicio}T${data.horaInicio}`,
-        finEn: `${data.fechaFin}T${data.horaFin}`,
-        motivo: data.motivo || undefined,
+        finEn:    `${data.fechaFin}T${data.horaFin}`,
+        motivo:   data.motivo || undefined,
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["bloqueos", empleadoBloqueo?.id] });
@@ -497,49 +557,64 @@ export default function EmpleadosPage() {
           <div className="border-t border-gray-100 pt-4">
             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Agregar bloqueo</p>
             <form onSubmit={formBloqueo.handleSubmit((d) => crearBloqueo(d))} className="space-y-3">
+              {/* Inicio */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Inicio *</label>
                 <div className="grid grid-cols-2 gap-2">
-                  <input
-                    type="date"
-                    {...formBloqueo.register("fechaInicio")}
-                    className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700
-                      ${formBloqueo.formState.errors.fechaInicio ? "border-red-400 bg-red-50" : "border-gray-200"}`}
+                  <DatePicker
+                    value={formBloqueo.watch("fechaInicio") ?? ""}
+                    onChange={(v) => {
+                      formBloqueo.setValue("fechaInicio", v, { shouldValidate: true });
+                      formBloqueo.setValue("horaInicio", "");
+                    }}
+                    error={formBloqueo.formState.errors.fechaInicio?.message}
                   />
-                  <input
-                    type="time"
-                    {...formBloqueo.register("horaInicio")}
-                    className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700
-                      ${formBloqueo.formState.errors.horaInicio ? "border-red-400 bg-red-50" : "border-gray-200"}`}
+                  <TimePicker
+                    value={formBloqueo.watch("horaInicio") ?? ""}
+                    onChange={(v) => formBloqueo.setValue("horaInicio", v, { shouldValidate: true })}
+                    minTime={rangoHorario(formBloqueo.watch("fechaInicio"))?.min}
+                    maxTime={rangoHorario(formBloqueo.watch("fechaInicio"))?.max}
+                    busySlots={busySlotsInicio}
+                    error={formBloqueo.formState.errors.horaInicio?.message}
                   />
                 </div>
-                {(formBloqueo.formState.errors.fechaInicio || formBloqueo.formState.errors.horaInicio) && (
-                  <p className="text-red-500 text-xs mt-1">
-                    {formBloqueo.formState.errors.fechaInicio?.message ?? formBloqueo.formState.errors.horaInicio?.message}
-                  </p>
-                )}
               </div>
+
+              {/* Fin */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Fin *</label>
                 <div className="grid grid-cols-2 gap-2">
-                  <input
-                    type="date"
-                    {...formBloqueo.register("fechaFin")}
-                    className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700
-                      ${formBloqueo.formState.errors.fechaFin ? "border-red-400 bg-red-50" : "border-gray-200"}`}
+                  <DatePicker
+                    value={formBloqueo.watch("fechaFin") ?? ""}
+                    onChange={(v) => {
+                      formBloqueo.setValue("fechaFin", v, { shouldValidate: true });
+                      formBloqueo.setValue("horaFin", "");
+                    }}
+                    minDate={formBloqueo.watch("fechaInicio")}
+                    error={formBloqueo.formState.errors.fechaFin?.message}
                   />
-                  <input
-                    type="time"
-                    {...formBloqueo.register("horaFin")}
-                    className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700
-                      ${formBloqueo.formState.errors.horaFin ? "border-red-400 bg-red-50" : "border-gray-200"}`}
+                  <TimePicker
+                    value={formBloqueo.watch("horaFin") ?? ""}
+                    onChange={(v) => formBloqueo.setValue("horaFin", v, { shouldValidate: true })}
+                    minTime={(() => {
+                      const fi = formBloqueo.watch("fechaInicio");
+                      const ff = formBloqueo.watch("fechaFin");
+                      const hi = formBloqueo.watch("horaInicio");
+                      const rango = rangoHorario(ff);
+                      const minNegocio = rango?.min;
+                      if (fi === ff && hi) {
+                        const [hh, mm] = hi.split(":").map(Number);
+                        const total = hh * 60 + mm + 60;
+                        const minPorInicio = `${String(Math.floor(total / 60) % 24).padStart(2,"0")}:${String(total % 60).padStart(2,"0")}`;
+                        return minNegocio && minNegocio > minPorInicio ? minNegocio : minPorInicio;
+                      }
+                      return minNegocio;
+                    })()}
+                    maxTime={rangoHorario(formBloqueo.watch("fechaFin"))?.max}
+                    busySlots={busySlotsFin}
+                    error={formBloqueo.formState.errors.horaFin?.message}
                   />
                 </div>
-                {(formBloqueo.formState.errors.fechaFin || formBloqueo.formState.errors.horaFin) && (
-                  <p className="text-red-500 text-xs mt-1">
-                    {formBloqueo.formState.errors.fechaFin?.message ?? formBloqueo.formState.errors.horaFin?.message}
-                  </p>
-                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">

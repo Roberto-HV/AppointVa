@@ -26,6 +26,14 @@ export const meApi = {
     const res = await api.get("/me/push-status");
     return res.data;
   },
+  obtenerMiEmpleado: async (): Promise<{ empleadoId: string; nombre: string } | null> => {
+    try {
+      const res = await api.get<{ empleadoId: string; nombre: string }>("/me/empleado");
+      return res.data;
+    } catch {
+      return null;
+    }
+  },
   obtenerVapidPublicKey: async (): Promise<string | null> => {
     try {
       const res = await api.get<{ vapidPublicKey: string }>("/me/push-vapid-key");

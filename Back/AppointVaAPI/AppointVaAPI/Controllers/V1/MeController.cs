@@ -81,6 +81,22 @@ namespace AppointVaAPI.Controllers.V1
             });
         }
 
+        // GET api/me/empleado — devuelve el empleadoId del usuario logueado (solo rol Empleado)
+        [HttpGet("empleado")]
+        [Authorize(Roles = Roles.Empleado)]
+        public async Task<IActionResult> ObtenerMiEmpleado([FromServices] AppointVaAPI.Data.ApplicationDbContext db)
+        {
+            var empleado = await db.Empleados
+                .Where(e => e.UsuarioId == UserId)
+                .Select(e => new { e.Id, e.Nombre })
+                .FirstOrDefaultAsync();
+
+            if (empleado is null)
+                return NotFound(new { mensaje = "No se encontró un empleado vinculado a este usuario." });
+
+            return Ok(new { empleadoId = empleado.Id, nombre = empleado.Nombre });
+        }
+
         // POST api/me/push-test
         [HttpPost("push-test")]
         public async Task<IActionResult> ProbarPush()
