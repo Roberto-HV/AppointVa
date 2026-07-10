@@ -50,13 +50,14 @@ interface OnboardingProps {
   tieneCitas: boolean;
   tieneServicios: boolean;
   tieneEmpleados: boolean;
+  cargando: boolean;
 }
 
-function WizardOnboarding({ negocioId, slug, tieneCitas, tieneServicios, tieneEmpleados }: OnboardingProps) {
+function WizardOnboarding({ negocioId, slug, tieneCitas, tieneServicios, tieneEmpleados, cargando }: OnboardingProps) {
   const keyStorage = `onboarding-ok-${negocioId}`;
   const [cerrado, setCerrado] = useState(() => !!localStorage.getItem(keyStorage));
 
-  if (cerrado || tieneCitas) return null;
+  if (cerrado || cargando || tieneCitas) return null;
 
   const cerrar = () => {
     localStorage.setItem(keyStorage, "1");
@@ -196,6 +197,7 @@ function VistaPropietario({ nombre }: { nombre: string }) {
           tieneCitas={(data?.citasMes ?? 0) > 0}
           tieneServicios={(data?.topServicios?.length ?? 0) > 0}
           tieneEmpleados={empleados.length > 0}
+          cargando={isLoading}
         />
       )}
 
