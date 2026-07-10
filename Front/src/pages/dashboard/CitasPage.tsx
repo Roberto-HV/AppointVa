@@ -35,6 +35,7 @@ import EstadoBadge from "../../components/ui/EstadoBadge";
 import Modal from "../../components/ui/Modal";
 import CalendarioCitas from "../../components/dashboard/CalendarioCitas";
 import GanttCitas from "../../components/dashboard/GanttCitas";
+import PasoFechaHora from "../../components/booking/PasoFechaHora";
 import { useToastStore } from "../../store/toastStore";
 import type { CitaDto, SlotDisponible } from "../../types";
 import { SkeletonTableRows } from "../../components/ui/Skeleton";
@@ -95,6 +96,13 @@ export default function CitasPage() {
 
   // Modal comprobante
   const [urlComprobante, setUrlComprobante] = useState<string | null>(null);
+
+  // Modal repetir cita
+  const [citaRepetir, setCitaRepetir] = useState<CitaDto | null>(null);
+  const [slotRepetir, setSlotRepetir] = useState<SlotDisponible | null>(null);
+  const [pasoRepetir, setPasoRepetir] = useState<1 | 2>(1);
+  const [fClienteRepetir, setFClienteRepetir] = useState({ nombre: "", telefono: "", email: "", notas: "" });
+  const [emailRepetirError, setEmailRepetirError] = useState("");
 
   // Modal nueva cita
   const [modalNueva, setModalNueva] = useState(false);
@@ -253,6 +261,19 @@ export default function CitasPage() {
     setEmailClienteError("");
   };
 
+  const abrirRepetirCita = (c: CitaDto) => {
+    setCitaRepetir(c);
+    setSlotRepetir(null);
+    setPasoRepetir(1);
+    setFClienteRepetir({
+      nombre: c.nombreCliente,
+      telefono: c.telefonoCliente,
+      email: c.emailCliente ?? "",
+      notas: "",
+    });
+    setEmailRepetirError("");
+  };
+
   const { mutate: actualizarNotas, isPending: guardandoNotas } = useMutation({
     mutationFn: ({ id, notas }: { id: string; notas: string | null }) =>
       citasApi.actualizarNotas(id, notas),
@@ -263,6 +284,36 @@ export default function CitasPage() {
       toast("Notas guardadas");
     },
     onError: () => toast("No se pudieron guardar las notas. Intenta de nuevo.", "error"),
+  });
+
+  const { mutate: repetirCita, isPending: repitiendo } = useMutation({
+    mutationFn: () => citasApi.crear({
+      servicioId: citaRepetir!.servicioId,
+      empleadoId: citaRepetir!.empleadoId,
+      inicioEn: slotRepetir!.inicio,
+      nombreCliente: fClienteRepetir.nombre.trim(),
+      telefonoCliente: fClienteRepetir.telefono.trim(),
+      emailCliente: fClienteRepetir.email.trim() || undefined,
+      notas: fClienteRepetir.notas.trim() || undefined,
+    }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["citas"] });
+      qc.invalidateQueries({ queryKey: ["citas-cal"] });
+      qc.invalidateQueries({ queryKey: ["citas-badge"] });
+      qc.invalidateQueries({ queryKey: ["citas-gantt"] });
+      qc.invalidateQueries({ queryKey: ["dashboard-resumen"] });
+      qc.invalidateQueries({ queryKey: ["clientes"] });
+      setCitaRepetir(null);
+      setSlotRepetir(null);
+      setPasoRepetir(1);
+      setFClienteRepetir({ nombre: "", telefono: "", email: "", notas: "" });
+      setEmailRepetirError("");
+      toast("Cita creada");
+    },
+    onError: (err: unknown) => {
+      const msg = (err as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje ?? "No se pudo crear la cita";
+      toast(msg);
+    },
   });
 
   const { mutate: cambiarEstado, isPending } = useMutation({
@@ -710,6 +761,14 @@ export default function CitasPage() {
                             Reagendar
                           </button>
                         )}
+                        <Tooltip text="Crear una nueva cita con los mismos datos del cliente y servicio">
+                          <button
+                            onClick={() => abrirRepetirCita(c)}
+                            className="text-xs font-medium px-2.5 py-1 rounded-lg bg-sky-50 text-sky-600 hover:bg-sky-100 transition"
+                          >
+                            Repetir
+                          </button>
+                        </Tooltip>
                         {TRANSICIONES[c.estadoTexto] && (
                           <button
                             onClick={() => abrirCambioEstado(c)}
@@ -1178,6 +1237,119 @@ export default function CitasPage() {
               </>
             )}
           </div>
+        )}
+      </Modal>
+
+      {/* ── Modal: Repetir cita ── */}
+      <Modal abierto={!!citaRepetir} onCerrar={() => setCitaRepetir(null)} titulo="Repetir cita" ancho="sm">
+        {citaRepetir && (
+          <>
+            {/* Paso 1 — elegir nueva fecha y slot */}
+            {pasoRepetir === 1 && (
+              <div className="space-y-4">
+                <div className="bg-gray-50 rounded-lg p-3 text-sm space-y-1">
+                  <p><span className="text-gray-500">Servicio:</span> <span className="font-medium">{citaRepetir.nombreServicio}</span></p>
+                  <p><span className="text-gray-500">Profesional:</span> <span className="font-medium">{citaRepetir.nombreEmpleado}</span></p>
+                  <p><span className="text-gray-500">Cliente:</span> <span className="font-medium">{citaRepetir.nombreCliente}</span></p>
+                </div>
+                <p className="text-sm text-gray-500">Selecciona la nueva fecha y horario:</p>
+                <PasoFechaHora
+                  servicioId={citaRepetir.servicioId}
+                  empleadoId={citaRepetir.empleadoId}
+                  seleccionado={slotRepetir}
+                  onSeleccionar={setSlotRepetir}
+                />
+                <button
+                  onClick={() => slotRepetir && setPasoRepetir(2)}
+                  disabled={!slotRepetir}
+                  className="w-full bg-slate-700 hover:bg-slate-800 disabled:opacity-40 text-white font-semibold py-2.5 rounded-xl transition"
+                >
+                  Continuar →
+                </button>
+              </div>
+            )}
+
+            {/* Paso 2 — confirmar datos del cliente */}
+            {pasoRepetir === 2 && (
+              <div className="space-y-4">
+                <div className="bg-gray-50 rounded-lg p-3 text-sm space-y-1">
+                  <p><span className="text-gray-500">Servicio:</span> <span className="font-medium">{citaRepetir.nombreServicio}</span></p>
+                  <p><span className="text-gray-500">Profesional:</span> <span className="font-medium">{citaRepetir.nombreEmpleado}</span></p>
+                  <p><span className="text-gray-500">Hora:</span> <span className="font-medium capitalize">{slotRepetir ? formatFechaHora(slotRepetir.inicio) : ""}</span></p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Nombre del cliente <span className="text-red-400">*</span></label>
+                  <input
+                    type="text"
+                    value={fClienteRepetir.nombre}
+                    onChange={(e) => setFClienteRepetir((p) => ({ ...p, nombre: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono <span className="text-red-400">*</span></label>
+                  <input
+                    type="tel"
+                    value={fClienteRepetir.telefono}
+                    onChange={(e) => setFClienteRepetir((p) => ({ ...p, telefono: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email <span className="text-gray-400 font-normal">(opcional)</span>
+                  </label>
+                  <input
+                    type="email"
+                    value={fClienteRepetir.email}
+                    onChange={(e) => {
+                      setFClienteRepetir((p) => ({ ...p, email: e.target.value }));
+                      if (emailRepetirError) setEmailRepetirError(validarEmailCliente(e.target.value));
+                    }}
+                    onBlur={() => setEmailRepetirError(validarEmailCliente(fClienteRepetir.email))}
+                    className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700 ${
+                      emailRepetirError ? "border-red-400 bg-red-50" : "border-gray-200"
+                    }`}
+                  />
+                  {emailRepetirError && (
+                    <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                      <span>⚠</span> {emailRepetirError}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Nota interna <span className="text-gray-400 font-normal">(opcional)</span>
+                  </label>
+                  <textarea
+                    value={fClienteRepetir.notas}
+                    onChange={(e) => setFClienteRepetir((p) => ({ ...p, notas: e.target.value }))}
+                    rows={2}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700 resize-none"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setPasoRepetir(1)}
+                    className="px-4 py-2.5 border border-gray-200 text-gray-600 hover:bg-gray-50 rounded-xl text-sm transition"
+                  >
+                    ← Atrás
+                  </button>
+                  <button
+                    onClick={() => {
+                      const err = validarEmailCliente(fClienteRepetir.email);
+                      setEmailRepetirError(err);
+                      if (!err) repetirCita();
+                    }}
+                    disabled={!fClienteRepetir.nombre.trim() || !fClienteRepetir.telefono.trim() || repitiendo || !!emailRepetirError}
+                    className="flex-1 bg-slate-700 hover:bg-slate-800 disabled:opacity-40 text-white font-semibold py-2.5 rounded-xl text-sm transition"
+                  >
+                    {repitiendo ? "Creando..." : "Crear cita"}
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </Modal>
     </div>

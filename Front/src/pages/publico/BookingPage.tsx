@@ -1,6 +1,6 @@
 ﻿import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { publicoApi } from "../../api/publico";
 import { intakePublicoApi, type CampoIntake } from "../../api/intake";
@@ -189,6 +189,7 @@ function IntakeCampoInput({
 export default function BookingPage() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const [paso, setPaso] = useState(1);
   const [servicio, setServicio] = useState<ServicioPublico | null>(null);
@@ -215,6 +216,9 @@ export default function BookingPage() {
   const [descuentoAplicado, setDescuentoAplicado] = useState<DescuentoValidado | null>(null);
   const [validandoCupon, setValidandoCupon] = useState(false);
   const [errorCupon, setErrorCupon] = useState("");
+
+  // Pre-selección vía URL params (Repetir cita)
+  const [yaPreseleccionado, setYaPreseleccionado] = useState(false);
 
   const { data: negocio, isLoading, isError, error } = useQuery({
     queryKey: ["negocio", slug],
@@ -260,6 +264,32 @@ export default function BookingPage() {
 
     return () => { document.title = "AppointVa"; };
   }, [negocio]);
+
+  // Pre-seleccionar servicio y empleado desde URL params (flujo "Repetir cita")
+  useEffect(() => {
+    if (!negocio || yaPreseleccionado) return;
+    const paramServicioId = searchParams.get("servicioId");
+    const paramEmpleadoId = searchParams.get("empleadoId");
+    if (!paramServicioId) return;
+
+    const svc = negocio.servicios.find((s) => s.id === paramServicioId);
+    if (!svc) return;
+
+    setServicio(svc);
+    setYaPreseleccionado(true);
+
+    if (paramEmpleadoId) {
+      const emp = negocio.empleados.find((e) => e.id === paramEmpleadoId);
+      if (emp) {
+        setEmpleado(emp);
+        setDirection(1);
+        setPaso(3);
+        return;
+      }
+    }
+    setDirection(1);
+    setPaso(2);
+  }, [negocio, searchParams, yaPreseleccionado]);
 
   const irSiguiente = () => {
     (document.activeElement as HTMLElement)?.blur();

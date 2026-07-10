@@ -303,6 +303,14 @@ export default function MisCitasPage() {
                           </>
                         )}
                         <button
+                          onClick={() =>
+                            navigate(`/b/${c.negocioSlug}?servicioId=${c.servicioId}&empleadoId=${c.empleadoId}`)
+                          }
+                          className="text-xs font-semibold text-sky-600 hover:text-sky-800 transition"
+                        >
+                          Repetir
+                        </button>
+                        <button
                           onClick={() => navigate(`/cita/${c.codigoConfirmacion}`)}
                           className="text-xs font-bold text-slate-700 hover:underline"
                         >
