@@ -10,7 +10,7 @@ namespace AppointVaAPI.Controllers.V1
 {
     [ApiController]
     [Route("api/servicios")]
-    [Authorize(Roles = $"{Roles.Propietario},{Roles.SuperAdmin}")]
+    [Authorize]
     public class ServiciosController : ControllerBase
     {
         private readonly IServicioRepository _repo;
@@ -50,6 +50,7 @@ namespace AppointVaAPI.Controllers.V1
 
         // POST api/servicios
         [HttpPost]
+        [Authorize(Roles = $"{Roles.Propietario},{Roles.SuperAdmin}")]
         public async Task<IActionResult> Crear([FromBody] CrearServicioDto dto)
         {
             if (_contexto.NegocioId is null) return Unauthorized();
@@ -76,6 +77,7 @@ namespace AppointVaAPI.Controllers.V1
 
         // PUT api/servicios/{id}
         [HttpPut("{id:guid}")]
+        [Authorize(Roles = $"{Roles.Propietario},{Roles.SuperAdmin}")]
         public async Task<IActionResult> Actualizar(Guid id, [FromBody] ActualizarServicioDto dto)
         {
             if (_contexto.NegocioId is null) return Unauthorized();
@@ -99,6 +101,7 @@ namespace AppointVaAPI.Controllers.V1
 
         // POST api/servicios/{id}/imagen
         [HttpPost("{id:guid}/imagen")]
+        [Authorize(Roles = $"{Roles.Propietario},{Roles.SuperAdmin}")]
         public async Task<IActionResult> SubirImagen(Guid id, IFormFile archivo)
         {
             if (_contexto.NegocioId is null) return Unauthorized();
@@ -125,6 +128,7 @@ namespace AppointVaAPI.Controllers.V1
 
         // DELETE api/servicios/{id}
         [HttpDelete("{id:guid}")]
+        [Authorize(Roles = $"{Roles.Propietario},{Roles.SuperAdmin}")]
         public async Task<IActionResult> Eliminar(Guid id)
         {
             if (_contexto.NegocioId is null) return Unauthorized();
