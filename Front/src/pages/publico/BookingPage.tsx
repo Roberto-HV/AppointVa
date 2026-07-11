@@ -496,7 +496,7 @@ export default function BookingPage() {
           }}
         />
         {/* Contenido con padding-top para dejar ver la foto arriba */}
-        <div className="relative z-10 px-5 pt-20 pb-4">
+        <div className="relative z-10 px-5 pt-28 pb-4">
           {/* Fila: logo + nombre alineados arriba */}
           <div className="flex items-start gap-3.5">
             {/* Logo */}
@@ -545,7 +545,7 @@ export default function BookingPage() {
             </div>
           </div>
           {/* Descripción + redes — debajo del logo, indentadas */}
-          <div className="pl-[4.375rem] mt-0.5">
+          <div className="pl-[4.375rem] mt-0">
             {negocio.descripcion && (
               <p className="text-xs line-clamp-2 leading-relaxed" style={{ color: "rgba(255,255,255,0.62)" }}>
                 {negocio.descripcion}
