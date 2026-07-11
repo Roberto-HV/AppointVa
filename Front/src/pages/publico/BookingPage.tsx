@@ -495,10 +495,8 @@ export default function BookingPage() {
             background: `radial-gradient(ellipse 80% 120% at 0% 0%, rgb(${hexToChannels(color)} / 0.20) 0%, transparent 65%)`,
           }}
         />
-        {/* Spacer + contenido: el flex-1 empuja el contenido al fondo */}
-        <div className="relative z-10 flex flex-col" style={{ minHeight: "10rem" }}>
-          <div className="flex-1" />
-        <div className="px-5 pb-4">
+        {/* Contenido con padding-top para dejar ver la foto arriba */}
+        <div className="relative z-10 px-5 pt-20 pb-4">
           {/* Fila: logo + nombre centrados verticalmente */}
           <div className="flex items-center gap-3.5">
             {/* Logo */}
@@ -579,7 +577,6 @@ export default function BookingPage() {
               </div>
             )}
           </div>
-        </div>
         </div>
       </div>
 
