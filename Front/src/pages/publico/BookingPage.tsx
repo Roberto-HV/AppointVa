@@ -468,7 +468,7 @@ export default function BookingPage() {
     <div className="min-h-screen bg-slate-50">
       {/* Header oscuro del negocio */}
       <div
-        className="relative overflow-hidden"
+        className="relative overflow-hidden flex flex-col justify-end"
         style={{ background: "#0C0C0F", minHeight: "10rem" }}
       >
         {/* Portada visible */}
@@ -495,55 +495,56 @@ export default function BookingPage() {
             background: `radial-gradient(ellipse 80% 120% at 0% 0%, rgb(${hexToChannels(color)} / 0.20) 0%, transparent 65%)`,
           }}
         />
-        {/* Contenido anclado al fondo */}
-        <div className="absolute bottom-0 left-0 right-0 z-10 px-5 pb-4">
+        {/* Contenido al fondo — flex col justify-end lo empuja */}
+        <div className="relative z-10 px-5 pb-4">
+          {/* Fila: logo + nombre centrados verticalmente */}
           <div className="flex items-center gap-3.5">
-          {/* Logo */}
-          <div className="shrink-0">
-            {negocio.logoUrl ? (
-              <img
-                src={negocio.logoUrl}
-                alt={negocio.nombre}
-                className="w-14 h-14 rounded-2xl object-cover"
-                style={{
-                  border: `1.5px solid rgb(${hexToChannels(color)} / 0.45)`,
-                  boxShadow: `0 2px 16px rgb(${hexToChannels(color)} / 0.28)`,
-                }}
-                loading="lazy"
-              />
-            ) : (
-              <div
-                className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl"
-                style={{
-                  background: `rgb(${hexToChannels(color)} / 0.18)`,
-                  border: `1.5px solid rgb(${hexToChannels(color)} / 0.40)`,
-                }}
-              >
-                🏪
-              </div>
-            )}
-          </div>
-          {/* Nombre + rating — centrados con el logo */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-white font-black text-[1.05rem] leading-tight tracking-tight">
-                {negocio.nombre}
-              </h1>
-              {(negocio.totalResenas ?? 0) > 0 && (
+            {/* Logo */}
+            <div className="shrink-0">
+              {negocio.logoUrl ? (
+                <img
+                  src={negocio.logoUrl}
+                  alt={negocio.nombre}
+                  className="w-14 h-14 rounded-2xl object-cover"
+                  style={{
+                    border: `1.5px solid rgb(${hexToChannels(color)} / 0.45)`,
+                    boxShadow: `0 2px 16px rgb(${hexToChannels(color)} / 0.28)`,
+                  }}
+                  loading="lazy"
+                />
+              ) : (
                 <div
-                  className="flex items-center gap-1 rounded-full px-2 py-0.5"
-                  style={{ background: "rgba(255,255,255,0.08)" }}
+                  className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl"
+                  style={{
+                    background: `rgb(${hexToChannels(color)} / 0.18)`,
+                    border: `1.5px solid rgb(${hexToChannels(color)} / 0.40)`,
+                  }}
                 >
-                  <Star size={9} fill="#F59E0B" stroke="#F59E0B" strokeWidth={0} />
-                  <span className="text-[10px]" style={{ color: "rgba(255,255,255,0.55)" }}>
-                    {(negocio.promedioResenas ?? 0).toFixed(1)}
-                  </span>
+                  🏪
                 </div>
               )}
             </div>
+            {/* Nombre + rating al mismo nivel que el logo */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-white font-black text-[1.05rem] leading-tight tracking-tight">
+                  {negocio.nombre}
+                </h1>
+                {(negocio.totalResenas ?? 0) > 0 && (
+                  <div
+                    className="flex items-center gap-1 rounded-full px-2 py-0.5"
+                    style={{ background: "rgba(255,255,255,0.08)" }}
+                  >
+                    <Star size={9} fill="#F59E0B" stroke="#F59E0B" strokeWidth={0} />
+                    <span className="text-[10px]" style={{ color: "rgba(255,255,255,0.55)" }}>
+                      {(negocio.promedioResenas ?? 0).toFixed(1)}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
-          </div>
-          {/* Descripción + redes — debajo del row logo-nombre */}
+          {/* Descripción + redes — debajo del logo, indentadas */}
           <div className="pl-[4.375rem] mt-1.5">
             {negocio.descripcion && (
               <p className="text-xs line-clamp-2 leading-relaxed" style={{ color: "rgba(255,255,255,0.62)" }}>
