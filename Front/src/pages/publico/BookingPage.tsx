@@ -496,7 +496,8 @@ export default function BookingPage() {
           }}
         />
         {/* Contenido anclado al fondo */}
-        <div className="absolute bottom-0 left-0 right-0 z-10 flex items-end gap-3.5 px-5 pb-4">
+        <div className="absolute bottom-0 left-0 right-0 z-10 px-5 pb-4">
+          <div className="flex items-center gap-3.5">
           {/* Logo */}
           <div className="shrink-0">
             {negocio.logoUrl ? (
@@ -522,8 +523,8 @@ export default function BookingPage() {
               </div>
             )}
           </div>
-          {/* Info */}
-          <div className="flex-1 min-w-0 pb-0.5">
+          {/* Nombre + rating — centrados con el logo */}
+          <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-white font-black text-[1.05rem] leading-tight tracking-tight">
                 {negocio.nombre}
@@ -540,12 +541,15 @@ export default function BookingPage() {
                 </div>
               )}
             </div>
+          </div>
+          </div>
+          {/* Descripción + redes — debajo del row logo-nombre */}
+          <div className="pl-[4.375rem] mt-1.5">
             {negocio.descripcion && (
-              <p className="text-xs mt-1 line-clamp-2 leading-relaxed" style={{ color: "rgba(255,255,255,0.62)" }}>
+              <p className="text-xs line-clamp-2 leading-relaxed" style={{ color: "rgba(255,255,255,0.62)" }}>
                 {negocio.descripcion}
               </p>
             )}
-            {/* Redes sociales */}
             {(negocio.instagramUrl || negocio.facebookUrl || negocio.tiktokUrl) && (
               <div className="flex gap-1.5 mt-2">
                 {negocio.instagramUrl && (
