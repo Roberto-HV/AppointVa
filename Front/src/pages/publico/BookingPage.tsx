@@ -466,29 +466,37 @@ export default function BookingPage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Header oscuro del negocio — Estilo C */}
+      {/* Header oscuro del negocio */}
       <div
-        className="relative overflow-hidden px-5 pt-5 pb-4"
-        style={{ background: "#0C0C0F" }}
+        className="relative overflow-hidden"
+        style={{ background: "#0C0C0F", minHeight: "10rem" }}
       >
-        {/* Portada como textura muy sutil si existe */}
+        {/* Portada visible */}
         {negocio.portadaUrl && (
           <img
             src={negocio.portadaUrl}
             alt=""
-            className="absolute inset-0 w-full h-full object-cover opacity-15 pointer-events-none"
+            className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+            style={{ opacity: 0.5 }}
             loading="lazy"
           />
         )}
+        {/* Gradiente: transparente arriba → oscuro abajo */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: "linear-gradient(to bottom, rgba(12,12,15,0.15) 0%, rgba(12,12,15,0.92) 100%)",
+          }}
+        />
         {/* Glow radial con el color de marca */}
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
-            background: `radial-gradient(ellipse 80% 120% at 0% 0%, rgb(${hexToChannels(color)} / 0.22) 0%, transparent 70%)`,
+            background: `radial-gradient(ellipse 80% 120% at 0% 0%, rgb(${hexToChannels(color)} / 0.20) 0%, transparent 65%)`,
           }}
         />
-        {/* Layout: logo + info lado a lado */}
-        <div className="relative z-10 flex items-start gap-3.5">
+        {/* Contenido anclado al fondo */}
+        <div className="absolute bottom-0 left-0 right-0 z-10 flex items-end gap-3.5 px-5 pb-4">
           {/* Logo */}
           <div className="shrink-0">
             {negocio.logoUrl ? (
@@ -497,8 +505,8 @@ export default function BookingPage() {
                 alt={negocio.nombre}
                 className="w-14 h-14 rounded-2xl object-cover"
                 style={{
-                  border: `1.5px solid rgb(${hexToChannels(color)} / 0.38)`,
-                  boxShadow: `0 2px 14px rgb(${hexToChannels(color)} / 0.20)`,
+                  border: `1.5px solid rgb(${hexToChannels(color)} / 0.45)`,
+                  boxShadow: `0 2px 16px rgb(${hexToChannels(color)} / 0.28)`,
                 }}
                 loading="lazy"
               />
@@ -506,8 +514,8 @@ export default function BookingPage() {
               <div
                 className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl"
                 style={{
-                  background: `rgb(${hexToChannels(color)} / 0.15)`,
-                  border: `1.5px solid rgb(${hexToChannels(color)} / 0.35)`,
+                  background: `rgb(${hexToChannels(color)} / 0.18)`,
+                  border: `1.5px solid rgb(${hexToChannels(color)} / 0.40)`,
                 }}
               >
                 🏪
@@ -515,7 +523,7 @@ export default function BookingPage() {
             )}
           </div>
           {/* Info */}
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 pb-0.5">
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-white font-black text-[1.05rem] leading-tight tracking-tight">
                 {negocio.nombre}
@@ -523,17 +531,17 @@ export default function BookingPage() {
               {(negocio.totalResenas ?? 0) > 0 && (
                 <div
                   className="flex items-center gap-1 rounded-full px-2 py-0.5"
-                  style={{ background: "rgba(255,255,255,0.06)" }}
+                  style={{ background: "rgba(255,255,255,0.08)" }}
                 >
                   <Star size={9} fill="#F59E0B" stroke="#F59E0B" strokeWidth={0} />
-                  <span className="text-[10px]" style={{ color: "rgba(255,255,255,0.45)" }}>
+                  <span className="text-[10px]" style={{ color: "rgba(255,255,255,0.55)" }}>
                     {(negocio.promedioResenas ?? 0).toFixed(1)}
                   </span>
                 </div>
               )}
             </div>
             {negocio.descripcion && (
-              <p className="text-xs mt-1 line-clamp-2 leading-relaxed" style={{ color: "rgba(255,255,255,0.35)" }}>
+              <p className="text-xs mt-1 line-clamp-2 leading-relaxed" style={{ color: "rgba(255,255,255,0.62)" }}>
                 {negocio.descripcion}
               </p>
             )}

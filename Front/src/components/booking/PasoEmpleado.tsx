@@ -1,5 +1,4 @@
 ﻿import type { EmpleadoPublico } from "../../types";
-import { Star } from "lucide-react";
 
 export const SIN_PREFERENCIA_ID = "sin-preferencia";
 
@@ -10,23 +9,6 @@ export const SIN_PREFERENCIA: EmpleadoPublico = {
   promedioResenas: 0,
   totalResenas: 0,
 };
-
-function Estrellas({ promedio, total }: { promedio: number; total: number }) {
-  if (total === 0) return null;
-  return (
-    <div className="flex items-center justify-center gap-0.5 mt-1.5">
-      {[1, 2, 3, 4, 5].map((s) => (
-        <Star
-          key={s}
-          size={10}
-          className={promedio >= s ? "text-amber-400" : "text-slate-200"}
-          fill={promedio >= s ? "currentColor" : "none"}
-        />
-      ))}
-      <span className="text-[10px] text-slate-400 ml-0.5">({total})</span>
-    </div>
-  );
-}
 
 interface Props {
   empleados: EmpleadoPublico[];
@@ -123,7 +105,6 @@ export default function PasoEmpleado({ empleados, servicioId, seleccionado, onSe
               <p className="text-sm font-semibold" style={{ color: activo ? color : "#1e293b" }}>
                 {emp.nombre}
               </p>
-              <Estrellas promedio={emp.promedioResenas} total={emp.totalResenas} />
               {emp.biografia && (
                 <p className="text-xs text-slate-400 mt-1.5 line-clamp-2 leading-relaxed">{emp.biografia}</p>
               )}
