@@ -40,10 +40,21 @@ export default function GaleriaPage() {
     onError: () => toast("No se pudo eliminar la foto. Intenta de nuevo.", "error"),
   });
 
+  const MAX_MB = 10;
   const handleArchivos = (files: FileList | null) => {
     if (!files) return;
     const restantes = MAX_FOTOS - imagenes.length;
-    Array.from(files).slice(0, restantes).forEach((f) => subir(f));
+    Array.from(files).slice(0, restantes).forEach((f) => {
+      if (!f.type.startsWith("image/")) {
+        toast(`"${f.name}" no es una imagen válida`, "error");
+        return;
+      }
+      if (f.size > MAX_MB * 1024 * 1024) {
+        toast(`"${f.name}" supera el límite de ${MAX_MB} MB`, "error");
+        return;
+      }
+      subir(f);
+    });
   };
 
   const handleDrop = (e: React.DragEvent) => {
