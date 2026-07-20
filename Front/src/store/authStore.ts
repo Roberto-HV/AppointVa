@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { queryClient } from "../lib/queryClient";
 
 interface UsuarioInfo {
   id: string;
@@ -28,8 +29,10 @@ export const useAuthStore = create<AuthState>()(
       usuario: null,
       iniciarSesion: (token, refreshToken, usuario) =>
         set({ token, refreshToken, usuario }),
-      cerrarSesion: () =>
-        set({ token: null, refreshToken: null, usuario: null }),
+      cerrarSesion: () => {
+        queryClient.clear();
+        set({ token: null, refreshToken: null, usuario: null });
+      },
       estaAutenticado: () => get().token !== null,
       actualizarFoto: (fotoUrl) =>
         set((s) => ({ usuario: s.usuario ? { ...s.usuario, fotoUrl } : null })),

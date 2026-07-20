@@ -278,8 +278,8 @@
             </tr>
             <tr>
               <td><strong>Base de datos</strong></td>
-              <td>Neon PostgreSQL</td>
-              <td class="mono" style="font-size:12px">us-east-1 · Free tier</td>
+              <td>Render PostgreSQL</td>
+              <td class="mono" style="font-size:12px">Virginia · Basic $6.30/mes</td>
             </tr>
             <tr>
               <td><strong>Imágenes</strong></td>
@@ -299,7 +299,7 @@
             <tr>
               <td><strong>Keep-alive</strong></td>
               <td>cron-job.org</td>
-              <td class="mono" style="font-size:12px">Ping /health cada 15 min</td>
+              <td class="mono" style="font-size:12px">Ping /ping cada 10 min</td>
             </tr>
           </tbody>
         </table>
@@ -312,7 +312,7 @@
         <div class="alert" style="background:#f0fdf4;border-color:#bbf7d0;">
           <div class="alert-icon">✅</div>
           <div class="alert-text">
-            <strong>Backend siempre activo:</strong> Un cron job en cron-job.org hace ping al endpoint <code>/health</code> cada 15 minutos, manteniendo el servidor de Render despierto. No es necesario esperar — el sistema responde de inmediato.
+            <strong>Backend siempre activo:</strong> Un cron job en cron-job.org hace ping al endpoint <code>/ping</code> cada 10 minutos, manteniendo el servidor de Render despierto. No es necesario esperar — el sistema responde de inmediato.
           </div>
         </div>
       </div>

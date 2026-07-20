@@ -137,7 +137,7 @@
     Sistema de reservas online para negocios de servicios — Backend .NET 10 + PostgreSQL, Frontend React + Vite
   </p>
   <div class="badge">Versión de producción — Julio 2026</div>
-  <div class="date">Actualizado el 2 de julio de 2026 — v4.2</div>
+  <div class="date">Actualizado el 10 de julio de 2026 — v4.3</div>
 </div>
 
 <!-- ══════════════════ SECCIÓN 1: URLs ══════════════════ -->
@@ -1690,10 +1690,10 @@
       <div class="change-title">Keep-alive automático — sin cold starts en Render</div>
       <div class="change-desc">
         <strong>Problema:</strong> Render Free tier apaga el servicio tras 15 min de inactividad. La primera petición tardaba hasta 50 segundos.<br>
-        <strong>Solución:</strong> Cron job en <strong>cron-job.org</strong> que hace <code>GET https://appointva.onrender.com/health</code> cada 15 minutos, manteniendo el servidor siempre activo. El endpoint <code>/health</code> ya existía desde v2.2 y retorna JSON con estado de la DB.
+        <strong>Solución:</strong> Cron job en <strong>cron-job.org</strong> que hace <code>GET https://appointva.onrender.com/ping</code> cada 10 minutos, manteniendo el servidor siempre activo. Se usa <code>/ping</code> (sin DB) en lugar de <code>/health</code> para no despertar la base de datos innecesariamente.
       </div>
       <div class="change-files">
-        <span class="file-chip">Program.cs (/health endpoint — ya existente)</span>
+        <span class="file-chip">Program.cs (/ping endpoint — sin DB)</span>
       </div>
     </div>
   </div>
@@ -2147,6 +2147,130 @@
 
 </div>
 
+<!-- ══════════════════ SECCIÓN 5g: CAMBIOS v4.3 (10 jul) ══════════════════ -->
+<div class="container page-break">
+  <h2>5g. Registro de Cambios — v4.3 (10 de julio de 2026)</h2>
+  <p style="color:#6b7280;margin-bottom:24px;">Sprint de personalización visual del booking: rediseño Estilo C con colores de marca dinámicos, selector de color primario en perfil del propietario, y correcciones de URLs en producción.</p>
+
+  <!-- ── Personalización visual del Booking ── -->
+  <h3>v4.3 — Personalización visual del Booking público</h3>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#1c1c1f;color:#fff;">🎨</div>
+    <div>
+      <div class="change-title">Booking público: rediseño Estilo C — header oscuro con glow de marca <span class="tag tag-new" style="vertical-align:middle;">Nuevo</span></div>
+      <div class="change-desc">
+        Header oscuro (<code>#0C0C0F</code>) con glow del <code>colorPrimario</code> del negocio. Logo e información del negocio alineados a la izquierda; redes sociales mostradas debajo de la descripción del negocio.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">components/booking/BookingHeader.tsx</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#18181b;color:#fff;">📊</div>
+    <div>
+      <div class="change-title">Booking público: IndicadorPasos reescrito como tira oscura segmentada <span class="tag tag-new" style="vertical-align:middle;">Nuevo</span></div>
+      <div class="change-desc">
+        El indicador de pasos fue reescrito como tira oscura (<code>#18181B</code>) con 4 barras segmentadas de color dinámico usando el <code>colorPrimario</code> del negocio en lugar de los colores fijos anteriores.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">components/booking/IndicadorPasos.tsx</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#f0fdf4;">✅</div>
+    <div>
+      <div class="change-title">Booking público: estados seleccionados con colorPrimario del negocio <span class="tag tag-mod" style="vertical-align:middle;">Mejora</span></div>
+      <div class="change-desc">
+        Todos los estados de selección activa en el booking (servicio, empleado, fecha, hora) usan el <code>colorPrimario</code> configurado por el negocio en lugar de colores estáticos, garantizando coherencia visual con la identidad de cada negocio.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">components/booking/PasoServicio.tsx</span>
+        <span class="file-chip">components/booking/PasoEmpleado.tsx</span>
+        <span class="file-chip">components/booking/PasoFechaHora.tsx</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#f0fdf4;">💬</div>
+    <div>
+      <div class="change-title">Booking público: WhatsApp en barra inferior condicional <span class="tag tag-mod" style="vertical-align:middle;">Mejora</span></div>
+      <div class="change-desc">
+        El botón de WhatsApp en la barra inferior del booking solo aparece si el negocio tiene <code>telefonoWhatsApp</code> configurado. Si el campo está vacío, el botón no se renderiza.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">components/booking/BookingLayout.tsx</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#ede9fe;">🎉</div>
+    <div>
+      <div class="change-title">ConfirmacionPage: header oscuro con glow del colorPrimario <span class="tag tag-mod" style="vertical-align:middle;">Mejora</span></div>
+      <div class="change-desc">
+        La página de confirmación de cita ahora usa el mismo estilo de header oscuro con glow que el booking. <code>colorPrimario</code> fue añadido al <code>ConfirmacionCitaDto</code> para que esté disponible en esta vista.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">pages/ConfirmacionPage.tsx</span>
+        <span class="file-chip">DTOs/ConfirmacionCitaDto.cs</span>
+        <span class="file-chip">Controllers/V1/PublicoController.cs</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#fef3c7;">🎨</div>
+    <div>
+      <div class="change-title">PerfilPage (propietario): selector de color primario con vista previa en tiempo real <span class="tag tag-new" style="vertical-align:middle;">Nuevo</span></div>
+      <div class="change-desc">
+        El propietario puede elegir el color de marca de su negocio desde su perfil mediante un color picker nativo, campo hex editable y vista previa del booking en tiempo real. El color seleccionado se aplica a todo el flujo público de reservas.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">pages/dashboard/PerfilPage.tsx</span>
+        <span class="file-chip">components/booking/BookingPreview.tsx</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Correcciones ── -->
+  <h3 style="margin-top:28px;">v4.3 — Correcciones de producción</h3>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#fee2e2;">🔧</div>
+    <div>
+      <div class="change-title">Fallbacks de FrontendUrl corregidos en 3 controladores <span class="tag tag-fix" style="vertical-align:middle;">Fix</span></div>
+      <div class="change-desc">
+        Los fallbacks de <code>FrontendUrl</code> apuntaban a <code>localhost:5173</code> en lugar de <code>https://appointva.com</code>. Corregido en 3 controladores del backend para evitar URLs incorrectas en los correos enviados desde producción.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">Controllers/V1/AuthController.cs</span>
+        <span class="file-chip">Controllers/V1/CitasController.cs</span>
+        <span class="file-chip">Controllers/V1/PublicoController.cs</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#fee2e2;">🔧</div>
+    <div>
+      <div class="change-title">VITE_API_URL en .env.production actualizado a producción <span class="tag tag-fix" style="vertical-align:middle;">Fix</span></div>
+      <div class="change-desc">
+        La variable <code>VITE_API_URL</code> en <code>.env.production</code> apuntaba a un valor incorrecto. Actualizada a <code>https://api.appointva.com/api</code> para que el frontend de producción apunte al backend correcto.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">Front/.env.production</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
 <!-- ══════════════════ SECCIÓN 6: DATOS DEMO ══════════════════ -->
 <div class="container page-break">
   <h2>6. Datos Demo Precargados</h2>
@@ -2218,7 +2342,7 @@
     <tr><td>Íconos</td><td>lucide-react</td><td>—</td><td>—</td></tr>
     <tr><td>QR Code</td><td>qrcode.react</td><td>—</td><td>2FA + página de reservas</td></tr>
     <tr><td>Backend</td><td>ASP.NET Core + Entity Framework Core</td><td>.NET 10 / EF 10</td><td>—</td></tr>
-    <tr><td>Base de datos</td><td>PostgreSQL</td><td>16 (Docker local / Neon prod)</td><td>Puerto 5433</td></tr>
+    <tr><td>Base de datos</td><td>PostgreSQL</td><td>18 (Docker local / Render PostgreSQL prod)</td><td>Puerto 5433</td></tr>
     <tr><td>ORM provider</td><td>Npgsql.EntityFrameworkCore.PostgreSQL</td><td>—</td><td>—</td></tr>
     <tr><td>Autenticación</td><td>JWT Bearer + ASP.NET Identity</td><td>—</td><td>TOTP 2FA nativo</td></tr>
     <tr><td>Jobs</td><td>Hangfire + Hangfire.PostgreSql</td><td>—</td><td>Recordatorios 24h</td></tr>
@@ -2231,8 +2355,8 @@
     <tr><td>Dominio</td><td>Cloudflare</td><td>—</td><td>✨ v4.0 — appointva.com, auto-renovación anual</td></tr>
     <tr><td>Hosting Frontend</td><td>Render (Static Site)</td><td>—</td><td>✨ v4.3 — appointva.com (migrado de Vercel)</td></tr>
     <tr><td>Hosting Backend</td><td>Render (Free)</td><td>—</td><td>✨ v4.0 — appointva.onrender.com</td></tr>
-    <tr><td>Base de datos prod</td><td>Neon PostgreSQL</td><td>—</td><td>✨ v4.0 — us-east-1, Free tier</td></tr>
-    <tr><td>Keep-alive</td><td>cron-job.org</td><td>—</td><td>✨ v4.0 — Ping /health cada 15 min (sin cold starts)</td></tr>
+    <tr><td>Base de datos prod</td><td>Render PostgreSQL</td><td>—</td><td>✨ v4.0 — Virginia, Basic $6.30/mes, siempre activo</td></tr>
+    <tr><td>Keep-alive</td><td>cron-job.org</td><td>—</td><td>✨ v4.0 — Ping /ping cada 10 min (sin cold starts, sin DB)</td></tr>
     <tr><td>Monitoreo de errores</td><td>Sentry</td><td>—</td><td>✨ v4.3 — Frontend + Backend, 5,000 errores/mes</td></tr>
   </table>
 
@@ -2248,11 +2372,11 @@
     <tr><td><strong>Dominio</strong></td><td>Cloudflare</td><td>appointva.com · auto-renovación anual</td><td><span class="tag tag-new">✅ Activo</span></td></tr>
     <tr><td><strong>Frontend</strong></td><td>Render (Static Site)</td><td>appointva.com</td><td><span class="tag tag-new">✅ Activo</span></td></tr>
     <tr><td><strong>Backend API</strong></td><td>Render (Free)</td><td>appointva.onrender.com · Virginia</td><td><span class="tag tag-new">✅ Activo</span></td></tr>
-    <tr><td><strong>Base de datos</strong></td><td>Neon PostgreSQL</td><td>us-east-1 · Free tier</td><td><span class="tag tag-new">✅ Activo</span></td></tr>
+    <tr><td><strong>Base de datos</strong></td><td>Render PostgreSQL</td><td>Virginia · Basic $6.30/mes</td><td><span class="tag tag-new">✅ Activo</span></td></tr>
     <tr><td><strong>Imágenes</strong></td><td>Cloudinary</td><td>Cloud: dssyaimvj</td><td><span class="tag tag-new">✅ Activo</span></td></tr>
     <tr><td><strong>Emails</strong></td><td>Brevo HTTP API</td><td>notificaciones@appointva.com</td><td><span class="tag tag-new">✅ Activo</span></td></tr>
     <tr><td><strong>Monitoreo</strong></td><td>Sentry</td><td>sentry.io · Frontend + Backend</td><td><span class="tag tag-new">✅ Activo</span></td></tr>
-    <tr><td><strong>Keep-alive</strong></td><td>cron-job.org</td><td>GET /health cada 15 min</td><td><span class="tag tag-new">✅ Activo</span></td></tr>
+    <tr><td><strong>Keep-alive</strong></td><td>cron-job.org</td><td>GET /ping cada 10 min</td><td><span class="tag tag-new">✅ Activo</span></td></tr>
   </table>
 
   <div class="card card-gold" style="margin-top:16px;">
@@ -2312,7 +2436,7 @@
     <tr><td>Emails</td><td>Confirmación, recordatorio (cliente + empleado), verificación, recuperación, cancelación — desde notificaciones@appointva.com (Brevo HTTP API)</td><td><span class="tag tag-new">✅ v4.3</span></td></tr>
     <tr><td>Imágenes</td><td>Cloudinary integrado, fallback local en dev</td><td><span class="tag tag-new">✅ v4.0</span></td></tr>
     <tr><td>Dominio</td><td>appointva.com en Cloudflare, Render Static Site (Frontend), correo propio</td><td><span class="tag tag-new">✅ v4.3</span></td></tr>
-    <tr><td>Keep-alive</td><td>cron-job.org ping /health cada 15 min — sin cold starts en Render</td><td><span class="tag tag-new">✅ v4.0</span></td></tr>
+    <tr><td>Keep-alive</td><td>cron-job.org ping /ping cada 10 min — sin cold starts en Render (sin tocar DB)</td><td><span class="tag tag-new">✅ v4.0</span></td></tr>
     <tr><td>Monitoreo de errores</td><td>Sentry — captura excepciones en Frontend y Backend, alertas por email, 5,000 errores/mes gratis</td><td><span class="tag tag-new">✅ v4.3</span></td></tr>
     <tr><td>Bloqueo de cuentas</td><td>Identity lockout: 5 intentos → 15 min bloqueado, retorna 423 con tiempo restante</td><td><span class="tag tag-new">✅ v4.2</span></td></tr>
     <tr><td>Audit Log</td><td>Tabla AuditLogs: Login, LoginFallido, Logout, CambiarPassword, EliminarCuenta — visible para SuperAdmin</td><td><span class="tag tag-new">✅ v4.2</span></td></tr>

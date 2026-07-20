@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "./lib/queryClient";
 
 import RutaProtegida from "./components/RutaProtegida";
 import RutaPublica from "./components/RutaPublica";
@@ -58,11 +59,6 @@ const LandingPage = lazy(() => import("./pages/publico/LandingPage"));
 // ── 404 ───────────────────────────────────────────────────────────────────
 const NotFoundPage = lazy(() => import("./pages/NotFoundPage"));
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: { retry: 1, staleTime: 1000 * 60 },
-  },
-});
 
 export default function App() {
   return (

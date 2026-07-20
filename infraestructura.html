@@ -213,38 +213,38 @@ footer {
       </div>
     </div>
 
-    <!-- Neon -->
+    <!-- Render PostgreSQL -->
     <div class="card">
-      <div class="card-stripe" style="background:#00E599"></div>
+      <div class="card-stripe" style="background:#7C3AED"></div>
       <div class="card-head">
-        <div class="svc-badge" style="background:#00B87A">N</div>
+        <div class="svc-badge" style="background:#7C3AED">R</div>
         <div>
-          <div class="svc-name">Neon</div>
+          <div class="svc-name">Render PostgreSQL</div>
           <div class="svc-role">Base de datos PostgreSQL</div>
         </div>
-        <div class="plan-pill">Free</div>
+        <div class="plan-pill">Basic $6.30/mes</div>
       </div>
       <div class="card-body">
         <div class="field">
           <span class="field-lbl">Dashboard</span>
-          <span class="field-val"><a href="https://console.neon.tech">console.neon.tech</a></span>
+          <span class="field-val"><a href="https://dashboard.render.com">dashboard.render.com</a></span>
         </div>
         <div class="field">
-          <span class="field-lbl">Proyecto &middot; Branch &middot; Database</span>
-          <span class="field-val">Appointva &middot; production &middot; appointva</span>
+          <span class="field-lbl">Instancia &middot; Database &middot; User</span>
+          <span class="field-val">appointva-db &middot; appointva_db &middot; appointva_db_user</span>
         </div>
         <div class="field">
           <span class="field-lbl">Versión &middot; Región</span>
-          <span class="field-val plain">PostgreSQL 16 &middot; AWS US East 1 (N. Virginia)</span>
+          <span class="field-val plain">PostgreSQL 18 &middot; Virginia (US East) &middot; Basic-256mb</span>
         </div>
         <div class="sep"></div>
         <div class="field">
-          <span class="field-lbl">Límites plan free</span>
-          <span class="field-val plain">100 CU-hrs/mes &middot; 0.5 GB storage &middot; Compute 0.25 ↔ 2 CU</span>
+          <span class="field-lbl">Plan</span>
+          <span class="field-val plain">$6/mes instancia + $0.30/mes storage (1 GB) · Siempre activo, sin cold starts</span>
         </div>
         <div class="field">
           <span class="field-lbl">Connection string</span>
-          <span class="field-val plain">Configurada en Render &rarr; Environment</span>
+          <span class="field-val plain">Configurada en Render &rarr; Environment &rarr; ConnectionStrings__ConexionSql</span>
         </div>
       </div>
     </div>
@@ -284,7 +284,7 @@ footer {
         </div>
         <div class="warn">
           <span>⚠</span>
-          <span>Plan Free: se duerme tras inactividad. El primer request puede tardar ~50 segundos al despertar.</span>
+          <span>Plan Free: se duerme tras inactividad. El primer request puede tardar ~50 segundos al despertar. <strong>Keep-alive activo:</strong> cron-job.org ejecuta ping cada 15 min para mantenerlo activo.</span>
         </div>
       </div>
     </div>
@@ -428,6 +428,38 @@ footer {
         <div class="field">
           <span class="field-lbl">Límites plan free</span>
           <span class="field-val plain">5,000 errores/mes &middot; 30 días historial</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- cron-job.org -->
+    <div class="card">
+      <div class="card-stripe" style="background:#16a34a"></div>
+      <div class="card-head">
+        <div class="svc-badge" style="background:#16a34a">CJ</div>
+        <div>
+          <div class="svc-name">cron-job.org</div>
+          <div class="svc-role">Tareas programadas &middot; Keep-alive &middot; Recordatorios</div>
+        </div>
+        <div class="plan-pill">Free</div>
+      </div>
+      <div class="card-body">
+        <div class="field">
+          <span class="field-lbl">Dashboard</span>
+          <span class="field-val"><a href="https://cron-job.org">cron-job.org</a></span>
+        </div>
+        <div class="field">
+          <span class="field-lbl">Uso principal</span>
+          <span class="field-val plain">Keep-alive del backend (ping cada 15 min) &middot; Recordatorios de citas</span>
+        </div>
+        <div class="sep"></div>
+        <div class="field">
+          <span class="field-lbl">Endpoint de keep-alive</span>
+          <span class="field-val">https://appointva.onrender.com/ping</span>
+        </div>
+        <div class="field">
+          <span class="field-lbl">Frecuencia</span>
+          <span class="field-val plain">Cada 10 minutos — evita el sleep del plan Free de Render (no toca la DB)</span>
         </div>
       </div>
     </div>
