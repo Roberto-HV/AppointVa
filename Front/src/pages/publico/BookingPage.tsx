@@ -190,6 +190,7 @@ export default function BookingPage() {
   const [slot, setSlot] = useState<SlotDisponible | null>(null);
   const [enviando, setEnviando] = useState(false);
   const [errorEnvio, setErrorEnvio] = useState("");
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
 
   // Sub-flujo paso 4: elegir → buscar | listo
   const [modoCliente, setModoCliente] = useState<"elegir" | "buscar" | "listo">("elegir");
@@ -503,16 +504,22 @@ export default function BookingPage() {
             {/* Logo */}
             <div className="shrink-0">
               {negocio.logoUrl ? (
-                <img
-                  src={negocio.logoUrl}
-                  alt={negocio.nombre}
-                  className="w-14 h-14 rounded-2xl object-cover"
-                  style={{
-                    border: `1.5px solid rgb(${hexToChannels(color)} / 0.45)`,
-                    boxShadow: `0 2px 16px rgb(${hexToChannels(color)} / 0.28)`,
-                  }}
-                  loading="lazy"
-                />
+                <button
+                  onClick={() => setLightboxUrl(negocio.logoUrl!)}
+                  className="block focus:outline-none"
+                  aria-label="Ver logo en pantalla completa"
+                >
+                  <img
+                    src={negocio.logoUrl}
+                    alt={negocio.nombre}
+                    className="w-14 h-14 rounded-2xl object-cover cursor-zoom-in"
+                    style={{
+                      border: `1.5px solid rgb(${hexToChannels(color)} / 0.45)`,
+                      boxShadow: `0 2px 16px rgb(${hexToChannels(color)} / 0.28)`,
+                    }}
+                    loading="lazy"
+                  />
+                </button>
               ) : (
                 <div
                   className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl"
@@ -987,6 +994,28 @@ export default function BookingPage() {
         </AnimatePresence>
         <PublicFooter />
       </div>
+
+      {/* Lightbox logo */}
+      {lightboxUrl && (
+        <div
+          className="fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-6"
+          onClick={() => setLightboxUrl(null)}
+        >
+          <button
+            className="absolute top-4 right-4 text-white/70 hover:text-white transition"
+            onClick={() => setLightboxUrl(null)}
+            aria-label="Cerrar"
+          >
+            <X size={28} />
+          </button>
+          <img
+            src={lightboxUrl}
+            alt=""
+            className="max-w-full max-h-[88vh] rounded-2xl object-contain shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </div>
   );
 }
