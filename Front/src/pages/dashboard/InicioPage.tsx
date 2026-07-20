@@ -353,7 +353,7 @@ function VistaPropietario({ nombre }: { nombre: string }) {
               ) : (
                 <div className="space-y-3">
                   {data.proximasCitas.map((c, idx) => (
-                    <div key={c.id} className={`flex items-center justify-between py-2 border-b border-gray-50 last:border-0 ${idx === 0 ? "opacity-50" : ""}`}>
+                    <div key={c.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
                       <div>
                         <p className="text-sm font-medium text-gray-800">{c.nombreCliente}</p>
                         <p className="text-xs text-gray-400">{c.nombreServicio} · {c.nombreEmpleado}</p>

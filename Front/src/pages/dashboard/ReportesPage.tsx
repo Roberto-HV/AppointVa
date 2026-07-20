@@ -90,13 +90,13 @@ export default function ReportesPage() {
     staleTime: 1000 * 60 * 5,
   });
 
-  const { data: reporteCitas, isLoading: cargandoCitas } = useQuery({
+  const { data: reporteCitas, isLoading: cargandoCitas, isError: errorCitas } = useQuery({
     queryKey: ["reporte-citas", filtros],
     queryFn: () => reportesApi.obtenerCitas(filtros),
     enabled: tab === "citas",
   });
 
-  const { data: reporteIngresos, isLoading: cargandoIngresos } = useQuery({
+  const { data: reporteIngresos, isLoading: cargandoIngresos, isError: errorIngresos } = useQuery({
     queryKey: ["reporte-ingresos", desde, hasta],
     queryFn: () => reportesApi.obtenerIngresos(desde, hasta),
     enabled: tab === "ingresos" || tab === "empleados",
@@ -356,6 +356,12 @@ export default function ReportesPage() {
               <tbody>
                 {cargandoCitas ? (
                   <SkeletonTableRows filas={8} columnas={8} />
+                ) : errorCitas ? (
+                  <tr>
+                    <td colSpan={8} className="px-4 py-10 text-center text-red-400 text-sm">
+                      No se pudieron cargar las citas. Intenta cambiar el rango de fechas.
+                    </td>
+                  </tr>
                 ) : !reporteCitas?.citas.length ? (
                   <tr>
                     <td colSpan={8} className="px-4 py-10 text-center text-gray-400 text-sm">
@@ -394,6 +400,10 @@ export default function ReportesPage() {
           {cargandoIngresos ? (
             <div className="bg-white rounded-xl border border-gray-100 p-8 flex items-center justify-center">
               <div className="animate-spin w-6 h-6 border-2 border-slate-700 border-t-transparent rounded-full" />
+            </div>
+          ) : errorIngresos ? (
+            <div className="bg-white rounded-xl border border-gray-100 p-10 text-center text-sm text-red-400">
+              No se pudieron cargar los datos. Intenta cambiar el rango de fechas.
             </div>
           ) : !reporteIngresos?.porEmpleado.length ? (
             <div className="bg-white rounded-xl border border-gray-100 p-10 text-center text-sm text-gray-400">
@@ -511,6 +521,10 @@ export default function ReportesPage() {
           {cargandoIngresos ? (
             <div className="bg-white rounded-xl border border-gray-100 p-8 flex items-center justify-center">
               <div className="animate-spin w-6 h-6 border-2 border-slate-700 border-t-transparent rounded-full" />
+            </div>
+          ) : errorIngresos ? (
+            <div className="bg-white rounded-xl border border-gray-100 p-10 text-center text-sm text-red-400">
+              No se pudieron cargar los datos. Intenta cambiar el rango de fechas.
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

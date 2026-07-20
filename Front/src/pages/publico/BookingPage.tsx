@@ -703,7 +703,7 @@ export default function BookingPage() {
         )}
 
         {/* Paso 3 */}
-        {paso === 3 && servicio && empleado && (
+        {paso === 3 && servicio && empleado && !mostrarIntake && (
           <>
             <PasoFechaHora
               servicioId={servicio.id}

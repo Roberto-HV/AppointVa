@@ -19,6 +19,7 @@ export default function ConfirmacionPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [confirmandoCancelar, setConfirmandoCancelar] = useState(false);
+  const [errorCancelar, setErrorCancelar] = useState("");
   const [reagendando, setReagendando] = useState(false);
   const [fechaReag, setFechaReag] = useState("");
   const [slotReag, setSlotReag] = useState("");
@@ -44,8 +45,7 @@ export default function ConfirmacionPage() {
       setConfirmandoCancelar(false);
     },
     onError: () => {
-      setConfirmandoCancelar(false);
-      alert("No se pudo cancelar la cita. Intenta de nuevo.");
+      setErrorCancelar("No se pudo cancelar la cita. Intenta de nuevo.");
     },
   });
 
@@ -589,15 +589,18 @@ export default function ConfirmacionPage() {
           {confirmandoCancelar && (
             <div className="bg-red-50 border border-red-100 rounded-2xl p-4 text-center">
               <p className="text-sm text-slate-700 mb-3 font-medium">¿Seguro que deseas cancelar tu cita?</p>
+              {errorCancelar && (
+                <p className="text-xs text-red-600 mb-3 bg-red-100 rounded-xl px-3 py-2">{errorCancelar}</p>
+              )}
               <div className="flex gap-2">
                 <button
-                  onClick={() => setConfirmandoCancelar(false)}
+                  onClick={() => { setConfirmandoCancelar(false); setErrorCancelar(""); }}
                   className="flex-1 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 transition font-medium"
                 >
                   Mantenerla
                 </button>
                 <button
-                  onClick={() => cancelar()}
+                  onClick={() => { setErrorCancelar(""); cancelar(); }}
                   disabled={cancelando}
                   className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-bold disabled:opacity-60 transition"
                 >
