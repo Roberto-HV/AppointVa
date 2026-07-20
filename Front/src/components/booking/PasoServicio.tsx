@@ -35,7 +35,7 @@ export default function PasoServicio({ servicios, seleccionado, onSeleccionar, c
                     <button
                       key={servicio.id}
                       onClick={() => onSeleccionar(servicio)}
-                      className={`w-full text-left rounded-2xl border-2 transition-all duration-150 flex items-center gap-4 p-3.5 relative overflow-hidden
+                      className={`w-full text-left rounded-2xl border-2 transition-all duration-200 flex items-start gap-4 p-3.5 relative
                         ${activo
                           ? "shadow-sm"
                           : "border-slate-100 hover:border-slate-300 bg-white hover:shadow-sm"
@@ -55,7 +55,7 @@ export default function PasoServicio({ servicios, seleccionado, onSeleccionar, c
                         <img
                           src={servicio.imagenUrl}
                           alt={servicio.nombre}
-                          className="w-16 h-16 rounded-xl object-cover shrink-0 bg-slate-100"
+                          className="w-16 h-16 rounded-xl object-cover shrink-0 bg-slate-100 mt-0.5"
                           onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
                         />
                       )}
@@ -74,7 +74,17 @@ export default function PasoServicio({ servicios, seleccionado, onSeleccionar, c
                           )}
                         </div>
                         {servicio.descripcion && (
-                          <p className={`text-xs text-slate-400 mb-1 ${activo ? "" : "line-clamp-1"}`}>{servicio.descripcion}</p>
+                          <p
+                            className="text-xs text-slate-400 mb-1"
+                            style={{
+                              overflow: "hidden",
+                              display: "-webkit-box",
+                              WebkitBoxOrient: "vertical",
+                              WebkitLineClamp: activo ? 99 : 1,
+                            }}
+                          >
+                            {servicio.descripcion}
+                          </p>
                         )}
                         <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-500 text-[10px] font-semibold px-2 py-0.5 rounded-full mt-1">
                           <Clock size={9} />
