@@ -74,7 +74,7 @@ export default function PasoServicio({ servicios, seleccionado, onSeleccionar, c
                           )}
                         </div>
                         {servicio.descripcion && (
-                          <p className="text-xs text-slate-400 line-clamp-1 mb-1">{servicio.descripcion}</p>
+                          <p className={`text-xs text-slate-400 mb-1 ${activo ? "" : "line-clamp-1"}`}>{servicio.descripcion}</p>
                         )}
                         <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-500 text-[10px] font-semibold px-2 py-0.5 rounded-full mt-1">
                           <Clock size={9} />

@@ -5,6 +5,8 @@ export interface FiltrosCitas {
   desde?: string;
   hasta?: string;
   empleadoId?: string;
+  busqueda?: string;
+  estado?: number;
   pagina?: number;
   tamano?: number;
 }

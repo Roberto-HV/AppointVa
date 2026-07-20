@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+﻿import { useState, useEffect } from "react";
 
 function fechaStr(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -72,6 +72,7 @@ export default function CitasPage() {
   const [hasta, setHasta] = useState(() => hoy());
   const [empleadoId, setEmpleadoId] = useState("");
   const [busqueda, setBusqueda] = useState("");
+  const [busquedaQuery, setBusquedaQuery] = useState("");
   const [estadoFiltro, setEstadoFiltro] = useState("");
   const [pagina, setPagina] = useState(1);
   const TAMANO = 50;
@@ -117,13 +118,23 @@ export default function CitasPage() {
   const validarEmailCliente = (v: string) =>
     v.trim() && !EMAIL_RE.test(v.trim()) ? "Correo no válido (ej: nombre@dominio.com)" : "";
 
+  // Debounce búsqueda 400ms para no disparar una request por cada tecla
+  useEffect(() => {
+    const t = setTimeout(() => { setBusquedaQuery(busqueda); setPagina(1); }, 400);
+    return () => clearTimeout(t);
+  }, [busqueda]);
+
   // ── Queries ──────────────────────────────────────────────────────────────────
+  const estadoNum = estadoFiltro ? ESTADOS[estadoFiltro as keyof typeof ESTADOS] : undefined;
+
   const { data: pagCitas, isLoading } = useQuery({
-    queryKey: ["citas", desde, hasta, empleadoId, pagina],
+    queryKey: ["citas", desde, hasta, empleadoId, busquedaQuery, estadoFiltro, pagina],
     queryFn: () => citasApi.obtenerTodas({
       desde: desde || undefined,
       hasta: hasta || undefined,
       empleadoId: empleadoId || undefined,
+      busqueda: busquedaQuery || undefined,
+      estado: estadoNum,
       pagina,
       tamano: TAMANO,
     }),
@@ -356,19 +367,6 @@ export default function CitasPage() {
     return acc;
   }, {});
 
-  const citasFiltradas = citas.filter((c) => {
-    if (estadoFiltro && c.estadoTexto !== estadoFiltro) return false;
-    if (busqueda.trim()) {
-      const q = busqueda.toLowerCase();
-      return (
-        c.nombreCliente.toLowerCase().includes(q) ||
-        c.telefonoCliente.includes(q) ||
-        c.nombreServicio.toLowerCase().includes(q)
-      );
-    }
-    return true;
-  });
-
   // ── WhatsApp ─────────────────────────────────────────────────────────────────
   const whatsappUrl = (c: CitaDto) => {
     const tel = c.telefonoCliente.replace(/\D/g, "");
@@ -386,7 +384,7 @@ export default function CitasPage() {
   // ── Excel export ─────────────────────────────────────────────────────────────
   const exportarCSV = () => {
     const encabezados = ["Fecha", "Cliente", "Teléfono", "Servicio", "Profesional", "Precio", "Estado", "Pagada", "Método de pago", "Notas"];
-    const filas = citasFiltradas.map((c) => [
+    const filas = citas.map((c) => [
       new Date(c.inicioEn).toLocaleString("es-MX", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true }),
       c.nombreCliente,
       c.telefonoCliente ?? "",
@@ -420,7 +418,7 @@ export default function CitasPage() {
             >
               🖥 Recepción
             </Link>
-            {citasFiltradas.length > 0 && vista === "lista" && (
+            {citas.length > 0 && vista === "lista" && (
               <button
                 onClick={exportarCSV}
                 className="hidden sm:block text-xs text-gray-500 hover:text-gray-700 border border-gray-200 hover:border-gray-300 px-3 py-1.5 rounded-lg transition"
@@ -495,7 +493,7 @@ export default function CitasPage() {
                 return (
                   <button
                     key={e || "todos"}
-                    onClick={() => setEstadoFiltro(e)}
+                    onClick={() => { setEstadoFiltro(e); setPagina(1); }}
                     className={`px-3 py-1 text-xs font-medium rounded-full border transition ${
                       estadoFiltro === e
                         ? "bg-slate-700 text-white border-slate-700"
@@ -600,7 +598,7 @@ export default function CitasPage() {
               <tbody><SkeletonTableRows filas={6} columnas={5} /></tbody>
             </table>
           </div>
-        ) : citasFiltradas.length === 0 ? (
+        ) : citas.length === 0 ? (
           <div className="bg-white rounded-xl border border-gray-100 p-12 text-center flex flex-col items-center gap-3">
             <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center">
               <Calendar size={26} className="text-gray-300" />
@@ -635,7 +633,7 @@ export default function CitasPage() {
                 </tr>
               </thead>
               <tbody>
-                {citasFiltradas.map((c) => (
+                {citas.map((c) => (
                   <tr key={c.id} className="border-b border-gray-50 hover:bg-gray-50 transition">
                     <td className="px-4 py-3">
                       <p className="font-medium text-gray-800">{c.nombreCliente}</p>

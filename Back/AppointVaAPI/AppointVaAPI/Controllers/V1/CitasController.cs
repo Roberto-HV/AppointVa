@@ -56,6 +56,8 @@ namespace AppointVaAPI.Controllers.V1
             [FromQuery] DateTime? desde,
             [FromQuery] DateTime? hasta,
             [FromQuery] Guid? empleadoId,
+            [FromQuery] string? busqueda,
+            [FromQuery] byte? estado,
             [FromQuery] int pagina = 1,
             [FromQuery] int tamano = 0)
         {
@@ -76,7 +78,7 @@ namespace AppointVaAPI.Controllers.V1
             }
 
             var citas = await _citaRepo.ObtenerCitasAsync(
-                _contexto.NegocioId.Value, desde, hasta, filtroEmpleado);
+                _contexto.NegocioId.Value, desde, hasta, filtroEmpleado, busqueda, estado);
 
             var total = citas.Count;
             Response.Headers["X-Total-Count"] = total.ToString();
