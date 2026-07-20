@@ -76,12 +76,12 @@ export default function PasoServicio({ servicios, seleccionado, onSeleccionar, c
                         {servicio.descripcion && (
                           <p
                             className="text-xs text-slate-400 mb-1"
-                            style={{
+                            style={!activo ? {
                               overflow: "hidden",
                               display: "-webkit-box",
                               WebkitBoxOrient: "vertical",
-                              WebkitLineClamp: activo ? 99 : 1,
-                            }}
+                              WebkitLineClamp: 1,
+                            } : undefined}
                           >
                             {servicio.descripcion}
                           </p>
