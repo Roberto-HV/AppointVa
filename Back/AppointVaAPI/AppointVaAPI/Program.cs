@@ -276,6 +276,9 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseOutputCache();
 app.MapControllers();
+// Ping sin DB — usar este para keep-alive (no consume compute de Neon)
+app.MapGet("/ping", () => Results.Ok(new { status = "ok" }));
+
 app.MapHealthChecks("/health", new HealthCheckOptions
 {
     ResponseWriter = async (ctx, report) =>
