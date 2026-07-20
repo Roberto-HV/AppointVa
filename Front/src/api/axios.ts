@@ -57,6 +57,7 @@ api.interceptors.response.use(
     const { refreshToken, iniciarSesion, cerrarSesion } = useAuthStore.getState();
 
     if (!refreshToken) {
+      refrescando = false;
       cerrarSesion();
       window.location.href = "/login";
       return Promise.reject(error);

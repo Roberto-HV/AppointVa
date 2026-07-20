@@ -302,6 +302,7 @@ export default function BookingPage() {
     if (mostrarIntake) {
       setDirection(-1);
       setMostrarIntake(false);
+      setRespuestasIntake({});
       return;
     }
     if (paso === 4 && modoCliente !== "elegir") {
@@ -314,7 +315,7 @@ export default function BookingPage() {
     setPaso((p) => p - 1);
     if (paso === 4) { setModoCliente("elegir"); setDatosPreRellenos(null); setEmailBusqueda(""); }
     if (paso === 3) setSlot(null);
-    if (paso === 2) setEmpleado(null);
+    if (paso === 2) { setEmpleado(null); setRespuestasIntake({}); }
   };
 
   const buscarCliente = async () => {
@@ -702,6 +703,7 @@ export default function BookingPage() {
               empleadoId={sinPreferencia ? null : empleado.id}
               seleccionado={slot}
               onSeleccionar={setSlot}
+              onLimpiarSlot={() => setSlot(null)}
               color={color}
             />
             {slot && (negocio.horasCancelacion ?? 0) > 0 && (

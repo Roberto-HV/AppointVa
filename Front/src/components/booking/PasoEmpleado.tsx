@@ -21,14 +21,6 @@ interface Props {
 export default function PasoEmpleado({ empleados, servicioId, seleccionado, onSeleccionar, color = "#334155" }: Props) {
   const disponibles = empleados.filter((e) => e.servicioIds.includes(servicioId));
 
-  if (disponibles.length === 0) {
-    return (
-      <p className="text-slate-500 text-sm text-center py-8">
-        No hay profesionales disponibles para este servicio.
-      </p>
-    );
-  }
-
   const activoSinPreferencia = seleccionado?.id === SIN_PREFERENCIA_ID;
 
   return (
@@ -70,6 +62,11 @@ export default function PasoEmpleado({ empleados, servicioId, seleccionado, onSe
       </button>
 
       <div className="grid grid-cols-2 gap-2.5">
+        {disponibles.length === 0 && (
+          <p className="col-span-2 text-slate-400 text-sm text-center py-4">
+            No hay profesionales asignados a este servicio.
+          </p>
+        )}
         {disponibles.map((emp) => {
           const activo = seleccionado?.id === emp.id;
           return (

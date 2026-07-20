@@ -201,7 +201,7 @@ export default function CitasPage() {
     onError: (err: unknown) => {
       const msg = (err as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje
         ?? "No se pudo reagendar la cita";
-      toast(msg);
+      toast(msg, "error");
     },
   });
 
@@ -218,7 +218,7 @@ export default function CitasPage() {
     onError: (err: unknown) => {
       const msg = (err as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje
         ?? "No se pudo actualizar el pago";
-      toast(msg);
+      toast(msg, "error");
     },
   });
 
@@ -249,7 +249,7 @@ export default function CitasPage() {
     onError: (err: unknown) => {
       const msg = (err as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje
         ?? "No se pudo crear la cita";
-      toast(msg);
+      toast(msg, "error");
     },
   });
 
@@ -312,7 +312,7 @@ export default function CitasPage() {
     },
     onError: (err: unknown) => {
       const msg = (err as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje ?? "No se pudo crear la cita";
-      toast(msg);
+      toast(msg, "error");
     },
   });
 
@@ -331,7 +331,7 @@ export default function CitasPage() {
     onError: (err: unknown) => {
       const msg = (err as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje
         ?? "No se pudo cambiar el estado";
-      toast(msg);
+      toast(msg, "error");
     },
   });
 

@@ -7,6 +7,7 @@ import {
 } from "recharts";
 import { CheckCircle2, Circle, X, Scissors, Users, Link2, CalendarDays, BarChart2, UserCheck, ChevronRight, Clock, TrendingUp } from "lucide-react";
 import { clientesApi } from "../../api/clientes";
+import type { ClienteCitaDto } from "../../types";
 import { NotificacionBanner } from "../../components/ui/NotificacionBanner";
 import { dashboardApi } from "../../api/dashboard";
 import { citasApi } from "../../api/citas";
@@ -660,7 +661,7 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
               ) : historialCliente.length === 0 ? (
                 <p className="text-slate-400 text-sm text-center py-8">Primera visita del cliente</p>
               ) : (
-                historialCliente.map((h: any) => (
+                historialCliente.map((h: ClienteCitaDto) => (
                   <div key={h.id} className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
                     <div className="w-8 h-8 rounded-lg bg-slate-200 flex items-center justify-center shrink-0">
                       <Clock size={14} className="text-slate-500" />

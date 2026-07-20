@@ -605,7 +605,8 @@ export default function EmpleadosPage() {
                       if (fi === ff && hi) {
                         const [hh, mm] = hi.split(":").map(Number);
                         const total = hh * 60 + mm + 60;
-                        const minPorInicio = `${String(Math.floor(total / 60) % 24).padStart(2,"0")}:${String(total % 60).padStart(2,"0")}`;
+                        if (total >= 24 * 60) return minNegocio;
+                        const minPorInicio = `${String(Math.floor(total / 60)).padStart(2,"0")}:${String(total % 60).padStart(2,"0")}`;
                         return minNegocio && minNegocio > minPorInicio ? minNegocio : minPorInicio;
                       }
                       return minNegocio;

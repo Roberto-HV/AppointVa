@@ -43,6 +43,10 @@ export default function ConfirmacionPage() {
       queryClient.invalidateQueries({ queryKey: ["cita", codigo] });
       setConfirmandoCancelar(false);
     },
+    onError: () => {
+      setConfirmandoCancelar(false);
+      alert("No se pudo cancelar la cita. Intenta de nuevo.");
+    },
   });
 
   const { mutate: reagendar, isPending: confirmandoReag, error: errorReag } = useMutation({

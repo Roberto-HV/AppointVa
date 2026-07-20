@@ -9,6 +9,7 @@ interface Props {
   empleadoId: string | null;
   seleccionado: SlotDisponible | null;
   onSeleccionar: (slot: SlotDisponible) => void;
+  onLimpiarSlot?: () => void;
   color?: string;
 }
 
@@ -42,7 +43,7 @@ function textoMesSemana(dias: Date[]): string {
   return `${MESES[mes0]} ${anio}`;
 }
 
-export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, onSeleccionar, color = "#334155" }: Props) {
+export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, onSeleccionar, onLimpiarSlot, color = "#334155" }: Props) {
   const [semanaRef, setSemanaRef] = useState(() => lunesDeSemanaDe(new Date()));
   const [fechaSel, setFechaSel] = useState<string | null>(null);
 
@@ -73,6 +74,7 @@ export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, on
   const seleccionarFecha = (dia: Date) => {
     if (dia < hoy()) return;
     setFechaSel(fechaISO(dia));
+    onLimpiarSlot?.();
   };
 
   const { data: slots = [], isFetching, isError, refetch } = useQuery({
