@@ -43,14 +43,9 @@ export default function PasoServicio({ servicios, seleccionado, onSeleccionar, c
                       style={activo ? {
                         borderColor: color,
                         background: `${color}0D`,
+                        boxShadow: `inset 4px 0 0 ${color}`,
                       } : undefined}
                     >
-                      {activo && (
-                        <div
-                          className="absolute left-0 top-0 bottom-0 w-1 rounded-r-sm"
-                          style={{ background: color }}
-                        />
-                      )}
                       {servicio.imagenUrl && (
                         <img
                           src={servicio.imagenUrl}
@@ -80,6 +75,8 @@ export default function PasoServicio({ servicios, seleccionado, onSeleccionar, c
                               display: "block",
                               overflow: "visible",
                               whiteSpace: "normal",
+                              wordBreak: "break-word",
+                              overflowWrap: "break-word",
                             } : {
                               overflow: "hidden",
                               display: "-webkit-box",
