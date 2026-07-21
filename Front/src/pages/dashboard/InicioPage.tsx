@@ -50,11 +50,12 @@ interface OnboardingProps {
   slug: string;
   tieneCitas: boolean;
   tieneServicios: boolean;
+  tieneHorarios: boolean;
   tieneEmpleados: boolean;
   cargando: boolean;
 }
 
-function WizardOnboarding({ negocioId, slug, tieneCitas, tieneServicios, tieneEmpleados, cargando }: OnboardingProps) {
+function WizardOnboarding({ negocioId, slug, tieneCitas, tieneServicios, tieneHorarios, tieneEmpleados, cargando }: OnboardingProps) {
   const keyStorage = `onboarding-ok-${negocioId}`;
   const [cerrado, setCerrado] = useState(() => !!localStorage.getItem(keyStorage));
 
@@ -66,10 +67,11 @@ function WizardOnboarding({ negocioId, slug, tieneCitas, tieneServicios, tieneEm
   };
 
   const pasos = [
-    { hecho: true,            icono: CheckCircle2, label: "Cuenta creada",      desc: "Tu negocio está registrado en AppointVa",                        accion: null },
-    { hecho: tieneServicios,  icono: Scissors,     label: "Agrega servicios",  desc: "Define los servicios que ofreces y sus precios",                  accion: { href: "/dashboard/servicios", texto: "Ir a Servicios" } },
-    { hecho: tieneEmpleados,  icono: Users,        label: "Agrega tu equipo",  desc: "Registra empleados para asignar citas",                           accion: { href: "/dashboard/empleados", texto: "Ir a Empleados" } },
-    { hecho: !!slug,          icono: Link2,         label: "Comparte tu enlace", desc: `Envía este link a tus clientes para que reserven`,              accion: null, link: `${window.location.origin}/b/${slug}` },
+    { hecho: true,            icono: CheckCircle2, label: "Cuenta creada",        desc: "Tu negocio está registrado en AppointVa",                   accion: null },
+    { hecho: tieneServicios,  icono: Scissors,     label: "Agrega servicios",     desc: "Define los servicios que ofreces y sus precios",             accion: { href: "/dashboard/servicios", texto: "Ir a Servicios" } },
+    { hecho: tieneHorarios,   icono: CalendarDays, label: "Configura tus horarios", desc: "Sin horarios configurados tus clientes no podrán reservar", accion: { href: "/dashboard/perfil?tab=horarios", texto: "Ir a Horarios" } },
+    { hecho: tieneEmpleados,  icono: Users,        label: "Agrega tu equipo",     desc: "Registra empleados para asignar citas",                      accion: { href: "/dashboard/empleados", texto: "Ir a Empleados" } },
+    { hecho: !!slug,          icono: Link2,         label: "Comparte tu enlace",  desc: `Envía este link a tus clientes para que reserven`,           accion: null, link: `${window.location.origin}/b/${slug}` },
   ];
 
   const hechos = pasos.filter((p) => p.hecho).length;
@@ -151,6 +153,12 @@ function VistaPropietario({ nombre }: { nombre: string }) {
     staleTime: 1000 * 60 * 10,
   });
 
+  const { data: horarios = [] } = useQuery({
+    queryKey: ["horarios-wizard"],
+    queryFn: () => negociosApi.obtenerHorarios(),
+    staleTime: 1000 * 60 * 10,
+  });
+
   return (
     <div className="p-4 sm:p-8">
       <NotificacionBanner />
@@ -197,6 +205,7 @@ function VistaPropietario({ nombre }: { nombre: string }) {
           slug={negocio.slug}
           tieneCitas={(data?.citasMes ?? 0) > 0}
           tieneServicios={(data?.topServicios?.length ?? 0) > 0}
+          tieneHorarios={horarios.length > 0}
           tieneEmpleados={empleados.length > 0}
           cargando={isLoading}
         />
