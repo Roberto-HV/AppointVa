@@ -29,8 +29,11 @@ namespace AppointVaAPI.Services
         {
             if (!EstaHabilitado()) return;
 
-            var asunto = $"¡Tu cita está confirmada! — {cita.Servicio?.Nombre ?? "AppointVa"}";
-            var html = PlantillaConfirmacion(cita, nombreCliente, urlCita, icalUrl, googleCalUrl, urlCancelacion);
+            var esPendiente = cita.Estado == EstadosCitas.Pendiente;
+            var asunto = esPendiente
+                ? $"Solicitud de cita recibida — {cita.Servicio?.Nombre ?? "AppointVa"}"
+                : $"¡Tu cita está confirmada! — {cita.Servicio?.Nombre ?? "AppointVa"}";
+            var html = PlantillaConfirmacion(cita, nombreCliente, urlCita, icalUrl, googleCalUrl, urlCancelacion, esPendiente);
             await EnviarAsync(emailDestino, asunto, html);
             if (cita.NegocioId != Guid.Empty) await RegistrarEmailAsync(cita.NegocioId, "Confirmacion");
         }
@@ -171,7 +174,7 @@ namespace AppointVaAPI.Services
             }
         }
 
-        private static string PlantillaConfirmacion(Cita cita, string nombreCliente, string? urlCita = null, string? icalUrl = null, string? googleCalUrl = null, string? urlCancelacion = null)
+        private static string PlantillaConfirmacion(Cita cita, string nombreCliente, string? urlCita = null, string? icalUrl = null, string? googleCalUrl = null, string? urlCancelacion = null, bool esPendiente = false)
         {
             nombreCliente = nombreCliente.Trim();
             var negocio = cita.Negocio?.Nombre ?? "el negocio";
@@ -180,17 +183,21 @@ namespace AppointVaAPI.Services
             var inicio = cita.InicioEn.ToString("dddd dd 'de' MMMM 'de' yyyy", new System.Globalization.CultureInfo("es-MX"));
             var hora = cita.InicioEn.ToString("HH:mm");
             var precio = cita.Precio.ToString("C", new System.Globalization.CultureInfo("es-MX"));
+            var tituloHeader = esPendiente ? "Solicitud recibida" : "¡Cita confirmada!";
+            var textoIntro = esPendiente
+                ? $"Tu solicitud de cita en <strong>{negocio}</strong> fue recibida y está <strong>pendiente de confirmación</strong>. Te avisaremos en cuanto el negocio la confirme."
+                : $"Tu cita en <strong>{negocio}</strong> ha sido agendada exitosamente.";
 
             return $"""
                 <!DOCTYPE html>
                 <html lang="es">
                 <body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#333;">
                   <div style="background:#1e293b;padding:24px;border-radius:8px 8px 0 0;text-align:center;">
-                    <h1 style="color:#fff;margin:0;font-size:22px;">¡Cita confirmada!</h1>
+                    <h1 style="color:#fff;margin:0;font-size:22px;">{tituloHeader}</h1>
                   </div>
                   <div style="background:#f9f9f9;padding:24px;border-radius:0 0 8px 8px;border:1px solid #e5e7eb;">
                     <p>Hola <strong>{nombreCliente}</strong>,</p>
-                    <p>Tu cita en <strong>{negocio}</strong> ha sido agendada exitosamente.</p>
+                    <p>{textoIntro}</p>
                     <table style="width:100%;border-collapse:collapse;margin:16px 0;">
                       <tr style="border-bottom:1px solid #e5e7eb;">
                         <td style="padding:10px 0;color:#6b7280;width:40%;">Servicio</td>
@@ -226,7 +233,7 @@ namespace AppointVaAPI.Services
                       </a>
                     </div>
                     """)}
-                    {((icalUrl is not null || googleCalUrl is not null) ? $"""
+                    {(!esPendiente && (icalUrl is not null || googleCalUrl is not null) ? $"""
                     <div style="margin:20px 0;text-align:center;">
                       <p style="font-size:13px;color:#6b7280;margin-bottom:10px;">Agrega tu cita al calendario:</p>
                       {(icalUrl is not null ? $"""<a href="{icalUrl}" style="display:inline-block;background:#1f2937;color:#fff;text-decoration:none;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;margin:4px;">Guardar en calendario</a>""" : "")}
