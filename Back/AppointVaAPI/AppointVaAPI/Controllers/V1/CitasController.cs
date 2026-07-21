@@ -264,6 +264,9 @@ namespace AppointVaAPI.Controllers.V1
             var emailDestino = cita.Cliente?.Email;
             if (!string.IsNullOrWhiteSpace(emailDestino))
             {
+                if (dto.NuevoEstado == EstadosCitas.Confirmada && estadoAnterior == EstadosCitas.Pendiente)
+                    _jobClient.Enqueue<NotificacionJob>(j => j.EnviarConfirmacionAsync(cita.Id, emailDestino, cita.Cliente!.NombreCompleto));
+
                 if (dto.NuevoEstado == EstadosCitas.Cancelada)
                     _jobClient.Enqueue<NotificacionJob>(j => j.EnviarCancelacionAsync(cita.Id, emailDestino, cita.Cliente!.NombreCompleto));
 

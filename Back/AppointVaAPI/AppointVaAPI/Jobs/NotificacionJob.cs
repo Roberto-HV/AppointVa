@@ -14,11 +14,13 @@ namespace AppointVaAPI.Jobs
     {
         private readonly ApplicationDbContext _db;
         private readonly INotificacionService _notificacion;
+        private readonly IConfiguration _config;
 
-        public NotificacionJob(ApplicationDbContext db, INotificacionService notificacion)
+        public NotificacionJob(ApplicationDbContext db, INotificacionService notificacion, IConfiguration config)
         {
             _db = db;
             _notificacion = notificacion;
+            _config = config;
         }
 
         private Task<Cita?> CargarCitaAsync(Guid citaId) =>
@@ -29,11 +31,40 @@ namespace AppointVaAPI.Jobs
                 .Include(c => c.Negocio)
                 .FirstOrDefaultAsync(c => c.Id == citaId);
 
+        public async Task EnviarConfirmacionAsync(Guid citaId, string emailDestino, string nombreCliente)
+        {
+            var cita = await CargarCitaAsync(citaId);
+            if (cita is null) return;
+
+            var frontendUrl = _config["FrontendUrl"] ?? "https://appointva.com";
+            var backendUrl = _config["BackendUrl"] ?? string.Empty;
+            var codigo = cita.CodigoConfirmacion;
+            var urlCita = $"{frontendUrl}/b/{cita.Negocio?.Slug}/confirmacion/{codigo}";
+            var urlCancelacion = $"{frontendUrl}/cancelar/{codigo}";
+            var icalUrl = string.IsNullOrWhiteSpace(backendUrl) ? null
+                : $"{backendUrl}/api/publico/citas/{codigo}/ical";
+            var googleCalUrl = GenerarGoogleCalendarUrl(cita);
+
+            await _notificacion.EnviarConfirmacionCitaAsync(cita, emailDestino, nombreCliente,
+                urlCita, icalUrl, googleCalUrl, urlCancelacion);
+        }
+
         public async Task EnviarCancelacionAsync(Guid citaId, string emailDestino, string nombreCliente)
         {
             var cita = await CargarCitaAsync(citaId);
             if (cita is null) return;
             await _notificacion.EnviarCancelacionCitaAsync(cita, emailDestino, nombreCliente);
+        }
+
+        private static string GenerarGoogleCalendarUrl(Cita cita)
+        {
+            var titulo = Uri.EscapeDataString(
+                $"{cita.Servicio?.Nombre ?? "Cita"} - {cita.Negocio?.Nombre ?? "AppointVa"}");
+            var inicio = cita.InicioEn.ToString("yyyyMMddTHHmmssZ");
+            var fin = cita.FinEn.ToString("yyyyMMddTHHmmssZ");
+            var detalles = Uri.EscapeDataString(
+                $"Cita con {cita.Empleado?.Nombre ?? "el equipo"} en {cita.Negocio?.Nombre ?? "AppointVa"}");
+            return $"https://calendar.google.com/calendar/render?action=TEMPLATE&text={titulo}&dates={inicio}/{fin}&details={detalles}";
         }
 
         public async Task EnviarReagendaAsync(Guid citaId, string emailDestino, string nombreCliente, DateTime fechaOriginal)
