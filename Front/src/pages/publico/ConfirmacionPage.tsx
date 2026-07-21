@@ -517,6 +517,11 @@ export default function ConfirmacionPage() {
                 onLimpiarSlot={() => setSlotReag(null)}
                 color={color}
               />
+              {slotReag?.inicio === cita.inicioEn && (
+                <p className="text-xs text-amber-600 text-center bg-amber-50 border border-amber-100 rounded-lg py-2 px-3">
+                  Este ya es el horario actual de tu cita. Elige una fecha u hora diferente.
+                </p>
+              )}
               {errorReag && (
                 <p className="text-xs text-red-500 text-center">
                   {(errorReag as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje ?? "No se pudo reagendar"}
@@ -531,7 +536,7 @@ export default function ConfirmacionPage() {
                 </button>
                 <button
                   onClick={() => reagendar()}
-                  disabled={!slotReag || confirmandoReag}
+                  disabled={!slotReag || confirmandoReag || slotReag?.inicio === cita.inicioEn}
                   className="flex-1 py-2.5 rounded-xl bg-slate-700 hover:bg-slate-800 text-white text-sm font-bold disabled:opacity-50 transition"
                 >
                   {confirmandoReag ? "Reagendando…" : "Confirmar"}
