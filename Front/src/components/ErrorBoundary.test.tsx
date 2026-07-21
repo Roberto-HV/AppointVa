@@ -79,12 +79,29 @@ describe("ErrorBoundary", () => {
     expect(screen.getByText("Contenido normal")).toBeInTheDocument();
   });
 
-  it("el ícono de advertencia está presente en el fallback", () => {
+  it("el ícono de advertencia SVG está presente en el fallback", () => {
+    const { container } = render(
+      <ErrorBoundary>
+        <Bomba lanzar={true} />
+      </ErrorBoundary>
+    );
+    expect(container.querySelector("svg")).toBeInTheDocument();
+  });
+
+  it("el botón Volver llama a window.history.back", () => {
+    const backMock = vi.fn();
+    Object.defineProperty(window, "history", {
+      value: { back: backMock },
+      writable: true,
+    });
+
     render(
       <ErrorBoundary>
         <Bomba lanzar={true} />
       </ErrorBoundary>
     );
-    expect(screen.getByText("⚠️")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /volver/i }));
+    expect(backMock).toHaveBeenCalledOnce();
   });
 });
