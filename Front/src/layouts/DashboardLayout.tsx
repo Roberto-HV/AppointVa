@@ -7,6 +7,7 @@ import { authApi } from "../api/auth";
 import { negociosApi } from "../api/negocios";
 import { citasApi, ESTADOS } from "../api/citas";
 import { useToastStore } from "../store/toastStore";
+import { Tooltip } from "../components/ui/Tooltip";
 
 interface UserMenuContentProps {
   usuario: { fotoUrl?: string | null; nombreCompleto: string; email: string; rol: string } | null;
@@ -113,7 +114,12 @@ export default function DashboardLayout() {
     refetchInterval: 30_000,
     select: (pagina) => pagina.datos,
   });
-  const hoyCnt = citasHoy.length;
+  const ahora = new Date();
+  const hoyCnt = citasHoy.filter((c) =>
+    c.estado !== ESTADOS.Cancelada &&
+    c.estado !== ESTADOS.Inasistencia &&
+    new Date(c.finEn) > ahora
+  ).length;
   const pendientesCnt = citasHoy.filter((c) => c.estado === ESTADOS.Pendiente).length;
 
   useEffect(() => {
@@ -252,8 +258,10 @@ export default function DashboardLayout() {
                     </div>
                     <span className="flex-1">{item.label}</span>
                     {esCitas && hoyCnt > 0 && (
-                      <span className={`text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center leading-none ${
-                        pendientesCnt > 0 ? "bg-red-500" : "bg-slate-500"
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center leading-none ${
+                        pendientesCnt > 0
+                          ? "bg-amber-100 text-amber-700 border border-amber-200"
+                          : "bg-slate-100 text-slate-500"
                       }`}>
                         {hoyCnt > 9 ? "9+" : hoyCnt}
                       </span>
@@ -335,9 +343,11 @@ export default function DashboardLayout() {
           )}
           <div ref={headerUserRef} className="ml-auto flex items-center gap-2 relative">
             {pendientesCnt > 0 && (
-              <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
-                {pendientesCnt > 9 ? "9+" : pendientesCnt}
-              </span>
+              <Tooltip text={`${pendientesCnt} cita${pendientesCnt !== 1 ? "s" : ""} pendiente${pendientesCnt !== 1 ? "s" : ""} por confirmar`}>
+                <span className="flex items-center gap-1 bg-amber-100 text-amber-700 border border-amber-200 text-[10px] font-bold px-2 py-0.5 rounded-full cursor-default">
+                  {pendientesCnt > 9 ? "9+" : pendientesCnt} pendiente{pendientesCnt !== 1 ? "s" : ""}
+                </span>
+              </Tooltip>
             )}
             <button
               onClick={() => setUserMenuOpen((o) => !o)}
