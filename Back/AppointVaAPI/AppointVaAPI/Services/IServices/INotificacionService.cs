@@ -22,5 +22,8 @@ namespace AppointVaAPI.Services.IServices
 
         Task EnviarSolicitudResenaAsync(Cita cita, string emailDestino, string nombreCliente,
             string urlResena);
+
+        Task EnviarNotificacionListaEsperaAsync(string emailDestino, string nombreCliente,
+            string nombreNegocio, string nombreServicio, string urlReserva);
     }
 }

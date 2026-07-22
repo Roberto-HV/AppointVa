@@ -45,6 +45,7 @@ export interface NegocioPublico {
   telefonoWhatsApp?: string;
   horasCancelacion: number;
   autoConfirmar: boolean;
+  listaEsperaActiva?: boolean;
   requiereAnticipo: boolean;
   montoAnticipo: number;
   instruccionesAnticipo?: string;
@@ -287,6 +288,7 @@ export interface NegocioDto {
   horasRecordatorio?: number;
   horasCancelacion?: number;
   autoConfirmar?: boolean;
+  listaEsperaActiva?: boolean;
   metodoNotificacion?: string;
   telefonoWhatsApp?: string;
   requiereAnticipo?: boolean;
@@ -309,6 +311,7 @@ export interface ActualizarNegocioDto {
   horasRecordatorio?: number;
   horasCancelacion?: number;
   autoConfirmar?: boolean;
+  listaEsperaActiva?: boolean;
   metodoNotificacion?: string;
   telefonoWhatsApp?: string;
   requiereAnticipo?: boolean;

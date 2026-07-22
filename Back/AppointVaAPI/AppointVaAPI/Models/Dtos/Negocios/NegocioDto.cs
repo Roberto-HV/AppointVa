@@ -18,6 +18,7 @@
         public int HorasRecordatorio { get; set; }
         public int HorasCancelacion { get; set; }
         public bool AutoConfirmar { get; set; }
+        public bool ListaEsperaActiva { get; set; }
         public string MetodoNotificacion { get; set; } = "Correo";
         public string? TelefonoWhatsApp { get; set; }
         public bool RequiereAnticipo { get; set; }

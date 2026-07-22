@@ -717,6 +717,16 @@ export default function BookingPage() {
                 Continuar
               </button>
             </div>
+            {negocio.listaEsperaActiva === true && (
+              <div className="mt-4 text-center">
+                <a
+                  href={`/b/${negocio.slug}/espera?servicioId=${servicio.id}`}
+                  className="text-xs text-slate-400 hover:text-slate-600 underline underline-offset-2 transition"
+                >
+                  ¿Sin disponibilidad? Únete a la lista de espera
+                </a>
+              </div>
+            )}
           </>
         )}
 

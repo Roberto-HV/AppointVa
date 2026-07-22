@@ -1,6 +1,7 @@
 using AppointVaAPI.Data;
 using AppointVaAPI.Models;
 using AppointVaAPI.Services.IServices;
+using Hangfire;
 using Microsoft.EntityFrameworkCore;
 
 namespace AppointVaAPI.Jobs
@@ -15,12 +16,14 @@ namespace AppointVaAPI.Jobs
         private readonly ApplicationDbContext _db;
         private readonly INotificacionService _notificacion;
         private readonly IConfiguration _config;
+        private readonly IBackgroundJobClient _jobClient;
 
-        public NotificacionJob(ApplicationDbContext db, INotificacionService notificacion, IConfiguration config)
+        public NotificacionJob(ApplicationDbContext db, INotificacionService notificacion, IConfiguration config, IBackgroundJobClient jobClient)
         {
             _db = db;
             _notificacion = notificacion;
             _config = config;
+            _jobClient = jobClient;
         }
 
         private Task<Cita?> CargarCitaAsync(Guid citaId) =>
@@ -79,6 +82,48 @@ namespace AppointVaAPI.Jobs
             var cita = await CargarCitaAsync(citaId);
             if (cita is null) return;
             await _notificacion.EnviarSolicitudResenaAsync(cita, emailDestino, nombreCliente, urlResena);
+        }
+
+        public async Task NotificarListaEsperaAsync(Guid negocioId, Guid servicioId)
+        {
+            var entrada = await _db.ListaEspera
+                .Include(le => le.Negocio)
+                .Include(le => le.Servicio)
+                .Where(le => le.NegocioId == negocioId && le.ServicioId == servicioId && le.Estado == "Esperando")
+                .OrderBy(le => le.FechaCreacion)
+                .FirstOrDefaultAsync();
+
+            if (entrada is null) return;
+            if (string.IsNullOrWhiteSpace(entrada.EmailCliente)) return;
+
+            var frontendUrl = _config["FrontendUrl"] ?? "https://appointva.com";
+            var urlReserva = $"{frontendUrl}/b/{entrada.Negocio?.Slug}";
+
+            await _notificacion.EnviarNotificacionListaEsperaAsync(
+                entrada.EmailCliente,
+                entrada.NombreCliente,
+                entrada.Negocio?.Nombre ?? string.Empty,
+                entrada.Servicio?.Nombre ?? string.Empty,
+                urlReserva);
+
+            entrada.Estado = "Notificado";
+            entrada.FechaNotificacion = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+
+            _jobClient.Schedule<NotificacionJob>(
+                j => j.ExpirarYNotificarSiguienteAsync(entrada.Id, negocioId, servicioId),
+                TimeSpan.FromHours(2));
+        }
+
+        public async Task ExpirarYNotificarSiguienteAsync(Guid listaEsperaId, Guid negocioId, Guid servicioId)
+        {
+            var entrada = await _db.ListaEspera.FindAsync(listaEsperaId);
+            if (entrada is null || entrada.Estado != "Notificado") return;
+
+            entrada.Estado = "Expirado";
+            await _db.SaveChangesAsync();
+
+            _jobClient.Enqueue<NotificacionJob>(j => j.NotificarListaEsperaAsync(negocioId, servicioId));
         }
     }
 }

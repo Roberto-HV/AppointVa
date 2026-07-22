@@ -165,6 +165,13 @@ namespace AppointVaAPI.Services
             }
         }
 
+        public async Task EnviarNotificacionListaEsperaAsync(string emailDestino, string nombreCliente,
+            string nombreNegocio, string nombreServicio, string urlReserva)
+        {
+            if (!string.IsNullOrWhiteSpace(emailDestino))
+                await _email.EnviarNotificacionListaEsperaAsync(emailDestino, nombreCliente, nombreNegocio, nombreServicio, urlReserva);
+        }
+
         public async Task EnviarSolicitudResenaAsync(Cita cita, string emailDestino,
             string nombreCliente, string urlResena)
         {

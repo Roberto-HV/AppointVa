@@ -14,6 +14,7 @@
         public string? TelefonoWhatsApp { get; set; }
         public int HorasCancelacion { get; set; }
         public bool AutoConfirmar { get; set; }
+        public bool ListaEsperaActiva { get; set; }
         public bool RequiereAnticipo { get; set; }
         public decimal MontoAnticipo { get; set; }
         public string? InstruccionesAnticipo { get; set; }

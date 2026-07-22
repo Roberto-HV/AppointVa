@@ -6,8 +6,12 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  backend:
+  backend-tests:
     name: Backend — build & test
     runs-on: ubuntu-latest
     steps:
@@ -18,26 +22,23 @@ jobs:
           dotnet-version: '10.x'
 
       - name: Restore
-        run: dotnet restore
-        working-directory: Back/AppointVaAPI
+        run: dotnet restore Back/AppointVaAPI/AppointVaAPI.sln
 
       - name: Build
-        run: dotnet build --no-restore --configuration Release
-        working-directory: Back/AppointVaAPI
+        run: dotnet build Back/AppointVaAPI/AppointVaAPI.sln --no-restore --configuration Release
 
       - name: Test
-        run: dotnet test --no-build --configuration Release --verbosity normal
-        working-directory: Back/AppointVaAPI
+        run: dotnet test Back/AppointVaAPI/AppointVaAPI.sln --no-build --configuration Release --verbosity normal
 
-  frontend:
-    name: Frontend — build
+  frontend-tests:
+    name: Frontend — test & build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: Front/package-lock.json
 
@@ -46,11 +47,9 @@ jobs:
         working-directory: Front
 
       - name: Test
-        run: npm test
+        run: npm run test
         working-directory: Front
 
       - name: Build
         run: npm run build
         working-directory: Front
-        env:
-          VITE_API_URL: https://appointva.onrender.com

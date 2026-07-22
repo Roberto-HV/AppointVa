@@ -7,6 +7,7 @@ using AppointVaAPI.Services.IServices;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.EntityFrameworkCore;
 
 namespace AppointVaAPI.Controllers.V1
@@ -21,19 +22,22 @@ namespace AppointVaAPI.Controllers.V1
         private readonly IBlobStorageService _storage;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ApplicationDbContext _db;
+        private readonly IOutputCacheStore _cacheStore;
 
         public NegociosController(
             INegocioRepository repo,
             IContextoNegocio contexto,
             IBlobStorageService storage,
             UserManager<ApplicationUser> userManager,
-            ApplicationDbContext db)
+            ApplicationDbContext db,
+            IOutputCacheStore cacheStore)
         {
             _repo = repo;
             _contexto = contexto;
             _storage = storage;
             _userManager = userManager;
             _db = db;
+            _cacheStore = cacheStore;
         }
 
         // GET api/negocios/perfil — el propietario ve su propio negocio
@@ -72,6 +76,8 @@ namespace AppointVaAPI.Controllers.V1
                 negocio.HorasCancelacion = Math.Max(0, dto.HorasCancelacion.Value);
             if (dto.AutoConfirmar.HasValue)
                 negocio.AutoConfirmar = dto.AutoConfirmar.Value;
+            if (dto.ListaEsperaActiva.HasValue)
+                negocio.ListaEsperaActiva = dto.ListaEsperaActiva.Value;
             if (!string.IsNullOrWhiteSpace(dto.MetodoNotificacion))
                 negocio.MetodoNotificacion = dto.MetodoNotificacion;
             negocio.TelefonoWhatsApp = dto.TelefonoWhatsApp;
@@ -86,6 +92,7 @@ namespace AppointVaAPI.Controllers.V1
             negocio.FechaActualizacion = DateTime.UtcNow;
 
             await _repo.ActualizarAsync(negocio);
+            await _cacheStore.EvictByTagAsync($"negocio-{negocio.Slug}", CancellationToken.None);
             return Ok(MapearDto(negocio));
         }
 
@@ -106,6 +113,7 @@ namespace AppointVaAPI.Controllers.V1
             negocio.FechaActualizacion = DateTime.UtcNow;
 
             await _repo.ActualizarAsync(negocio);
+            await _cacheStore.EvictByTagAsync($"negocio-{negocio.Slug}", CancellationToken.None);
             return Ok(MapearDto(negocio));
         }
 
@@ -124,6 +132,7 @@ namespace AppointVaAPI.Controllers.V1
             negocio.FechaActualizacion = DateTime.UtcNow;
 
             await _repo.ActualizarAsync(negocio);
+            await _cacheStore.EvictByTagAsync($"negocio-{negocio.Slug}", CancellationToken.None);
             return Ok(MapearDto(negocio));
         }
 
@@ -366,6 +375,7 @@ namespace AppointVaAPI.Controllers.V1
 
                 negocio.FechaActualizacion = DateTime.UtcNow;
                 await _repo.ActualizarAsync(negocio);
+                await _cacheStore.EvictByTagAsync($"negocio-{negocio.Slug}", CancellationToken.None);
 
                 return Ok(new { url });
             }
@@ -403,6 +413,9 @@ namespace AppointVaAPI.Controllers.V1
             if (archivo is null || archivo.Length == 0)
                 return BadRequest(new { mensaje = "No se recibió ningún archivo." });
 
+            var negocio = await _repo.ObtenerPorIdAsync(_contexto.NegocioId.Value);
+            if (negocio is null) return NotFound(new { mensaje = "Negocio no encontrado" });
+
             var total = await _db.ImagenesNegocios
                 .CountAsync(i => i.NegocioId == _contexto.NegocioId.Value);
             if (total >= 20)
@@ -422,6 +435,7 @@ namespace AppointVaAPI.Controllers.V1
                 };
                 _db.ImagenesNegocios.Add(imagen);
                 await _db.SaveChangesAsync();
+                await _cacheStore.EvictByTagAsync($"negocio-{negocio.Slug}", CancellationToken.None);
                 return Ok(new { imagen.Id, imagen.Url, imagen.Descripcion, imagen.Orden, imagen.FechaCreacion });
             }
             catch (ArgumentException ex)
@@ -437,12 +451,16 @@ namespace AppointVaAPI.Controllers.V1
         {
             if (_contexto.NegocioId is null) return Unauthorized();
 
+            var negocio = await _repo.ObtenerPorIdAsync(_contexto.NegocioId.Value);
+            if (negocio is null) return NotFound(new { mensaje = "Negocio no encontrado" });
+
             var imagen = await _db.ImagenesNegocios
                 .FirstOrDefaultAsync(i => i.Id == id && i.NegocioId == _contexto.NegocioId.Value);
             if (imagen is null) return NotFound();
 
             _db.ImagenesNegocios.Remove(imagen);
             await _db.SaveChangesAsync();
+            await _cacheStore.EvictByTagAsync($"negocio-{negocio.Slug}", CancellationToken.None);
             return NoContent();
         }
 
@@ -540,6 +558,7 @@ namespace AppointVaAPI.Controllers.V1
             HorasRecordatorio = n.HorasRecordatorio,
             HorasCancelacion = n.HorasCancelacion,
             AutoConfirmar = n.AutoConfirmar,
+            ListaEsperaActiva = n.ListaEsperaActiva,
             MetodoNotificacion = n.MetodoNotificacion,
             TelefonoWhatsApp = n.TelefonoWhatsApp,
             RequiereAnticipo = n.RequiereAnticipo,

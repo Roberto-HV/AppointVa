@@ -11,5 +11,6 @@ namespace AppointVaAPI.Services.IServices
         Task EnviarReagendarCitaAsync(Cita cita, string emailDestino, string nombreCliente, DateTime fechaOriginal);
         Task EnviarVerificacionEmailAsync(string emailDestino, string nombre, string urlVerificacion);
         Task EnviarSolicitudResenaAsync(Cita cita, string emailDestino, string nombreCliente, string urlResena);
+        Task EnviarNotificacionListaEsperaAsync(string emailDestino, string nombreCliente, string nombreNegocio, string nombreServicio, string urlReserva);
     }
 }

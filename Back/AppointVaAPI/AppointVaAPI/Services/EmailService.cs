@@ -81,6 +81,13 @@ namespace AppointVaAPI.Services
             if (cita.NegocioId != Guid.Empty) await RegistrarEmailAsync(cita.NegocioId, "SolicitudResena");
         }
 
+        public async Task EnviarNotificacionListaEsperaAsync(string emailDestino, string nombreCliente, string nombreNegocio, string nombreServicio, string urlReserva)
+        {
+            if (!EstaHabilitado()) return;
+            var asunto = $"¡Hay un lugar disponible en {nombreNegocio}!";
+            await EnviarAsync(emailDestino, asunto, PlantillaListaEspera(nombreCliente, nombreNegocio, nombreServicio, urlReserva));
+        }
+
         public async Task EnviarRecuperacionContrasenaAsync(string emailDestino, string nombre, string urlReset)
         {
             if (!EstaHabilitado()) return;
@@ -401,6 +408,32 @@ namespace AppointVaAPI.Services
                     </div>
                     """ : "")}
                     <p style="font-size:13px;color:#6b7280;">Si no puedes asistir, cancela con anticipación usando tu código: <strong>{cita.CodigoConfirmacion}</strong></p>
+                  </div>
+                </body>
+                </html>
+                """;
+        }
+
+        private static string PlantillaListaEspera(string nombreCliente, string nombreNegocio, string nombreServicio, string urlReserva)
+        {
+            nombreCliente = nombreCliente.Trim();
+            return $"""
+                <!DOCTYPE html>
+                <html lang="es">
+                <body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#333;">
+                  <div style="background:#166534;padding:24px;border-radius:8px 8px 0 0;text-align:center;">
+                    <h1 style="color:#fff;margin:0;font-size:22px;">¡Hay un lugar disponible!</h1>
+                  </div>
+                  <div style="background:#f9f9f9;padding:24px;border-radius:0 0 8px 8px;border:1px solid #e5e7eb;">
+                    <p>Hola <strong>{nombreCliente}</strong>,</p>
+                    <p>Tenemos buenas noticias: quedó disponible un lugar en <strong>{nombreNegocio}</strong> para el servicio de <strong>{nombreServicio}</strong>.</p>
+                    <p>Tienes <strong>2 horas</strong> para reservar tu lugar antes de que se ofrezca al siguiente en la lista.</p>
+                    <div style="text-align:center;margin:28px 0;">
+                      <a href="{urlReserva}" style="background:#C8A961;color:#fff;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:700;font-size:15px;display:inline-block;">
+                        Reservar ahora
+                      </a>
+                    </div>
+                    <p style="font-size:13px;color:#6b7280;">Si ya no necesitas el lugar, puedes ignorar este mensaje.</p>
                   </div>
                 </body>
                 </html>

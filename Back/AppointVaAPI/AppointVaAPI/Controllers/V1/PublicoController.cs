@@ -68,7 +68,7 @@ namespace AppointVaAPI.Controllers.V1
         // GET api/publico/negocios/{slug}
         [HttpGet("negocios/{slug}")]
         [EnableRateLimiting("PublicoGeneral")]
-        [OutputCache(Duration = 300)]
+        [OutputCache(PolicyName = "NegocioPublico")]
         public async Task<IActionResult> ObtenerNegocio(string slug)
         {
             var negocio = await _negocioRepo.ObtenerPorSlugAsync(slug);
@@ -130,6 +130,7 @@ namespace AppointVaAPI.Controllers.V1
                 TelefonoWhatsApp = negocio.TelefonoWhatsApp,
                 HorasCancelacion = negocio.HorasCancelacion,
                 AutoConfirmar = negocio.AutoConfirmar,
+                ListaEsperaActiva = negocio.ListaEsperaActiva,
                 RequiereAnticipo = negocio.RequiereAnticipo,
                 MontoAnticipo = negocio.MontoAnticipo,
                 InstruccionesAnticipo = negocio.InstruccionesAnticipo,
@@ -514,6 +515,16 @@ namespace AppointVaAPI.Controllers.V1
 
             if (!string.IsNullOrWhiteSpace(emailCliente))
                 _jobClient.Enqueue<NotificacionJob>(j => j.EnviarCancelacionAsync(cita.Id, emailCliente, cita.Cliente!.NombreCompleto));
+
+            if (cita.Negocio?.ListaEsperaActiva == true)
+            {
+                var hayEnEspera = await _db.ListaEspera
+                    .AnyAsync(le => le.NegocioId == cita.NegocioId
+                                 && le.ServicioId == cita.ServicioId
+                                 && le.Estado == "Esperando");
+                if (hayEnEspera)
+                    _jobClient.Enqueue<NotificacionJob>(j => j.NotificarListaEsperaAsync(cita.NegocioId, cita.ServicioId));
+            }
 
             return NoContent();
         }

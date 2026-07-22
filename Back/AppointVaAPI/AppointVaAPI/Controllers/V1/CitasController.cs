@@ -260,6 +260,24 @@ namespace AppointVaAPI.Controllers.V1
                 }
             }
 
+            // Disparar lista de espera si el negocio la tiene activa y hay personas esperando
+            if (dto.NuevoEstado == EstadosCitas.Cancelada)
+            {
+                var listaEsperaActiva = await _db.Negocios
+                    .Where(n => n.Id == cita.NegocioId)
+                    .Select(n => n.ListaEsperaActiva)
+                    .FirstOrDefaultAsync();
+                if (listaEsperaActiva)
+                {
+                    var hayEnEspera = await _db.ListaEspera
+                        .AnyAsync(le => le.NegocioId == cita.NegocioId
+                                     && le.ServicioId == cita.ServicioId
+                                     && le.Estado == "Esperando");
+                    if (hayEnEspera)
+                        _jobClient.Enqueue<NotificacionJob>(j => j.NotificarListaEsperaAsync(cita.NegocioId, cita.ServicioId));
+                }
+            }
+
             // Notificar por email si el cliente tiene correo
             var emailDestino = cita.Cliente?.Email;
             if (!string.IsNullOrWhiteSpace(emailDestino))

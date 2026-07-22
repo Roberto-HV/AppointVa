@@ -680,6 +680,9 @@ namespace AppointVaAPI.Migrations
                     b.Property<bool>("AutoConfirmar")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("ListaEsperaActiva")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("ColorPrimario")
                         .HasColumnType("text");
 

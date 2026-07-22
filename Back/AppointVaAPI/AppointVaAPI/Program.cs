@@ -20,6 +20,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.ResponseCompression;
+using AppointVaAPI.Policies;
 
 // ── Serilog ────────────────────────────────────────────────────────────────────
 Serilog.Log.Logger = new LoggerConfiguration()
@@ -217,6 +218,7 @@ builder.Services.AddHealthChecks()
 builder.Services.AddOutputCache(opt =>
 {
     opt.AddBasePolicy(policy => policy.Expire(TimeSpan.FromMinutes(5)));
+    opt.AddPolicy("NegocioPublico", NegocioPublicoPolicy.Instance);
 });
 
 // ── Compresión HTTP (Brotli + Gzip) ───────────────────────────────────────────

@@ -31,6 +31,7 @@ namespace AppointVaAPI.Models.Dtos.Negocios
         public int? HorasCancelacion { get; set; }
 
         public bool? AutoConfirmar { get; set; }
+        public bool? ListaEsperaActiva { get; set; }
 
         // "Correo" | "WhatsApp" | "Ambos"
         [MaxLength(20)]

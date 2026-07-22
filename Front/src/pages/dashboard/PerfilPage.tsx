@@ -60,6 +60,7 @@ const schema = z.object({
   horasRecordatorio: z.coerce.number().optional(),
   horasCancelacion: z.coerce.number().optional(),
   autoConfirmar: z.boolean().optional(),
+  listaEsperaActiva: z.boolean().optional(),
   metodoNotificacion: z.enum(["Correo", "WhatsApp", "Ambos"]).optional(),
   telefonoWhatsApp: z.string().max(30).optional(),
   requiereAnticipo: z.boolean().optional(),
@@ -107,6 +108,7 @@ export default function PerfilPage() {
         horasRecordatorio: negocio.horasRecordatorio ?? 24,
         horasCancelacion: negocio.horasCancelacion ?? 0,
         autoConfirmar: negocio.autoConfirmar ?? true,
+        listaEsperaActiva: negocio.listaEsperaActiva ?? false,
         metodoNotificacion: (negocio.metodoNotificacion as "Correo" | "WhatsApp" | "Ambos") ?? "Correo",
         telefonoWhatsApp: negocio.telefonoWhatsApp ?? "",
         requiereAnticipo: negocio.requiereAnticipo ?? false,
@@ -579,6 +581,26 @@ export default function PerfilPage() {
               >
                 <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${
                   watch("autoConfirmar") ?? true ? "left-6" : "left-1"
+                }`} />
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-700">Lista de espera</p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  Activado: cuando canceles una cita se notificará automáticamente al primer cliente en espera.<br />
+                  Desactivado: la lista de espera no genera notificaciones automáticas.
+                </p>
+              </div>
+              <div
+                onClick={() => setValue("listaEsperaActiva", !(watch("listaEsperaActiva") ?? false), { shouldDirty: true })}
+                className={`shrink-0 w-11 h-6 rounded-full transition relative cursor-pointer ${
+                  watch("listaEsperaActiva") ? "bg-slate-700" : "bg-gray-300"
+                }`}
+              >
+                <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${
+                  watch("listaEsperaActiva") ? "left-6" : "left-1"
                 }`} />
               </div>
             </div>
