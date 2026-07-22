@@ -741,6 +741,19 @@ namespace AppointVaAPI.Controllers.V1
             if (!resultado.Succeeded)
                 return BadRequest(new { mensaje = "El enlace de verificación es inválido o ha expirado." });
 
+            var frontendUrl = _config["FrontendUrl"] ?? "https://appointva.com";
+            var negocio = await _db.Negocios
+                .Where(n => n.Id == usuario.NegocioId)
+                .Select(n => new { n.Nombre, n.Slug })
+                .FirstOrDefaultAsync();
+            if (negocio is not null)
+                _ = Task.Run(() => _email.EnviarBienvenidaAsync(
+                    usuario.Email!,
+                    usuario.Nombre ?? usuario.Email!,
+                    negocio.Nombre,
+                    negocio.Slug,
+                    $"{frontendUrl}/dashboard"));
+
             return Ok(new { mensaje = "¡Correo verificado! Ya puedes iniciar sesión." });
         }
 

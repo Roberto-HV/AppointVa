@@ -97,6 +97,16 @@ namespace AppointVaAPI.Services
             await EnviarAsync(emailDestino, asunto, html);
         }
 
+        public async Task EnviarBienvenidaAsync(string emailDestino, string nombre, string negocioNombre, string slug, string urlDashboard)
+        {
+            if (!EstaHabilitado()) return;
+
+            var frontendUrl = _config["FrontendUrl"] ?? "https://appointva.com";
+            var urlReservas = $"{frontendUrl}/b/{slug}";
+            var asunto = $"¡Bienvenido a AppointVa, {nombre}!";
+            await EnviarAsync(emailDestino, asunto, PlantillaBienvenida(nombre, negocioNombre, urlReservas, urlDashboard));
+        }
+
         private async Task EnviarAsync(string destino, string asunto, string html)
         {
             try
@@ -434,6 +444,37 @@ namespace AppointVaAPI.Services
                       </a>
                     </div>
                     <p style="font-size:13px;color:#6b7280;">Si ya no necesitas el lugar, puedes ignorar este mensaje.</p>
+                  </div>
+                </body>
+                </html>
+                """;
+        }
+
+        private static string PlantillaBienvenida(string nombre, string negocioNombre, string urlReservas, string urlDashboard)
+        {
+            return $"""
+                <!DOCTYPE html>
+                <html lang="es">
+                <body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#333;">
+                  <div style="background:#0C0C0F;padding:24px;border-radius:8px 8px 0 0;text-align:center;">
+                    <h1 style="color:#fff;margin:0;font-size:26px;font-weight:700;letter-spacing:1px;">AppointVa</h1>
+                  </div>
+                  <div style="background:#f9f9f9;padding:24px;border-radius:0 0 8px 8px;border:1px solid #e5e7eb;">
+                    <p>¡Hola, <strong>{nombre}</strong>! Tu cuenta de <strong>{negocioNombre}</strong> ya está activa.</p>
+                    <p>Aquí te dejamos los primeros pasos para que empieces a recibir citas:</p>
+                    <ol style="padding-left:20px;line-height:1.8;">
+                      <li><strong>Configura tus servicios</strong> — Agrega los servicios que ofreces con precio y duración</li>
+                      <li><strong>Configura tus horarios</strong> — Define qué días y horas atiendes</li>
+                      <li><strong>Comparte tu link de reservas</strong> — Tu página pública está lista en: <a href="{urlReservas}" style="color:#C8A961;">{urlReservas}</a></li>
+                    </ol>
+                    <div style="text-align:center;margin:28px 0;">
+                      <a href="{urlDashboard}"
+                        style="background:#1f2937;color:#fff;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:700;font-size:15px;display:inline-block;">
+                        Ir a mi panel
+                      </a>
+                    </div>
+                    <hr style="border:none;border-top:1px solid #e5e7eb;margin:20px 0;" />
+                    <p style="font-size:12px;color:#9ca3af;text-align:center;">El equipo de AppointVa</p>
                   </div>
                 </body>
                 </html>
