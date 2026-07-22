@@ -474,7 +474,11 @@ namespace AppointVaAPI.Services
                       </a>
                     </div>
                     <hr style="border:none;border-top:1px solid #e5e7eb;margin:20px 0;" />
-                    <p style="font-size:12px;color:#9ca3af;text-align:center;">El equipo de AppointVa</p>
+                    <p style="font-size:13px;color:#6b7280;text-align:center;margin:0 0 6px;">
+                      ¿Tienes dudas? Escríbenos a
+                      <a href="mailto:hola@appointva.com" style="color:#1f2937;font-weight:600;text-decoration:none;">hola@appointva.com</a>
+                    </p>
+                    <p style="font-size:12px;color:#9ca3af;text-align:center;margin:0;">El equipo de AppointVa</p>
                   </div>
                 </body>
                 </html>
