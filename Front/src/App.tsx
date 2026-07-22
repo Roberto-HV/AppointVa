@@ -31,6 +31,7 @@ const ResenaPage = lazy(() => import("./pages/publico/ResenaPage"));
 const PrivacidadPage = lazy(() => import("./pages/publico/PrivacidadPage"));
 const TerminosPage = lazy(() => import("./pages/publico/TerminosPage"));
 const CancelarCitaPage = lazy(() => import("./pages/publico/CancelarCitaPage"));
+const ListaEsperaPublicaPage = lazy(() => import("./pages/publico/ListaEsperaPublicaPage"));
 
 // ── Dashboard ─────────────────────────────────────────────────────────────
 const InicioPage = lazy(() => import("./pages/dashboard/InicioPage"));
@@ -88,6 +89,7 @@ export default function App() {
                 <Route path="/privacidad" element={<PrivacidadPage />} />
                 <Route path="/terminos" element={<TerminosPage />} />
                 <Route path="/cancelar/:codigo" element={<CancelarCitaPage />} />
+                <Route path="/b/:slug/espera" element={<ListaEsperaPublicaPage />} />
 
                 {/* ── Dashboard (requiere auth) ── */}
                 <Route element={<RutaProtegida roles={["Propietario", "Empleado"]} />}>
