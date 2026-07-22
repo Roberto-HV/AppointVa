@@ -267,7 +267,7 @@ namespace AppointVaAPI.Controllers.V1
                     .Where(n => n.Id == cita.NegocioId)
                     .Select(n => n.ListaEsperaActiva)
                     .FirstOrDefaultAsync();
-                if (listaEsperaActiva)
+                if (listaEsperaActiva && cita.InicioEn > DateTime.UtcNow.AddHours(2))
                 {
                     var hayEnEspera = await _db.ListaEspera
                         .AnyAsync(le => le.NegocioId == cita.NegocioId

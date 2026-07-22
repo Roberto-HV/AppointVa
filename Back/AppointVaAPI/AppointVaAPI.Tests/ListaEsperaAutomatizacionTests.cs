@@ -124,6 +124,27 @@ public class ListaEsperaAutomatizacionTests
     // ── Tests de CitasController ───────────────────────────────────────────────
 
     [Fact]
+    public async Task CambiarEstado_Cancelada_CitaEnMenosDe2Horas_NoDisparaNotificacion()
+    {
+        var (controller, citaRepo, jobClient, db) = CrearComponentesCitas(
+            nameof(CambiarEstado_Cancelada_CitaEnMenosDe2Horas_NoDisparaNotificacion));
+
+        db.Negocios.Add(NegocioConListaEsperaActiva(activa: true));
+        db.ListaEspera.Add(EntradaEsperando());
+        await db.SaveChangesAsync();
+
+        var cita = CitaCancelable();
+        cita.InicioEn = DateTime.UtcNow.AddMinutes(90); // menos de 2 horas
+        citaRepo.ObtenerPorIdAsync(cita.Id, NegocioId).Returns(cita);
+
+        await controller.CambiarEstado(cita.Id, new CambiarEstadoCitaDto { NuevoEstado = EstadosCitas.Cancelada });
+
+        jobClient.DidNotReceive().Create(
+            Arg.Is<Job>(j => j.Method.Name == nameof(NotificacionJob.NotificarListaEsperaAsync)),
+            Arg.Any<IState>());
+    }
+
+    [Fact]
     public async Task CambiarEstado_Cancelada_ListaEsperaDesactivada_NoDisparaNotificacion()
     {
         var (controller, citaRepo, jobClient, db) = CrearComponentesCitas(

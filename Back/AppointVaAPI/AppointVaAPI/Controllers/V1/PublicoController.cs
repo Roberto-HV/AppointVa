@@ -516,7 +516,7 @@ namespace AppointVaAPI.Controllers.V1
             if (!string.IsNullOrWhiteSpace(emailCliente))
                 _jobClient.Enqueue<NotificacionJob>(j => j.EnviarCancelacionAsync(cita.Id, emailCliente, cita.Cliente!.NombreCompleto));
 
-            if (cita.Negocio?.ListaEsperaActiva == true)
+            if (cita.Negocio?.ListaEsperaActiva == true && cita.InicioEn > DateTime.UtcNow.AddHours(2))
             {
                 var hayEnEspera = await _db.ListaEspera
                     .AnyAsync(le => le.NegocioId == cita.NegocioId
