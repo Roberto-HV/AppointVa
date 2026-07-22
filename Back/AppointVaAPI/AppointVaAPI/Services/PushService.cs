@@ -118,6 +118,56 @@ namespace AppointVaAPI.Services
             }
         }
 
+        public async Task EnviarReagendarEmpleadoAsync(Guid citaId)
+        {
+            var cita = await _db.Citas
+                .Include(c => c.Cliente)
+                .Include(c => c.Servicio)
+                .Include(c => c.Negocio)
+                .Include(c => c.Empleado)
+                .FirstOrDefaultAsync(c => c.Id == citaId);
+
+            if (cita is null) return;
+
+            var payload = BuildPayloadReagendar(cita);
+
+            if (cita.EmpleadoId != Guid.Empty)
+            {
+                var empleado = await _db.Empleados.FirstOrDefaultAsync(e => e.Id == cita.EmpleadoId);
+                if (empleado?.UsuarioId is not null)
+                {
+                    var subEmpleado = await _db.PushSuscripciones
+                        .FirstOrDefaultAsync(s => s.UsuarioId == empleado.UsuarioId.Value);
+                    if (subEmpleado is not null)
+                        await EnviarAsync(subEmpleado, payload);
+                }
+            }
+
+            var roleId = await _db.Roles
+                .Where(r => r.Name == Roles.Propietario)
+                .Select(r => r.Id)
+                .FirstOrDefaultAsync();
+
+            if (roleId == Guid.Empty) return;
+
+            var propietarioIds = await _db.UserRoles
+                .Where(ur => ur.RoleId == roleId)
+                .Select(ur => ur.UserId)
+                .ToListAsync();
+
+            var propietarios = await _db.Users
+                .Where(u => u.NegocioId == cita.NegocioId && propietarioIds.Contains(u.Id) && u.Activo)
+                .ToListAsync();
+
+            foreach (var propietario in propietarios)
+            {
+                var subProp = await _db.PushSuscripciones
+                    .FirstOrDefaultAsync(s => s.UsuarioId == propietario.Id);
+                if (subProp is not null)
+                    await EnviarAsync(subProp, payload);
+            }
+        }
+
         // ── Prueba manual desde perfil ────────────────────────────────────────────
 
         public async Task<string> EnviarPruebaAsync(Guid usuarioId)
@@ -433,6 +483,22 @@ namespace AppointVaAPI.Services
                 url   = $"/dashboard/citas/{cita.Id}",
                 icalUrl,
                 googleCalUrl
+            });
+        }
+
+        private static string BuildPayloadReagendar(Cita cita)
+        {
+            var cliente  = cita.Cliente?.NombreCompleto ?? "Un cliente";
+            var servicio = cita.Servicio?.Nombre ?? "Servicio";
+            var negocio  = cita.Negocio?.Nombre ?? "AppointVa";
+            var hora     = cita.InicioEn.ToString("HH:mm");
+            var fecha    = cita.InicioEn.ToString("dd/MM/yyyy");
+
+            return JsonSerializer.Serialize(new
+            {
+                title = $"Cita reagendada — {negocio}",
+                body  = $"{cliente} · {servicio} · {fecha} {hora}",
+                url   = $"/dashboard/citas/{cita.Id}",
             });
         }
 

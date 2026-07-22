@@ -374,9 +374,10 @@ namespace AppointVaAPI.Controllers.V1
 
             await _citaRepo.ActualizarAsync(cita);
 
-            var emailCliente = cita.Cliente?.Email;
-            if (!string.IsNullOrWhiteSpace(emailCliente))
-                _jobClient.Enqueue<NotificacionJob>(j => j.EnviarReagendaAsync(cita.Id, emailCliente, cita.Cliente!.NombreCompleto, fechaOriginal));
+            var emailCliente = cita.Cliente?.Email ?? string.Empty;
+            var nombreCliente = cita.Cliente?.NombreCompleto ?? string.Empty;
+            _jobClient.Enqueue<NotificacionJob>(j => j.EnviarReagendaAsync(cita.Id, emailCliente, nombreCliente, fechaOriginal));
+            _jobClient.Enqueue<IPushService>(s => s.EnviarReagendarEmpleadoAsync(cita.Id));
 
             return Ok(MapearDto(cita));
         }
