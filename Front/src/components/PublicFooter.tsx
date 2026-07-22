@@ -21,6 +21,15 @@ export default function PublicFooter() {
         >
           Términos de uso
         </Link>
+        <span className="text-slate-300 text-[11px]">·</span>
+        <a
+          href="/manuales/manual-clientes.html"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[11px] text-slate-400 hover:text-slate-600 hover:underline transition"
+        >
+          Manual del cliente
+        </a>
       </div>
     </footer>
   );

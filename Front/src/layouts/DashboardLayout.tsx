@@ -1,6 +1,6 @@
 ﻿import { useState, useRef, useEffect } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { Menu, X, LayoutDashboard, CalendarDays, Users, Scissors, UserCheck, Building2, Link, Copy, Check, BarChart2, ShieldCheck, UserCircle, Images, ClipboardList, Tag, LogOut, ChevronUp, Mail } from "lucide-react";
+import { Menu, X, LayoutDashboard, CalendarDays, Users, Scissors, UserCheck, Building2, Link, Copy, Check, BarChart2, ShieldCheck, UserCircle, Images, ClipboardList, Tag, LogOut, ChevronUp, Mail, BookOpen } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "../store/authStore";
 import { authApi } from "../api/auth";
@@ -14,11 +14,12 @@ interface UserMenuContentProps {
   perfil?: { planNombre?: string | null } | null;
   iniciales: string;
   rolChip: { label: string; cls: string };
+  rol: string;
   onProfile: () => void;
   onLogout: () => void;
 }
 
-function UserMenuContent({ usuario, perfil, iniciales, rolChip, onProfile, onLogout }: UserMenuContentProps) {
+function UserMenuContent({ usuario, perfil, iniciales, rolChip, rol, onProfile, onLogout }: UserMenuContentProps) {
   return (
     <div className="py-1">
       <div className="px-4 pt-3 pb-3 flex items-center gap-3">
@@ -51,6 +52,15 @@ function UserMenuContent({ usuario, perfil, iniciales, rolChip, onProfile, onLog
         <UserCircle size={15} className="text-slate-400 shrink-0" />
         Mi perfil
       </button>
+      <a
+        href={rol === "Empleado" ? "/manuales/manual-empleado.html" : "/manuales/manual-propietario.html"}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 transition"
+      >
+        <BookOpen size={15} className="text-slate-400 shrink-0" />
+        Manual de usuario
+      </a>
       <div className="h-px bg-slate-100 mx-3 my-1" />
       <button
         onClick={onLogout}
@@ -178,6 +188,7 @@ export default function DashboardLayout() {
     perfil,
     iniciales,
     rolChip,
+    rol: usuario?.rol ?? "",
     onProfile: () => { navigate("/dashboard/mi-perfil"); setUserMenuOpen(false); cerrarSidebar(); },
     onLogout: () => { setUserMenuOpen(false); handleLogout(); },
   };
