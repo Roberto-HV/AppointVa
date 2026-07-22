@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { publicoApi } from "../../api/publico";
 import { comprobantesApi } from "../../api/comprobantes";
-import { Copy, Check, Calendar, ChevronDown, CalendarClock, Download, CheckCircle2, XCircle, Star, Bell, Scissors, Upload } from "lucide-react";
+import { Copy, Check, Calendar, ChevronDown, CalendarClock, Download, CheckCircle2, XCircle, Star, Bell, Scissors, Upload, Info } from "lucide-react";
 import WhatsAppIcon from "../../components/icons/WhatsAppIcon";
 import PublicFooter from "../../components/PublicFooter";
 import { formatPrecio, formatFechaHoraCompleta as formatFechaHora } from "../../utils/formatters";
@@ -22,6 +22,7 @@ export default function ConfirmacionPage() {
   const [reagendando, setReagendando] = useState(false);
   const [slotReag, setSlotReag] = useState<SlotDisponible | null>(null);
   const [linkCopiado, setLinkCopiado] = useState(false);
+  const [bannerCopiado, setBannerCopiado] = useState(false);
   const [calAbierto, setCalAbierto] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -81,6 +82,12 @@ export default function ConfirmacionPage() {
     navigator.clipboard.writeText(linkCita);
     setLinkCopiado(true);
     setTimeout(() => setLinkCopiado(false), 2000);
+  };
+
+  const copiarLinkBanner = () => {
+    navigator.clipboard.writeText(window.location.href);
+    setBannerCopiado(true);
+    setTimeout(() => setBannerCopiado(false), 2000);
   };
 
   const irAlNegocio = () => navigate(negocioSlug ? `/b/${negocioSlug}` : "/");
@@ -201,6 +208,32 @@ export default function ConfirmacionPage() {
       </div>
 
       <div className="max-w-md mx-auto px-4 py-5">
+
+        {!cita.emailCliente && (
+          <div className="mb-4 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex flex-col gap-2.5 print:hidden">
+            <div className="flex items-start gap-2">
+              <Info size={16} className="text-amber-500 shrink-0 mt-0.5" />
+              <p className="text-sm text-amber-800 leading-snug">
+                Sin correo registrado — guarda el enlace de tu cita o búscate en{" "}
+                <strong>Mis Citas</strong> con tu teléfono.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                onClick={copiarLinkBanner}
+                className="text-amber-700 border border-amber-300 rounded-lg px-3 py-1.5 text-xs font-medium hover:bg-amber-100 transition"
+              >
+                {bannerCopiado ? "¡Copiado!" : "Copiar enlace"}
+              </button>
+              <a
+                href={`/b/${negocioSlug}/mis-citas`}
+                className="text-amber-700 border border-amber-300 rounded-lg px-3 py-1.5 text-xs font-medium hover:bg-amber-100 transition"
+              >
+                Ver mis citas
+              </a>
+            </div>
+          </div>
+        )}
 
         {/* Comprobante */}
         <div id="comprobante-cita" className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">

@@ -101,6 +101,8 @@ export interface ConfirmacionCita {
   nombreServicio: string;
   nombreEmpleado: string;
   nombreCliente: string;
+  emailCliente?: string;
+  telefonoCliente?: string;
   inicioEn: string;
   finEn: string;
   precio: number;

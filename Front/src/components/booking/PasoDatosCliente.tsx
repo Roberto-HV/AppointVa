@@ -1,10 +1,11 @@
-﻿import { useForm } from "react-hook-form";
+﻿import { useState } from "react";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import type { ServicioPublico, EmpleadoPublico, SlotDisponible } from "../../types";
 import { SIN_PREFERENCIA_ID } from "./PasoEmpleado";
 import { formatPrecio, formatFechaLarga as formatFecha } from "../../utils/formatters";
-import { CalendarDays, User, Clock, Tag } from "lucide-react";
+import { CalendarDays, User, Clock, Tag, Info } from "lucide-react";
 
 const schema = z.object({
   nombreCliente: z.string().min(2, "Ingresa tu nombre completo"),
@@ -26,11 +27,14 @@ interface Props {
 }
 
 export default function PasoDatosCliente({ servicio, empleado, slot, enviando, datosIniciales, onEnviar, color = "#334155" }: Props) {
-  const { register, handleSubmit, formState: { errors } } = useForm<DatosClienteForm>({
+  const { register, handleSubmit, watch, formState: { errors } } = useForm<DatosClienteForm>({
     resolver: zodResolver(schema),
     defaultValues: datosIniciales,
     mode: "onBlur",
   });
+  const [emailTocado, setEmailTocado] = useState(false);
+  const emailValue = watch("emailCliente");
+  const emailReg = register("emailCliente");
 
   const nombreEmpleado = empleado.id === SIN_PREFERENCIA_ID
     ? (slot.empleadoNombre ?? "Cualquier disponible")
@@ -118,15 +122,24 @@ export default function PasoDatosCliente({ servicio, empleado, slot, enviando, d
             Correo electrónico <span className="text-slate-400 font-normal normal-case">(opcional)</span>
           </label>
           <input
-            {...register("emailCliente")}
+            {...emailReg}
+            onBlur={(e) => {
+              emailReg.onBlur(e);
+              setEmailTocado(true);
+            }}
             type="email"
             placeholder="correo@ejemplo.com"
             className={`w-full px-4 py-3 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-slate-700/20 focus:border-slate-700 transition bg-white
               ${errors.emailCliente ? "border-red-300 bg-red-50" : "border-slate-200"}`}
           />
-          {errors.emailCliente && (
+          {errors.emailCliente ? (
             <p className="text-red-500 text-xs mt-1.5">{errors.emailCliente.message}</p>
-          )}
+          ) : emailTocado && !emailValue ? (
+            <p className="text-amber-600 text-xs mt-1.5 flex items-center gap-1">
+              <Info size={16} className="shrink-0" />
+              Sin correo no recibirás confirmación por email. Guarda el enlace de tu cita al finalizar.
+            </p>
+          ) : null}
         </div>
 
         <div>
