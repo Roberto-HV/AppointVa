@@ -246,6 +246,8 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     await db.Database.MigrateAsync();
+    // Safety net: ensure column exists regardless of migration history state
+    await db.Database.ExecuteSqlRawAsync(@"ALTER TABLE ""Negocios"" ADD COLUMN IF NOT EXISTS ""ListaEsperaActiva"" boolean NOT NULL DEFAULT false;");
     await DataSeeder.SeedAsync(scope.ServiceProvider);
 }
 
