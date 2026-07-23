@@ -516,14 +516,12 @@ export default function PerfilPage() {
               {negocio?.planNombre ?? "Sin plan asignado"}
             </p>
             <p className="text-xs text-slate-400 mt-2">
-              ¿Quieres cambiar de plan?{" "}
+              ¿Quieres cambiar de plan? Escríbenos a{" "}
               <a
-                href="https://wa.me/5215500000000"
-                target="_blank"
-                rel="noopener noreferrer"
+                href="mailto:hola@appointva.com"
                 className="text-slate-600 font-semibold underline"
               >
-                Contáctanos por WhatsApp
+                hola@appointva.com
               </a>
             </p>
           </div>
