@@ -509,8 +509,8 @@ export default function PerfilPage() {
 
         {/* ── TAB: CONFIGURACIÓN ──────────────────────────────────────────────── */}
         <div className={tab !== "configuracion" ? "hidden" : "space-y-6"}>
-          {/* Tarjeta de suscripción */}
-          <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+          {/* Subscription plan — read-only */}
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-4">
             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Tu suscripción</p>
             <p className="text-base font-bold text-slate-800">
               {negocio?.planNombre ?? "Sin plan asignado"}
@@ -518,10 +518,12 @@ export default function PerfilPage() {
             <p className="text-xs text-slate-400 mt-2">
               ¿Quieres cambiar de plan?{" "}
               <a
-                href="mailto:hola@appointva.com"
+                href="https://wa.me/5215500000000"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="text-slate-600 font-semibold underline"
               >
-                Contáctanos por correo
+                Contáctanos por WhatsApp
               </a>
             </p>
           </div>
