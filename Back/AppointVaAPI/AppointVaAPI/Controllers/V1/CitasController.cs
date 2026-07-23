@@ -366,16 +366,37 @@ namespace AppointVaAPI.Controllers.V1
             var duracion = (int)(cita.FinEn - cita.InicioEn).TotalMinutes;
             var nuevoFin = dto.InicioEn.AddMinutes(duracion);
 
-            var haySolapamiento = await _citaRepo.ExisteSolapamientoAsync(cita.EmpleadoId, dto.InicioEn, nuevoFin, cita.Id);
-            if (haySolapamiento)
-                return Conflict(new { mensaje = "El horario seleccionado ya no está disponible" });
+            DateTime fechaOriginal;
+            using (var tx = await _db.Database.BeginTransactionAsync(IsolationLevel.Serializable))
+            {
+                try
+                {
+                    var haySolapamiento = await _citaRepo.ExisteSolapamientoAsync(cita.EmpleadoId, dto.InicioEn, nuevoFin, cita.Id);
+                    if (haySolapamiento)
+                    {
+                        await tx.RollbackAsync();
+                        return Conflict(new { mensaje = "El horario seleccionado ya no está disponible" });
+                    }
 
-            var fechaOriginal = cita.InicioEn;
-            cita.InicioEn = dto.InicioEn;
-            cita.FinEn = nuevoFin;
-            cita.FechaActualizacion = DateTime.UtcNow;
+                    fechaOriginal = cita.InicioEn;
+                    cita.InicioEn = dto.InicioEn;
+                    cita.FinEn = nuevoFin;
+                    cita.FechaActualizacion = DateTime.UtcNow;
 
-            await _citaRepo.ActualizarAsync(cita);
+                    await _citaRepo.ActualizarAsync(cita);
+                    await tx.CommitAsync();
+                }
+                catch (Exception ex) when (EsConflictoSerializacion(ex))
+                {
+                    await tx.RollbackAsync();
+                    return Conflict(new { mensaje = "El horario fue reservado en este momento. Intenta de nuevo." });
+                }
+                catch
+                {
+                    await tx.RollbackAsync();
+                    throw;
+                }
+            }
 
             var emailCliente = cita.Cliente?.Email ?? string.Empty;
             var nombreCliente = cita.Cliente?.NombreCompleto ?? string.Empty;
