@@ -129,7 +129,11 @@ namespace AppointVaAPI.Services
 
             if (cita is null) return;
 
-            var payload = BuildPayloadReagendar(cita);
+            var backendUrl = _config["BackendUrl"] ?? string.Empty;
+            var icalUrl = string.IsNullOrWhiteSpace(backendUrl) ? null
+                : $"{backendUrl}/api/publico/citas/{cita.CodigoConfirmacion}/ical";
+            var googleCalUrl = BuildGoogleCalendarUrl(cita);
+            var payload = BuildPayloadReagendar(cita, icalUrl, googleCalUrl);
 
             if (cita.EmpleadoId != Guid.Empty)
             {
@@ -486,7 +490,7 @@ namespace AppointVaAPI.Services
             });
         }
 
-        private static string BuildPayloadReagendar(Cita cita)
+        private static string BuildPayloadReagendar(Cita cita, string? icalUrl, string? googleCalUrl)
         {
             var cliente  = cita.Cliente?.NombreCompleto ?? "Un cliente";
             var servicio = cita.Servicio?.Nombre ?? "Servicio";
@@ -499,6 +503,8 @@ namespace AppointVaAPI.Services
                 title = $"Cita reagendada — {negocio}",
                 body  = $"{cliente} · {servicio} · {fecha} {hora}",
                 url   = $"/dashboard/citas/{cita.Id}",
+                icalUrl,
+                googleCalUrl,
             });
         }
 

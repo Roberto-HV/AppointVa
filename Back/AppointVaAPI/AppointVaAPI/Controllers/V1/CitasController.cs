@@ -360,6 +360,9 @@ namespace AppointVaAPI.Controllers.V1
             if (cita.Estado == EstadosCitas.Cancelada || cita.Estado == EstadosCitas.Completada)
                 return BadRequest(new { mensaje = "No se puede reagendar una cita ya finalizada" });
 
+            if (dto.InicioEn <= DateTime.UtcNow)
+                return BadRequest(new { mensaje = "La nueva fecha debe ser en el futuro" });
+
             var duracion = (int)(cita.FinEn - cita.InicioEn).TotalMinutes;
             var nuevoFin = dto.InicioEn.AddMinutes(duracion);
 

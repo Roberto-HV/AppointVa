@@ -402,7 +402,7 @@ export default function MisCitasPage() {
                             {c.codigoConfirmacion}
                           </span>
                           <div className="flex items-center gap-3">
-                            {(c.estadoTexto === "Pendiente" || c.estadoTexto === "Confirmada") && (
+                            {(c.estadoTexto === "Pendiente" || c.estadoTexto === "Confirmada") && new Date(c.inicioEn) >= now && (
                               <>
                                 <button
                                   onClick={() => { setReagendando(c); setSlotNuevo(null); setErrorReagenda(""); }}

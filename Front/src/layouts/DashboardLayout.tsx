@@ -364,14 +364,14 @@ export default function DashboardLayout() {
             <img src="/MasterLogo.png" alt="AppointVa" className="h-7 object-contain" />
           </NavLink>
           {esEmpleado && (
-            <span className="text-[10px] font-bold bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full uppercase tracking-wide">
+            <span className="text-[10px] font-bold bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 px-2 py-0.5 rounded-full uppercase tracking-wide">
               Empleado
             </span>
           )}
           <div ref={headerUserRef} className="ml-auto flex items-center gap-2 relative">
             {pendientesCnt > 0 && (
               <Tooltip text={`${pendientesCnt} cita${pendientesCnt !== 1 ? "s" : ""} pendiente${pendientesCnt !== 1 ? "s" : ""} por confirmar`}>
-                <span className="flex items-center gap-1 bg-amber-100 text-amber-700 border border-amber-200 text-[10px] font-bold px-2 py-0.5 rounded-full cursor-default">
+                <span className="flex items-center gap-1 bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-700 text-[10px] font-bold px-2 py-0.5 rounded-full cursor-default">
                   {pendientesCnt > 9 ? "9+" : pendientesCnt} pendiente{pendientesCnt !== 1 ? "s" : ""}
                 </span>
               </Tooltip>
