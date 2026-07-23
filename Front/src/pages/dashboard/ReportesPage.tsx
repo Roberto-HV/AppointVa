@@ -6,6 +6,7 @@ import {
 } from "recharts";
 import { Download, TrendingUp, Calendar, DollarSign, CheckCircle } from "lucide-react";
 import { reportesApi, type FiltrosReporteCitas } from "../../api/reportes";
+import { Users, RefreshCw } from "lucide-react";
 import { exportarExcel } from "../../utils/exportarExcel";
 import { empleadosApi } from "../../api/empleados";
 import { serviciosApi } from "../../api/servicios";
@@ -13,7 +14,7 @@ import EstadoBadge from "../../components/ui/EstadoBadge";
 import { SkeletonTableRows } from "../../components/ui/Skeleton";
 import { formatPrecio, formatFechaHora as formatFecha } from "../../utils/formatters";
 
-type Tab = "citas" | "ingresos" | "empleados";
+type Tab = "citas" | "ingresos" | "empleados" | "heatmap" | "retencion";
 
 const ESTADOS_OPCIONES = [
   { valor: 1, texto: "Pendiente" },
@@ -102,6 +103,17 @@ export default function ReportesPage() {
     enabled: tab === "ingresos" || tab === "empleados",
   });
 
+  const { data: heatmap, isLoading: cargandoHeatmap } = useQuery({
+    queryKey: ["reporte-heatmap", desde, hasta],
+    queryFn: () => reportesApi.obtenerHeatmap(desde, hasta),
+    enabled: tab === "heatmap",
+  });
+
+  const { data: retencion, isLoading: cargandoRetencion } = useQuery({
+    queryKey: ["reporte-retencion", desde, hasta],
+    queryFn: () => reportesApi.obtenerRetencion(desde, hasta),
+    enabled: tab === "retencion",
+  });
 
   const handleExportar = () => {
     if (!reporteCitas?.citas.length) return;
@@ -182,22 +194,24 @@ export default function ReportesPage() {
           <h1 className="text-2xl font-bold text-gray-900">Reportes</h1>
           <p className="text-sm text-gray-500 mt-0.5">Análisis de citas e ingresos</p>
         </div>
-        <button
-          onClick={
-            tab === "citas" ? handleExportar
-            : tab === "empleados" ? handleExportarEmpleados
-            : handleExportarIngresos
-          }
-          disabled={
-            tab === "citas" ? !reporteCitas?.citas.length
-            : tab === "empleados" ? !reporteIngresos?.porEmpleado.length
-            : !reporteIngresos?.porServicio.length
-          }
-          className="flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-800 disabled:opacity-40 text-white text-sm font-semibold rounded-lg transition"
-        >
-          <Download size={15} />
-          Exportar Excel
-        </button>
+        {(tab === "citas" || tab === "ingresos" || tab === "empleados") && (
+          <button
+            onClick={
+              tab === "citas" ? handleExportar
+              : tab === "empleados" ? handleExportarEmpleados
+              : handleExportarIngresos
+            }
+            disabled={
+              tab === "citas" ? !reporteCitas?.citas.length
+              : tab === "empleados" ? !reporteIngresos?.porEmpleado.length
+              : !reporteIngresos?.porServicio.length
+            }
+            className="flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-800 disabled:opacity-40 text-white text-sm font-semibold rounded-lg transition"
+          >
+            <Download size={15} />
+            Exportar Excel
+          </button>
+        )}
       </div>
 
       {/* Filtros */}
@@ -268,23 +282,27 @@ export default function ReportesPage() {
         </div>
       </div>
 
-      {/* Tabs — ancho completo, cada tab igual */}
-      <div className="flex bg-gray-100 p-1 rounded-lg">
-        {([
-          { id: "citas", label: "Citas" },
-          { id: "ingresos", label: "Ingresos" },
-          { id: "empleados", label: "Empleados" },
-        ] as { id: Tab; label: string }[]).map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            className={`flex-1 py-1.5 rounded-md text-sm font-medium transition ${
-              tab === t.id ? "bg-white shadow text-gray-900" : "text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
+      {/* Tabs */}
+      <div className="overflow-x-auto -mx-1 px-1">
+        <div className="flex bg-gray-100 p-1 rounded-lg min-w-max sm:min-w-0">
+          {([
+            { id: "citas", label: "Citas" },
+            { id: "ingresos", label: "Ingresos" },
+            { id: "empleados", label: "Empleados" },
+            { id: "heatmap", label: "Horarios" },
+            { id: "retencion", label: "Retención" },
+          ] as { id: Tab; label: string }[]).map((t) => (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              className={`flex-1 whitespace-nowrap px-3 py-1.5 rounded-md text-sm font-medium transition ${
+                tab === t.id ? "bg-white shadow text-gray-900" : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* ── Tab: Citas ── */}
@@ -596,6 +614,158 @@ export default function ReportesPage() {
                 </table>
               </div>
             </div>
+          )}
+        </>
+      )}
+
+      {/* ── Tab: Horarios (Heatmap) ── */}
+      {tab === "heatmap" && (
+        <>
+          {cargandoHeatmap ? (
+            <div className="bg-white rounded-xl border border-gray-100 p-8 flex items-center justify-center">
+              <div className="animate-spin w-6 h-6 border-2 border-slate-700 border-t-transparent rounded-full" />
+            </div>
+          ) : !heatmap || heatmap.totalCitas === 0 ? (
+            <div className="bg-white rounded-xl border border-gray-100 p-10 text-center text-sm text-gray-400">
+              No hay citas en el rango seleccionado.
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                <Tarjeta label="Total citas analizadas" valor={String(heatmap.totalCitas)} icono={<Calendar size={18} />} />
+                <Tarjeta label="Hora pico" valor={heatmap.horaPico} subvalor="hora con más demanda" icono={<TrendingUp size={18} />} />
+                <Tarjeta label="Día pico" valor={heatmap.diaPico} subvalor="día con más demanda" icono={<CheckCircle size={18} />} />
+              </div>
+
+              <div className="bg-white rounded-xl border border-gray-100 p-5">
+                <h2 className="text-sm font-semibold text-gray-700 mb-1">Ocupación por hora y día</h2>
+                <p className="text-xs text-gray-400 mb-4">Número de citas por franja horaria. Más oscuro = más ocupado.</p>
+                <div className="overflow-x-auto">
+                  <div className="min-w-[480px]">
+                    <div className="grid grid-cols-[40px_repeat(7,1fr)] gap-1 mb-1">
+                      <div />
+                      {["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"].map((d) => (
+                        <div key={d} className="text-center text-xs font-semibold text-gray-500">{d}</div>
+                      ))}
+                    </div>
+                    {Array.from({ length: 24 }, (_, hora) => (
+                      <div key={hora} className="grid grid-cols-[40px_repeat(7,1fr)] gap-1 mb-1">
+                        <div className="text-right text-xs text-gray-400 pr-2 self-center leading-none">
+                          {hora % 3 === 0 ? `${hora}:00` : ""}
+                        </div>
+                        {Array.from({ length: 7 }, (_, dia) => {
+                          const val = heatmap.matriz[hora]?.[dia] ?? 0;
+                          const intensity = heatmap.maximo > 0 ? val / heatmap.maximo : 0;
+                          const alpha = intensity === 0 ? 0 : Math.max(0.08, intensity);
+                          return (
+                            <div
+                              key={dia}
+                              title={val > 0 ? `${val} cita${val !== 1 ? "s" : ""}` : "Sin citas"}
+                              className="h-7 rounded-md flex items-center justify-center text-xs font-medium cursor-default"
+                              style={{
+                                backgroundColor: val === 0 ? "#f1f5f9" : `rgba(51, 65, 85, ${alpha})`,
+                                color: intensity > 0.55 ? "#ffffff" : intensity > 0.2 ? "#1e293b" : "#94a3b8",
+                              }}
+                            >
+                              {val > 0 ? val : ""}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <p className="text-xs text-gray-400 mt-3 text-right">Zona horaria del negocio</p>
+              </div>
+            </>
+          )}
+        </>
+      )}
+
+      {/* ── Tab: Retención ── */}
+      {tab === "retencion" && (
+        <>
+          {cargandoRetencion ? (
+            <div className="bg-white rounded-xl border border-gray-100 p-8 flex items-center justify-center">
+              <div className="animate-spin w-6 h-6 border-2 border-slate-700 border-t-transparent rounded-full" />
+            </div>
+          ) : !retencion || retencion.totalClientes === 0 ? (
+            <div className="bg-white rounded-xl border border-gray-100 p-10 text-center text-sm text-gray-400">
+              No hay datos de clientes en el rango seleccionado.
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <Tarjeta label="Total clientes" valor={String(retencion.totalClientes)} icono={<Users size={18} />} />
+                <Tarjeta label="Clientes nuevos" valor={String(retencion.clientesNuevos)} subvalor="primera visita" icono={<TrendingUp size={18} />} />
+                <Tarjeta label="Clientes recurrentes" valor={String(retencion.clientesRecurrentes)} subvalor="ya visitaron antes" icono={<RefreshCw size={18} />} />
+                <Tarjeta label="Tasa de retención" valor={`${retencion.tasaRetencion.toFixed(1)}%`} subvalor="recurrentes / total" icono={<CheckCircle size={18} />} />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="bg-white rounded-xl border border-gray-100 p-5">
+                  <h2 className="text-sm font-semibold text-gray-700 mb-4">Nuevos vs recurrentes</h2>
+                  {(() => {
+                    const total = retencion.totalClientes;
+                    const pctNuevos = total > 0 ? (retencion.clientesNuevos / total) * 100 : 0;
+                    const pctRecurrentes = total > 0 ? (retencion.clientesRecurrentes / total) * 100 : 0;
+                    return (
+                      <div className="space-y-3">
+                        <div>
+                          <div className="flex justify-between text-xs mb-1">
+                            <span className="font-medium text-slate-700">Nuevos</span>
+                            <span className="text-gray-500">{retencion.clientesNuevos} ({pctNuevos.toFixed(1)}%)</span>
+                          </div>
+                          <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+                            <div className="h-full bg-sky-400 rounded-full" style={{ width: `${pctNuevos}%` }} />
+                          </div>
+                        </div>
+                        <div>
+                          <div className="flex justify-between text-xs mb-1">
+                            <span className="font-medium text-slate-700">Recurrentes</span>
+                            <span className="text-gray-500">{retencion.clientesRecurrentes} ({pctRecurrentes.toFixed(1)}%)</span>
+                          </div>
+                          <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+                            <div className="h-full bg-emerald-400 rounded-full" style={{ width: `${pctRecurrentes}%` }} />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                <div className="bg-white rounded-xl border border-gray-100 p-5">
+                  <h2 className="text-sm font-semibold text-gray-700 mb-4">Proyección del mes</h2>
+                  <div className="space-y-3">
+                    <div className="flex justify-between text-xs text-gray-500">
+                      <span>Ingreso actual</span>
+                      <span className="font-semibold text-gray-900">{formatPrecio(retencion.ingresoMesActual)}</span>
+                    </div>
+                    <div className="flex justify-between text-xs text-gray-500">
+                      <span>Agendado pendiente</span>
+                      <span className="font-semibold text-gray-900">{formatPrecio(retencion.ingresoAgendado)}</span>
+                    </div>
+                    <div className="border-t border-gray-100 pt-2 flex justify-between text-sm">
+                      <span className="font-semibold text-gray-700">Proyección total</span>
+                      <span className="font-bold text-slate-900">{formatPrecio(retencion.proyeccionMes)}</span>
+                    </div>
+                    {retencion.proyeccionMes > 0 && (
+                      <div>
+                        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-slate-700 rounded-full"
+                            style={{ width: `${Math.min(100, (retencion.ingresoMesActual / retencion.proyeccionMes) * 100)}%` }}
+                          />
+                        </div>
+                        <p className="text-xs text-gray-400 mt-1 text-right">
+                          {retencion.diasRestantesMes} días restantes en el mes
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </>
           )}
         </>
       )}
