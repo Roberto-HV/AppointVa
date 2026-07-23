@@ -1,15 +1,16 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../api/axios";
 import PasoFechaHora from "../../components/booking/PasoFechaHora";
 import type { SlotDisponible } from "../../types";
-import { CalendarDays, ChevronLeft, ChevronRight, X, CheckCircle2, LogOut } from "lucide-react";
+import { CalendarDays, CalendarPlus, ChevronLeft, ChevronRight, ExternalLink, X, CheckCircle2, LogOut } from "lucide-react";
 import { formatPrecio, formatFechaHoraResumen as formatFecha } from "../../utils/formatters";
 import PublicFooter from "../../components/PublicFooter";
 
 const TAMANO = 10;
 const SESSION_KEY = "mcs_session";
+const API_URL = import.meta.env.VITE_API_URL as string;
 
 interface MiCita {
   id: string;
@@ -48,6 +49,17 @@ function EstadoBadge({ estado }: { estado: string }) {
       {estado}
     </span>
   );
+}
+
+function buildGoogleCalUrl(cita: MiCita): string {
+  const fmt = (d: Date) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+  const titulo = encodeURIComponent(`${cita.nombreServicio} — ${cita.nombreEmpleado}`);
+  const detalles = encodeURIComponent(`Negocio: ${cita.nombreNegocio}\nCódigo: ${cita.codigoConfirmacion}`);
+  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${titulo}&dates=${fmt(new Date(cita.inicioEn))}/${fmt(new Date(cita.finEn))}&details=${detalles}`;
+}
+
+function getIcalUrl(cita: MiCita): string {
+  return `${API_URL}/publico/citas/${cita.codigoConfirmacion}/ical`;
 }
 
 export default function MisCitasPage() {
@@ -147,6 +159,14 @@ export default function MisCitasPage() {
       setGuardandoReagenda(false);
     }
   };
+
+  const now = new Date();
+  const proximas = (citas ?? []).filter(
+    (c) => (c.estado === 1 || c.estado === 2) && new Date(c.inicioEn) >= now
+  );
+  const historial = (citas ?? []).filter(
+    (c) => !((c.estado === 1 || c.estado === 2) && new Date(c.inicioEn) >= now)
+  );
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -265,61 +285,168 @@ export default function MisCitasPage() {
                   </Link>
                 </div>
 
-                {citas.map((c) => (
-                  <div key={c.id} className="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="flex items-start justify-between gap-3 mb-3">
-                      <div className="flex-1 min-w-0">
-                        <p className="font-bold text-slate-900 text-sm">{c.nombreServicio}</p>
-                        <p className="text-xs text-slate-400 mt-0.5">con {c.nombreEmpleado}</p>
-                      </div>
-                      <EstadoBadge estado={c.estadoTexto} />
+                {/* Próximas */}
+                {proximas.length > 0 && (
+                  <>
+                    <div className="flex items-center gap-2 px-1 mb-2">
+                      <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Próximas</span>
+                      <span className="text-xs bg-emerald-100 text-emerald-700 font-bold px-2 py-0.5 rounded-full">{proximas.length}</span>
                     </div>
+                    {proximas.map((c) => (
+                      <div key={c.id} className="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm hover:shadow-md transition-shadow">
+                        <div className="flex items-start justify-between gap-3 mb-3">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-bold text-slate-900 text-sm">{c.nombreServicio}</p>
+                            <p className="text-xs text-slate-400 mt-0.5">con {c.nombreEmpleado}</p>
+                          </div>
+                          <EstadoBadge estado={c.estadoTexto} />
+                        </div>
 
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs text-slate-500">{formatFecha(c.inicioEn)}</p>
-                      <p className="text-sm font-bold text-slate-800">{formatPrecio(c.precio)}</p>
-                    </div>
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs text-slate-500">{formatFecha(c.inicioEn)}</p>
+                          <p className="text-sm font-bold text-slate-800">{formatPrecio(c.precio)}</p>
+                        </div>
 
-                    <div className="mt-3 pt-3 border-t border-slate-50 flex items-center justify-between gap-2">
-                      <span className="font-mono text-xs text-slate-400 bg-slate-50 px-2 py-1 rounded-lg tracking-wider">
-                        {c.codigoConfirmacion}
-                      </span>
-                      <div className="flex items-center gap-3">
-                        {(c.estadoTexto === "Pendiente" || c.estadoTexto === "Confirmada") && (
-                          <>
+                        <div className="mt-3 pt-3 border-t border-slate-50 flex items-center justify-between gap-2">
+                          <span className="font-mono text-xs text-slate-400 bg-slate-50 px-2 py-1 rounded-lg tracking-wider">
+                            {c.codigoConfirmacion}
+                          </span>
+                          <div className="flex items-center gap-3">
+                            {(c.estadoTexto === "Pendiente" || c.estadoTexto === "Confirmada") && (
+                              <>
+                                <button
+                                  onClick={() => { setReagendando(c); setSlotNuevo(null); setErrorReagenda(""); }}
+                                  className="text-xs font-semibold text-slate-500 hover:text-slate-800 transition"
+                                >
+                                  Reagendar
+                                </button>
+                                <button
+                                  onClick={() => cancelarCita(c.codigoConfirmacion)}
+                                  disabled={cancelando === c.codigoConfirmacion}
+                                  className="text-xs font-semibold text-red-400 hover:text-red-600 disabled:opacity-40 transition"
+                                >
+                                  {cancelando === c.codigoConfirmacion ? "Cancelando…" : "Cancelar"}
+                                </button>
+                              </>
+                            )}
                             <button
-                              onClick={() => { setReagendando(c); setSlotNuevo(null); setErrorReagenda(""); }}
-                              className="text-xs font-semibold text-slate-500 hover:text-slate-800 transition"
+                              onClick={() =>
+                                navigate(`/b/${c.negocioSlug}?servicioId=${c.servicioId}&empleadoId=${c.empleadoId}`)
+                              }
+                              className="text-xs font-semibold text-sky-600 hover:text-sky-800 transition"
                             >
-                              Reagendar
+                              Repetir
                             </button>
                             <button
-                              onClick={() => cancelarCita(c.codigoConfirmacion)}
-                              disabled={cancelando === c.codigoConfirmacion}
-                              className="text-xs font-semibold text-red-400 hover:text-red-600 disabled:opacity-40 transition"
+                              onClick={() => navigate(`/cita/${c.codigoConfirmacion}`)}
+                              className="text-xs font-bold text-slate-700 hover:underline"
                             >
-                              {cancelando === c.codigoConfirmacion ? "Cancelando…" : "Cancelar"}
+                              Ver →
                             </button>
-                          </>
-                        )}
-                        <button
-                          onClick={() =>
-                            navigate(`/b/${c.negocioSlug}?servicioId=${c.servicioId}&empleadoId=${c.empleadoId}`)
-                          }
-                          className="text-xs font-semibold text-sky-600 hover:text-sky-800 transition"
-                        >
-                          Repetir
-                        </button>
-                        <button
-                          onClick={() => navigate(`/cita/${c.codigoConfirmacion}`)}
-                          className="text-xs font-bold text-slate-700 hover:underline"
-                        >
-                          Ver →
-                        </button>
+                          </div>
+                        </div>
+
+                        <div className="mt-2 flex items-center gap-3">
+                          <a
+                            href={buildGoogleCalUrl(c)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-700 transition"
+                          >
+                            <CalendarPlus size={12} />
+                            Google Calendar
+                          </a>
+                          <a
+                            href={getIcalUrl(c)}
+                            download
+                            className="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-700 transition"
+                          >
+                            <ExternalLink size={12} />
+                            iCal / Apple
+                          </a>
+                        </div>
                       </div>
+                    ))}
+                  </>
+                )}
+
+                {/* Divider */}
+                {proximas.length > 0 && historial.length > 0 && (
+                  <div className="border-t border-slate-100 my-4" />
+                )}
+
+                {/* Historial */}
+                {historial.length > 0 && (
+                  <>
+                    <div className="flex items-center gap-2 px-1 mb-2">
+                      <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Historial</span>
+                      <span className="text-xs bg-slate-100 text-slate-500 font-bold px-2 py-0.5 rounded-full">{historial.length}</span>
                     </div>
-                  </div>
-                ))}
+                    {historial.map((c) => (
+                      <div key={c.id} className="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm hover:shadow-md transition-shadow">
+                        <div className="flex items-start justify-between gap-3 mb-3">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-bold text-slate-900 text-sm">{c.nombreServicio}</p>
+                            <p className="text-xs text-slate-400 mt-0.5">con {c.nombreEmpleado}</p>
+                          </div>
+                          <EstadoBadge estado={c.estadoTexto} />
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs text-slate-500">{formatFecha(c.inicioEn)}</p>
+                          <p className="text-sm font-bold text-slate-800">{formatPrecio(c.precio)}</p>
+                        </div>
+
+                        <div className="mt-3 pt-3 border-t border-slate-50 flex items-center justify-between gap-2">
+                          <span className="font-mono text-xs text-slate-400 bg-slate-50 px-2 py-1 rounded-lg tracking-wider">
+                            {c.codigoConfirmacion}
+                          </span>
+                          <div className="flex items-center gap-3">
+                            {(c.estadoTexto === "Pendiente" || c.estadoTexto === "Confirmada") && (
+                              <>
+                                <button
+                                  onClick={() => { setReagendando(c); setSlotNuevo(null); setErrorReagenda(""); }}
+                                  className="text-xs font-semibold text-slate-500 hover:text-slate-800 transition"
+                                >
+                                  Reagendar
+                                </button>
+                                <button
+                                  onClick={() => cancelarCita(c.codigoConfirmacion)}
+                                  disabled={cancelando === c.codigoConfirmacion}
+                                  className="text-xs font-semibold text-red-400 hover:text-red-600 disabled:opacity-40 transition"
+                                >
+                                  {cancelando === c.codigoConfirmacion ? "Cancelando…" : "Cancelar"}
+                                </button>
+                              </>
+                            )}
+                            <button
+                              onClick={() =>
+                                navigate(`/b/${c.negocioSlug}?servicioId=${c.servicioId}&empleadoId=${c.empleadoId}`)
+                              }
+                              className="text-xs font-semibold text-sky-600 hover:text-sky-800 transition"
+                            >
+                              Repetir
+                            </button>
+                            {c.estadoTexto === "Completada" && (
+                              <button
+                                onClick={() => navigate(`/cita/${c.codigoConfirmacion}`)}
+                                className="text-xs font-semibold text-amber-500 hover:text-amber-700 transition"
+                              >
+                                Reseña →
+                              </button>
+                            )}
+                            <button
+                              onClick={() => navigate(`/cita/${c.codigoConfirmacion}`)}
+                              className="text-xs font-bold text-slate-700 hover:underline"
+                            >
+                              Ver →
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                )}
 
                 {errorCancelacion && (
                   <div className="bg-red-50 border border-red-100 rounded-xl p-3 text-sm text-red-600 text-center">
