@@ -1,6 +1,7 @@
 ﻿import { useState, useRef, useEffect } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { Menu, X, LayoutDashboard, CalendarDays, Users, Scissors, UserCheck, Building2, Link, Copy, Check, BarChart2, ShieldCheck, UserCircle, Images, ClipboardList, Tag, LogOut, ChevronUp, Mail, BookOpen } from "lucide-react";
+import { Menu, X, LayoutDashboard, CalendarDays, Users, Scissors, UserCheck, Building2, Link, Copy, Check, BarChart2, ShieldCheck, UserCircle, Images, ClipboardList, Tag, LogOut, ChevronUp, Mail, BookOpen, Moon, Sun } from "lucide-react";
+import { useTheme } from "../hooks/useTheme";
 import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "../store/authStore";
 import { authApi } from "../api/auth";
@@ -17,9 +18,11 @@ interface UserMenuContentProps {
   rol: string;
   onProfile: () => void;
   onLogout: () => void;
+  theme: "light" | "dark";
+  onToggleTheme: () => void;
 }
 
-function UserMenuContent({ usuario, perfil, iniciales, rolChip, rol, onProfile, onLogout }: UserMenuContentProps) {
+function UserMenuContent({ usuario, perfil, iniciales, rolChip, rol, onProfile, onLogout, theme, onToggleTheme }: UserMenuContentProps) {
   return (
     <div className="py-1">
       <div className="px-4 pt-3 pb-3 flex items-center gap-3">
@@ -30,8 +33,8 @@ function UserMenuContent({ usuario, perfil, iniciales, rolChip, rol, onProfile, 
           }
         </div>
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-slate-800 truncate">{usuario?.nombreCompleto}</p>
-          <p className="text-xs text-slate-400 truncate">{usuario?.email}</p>
+          <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">{usuario?.nombreCompleto}</p>
+          <p className="text-xs text-slate-400 dark:text-slate-500 truncate">{usuario?.email}</p>
           <div className="flex items-center gap-1.5 mt-1 flex-wrap">
             <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${rolChip.cls}`}>
               {rolChip.label}
@@ -44,27 +47,37 @@ function UserMenuContent({ usuario, perfil, iniciales, rolChip, rol, onProfile, 
           </div>
         </div>
       </div>
-      <div className="h-px bg-slate-100 mx-3 my-1" />
+      <div className="h-px bg-slate-100 dark:bg-slate-700 mx-3 my-1" />
       <button
         onClick={onProfile}
-        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 transition"
+        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition"
       >
-        <UserCircle size={15} className="text-slate-400 shrink-0" />
+        <UserCircle size={15} className="text-slate-400 dark:text-slate-500 shrink-0" />
         Mi perfil
       </button>
       <a
         href={rol === "Empleado" ? "/manuales/manual-empleado.html" : "/manuales/manual-propietario.html"}
         target="_blank"
         rel="noopener noreferrer"
-        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 transition"
+        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition"
       >
-        <BookOpen size={15} className="text-slate-400 shrink-0" />
+        <BookOpen size={15} className="text-slate-400 dark:text-slate-500 shrink-0" />
         Manual de usuario
       </a>
-      <div className="h-px bg-slate-100 mx-3 my-1" />
+      <button
+        onClick={onToggleTheme}
+        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition"
+      >
+        {theme === "dark"
+          ? <Sun size={15} className="text-slate-400 dark:text-slate-500 shrink-0" />
+          : <Moon size={15} className="text-slate-400 shrink-0" />
+        }
+        {theme === "dark" ? "Modo claro" : "Modo oscuro"}
+      </button>
+      <div className="h-px bg-slate-100 dark:bg-slate-700 mx-3 my-1" />
       <button
         onClick={onLogout}
-        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition"
+        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition"
       >
         <LogOut size={15} className="shrink-0" />
         Cerrar sesión
@@ -99,6 +112,7 @@ export default function DashboardLayout() {
   const { usuario, refreshToken, cerrarSesion } = useAuthStore();
   const navigate = useNavigate();
   const { toast } = useToastStore();
+  const { theme, toggle: toggleTheme } = useTheme();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [copiado, setCopiado] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -191,6 +205,8 @@ export default function DashboardLayout() {
     rol: usuario?.rol ?? "",
     onProfile: () => { navigate("/dashboard/mi-perfil"); setUserMenuOpen(false); cerrarSidebar(); },
     onLogout: () => { setUserMenuOpen(false); handleLogout(); },
+    theme,
+    onToggleTheme: toggleTheme,
   };
 
   // Resetea scroll al montar — iOS puede llegar con viewport desplazado por el teclado del login
@@ -200,7 +216,7 @@ export default function DashboardLayout() {
   }, []);
 
   return (
-    <div className="h-lvh flex overflow-hidden bg-white">
+    <div className="h-lvh flex overflow-hidden bg-white dark:bg-slate-950">
 
       {/* ── Overlay backdrop (móvil) — siempre montado, fade vía inline style ── */}
       <div
@@ -216,7 +232,7 @@ export default function DashboardLayout() {
       {/* ── Sidebar ── */}
       <aside
         className={`
-          fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-100 flex flex-col
+          fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-slate-900 border-r border-slate-100 dark:border-slate-700/50 flex flex-col
           transition-transform duration-200 ease-in-out
           md:static md:w-60 md:translate-x-0 md:h-full md:shrink-0
           ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
@@ -224,7 +240,7 @@ export default function DashboardLayout() {
       >
         {/* Logo + cerrar móvil */}
         <div
-          className="relative px-5 py-3 border-b border-slate-100 flex items-center justify-center"
+          className="relative px-5 py-3 border-b border-slate-100 dark:border-slate-700/50 flex items-center justify-center"
         >
           <div className="flex flex-col items-center gap-1">
             <NavLink to="/dashboard" end onClick={cerrarSidebar}>
@@ -255,8 +271,8 @@ export default function DashboardLayout() {
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                     isActive
-                      ? "bg-slate-900 text-white shadow-sm"
-                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                      ? "bg-slate-900 dark:bg-slate-700 text-white shadow-sm"
+                      : "text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white"
                   }`
                 }
               >
@@ -265,7 +281,7 @@ export default function DashboardLayout() {
                     <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
                       isActive ? "bg-white/15" : "bg-transparent"
                     }`}>
-                      <Icon size={15} className={isActive ? "text-white" : "text-slate-500"} />
+                      <Icon size={15} className={isActive ? "text-white" : "text-slate-500 dark:text-slate-400"} />
                     </div>
                     <span className="flex-1">{item.label}</span>
                     {esCitas && hoyCnt > 0 && (
@@ -289,12 +305,12 @@ export default function DashboardLayout() {
           <div className="px-3 pb-3">
             <button
               onClick={copiarEnlace}
-              className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-medium bg-slate-50 hover:bg-slate-100 border border-slate-100 transition group"
+              className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-medium bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-100 dark:border-slate-700 transition group"
             >
-              <div className="w-6 h-6 rounded-lg bg-white border border-slate-200 flex items-center justify-center shrink-0">
+              <div className="w-6 h-6 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 flex items-center justify-center shrink-0">
                 {copiado ? <Check size={12} className="text-emerald-500" /> : <Link size={12} className="text-slate-500" />}
               </div>
-              <span className="flex-1 text-left text-slate-600 truncate">
+              <span className="flex-1 text-left text-slate-600 dark:text-slate-300 truncate">
                 {copiado ? "¡Copiado!" : "Enlace de reservas"}
               </span>
               {!copiado && <Copy size={11} className="text-slate-300 group-hover:text-slate-400 transition shrink-0" />}
@@ -303,15 +319,15 @@ export default function DashboardLayout() {
         )}
 
         {/* Usuario — popover hacia arriba */}
-        <div ref={sidebarUserRef} className="relative p-3 border-t border-slate-100 shrink-0">
+        <div ref={sidebarUserRef} className="relative p-3 border-t border-slate-100 dark:border-slate-700/50 shrink-0">
           {userMenuOpen && (
-            <div className="absolute bottom-full left-2 right-2 mb-2 bg-white rounded-2xl border border-slate-100 shadow-2xl overflow-hidden z-50">
+            <div className="absolute bottom-full left-2 right-2 mb-2 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-2xl overflow-hidden z-50">
               <UserMenuContent {...menuProps} />
             </div>
           )}
           <button
             onClick={() => setUserMenuOpen((o) => !o)}
-            className="w-full flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-slate-50 transition group"
+            className="w-full flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition group"
           >
             <div className="w-8 h-8 rounded-full bg-slate-900 flex items-center justify-center shrink-0 overflow-hidden">
               {usuario?.fotoUrl
@@ -320,8 +336,8 @@ export default function DashboardLayout() {
               }
             </div>
             <div className="flex-1 min-w-0 text-left">
-              <p className="text-xs font-semibold text-slate-800 truncate">{usuario?.nombreCompleto}</p>
-              <p className="text-[10px] text-slate-400 truncate">{usuario?.email}</p>
+              <p className="text-xs font-semibold text-slate-800 dark:text-slate-100 truncate">{usuario?.nombreCompleto}</p>
+              <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate">{usuario?.email}</p>
             </div>
             <ChevronUp
               size={13}
@@ -336,11 +352,11 @@ export default function DashboardLayout() {
 
         {/* ── Barra superior móvil ── */}
         <header
-          className="md:hidden bg-white border-b border-slate-100 px-4 py-3 flex items-center gap-3 shrink-0 z-30"
+          className="md:hidden bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-700/50 px-4 py-3 flex items-center gap-3 shrink-0 z-30"
         >
           <button
             onClick={() => setSidebarOpen(true)}
-            className="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-50 text-slate-600 hover:bg-slate-100 transition"
+            className="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition"
           >
             <Menu size={18} />
           </button>
@@ -370,7 +386,7 @@ export default function DashboardLayout() {
               }
             </button>
             {userMenuOpen && (
-              <div className="absolute top-full right-0 mt-2 w-64 bg-white rounded-2xl border border-slate-100 shadow-2xl overflow-hidden z-50">
+              <div className="absolute top-full right-0 mt-2 w-64 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-2xl overflow-hidden z-50">
                 <UserMenuContent {...menuProps} />
               </div>
             )}
@@ -394,7 +410,7 @@ export default function DashboardLayout() {
         )}
 
         {/* ── Contenido principal ── */}
-        <main className="flex-1 overflow-y-auto overscroll-y-none bg-white">
+        <main className="flex-1 overflow-y-auto overscroll-y-none bg-white dark:bg-slate-950">
           <Outlet />
         </main>
 

@@ -31,6 +31,34 @@
   --radius:               0.5rem;
 }
 
+.dark {
+  /* AppointVa RGB channels — lighter in dark mode */
+  --color-primary:       148 163 184;  /* slate-400 */
+  --color-primary-dark:  203 213 225;  /* slate-300 */
+  --color-primary-light: 100 116 139;  /* slate-500 */
+
+  /* shadcn/ui tokens — dark palette */
+  --background:           222 47% 7%;
+  --foreground:           210 40% 96%;
+  --card:                 215 28% 11%;
+  --card-foreground:      210 40% 96%;
+  --popover:              215 28% 11%;
+  --popover-foreground:   210 40% 96%;
+  --primary:              214 32% 91%;
+  --primary-foreground:   222 47% 7%;
+  --secondary:            217 33% 17%;
+  --secondary-foreground: 210 40% 96%;
+  --muted:                217 33% 17%;
+  --muted-foreground:     215 20% 65%;
+  --accent:               217 33% 17%;
+  --accent-foreground:    210 40% 96%;
+  --destructive:          0 63% 31%;
+  --destructive-foreground: 210 40% 96%;
+  --border:               217 33% 17%;
+  --input:                217 33% 17%;
+  --ring:                 213 27% 84%;
+}
+
 @keyframes stepIn {
   from { opacity: 0; transform: translateX(14px); }
   to   { opacity: 1; transform: translateX(0); }
@@ -58,12 +86,12 @@ button:not([disabled]):active {
   }
   html, body {
     margin: 0;
-    background-color: #ffffff;
+    background-color: hsl(var(--background));
     font-family: Inter, system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
   }
   #root {
-    background-color: #ffffff;
+    background-color: hsl(var(--background));
   }
 }
 
