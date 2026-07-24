@@ -340,3 +340,89 @@ describe("CitasPage — tabs de vista", () => {
     );
   });
 });
+
+describe("CitasPage — input de búsqueda", () => {
+  it("muestra el placeholder 'Nombre o teléfono...' en el input de búsqueda", async () => {
+    vi.mocked(citasApi.obtenerTodas).mockResolvedValue({
+      datos: [],
+      total: 0,
+      pagina: 1,
+      tamano: 50,
+    });
+    renderConQuery();
+    await waitFor(() =>
+      expect(
+        screen.getByPlaceholderText("Nombre o teléfono...")
+      ).toBeInTheDocument()
+    );
+  });
+
+  it("actualiza el valor al escribir en el input de búsqueda", async () => {
+    vi.mocked(citasApi.obtenerTodas).mockResolvedValue({
+      datos: [],
+      total: 0,
+      pagina: 1,
+      tamano: 50,
+    });
+    renderConQuery();
+    const input = await screen.findByPlaceholderText("Nombre o teléfono...");
+    fireEvent.change(input, { target: { value: "Juan" } });
+    expect(input).toHaveValue("Juan");
+  });
+});
+
+describe("CitasPage — atajo 'Hoy'", () => {
+  it("establece ambas fechas al día actual al hacer clic en 'Hoy'", async () => {
+    vi.mocked(citasApi.obtenerTodas).mockResolvedValue({
+      datos: [],
+      total: 0,
+      pagina: 1,
+      tamano: 50,
+    });
+    const { container } = renderConQuery();
+
+    // Cambiar a Semana para que al menos una fecha difiera de hoy
+    const btnSemana = await screen.findByRole("button", { name: "Semana" });
+    fireEvent.click(btnSemana);
+
+    // Volver a Hoy
+    fireEvent.click(screen.getByRole("button", { name: "Hoy" }));
+
+    const d = new Date();
+    const hoyStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const dateInputs = container.querySelectorAll('input[type="date"]');
+    expect(dateInputs[0]).toHaveValue(hoyStr);
+    expect(dateInputs[1]).toHaveValue(hoyStr);
+  });
+});
+
+describe("CitasPage — paginación", () => {
+  it("renderiza el componente Pagination cuando la respuesta contiene citas", async () => {
+    vi.mocked(citasApi.obtenerTodas).mockResolvedValue({
+      datos: [makeCita()],
+      total: 150,
+      pagina: 1,
+      tamano: 50,
+    });
+    renderConQuery();
+    await waitFor(() =>
+      expect(screen.getByTestId("pagination")).toBeInTheDocument()
+    );
+  });
+});
+
+describe("CitasPage — filtro de Profesional", () => {
+  it("muestra el dropdown de Profesional en la vista de lista", async () => {
+    vi.mocked(citasApi.obtenerTodas).mockResolvedValue({
+      datos: [],
+      total: 0,
+      pagina: 1,
+      tamano: 50,
+    });
+    const { container } = renderConQuery();
+    await waitFor(() =>
+      expect(screen.getByText("Profesional")).toBeInTheDocument()
+    );
+    expect(container.querySelector("select")).toBeInTheDocument();
+  });
+});
