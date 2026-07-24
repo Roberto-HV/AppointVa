@@ -220,10 +220,24 @@ namespace AppointVaAPI.Services
                   </div>
 """;
             var seccionCalendario = (!esPendiente && (icalUrl is not null || googleCalUrl is not null)) ? $"""
-                  <div style="text-align:center;margin:0 0 20px;">
-                    {(googleCalUrl is not null ? $"""<a href="{googleCalUrl}" style="background:#f1f5f9;color:#475569;font-size:13px;font-weight:600;padding:10px 22px;border-radius:8px;text-decoration:none;border:1px solid #e2e8f0;display:inline-block;margin:0 4px;">📅 Google Calendar</a>""" : "")}
-                    {(icalUrl is not null ? $"""<a href="{icalUrl}" style="background:#f1f5f9;color:#475569;font-size:13px;font-weight:600;padding:10px 22px;border-radius:8px;text-decoration:none;border:1px solid #e2e8f0;display:inline-block;margin:0 4px;">🍎 iCal / Apple</a>""" : "")}
-                  </div>
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 20px;">
+        <tr>
+          {(googleCalUrl is not null ? $"""
+          <td width="{(icalUrl is not null ? "50%" : "100%")}" style="{(icalUrl is not null ? "padding-right:6px;" : "")}">
+            <a href="{googleCalUrl}" style="display:block;background:#f1f5f9;color:#475569;font-size:13px;font-weight:600;padding:11px 8px;border-radius:8px;text-decoration:none;border:1px solid #e2e8f0;text-align:center;box-sizing:border-box;">
+              <span style="display:inline-block;background:#1a73e8;color:#ffffff;font-family:Arial,sans-serif;font-size:11px;font-weight:900;width:18px;height:18px;line-height:18px;border-radius:3px;text-align:center;vertical-align:middle;margin-right:6px;">G</span>Google Calendar
+            </a>
+          </td>
+          """ : "")}
+          {(icalUrl is not null ? $"""
+          <td width="{(googleCalUrl is not null ? "50%" : "100%")}" style="{(googleCalUrl is not null ? "padding-left:6px;" : "")}">
+            <a href="{icalUrl}" style="display:block;background:#f1f5f9;color:#475569;font-size:13px;font-weight:600;padding:11px 8px;border-radius:8px;text-decoration:none;border:1px solid #e2e8f0;text-align:center;box-sizing:border-box;">
+              <span style="display:inline-block;background:#000000;color:#ffffff;font-family:Arial,sans-serif;font-size:11px;font-weight:900;width:18px;height:18px;line-height:18px;border-radius:3px;text-align:center;vertical-align:middle;margin-right:6px;"></span>iCal / Apple
+            </a>
+          </td>
+          """ : "")}
+        </tr>
+      </table>
 """ : "";
             var seccionCancelacion = string.IsNullOrEmpty(urlCancelacion) ? "" : $"""
                   <div style="text-align:center;margin:0 0 20px;">
@@ -376,10 +390,24 @@ namespace AppointVaAPI.Services
                         </tr>
 """;
             var seccionCalendario = (icalUrl is not null || googleCalUrl is not null) ? $"""
-                      <div style="text-align:center;margin:0 0 24px;">
-                        {(googleCalUrl is not null ? $"""<a href="{googleCalUrl}" style="background:#f1f5f9;color:#475569;font-size:13px;font-weight:600;padding:10px 22px;border-radius:8px;text-decoration:none;border:1px solid #e2e8f0;display:inline-block;margin:0 4px;">📅 Google Calendar</a>""" : "")}
-                        {(icalUrl is not null ? $"""<a href="{icalUrl}" style="background:#f1f5f9;color:#475569;font-size:13px;font-weight:600;padding:10px 22px;border-radius:8px;text-decoration:none;border:1px solid #e2e8f0;display:inline-block;margin:0 4px;">🍎 iCal / Apple</a>""" : "")}
-                      </div>
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 24px;">
+        <tr>
+          {(googleCalUrl is not null ? $"""
+          <td width="{(icalUrl is not null ? "50%" : "100%")}" style="{(icalUrl is not null ? "padding-right:6px;" : "")}">
+            <a href="{googleCalUrl}" style="display:block;background:#f1f5f9;color:#475569;font-size:13px;font-weight:600;padding:11px 8px;border-radius:8px;text-decoration:none;border:1px solid #e2e8f0;text-align:center;box-sizing:border-box;">
+              <span style="display:inline-block;background:#1a73e8;color:#ffffff;font-family:Arial,sans-serif;font-size:11px;font-weight:900;width:18px;height:18px;line-height:18px;border-radius:3px;text-align:center;vertical-align:middle;margin-right:6px;">G</span>Google Calendar
+            </a>
+          </td>
+          """ : "")}
+          {(icalUrl is not null ? $"""
+          <td width="{(googleCalUrl is not null ? "50%" : "100%")}" style="{(googleCalUrl is not null ? "padding-left:6px;" : "")}">
+            <a href="{icalUrl}" style="display:block;background:#f1f5f9;color:#475569;font-size:13px;font-weight:600;padding:11px 8px;border-radius:8px;text-decoration:none;border:1px solid #e2e8f0;text-align:center;box-sizing:border-box;">
+              <span style="display:inline-block;background:#000000;color:#ffffff;font-family:Arial,sans-serif;font-size:11px;font-weight:900;width:18px;height:18px;line-height:18px;border-radius:3px;text-align:center;vertical-align:middle;margin-right:6px;"></span>iCal / Apple
+            </a>
+          </td>
+          """ : "")}
+        </tr>
+      </table>
 """ : "";
 
             return $"""
