@@ -4,7 +4,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../api/axios";
 import PasoFechaHora from "../../components/booking/PasoFechaHora";
 import type { SlotDisponible } from "../../types";
-import { CalendarDays, CalendarPlus, ChevronLeft, ChevronRight, ExternalLink, X, CheckCircle2, LogOut } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, X, CheckCircle2, LogOut } from "lucide-react";
+import { SiGooglecalendar, SiApple } from "react-icons/si";
 import { formatPrecio, formatFechaHoraResumen as formatFecha } from "../../utils/formatters";
 import PublicFooter from "../../components/PublicFooter";
 
@@ -353,7 +354,7 @@ export default function MisCitasPage() {
                             rel="noopener noreferrer"
                             className="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-700 transition"
                           >
-                            <CalendarPlus size={12} />
+                            <SiGooglecalendar size={12} />
                             Google Calendar
                           </a>
                           <a
@@ -361,7 +362,7 @@ export default function MisCitasPage() {
                             download
                             className="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-700 transition"
                           >
-                            <ExternalLink size={12} />
+                            <SiApple size={12} />
                             iCal / Apple
                           </a>
                         </div>

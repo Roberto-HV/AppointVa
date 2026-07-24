@@ -79,8 +79,13 @@ vi.mock("../../components/PublicFooter", () => ({
   default: () => <div data-testid="public-footer" />,
 }));
 
-vi.mock("../../components/icons/WhatsAppIcon", () => ({
-  default: () => <svg data-testid="whatsapp-icon" />,
+vi.mock("react-icons/si", () => ({
+  SiWhatsapp: () => <svg data-testid="whatsapp-icon" />,
+  SiApple: () => <svg data-testid="apple-icon" />,
+  SiGooglecalendar: () => <svg data-testid="google-calendar-icon" />,
+  SiInstagram: () => <svg data-testid="instagram-icon" />,
+  SiFacebook: () => <svg data-testid="facebook-icon" />,
+  SiTiktok: () => <svg data-testid="tiktok-icon" />,
 }));
 
 vi.mock("../../components/icons/SocialLinks", () => ({

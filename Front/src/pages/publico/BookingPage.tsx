@@ -12,7 +12,7 @@ import PasoEmpleado, { SIN_PREFERENCIA_ID } from "../../components/booking/PasoE
 import PasoFechaHora from "../../components/booking/PasoFechaHora";
 import PasoDatosCliente, { type DatosClienteForm } from "../../components/booking/PasoDatosCliente";
 import { Star, X, UserCircle, UserCheck, Tag, AlertCircle, ChevronRight, Lock } from "lucide-react";
-import WhatsAppIcon from "../../components/icons/WhatsAppIcon";
+import { SiWhatsapp } from "react-icons/si";
 import PublicFooter from "../../components/PublicFooter";
 
 import { hexToChannels, DEFAULT_COLOR } from "../../lib/colorUtils";
@@ -576,7 +576,7 @@ export default function BookingPage() {
             rel="noreferrer"
             className="inline-flex items-center gap-1.5 text-xs font-medium text-[#25D366] hover:opacity-80 transition"
           >
-            <WhatsAppIcon className="w-3.5 h-3.5 shrink-0" />
+            <SiWhatsapp size={14} className="shrink-0" />
             {negocio.telefonoWhatsApp}
           </a>
         ) : <span />}

@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Calendar, ExternalLink, User, Clock, DollarSign, FileText } from "lucide-react";
+import { ArrowLeft, Calendar, User, Clock, DollarSign, FileText } from "lucide-react";
+import { SiGooglecalendar } from "react-icons/si";
 import { citasApi, ESTADOS } from "../../api/citas";
 
 const ESTADO_ESTILOS: Record<number, { label: string; clase: string }> = {
@@ -164,7 +165,7 @@ export default function CitaDetallePage() {
             rel="noopener noreferrer"
             className="flex items-center justify-center gap-2 flex-1 bg-white border border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700 text-sm font-medium px-4 py-2.5 rounded-xl transition"
           >
-            <ExternalLink size={15} />
+            <SiGooglecalendar size={15} />
             Google Calendar
           </a>
           <a
