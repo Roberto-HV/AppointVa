@@ -35,8 +35,13 @@ namespace AppointVaAPI.Services
 
             if (empleadoId.HasValue)
             {
+                var nombreEmpleado = await _db.Empleados
+                    .Where(e => e.Id == empleadoId.Value)
+                    .Select(e => e.Nombre)
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync();
                 var slots = await ObtenerSlotsEmpleadoAsync(servicio, empleadoId.Value, fecha, fechaDt, finDia, diaSemana);
-                foreach (var s in slots) s.EmpleadoId = empleadoId;
+                foreach (var s in slots) { s.EmpleadoId = empleadoId; s.EmpleadoNombre = nombreEmpleado; }
                 return slots;
             }
 

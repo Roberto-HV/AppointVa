@@ -500,4 +500,66 @@ public class DisponibilidadServiceTests
         result.Should().HaveCount(1, "emp2 tiene el slot libre, debe aparecer aunque emp1 esté ocupado");
         result[0].HoraTexto.Should().Be("09:00");
     }
+
+    [Fact]
+    public async Task ObtenerSlots_EmpleadoNombre_SeEstablece_EnPathEmpleadoEspecifico()
+    {
+        var db = CreateDb();
+        var svc = CreateService(db);
+        var (negocioId, servicio) = SeedServicio(db, duracionMinutos: 60);
+        var empleado = SeedEmpleado(db, negocioId);
+        SeedEmpleadoServicio(db, empleado.Id, servicio.Id);
+        var fecha = NextWeekday(DayOfWeek.Monday);
+        SeedHorario(db, empleado.Id, ToDiaSemana(DayOfWeek.Monday),
+            new TimeSpan(9, 0, 0), new TimeSpan(11, 0, 0));
+        await db.SaveChangesAsync();
+
+        var result = await svc.ObtenerSlotsDisponiblesAsync(negocioId, servicio.Id, empleado.Id, fecha);
+
+        result.Should().NotBeEmpty();
+        result.Should().OnlyContain(s => s.EmpleadoNombre == empleado.Nombre);
+    }
+
+    [Fact]
+    public async Task ObtenerSlots_NoBloquearSlot_CuandoBloqueoTerminaExactamenteAlInicioDelSlot()
+    {
+        var db = CreateDb();
+        var svc = CreateService(db);
+        var (negocioId, servicio) = SeedServicio(db, duracionMinutos: 30, bufferMinutos: 0);
+        var empleado = SeedEmpleado(db, negocioId);
+        SeedEmpleadoServicio(db, empleado.Id, servicio.Id);
+        var fecha = NextWeekday(DayOfWeek.Monday);
+        SeedHorario(db, empleado.Id, ToDiaSemana(DayOfWeek.Monday),
+            new TimeSpan(9, 0, 0), new TimeSpan(11, 0, 0));
+        var fechaDt = fecha.ToDateTime(TimeOnly.MinValue);
+        SeedBloqueoHorario(db, empleado.Id, fechaDt.AddHours(8), fechaDt.AddHours(9));
+        await db.SaveChangesAsync();
+
+        var result = await svc.ObtenerSlotsDisponiblesAsync(negocioId, servicio.Id, empleado.Id, fecha);
+
+        result.Should().Contain(s => s.HoraTexto == "09:00",
+            "el bloqueo termina exactamente cuando el slot inicia, no debe bloquearlo");
+    }
+
+    [Fact]
+    public async Task ObtenerSlots_NoBloquearSlot_CuandoCitaSinBufferTerminaExactamenteAlInicioDelSlot()
+    {
+        var db = CreateDb();
+        var svc = CreateService(db);
+        var (negocioId, servicio) = SeedServicio(db, duracionMinutos: 30, bufferMinutos: 0);
+        var empleado = SeedEmpleado(db, negocioId);
+        SeedEmpleadoServicio(db, empleado.Id, servicio.Id);
+        var fecha = NextWeekday(DayOfWeek.Monday);
+        SeedHorario(db, empleado.Id, ToDiaSemana(DayOfWeek.Monday),
+            new TimeSpan(9, 0, 0), new TimeSpan(11, 0, 0));
+        var fechaDt = fecha.ToDateTime(TimeOnly.MinValue);
+        SeedCita(db, negocioId, empleado.Id, servicio.Id,
+            fechaDt.AddHours(8).AddMinutes(30), fechaDt.AddHours(9), EstadosCitas.Pendiente);
+        await db.SaveChangesAsync();
+
+        var result = await svc.ObtenerSlotsDisponiblesAsync(negocioId, servicio.Id, empleado.Id, fecha);
+
+        result.Should().Contain(s => s.HoraTexto == "09:00",
+            "con buffer 0, FinEn == slotInicio no debe bloquear el slot");
+    }
 }
