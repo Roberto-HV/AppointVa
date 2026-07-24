@@ -249,6 +249,19 @@ using (var scope = app.Services.CreateScope())
     // Safety net: ensure column exists regardless of migration history state
     await db.Database.ExecuteSqlRawAsync(@"ALTER TABLE ""Negocios"" ADD COLUMN IF NOT EXISTS ""ListaEsperaActiva"" boolean NOT NULL DEFAULT false;");
     await DataSeeder.SeedAsync(scope.ServiceProvider);
+    var previewEmail = app.Configuration["Email:PreviewDestinatario"];
+    if (!string.IsNullOrEmpty(previewEmail))
+    {
+        try
+        {
+            var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
+            await emailSvc.EnviarPreviasAsync(previewEmail);
+        }
+        catch (Exception ex)
+        {
+            Serilog.Log.Warning(ex, "Email preview failed at startup");
+        }
+    }
 }
 
 // ── Pipeline HTTP ─────────────────────────────────────────────────────────────
