@@ -172,33 +172,8 @@ namespace AppointVaAPI.Services
                 await EnviarAsync(destinatario, "🔍 Preview: Confirmación de cita (confirmada)",
                     PlantillaConfirmacion(cita, nombreCliente, urlCita, icalUrl, googleCalUrl, urlCancelacion, esPendiente: false));
 
-                await EnviarAsync(destinatario, "🔍 Preview: Confirmación de cita (pendiente)",
-                    PlantillaConfirmacion(cita, nombreCliente, urlCita, null, null, urlCancelacion, esPendiente: true));
-
-                await EnviarAsync(destinatario, "🔍 Preview: Cancelación de cita",
-                    PlantillaCancelacion(cita, nombreCliente));
-
                 await EnviarAsync(destinatario, "🔍 Preview: Recordatorio de cita",
                     PlantillaRecordatorio(cita, nombreCliente, icalUrl, googleCalUrl));
-
-                await EnviarAsync(destinatario, "🔍 Preview: Cita reagendada",
-                    PlantillaReagendar(cita, nombreCliente, DateTime.UtcNow));
-
-                await EnviarAsync(destinatario, "🔍 Preview: Solicitud de reseña",
-                    PlantillaSolicitudResena(cita, nombreCliente, $"{frontendUrl}/resena/{cita.Id}"));
-
-                await EnviarAsync(destinatario, "🔍 Preview: Notificación lista de espera",
-                    PlantillaListaEspera(nombreCliente, mockNegocio.Nombre, mockServicio.Nombre, $"{frontendUrl}/b/{mockNegocio.Slug}"));
-
-                await EnviarAsync(destinatario, "🔍 Preview: Recuperación de contraseña",
-                    PlantillaRecuperacion(nombreCliente, "https://appointva.com/reset?token=preview"));
-
-                await EnviarAsync(destinatario, "🔍 Preview: Verificación de correo",
-                    PlantillaVerificacion(nombreCliente, "https://appointva.com/verify?token=preview"));
-
-                await EnviarAsync(destinatario, "🔍 Preview: Bienvenida",
-                    PlantillaBienvenida(nombreCliente, mockNegocio.Nombre,
-                        $"{frontendUrl}/b/{mockNegocio.Slug}", $"{frontendUrl}/dashboard"));
 
                 _logger.LogInformation("Preview de emails enviado a {Destino}", MascarEmail(destinatario));
             }
@@ -326,14 +301,14 @@ namespace AppointVaAPI.Services
           {(googleCalUrl is not null ? $"""
           <td width="{(icalUrl is not null ? "50%" : "100%")}" style="{(icalUrl is not null ? "padding-right:6px;" : "")}">
             <a href="{googleCalUrl}" style="display:block;background:#f1f5f9;color:#475569;font-size:13px;font-weight:600;padding:11px 8px;border-radius:8px;text-decoration:none;border:1px solid #e2e8f0;text-align:center;box-sizing:border-box;">
-              <span style="display:inline-block;background:#1a73e8;color:#ffffff;font-family:Arial,sans-serif;font-size:11px;font-weight:900;width:18px;height:18px;line-height:18px;border-radius:3px;text-align:center;vertical-align:middle;margin-right:6px;">G</span>Google Calendar
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 22 22" width="18" height="18" style="display:inline-block;vertical-align:middle;margin-right:6px;"><rect width="22" height="22" rx="4" fill="#fff" stroke="#dadce0" stroke-width="1"/><rect x="0" y="0" width="22" height="7.5" rx="4" fill="#1a73e8"/><rect x="0" y="4" width="22" height="3.5" fill="#1a73e8"/><rect x="5" y="0.5" width="2.5" height="5.5" rx="1.25" fill="#fff"/><rect x="14.5" y="0.5" width="2.5" height="5.5" rx="1.25" fill="#fff"/><rect x="3" y="10" width="3" height="2.5" rx="0.5" fill="#5f6368"/><rect x="9.5" y="10" width="3" height="2.5" rx="0.5" fill="#5f6368"/><rect x="16" y="10" width="3" height="2.5" rx="0.5" fill="#5f6368"/><rect x="3" y="14.5" width="3" height="2.5" rx="0.5" fill="#ea4335"/><rect x="9.5" y="14.5" width="3" height="2.5" rx="0.5" fill="#34a853"/><rect x="16" y="14.5" width="3" height="2.5" rx="0.5" fill="#fbbc04"/></svg>Google Calendar
             </a>
           </td>
           """ : "")}
           {(icalUrl is not null ? $"""
           <td width="{(googleCalUrl is not null ? "50%" : "100%")}" style="{(googleCalUrl is not null ? "padding-left:6px;" : "")}">
             <a href="{icalUrl}" style="display:block;background:#f1f5f9;color:#475569;font-size:13px;font-weight:600;padding:11px 8px;border-radius:8px;text-decoration:none;border:1px solid #e2e8f0;text-align:center;box-sizing:border-box;">
-              <span style="display:inline-block;background:#000000;color:#ffffff;font-family:Arial,sans-serif;font-size:11px;font-weight:900;width:18px;height:18px;line-height:18px;border-radius:3px;text-align:center;vertical-align:middle;margin-right:6px;"></span>iCal / Apple
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 22 22" width="18" height="18" style="display:inline-block;vertical-align:middle;margin-right:6px;"><rect width="22" height="22" rx="4" fill="#fff" stroke="#dadce0" stroke-width="1"/><rect x="0" y="0" width="22" height="7.5" rx="4" fill="#ff3b30"/><rect x="0" y="4" width="22" height="3.5" fill="#ff3b30"/><rect x="5" y="0.5" width="2.5" height="5.5" rx="1.25" fill="#fff"/><rect x="14.5" y="0.5" width="2.5" height="5.5" rx="1.25" fill="#fff"/><rect x="3" y="10" width="3" height="2.5" rx="0.5" fill="#ff3b30"/><rect x="9.5" y="10" width="3" height="2.5" rx="0.5" fill="#8e8e93"/><rect x="16" y="10" width="3" height="2.5" rx="0.5" fill="#8e8e93"/><rect x="3" y="14.5" width="3" height="2.5" rx="0.5" fill="#8e8e93"/><rect x="9.5" y="14.5" width="3" height="2.5" rx="0.5" fill="#8e8e93"/><rect x="16" y="14.5" width="3" height="2.5" rx="0.5" fill="#8e8e93"/></svg>iCal / Apple
             </a>
           </td>
           """ : "")}
@@ -496,14 +471,14 @@ namespace AppointVaAPI.Services
           {(googleCalUrl is not null ? $"""
           <td width="{(icalUrl is not null ? "50%" : "100%")}" style="{(icalUrl is not null ? "padding-right:6px;" : "")}">
             <a href="{googleCalUrl}" style="display:block;background:#f1f5f9;color:#475569;font-size:13px;font-weight:600;padding:11px 8px;border-radius:8px;text-decoration:none;border:1px solid #e2e8f0;text-align:center;box-sizing:border-box;">
-              <span style="display:inline-block;background:#1a73e8;color:#ffffff;font-family:Arial,sans-serif;font-size:11px;font-weight:900;width:18px;height:18px;line-height:18px;border-radius:3px;text-align:center;vertical-align:middle;margin-right:6px;">G</span>Google Calendar
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 22 22" width="18" height="18" style="display:inline-block;vertical-align:middle;margin-right:6px;"><rect width="22" height="22" rx="4" fill="#fff" stroke="#dadce0" stroke-width="1"/><rect x="0" y="0" width="22" height="7.5" rx="4" fill="#1a73e8"/><rect x="0" y="4" width="22" height="3.5" fill="#1a73e8"/><rect x="5" y="0.5" width="2.5" height="5.5" rx="1.25" fill="#fff"/><rect x="14.5" y="0.5" width="2.5" height="5.5" rx="1.25" fill="#fff"/><rect x="3" y="10" width="3" height="2.5" rx="0.5" fill="#5f6368"/><rect x="9.5" y="10" width="3" height="2.5" rx="0.5" fill="#5f6368"/><rect x="16" y="10" width="3" height="2.5" rx="0.5" fill="#5f6368"/><rect x="3" y="14.5" width="3" height="2.5" rx="0.5" fill="#ea4335"/><rect x="9.5" y="14.5" width="3" height="2.5" rx="0.5" fill="#34a853"/><rect x="16" y="14.5" width="3" height="2.5" rx="0.5" fill="#fbbc04"/></svg>Google Calendar
             </a>
           </td>
           """ : "")}
           {(icalUrl is not null ? $"""
           <td width="{(googleCalUrl is not null ? "50%" : "100%")}" style="{(googleCalUrl is not null ? "padding-left:6px;" : "")}">
             <a href="{icalUrl}" style="display:block;background:#f1f5f9;color:#475569;font-size:13px;font-weight:600;padding:11px 8px;border-radius:8px;text-decoration:none;border:1px solid #e2e8f0;text-align:center;box-sizing:border-box;">
-              <span style="display:inline-block;background:#000000;color:#ffffff;font-family:Arial,sans-serif;font-size:11px;font-weight:900;width:18px;height:18px;line-height:18px;border-radius:3px;text-align:center;vertical-align:middle;margin-right:6px;"></span>iCal / Apple
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 22 22" width="18" height="18" style="display:inline-block;vertical-align:middle;margin-right:6px;"><rect width="22" height="22" rx="4" fill="#fff" stroke="#dadce0" stroke-width="1"/><rect x="0" y="0" width="22" height="7.5" rx="4" fill="#ff3b30"/><rect x="0" y="4" width="22" height="3.5" fill="#ff3b30"/><rect x="5" y="0.5" width="2.5" height="5.5" rx="1.25" fill="#fff"/><rect x="14.5" y="0.5" width="2.5" height="5.5" rx="1.25" fill="#fff"/><rect x="3" y="10" width="3" height="2.5" rx="0.5" fill="#ff3b30"/><rect x="9.5" y="10" width="3" height="2.5" rx="0.5" fill="#8e8e93"/><rect x="16" y="10" width="3" height="2.5" rx="0.5" fill="#8e8e93"/><rect x="3" y="14.5" width="3" height="2.5" rx="0.5" fill="#8e8e93"/><rect x="9.5" y="14.5" width="3" height="2.5" rx="0.5" fill="#8e8e93"/><rect x="16" y="14.5" width="3" height="2.5" rx="0.5" fill="#8e8e93"/></svg>iCal / Apple
             </a>
           </td>
           """ : "")}
