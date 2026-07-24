@@ -34,6 +34,11 @@ Serilog.Log.Logger = new LoggerConfiguration()
         outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
     .CreateLogger();
 
+// Evitar el límite de inotify en hosts Linux compartidos (Render free/starter tier).
+// .NET usa FileSystemWatcher para vigilar cambios en appsettings.json —
+// en producción no se necesita, y en hosts con muchos contenedores se agota el límite de 128.
+Environment.SetEnvironmentVariable("DOTNET_hostBuilder__reloadConfigOnChange", "false");
+
 var builder = WebApplication.CreateBuilder(args);
 builder.Host.UseSerilog();
 
