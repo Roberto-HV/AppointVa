@@ -18,9 +18,9 @@ const anchos = {
 export default function Modal({ abierto, onCerrar, titulo, children, ancho = "md" }: Props) {
   return (
     <Dialog open={abierto} onOpenChange={(open) => { if (!open) onCerrar(); }}>
-      <DialogContent className={`${anchos[ancho]} max-h-[90vh] flex flex-col p-0 gap-0 bg-white`}>
-        <DialogHeader className="px-6 py-4 border-b border-gray-100">
-          <DialogTitle className="text-base font-semibold text-gray-800">{titulo}</DialogTitle>
+      <DialogContent className={`${anchos[ancho]} max-h-[90vh] flex flex-col p-0 gap-0 bg-white dark:bg-slate-800`}>
+        <DialogHeader className="px-6 py-4 border-b border-gray-100 dark:border-slate-700">
+          <DialogTitle className="text-base font-semibold text-gray-800 dark:text-gray-100">{titulo}</DialogTitle>
         </DialogHeader>
         <div className="overflow-y-auto p-6">{children}</div>
       </DialogContent>
