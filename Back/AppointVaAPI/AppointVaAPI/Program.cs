@@ -20,7 +20,9 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.ResponseCompression;
+using AppointVaAPI.Filters;
 using AppointVaAPI.Policies;
+using System.IdentityModel.Tokens.Jwt;
 
 // ── Serilog ────────────────────────────────────────────────────────────────────
 Serilog.Log.Logger = new LoggerConfiguration()
@@ -274,8 +276,57 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
     app.MapScalarApiReference(opt => opt.Title = "AppointVa API");
-    app.UseHangfireDashboard("/hangfire");
 }
+
+// Hangfire dashboard — protegido con cookie validada por HangfireAuthorizationFilter
+app.UseHangfireDashboard("/hangfire", new DashboardOptions
+{
+    Authorization = [new HangfireAuthorizationFilter(app.Configuration)],
+    DashboardTitle = "AppointVa — Jobs",
+    IsReadOnlyFunc = _ => false,
+});
+
+// Endpoint que valida el JWT, pone la cookie y redirige al dashboard
+app.MapGet("/hangfire-session", (HttpContext ctx, IConfiguration config) =>
+{
+    var token = ctx.Request.Query["token"].FirstOrDefault();
+    if (string.IsNullOrEmpty(token)) return Results.Redirect("/hangfire");
+
+    try
+    {
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["Jwt:Clave"]!));
+        var principal = new JwtSecurityTokenHandler().ValidateToken(token,
+            new TokenValidationParameters
+            {
+                ValidateIssuer           = true,
+                ValidateAudience         = true,
+                ValidateLifetime         = true,
+                ValidateIssuerSigningKey  = true,
+                ValidIssuer              = config["Jwt:Emisor"],
+                ValidAudience            = config["Jwt:Audiencia"],
+                IssuerSigningKey         = key,
+                RoleClaimType            = "role",
+                NameClaimType            = "sub",
+                ClockSkew                = TimeSpan.Zero,
+            }, out _);
+
+        if (!principal.IsInRole("SuperAdmin")) return Results.Redirect("/hangfire");
+
+        ctx.Response.Cookies.Append("hangfire_auth", token, new CookieOptions
+        {
+            HttpOnly  = true,
+            Secure    = true,
+            SameSite  = SameSiteMode.Strict,
+            MaxAge    = TimeSpan.FromMinutes(60),
+        });
+
+        return Results.Redirect("/hangfire");
+    }
+    catch
+    {
+        return Results.Redirect("/hangfire");
+    }
+});
 
 // ── Security headers ──────────────────────────────────────────────────────────
 app.Use(async (ctx, next) =>

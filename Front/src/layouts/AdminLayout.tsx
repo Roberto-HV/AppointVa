@@ -5,7 +5,7 @@ import { useAuthStore } from "../store/authStore";
 import { authApi } from "../api/auth";
 
 export default function AdminLayout() {
-  const { usuario, refreshToken, cerrarSesion } = useAuthStore();
+  const { usuario, token, refreshToken, cerrarSesion } = useAuthStore();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -99,6 +99,15 @@ export default function AdminLayout() {
           >
             Audit Log
           </NavLink>
+          <a
+            href={`${import.meta.env.VITE_API_URL?.replace("/api", "")}/hangfire-session?token=${token}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={cerrarSidebar}
+            className="block px-4 py-2.5 rounded-lg text-sm font-medium transition text-gray-400 hover:bg-white/5 hover:text-white"
+          >
+            Jobs ↗
+          </a>
         </nav>
 
         {/* Usuario */}
