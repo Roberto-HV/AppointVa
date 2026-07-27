@@ -116,6 +116,12 @@ export default function CitasPage() {
   const [fCliente, setFCliente] = useState({ nombre: "", telefono: "", email: "", notas: "" });
   const [emailClienteError, setEmailClienteError] = useState("");
   const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+  // Issue 12 — drag-to-reschedule confirmation
+  const [confirmDrag, setConfirmDrag] = useState<{id: string; nombre: string; nuevoInicio: string; label: string} | null>(null);
+
+  // Issue 15 — completar confirmation
+  const [confirmCompletar, setConfirmCompletar] = useState<string | null>(null);
   const validarEmailCliente = (v: string) =>
     v.trim() && !EMAIL_RE.test(v.trim()) ? "Correo no válido (ej: nombre@dominio.com)" : "";
 
@@ -169,7 +175,7 @@ export default function CitasPage() {
     ? empleados.filter((e) => e.servicioIds.includes(svcSel) && e.activo)
     : empleados.filter((e) => e.activo);
 
-  const { data: slotsNueva = [], isFetching: cargandoSlotsNueva } = useQuery({
+  const { data: slotsNueva = [], isFetching: cargandoSlotsNueva, isError: errorSlotsNueva } = useQuery({
     queryKey: ["slots-nueva", svcSel, empSel, fechaNueva],
     queryFn: async (): Promise<SlotDisponible[]> => {
       const { data } = await api.get("/publico/disponibilidad", {
@@ -180,7 +186,7 @@ export default function CitasPage() {
     enabled: !!svcSel && !!empSel && !!fechaNueva,
   });
 
-  const { data: slotsReag = [], isFetching: cargandoSlots } = useQuery({
+  const { data: slotsReag = [], isFetching: cargandoSlots, isError: errorSlotsReag } = useQuery({
     queryKey: ["slots-reag", citaReag?.id, fechaReag],
     queryFn: async (): Promise<SlotDisponible[]> => {
       const { data } = await api.get("/publico/disponibilidad", {
@@ -579,9 +585,7 @@ export default function CitasPage() {
               weekday: "short", day: "numeric", month: "short",
               hour: "2-digit", minute: "2-digit", hour12: true,
             });
-            if (confirm(`¿Reagendar "${cita.nombreCliente}" para el ${nueva}?`)) {
-              reagendar({ id: cita.id, inicioEn: nuevoInicio });
-            }
+            setConfirmDrag({ id: cita.id, nombre: cita.nombreCliente, nuevoInicio: nuevoInicio, label: nueva });
           }}
         />
       )}
@@ -696,6 +700,13 @@ export default function CitasPage() {
 
                     {/* Acciones — solo desktop */}
                     <td className="px-4 py-3 text-right hidden sm:table-cell">
+                      {confirmCompletar === c.id && (
+                        <div className="flex items-center gap-2 mt-2 text-xs justify-end mb-2">
+                          <span className="text-gray-500 dark:text-gray-400">¿Marcar como completada?</span>
+                          <button onClick={() => { cambiarEstado({ id: c.id, estado: ESTADOS.Completada, mot: "" }); setConfirmCompletar(null); }} className="bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 transition">Sí</button>
+                          <button onClick={() => setConfirmCompletar(null)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 px-2 py-1">No</button>
+                        </div>
+                      )}
                       <div className="flex justify-end items-center gap-2">
                         {/* WhatsApp */}
                         <Tooltip text="Enviar recordatorio por WhatsApp">
@@ -745,7 +756,7 @@ export default function CitasPage() {
                         {c.estadoTexto === "Confirmada" && (
                           <Tooltip text="Marcar como completada directamente">
                             <button
-                              onClick={() => cambiarEstado({ id: c.id, estado: ESTADOS.Completada, mot: "" })}
+                              onClick={() => setConfirmCompletar(c.id)}
                               disabled={isPending}
                               className="text-xs font-medium px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/40 dark:text-blue-400 dark:hover:bg-blue-900/60 dark:border dark:border-blue-500/60 disabled:opacity-40 transition"
                             >
@@ -987,8 +998,10 @@ export default function CitasPage() {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Horario disponible</label>
                 {cargandoSlotsNueva ? (
                   <p className="text-sm text-gray-400 dark:text-gray-500">Cargando horarios...</p>
+                ) : errorSlotsNueva ? (
+                  <p className="text-xs text-red-500 text-center py-2">Error al cargar horarios. Intenta de nuevo.</p>
                 ) : slotsNueva.length === 0 ? (
-                  <p className="text-sm text-gray-400 dark:text-gray-500">Sin horarios disponibles para esta fecha</p>
+                  <p className="text-xs text-slate-400 text-center py-2">Sin horarios disponibles para esta fecha</p>
                 ) : (
                   <div className="grid grid-cols-3 gap-2 max-h-44 overflow-y-auto pr-1">
                     {slotsNueva.map((s) => (
@@ -1135,8 +1148,10 @@ export default function CitasPage() {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Nuevo horario</label>
                 {cargandoSlots ? (
                   <p className="text-sm text-gray-400 dark:text-gray-500">Cargando horarios disponibles...</p>
+                ) : errorSlotsReag ? (
+                  <p className="text-xs text-red-500 text-center py-2">Error al cargar horarios. Intenta de nuevo.</p>
                 ) : slotsReag.length === 0 ? (
-                  <p className="text-sm text-gray-400 dark:text-gray-500">Sin horarios disponibles para esta fecha</p>
+                  <p className="text-xs text-slate-400 text-center py-2">Sin horarios disponibles para esta fecha</p>
                 ) : (
                   <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto pr-1">
                     {slotsReag.map((s) => (
@@ -1256,6 +1271,20 @@ export default function CitasPage() {
           </div>
         )}
       </Modal>
+
+      {/* ── Confirm drag reagendar ── */}
+      {confirmDrag && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-6 max-w-sm w-full shadow-xl">
+            <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-1">Reagendar cita</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">¿Mover la cita de <strong>{confirmDrag.nombre}</strong> para el {confirmDrag.label}?</p>
+            <div className="flex gap-3 justify-end">
+              <button onClick={() => setConfirmDrag(null)} className="text-sm text-gray-500 px-4 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition">Cancelar</button>
+              <button onClick={() => { reagendar({ id: confirmDrag.id, inicioEn: confirmDrag.nuevoInicio }); setConfirmDrag(null); }} className="text-sm bg-violet-600 text-white px-4 py-2 rounded-lg hover:bg-violet-700 transition">Confirmar</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Modal: Repetir cita ── */}
       <Modal abierto={!!citaRepetir} onCerrar={() => setCitaRepetir(null)} titulo="Repetir cita" ancho="sm">

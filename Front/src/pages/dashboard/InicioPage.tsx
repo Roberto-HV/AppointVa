@@ -63,7 +63,7 @@ function WizardOnboarding({ negocioId, slug, tieneCitas, tieneServicios, tieneHo
   const [cerrado, setCerrado] = useState(() => !!localStorage.getItem(keyStorage));
   const [enlaceVisto, setEnlaceVisto] = useState(() => !!localStorage.getItem(keyEnlace));
 
-  if (cerrado || cargando || tieneCitas) return null;
+  if (cerrado || cargando) return null;
 
   const cerrar = () => {
     localStorage.setItem(keyStorage, "1");
@@ -136,7 +136,7 @@ function VistaPropietario({ nombre }: { nombre: string }) {
   const [dias, setDias] = useState(14);
   const usuario = useAuthStore((s) => s.usuario);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ["dashboard-resumen"],
     queryFn: dashboardApi.obtenerResumen,
     staleTime: 0,
@@ -211,6 +211,13 @@ function VistaPropietario({ nombre }: { nombre: string }) {
           </motion.div>
         ))}
       </motion.div>
+
+      {isError && !data && (
+        <div className="rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-6 text-center mb-6">
+          <p className="text-sm font-medium text-red-600 dark:text-red-400">No se pudo cargar el resumen del negocio</p>
+          <button onClick={() => window.location.reload()} className="mt-3 text-xs text-red-500 underline">Reintentar</button>
+        </div>
+      )}
 
       {negocio && usuario?.negocioId && (
         <WizardOnboarding
@@ -436,7 +443,7 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
 
   const [clienteSel, setClienteSel] = useState<{ id: string; nombre: string } | null>(null);
 
-  const { data: citasHoy = [], isLoading: cargandoHoy } = useQuery({
+  const { data: citasHoy = [], isLoading: cargandoHoy, isError: errorCitasHoy } = useQuery({
     queryKey: ["mis-citas-hoy"],
     queryFn: () => citasApi.obtenerTodas({ desde: hoy, hasta: hoy }),
     select: (p) => p.datos,
@@ -444,7 +451,7 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
     refetchInterval: 30_000,
   });
 
-  const { data: citasProximas = [], isLoading: cargandoProximas } = useQuery({
+  const { data: citasProximas = [], isLoading: cargandoProximas, isError: errorCitasProximas } = useQuery({
     queryKey: ["mis-citas-proximas"],
     queryFn: () => citasApi.obtenerTodas({ desde: manana }),
     select: (p) => p.datos,
@@ -459,7 +466,7 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
     staleTime: 0,
   });
 
-  const { data: historialCliente = [], isLoading: cargandoHistorial } = useQuery({
+  const { data: historialCliente = [], isLoading: cargandoHistorial, isError: errorHistorial } = useQuery({
     queryKey: ["historial-cliente", clienteSel?.id],
     queryFn: () => clientesApi.obtenerCitas(clienteSel!.id),
     enabled: !!clienteSel,
@@ -584,7 +591,9 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
           <div className="space-y-3">
             {[0, 1, 2].map((i) => <Skeleton key={i} className="h-14 rounded-xl" />)}
           </div>
-        ) : citasHoy.length === 0 ? (
+        ) : errorCitasHoy ? (
+          <p className="text-sm text-red-500 dark:text-red-400 text-center py-4">No se pudo cargar tu agenda. Recarga la página.</p>
+        ) : citasOrdenadas.length === 0 ? (
           <p className="text-gray-400 dark:text-gray-500 text-sm py-2">No tienes citas hoy — ¡disfruta el día!</p>
         ) : (
           <div className="space-y-2">
@@ -642,6 +651,8 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
           <div className="space-y-2">
             {[0, 1, 2].map((i) => <Skeleton key={i} className="h-12 rounded-xl" />)}
           </div>
+        ) : errorCitasProximas ? (
+          <p className="text-sm text-red-500 dark:text-red-400 text-center py-4">No se pudo cargar tu agenda. Recarga la página.</p>
         ) : pendientesOConfirmadas.length === 0 ? (
           <p className="text-gray-400 dark:text-gray-500 text-sm">Sin citas próximas</p>
         ) : (
@@ -682,7 +693,9 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
                 <div className="space-y-2">
                   {[0, 1, 2].map((i) => <Skeleton key={i} className="h-14 rounded-xl" />)}
                 </div>
-              ) : historialCliente.length === 0 ? (
+              ) : errorHistorial ? (
+                <p className="text-xs text-slate-400 text-center py-8">No se pudo cargar el historial</p>
+              ) : !errorHistorial && historialCliente.length === 0 ? (
                 <p className="text-slate-400 text-sm text-center py-8">Primera visita del cliente</p>
               ) : (
                 historialCliente.map((h: ClienteCitaDto) => (

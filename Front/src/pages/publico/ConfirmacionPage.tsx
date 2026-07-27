@@ -25,10 +25,13 @@ export default function ConfirmacionPage() {
   const [bannerCopiado, setBannerCopiado] = useState(false);
   const [calAbierto, setCalAbierto] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [errorComprobante, setErrorComprobante] = useState("");
+  const [exitoReagenda, setExitoReagenda] = useState(false);
 
   const { mutate: subirComprobante, isPending: subiendoComprobante, isSuccess: comprobanteSubido } = useMutation({
     mutationFn: (archivo: File) => comprobantesApi.subirComprobante(codigo!, archivo),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["cita", codigo] }),
+    onError: () => setErrorComprobante("No se pudo subir el comprobante. Verifica que el archivo sea una imagen menor a 5 MB."),
   });
 
   const { data: cita, isLoading, isError } = useQuery({
@@ -54,6 +57,8 @@ export default function ConfirmacionPage() {
       queryClient.invalidateQueries({ queryKey: ["cita", codigo] });
       setReagendando(false);
       setSlotReag(null);
+      setExitoReagenda(true);
+      setTimeout(() => setExitoReagenda(false), 5000);
     },
   });
 
@@ -235,6 +240,12 @@ export default function ConfirmacionPage() {
           </div>
         )}
 
+        {exitoReagenda && (
+          <div className="mb-4 p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg flex items-center gap-2">
+            <span className="text-emerald-600 dark:text-emerald-400 text-sm font-medium">✓ Tu cita fue reagendada correctamente</span>
+          </div>
+        )}
+
         {/* Comprobante */}
         <div id="comprobante-cita" className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
 
@@ -399,8 +410,15 @@ export default function ConfirmacionPage() {
                   accept="image/*"
                   className="hidden"
                   onChange={(e) => {
+                    setErrorComprobante("");
                     const archivo = e.target.files?.[0];
-                    if (archivo) subirComprobante(archivo);
+                    if (archivo) {
+                      if (archivo.size > 5 * 1024 * 1024) {
+                        setErrorComprobante("No se pudo subir el comprobante. Verifica que el archivo sea una imagen menor a 5 MB.");
+                        return;
+                      }
+                      subirComprobante(archivo);
+                    }
                   }}
                 />
                 <button
@@ -411,6 +429,9 @@ export default function ConfirmacionPage() {
                   <Upload size={14} />
                   {subiendoComprobante ? "Subiendo..." : "Subir comprobante de pago"}
                 </button>
+                {errorComprobante && (
+                  <p className="text-xs text-red-500 dark:text-red-400 mt-2">{errorComprobante}</p>
+                )}
               </>
             )}
           </div>

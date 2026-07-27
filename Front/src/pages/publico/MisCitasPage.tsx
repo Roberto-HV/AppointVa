@@ -76,7 +76,8 @@ export default function MisCitasPage() {
   const [email, setEmail] = useState(session?.email ?? "");
   const [telefono, setTelefono] = useState(session?.telefono ?? "");
   const [cancelando, setCancelando] = useState<string | null>(null);
-  const [errorCancelacion, setErrorCancelacion] = useState("");
+  const [cancelandoId, setCancelandoId] = useState<string | null>(null);
+  const [errorCancelacion, setErrorCancelacion] = useState<{id: string; msg: string} | null>(null);
   const [buscado, setBuscado] = useState<Session | null>(session);
   const [pagina, setPagina] = useState(1);
   const [total, setTotal] = useState(0);
@@ -124,17 +125,16 @@ export default function MisCitasPage() {
     setTelefono("");
   };
 
-  const cancelarCita = async (codigo: string) => {
+  const cancelarCita = async (id: string, codigo: string) => {
     if (!buscado?.email) return;
-    if (!confirm("¿Seguro que deseas cancelar esta cita? Esta acción no se puede deshacer.")) return;
     setCancelando(codigo);
-    setErrorCancelacion("");
+    setErrorCancelacion(null);
     try {
       await api.delete(`/publico/citas/${codigo}`, { params: { email: buscado.email } });
       qc.invalidateQueries({ queryKey: ["mis-citas", slug, buscado.email, buscado.telefono] });
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje ?? "No se pudo cancelar la cita.";
-      setErrorCancelacion(msg);
+      const msg = (err as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje ?? "No se pudo cancelar. Intenta de nuevo.";
+      setErrorCancelacion({ id, msg });
     } finally {
       setCancelando(null);
     }
@@ -152,7 +152,7 @@ export default function MisCitasPage() {
       );
       setExitoReagenda("¡Cita reagendada exitosamente!");
       qc.invalidateQueries({ queryKey: ["mis-citas", slug, buscado.email, buscado.telefono] });
-      setTimeout(() => { setReagendando(null); setSlotNuevo(null); setExitoReagenda(""); }, 2500);
+      setTimeout(() => { setReagendando(null); setSlotNuevo(null); setExitoReagenda(""); }, 5000);
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje ?? "No se pudo reagendar la cita.";
       setErrorReagenda(msg);
@@ -255,6 +255,7 @@ export default function MisCitasPage() {
             {error && (
               <div className="bg-red-50 border border-red-100 rounded-2xl p-4 text-center text-sm text-red-600">
                 No se pudo buscar las citas. Verifica tu información e intenta de nuevo.
+                <button onClick={() => { setBuscado(null); }} className="mt-3 block mx-auto text-sm font-medium text-slate-700 dark:text-slate-300 underline">Corregir mis datos</button>
               </div>
             )}
 
@@ -322,7 +323,7 @@ export default function MisCitasPage() {
                                   Reagendar
                                 </button>
                                 <button
-                                  onClick={() => cancelarCita(c.codigoConfirmacion)}
+                                  onClick={() => setCancelandoId(c.id)}
                                   disabled={cancelando === c.codigoConfirmacion}
                                   className="text-xs font-semibold text-red-400 hover:text-red-600 disabled:opacity-40 transition"
                                 >
@@ -366,6 +367,20 @@ export default function MisCitasPage() {
                             iCal / Apple
                           </a>
                         </div>
+                        {cancelandoId === c.id && (
+                          <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                            <p className="text-xs text-red-700 dark:text-red-300 mb-2">¿Confirmas la cancelación? Esta acción no se puede deshacer.</p>
+                            <div className="flex gap-2">
+                              <button onClick={() => { cancelarCita(c.id, c.codigoConfirmacion); setCancelandoId(null); }} className="text-xs bg-red-600 text-white px-3 py-1.5 rounded-lg hover:bg-red-700 transition">Sí, cancelar</button>
+                              <button onClick={() => setCancelandoId(null)} className="text-xs text-slate-500 dark:text-slate-400 px-3 py-1.5 hover:text-slate-700 transition">No, volver</button>
+                            </div>
+                          </div>
+                        )}
+                        {errorCancelacion?.id === c.id && (
+                          <div className="mt-2 text-xs text-red-600 bg-red-50 border border-red-100 px-3 py-2 rounded-lg">
+                            {errorCancelacion.msg}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </>
@@ -412,7 +427,7 @@ export default function MisCitasPage() {
                                   Reagendar
                                 </button>
                                 <button
-                                  onClick={() => cancelarCita(c.codigoConfirmacion)}
+                                  onClick={() => setCancelandoId(c.id)}
                                   disabled={cancelando === c.codigoConfirmacion}
                                   className="text-xs font-semibold text-red-400 hover:text-red-600 disabled:opacity-40 transition"
                                 >
@@ -444,15 +459,23 @@ export default function MisCitasPage() {
                             </button>
                           </div>
                         </div>
+                        {cancelandoId === c.id && (
+                          <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                            <p className="text-xs text-red-700 dark:text-red-300 mb-2">¿Confirmas la cancelación? Esta acción no se puede deshacer.</p>
+                            <div className="flex gap-2">
+                              <button onClick={() => { cancelarCita(c.id, c.codigoConfirmacion); setCancelandoId(null); }} className="text-xs bg-red-600 text-white px-3 py-1.5 rounded-lg hover:bg-red-700 transition">Sí, cancelar</button>
+                              <button onClick={() => setCancelandoId(null)} className="text-xs text-slate-500 dark:text-slate-400 px-3 py-1.5 hover:text-slate-700 transition">No, volver</button>
+                            </div>
+                          </div>
+                        )}
+                        {errorCancelacion?.id === c.id && (
+                          <div className="mt-2 text-xs text-red-600 bg-red-50 border border-red-100 px-3 py-2 rounded-lg">
+                            {errorCancelacion.msg}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </>
-                )}
-
-                {errorCancelacion && (
-                  <div className="bg-red-50 border border-red-100 rounded-xl p-3 text-sm text-red-600 text-center">
-                    {errorCancelacion}
-                  </div>
                 )}
 
                 {/* Paginación */}
@@ -533,6 +556,7 @@ export default function MisCitasPage() {
                 <div className="flex flex-col items-center gap-3 py-10 text-center">
                   <CheckCircle2 size={48} className="text-emerald-500" />
                   <p className="text-slate-800 font-semibold">{exitoReagenda}</p>
+                  <button onClick={() => { setExitoReagenda(""); setReagendando(null); setSlotNuevo(null); }} className="mt-2 text-xs underline text-emerald-600 dark:text-emerald-400">Cerrar</button>
                 </div>
               ) : (
                 <>

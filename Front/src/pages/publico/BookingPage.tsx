@@ -92,10 +92,12 @@ function IntakeCampoInput({
   campo,
   valor,
   onChange,
+  mostrarError,
 }: {
   campo: CampoIntake;
   valor: string;
   onChange: (v: string) => void;
+  mostrarError?: boolean;
 }) {
   const label = (
     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -137,7 +139,7 @@ function IntakeCampoInput({
         <select
           value={valor}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm outline-none focus:ring-2 focus:ring-slate-700/40 focus:border-slate-700 transition"
+          className={`w-full px-4 py-2.5 rounded-lg border text-sm outline-none focus:ring-2 focus:ring-slate-700/40 focus:border-slate-700 transition ${mostrarError ? "border-red-500" : "border-gray-300"}`}
         >
           <option value="">Selecciona una opción</option>
           {opciones.map((op) => (
@@ -156,7 +158,7 @@ function IntakeCampoInput({
           value={valor}
           onChange={(e) => onChange(e.target.value)}
           rows={3}
-          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm outline-none focus:ring-2 focus:ring-slate-700/40 focus:border-slate-700 transition resize-none"
+          className={`w-full px-4 py-2.5 rounded-lg border text-sm outline-none focus:ring-2 focus:ring-slate-700/40 focus:border-slate-700 transition resize-none ${mostrarError ? "border-red-500" : "border-gray-300"}`}
         />
       </div>
     );
@@ -169,7 +171,7 @@ function IntakeCampoInput({
         type="text"
         value={valor}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm outline-none focus:ring-2 focus:ring-slate-700/40 focus:border-slate-700 transition"
+        className={`w-full px-4 py-2.5 rounded-lg border text-sm outline-none focus:ring-2 focus:ring-slate-700/40 focus:border-slate-700 transition ${mostrarError ? "border-red-500" : "border-gray-300"}`}
       />
     </div>
   );
@@ -207,6 +209,11 @@ export default function BookingPage() {
   const [validandoCupon, setValidandoCupon] = useState(false);
   const [errorCupon, setErrorCupon] = useState("");
 
+  // Slot taken (409) error shown in paso 3
+  const [errorSlotTomado, setErrorSlotTomado] = useState("");
+  // Intake validation attempt tracker
+  const [intentoContinuar, setIntentoContinuar] = useState(false);
+
   // Pre-selección vía URL params (Repetir cita)
   const [yaPreseleccionado, setYaPreseleccionado] = useState(false);
 
@@ -222,7 +229,7 @@ export default function BookingPage() {
     },
   });
 
-  const { data: camposIntake = [] } = useQuery<CampoIntake[]>({
+  const { data: camposIntake = [], isLoading: cargandoIntake } = useQuery<CampoIntake[]>({
     queryKey: ["intake-publico", slug, servicio?.id],
     queryFn: () => intakePublicoApi.getCampos(slug!, servicio?.id),
     enabled: !!slug && !!servicio,
@@ -300,6 +307,7 @@ export default function BookingPage() {
       setDirection(-1);
       setMostrarIntake(false);
       setRespuestasIntake({});
+      setIntentoContinuar(false);
       return;
     }
     if (paso === 4 && modoCliente !== "elegir") {
@@ -381,7 +389,7 @@ export default function BookingPage() {
       const status = (err as { response?: { status?: number } })?.response?.status;
       const msg = (err as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje;
       if (status === 409 || msg?.toLowerCase().includes("disponible") || msg?.toLowerCase().includes("ocupado")) {
-        setErrorEnvio("Este horario ya fue reservado por alguien más. Por favor elige otra fecha u hora.");
+        setErrorSlotTomado("Ese horario ya no está disponible, elige otro.");
         setPaso(3);
         setSlot(null);
         setMostrarIntake(false);
@@ -684,6 +692,14 @@ export default function BookingPage() {
         {/* Paso 3 */}
         {paso === 3 && servicio && empleado && !mostrarIntake && (
           <>
+            {errorSlotTomado && (
+              <div className="mb-4 flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+                <svg className="w-5 h-5 text-red-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                </svg>
+                <p className="text-sm font-semibold text-red-700">{errorSlotTomado}</p>
+              </div>
+            )}
             <PasoFechaHora
               servicioId={servicio.id}
               empleadoId={sinPreferencia ? null : empleado.id}
@@ -710,11 +726,11 @@ export default function BookingPage() {
               </button>
               <button
                 onClick={irSiguiente}
-                disabled={!slot}
+                disabled={!slot || cargandoIntake}
                 className="flex-1 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-3 rounded-2xl transition text-sm hover:opacity-90"
                 style={{ background: color }}
               >
-                Continuar
+                {cargandoIntake ? "Cargando..." : "Continuar"}
               </button>
             </div>
             {negocio.listaEsperaActiva === true && (
@@ -748,6 +764,7 @@ export default function BookingPage() {
                   onChange={(v) =>
                     setRespuestasIntake((prev) => ({ ...prev, [campo.id]: v }))
                   }
+                  mostrarError={intentoContinuar && campo.requerido && !respuestasIntake[campo.id]?.trim()}
                 />
               ))}
             </div>
@@ -759,16 +776,24 @@ export default function BookingPage() {
                 Atrás
               </button>
               <button
-                onClick={irSiguiente}
-                disabled={camposIntake
-                  .filter((c) => c.requerido)
-                  .some((c) => !respuestasIntake[c.id]?.trim())}
-                className="flex-1 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-3 rounded-2xl transition text-sm hover:opacity-90"
+                onClick={() => {
+                  setIntentoContinuar(true);
+                  const hayFaltantes = camposIntake
+                    .filter((c) => c.requerido)
+                    .some((c) => !respuestasIntake[c.id]?.trim());
+                  if (!hayFaltantes) {
+                    irSiguiente();
+                  }
+                }}
+                className="flex-1 text-white font-bold py-3 rounded-2xl transition text-sm hover:opacity-90"
                 style={{ background: color }}
               >
                 Continuar
               </button>
             </div>
+            {intentoContinuar && camposIntake.filter((c) => c.requerido).some((c) => !respuestasIntake[c.id]?.trim()) && (
+              <p className="text-xs text-red-500 text-center mt-2">Completa los campos obligatorios para continuar</p>
+            )}
           </>
         )}
 
@@ -836,7 +861,7 @@ export default function BookingPage() {
                 placeholder="correo@ejemplo.com"
                 className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-slate-700/20 focus:border-slate-700 transition bg-white"
               />
-              {errorBusqueda && <p className="text-slate-500 text-xs mt-1.5 bg-slate-50 border border-slate-100 rounded-lg px-3 py-2">{errorBusqueda}</p>}
+              {errorBusqueda && <p className="text-red-600 dark:text-red-400 text-xs mt-1.5 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2">{errorBusqueda}</p>}
             </div>
             <button
               onClick={buscarCliente}
@@ -913,7 +938,7 @@ export default function BookingPage() {
                       className="px-4 py-2 text-white text-sm font-semibold rounded-lg disabled:opacity-50 hover:opacity-90 transition"
                       style={{ background: color }}
                     >
-                      {validandoCupon ? "..." : "Aplicar"}
+                      {validandoCupon ? "Aplicando…" : "Aplicar"}
                     </button>
                   </div>
                   {errorCupon && <p className="text-red-500 text-xs">{errorCupon}</p>}
