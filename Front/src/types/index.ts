@@ -165,20 +165,20 @@ export interface CitaDto {
   servicioId: string;
   nombreCliente: string;
   telefonoCliente: string;
-  emailCliente?: string;
+  emailCliente?: string | null;
   nombreEmpleado: string;
   nombreServicio: string;
   duracionMinutos: number;
   precio: number;
   pagada: boolean;
-  metodoPago?: string;
+  metodoPago?: string | null;
   inicioEn: string;
   finEn: string;
   estado: number;
   estadoTexto: string;
-  notas?: string;
-  motivoCancelacion?: string;
-  comprobanteUrl?: string;
+  notas?: string | null;
+  motivoCancelacion?: string | null;
+  comprobanteUrl?: string | null;
   fechaCreacion?: string;
 }
 
