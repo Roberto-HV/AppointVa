@@ -1,73 +1,68 @@
-# React + TypeScript + Vite
+# AppointVa — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Frontend del SaaS de reservas AppointVa. React 19 + TypeScript + Vite.
 
-Currently, two official plugins are available:
+## Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **React 19** + **TypeScript**
+- **Vite** — bundler y dev server
+- **Tailwind CSS** — estilos utilitarios con soporte dark mode
+- **TanStack Query** — server state y caché
+- **Radix UI** — componentes accesibles (Dialog, Select, Tooltip, etc.)
+- **React Router v6** — navegación
+- **Framer Motion** — animaciones
+- **Recharts** — gráficas en el dashboard
+- **Lucide React** — iconos
+- **Vitest + Testing Library** — tests unitarios
 
-## React Compiler
+## Setup
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+npm install
 
-## Expanding the ESLint configuration
+# Crea el archivo de variables de entorno
+echo "VITE_API_URL=https://localhost:7xxx/api" > .env.local
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Comandos
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run dev           # desarrollo en http://localhost:5173
+npm run build         # build de producción (tsc + vite build)
+npm run preview       # previsualizar build
+npm run test          # tests unitarios
+npm run test:watch    # tests en modo watch
+npm run test:coverage # cobertura
+npm run lint          # ESLint
 ```
+
+## Estructura
+
+```
+src/
+├── api/           # clientes HTTP por dominio (citasApi, negociosApi, etc.)
+├── components/    # componentes reutilizables
+│   ├── ui/        # primitivos (Modal, Skeleton, Badge, etc.)
+│   └── booking/   # componentes del flujo de reserva público
+├── hooks/         # hooks personalizados (useTheme, etc.)
+├── layouts/       # DashboardLayout, PublicLayout
+├── pages/
+│   ├── dashboard/ # páginas del panel de negocio
+│   ├── publico/   # booking, confirmación, mis citas
+│   └── admin/     # superadmin
+├── store/         # Zustand (authStore)
+├── types/         # tipos TypeScript compartidos
+└── utils/         # formatters, helpers
+```
+
+## Variables de entorno
+
+| Variable | Descripción |
+|----------|-------------|
+| `VITE_API_URL` | URL base de la API (sin `/` final) |
+
+## Deploy
+
+Vercel. Auto-deploy desde la rama `main`. No requiere configuración adicional — Vercel detecta Vite automáticamente.
