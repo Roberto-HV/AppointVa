@@ -15,6 +15,14 @@ public abstract class IntegrationTestBase : IClassFixture<CustomWebApplicationFa
 
     protected HttpClient NewClient() => Factory.CreateClient();
 
+    protected HttpClient NewClient(string token)
+    {
+        var client = Factory.CreateClient();
+        client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", token);
+        return client;
+    }
+
     protected void SetToken(string token) =>
         Client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", token);
