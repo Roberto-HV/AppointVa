@@ -364,7 +364,7 @@ export default function EmpleadosPage() {
                   <div className="flex gap-1.5">
                     <button
                       onClick={() => abrirEditar(emp)}
-                      className="flex-1 text-xs font-medium py-1.5 rounded-lg bg-slate-700/10 text-slate-700 hover:bg-slate-700/20 dark:bg-slate-600/30 dark:text-slate-300 dark:hover:bg-slate-600/50 transition"
+                      className="flex-1 text-xs font-medium py-1.5 rounded-lg bg-slate-700/10 text-slate-700 hover:bg-slate-700/20 dark:bg-slate-600/30 dark:text-slate-300 dark:hover:bg-slate-600/50 dark:border dark:border-slate-500 transition"
                     >
                       Editar
                     </button>

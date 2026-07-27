@@ -207,7 +207,7 @@ export default function ClientesPage() {
                     <td className="px-5 py-3 text-right">
                       <button
                         onClick={() => abrirCliente(c)}
-                        className="text-xs font-medium px-2.5 py-1 rounded-lg bg-slate-700/10 text-slate-700 hover:bg-slate-700/20 transition"
+                        className="text-xs font-medium px-2.5 py-1 rounded-lg bg-slate-700/10 text-slate-700 hover:bg-slate-700/20 dark:bg-slate-600/30 dark:text-slate-300 dark:hover:bg-slate-600/50 dark:border dark:border-slate-500 transition"
                       >
                         Ver detalle
                       </button>
