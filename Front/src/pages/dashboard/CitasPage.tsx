@@ -747,7 +747,7 @@ export default function CitasPage() {
                             <button
                               onClick={() => cambiarEstado({ id: c.id, estado: ESTADOS.Completada, mot: "" })}
                               disabled={isPending}
-                              className="text-xs font-medium px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 disabled:opacity-40 transition"
+                              className="text-xs font-medium px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/40 dark:text-blue-400 dark:hover:bg-blue-900/60 dark:border dark:border-blue-500/60 disabled:opacity-40 transition"
                             >
                               ✓ Completar
                             </button>
@@ -756,7 +756,7 @@ export default function CitasPage() {
                         {(c.estadoTexto === "Pendiente" || c.estadoTexto === "Confirmada") && (
                           <button
                             onClick={() => abrirReagendar(c)}
-                            className="text-xs font-medium px-2.5 py-1 rounded-lg bg-violet-50 text-violet-600 hover:bg-violet-100 transition"
+                            className="text-xs font-medium px-2.5 py-1 rounded-lg bg-violet-50 text-violet-600 hover:bg-violet-100 dark:bg-violet-900/40 dark:text-violet-400 dark:hover:bg-violet-900/60 dark:border dark:border-violet-500/60 transition"
                           >
                             Reagendar
                           </button>
@@ -764,7 +764,7 @@ export default function CitasPage() {
                         <Tooltip text="Crear una nueva cita con los mismos datos del cliente y servicio">
                           <button
                             onClick={() => abrirRepetirCita(c)}
-                            className="text-xs font-medium px-2.5 py-1 rounded-lg bg-sky-50 text-sky-600 hover:bg-sky-100 transition"
+                            className="text-xs font-medium px-2.5 py-1 rounded-lg bg-sky-50 text-sky-600 hover:bg-sky-100 dark:bg-sky-900/40 dark:text-sky-400 dark:hover:bg-sky-900/60 dark:border dark:border-sky-500/60 transition"
                           >
                             Repetir
                           </button>
@@ -772,7 +772,7 @@ export default function CitasPage() {
                         {TRANSICIONES[c.estadoTexto] && (
                           <button
                             onClick={() => abrirCambioEstado(c)}
-                            className="text-xs font-medium px-2.5 py-1 rounded-lg bg-slate-700/10 text-slate-700 hover:bg-slate-700/20 transition"
+                            className="text-xs font-medium px-2.5 py-1 rounded-lg bg-slate-700/10 text-slate-700 hover:bg-slate-700/20 dark:bg-slate-600/30 dark:text-slate-300 dark:hover:bg-slate-600/50 dark:border dark:border-slate-500 transition"
                           >
                             Más
                           </button>
@@ -1260,12 +1260,12 @@ export default function CitasPage() {
             {/* Paso 1 — elegir nueva fecha y slot */}
             {pasoRepetir === 1 && (
               <div className="space-y-4">
-                <div className="bg-gray-50 rounded-lg p-3 text-sm space-y-1">
-                  <p><span className="text-gray-500">Servicio:</span> <span className="font-medium">{citaRepetir.nombreServicio}</span></p>
-                  <p><span className="text-gray-500">Profesional:</span> <span className="font-medium">{citaRepetir.nombreEmpleado}</span></p>
-                  <p><span className="text-gray-500">Cliente:</span> <span className="font-medium">{citaRepetir.nombreCliente}</span></p>
+                <div className="bg-gray-50 dark:bg-slate-700 rounded-lg p-3 text-sm space-y-1">
+                  <p><span className="text-gray-500 dark:text-gray-400">Servicio:</span> <span className="font-medium dark:text-gray-200">{citaRepetir.nombreServicio}</span></p>
+                  <p><span className="text-gray-500 dark:text-gray-400">Profesional:</span> <span className="font-medium dark:text-gray-200">{citaRepetir.nombreEmpleado}</span></p>
+                  <p><span className="text-gray-500 dark:text-gray-400">Cliente:</span> <span className="font-medium dark:text-gray-200">{citaRepetir.nombreCliente}</span></p>
                 </div>
-                <p className="text-sm text-gray-500">Selecciona la nueva fecha y horario:</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Selecciona la nueva fecha y horario:</p>
                 <PasoFechaHora
                   servicioId={citaRepetir.servicioId}
                   empleadoId={citaRepetir.empleadoId}
@@ -1285,32 +1285,32 @@ export default function CitasPage() {
             {/* Paso 2 — confirmar datos del cliente */}
             {pasoRepetir === 2 && (
               <div className="space-y-4">
-                <div className="bg-gray-50 rounded-lg p-3 text-sm space-y-1">
-                  <p><span className="text-gray-500">Servicio:</span> <span className="font-medium">{citaRepetir.nombreServicio}</span></p>
-                  <p><span className="text-gray-500">Profesional:</span> <span className="font-medium">{citaRepetir.nombreEmpleado}</span></p>
-                  <p><span className="text-gray-500">Hora:</span> <span className="font-medium capitalize">{slotRepetir ? formatFechaHora(slotRepetir.inicio) : ""}</span></p>
+                <div className="bg-gray-50 dark:bg-slate-700 rounded-lg p-3 text-sm space-y-1">
+                  <p><span className="text-gray-500 dark:text-gray-400">Servicio:</span> <span className="font-medium dark:text-gray-200">{citaRepetir.nombreServicio}</span></p>
+                  <p><span className="text-gray-500 dark:text-gray-400">Profesional:</span> <span className="font-medium dark:text-gray-200">{citaRepetir.nombreEmpleado}</span></p>
+                  <p><span className="text-gray-500 dark:text-gray-400">Hora:</span> <span className="font-medium dark:text-gray-200 capitalize">{slotRepetir ? formatFechaHora(slotRepetir.inicio) : ""}</span></p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Nombre del cliente <span className="text-red-400">*</span></label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre del cliente <span className="text-red-400">*</span></label>
                   <input
                     type="text"
                     value={fClienteRepetir.nombre}
                     onChange={(e) => setFClienteRepetir((p) => ({ ...p, nombre: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700"
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono <span className="text-red-400">*</span></label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Teléfono <span className="text-red-400">*</span></label>
                   <input
                     type="tel"
                     value={fClienteRepetir.telefono}
                     onChange={(e) => setFClienteRepetir((p) => ({ ...p, telefono: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700"
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email <span className="text-gray-400 font-normal">(opcional)</span>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Email <span className="text-gray-400 dark:text-gray-500 font-normal">(opcional)</span>
                   </label>
                   <input
                     type="email"
@@ -1320,8 +1320,8 @@ export default function CitasPage() {
                       if (emailRepetirError) setEmailRepetirError(validarEmailCliente(e.target.value));
                     }}
                     onBlur={() => setEmailRepetirError(validarEmailCliente(fClienteRepetir.email))}
-                    className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700 ${
-                      emailRepetirError ? "border-red-400 bg-red-50" : "border-gray-200"
+                    className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100 ${
+                      emailRepetirError ? "border-red-400 bg-red-50" : "border-gray-200 dark:border-slate-600"
                     }`}
                   />
                   {emailRepetirError && (
@@ -1331,14 +1331,14 @@ export default function CitasPage() {
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Nota interna <span className="text-gray-400 font-normal">(opcional)</span>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Nota interna <span className="text-gray-400 dark:text-gray-500 font-normal">(opcional)</span>
                   </label>
                   <textarea
                     value={fClienteRepetir.notas}
                     onChange={(e) => setFClienteRepetir((p) => ({ ...p, notas: e.target.value }))}
                     rows={2}
-                    className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700 resize-none"
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700 resize-none"
                   />
                 </div>
                 <div className="flex gap-2">

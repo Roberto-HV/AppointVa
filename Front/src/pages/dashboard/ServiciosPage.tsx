@@ -333,13 +333,13 @@ export default function ServiciosPage() {
                   <div className="flex gap-2 shrink-0">
                     <button
                       onClick={() => abrirEditarCategoria(c)}
-                      className="text-xs font-medium px-2.5 py-1 rounded-lg bg-slate-700/10 text-slate-700 hover:bg-slate-700/20 transition"
+                      className="text-xs font-medium px-2.5 py-1 rounded-lg bg-slate-700/10 text-slate-700 hover:bg-slate-700/20 dark:bg-slate-600/30 dark:text-slate-300 dark:hover:bg-slate-600/50 dark:border dark:border-slate-500 transition"
                     >
                       Editar
                     </button>
                     <button
                       onClick={() => setCategoriaEliminar(c)}
-                      className="text-xs font-medium px-2.5 py-1 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 transition"
+                      className="text-xs font-medium px-2.5 py-1 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 dark:bg-red-900/40 dark:text-red-400 dark:hover:bg-red-900/60 transition"
                     >
                       Eliminar
                     </button>
