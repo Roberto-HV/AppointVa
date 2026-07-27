@@ -48,7 +48,6 @@ function formatPrecioCorto(n: number) {
 interface OnboardingProps {
   negocioId: string;
   slug: string;
-  tieneCitas: boolean;
   tieneServicios: boolean;
   tieneHorarios: boolean;
   tieneEmpleados: boolean;
@@ -57,7 +56,7 @@ interface OnboardingProps {
   cargando: boolean;
 }
 
-function WizardOnboarding({ negocioId, slug, tieneCitas, tieneServicios, tieneHorarios, tieneEmpleados, tieneDescripcion, tieneGaleria, cargando }: OnboardingProps) {
+function WizardOnboarding({ negocioId, slug, tieneServicios, tieneHorarios, tieneEmpleados, tieneDescripcion, tieneGaleria, cargando }: OnboardingProps) {
   const keyStorage = `onboarding-ok-${negocioId}`;
   const keyEnlace = `enlace-visto-${negocioId}`;
   const [cerrado, setCerrado] = useState(() => !!localStorage.getItem(keyStorage));
@@ -223,7 +222,7 @@ function VistaPropietario({ nombre }: { nombre: string }) {
         <WizardOnboarding
           negocioId={usuario.negocioId}
           slug={negocio.slug ?? ""}
-          tieneCitas={(data?.citasMes ?? 0) > 0}
+
           tieneServicios={(data?.topServicios?.length ?? 0) > 0}
           tieneHorarios={horarios.some(h => h.activo)}
           tieneEmpleados={empleados.length > 0}
