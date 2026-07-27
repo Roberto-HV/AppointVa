@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
-import { CheckCircle2, Circle, X, Scissors, Users, CalendarDays, BarChart2, UserCheck, ChevronRight, Clock, TrendingUp } from "lucide-react";
+import { CheckCircle2, Circle, X, Scissors, Users, CalendarDays, BarChart2, UserCheck, ChevronRight, Clock, TrendingUp, Store, Images, ExternalLink } from "lucide-react";
 import { clientesApi } from "../../api/clientes";
 import type { ClienteCitaDto } from "../../types";
 import { NotificacionBanner } from "../../components/ui/NotificacionBanner";
@@ -47,16 +47,21 @@ function formatPrecioCorto(n: number) {
 // ── Wizard de onboarding ──────────────────────────────────────────────────────
 interface OnboardingProps {
   negocioId: string;
+  slug: string;
   tieneCitas: boolean;
   tieneServicios: boolean;
   tieneHorarios: boolean;
   tieneEmpleados: boolean;
+  tieneDescripcion: boolean;
+  tieneGaleria: boolean;
   cargando: boolean;
 }
 
-function WizardOnboarding({ negocioId, tieneCitas, tieneServicios, tieneHorarios, tieneEmpleados, cargando }: OnboardingProps) {
+function WizardOnboarding({ negocioId, slug, tieneCitas, tieneServicios, tieneHorarios, tieneEmpleados, tieneDescripcion, tieneGaleria, cargando }: OnboardingProps) {
   const keyStorage = `onboarding-ok-${negocioId}`;
+  const keyEnlace = `enlace-visto-${negocioId}`;
   const [cerrado, setCerrado] = useState(() => !!localStorage.getItem(keyStorage));
+  const [enlaceVisto, setEnlaceVisto] = useState(() => !!localStorage.getItem(keyEnlace));
 
   if (cerrado || cargando || tieneCitas) return null;
 
@@ -66,10 +71,13 @@ function WizardOnboarding({ negocioId, tieneCitas, tieneServicios, tieneHorarios
   };
 
   const pasos = [
-    { hecho: true,            icono: CheckCircle2, label: "Cuenta creada",        desc: "Tu negocio está registrado en AppointVa",                   accion: null },
-    { hecho: tieneServicios,  icono: Scissors,     label: "Agrega servicios",     desc: "Define los servicios que ofreces y sus precios",             accion: { href: "/dashboard/servicios", texto: "Ir a Servicios" } },
-    { hecho: tieneHorarios,   icono: CalendarDays, label: "Configura tus horarios", desc: "Sin horarios configurados tus clientes no podrán reservar", accion: { href: "/dashboard/perfil?tab=horarios", texto: "Ir a Horarios" } },
-    { hecho: tieneEmpleados,  icono: Users,        label: "Agrega tu equipo",     desc: "Registra empleados para asignar citas",                      accion: { href: "/dashboard/empleados", texto: "Ir a Empleados" } },
+    { hecho: true,             icono: CheckCircle2,  label: "Cuenta creada",              desc: "Tu negocio está registrado en AppointVa",                    accion: null },
+    { hecho: tieneServicios,   icono: Scissors,      label: "Agrega servicios",           desc: "Define los servicios que ofreces y sus precios",              accion: { href: "/dashboard/servicios", texto: "Ir a Servicios" } },
+    { hecho: tieneHorarios,    icono: CalendarDays,  label: "Configura tus horarios",     desc: "Sin horarios configurados tus clientes no podrán reservar",   accion: { href: "/dashboard/perfil?tab=horarios", texto: "Ir a Horarios" } },
+    { hecho: tieneEmpleados,   icono: Users,         label: "Agrega tu equipo",           desc: "Registra empleados para asignar citas",                       accion: { href: "/dashboard/empleados", texto: "Ir a Empleados" } },
+    { hecho: tieneDescripcion, icono: Store,         label: "Completa tu perfil",         desc: "Agrega descripción y foto para que los clientes te conozcan",  accion: { href: "/dashboard/perfil", texto: "Ir a Perfil" } },
+    { hecho: tieneGaleria,     icono: Images,        label: "Sube fotos a tu galería",    desc: "Las imágenes generan confianza y atraen más clientes",         accion: { href: "/dashboard/galeria", texto: "Ir a Galería" } },
+    { hecho: enlaceVisto,      icono: ExternalLink,  label: "Prueba tu página de reservas", desc: "Visita tu página y comprueba que todo se ve bien",           accion: { href: `/b/${slug}`, texto: "Ver mi página", externo: true, onClick: () => { localStorage.setItem(keyEnlace, "1"); setEnlaceVisto(true); } } },
   ];
 
   const hechos = pasos.filter((p) => p.hecho).length;
@@ -100,9 +108,21 @@ function WizardOnboarding({ negocioId, tieneCitas, tieneServicios, tieneHorarios
               {!p.hecho && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{p.desc}</p>}
             </div>
             {!p.hecho && p.accion && (
-              <Link to={p.accion.href} className="shrink-0 text-xs font-semibold text-slate-700 bg-slate-700/10 hover:bg-slate-700/20 px-3 py-1.5 rounded-lg transition">
-                {p.accion.texto}
-              </Link>
+              p.accion.externo ? (
+                <a
+                  href={p.accion.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={p.accion.onClick}
+                  className="shrink-0 text-xs font-semibold text-slate-700 bg-slate-700/10 hover:bg-slate-700/20 px-3 py-1.5 rounded-lg transition"
+                >
+                  {p.accion.texto}
+                </a>
+              ) : (
+                <Link to={p.accion.href} className="shrink-0 text-xs font-semibold text-slate-700 bg-slate-700/10 hover:bg-slate-700/20 px-3 py-1.5 rounded-lg transition">
+                  {p.accion.texto}
+                </Link>
+              )
             )}
           </div>
         ))}
@@ -143,6 +163,12 @@ function VistaPropietario({ nombre }: { nombre: string }) {
   const { data: horarios = [] } = useQuery({
     queryKey: ["horarios-wizard"],
     queryFn: () => negociosApi.obtenerHorarios(),
+    staleTime: 1000 * 60 * 10,
+  });
+
+  const { data: galeria = [] } = useQuery({
+    queryKey: ["galeria-wizard"],
+    queryFn: negociosApi.obtenerGaleria,
     staleTime: 1000 * 60 * 10,
   });
 
@@ -189,10 +215,13 @@ function VistaPropietario({ nombre }: { nombre: string }) {
       {negocio && usuario?.negocioId && (
         <WizardOnboarding
           negocioId={usuario.negocioId}
+          slug={negocio.slug ?? ""}
           tieneCitas={(data?.citasMes ?? 0) > 0}
           tieneServicios={(data?.topServicios?.length ?? 0) > 0}
           tieneHorarios={horarios.some(h => h.activo)}
           tieneEmpleados={empleados.length > 0}
+          tieneDescripcion={!!negocio.descripcion}
+          tieneGaleria={galeria.length > 0}
           cargando={isLoading}
         />
       )}
