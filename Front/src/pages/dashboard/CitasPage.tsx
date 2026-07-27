@@ -914,8 +914,8 @@ export default function CitasPage() {
           <div className="space-y-4">
             {/* Servicio */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Servicio</label>
-              <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-lg divide-y divide-gray-100">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Servicio</label>
+              <div className="max-h-48 overflow-y-auto border border-gray-200 dark:border-slate-600 rounded-lg divide-y divide-gray-100 dark:divide-slate-600">
                 {servicios.filter((s) => s.activo).map((s) => (
                   <button
                     key={s.id}
@@ -924,11 +924,11 @@ export default function CitasPage() {
                     className={`w-full text-left px-3 py-2.5 text-sm transition ${
                       svcSel === s.id
                         ? "bg-slate-700 text-white"
-                        : "hover:bg-gray-50 text-gray-700"
+                        : "hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200"
                     }`}
                   >
                     <span className="font-medium">{s.nombre}</span>
-                    <span className={`ml-2 text-xs ${svcSel === s.id ? "text-slate-300" : "text-gray-400"}`}>
+                    <span className={`ml-2 text-xs ${svcSel === s.id ? "text-slate-300" : "text-gray-400 dark:text-gray-500"}`}>
                       {s.duracionMinutos} min · {formatPrecio(s.precio)}
                     </span>
                   </button>
@@ -939,11 +939,11 @@ export default function CitasPage() {
             {/* Empleado */}
             {svcSel && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Profesional</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Profesional</label>
                 {empleadosFiltrados.length === 0 ? (
-                  <p className="text-sm text-gray-400">Ningún empleado ofrece este servicio</p>
+                  <p className="text-sm text-gray-400 dark:text-gray-500">Ningún empleado ofrece este servicio</p>
                 ) : (
-                  <div className="max-h-36 overflow-y-auto border border-gray-200 rounded-lg divide-y divide-gray-100">
+                  <div className="max-h-36 overflow-y-auto border border-gray-200 dark:border-slate-600 rounded-lg divide-y divide-gray-100 dark:divide-slate-600">
                     {empleadosFiltrados.map((e) => (
                       <button
                         key={e.id}
@@ -952,7 +952,7 @@ export default function CitasPage() {
                         className={`w-full text-left px-3 py-2.5 text-sm transition ${
                           empSel === e.id
                             ? "bg-slate-700 text-white"
-                            : "hover:bg-gray-50 text-gray-700"
+                            : "hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200"
                         }`}
                       >
                         {e.nombre}
@@ -966,13 +966,13 @@ export default function CitasPage() {
             {/* Fecha */}
             {svcSel && empSel && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Fecha</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha</label>
                 <input
                   type="date"
                   value={fechaNueva}
                   min={new Date().toISOString().split("T")[0]}
                   onChange={(e) => { setFechaNueva(e.target.value); setSlotNuevo(""); }}
-                  className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700"
+                  className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700"
                 />
               </div>
             )}
@@ -980,11 +980,11 @@ export default function CitasPage() {
             {/* Slots */}
             {svcSel && empSel && fechaNueva && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Horario disponible</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Horario disponible</label>
                 {cargandoSlotsNueva ? (
-                  <p className="text-sm text-gray-400">Cargando horarios...</p>
+                  <p className="text-sm text-gray-400 dark:text-gray-500">Cargando horarios...</p>
                 ) : slotsNueva.length === 0 ? (
-                  <p className="text-sm text-gray-400">Sin horarios disponibles para esta fecha</p>
+                  <p className="text-sm text-gray-400 dark:text-gray-500">Sin horarios disponibles para esta fecha</p>
                 ) : (
                   <div className="grid grid-cols-3 gap-2 max-h-44 overflow-y-auto pr-1">
                     {slotsNueva.map((s) => (
@@ -994,7 +994,7 @@ export default function CitasPage() {
                         className={`py-2 text-sm rounded-lg border transition ${
                           slotNuevo === s.inicio
                             ? "bg-slate-700 text-white border-slate-700"
-                            : "border-gray-200 text-gray-700 hover:border-slate-700"
+                            : "border-gray-200 dark:border-slate-600 text-gray-700 dark:text-gray-300 hover:border-slate-700 dark:hover:border-slate-400"
                         }`}
                       >
                         {s.horaTexto}
@@ -1019,37 +1019,37 @@ export default function CitasPage() {
         {pasoCita === 2 && (
           <div className="space-y-4">
             {/* Resumen */}
-            <div className="bg-gray-50 rounded-lg p-3 text-sm space-y-1">
-              <p><span className="text-gray-500">Servicio:</span> <span className="font-medium">{servicios.find((s) => s.id === svcSel)?.nombre}</span></p>
-              <p><span className="text-gray-500">Profesional:</span> <span className="font-medium">{empleados.find((e) => e.id === empSel)?.nombre}</span></p>
-              <p><span className="text-gray-500">Hora:</span> <span className="font-medium capitalize">{slotNuevo ? formatFechaHora(slotNuevo) : ""}</span></p>
+            <div className="bg-gray-50 dark:bg-slate-700 rounded-lg p-3 text-sm space-y-1">
+              <p><span className="text-gray-500 dark:text-gray-400">Servicio:</span> <span className="font-medium dark:text-gray-200">{servicios.find((s) => s.id === svcSel)?.nombre}</span></p>
+              <p><span className="text-gray-500 dark:text-gray-400">Profesional:</span> <span className="font-medium dark:text-gray-200">{empleados.find((e) => e.id === empSel)?.nombre}</span></p>
+              <p><span className="text-gray-500 dark:text-gray-400">Hora:</span> <span className="font-medium dark:text-gray-200 capitalize">{slotNuevo ? formatFechaHora(slotNuevo) : ""}</span></p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nombre del cliente <span className="text-red-400">*</span></label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre del cliente <span className="text-red-400">*</span></label>
               <input
                 type="text"
                 value={fCliente.nombre}
                 onChange={(e) => setFCliente((p) => ({ ...p, nombre: e.target.value }))}
                 placeholder="Nombre completo"
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700"
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono <span className="text-red-400">*</span></label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Teléfono <span className="text-red-400">*</span></label>
               <input
                 type="tel"
                 value={fCliente.telefono}
                 onChange={(e) => setFCliente((p) => ({ ...p, telefono: e.target.value }))}
                 placeholder="10 dígitos"
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700"
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email <span className="text-gray-400 font-normal">(opcional — para recordatorio)</span>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Email <span className="text-gray-400 dark:text-gray-500 font-normal">(opcional — para recordatorio)</span>
               </label>
               <input
                 type="email"
@@ -1060,8 +1060,8 @@ export default function CitasPage() {
                 }}
                 onBlur={() => setEmailClienteError(validarEmailCliente(fCliente.email))}
                 placeholder="correo@ejemplo.com"
-                className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700 ${
-                  emailClienteError ? "border-red-400 bg-red-50" : "border-gray-200"
+                className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100 ${
+                  emailClienteError ? "border-red-400 bg-red-50" : "border-gray-200 dark:border-slate-600"
                 }`}
               />
               {emailClienteError && (
@@ -1072,22 +1072,22 @@ export default function CitasPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Nota interna <span className="text-gray-400 font-normal">(opcional)</span>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Nota interna <span className="text-gray-400 dark:text-gray-500 font-normal">(opcional)</span>
               </label>
               <textarea
                 value={fCliente.notas}
                 onChange={(e) => setFCliente((p) => ({ ...p, notas: e.target.value }))}
                 rows={2}
                 placeholder="Preferencias, indicaciones..."
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700 resize-none"
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700 resize-none"
               />
             </div>
 
             <div className="flex gap-2">
               <button
                 onClick={() => setPasoCita(1)}
-                className="px-4 py-2.5 border border-gray-200 text-gray-600 hover:bg-gray-50 rounded-xl text-sm transition"
+                className="px-4 py-2.5 border border-gray-200 dark:border-slate-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700 rounded-xl text-sm transition"
               >
                 ← Atrás
               </button>
@@ -1344,7 +1344,7 @@ export default function CitasPage() {
                 <div className="flex gap-2">
                   <button
                     onClick={() => setPasoRepetir(1)}
-                    className="px-4 py-2.5 border border-gray-200 text-gray-600 hover:bg-gray-50 rounded-xl text-sm transition"
+                    className="px-4 py-2.5 border border-gray-200 dark:border-slate-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700 rounded-xl text-sm transition"
                   >
                     ← Atrás
                   </button>
