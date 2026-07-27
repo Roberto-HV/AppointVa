@@ -210,7 +210,7 @@ namespace AppointVaAPI.Controllers.V1
                 var urlReset = $"{frontendUrl}/restablecer-contrasena?token={tokenEncoded}&email={Uri.EscapeDataString(dto.Email)}";
 
                 _ = Task.Run(async () =>
-                    await _email.EnviarRecuperacionContrasenaAsync(dto.Email, usuario.Nombre, urlReset));
+                    await _email.EnviarRecuperacionContrasenaAsync(dto.Email, usuario.Nombre ?? "Usuario", urlReset));
             }
 
             return Ok(new { mensaje = "Si el correo estÃ¡ registrado, recibirÃ¡s un enlace para restablecer tu contraseÃ±a." });
