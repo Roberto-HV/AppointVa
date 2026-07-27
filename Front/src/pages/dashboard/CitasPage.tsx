@@ -1115,28 +1115,28 @@ export default function CitasPage() {
       <Modal abierto={!!citaReag} onCerrar={() => setCitaReag(null)} titulo="Reagendar cita" ancho="sm">
         {citaReag && (
           <div className="space-y-4">
-            <div className="bg-gray-50 rounded-lg p-3 text-sm space-y-1">
-              <p><span className="text-gray-500">Cliente:</span> <span className="font-medium">{citaReag.nombreCliente}</span></p>
-              <p><span className="text-gray-500">Servicio:</span> <span className="font-medium">{citaReag.nombreServicio}</span></p>
-              <p><span className="text-gray-500">Actual:</span> <span className="font-medium capitalize">{formatFechaHora(citaReag.inicioEn)}</span></p>
+            <div className="bg-gray-50 dark:bg-slate-700 rounded-lg p-3 text-sm space-y-1">
+              <p><span className="text-gray-500 dark:text-gray-400">Cliente:</span> <span className="font-medium dark:text-gray-200">{citaReag.nombreCliente}</span></p>
+              <p><span className="text-gray-500 dark:text-gray-400">Servicio:</span> <span className="font-medium dark:text-gray-200">{citaReag.nombreServicio}</span></p>
+              <p><span className="text-gray-500 dark:text-gray-400">Actual:</span> <span className="font-medium dark:text-gray-200 capitalize">{formatFechaHora(citaReag.inicioEn)}</span></p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nueva fecha</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nueva fecha</label>
               <input
                 type="date"
                 value={fechaReag}
                 min={new Date().toISOString().split("T")[0]}
                 onChange={(e) => { setFechaReag(e.target.value); setSlotReag(""); }}
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700"
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700"
               />
             </div>
             {fechaReag && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Nuevo horario</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Nuevo horario</label>
                 {cargandoSlots ? (
-                  <p className="text-sm text-gray-400">Cargando horarios disponibles...</p>
+                  <p className="text-sm text-gray-400 dark:text-gray-500">Cargando horarios disponibles...</p>
                 ) : slotsReag.length === 0 ? (
-                  <p className="text-sm text-gray-400">Sin horarios disponibles para esta fecha</p>
+                  <p className="text-sm text-gray-400 dark:text-gray-500">Sin horarios disponibles para esta fecha</p>
                 ) : (
                   <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto pr-1">
                     {slotsReag.map((s) => (
@@ -1146,7 +1146,7 @@ export default function CitasPage() {
                         className={`py-2 text-sm rounded-lg border transition ${
                           slotReag === s.inicio
                             ? "bg-violet-600 text-white border-violet-600"
-                            : "border-gray-200 text-gray-700 hover:border-violet-400"
+                            : "border-gray-200 dark:border-slate-600 text-gray-700 dark:text-gray-300 hover:border-violet-400 dark:hover:border-violet-500"
                         }`}
                       >
                         {s.horaTexto}
@@ -1192,44 +1192,44 @@ export default function CitasPage() {
       <Modal abierto={!!citaSel} onCerrar={() => setCitaSel(null)} titulo="Cambiar estado de la cita" ancho="sm">
         {citaSel && (
           <div>
-            <div className="bg-gray-50 rounded-lg p-3 mb-5 text-sm space-y-1">
+            <div className="bg-gray-50 dark:bg-slate-700 rounded-lg p-3 mb-5 text-sm space-y-1">
               <div className="flex items-center justify-between">
-                <p><span className="text-gray-500">Cliente:</span> <span className="font-medium">{citaSel.nombreCliente}</span></p>
+                <p><span className="text-gray-500 dark:text-gray-400">Cliente:</span> <span className="font-medium dark:text-gray-200">{citaSel.nombreCliente}</span></p>
                 <Link
                   to={`/dashboard/clientes?clienteId=${citaSel.clienteId}`}
-                  className="text-xs text-slate-700 hover:underline font-medium shrink-0 ml-2"
+                  className="text-xs text-slate-700 dark:text-slate-300 hover:underline font-medium shrink-0 ml-2"
                   onClick={() => setCitaSel(null)}
                 >
                   Ver historial
                 </Link>
               </div>
-              <p><span className="text-gray-500">Servicio:</span> <span className="font-medium">{citaSel.nombreServicio}</span></p>
-              <p><span className="text-gray-500">Hora:</span> <span className="font-medium capitalize">{formatFechaHora(citaSel.inicioEn)}</span></p>
-              <p><span className="text-gray-500">Estado actual:</span> <span className="font-medium">{citaSel.estadoTexto}</span></p>
+              <p><span className="text-gray-500 dark:text-gray-400">Servicio:</span> <span className="font-medium dark:text-gray-200">{citaSel.nombreServicio}</span></p>
+              <p><span className="text-gray-500 dark:text-gray-400">Hora:</span> <span className="font-medium dark:text-gray-200 capitalize">{formatFechaHora(citaSel.inicioEn)}</span></p>
+              <p><span className="text-gray-500 dark:text-gray-400">Estado actual:</span> <span className="font-medium dark:text-gray-200">{citaSel.estadoTexto}</span></p>
               {respuestasIntake.length > 0 && (
-                <div className="mt-2 pt-2 border-t border-gray-200 space-y-1">
-                  <p className="text-gray-400 text-xs font-medium uppercase tracking-wide">Preguntas de intake</p>
+                <div className="mt-2 pt-2 border-t border-gray-200 dark:border-slate-600 space-y-1">
+                  <p className="text-gray-400 dark:text-gray-500 text-xs font-medium uppercase tracking-wide">Preguntas de intake</p>
                   {respuestasIntake.map((r, i) => (
                     <p key={i}>
-                      <span className="text-gray-500">{r.etiqueta}:</span>{" "}
-                      <span className="font-medium">{r.valor ?? "—"}</span>
+                      <span className="text-gray-500 dark:text-gray-400">{r.etiqueta}:</span>{" "}
+                      <span className="font-medium dark:text-gray-200">{r.valor ?? "—"}</span>
                     </p>
                   ))}
                 </div>
               )}
             </div>
             {accionesCita.length === 0 ? (
-              <p className="text-sm text-gray-500 text-center py-2">Esta cita no puede cambiar de estado.</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-2">Esta cita no puede cambiar de estado.</p>
             ) : (
               <>
-                <p className="text-sm font-medium text-gray-700 mb-3">Selecciona el nuevo estado:</p>
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Selecciona el nuevo estado:</p>
                 <div className="space-y-2 mb-4">
                   {accionesCita.map((acc) => (
                     <button key={acc.estado} onClick={() => setNuevoEstado(acc.estado)}
                       className={`w-full py-2 rounded-lg text-sm font-medium transition border-2 ${
                         nuevoEstado === acc.estado
                           ? "border-gray-800 " + acc.clase
-                          : "border-transparent bg-gray-100 text-gray-700 hover:bg-gray-200"
+                          : "border-transparent bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600"
                       }`}>
                       {acc.label}
                     </button>
@@ -1237,12 +1237,12 @@ export default function CitasPage() {
                 </div>
                 {(nuevoEstado === ESTADOS.Cancelada || nuevoEstado === ESTADOS.Inasistencia) && (
                   <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Motivo <span className="text-gray-400 font-normal">(opcional)</span>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Motivo <span className="text-gray-400 dark:text-gray-500 font-normal">(opcional)</span>
                     </label>
                     <textarea value={motivo} onChange={(e) => setMotivo(e.target.value)}
                       rows={2} placeholder="Motivo de la cancelación..."
-                      className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700 resize-none" />
+                      className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700 resize-none" />
                   </div>
                 )}
                 <button

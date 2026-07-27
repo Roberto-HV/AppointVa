@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Pencil, Trash2, GripVertical, ClipboardList, X, Check } from "lucide-react";
 import { intakeApi, type CampoIntake } from "../../api/intake";
@@ -122,8 +122,8 @@ export default function IntakePage() {
     <div className="p-6 max-w-3xl mx-auto space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Cuestionario</h1>
-          <p className="text-gray-500 text-sm mt-1">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Cuestionario</h1>
+          <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
             Preguntas adicionales que verá el cliente al reservar
           </p>
         </div>
@@ -137,14 +137,14 @@ export default function IntakePage() {
 
       {/* Form modal */}
       {showForm && (
-        <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
+        <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-gray-800">
+            <h2 className="font-semibold text-gray-800 dark:text-gray-100">
               {editando ? "Editar pregunta" : "Nueva pregunta"}
             </h2>
             <button
               onClick={() => { setShowForm(false); setEditando(null); }}
-              className="text-gray-400 hover:text-gray-600"
+              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
             >
               <X size={18} />
             </button>
@@ -152,21 +152,21 @@ export default function IntakePage() {
 
           <div className="space-y-3">
             <div>
-              <label className="text-sm font-medium text-gray-700">Pregunta / etiqueta</label>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Pregunta / etiqueta</label>
               <input
                 value={form.etiqueta}
                 onChange={(e) => setForm({ ...form, etiqueta: e.target.value })}
                 placeholder="Ej: ¿Tienes alguna alergia?"
-                className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-700/30"
+                className="mt-1 w-full border border-gray-200 dark:bg-slate-800 dark:text-gray-100 dark:border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-700/30 dark:focus:ring-slate-500/30"
               />
             </div>
 
             <div>
-              <label className="text-sm font-medium text-gray-700">Tipo de respuesta</label>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Tipo de respuesta</label>
               <select
                 value={form.tipo}
                 onChange={(e) => setForm({ ...form, tipo: e.target.value })}
-                className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-700/30"
+                className="mt-1 w-full border border-gray-200 dark:bg-slate-800 dark:text-gray-100 dark:border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-700/30 dark:focus:ring-slate-500/30"
               >
                 {TIPOS.map((t) => (
                   <option key={t.value} value={t.value}>{t.label}</option>
@@ -176,27 +176,27 @@ export default function IntakePage() {
 
             {form.tipo === "Seleccion" && (
               <div>
-                <label className="text-sm font-medium text-gray-700">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   Opciones (separadas por coma)
                 </label>
                 <input
                   value={form.opciones}
                   onChange={(e) => setForm({ ...form, opciones: e.target.value })}
                   placeholder="Sí, No, Tal vez"
-                  className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-700/30"
+                  className="mt-1 w-full border border-gray-200 dark:bg-slate-800 dark:text-gray-100 dark:border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-700/30 dark:focus:ring-slate-500/30"
                 />
-                <p className="text-xs text-gray-400 mt-1">
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                   Escribe las opciones separadas por coma
                 </p>
               </div>
             )}
 
             <div>
-              <label className="text-sm font-medium text-gray-700">Servicio (opcional)</label>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Servicio (opcional)</label>
               <select
                 value={form.servicioId}
                 onChange={(e) => setForm({ ...form, servicioId: e.target.value })}
-                className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-700/30"
+                className="mt-1 w-full border border-gray-200 dark:bg-slate-800 dark:text-gray-100 dark:border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-700/30 dark:focus:ring-slate-500/30"
               >
                 <option value="">Todos los servicios</option>
                 {servicios.map((s) => (
@@ -212,14 +212,14 @@ export default function IntakePage() {
                 onChange={(e) => setForm({ ...form, requerido: e.target.checked })}
                 className="accent-slate-700 w-4 h-4"
               />
-              <span className="text-sm font-medium text-gray-700">Respuesta requerida</span>
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Respuesta requerida</span>
             </label>
           </div>
 
           <div className="flex justify-end gap-2 pt-1">
             <button
               onClick={() => { setShowForm(false); setEditando(null); }}
-              className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition"
+              className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition"
             >
               Cancelar
             </button>
@@ -237,9 +237,9 @@ export default function IntakePage() {
 
       {/* Lista de campos */}
       {isLoading ? (
-        <div className="text-center py-16 text-gray-400">Cargando...</div>
+        <div className="text-center py-16 text-gray-400 dark:text-gray-500">Cargando...</div>
       ) : campos.length === 0 ? (
-        <div className="text-center py-16 text-gray-400">
+        <div className="text-center py-16 text-gray-400 dark:text-gray-500">
           <ClipboardList size={40} className="mx-auto mb-3 opacity-30" />
           <p className="font-medium">No hay preguntas configuradas</p>
           <p className="text-sm mt-1">
@@ -264,7 +264,7 @@ export default function IntakePage() {
       )}
 
       {campos.length > 0 && (
-        <p className="text-xs text-gray-400 text-center">
+        <p className="text-xs text-gray-400 dark:text-gray-500 text-center">
           {campos.length} pregunta{campos.length !== 1 ? "s" : ""} — aparecen en el formulario de reserva en orden mostrado
         </p>
       )}
@@ -286,21 +286,21 @@ function CampoRow({
   const tipoLabel = TIPOS.find((t) => t.value === campo.tipo)?.label ?? campo.tipo;
 
   return (
-    <div className="bg-white border border-gray-100 rounded-xl px-4 py-3 flex items-center gap-3">
-      <div className="text-gray-300 cursor-grab shrink-0">
+    <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl px-4 py-3 flex items-center gap-3">
+      <div className="text-gray-300 dark:text-gray-600 cursor-grab shrink-0">
         <GripVertical size={16} />
       </div>
-      <span className="text-xs text-gray-400 w-5 shrink-0">{orden}</span>
+      <span className="text-xs text-gray-400 dark:text-gray-500 w-5 shrink-0">{orden}</span>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <p className="font-medium text-gray-800 text-sm truncate">{campo.etiqueta}</p>
+          <p className="font-medium text-gray-800 dark:text-gray-200 text-sm truncate">{campo.etiqueta}</p>
           {campo.requerido && (
-            <span className="text-xs bg-red-50 text-red-500 px-1.5 py-0.5 rounded font-medium">
+            <span className="text-xs bg-red-50 dark:bg-red-900/40 text-red-500 dark:text-red-400 px-1.5 py-0.5 rounded font-medium">
               Requerido
             </span>
           )}
         </div>
-        <div className="flex items-center gap-3 text-xs text-gray-400 mt-0.5">
+        <div className="flex items-center gap-3 text-xs text-gray-400 dark:text-gray-500 mt-0.5">
           <span>{tipoLabel}</span>
           {campo.servicioNombre ? (
             <span>Solo para: {campo.servicioNombre}</span>
@@ -312,13 +312,13 @@ function CampoRow({
       <div className="flex items-center gap-1 shrink-0">
         <button
           onClick={onEditar}
-          className="p-1.5 text-gray-400 hover:text-slate-700 hover:bg-slate-700/10 rounded-lg transition"
+          className="p-1.5 text-gray-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-700/10 dark:hover:bg-slate-600/30 rounded-lg transition"
         >
           <Pencil size={15} />
         </button>
         <button
           onClick={onEliminar}
-          className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition"
+          className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition"
         >
           <Trash2 size={15} />
         </button>
