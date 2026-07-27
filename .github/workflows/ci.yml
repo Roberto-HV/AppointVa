@@ -53,3 +53,35 @@ jobs:
       - name: Build
         run: npm run build
         working-directory: Front
+
+  e2e:
+    name: Frontend — E2E (Playwright)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: Front/package-lock.json
+
+      - name: Install
+        run: npm ci
+        working-directory: Front
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+        working-directory: Front
+
+      - name: E2E tests
+        run: npm run test:e2e
+        working-directory: Front
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: Front/playwright-report/
+          retention-days: 7
