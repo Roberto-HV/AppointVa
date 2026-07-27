@@ -10,7 +10,7 @@ namespace AppointVaAPI.Controllers.V1
 {
     [ApiController]
     [Route("api/categorias")]
-    [Authorize(Roles = $"{Roles.Propietario},{Roles.SuperAdmin}")]
+    [Authorize]
     public class CategoriasController : ControllerBase
     {
         private readonly ICategoriaRepository _repo;
@@ -48,6 +48,7 @@ namespace AppointVaAPI.Controllers.V1
 
         // POST api/categorias
         [HttpPost]
+        [Authorize(Roles = $"{Roles.Propietario},{Roles.SuperAdmin}")]
         public async Task<IActionResult> Crear([FromBody] CrearCategoriaDto dto)
         {
             if (_contexto.NegocioId is null) return Unauthorized();
@@ -67,6 +68,7 @@ namespace AppointVaAPI.Controllers.V1
 
         // PUT api/categorias/{id}
         [HttpPut("{id:guid}")]
+        [Authorize(Roles = $"{Roles.Propietario},{Roles.SuperAdmin}")]
         public async Task<IActionResult> Actualizar(Guid id, [FromBody] CrearCategoriaDto dto)
         {
             if (_contexto.NegocioId is null) return Unauthorized();
@@ -83,6 +85,7 @@ namespace AppointVaAPI.Controllers.V1
 
         // DELETE api/categorias/{id}
         [HttpDelete("{id:guid}")]
+        [Authorize(Roles = $"{Roles.Propietario},{Roles.SuperAdmin}")]
         public async Task<IActionResult> Eliminar(Guid id)
         {
             if (_contexto.NegocioId is null) return Unauthorized();

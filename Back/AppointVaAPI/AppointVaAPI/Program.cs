@@ -250,10 +250,23 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    await db.Database.MigrateAsync();
-    // Safety net: ensure column exists regardless of migration history state
-    await db.Database.ExecuteSqlRawAsync(@"ALTER TABLE ""Negocios"" ADD COLUMN IF NOT EXISTS ""ListaEsperaActiva"" boolean NOT NULL DEFAULT false;");
-    await DataSeeder.SeedAsync(scope.ServiceProvider);
+    if (app.Environment.IsEnvironment("Testing"))
+    {
+        // InMemory database: create schema and seed without relational migration.
+        await db.Database.EnsureCreatedAsync();
+        await DataSeeder.SeedAsync(scope.ServiceProvider);
+    }
+    else if (db.Database.IsRelational())
+    {
+        await db.Database.MigrateAsync();
+        await db.Database.ExecuteSqlRawAsync(@"ALTER TABLE ""Negocios"" ADD COLUMN IF NOT EXISTS ""ListaEsperaActiva"" boolean NOT NULL DEFAULT false;");
+        await DataSeeder.SeedAsync(scope.ServiceProvider);
+    }
+    else
+    {
+        await db.Database.EnsureCreatedAsync();
+        await DataSeeder.SeedAsync(scope.ServiceProvider);
+    }
 }
 
 // ── Pipeline HTTP ─────────────────────────────────────────────────────────────
@@ -322,3 +335,5 @@ app.MapGet("/sitemap.xml", async (ApplicationDbContext db) =>
 });
 
 app.Run();
+
+public partial class Program { }
