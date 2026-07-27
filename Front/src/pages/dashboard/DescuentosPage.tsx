@@ -89,8 +89,8 @@ export default function DescuentosPage() {
     <div className="p-6 max-w-3xl mx-auto space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Cupones de descuento</h1>
-          <p className="text-gray-500 text-sm mt-1">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Cupones de descuento</h1>
+          <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
             Los clientes ingresan el código al reservar para obtener un descuento
           </p>
         </div>
@@ -104,46 +104,46 @@ export default function DescuentosPage() {
 
       {/* Form */}
       {showForm && (
-        <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
+        <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-2xl p-5 shadow-sm space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-gray-800">Nuevo cupón</h2>
-            <button onClick={() => { setShowForm(false); setForm(EMPTY); }} className="text-gray-400 hover:text-gray-600">
+            <h2 className="font-semibold text-gray-800 dark:text-gray-200">Nuevo cupón</h2>
+            <button onClick={() => { setShowForm(false); setForm(EMPTY); }} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400">
               <X size={18} />
             </button>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="text-sm font-medium text-gray-700">Código</label>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Código</label>
               <input
                 value={form.codigo}
                 onChange={(e) => setForm({ ...form, codigo: e.target.value.toUpperCase() })}
                 placeholder="PROMO20"
                 maxLength={50}
-                className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono uppercase focus:outline-none focus:ring-2 focus:ring-slate-700/30"
+                className="mt-1 w-full border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 rounded-lg px-3 py-2 text-sm font-mono uppercase focus:outline-none focus:ring-2 focus:ring-slate-700/30"
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700">Descripción (opcional)</label>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Descripción (opcional)</label>
               <input
                 value={form.descripcion}
                 onChange={(e) => setForm({ ...form, descripcion: e.target.value })}
                 placeholder="Descuento de bienvenida"
-                className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-700/30"
+                className="mt-1 w-full border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-700/30"
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700">Tipo</label>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Tipo</label>
               <select
                 value={form.tipo}
                 onChange={(e) => setForm({ ...form, tipo: e.target.value })}
-                className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-700/30"
+                className="mt-1 w-full border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-700/30"
               >
                 {TIPOS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                 Valor {form.tipo === "Porcentaje" ? "(%)" : "($)"}
               </label>
               <input
@@ -154,33 +154,33 @@ export default function DescuentosPage() {
                 min="0.01"
                 max={form.tipo === "Porcentaje" ? "100" : undefined}
                 step="0.01"
-                className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-700/30"
+                className="mt-1 w-full border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-700/30"
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700">Límite de usos (opcional)</label>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Límite de usos (opcional)</label>
               <input
                 type="number"
                 value={form.usoMaximo}
                 onChange={(e) => setForm({ ...form, usoMaximo: e.target.value })}
                 placeholder="Sin límite"
                 min="1"
-                className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-700/30"
+                className="mt-1 w-full border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-700/30"
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700">Fecha expiración (opcional)</label>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Fecha expiración (opcional)</label>
               <input
                 type="date"
                 value={form.fechaExpiracion}
                 onChange={(e) => setForm({ ...form, fechaExpiracion: e.target.value })}
-                className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-700/30"
+                className="mt-1 w-full border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-700/30"
               />
             </div>
           </div>
 
           <div className="flex justify-end gap-2 pt-1">
-            <button onClick={() => { setShowForm(false); setForm(EMPTY); }} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition">
+            <button onClick={() => { setShowForm(false); setForm(EMPTY); }} className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition">
               Cancelar
             </button>
             <button
@@ -196,9 +196,9 @@ export default function DescuentosPage() {
 
       {/* Lista activos */}
       {isLoading ? (
-        <div className="text-center py-16 text-gray-400">Cargando...</div>
+        <div className="text-center py-16 text-gray-400 dark:text-gray-500">Cargando...</div>
       ) : descuentos.length === 0 ? (
-        <div className="text-center py-16 text-gray-400">
+        <div className="text-center py-16 text-gray-400 dark:text-gray-500">
           <Tag size={40} className="mx-auto mb-3 opacity-30" />
           <p className="font-medium">No hay cupones configurados</p>
           <p className="text-sm mt-1">Crea cupones para ofrecer descuentos a tus clientes</p>
@@ -207,7 +207,7 @@ export default function DescuentosPage() {
         <>
           {activos.length > 0 && (
             <div className="space-y-3">
-              <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Activos ({activos.length})</h2>
+              <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Activos ({activos.length})</h2>
               {activos.map((d) => (
                 <DescuentoRow
                   key={d.id}
@@ -224,7 +224,7 @@ export default function DescuentosPage() {
           )}
           {inactivos.length > 0 && (
             <div className="space-y-3">
-              <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Inactivos / expirados ({inactivos.length})</h2>
+              <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Inactivos / expirados ({inactivos.length})</h2>
               {inactivos.map((d) => (
                 <DescuentoRow
                   key={d.id}
@@ -255,18 +255,18 @@ function DescuentoRow({
 }) {
   const inactivo = d.agotado || d.expirado;
   return (
-    <div className={`bg-white border rounded-xl p-4 flex items-center gap-4 ${inactivo ? "border-gray-100 opacity-60" : "border-gray-200"}`}>
+    <div className={`bg-white dark:bg-slate-800 border rounded-xl p-4 flex items-center gap-4 ${inactivo ? "border-gray-100 dark:border-slate-700 opacity-60" : "border-gray-200 dark:border-slate-600"}`}>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-mono font-bold text-gray-900 text-sm">{d.codigo}</span>
+          <span className="font-mono font-bold text-gray-900 dark:text-gray-100 text-sm">{d.codigo}</span>
           <span className="text-xs bg-slate-700/10 text-slate-700 px-2 py-0.5 rounded-full font-medium">
             {formatDescuento(d)}
           </span>
           {d.agotado && <span className="text-xs bg-red-50 text-red-500 px-2 py-0.5 rounded-full">Agotado</span>}
-          {d.expirado && <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">Expirado</span>}
+          {d.expirado && <span className="text-xs bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400 px-2 py-0.5 rounded-full">Expirado</span>}
         </div>
-        {d.descripcion && <p className="text-xs text-gray-500 mt-0.5">{d.descripcion}</p>}
-        <div className="flex flex-wrap gap-3 text-xs text-gray-400 mt-1">
+        {d.descripcion && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{d.descripcion}</p>}
+        <div className="flex flex-wrap gap-3 text-xs text-gray-400 dark:text-gray-500 mt-1">
           <span>Usos: {d.usoActual}{d.usoMaximo ? ` / ${d.usoMaximo}` : ""}</span>
           {d.fechaExpiracion && (
             <span>Expira: {new Date(d.fechaExpiracion).toLocaleDateString("es-MX")}</span>
@@ -277,14 +277,14 @@ function DescuentoRow({
         <button
           onClick={onCopiar}
           title="Copiar código"
-          className="p-1.5 text-gray-400 hover:text-slate-700 hover:bg-slate-700/10 rounded-lg transition"
+          className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-slate-700 hover:bg-slate-700/10 rounded-lg transition"
         >
           {copiado ? <Check size={15} className="text-green-500" /> : <Copy size={15} />}
         </button>
         <button
           onClick={onEliminar}
           title="Desactivar"
-          className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition"
+          className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-lg transition"
         >
           <Trash2 size={15} />
         </button>

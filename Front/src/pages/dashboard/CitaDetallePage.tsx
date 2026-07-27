@@ -48,7 +48,7 @@ export default function CitaDetallePage() {
   if (error || !cita) {
     return (
       <div className="max-w-xl mx-auto p-6 text-center">
-        <p className="text-gray-500 mb-4">No se encontró la cita o no tienes acceso.</p>
+        <p className="text-gray-500 dark:text-gray-400 mb-4">No se encontró la cita o no tienes acceso.</p>
         <button
           onClick={() => navigate("/dashboard/citas")}
           className="text-sm text-slate-700 hover:underline"
@@ -83,14 +83,14 @@ export default function CitaDetallePage() {
       <div className="flex items-center gap-3">
         <button
           onClick={() => navigate("/dashboard/citas")}
-          className="p-2 rounded-lg hover:bg-gray-100 transition text-gray-500"
+          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition text-gray-500 dark:text-gray-400"
           aria-label="Volver"
         >
           <ArrowLeft size={20} />
         </button>
         <div>
-          <h1 className="text-xl font-semibold text-gray-900">Detalle de cita</h1>
-          <p className="text-xs text-gray-400 font-mono">{cita.codigoConfirmacion}</p>
+          <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Detalle de cita</h1>
+          <p className="text-xs text-gray-400 dark:text-gray-500 font-mono">{cita.codigoConfirmacion}</p>
         </div>
         <span className={`ml-auto text-xs font-semibold px-2.5 py-1 rounded-full ${estado.clase}`}>
           {estado.label}
@@ -98,41 +98,41 @@ export default function CitaDetallePage() {
       </div>
 
       {/* Tarjeta principal */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm divide-y divide-gray-50">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm divide-y divide-gray-50 dark:divide-slate-700">
 
         {/* Servicio y profesional */}
         <div className="p-5">
-          <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Servicio</p>
-          <p className="text-lg font-semibold text-gray-900">{cita.nombreServicio}</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1">Servicio</p>
+          <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">{cita.nombreServicio}</p>
           {cita.nombreEmpleado && (
-            <p className="text-sm text-gray-500 mt-0.5">con {cita.nombreEmpleado}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">con {cita.nombreEmpleado}</p>
           )}
         </div>
 
         {/* Fecha y hora */}
         <div className="p-5 flex gap-3">
-          <Clock size={18} className="text-gray-400 mt-0.5 shrink-0" />
+          <Clock size={18} className="text-gray-400 dark:text-gray-500 mt-0.5 shrink-0" />
           <div>
-            <p className="text-sm font-medium text-gray-900 capitalize">{fechaStr}</p>
-            <p className="text-sm text-gray-500">{horaStr} · {cita.duracionMinutos} min</p>
+            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 capitalize">{fechaStr}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{horaStr} · {cita.duracionMinutos} min</p>
           </div>
         </div>
 
         {/* Cliente */}
         <div className="p-5 flex gap-3">
-          <User size={18} className="text-gray-400 mt-0.5 shrink-0" />
+          <User size={18} className="text-gray-400 dark:text-gray-500 mt-0.5 shrink-0" />
           <div>
-            <p className="text-sm font-medium text-gray-900">{cita.nombreCliente}</p>
-            <p className="text-sm text-gray-500">{cita.telefonoCliente}</p>
-            {cita.emailCliente && <p className="text-sm text-gray-500">{cita.emailCliente}</p>}
+            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{cita.nombreCliente}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{cita.telefonoCliente}</p>
+            {cita.emailCliente && <p className="text-sm text-gray-500 dark:text-gray-400">{cita.emailCliente}</p>}
           </div>
         </div>
 
         {/* Precio */}
         <div className="p-5 flex gap-3">
-          <DollarSign size={18} className="text-gray-400 mt-0.5 shrink-0" />
+          <DollarSign size={18} className="text-gray-400 dark:text-gray-500 mt-0.5 shrink-0" />
           <div className="flex items-center gap-2">
-            <p className="text-sm font-medium text-gray-900">
+            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
               {cita.precio.toLocaleString("es-MX", { style: "currency", currency: "MXN" })}
             </p>
             {cita.pagada && (
@@ -146,15 +146,15 @@ export default function CitaDetallePage() {
         {/* Notas */}
         {cita.notas && (
           <div className="p-5 flex gap-3">
-            <FileText size={18} className="text-gray-400 mt-0.5 shrink-0" />
-            <p className="text-sm text-gray-600">{cita.notas}</p>
+            <FileText size={18} className="text-gray-400 dark:text-gray-500 mt-0.5 shrink-0" />
+            <p className="text-sm text-gray-600 dark:text-gray-400">{cita.notas}</p>
           </div>
         )}
       </div>
 
       {/* Botones de calendario */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-3">
-        <p className="text-sm font-medium text-gray-700 flex items-center gap-2">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm p-5 space-y-3">
+        <p className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
           <Calendar size={16} />
           Agregar al calendario
         </p>
@@ -163,7 +163,7 @@ export default function CitaDetallePage() {
             href={googleCalUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 flex-1 bg-white border border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700 text-sm font-medium px-4 py-2.5 rounded-xl transition"
+            className="flex items-center justify-center gap-2 flex-1 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 hover:border-gray-300 dark:hover:border-slate-500 hover:bg-gray-50 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-300 text-sm font-medium px-4 py-2.5 rounded-xl transition"
           >
             <SiGooglecalendar size={15} />
             Google Calendar

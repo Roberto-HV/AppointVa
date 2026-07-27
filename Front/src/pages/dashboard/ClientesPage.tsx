@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { clientesApi } from "../../api/clientes";
@@ -89,11 +89,11 @@ export default function ClientesPage() {
   return (
     <div className="p-4 sm:p-8">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Clientes</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Clientes</h1>
         {clientes.length > 0 && (
           <button
             onClick={exportarClientes}
-            className="text-xs text-gray-500 hover:text-gray-700 border border-gray-200 hover:border-gray-300 px-3 py-1.5 rounded-lg transition"
+            className="text-xs text-gray-500 hover:text-gray-700 border border-gray-200 hover:border-gray-300 px-3 py-1.5 rounded-lg transition dark:text-gray-400 dark:border-slate-600"
           >
             Exportar Excel
           </button>
@@ -108,7 +108,7 @@ export default function ClientesPage() {
           onChange={(e) => setBuscar(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && buscarClientes()}
           placeholder="Buscar por nombre o teléfono..."
-          className="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700"
+          className="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100 dark:border-slate-600"
         />
         <button
           onClick={buscarClientes}
@@ -119,7 +119,7 @@ export default function ClientesPage() {
         {buscarActivo && (
           <button
             onClick={() => { setBuscar(""); setBuscarActivo(""); setPagina(1); }}
-            className="px-3 py-2 text-sm text-gray-500 hover:text-gray-700"
+            className="px-3 py-2 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400"
           >
             Limpiar
           </button>
@@ -128,18 +128,18 @@ export default function ClientesPage() {
 
       {/* Lista */}
       {isLoading ? (
-        <p className="text-gray-400">Cargando clientes...</p>
+        <p className="text-gray-400 dark:text-gray-500">Cargando clientes...</p>
       ) : clientes.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-100 p-12 text-center">
+        <div className="bg-white rounded-xl border border-gray-100 p-12 text-center dark:bg-slate-800 dark:border-slate-700">
           {buscarActivo ? (
             <>
-              <div className="w-14 h-14 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-14 h-14 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 dark:bg-slate-700">
                 <svg className="w-7 h-7 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </div>
-              <p className="font-medium text-gray-700 mb-1">Sin resultados</p>
-              <p className="text-sm text-gray-400 mb-4">No hay clientes que coincidan con tu búsqueda</p>
+              <p className="font-medium text-gray-700 mb-1 dark:text-gray-300">Sin resultados</p>
+              <p className="text-sm text-gray-400 mb-4 dark:text-gray-500">No hay clientes que coincidan con tu búsqueda</p>
               <button
                 onClick={() => { setBuscar(""); setBuscarActivo(""); setPagina(1); }}
                 className="text-slate-700 text-sm font-medium hover:underline"
@@ -149,23 +149,23 @@ export default function ClientesPage() {
             </>
           ) : (
             <>
-              <div className="w-14 h-14 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-14 h-14 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 dark:bg-slate-700">
                 <svg className="w-7 h-7 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
               </div>
-              <p className="font-medium text-gray-700 mb-1">Aún no hay clientes</p>
-              <p className="text-sm text-gray-400">Los clientes aparecerán aquí automáticamente cuando hagan su primera reserva</p>
+              <p className="font-medium text-gray-700 mb-1 dark:text-gray-300">Aún no hay clientes</p>
+              <p className="text-sm text-gray-400 dark:text-gray-500">Los clientes aparecerán aquí automáticamente cuando hagan su primera reserva</p>
             </>
           )}
         </div>
       ) : (
         <>
-          <p className="text-xs text-gray-400 mb-3">{totalClientes} cliente{totalClientes !== 1 ? "s" : ""}</p>
-          <div className="bg-white rounded-xl border border-gray-100 overflow-x-auto">
+          <p className="text-xs text-gray-400 mb-3 dark:text-gray-500">{totalClientes} cliente{totalClientes !== 1 ? "s" : ""}</p>
+          <div className="bg-white rounded-xl border border-gray-100 overflow-x-auto dark:bg-slate-800 dark:border-slate-700">
             <table className="w-full text-sm min-w-[560px]">
               <thead>
-                <tr className="border-b border-gray-100 text-xs text-gray-400 uppercase tracking-wide">
+                <tr className="border-b border-gray-100 text-xs text-gray-400 uppercase tracking-wide dark:border-slate-700 dark:text-gray-500">
                   <th className="text-left px-5 py-3 font-medium">Cliente</th>
                   <th className="text-left px-5 py-3 font-medium">Contacto</th>
                   <th className="text-center px-5 py-3 font-medium">Citas</th>
@@ -176,7 +176,7 @@ export default function ClientesPage() {
               </thead>
               <tbody>
                 {clientes.map((c) => (
-                  <tr key={c.id} className="border-b border-gray-50 hover:bg-gray-50 transition">
+                  <tr key={c.id} className="border-b border-gray-50 hover:bg-gray-50 transition dark:border-slate-700 dark:hover:bg-slate-700">
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-slate-700/10 flex items-center justify-center shrink-0">
@@ -184,25 +184,25 @@ export default function ClientesPage() {
                             {c.nombreCompleto.charAt(0).toUpperCase()}
                           </span>
                         </div>
-                        <p className="font-medium text-gray-800">{c.nombreCompleto}</p>
+                        <p className="font-medium text-gray-800 dark:text-gray-200">{c.nombreCompleto}</p>
                       </div>
                     </td>
                     <td className="px-5 py-3">
-                      <p className="text-gray-700">{c.telefono}</p>
-                      {c.email && <p className="text-xs text-gray-400">{c.email}</p>}
+                      <p className="text-gray-700 dark:text-gray-300">{c.telefono}</p>
+                      {c.email && <p className="text-xs text-gray-400 dark:text-gray-500">{c.email}</p>}
                     </td>
                     <td className="px-5 py-3 text-center">
-                      <span className="font-semibold text-gray-800">{c.totalCitas}</span>
+                      <span className="font-semibold text-gray-800 dark:text-gray-200">{c.totalCitas}</span>
                     </td>
                     <td className="px-5 py-3 text-center">
                       {c.cantidadInasistencias > 0 ? (
                         <span className="font-medium text-red-500">{c.cantidadInasistencias}</span>
                       ) : (
-                        <span className="text-gray-400">—</span>
+                        <span className="text-gray-400 dark:text-gray-500">—</span>
                       )}
                     </td>
-                    <td className="px-5 py-3 text-gray-600 text-sm">
-                      {c.ultimaCitaEn ? formatFecha(c.ultimaCitaEn) : <span className="text-gray-400">—</span>}
+                    <td className="px-5 py-3 text-gray-600 text-sm dark:text-gray-400">
+                      {c.ultimaCitaEn ? formatFecha(c.ultimaCitaEn) : <span className="text-gray-400 dark:text-gray-500">—</span>}
                     </td>
                     <td className="px-5 py-3 text-right">
                       <button
@@ -238,44 +238,44 @@ export default function ClientesPage() {
           <div className="space-y-5">
             {/* Info básica */}
             <div className="grid grid-cols-2 gap-3 text-sm">
-              <div className="bg-gray-50 rounded-lg px-3 py-2">
-                <p className="text-xs text-gray-400 mb-0.5">Teléfono</p>
-                <p className="font-medium text-gray-800">{clienteSel.telefono}</p>
+              <div className="bg-gray-50 rounded-lg px-3 py-2 dark:bg-slate-700">
+                <p className="text-xs text-gray-400 mb-0.5 dark:text-gray-500">Teléfono</p>
+                <p className="font-medium text-gray-800 dark:text-gray-200">{clienteSel.telefono}</p>
               </div>
               {clienteSel.email && (
-                <div className="bg-gray-50 rounded-lg px-3 py-2">
-                  <p className="text-xs text-gray-400 mb-0.5">Correo</p>
-                  <p className="font-medium text-gray-800 truncate">{clienteSel.email}</p>
+                <div className="bg-gray-50 rounded-lg px-3 py-2 dark:bg-slate-700">
+                  <p className="text-xs text-gray-400 mb-0.5 dark:text-gray-500">Correo</p>
+                  <p className="font-medium text-gray-800 truncate dark:text-gray-200">{clienteSel.email}</p>
                 </div>
               )}
-              <div className="bg-gray-50 rounded-lg px-3 py-2">
-                <p className="text-xs text-gray-400 mb-0.5">Total citas</p>
-                <p className="font-bold text-gray-800 text-lg">{clienteSel.totalCitas}</p>
+              <div className="bg-gray-50 rounded-lg px-3 py-2 dark:bg-slate-700">
+                <p className="text-xs text-gray-400 mb-0.5 dark:text-gray-500">Total citas</p>
+                <p className="font-bold text-gray-800 text-lg dark:text-gray-200">{clienteSel.totalCitas}</p>
               </div>
-              <div className="bg-gray-50 rounded-lg px-3 py-2">
-                <p className="text-xs text-gray-400 mb-0.5">Inasistencias</p>
-                <p className={`font-bold text-lg ${clienteSel.cantidadInasistencias > 0 ? "text-red-500" : "text-gray-800"}`}>
+              <div className="bg-gray-50 rounded-lg px-3 py-2 dark:bg-slate-700">
+                <p className="text-xs text-gray-400 mb-0.5 dark:text-gray-500">Inasistencias</p>
+                <p className={`font-bold text-lg ${clienteSel.cantidadInasistencias > 0 ? "text-red-500" : "text-gray-800 dark:text-gray-200"}`}>
                   {clienteSel.cantidadInasistencias}
                 </p>
               </div>
-              <div className="bg-gray-50 rounded-lg px-3 py-2 col-span-2">
-                <p className="text-xs text-gray-400 mb-0.5">Cliente desde</p>
-                <p className="font-medium text-gray-800">{formatFecha(clienteSel.fechaCreacion)}</p>
+              <div className="bg-gray-50 rounded-lg px-3 py-2 col-span-2 dark:bg-slate-700">
+                <p className="text-xs text-gray-400 mb-0.5 dark:text-gray-500">Cliente desde</p>
+                <p className="font-medium text-gray-800 dark:text-gray-200">{formatFecha(clienteSel.fechaCreacion)}</p>
               </div>
             </div>
 
             {/* Notas */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">
                 Notas internas
-                <span className="text-gray-400 font-normal ml-1">(solo visible para ti)</span>
+                <span className="text-gray-400 font-normal ml-1 dark:text-gray-500">(solo visible para ti)</span>
               </label>
               <textarea
                 value={notas}
                 onChange={(e) => { setNotas(e.target.value); setNotasGuardadas(false); }}
                 rows={3}
                 placeholder="Preferencias, alergias, observaciones..."
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700 resize-none"
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700 resize-none dark:bg-slate-800 dark:text-gray-100 dark:border-slate-600"
               />
               <div className="flex items-center gap-3 mt-2">
                 <button
@@ -293,23 +293,23 @@ export default function ClientesPage() {
 
             {/* Historial citas */}
             <div>
-              <p className="text-sm font-semibold text-gray-700 mb-2">Historial de citas</p>
+              <p className="text-sm font-semibold text-gray-700 mb-2 dark:text-gray-300">Historial de citas</p>
               {cargandoCitas ? (
-                <p className="text-sm text-gray-400">Cargando historial...</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500">Cargando historial...</p>
               ) : citasCliente.length === 0 ? (
-                <p className="text-sm text-gray-400">Sin citas registradas</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500">Sin citas registradas</p>
               ) : (
                 <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
                   {citasCliente.map((cita) => (
-                    <div key={cita.id} className="flex items-center justify-between gap-3 bg-gray-50 rounded-lg px-3 py-2">
+                    <div key={cita.id} className="flex items-center justify-between gap-3 bg-gray-50 rounded-lg px-3 py-2 dark:bg-slate-700">
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-gray-800 truncate">{cita.nombreServicio}</p>
-                        <p className="text-xs text-gray-400">
+                        <p className="text-sm font-medium text-gray-800 truncate dark:text-gray-200">{cita.nombreServicio}</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500">
                           {cita.nombreEmpleado} · {formatFechaHora(cita.inicioEn)}
                         </p>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-xs font-medium text-gray-700">{formatPrecio(cita.precio)}</span>
+                        <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{formatPrecio(cita.precio)}</span>
                         <EstadoBadge estado={cita.estadoTexto} />
                       </div>
                     </div>
