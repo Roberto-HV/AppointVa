@@ -50,11 +50,30 @@ namespace AppointVaAPI.Services
             return string.Empty;
         }
 
+        // Resolves a timezone ID on both Windows (Windows IDs) and Linux (IANA IDs).
+        // .NET on Linux doesn't recognise Windows IDs like "Central Standard Time (Mexico)";
+        // TryConvertWindowsIdToIanaId bridges the gap without requiring tzdata configuration.
+        private static TimeZoneInfo ResolverZona(string id)
+        {
+            try { return TimeZoneInfo.FindSystemTimeZoneById(id); }
+            catch (TimeZoneNotFoundException) { }
+
+            if (TimeZoneInfo.TryConvertWindowsIdToIanaId(id, out var ianaId))
+                try { return TimeZoneInfo.FindSystemTimeZoneById(ianaId); }
+                catch { }
+
+            if (TimeZoneInfo.TryConvertIanaIdToWindowsId(id, out var winId))
+                try { return TimeZoneInfo.FindSystemTimeZoneById(winId); }
+                catch { }
+
+            return TimeZoneInfo.Utc;
+        }
+
         private static string FormatearFechaHora(DateTime fechaUtc, string zonaHoraria)
         {
             try
             {
-                var tz = TimeZoneInfo.FindSystemTimeZoneById(zonaHoraria);
+                var tz = ResolverZona(zonaHoraria);
                 var local = TimeZoneInfo.ConvertTimeFromUtc(fechaUtc, tz);
                 return local.ToString("dddd dd 'de' MMMM 'a las' HH:mm",
                     new System.Globalization.CultureInfo("es-MX"));
