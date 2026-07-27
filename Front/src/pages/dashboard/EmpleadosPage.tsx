@@ -364,19 +364,19 @@ export default function EmpleadosPage() {
                   <div className="flex gap-1.5">
                     <button
                       onClick={() => abrirEditar(emp)}
-                      className="flex-1 text-xs font-medium py-1.5 rounded-lg bg-slate-700/10 text-slate-700 hover:bg-slate-700/20 transition"
+                      className="flex-1 text-xs font-medium py-1.5 rounded-lg bg-slate-700/10 text-slate-700 hover:bg-slate-700/20 dark:bg-slate-600/30 dark:text-slate-300 dark:hover:bg-slate-600/50 transition"
                     >
                       Editar
                     </button>
                     <button
                       onClick={() => abrirHorario(emp)}
-                      className="flex-1 text-xs font-medium py-1.5 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition"
+                      className="flex-1 text-xs font-medium py-1.5 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 dark:bg-indigo-900/40 dark:text-indigo-400 dark:hover:bg-indigo-900/60 transition"
                     >
                       Horarios
                     </button>
                     <button
                       onClick={() => abrirBloqueo(emp)}
-                      className="flex-1 text-xs font-medium py-1.5 rounded-lg bg-orange-50 text-orange-600 hover:bg-orange-100 transition"
+                      className="flex-1 text-xs font-medium py-1.5 rounded-lg bg-orange-50 text-orange-600 hover:bg-orange-100 dark:bg-orange-900/40 dark:text-orange-400 dark:hover:bg-orange-900/60 transition"
                     >
                       Bloqueos
                     </button>
@@ -384,13 +384,13 @@ export default function EmpleadosPage() {
                   <div className="flex gap-1.5">
                     <button
                       onClick={() => abrirInvitar(emp)}
-                      className="flex-1 text-xs font-medium py-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition"
+                      className="flex-1 text-xs font-medium py-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/40 dark:text-blue-400 dark:hover:bg-blue-900/60 transition"
                     >
                       Invitar acceso
                     </button>
                     <button
                       onClick={() => setEmpleadoEliminar(emp)}
-                      className="flex-1 text-xs font-medium py-1.5 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 transition"
+                      className="flex-1 text-xs font-medium py-1.5 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 dark:bg-red-900/40 dark:text-red-400 dark:hover:bg-red-900/60 transition"
                     >
                       Eliminar
                     </button>
