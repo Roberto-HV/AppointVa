@@ -66,9 +66,25 @@ namespace AppointVaAPI.Controllers.V1
         // POST api/empleados
         [HttpPost]
         [Authorize(Roles = $"{Roles.Propietario},{Roles.SuperAdmin}")]
-        public async Task<IActionResult> Crear([FromBody] CrearEmpleadoDto dto)
+        public async Task<IActionResult> Crear([FromBody] CrearEmpleadoDto dto,
+            [FromServices] ApplicationDbContext db)
         {
             if (_contexto.NegocioId is null) return Unauthorized();
+
+            // Verificar límite de empleados del plan
+            var planLimite = await db.Negocios
+                .Where(n => n.Id == _contexto.NegocioId.Value)
+                .Select(n => n.Plan != null ? n.Plan.MaxEmpleados : 0)
+                .FirstOrDefaultAsync();
+            if (planLimite > 0)
+            {
+                var empleadosActivos = await db.Empleados
+                    .CountAsync(e => e.NegocioId == _contexto.NegocioId.Value
+                                  && e.FechaEliminacion == null
+                                  && e.Activo == 1);
+                if (empleadosActivos >= planLimite)
+                    return StatusCode(402, new { mensaje = $"Has alcanzado el límite de {planLimite} empleados de tu plan. Actualiza tu plan para agregar más." });
+            }
 
             var empleado = new Empleado
             {
