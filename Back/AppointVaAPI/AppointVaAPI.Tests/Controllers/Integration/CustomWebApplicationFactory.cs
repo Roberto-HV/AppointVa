@@ -1,12 +1,16 @@
 using System.Text;
 using AppointVaAPI.Data;
+using AppointVaAPI.Services.IServices;
 using Hangfire;
+using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.EntityFrameworkCore.InMemory.Infrastructure.Internal;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.IdentityModel.Tokens;
 using NSubstitute;
 
@@ -107,7 +111,8 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
             // provider so it never queries the app DI for IDatabaseProvider.
             services.AddDbContext<ApplicationDbContext>(opt =>
                 opt.UseInMemoryDatabase(_dbName)
-                   .UseInternalServiceProvider(_efInMemoryProvider));
+                   .UseInternalServiceProvider(_efInMemoryProvider)
+                   .ConfigureWarnings(w => w.Ignore(InMemoryEventId.TransactionIgnoredWarning)));
 
             // ── Hangfire ─────────────────────────────────────────────────────
             // Remove ALL Hangfire services including hosted services registered
@@ -124,6 +129,20 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
             // Replace IBackgroundJobClient with a no-op mock.
             services.AddSingleton<IBackgroundJobClient>(
                 Substitute.For<IBackgroundJobClient>());
+
+            // ── External notification/storage services ────────────────────────
+            // Prevent real HTTP calls to Brevo, WhatsApp, Cloudinary, etc.
+            services.RemoveAll<IEmailService>();
+            services.RemoveAll<IWhatsAppService>();
+            services.RemoveAll<INotificacionService>();
+            services.RemoveAll<IPushService>();
+            services.RemoveAll<IBlobStorageService>();
+
+            services.AddScoped(_ => Substitute.For<IEmailService>());
+            services.AddScoped(_ => Substitute.For<IWhatsAppService>());
+            services.AddScoped(_ => Substitute.For<INotificacionService>());
+            services.AddScoped(_ => Substitute.For<IPushService>());
+            services.AddScoped(_ => Substitute.For<IBlobStorageService>());
         });
     }
 

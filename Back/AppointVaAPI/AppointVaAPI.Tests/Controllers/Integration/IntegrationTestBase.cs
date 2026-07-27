@@ -4,12 +4,16 @@ namespace AppointVaAPI.Tests.Controllers.Integration;
 
 public abstract class IntegrationTestBase : IClassFixture<CustomWebApplicationFactory>
 {
+    protected readonly CustomWebApplicationFactory Factory;
     protected readonly HttpClient Client;
 
     protected IntegrationTestBase(CustomWebApplicationFactory factory)
     {
-        Client = factory.CreateClient();
+        Factory = factory;
+        Client  = factory.CreateClient();
     }
+
+    protected HttpClient NewClient() => Factory.CreateClient();
 
     protected void SetToken(string token) =>
         Client.DefaultRequestHeaders.Authorization =

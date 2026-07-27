@@ -293,7 +293,8 @@ app.UseHttpsRedirection();
 app.UseCors("FrontendPolicy");
 if (!string.IsNullOrEmpty(sentryDsn)) app.UseSentryTracing();
 app.UseStaticFiles(); // sirve wwwroot/uploads/ cuando Cloudinary no está configurado
-app.UseRateLimiter();
+if (!app.Environment.IsEnvironment("Testing"))
+    app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseOutputCache();
