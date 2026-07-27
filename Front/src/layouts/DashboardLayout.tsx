@@ -244,7 +244,7 @@ export default function DashboardLayout() {
         >
           <div className="flex flex-col items-center gap-1">
             <NavLink to="/dashboard" end onClick={cerrarSidebar}>
-              <img src="/MasterLogo.png" alt="AppointVa" className="h-9 object-contain" />
+              <img src="/MasterLogo.png" alt="AppointVa" className="h-9 object-contain rounded-lg" />
             </NavLink>
             {esEmpleado && (
               <span className="text-[10px] font-bold bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full uppercase tracking-wide">
@@ -361,7 +361,7 @@ export default function DashboardLayout() {
             <Menu size={18} />
           </button>
           <NavLink to="/dashboard" end>
-            <img src="/MasterLogo.png" alt="AppointVa" className="h-7 object-contain" />
+            <img src="/MasterLogo.png" alt="AppointVa" className="h-7 object-contain rounded-lg" />
           </NavLink>
           {esEmpleado && (
             <span className="text-[10px] font-bold bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 px-2 py-0.5 rounded-full uppercase tracking-wide">
