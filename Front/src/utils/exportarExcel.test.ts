@@ -11,7 +11,7 @@ describe("exportarExcel", () => {
     // Create anchor before spy so we don't recurse
     const originalCreateElement = document.createElement.bind(document);
     mockAnchor = originalCreateElement("a") as HTMLAnchorElement;
-    mockAnchor.click = clickSpy;
+    mockAnchor.click = clickSpy as unknown as () => void;
 
     vi.spyOn(document, "createElement").mockImplementation((tag: string) => {
       if (tag === "a") return mockAnchor;
@@ -21,8 +21,8 @@ describe("exportarExcel", () => {
     vi.spyOn(document.body, "appendChild").mockImplementation((node) => node as ChildNode);
     vi.spyOn(document.body, "removeChild").mockImplementation((node) => node as ChildNode);
 
-    global.URL.createObjectURL = vi.fn().mockReturnValue("blob:mock-url");
-    global.URL.revokeObjectURL = vi.fn();
+    (globalThis as any).URL.createObjectURL = vi.fn().mockReturnValue("blob:mock-url");
+    (globalThis as any).URL.revokeObjectURL = vi.fn();
   });
 
   afterEach(() => {
@@ -115,7 +115,7 @@ describe("exportarExcel", () => {
   describe("contenido del blob", () => {
     it("pasa un Blob con tipo application/vnd.ms-excel", () => {
       let capturedBlob: Blob | undefined;
-      (global.URL.createObjectURL as ReturnType<typeof vi.fn>).mockImplementation(
+      ((globalThis as any).URL.createObjectURL as ReturnType<typeof vi.fn>).mockImplementation(
         (blob: Blob) => {
           capturedBlob = blob;
           return "blob:mock-url";

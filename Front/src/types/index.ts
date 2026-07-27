@@ -188,7 +188,7 @@ export interface ClienteDto {
   nombreCompleto: string;
   telefono: string;
   email?: string;
-  notas?: string;
+  notas?: string | null;
   totalCitas: number;
   cantidadInasistencias: number;
   ultimaCitaEn?: string;
@@ -226,7 +226,7 @@ export interface EmpleadoDto {
   nombre: string;
   telefono?: string;
   email?: string;
-  fotoUrl?: string;
+  fotoUrl?: string | null;
   biografia?: string;
   activo: boolean;
   servicioIds: string[];
@@ -243,14 +243,14 @@ export interface CrearEmpleadoDto {
 // ── Servicios ─────────────────────────────────────────────────────────────────
 export interface ServicioDto {
   id: string;
-  categoriaId?: string;
-  categoriaNombre?: string;
+  categoriaId?: string | null;
+  categoriaNombre?: string | null;
   nombre: string;
   descripcion?: string;
   duracionMinutos: number;
   bufferMinutos: number;
   precio: number;
-  imagenUrl?: string;
+  imagenUrl?: string | null;
   orden: number;
   activo: boolean;
 }

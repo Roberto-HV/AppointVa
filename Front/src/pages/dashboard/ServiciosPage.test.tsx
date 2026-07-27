@@ -76,6 +76,7 @@ const mockCategoria = {
   id: "cat-1",
   nombre: "Cabello",
   orden: 1,
+  activo: true,
 };
 
 function renderConQuery() {

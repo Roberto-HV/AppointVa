@@ -361,7 +361,7 @@ function VistaPropietario({ nombre }: { nombre: string }) {
                 <p className="text-gray-400 text-sm">No hay citas próximas</p>
               ) : (
                 <div className="space-y-3">
-                  {data.proximasCitas.map((c, idx) => (
+                  {data.proximasCitas.map((c) => (
                     <div key={c.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
                       <div>
                         <p className="text-sm font-medium text-gray-800">{c.nombreCliente}</p>
