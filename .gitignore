@@ -19,6 +19,12 @@ Front/node_modules/
 Front/dist/
 Front/dist-ssr/
 Front/*.local
+Front/coverage/
+Front/playwright-report/
+Front/test-results/
+
+# ── Test outputs ──────────────────────────────────────────────────────────────
+Back/AppointVaAPI/TestResults/
 
 # ── OS / Editor ──────────────────────────────────────────────────────────────
 .DS_Store
