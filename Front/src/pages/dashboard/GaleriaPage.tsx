@@ -67,10 +67,10 @@ export default function GaleriaPage() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4 mb-6 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Galería</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Galería</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
             Fotos de tus trabajos visibles en tu página de reservas
-            <span className="ml-2 text-xs text-gray-400">({imagenes.length}/{MAX_FOTOS})</span>
+            <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">({imagenes.length}/{MAX_FOTOS})</span>
           </p>
         </div>
         {imagenes.length < MAX_FOTOS && (
@@ -99,7 +99,7 @@ export default function GaleriaPage() {
           onDrop={handleDrop}
           onDragOver={(e) => e.preventDefault()}
           onClick={() => inputRef.current?.click()}
-          className="border-2 border-dashed border-gray-200 rounded-2xl p-16 flex flex-col items-center gap-3 text-gray-400 hover:border-gray-300 hover:text-gray-500 cursor-pointer transition"
+          className="border-2 border-dashed border-gray-200 dark:border-slate-600 rounded-2xl p-16 flex flex-col items-center gap-3 text-gray-400 dark:text-gray-500 hover:border-gray-300 hover:text-gray-500 dark:hover:text-gray-400 cursor-pointer transition"
         >
           <ImageIcon size={40} strokeWidth={1.2} />
           <p className="text-sm font-medium">Arrastra fotos aquí o haz clic para seleccionar</p>
@@ -111,7 +111,7 @@ export default function GaleriaPage() {
       {isLoading ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
           {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="aspect-square rounded-xl bg-gray-100 animate-pulse" />
+            <div key={i} className="aspect-square rounded-xl bg-gray-100 dark:bg-slate-700 animate-pulse" />
           ))}
         </div>
       ) : imagenes.length > 0 && (
@@ -122,7 +122,7 @@ export default function GaleriaPage() {
             onDragOver={(e) => e.preventDefault()}
           >
             {imagenes.map((img) => (
-              <div key={img.id} className="group relative aspect-square rounded-xl overflow-hidden bg-gray-100">
+              <div key={img.id} className="group relative aspect-square rounded-xl overflow-hidden bg-gray-100 dark:bg-slate-700">
                 <img
                   src={img.url}
                   alt={img.descripcion ?? ""}
@@ -145,7 +145,7 @@ export default function GaleriaPage() {
               <button
                 onClick={() => inputRef.current?.click()}
                 disabled={subiendo}
-                className="aspect-square rounded-xl border-2 border-dashed border-gray-200 hover:border-gray-300 flex flex-col items-center justify-center gap-2 text-gray-400 hover:text-gray-500 transition disabled:opacity-40"
+                className="aspect-square rounded-xl border-2 border-dashed border-gray-200 dark:border-slate-600 hover:border-gray-300 flex flex-col items-center justify-center gap-2 text-gray-400 dark:text-gray-500 hover:text-gray-500 dark:hover:text-gray-400 transition disabled:opacity-40"
               >
                 <Upload size={22} strokeWidth={1.5} />
                 <span className="text-xs font-medium">Agregar</span>
@@ -153,7 +153,7 @@ export default function GaleriaPage() {
             )}
           </div>
 
-          <p className="text-xs text-gray-400 mt-3">
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-3">
             Arrastra imágenes al grid para agregar más · Las fotos se muestran en tu página de reservas en el mismo orden.
           </p>
         </>
@@ -183,13 +183,13 @@ export default function GaleriaPage() {
       {/* Confirmar eliminar */}
       {eliminando && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-xs w-full shadow-xl">
-            <h3 className="font-semibold text-gray-900 mb-1">¿Eliminar foto?</h3>
-            <p className="text-sm text-gray-500 mb-5">Esta acción no se puede deshacer.</p>
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-xs w-full shadow-xl">
+            <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-1">¿Eliminar foto?</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">Esta acción no se puede deshacer.</p>
             <div className="flex gap-3">
               <button
                 onClick={() => setEliminando(null)}
-                className="flex-1 py-2.5 rounded-xl border-2 border-gray-200 text-sm font-medium text-gray-600 hover:border-gray-300 transition"
+                className="flex-1 py-2.5 rounded-xl border-2 border-gray-200 dark:border-slate-600 text-sm font-medium text-gray-600 dark:text-gray-400 hover:border-gray-300 transition"
               >
                 Cancelar
               </button>

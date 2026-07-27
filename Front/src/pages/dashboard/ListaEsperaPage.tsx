@@ -52,8 +52,8 @@ export default function ListaEsperaPage() {
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Lista de espera</h1>
-        <p className="text-gray-500 text-sm mt-1">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Lista de espera</h1>
+        <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
           Clientes que quieren una cita cuando se libere un espacio
         </p>
       </div>
@@ -61,7 +61,7 @@ export default function ListaEsperaPage() {
       {/* KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: "Total", value: lista.length, color: "text-gray-700" },
+          { label: "Total", value: lista.length, color: "text-gray-700 dark:text-gray-300" },
           { label: "Esperando", value: esperando, color: "text-yellow-600" },
           { label: "Notificados", value: notificados, color: "text-blue-600" },
           {
@@ -70,8 +70,8 @@ export default function ListaEsperaPage() {
             color: "text-green-600",
           },
         ].map((k) => (
-          <div key={k.label} className="bg-white rounded-xl border border-gray-100 p-4">
-            <p className="text-xs text-gray-500">{k.label}</p>
+          <div key={k.label} className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4">
+            <p className="text-xs text-gray-500 dark:text-gray-400">{k.label}</p>
             <p className={`text-3xl font-bold mt-1 ${k.color}`}>{k.value}</p>
           </div>
         ))}
@@ -86,7 +86,7 @@ export default function ListaEsperaPage() {
             className={`px-3 py-1.5 text-sm rounded-full border transition ${
               filtroEstado === e
                 ? "bg-slate-700 text-white border-slate-700"
-                : "border-gray-200 text-gray-600 hover:bg-gray-50"
+                : "border-gray-200 dark:border-slate-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700"
             }`}
           >
             {e || "Todos"}
@@ -96,11 +96,11 @@ export default function ListaEsperaPage() {
 
       {/* Tabla */}
       {isLoading ? (
-        <div className="text-center py-16 text-gray-400">Cargando...</div>
+        <div className="text-center py-16 text-gray-400 dark:text-gray-500">Cargando...</div>
       ) : isError ? (
         <div className="text-center py-16 text-red-400">No se pudo cargar la lista de espera.</div>
       ) : lista.length === 0 ? (
-        <div className="text-center py-16 text-gray-400">
+        <div className="text-center py-16 text-gray-400 dark:text-gray-500">
           <Clock size={40} className="mx-auto mb-3 opacity-30" />
           <p>No hay entradas en la lista de espera</p>
         </div>
@@ -137,17 +137,17 @@ function EntradaCard({
   const cfg = ESTADOS_CONFIG[entrada.estado] ?? ESTADOS_CONFIG.Esperando;
 
   return (
-    <div className="bg-white rounded-xl border border-gray-100 p-4 flex flex-col sm:flex-row sm:items-center gap-4">
+    <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4 flex flex-col sm:flex-row sm:items-center gap-4">
       {/* Info principal */}
       <div className="flex-1 space-y-1.5">
         <div className="flex items-center gap-2 flex-wrap">
-          <p className="font-semibold text-gray-900">{entrada.nombreCliente}</p>
+          <p className="font-semibold text-gray-900 dark:text-gray-100">{entrada.nombreCliente}</p>
           <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${cfg.color}`}>
             {cfg.label}
           </span>
         </div>
 
-        <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-500">
+        <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-500 dark:text-gray-400">
           <span className="flex items-center gap-1">
             <Phone size={13} /> {entrada.telefonoCliente}
           </span>
@@ -173,7 +173,7 @@ function EntradaCard({
           )}
         </div>
 
-        <p className="text-xs text-gray-400">
+        <p className="text-xs text-gray-400 dark:text-gray-500">
           Registrado: {formatFecha(entrada.fechaCreacion)}
           {entrada.fechaNotificacion &&
             ` · Notificado: ${formatFecha(entrada.fechaNotificacion)}`}
@@ -204,7 +204,7 @@ function EntradaCard({
           <button
             onClick={() => onCambiarEstado("Expirado")}
             title="Marcar como expirado"
-            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition"
+            className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition"
           >
             <Ban size={15} />
           </button>
@@ -212,7 +212,7 @@ function EntradaCard({
         <button
           onClick={onEliminar}
           title="Eliminar"
-          className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition"
+          className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-lg transition"
         >
           <Trash2 size={15} />
         </button>

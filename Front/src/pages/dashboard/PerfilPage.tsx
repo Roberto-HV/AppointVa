@@ -259,10 +259,10 @@ export default function PerfilPage() {
   if (isLoading) return (
     <div className="p-4 sm:p-8 space-y-6">
       <Skeleton className="h-8 w-48" />
-      <div className="bg-white rounded-xl border border-gray-100 p-5">
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
         <Skeleton className="h-4 w-36 mb-3" /><Skeleton className="h-10 rounded-lg" />
       </div>
-      <div className="bg-white rounded-xl border border-gray-100 p-5 space-y-4">
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5 space-y-4">
         <Skeleton className="h-4 w-40" />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {[0,1,2,3,4,5].map(i => <Skeleton key={i} className="h-10 rounded-lg" />)}
@@ -273,17 +273,17 @@ export default function PerfilPage() {
 
   return (
     <div className="p-4 sm:p-8">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Mi negocio</h1>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">Mi negocio</h1>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-6">
+      <div className="flex gap-1 bg-gray-100 dark:bg-slate-700 rounded-xl p-1 mb-6">
         {(["perfil", "configuracion", "horarios"] as Tab[]).map((t) => (
           <button
             key={t}
             type="button"
             onClick={() => setTab(t)}
             className={`flex-1 py-2 text-sm font-medium rounded-lg transition ${
-              tab === t ? "bg-white shadow-sm text-gray-900" : "text-gray-500 hover:text-gray-700"
+              tab === t ? "bg-white dark:bg-slate-800 shadow-sm text-gray-900 dark:text-gray-100" : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
             }`}
           >
             {t === "perfil" ? "Perfil" : t === "configuracion" ? "Configuración" : "Horarios"}
@@ -297,27 +297,27 @@ export default function PerfilPage() {
 
           {/* URL + QR */}
           {negocio && (
-            <div className="bg-white rounded-xl border border-gray-100 p-5">
-              <h2 className="text-sm font-semibold text-gray-700 mb-3">Tu página de reservas</h2>
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
+              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Tu página de reservas</h2>
               <div className="flex items-center gap-2 mb-5">
                 <a href={bookingUrl} target="_blank" rel="noreferrer"
-                  className="flex-1 px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 text-sm text-slate-700 font-mono truncate hover:underline">
+                  className="flex-1 px-3 py-2 rounded-lg bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 text-sm text-slate-700 dark:text-gray-300 font-mono truncate hover:underline">
                   {bookingUrl}
                 </a>
                 <button onClick={copiarUrl}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition whitespace-nowrap">
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700 transition whitespace-nowrap">
                   {urlCopiada ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
                   {urlCopiada ? "¡Copiado!" : "Copiar"}
                 </button>
               </div>
-              <h2 className="text-sm font-semibold text-gray-700 mb-3">Código QR</h2>
+              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Código QR</h2>
               <div className="flex flex-col sm:flex-row items-start gap-4">
-                <div className="p-3 bg-white border border-gray-100 rounded-xl shadow-sm inline-block shrink-0">
+                <div className="p-3 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl shadow-sm inline-block shrink-0">
                   <QRCodeCanvas id="qr-reservas" value={bookingUrl} size={120} level="M"
                     includeMargin={false} bgColor="#ffffff" fgColor="#1a1a1a" />
                 </div>
                 <div className="flex flex-col justify-center gap-3">
-                  <p className="text-sm text-gray-500 max-w-xs">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs">
                     Comparte este código en tu negocio para que los clientes reserven escaneándolo.
                   </p>
                   <div className="flex gap-2">
@@ -326,7 +326,7 @@ export default function PerfilPage() {
                       <Download size={14} /> Descargar PNG
                     </button>
                     <button type="button" onClick={() => window.print()}
-                      className="flex items-center gap-2 px-4 py-2 border border-gray-200 hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg transition">
+                      className="flex items-center gap-2 px-4 py-2 border border-gray-200 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg transition">
                       Imprimir
                     </button>
                   </div>
@@ -336,14 +336,14 @@ export default function PerfilPage() {
           )}
 
           {/* Imágenes */}
-          <div className="bg-white rounded-xl border border-gray-100 p-5">
-            <h2 className="text-sm font-semibold text-gray-700 mb-4">Imágenes</h2>
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Imágenes</h2>
             <div className="flex gap-6 flex-wrap">
               <div className="text-center">
-                <div className="w-20 h-20 rounded-xl bg-gray-100 overflow-hidden mb-2 mx-auto flex items-center justify-center">
+                <div className="w-20 h-20 rounded-xl bg-gray-100 dark:bg-slate-700 overflow-hidden mb-2 mx-auto flex items-center justify-center">
                   {negocio?.logoUrl
                     ? <img src={negocio.logoUrl} alt="Logo" className="w-full h-full object-cover" />
-                    : <span className="text-2xl font-bold text-gray-300">{negocio?.nombre?.charAt(0)}</span>}
+                    : <span className="text-2xl font-bold text-gray-300 dark:text-gray-600">{negocio?.nombre?.charAt(0)}</span>}
                 </div>
                 <input ref={logoRef} type="file" accept="image/*" className="hidden"
                   onChange={(e) => { const f = e.target.files?.[0]; if (f) subirLogo(f); }} />
@@ -353,10 +353,10 @@ export default function PerfilPage() {
                 </button>
               </div>
               <div className="text-center">
-                <div className="w-40 h-20 rounded-xl bg-gray-100 overflow-hidden mb-2 mx-auto flex items-center justify-center">
+                <div className="w-40 h-20 rounded-xl bg-gray-100 dark:bg-slate-700 overflow-hidden mb-2 mx-auto flex items-center justify-center">
                   {negocio?.portadaUrl
                     ? <img src={negocio.portadaUrl} alt="Portada" className="w-full h-full object-cover" />
-                    : <span className="text-xs text-gray-400">Sin portada</span>}
+                    : <span className="text-xs text-gray-400 dark:text-gray-500">Sin portada</span>}
                 </div>
                 <input ref={portadaRef} type="file" accept="image/*" className="hidden"
                   onChange={(e) => { const f = e.target.files?.[0]; if (f) subirPortada(f); }} />
@@ -369,15 +369,15 @@ export default function PerfilPage() {
           </div>
 
           {/* Color del booking */}
-          <div className="bg-white rounded-xl border border-gray-100 p-5">
-            <h2 className="text-sm font-semibold text-gray-700 mb-1">Color de tu página de reservas</h2>
-            <p className="text-xs text-gray-400 mb-4">Se usa en botones, selección de servicios, fechas y el encabezado de tu página.</p>
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Color de tu página de reservas</h2>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">Se usa en botones, selección de servicios, fechas y el encabezado de tu página.</p>
             <div className="flex gap-3 items-center mb-4">
               <input
                 type="color"
                 value={colorPrimario}
                 onChange={(e) => setColorPrimario(e.target.value)}
-                className="w-12 h-12 rounded-lg cursor-pointer border border-gray-200 p-0.5 shrink-0"
+                className="w-12 h-12 rounded-lg cursor-pointer border border-gray-200 dark:border-slate-600 p-0.5 shrink-0"
               />
               <input
                 type="text"
@@ -386,14 +386,14 @@ export default function PerfilPage() {
                   const v = e.target.value;
                   if (/^#[0-9A-Fa-f]{0,6}$/.test(v)) setColorPrimario(v);
                 }}
-                className="w-32 px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700 font-mono uppercase"
+                className="w-32 px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700 font-mono uppercase"
                 maxLength={7}
                 placeholder="#334155"
               />
-              <div className="w-10 h-10 rounded-lg border border-gray-200 shrink-0" style={{ backgroundColor: colorPrimario }} />
+              <div className="w-10 h-10 rounded-lg border border-gray-200 dark:border-slate-600 shrink-0" style={{ backgroundColor: colorPrimario }} />
             </div>
             {/* Vista previa del header del booking */}
-            <div className="rounded-xl overflow-hidden border border-gray-100 mb-4">
+            <div className="rounded-xl overflow-hidden border border-gray-100 dark:border-slate-700 mb-4">
               <div className="px-4 pt-3 pb-3 flex items-start gap-3 relative"
                 style={{ background: "#0C0C0F" }}>
                 <div className="absolute inset-0 pointer-events-none"
@@ -439,9 +439,9 @@ export default function PerfilPage() {
           </div>
 
           {/* Redes sociales */}
-          <div className="bg-white rounded-xl border border-gray-100 p-5">
-            <h2 className="text-sm font-semibold text-gray-700 mb-1">Redes sociales</h2>
-            <p className="text-xs text-gray-400 mb-4">Se muestran en tu página de reservas para que los clientes te sigan.</p>
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Redes sociales</h2>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">Se muestran en tu página de reservas para que los clientes te sigan.</p>
             <div className="space-y-3">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
@@ -449,58 +449,58 @@ export default function PerfilPage() {
                   <SiInstagram className="w-4 h-4 text-white" />
                 </div>
                 <input {...register("instagramUrl")} placeholder="https://instagram.com/tu_negocio"
-                  className="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700" />
+                  className="flex-1 px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700" />
               </div>
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-[#1877F2] flex items-center justify-center shrink-0">
                   <SiFacebook className="w-4 h-4 text-white" />
                 </div>
                 <input {...register("facebookUrl")} placeholder="https://facebook.com/tu_negocio"
-                  className="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700" />
+                  className="flex-1 px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700" />
               </div>
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-black flex items-center justify-center shrink-0">
                   <SiTiktok className="w-4 h-4 text-white" />
                 </div>
                 <input {...register("tiktokUrl")} placeholder="https://tiktok.com/@tu_negocio"
-                  className="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700" />
+                  className="flex-1 px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700" />
               </div>
             </div>
-            <p className="text-xs text-gray-400 mt-3">Pega la URL completa. Deja vacío si no usas esa red.</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-3">Pega la URL completa. Deja vacío si no usas esa red.</p>
           </div>
 
           {/* Información básica */}
-          <div className="bg-white rounded-xl border border-gray-100 p-5">
-            <h2 className="text-sm font-semibold text-gray-700 mb-4">Información del negocio</h2>
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Información del negocio</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nombre del negocio *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre del negocio *</label>
                 <input {...register("nombre")}
-                  className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700
-                    ${errors.nombre ? "border-red-400 bg-red-50" : "border-gray-200"}`} />
+                  className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100
+                    ${errors.nombre ? "border-red-400 bg-red-50" : "border-gray-200 dark:border-slate-600"}`} />
                 {errors.nombre && <p className="text-red-500 text-xs mt-1">{errors.nombre.message}</p>}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Teléfono</label>
                 <input {...register("telefono")}
-                  className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700" />
+                  className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Correo de contacto</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Correo de contacto</label>
                 <input type="email" {...register("email")}
-                  className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700
-                    ${errors.email ? "border-red-400 bg-red-50" : "border-gray-200"}`} />
+                  className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100
+                    ${errors.email ? "border-red-400 bg-red-50" : "border-gray-200 dark:border-slate-600"}`} />
               </div>
               <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Dirección</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Dirección</label>
                 <input {...register("direccion")}
-                  className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700" />
+                  className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700" />
               </div>
               <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Descripción</label>
                 <textarea rows={3} maxLength={500} {...register("descripcion")}
-                  className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700 resize-none" />
-                <p className="text-xs text-gray-400 text-right mt-0.5">{(watch("descripcion") ?? "").length}/500</p>
+                  className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700 resize-none" />
+                <p className="text-xs text-gray-400 dark:text-gray-500 text-right mt-0.5">{(watch("descripcion") ?? "").length}/500</p>
               </div>
             </div>
           </div>
@@ -511,28 +511,28 @@ export default function PerfilPage() {
         {/* ── TAB: CONFIGURACIÓN ──────────────────────────────────────────────── */}
         <div className={tab !== "configuracion" ? "hidden" : "space-y-6"}>
           {/* Subscription plan — read-only */}
-          <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-4">
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Tu suscripción</p>
-            <p className="text-base font-bold text-slate-800">
+          <div className="bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl p-4 mb-4">
+            <p className="text-xs font-semibold text-slate-400 dark:text-gray-500 uppercase tracking-wide mb-1">Tu suscripción</p>
+            <p className="text-base font-bold text-slate-800 dark:text-gray-200">
               {negocio?.planNombre ?? "Sin plan asignado"}
             </p>
-            <p className="text-xs text-slate-400 mt-2">
+            <p className="text-xs text-slate-400 dark:text-gray-500 mt-2">
               ¿Quieres cambiar de plan? Escríbenos a{" "}
               <a
                 href="mailto:hola@appointva.com"
-                className="text-slate-600 font-semibold underline"
+                className="text-slate-600 dark:text-gray-400 font-semibold underline"
               >
                 hola@appointva.com
               </a>
             </p>
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-100 p-5 space-y-5">
-            <h2 className="text-sm font-semibold text-gray-700">Ajustes de citas</h2>
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5 space-y-5">
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Ajustes de citas</h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Zona horaria</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Zona horaria</label>
                 <Select {...register("zonaHoraria")} value={watch("zonaHoraria") ?? ""} className="w-full">
                   <option value="">Seleccionar...</option>
                   {ZONAS_HORARIAS.map((z) => (
@@ -541,35 +541,35 @@ export default function PerfilPage() {
                 </Select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Recordatorio al cliente</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Recordatorio al cliente</label>
                 <Select {...register("horasRecordatorio")} value={watch("horasRecordatorio") ?? ""} className="w-full">
                   {HORAS_RECORDATORIO.map((h) => (
                     <option key={h.valor} value={h.valor}>{h.texto}</option>
                   ))}
                 </Select>
-                <p className="text-xs text-gray-400 mt-1">Cuánto antes se envía el recordatorio por email.</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Cuánto antes se envía el recordatorio por email.</p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Política de cancelación</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Política de cancelación</label>
                 <Select {...register("horasCancelacion")} value={watch("horasCancelacion") ?? ""} className="w-full">
                   {HORAS_CANCELACION.map((h) => (
                     <option key={h.valor} value={h.valor}>{h.texto}</option>
                   ))}
                 </Select>
-                <p className="text-xs text-gray-400 mt-1">Anticipación mínima para que el cliente cancele.</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Anticipación mínima para que el cliente cancele.</p>
               </div>
               {negocio?.planNombre && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Plan activo</label>
-                  <p className="px-3 py-2 rounded-lg bg-gray-50 text-sm text-gray-600">{negocio.planNombre}</p>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Plan activo</label>
+                  <p className="px-3 py-2 rounded-lg bg-gray-50 dark:bg-slate-700 text-sm text-gray-600 dark:text-gray-400">{negocio.planNombre}</p>
                 </div>
               )}
             </div>
 
-            <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
+            <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-slate-700 rounded-lg border border-gray-100 dark:border-slate-600">
               <div className="flex-1">
-                <p className="text-sm font-medium text-gray-700">Confirmación automática de citas</p>
-                <p className="text-xs text-gray-400 mt-0.5">
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Confirmación automática de citas</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
                   Activado: las reservas quedan confirmadas de inmediato.<br />
                   Desactivado: quedan pendientes y debes confirmarlas manualmente.
                 </p>
@@ -586,10 +586,10 @@ export default function PerfilPage() {
               </div>
             </div>
 
-            <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
+            <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-slate-700 rounded-lg border border-gray-100 dark:border-slate-600">
               <div className="flex-1">
-                <p className="text-sm font-medium text-gray-700">Lista de espera</p>
-                <p className="text-xs text-gray-400 mt-0.5">
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Lista de espera</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
                   Activado: cuando canceles una cita se notificará automáticamente al primer cliente en espera.<br />
                   Desactivado: la lista de espera no genera notificaciones automáticas.
                 </p>
@@ -606,25 +606,25 @@ export default function PerfilPage() {
               </div>
             </div>
 
-            <div className="p-3 bg-gray-50 rounded-lg border border-gray-100">
-              <p className="text-sm font-medium text-gray-700 mb-2">Canal de notificaciones al cliente</p>
+            <div className="p-3 bg-gray-50 dark:bg-slate-700 rounded-lg border border-gray-100 dark:border-slate-600">
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Canal de notificaciones al cliente</p>
               <div className="flex flex-wrap gap-2 mb-2">
                 <button type="button"
                   className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-medium bg-slate-700 text-white">
                   <Mail size={13} /> Correo
                 </button>
               </div>
-              <p className="text-xs text-gray-400">Los clientes reciben confirmaciones, recordatorios y cancelaciones por correo electrónico.</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">Los clientes reciben confirmaciones, recordatorios y cancelaciones por correo electrónico.</p>
             </div>
           </div>
 
           {/* Anticipo */}
-          <div className="bg-white rounded-xl border border-gray-100 p-5">
-            <h2 className="text-sm font-semibold text-gray-700 mb-4">Anticipo / Depósito</h2>
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Anticipo / Depósito</h2>
             <label className="flex items-center justify-between cursor-pointer select-none mb-4">
               <div>
-                <p className="text-sm font-medium text-gray-700">Requerir anticipo al reservar</p>
-                <p className="text-xs text-gray-400">El cliente recibe instrucciones de pago y la cita queda pendiente hasta que confirmes el depósito</p>
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Requerir anticipo al reservar</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500">El cliente recibe instrucciones de pago y la cita queda pendiente hasta que confirmes el depósito</p>
               </div>
               <button type="button"
                 onClick={() => setValue("requiereAnticipo", !(watch("requiereAnticipo") ?? false), { shouldDirty: true })}
@@ -635,17 +635,17 @@ export default function PerfilPage() {
             {watch("requiereAnticipo") && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Monto del anticipo ($)</label>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Monto del anticipo ($)</label>
                   <input {...register("montoAnticipo")} type="number" min="0" step="0.01" placeholder="0.00"
-                    className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700" />
-                  <p className="text-xs text-gray-400 mt-1">Cantidad que el cliente debe pagar por adelantado</p>
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700" />
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Cantidad que el cliente debe pagar por adelantado</p>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Instrucciones de pago</label>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Instrucciones de pago</label>
                   <textarea {...register("instruccionesAnticipo")} rows={3} maxLength={500}
                     placeholder={"CLABE: 012345678901234567\nBanco: BBVA\nNombre: Nombre del negocio"}
-                    className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700 resize-none" />
-                  <p className="text-xs text-gray-400 mt-1">El cliente verá esto al confirmar su reserva</p>
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700 resize-none" />
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">El cliente verá esto al confirmar su reserva</p>
                 </div>
               </div>
             )}
@@ -658,7 +658,7 @@ export default function PerfilPage() {
             <h2 className="text-sm font-semibold text-red-600 mb-1 flex items-center gap-2">
               <Trash2 size={15} /> Zona de peligro
             </h2>
-            <p className="text-xs text-gray-500 mb-4">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
               Eliminar tu cuenta es permanente. Todos tus datos personales serán eliminados de forma irreversible. El historial de citas se conservará de forma anonimizada.
             </p>
             <button
@@ -675,9 +675,9 @@ export default function PerfilPage() {
       {/* ── Modal: eliminar cuenta ─────────────────────────────────────────── */}
       {modalEliminar && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6">
-            <h3 className="text-base font-bold text-gray-900 mb-1">¿Eliminar tu cuenta?</h3>
-            <p className="text-sm text-gray-500 mb-4">
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-sm p-6">
+            <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 mb-1">¿Eliminar tu cuenta?</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
               Esta acción es irreversible. Ingresa tu contraseña actual para confirmar.
             </p>
             <input
@@ -686,13 +686,13 @@ export default function PerfilPage() {
               placeholder="Contraseña actual"
               value={contrasenaEliminar}
               onChange={(e) => setContrasenaEliminar(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-red-400 mb-4"
+              className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-red-400 mb-4"
             />
             <div className="flex gap-2 justify-end">
               <button
                 type="button"
                 onClick={() => setModalEliminar(false)}
-                className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition"
+                className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700 transition"
               >
                 Cancelar
               </button>
@@ -712,30 +712,30 @@ export default function PerfilPage() {
       {/* ── TAB: HORARIOS ───────────────────────────────────────────────────── */}
       {tab === "horarios" && (
         <div className="space-y-6">
-          <div className="bg-white rounded-xl border border-gray-100 p-5">
-            <h2 className="text-sm font-semibold text-gray-700 mb-4">Horarios de atención</h2>
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Horarios de atención</h2>
             <div className="space-y-3">
               {horarios.map((h) => (
-                <div key={h.diaSemana} className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3 py-2 border-b border-gray-50 last:border-0">
+                <div key={h.diaSemana} className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3 py-2 border-b border-gray-50 dark:border-slate-700 last:border-0">
                   <label className="flex items-center gap-2 cursor-pointer select-none sm:w-28 sm:shrink-0">
                     <div onClick={() => actualizarHorario(h.diaSemana!, "activo", !h.activo)}
                       className={`w-9 h-5 rounded-full transition relative cursor-pointer shrink-0 ${h.activo ? "bg-slate-700" : "bg-gray-300"}`}>
                       <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${h.activo ? "left-4" : "left-0.5"}`} />
                     </div>
-                    <span className="text-sm text-gray-700">{DIAS[h.diaSemana ?? 0]}</span>
+                    <span className="text-sm text-gray-700 dark:text-gray-300">{DIAS[h.diaSemana ?? 0]}</span>
                   </label>
                   {h.activo ? (
                     <div className="flex items-center gap-2 pl-11 sm:pl-0">
                       <input type="time" value={h.horaInicio}
                         onChange={(e) => actualizarHorario(h.diaSemana!, "horaInicio", e.target.value)}
-                        className="flex-1 min-w-0 sm:w-32 sm:flex-none px-2 py-1 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700" />
-                      <span className="text-gray-400 text-sm shrink-0">—</span>
+                        className="flex-1 min-w-0 sm:w-32 sm:flex-none px-2 py-1 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700" />
+                      <span className="text-gray-400 dark:text-gray-500 text-sm shrink-0">—</span>
                       <input type="time" value={h.horaFin}
                         onChange={(e) => actualizarHorario(h.diaSemana!, "horaFin", e.target.value)}
-                        className="flex-1 min-w-0 sm:w-32 sm:flex-none px-2 py-1 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700" />
+                        className="flex-1 min-w-0 sm:w-32 sm:flex-none px-2 py-1 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700" />
                     </div>
                   ) : (
-                    <span className="text-sm text-gray-400 pl-11 sm:pl-0">Cerrado</span>
+                    <span className="text-sm text-gray-400 dark:text-gray-500 pl-11 sm:pl-0">Cerrado</span>
                   )}
                 </div>
               ))}
@@ -746,21 +746,21 @@ export default function PerfilPage() {
             </button>
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-100 p-5">
-            <h2 className="text-sm font-semibold text-gray-700 mb-1">Días sin atención</h2>
-            <p className="text-xs text-gray-400 mb-4">Bloquea días donde el negocio no trabajará (feriados, vacaciones). Los clientes no podrán reservar esos días.</p>
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Días sin atención</h2>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">Bloquea días donde el negocio no trabajará (feriados, vacaciones). Los clientes no podrán reservar esos días.</p>
             <div className="flex gap-2 mb-4 flex-wrap items-end">
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Fecha</label>
+                <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Fecha</label>
                 <input type="date" value={nuevaFecha} min={new Date().toISOString().split("T")[0]}
                   onChange={(e) => setNuevaFecha(e.target.value)}
-                  className="px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700" />
+                  className="px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700" />
               </div>
               <div className="flex-1 min-w-[180px]">
-                <label className="block text-xs text-gray-500 mb-1">Motivo <span className="text-gray-400">(opcional)</span></label>
+                <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Motivo <span className="text-gray-400 dark:text-gray-500">(opcional)</span></label>
                 <input type="text" value={nuevoMotivo} onChange={(e) => setNuevoMotivo(e.target.value)}
                   placeholder="Ej: Día festivo, Vacaciones..." maxLength={100}
-                  className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700" />
+                  className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700" />
               </div>
               <button onClick={() => nuevaFecha && bloquearDia()} disabled={!nuevaFecha || bloqueando}
                 className="px-4 py-2 bg-gray-800 hover:bg-gray-700 disabled:opacity-40 text-white text-sm font-medium rounded-lg transition">
@@ -768,7 +768,7 @@ export default function PerfilPage() {
               </button>
             </div>
             {diasBloqueados.length === 0 ? (
-              <p className="text-sm text-gray-400">No hay días bloqueados próximos.</p>
+              <p className="text-sm text-gray-400 dark:text-gray-500">No hay días bloqueados próximos.</p>
             ) : (
               <div className="space-y-2">
                 {diasBloqueados.map((b) => {

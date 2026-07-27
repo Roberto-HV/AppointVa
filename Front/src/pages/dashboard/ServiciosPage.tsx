@@ -1,4 +1,4 @@
-﻿import { useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Select from "../../components/ui/Select";
@@ -165,12 +165,12 @@ export default function ServiciosPage() {
       {/* Header con tabs */}
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div className="flex items-center gap-4">
-          <h1 className="text-2xl font-bold text-gray-900">Servicios</h1>
-          <div className="flex bg-gray-100 rounded-lg p-1 gap-1">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Servicios</h1>
+          <div className="flex bg-gray-100 rounded-lg p-1 gap-1 dark:bg-slate-700">
             <button
               onClick={() => setTab("servicios")}
               className={`px-3 py-1 text-sm font-medium rounded-md transition ${
-                tab === "servicios" ? "bg-white text-gray-800 shadow-sm" : "text-gray-500 hover:text-gray-700"
+                tab === "servicios" ? "bg-white text-gray-800 shadow-sm dark:bg-slate-800 dark:text-gray-200" : "text-gray-500 hover:text-gray-700 dark:text-gray-400"
               }`}
             >
               Servicios
@@ -178,12 +178,12 @@ export default function ServiciosPage() {
             <button
               onClick={() => setTab("categorias")}
               className={`px-3 py-1 text-sm font-medium rounded-md transition ${
-                tab === "categorias" ? "bg-white text-gray-800 shadow-sm" : "text-gray-500 hover:text-gray-700"
+                tab === "categorias" ? "bg-white text-gray-800 shadow-sm dark:bg-slate-800 dark:text-gray-200" : "text-gray-500 hover:text-gray-700 dark:text-gray-400"
               }`}
             >
               Categorías
               {categorias.length > 0 && (
-                <span className="ml-1.5 text-xs bg-gray-200 text-gray-600 rounded-full px-1.5 py-0.5">
+                <span className="ml-1.5 text-xs bg-gray-200 text-gray-600 rounded-full px-1.5 py-0.5 dark:text-gray-400">
                   {categorias.length}
                 </span>
               )}
@@ -211,16 +211,16 @@ export default function ServiciosPage() {
       {/* ── Tab Servicios ──────────────────────────────────────────────────── */}
       {tab === "servicios" && (
         isLoading ? (
-          <p className="text-gray-400">Cargando servicios...</p>
+          <p className="text-gray-400 dark:text-gray-500">Cargando servicios...</p>
         ) : servicios.length === 0 ? (
-          <div className="bg-white rounded-xl border border-gray-100 p-12 text-center">
-            <div className="w-14 h-14 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="bg-white rounded-xl border border-gray-100 p-12 text-center dark:bg-slate-800 dark:border-slate-700">
+            <div className="w-14 h-14 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 dark:bg-slate-700">
               <svg className="w-7 h-7 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>
             </div>
-            <p className="font-medium text-gray-700 mb-1">Aún no tienes servicios</p>
-            <p className="text-sm text-gray-400 mb-5">Crea tus servicios para que los clientes puedan reservar</p>
+            <p className="font-medium text-gray-700 mb-1 dark:text-gray-300">Aún no tienes servicios</p>
+            <p className="text-sm text-gray-400 mb-5 dark:text-gray-500">Crea tus servicios para que los clientes puedan reservar</p>
             <button
               onClick={abrirCrearServicio}
               className="bg-slate-700 hover:bg-slate-800 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition"
@@ -232,22 +232,22 @@ export default function ServiciosPage() {
           <div className="space-y-6">
             {Object.entries(grupos).map(([cat, items]) => (
               <div key={cat}>
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">{cat}</p>
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 dark:text-gray-500">{cat}</p>
                 <motion.div
                   initial="hidden"
                   animate="show"
                   variants={{ hidden: {}, show: { transition: { staggerChildren: 0.06 } } }}
-                  className="bg-white rounded-xl border border-gray-100"
+                  className="bg-white rounded-xl border border-gray-100 dark:bg-slate-800 dark:border-slate-700"
                 >
                   {items.map((s, i) => (
                     <motion.div
                       key={s.id}
                       variants={{ hidden: { opacity: 0, x: -10 }, show: { opacity: 1, x: 0, transition: { duration: 0.25 } } }}
-                      className={`flex items-center gap-3 px-4 py-3 ${i < items.length - 1 ? "border-b border-gray-50" : ""}`}
+                      className={`flex items-center gap-3 px-4 py-3 ${i < items.length - 1 ? "border-b border-gray-50 dark:border-slate-700" : ""}`}
                     >
                       {/* Thumbnail imagen */}
                       <div
-                        className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center shrink-0 overflow-hidden relative group cursor-pointer"
+                        className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center shrink-0 overflow-hidden relative group cursor-pointer dark:bg-slate-700"
                         onClick={() => { servicioImagenIdRef.current = s.id; imagenInputRef.current?.click(); }}
                         title="Haz clic para cambiar la imagen del servicio"
                       >
@@ -266,13 +266,13 @@ export default function ServiciosPage() {
                       </div>
 
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-gray-800">{s.nombre}</p>
-                        {s.descripcion && <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">{s.descripcion}</p>}
-                        <p className="text-xs text-gray-400 mt-0.5">{s.duracionMinutos} min</p>
-                        <p className="sm:hidden font-semibold text-gray-800 text-sm mt-1">{formatPrecio(s.precio)}</p>
+                        <p className="font-medium text-gray-800 dark:text-gray-200">{s.nombre}</p>
+                        {s.descripcion && <p className="text-xs text-gray-400 mt-0.5 line-clamp-1 dark:text-gray-500">{s.descripcion}</p>}
+                        <p className="text-xs text-gray-400 mt-0.5 dark:text-gray-500">{s.duracionMinutos} min</p>
+                        <p className="sm:hidden font-semibold text-gray-800 text-sm mt-1 dark:text-gray-200">{formatPrecio(s.precio)}</p>
                       </div>
                       <div className="flex items-center gap-3 sm:gap-5 shrink-0">
-                        <span className="hidden sm:inline font-semibold text-gray-800 text-sm">{formatPrecio(s.precio)}</span>
+                        <span className="hidden sm:inline font-semibold text-gray-800 text-sm dark:text-gray-200">{formatPrecio(s.precio)}</span>
                         <div className="flex gap-2">
                           <button
                             onClick={() => abrirEditarServicio(s)}
@@ -300,16 +300,16 @@ export default function ServiciosPage() {
       {/* ── Tab Categorías ─────────────────────────────────────────────────── */}
       {tab === "categorias" && (
         cargandoCategorias ? (
-          <p className="text-gray-400">Cargando categorías...</p>
+          <p className="text-gray-400 dark:text-gray-500">Cargando categorías...</p>
         ) : categorias.length === 0 ? (
-          <div className="bg-white rounded-xl border border-gray-100 p-12 text-center">
-            <div className="w-14 h-14 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="bg-white rounded-xl border border-gray-100 p-12 text-center dark:bg-slate-800 dark:border-slate-700">
+            <div className="w-14 h-14 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 dark:bg-slate-700">
               <svg className="w-7 h-7 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a2 2 0 012-2z" />
               </svg>
             </div>
-            <p className="font-medium text-gray-700 mb-1">Aún no tienes categorías</p>
-            <p className="text-sm text-gray-400 mb-5">Las categorías agrupan tus servicios en el catálogo público</p>
+            <p className="font-medium text-gray-700 mb-1 dark:text-gray-300">Aún no tienes categorías</p>
+            <p className="text-sm text-gray-400 mb-5 dark:text-gray-500">Las categorías agrupan tus servicios en el catálogo público</p>
             <button
               onClick={abrirCrearCategoria}
               className="bg-slate-700 hover:bg-slate-800 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition"
@@ -322,11 +322,11 @@ export default function ServiciosPage() {
             {categorias.map((c) => {
               const count = serviciosPorCategoria(c.id);
               return (
-                <div key={c.id} className="bg-white rounded-xl border border-gray-100 px-4 py-3 flex items-center gap-3">
+                <div key={c.id} className="bg-white rounded-xl border border-gray-100 px-4 py-3 flex items-center gap-3 dark:bg-slate-800 dark:border-slate-700">
                   <div className="w-2 h-2 rounded-full bg-slate-700/40 shrink-0" />
-                  <span className="font-medium text-gray-800 flex-1 min-w-0">{c.nombre}</span>
+                  <span className="font-medium text-gray-800 flex-1 min-w-0 dark:text-gray-200">{c.nombre}</span>
                   <span className={`text-xs font-medium px-2 py-0.5 rounded-full shrink-0 ${
-                    count > 0 ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-400"
+                    count > 0 ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-400 dark:bg-slate-700 dark:text-gray-500"
                   }`}>
                     {count} {count === 1 ? "servicio" : "servicios"}
                   </span>
@@ -372,17 +372,17 @@ export default function ServiciosPage() {
       >
         <form onSubmit={handleSubmit((d) => guardarServicio(d))} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Nombre *</label>
             <input
               {...register("nombre")}
-              className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700
+              className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100 dark:border-slate-600
                 ${errors.nombre ? "border-red-400 bg-red-50" : "border-gray-200"}`}
             />
             {errors.nombre && <p className="text-red-500 text-xs mt-1">{errors.nombre.message}</p>}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Categoría</label>
             <Select {...register("categoriaId")} value={watch("categoriaId") ?? ""} className="w-full">
               <option value="">Sin categoría</option>
               {categorias.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
@@ -390,52 +390,52 @@ export default function ServiciosPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Descripción</label>
             <textarea
               rows={2}
               {...register("descripcion")}
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700 resize-none"
+              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700 resize-none dark:bg-slate-800 dark:text-gray-100 dark:border-slate-600"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Duración (min) *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Duración (min) *</label>
               <input
                 type="number" min="5" step="5"
                 {...register("duracionMinutos")}
-                className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700
+                className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100 dark:border-slate-600
                   ${errors.duracionMinutos ? "border-red-400" : "border-gray-200"}`}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">
                 Buffer (min)
-                <span className="ml-1 text-xs text-gray-400 font-normal">tiempo extra tras la cita</span>
+                <span className="ml-1 text-xs text-gray-400 font-normal dark:text-gray-500">tiempo extra tras la cita</span>
               </label>
               <input
                 type="number" min="0" max="120" step="5"
                 {...register("bufferMinutos")}
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700"
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100 dark:border-slate-600"
               />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Precio (MXN) *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Precio (MXN) *</label>
               <input
                 type="number" min="0" step="0.5"
                 {...register("precio")}
-                className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700
+                className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100 dark:border-slate-600
                   ${errors.precio ? "border-red-400" : "border-gray-200"}`}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Orden</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Orden</label>
               <input
                 type="number" min="1"
                 {...register("orden")}
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700"
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100 dark:border-slate-600"
               />
             </div>
           </div>
@@ -454,14 +454,14 @@ export default function ServiciosPage() {
       <Modal abierto={!!servicioEliminar} onCerrar={() => setServicioEliminar(null)} titulo="Eliminar servicio" ancho="sm">
         {servicioEliminar && (
           <div>
-            <p className="text-sm text-gray-600 mb-1">
-              ¿Seguro que deseas eliminar <span className="font-semibold text-gray-900">"{servicioEliminar.nombre}"</span>?
+            <p className="text-sm text-gray-600 mb-1 dark:text-gray-400">
+              ¿Seguro que deseas eliminar <span className="font-semibold text-gray-900 dark:text-gray-100">"{servicioEliminar.nombre}"</span>?
             </p>
-            <p className="text-xs text-gray-400 mb-6">Esta acción no se puede deshacer.</p>
+            <p className="text-xs text-gray-400 mb-6 dark:text-gray-500">Esta acción no se puede deshacer.</p>
             <div className="flex gap-3">
               <button
                 onClick={() => setServicioEliminar(null)}
-                className="flex-1 py-2.5 rounded-xl border-2 border-gray-200 text-sm font-medium text-gray-600 hover:border-gray-300 transition"
+                className="flex-1 py-2.5 rounded-xl border-2 border-gray-200 text-sm font-medium text-gray-600 hover:border-gray-300 transition dark:border-slate-600 dark:text-gray-400"
               >
                 Cancelar
               </button>
@@ -480,19 +480,19 @@ export default function ServiciosPage() {
       <Modal abierto={!!categoriaEliminar} onCerrar={() => setCategoriaEliminar(null)} titulo="Eliminar categoría" ancho="sm">
         {categoriaEliminar && (
           <div>
-            <p className="text-sm text-gray-600 mb-1">
-              ¿Seguro que deseas eliminar <span className="font-semibold text-gray-900">"{categoriaEliminar.nombre}"</span>?
+            <p className="text-sm text-gray-600 mb-1 dark:text-gray-400">
+              ¿Seguro que deseas eliminar <span className="font-semibold text-gray-900 dark:text-gray-100">"{categoriaEliminar.nombre}"</span>?
             </p>
             {serviciosPorCategoria(categoriaEliminar.id) > 0 && (
               <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-3">
                 Esta categoría tiene {serviciosPorCategoria(categoriaEliminar.id)} servicio(s). Los servicios quedarán sin categoría.
               </p>
             )}
-            <p className="text-xs text-gray-400 mb-6">Esta acción no se puede deshacer.</p>
+            <p className="text-xs text-gray-400 mb-6 dark:text-gray-500">Esta acción no se puede deshacer.</p>
             <div className="flex gap-3">
               <button
                 onClick={() => setCategoriaEliminar(null)}
-                className="flex-1 py-2.5 rounded-xl border-2 border-gray-200 text-sm font-medium text-gray-600 hover:border-gray-300 transition"
+                className="flex-1 py-2.5 rounded-xl border-2 border-gray-200 text-sm font-medium text-gray-600 hover:border-gray-300 transition dark:border-slate-600 dark:text-gray-400"
               >
                 Cancelar
               </button>
@@ -516,11 +516,11 @@ export default function ServiciosPage() {
       >
         <form onSubmit={formCat.handleSubmit((d) => guardarCategoria(d))} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Nombre *</label>
             <input
               {...formCat.register("nombre")}
               placeholder="Ej. Cabello, Uñas, Tratamientos..."
-              className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700
+              className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100 dark:border-slate-600
                 ${formCat.formState.errors.nombre ? "border-red-400 bg-red-50" : "border-gray-200"}`}
             />
             {formCat.formState.errors.nombre && (
@@ -528,13 +528,13 @@ export default function ServiciosPage() {
             )}
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Orden</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Orden</label>
             <input
               type="number" min="1"
               {...formCat.register("orden")}
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700"
+              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100 dark:border-slate-600"
             />
-            <p className="text-xs text-gray-400 mt-1">Número que define el orden en el catálogo público.</p>
+            <p className="text-xs text-gray-400 mt-1 dark:text-gray-500">Número que define el orden en el catálogo público.</p>
           </div>
           <button
             type="submit"

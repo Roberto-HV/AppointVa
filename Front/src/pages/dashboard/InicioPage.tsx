@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
-import { CheckCircle2, Circle, X, Scissors, Users, Link2, CalendarDays, BarChart2, UserCheck, ChevronRight, Clock, TrendingUp } from "lucide-react";
+import { CheckCircle2, Circle, X, Scissors, Users, CalendarDays, BarChart2, UserCheck, ChevronRight, Clock, TrendingUp } from "lucide-react";
 import { clientesApi } from "../../api/clientes";
 import type { ClienteCitaDto } from "../../types";
 import { NotificacionBanner } from "../../components/ui/NotificacionBanner";
@@ -20,11 +20,11 @@ import AnimatedCounter from "../../components/ui/AnimatedCounter";
 import { formatPrecio, formatFechaHoraResumen as formatFechaHora } from "../../utils/formatters";
 
 interface TarjetaProps { label: string; valor?: string | number; rawValue?: number; valorCorto?: string; color?: string; accent?: boolean }
-function Tarjeta({ label, valor, rawValue, color = "text-slate-900", accent = false }: TarjetaProps) {
+function Tarjeta({ label, valor, rawValue, color = "text-slate-900 dark:text-gray-100", accent = false }: TarjetaProps) {
   const numCls = `text-xl sm:text-2xl font-black leading-none ${accent ? "text-white" : color}`;
   return (
-    <div className={`rounded-2xl border p-3 sm:p-4 transition-all ${accent ? "bg-slate-900 border-slate-800" : "bg-white border-slate-100"}`}>
-      <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest mb-1.5 line-clamp-1 text-slate-400">{label}</p>
+    <div className={`rounded-2xl border p-3 sm:p-4 transition-all ${accent ? "bg-slate-900 border-slate-800" : "bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700"}`}>
+      <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest mb-1.5 line-clamp-1 text-slate-400 dark:text-gray-500">{label}</p>
       {typeof valor === "number" ? (
         <AnimatedCounter to={valor} className={numCls} />
       ) : rawValue !== undefined ? (
@@ -47,7 +47,6 @@ function formatPrecioCorto(n: number) {
 // ── Wizard de onboarding ──────────────────────────────────────────────────────
 interface OnboardingProps {
   negocioId: string;
-  slug: string;
   tieneCitas: boolean;
   tieneServicios: boolean;
   tieneHorarios: boolean;
@@ -55,7 +54,7 @@ interface OnboardingProps {
   cargando: boolean;
 }
 
-function WizardOnboarding({ negocioId, slug, tieneCitas, tieneServicios, tieneHorarios, tieneEmpleados, cargando }: OnboardingProps) {
+function WizardOnboarding({ negocioId, tieneCitas, tieneServicios, tieneHorarios, tieneEmpleados, cargando }: OnboardingProps) {
   const keyStorage = `onboarding-ok-${negocioId}`;
   const [cerrado, setCerrado] = useState(() => !!localStorage.getItem(keyStorage));
 
@@ -71,46 +70,34 @@ function WizardOnboarding({ negocioId, slug, tieneCitas, tieneServicios, tieneHo
     { hecho: tieneServicios,  icono: Scissors,     label: "Agrega servicios",     desc: "Define los servicios que ofreces y sus precios",             accion: { href: "/dashboard/servicios", texto: "Ir a Servicios" } },
     { hecho: tieneHorarios,   icono: CalendarDays, label: "Configura tus horarios", desc: "Sin horarios configurados tus clientes no podrán reservar", accion: { href: "/dashboard/perfil?tab=horarios", texto: "Ir a Horarios" } },
     { hecho: tieneEmpleados,  icono: Users,        label: "Agrega tu equipo",     desc: "Registra empleados para asignar citas",                      accion: { href: "/dashboard/empleados", texto: "Ir a Empleados" } },
-    { hecho: !!slug,          icono: Link2,         label: "Comparte tu enlace",  desc: `Envía este link a tus clientes para que reserven`,           accion: null, link: `${window.location.origin}/b/${slug}` },
   ];
 
   const hechos = pasos.filter((p) => p.hecho).length;
   const pct = Math.round((hechos / pasos.length) * 100);
 
   return (
-    <div className="bg-white rounded-xl border border-slate-700/20 p-5 mb-6 relative">
-      <button onClick={cerrar} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition">
+    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-700/20 p-5 mb-6 relative">
+      <button onClick={cerrar} className="absolute top-4 right-4 text-gray-400 dark:text-gray-500 hover:text-gray-600 transition">
         <X size={16} />
       </button>
 
       <div className="flex items-center justify-between mb-1 pr-6">
-        <h3 className="text-sm font-bold text-gray-800">Configura tu negocio</h3>
-        <span className="text-xs font-semibold text-slate-700">{hechos}/{pasos.length} completados</span>
+        <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200">Configura tu negocio</h3>
+        <span className="text-xs font-semibold text-slate-700 dark:text-gray-300">{hechos}/{pasos.length} completados</span>
       </div>
-      <div className="w-full bg-gray-100 rounded-full h-1.5 mb-5">
+      <div className="w-full bg-gray-100 dark:bg-slate-700 rounded-full h-1.5 mb-5">
         <div className="bg-slate-700 h-1.5 rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
       </div>
 
       <div className="space-y-3">
         {pasos.map((p, i) => (
-          <div key={i} className={`flex items-start gap-3 p-3 rounded-lg ${p.hecho ? "bg-gray-50" : "bg-slate-700/5 border border-slate-700/10"}`}>
+          <div key={i} className={`flex items-start gap-3 p-3 rounded-lg ${p.hecho ? "bg-gray-50 dark:bg-slate-700" : "bg-slate-700/5 border border-slate-700/10"}`}>
             <div className={`mt-0.5 shrink-0 ${p.hecho ? "text-emerald-500" : "text-slate-700"}`}>
               {p.hecho ? <CheckCircle2 size={18} /> : <Circle size={18} />}
             </div>
             <div className="flex-1 min-w-0">
-              <p className={`text-sm font-medium ${p.hecho ? "text-gray-400 line-through" : "text-gray-800"}`}>{p.label}</p>
-              {!p.hecho && <p className="text-xs text-gray-500 mt-0.5">{p.desc}</p>}
-              {!p.hecho && p.link && (
-                <div className="flex items-center gap-2 mt-2">
-                  <code className="text-xs bg-white border border-gray-200 px-2 py-1 rounded text-slate-700 truncate max-w-[200px] sm:max-w-xs">{p.link}</code>
-                  <button
-                    onClick={() => navigator.clipboard.writeText(p.link!)}
-                    className="text-xs text-slate-700 font-semibold hover:underline shrink-0"
-                  >
-                    Copiar
-                  </button>
-                </div>
-              )}
+              <p className={`text-sm font-medium ${p.hecho ? "text-gray-400 dark:text-gray-500 line-through" : "text-gray-800 dark:text-gray-200"}`}>{p.label}</p>
+              {!p.hecho && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{p.desc}</p>}
             </div>
             {!p.hecho && p.accion && (
               <Link to={p.accion.href} className="shrink-0 text-xs font-semibold text-slate-700 bg-slate-700/10 hover:bg-slate-700/20 px-3 py-1.5 rounded-lg transition">
@@ -165,7 +152,7 @@ function VistaPropietario({ nombre }: { nombre: string }) {
 
       {/* Encabezado — Apple Store style */}
       <div className="mb-6">
-        <h1 className="text-3xl font-black text-slate-900 leading-none mb-1">Hola, {nombre}</h1>
+        <h1 className="text-3xl font-black text-slate-900 dark:text-gray-100 leading-none mb-1">Hola, {nombre}</h1>
         <p className="text-sm text-slate-400">{negocio?.nombre ?? "Tu negocio"}</p>
       </div>
 
@@ -188,12 +175,12 @@ function VistaPropietario({ nombre }: { nombre: string }) {
           >
             <Link
               to={to}
-              className="flex flex-col items-center gap-2 bg-white rounded-2xl border border-slate-100 p-3 hover:border-slate-200 hover:-translate-y-0.5 hover:shadow-md transition group"
+              className="flex flex-col items-center gap-2 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-3 hover:border-slate-200 dark:hover:border-slate-600 hover:-translate-y-0.5 hover:shadow-md transition group"
             >
-              <div className="w-10 h-10 rounded-xl bg-slate-50 group-hover:bg-slate-100 flex items-center justify-center transition">
-                <Icon size={18} className="text-slate-600" />
+              <div className="w-10 h-10 rounded-xl bg-slate-50 dark:bg-slate-700 group-hover:bg-slate-100 dark:group-hover:bg-slate-600 flex items-center justify-center transition">
+                <Icon size={18} className="text-slate-600 dark:text-gray-400" />
               </div>
-              <span className="text-[10px] font-semibold text-slate-500 text-center leading-tight">{label}</span>
+              <span className="text-[10px] font-semibold text-slate-500 dark:text-gray-400 text-center leading-tight">{label}</span>
             </Link>
           </motion.div>
         ))}
@@ -202,10 +189,9 @@ function VistaPropietario({ nombre }: { nombre: string }) {
       {negocio && usuario?.negocioId && (
         <WizardOnboarding
           negocioId={usuario.negocioId}
-          slug={negocio.slug}
           tieneCitas={(data?.citasMes ?? 0) > 0}
           tieneServicios={(data?.topServicios?.length ?? 0) > 0}
-          tieneHorarios={horarios.length > 0}
+          tieneHorarios={horarios.some(h => h.activo)}
           tieneEmpleados={empleados.length > 0}
           cargando={isLoading}
         />
@@ -262,16 +248,16 @@ function VistaPropietario({ nombre }: { nombre: string }) {
           </motion.div>
 
           {/* Gráfica de tendencia */}
-          <div className="bg-white rounded-2xl border border-slate-100 p-5 mb-6 overflow-hidden">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-5 mb-6 overflow-hidden">
             <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-              <h2 className="text-sm font-bold text-slate-800">Ingresos y citas por día</h2>
-              <div className="flex bg-slate-100 rounded-xl p-0.5 gap-0.5">
+              <h2 className="text-sm font-bold text-slate-800 dark:text-gray-200">Ingresos y citas por día</h2>
+              <div className="flex bg-slate-100 dark:bg-slate-700 rounded-xl p-0.5 gap-0.5">
                 {[7, 14, 30].map((d) => (
                   <button
                     key={d}
                     onClick={() => setDias(d)}
                     className={`px-3 py-1 text-xs font-semibold rounded-lg transition ${
-                      dias === d ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                      dias === d ? "bg-white dark:bg-slate-800 text-slate-800 dark:text-gray-200 shadow-sm" : "text-slate-500 dark:text-gray-400 hover:text-slate-700 dark:hover:text-gray-300"
                     }`}
                   >
                     {d}d
@@ -355,18 +341,18 @@ function VistaPropietario({ nombre }: { nombre: string }) {
           })()}
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 bg-white rounded-xl border border-gray-100 p-5">
-              <h2 className="text-sm font-semibold text-gray-700 mb-4">Próximas citas</h2>
+            <div className="lg:col-span-2 bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
+              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Próximas citas</h2>
               {data.proximasCitas.length === 0 ? (
-                <p className="text-gray-400 text-sm">No hay citas próximas</p>
+                <p className="text-gray-400 dark:text-gray-500 text-sm">No hay citas próximas</p>
               ) : (
                 <div className="space-y-3">
                   {data.proximasCitas.map((c) => (
-                    <div key={c.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                    <div key={c.id} className="flex items-center justify-between py-2 border-b border-gray-50 dark:border-slate-700 last:border-0">
                       <div>
-                        <p className="text-sm font-medium text-gray-800">{c.nombreCliente}</p>
-                        <p className="text-xs text-gray-400">{c.nombreServicio} · {c.nombreEmpleado}</p>
-                        <p className="text-xs text-gray-400">{formatFechaHora(c.inicioEn)}</p>
+                        <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{c.nombreCliente}</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500">{c.nombreServicio} · {c.nombreEmpleado}</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500">{formatFechaHora(c.inicioEn)}</p>
                       </div>
                       <EstadoBadge estado={c.estadoTexto} />
                     </div>
@@ -375,19 +361,19 @@ function VistaPropietario({ nombre }: { nombre: string }) {
               )}
             </div>
 
-            <div className="bg-white rounded-xl border border-gray-100 p-5">
-              <h2 className="text-sm font-semibold text-gray-700 mb-4">Top servicios</h2>
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
+              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Top servicios</h2>
               {data.topServicios.length === 0 ? (
-                <p className="text-gray-400 text-sm">Sin datos aún</p>
+                <p className="text-gray-400 dark:text-gray-500 text-sm">Sin datos aún</p>
               ) : (
                 <div className="space-y-3">
                   {data.topServicios.map((s, i) => (
                     <div key={s.nombre}>
                       <div className="flex justify-between items-center mb-1">
-                        <span className="text-xs text-gray-600 font-medium">{i + 1}. {s.nombre}</span>
-                        <span className="text-xs text-gray-400">{s.totalCitas} citas</span>
+                        <span className="text-xs text-gray-600 dark:text-gray-400 font-medium">{i + 1}. {s.nombre}</span>
+                        <span className="text-xs text-gray-400 dark:text-gray-500">{s.totalCitas} citas</span>
                       </div>
-                      <div className="w-full bg-gray-100 rounded-full h-1.5">
+                      <div className="w-full bg-gray-100 dark:bg-slate-700 rounded-full h-1.5">
                         <div
                           className="bg-slate-700 h-1.5 rounded-full"
                           style={{ width: `${Math.min((s.totalCitas / (data.topServicios[0]?.totalCitas || 1)) * 100, 100)}%` }}
@@ -490,21 +476,21 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
 
       {/* Encabezado */}
       <div className="mb-6">
-        <p className="text-sm text-slate-400 mb-0.5">{saludo}</p>
-        <h1 className="text-3xl font-black text-slate-900 leading-none">{nombre}</h1>
+        <p className="text-sm text-slate-400 dark:text-gray-500 mb-0.5">{saludo}</p>
+        <h1 className="text-3xl font-black text-slate-900 dark:text-gray-100 leading-none">{nombre}</h1>
       </div>
 
       {/* Stats hoy */}
       <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-4">
-        <div className="bg-white rounded-2xl border border-slate-100 p-3 sm:p-4">
-          <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1.5">Citas hoy</p>
-          <p className="text-2xl font-black text-slate-900 leading-none">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-3 sm:p-4">
+          <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 dark:text-gray-500 mb-1.5">Citas hoy</p>
+          <p className="text-2xl font-black text-slate-900 dark:text-gray-100 leading-none">
             {cargandoHoy ? "—" : citasHoy.length}
           </p>
         </div>
-        <div className="bg-white rounded-2xl border border-slate-100 p-3 sm:p-4">
-          <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1.5">Completadas</p>
-          <p className="text-2xl font-black text-slate-900 leading-none">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-3 sm:p-4">
+          <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 dark:text-gray-500 mb-1.5">Completadas</p>
+          <p className="text-2xl font-black text-slate-900 dark:text-gray-100 leading-none">
             {cargandoHoy ? "—" : completadas.length}
           </p>
         </div>
@@ -558,9 +544,9 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
       )}
 
       {/* Agenda del día */}
-      <div className="bg-white rounded-2xl border border-slate-100 p-5 mb-6">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-5 mb-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-gray-700">Agenda de hoy</h2>
+          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Agenda de hoy</h2>
           <span className="text-xs bg-slate-700/10 text-slate-700 font-semibold px-2.5 py-1 rounded-full">
             {cargandoHoy ? "..." : citasHoy.length}
           </span>
@@ -570,7 +556,7 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
             {[0, 1, 2].map((i) => <Skeleton key={i} className="h-14 rounded-xl" />)}
           </div>
         ) : citasHoy.length === 0 ? (
-          <p className="text-gray-400 text-sm py-2">No tienes citas hoy — ¡disfruta el día!</p>
+          <p className="text-gray-400 dark:text-gray-500 text-sm py-2">No tienes citas hoy — ¡disfruta el día!</p>
         ) : (
           <div className="space-y-2">
             {citasOrdenadas.map((c) => {
@@ -603,13 +589,13 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
                     : "bg-slate-700"
                   }`} />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-800 truncate">{c.nombreCliente}</p>
-                    <p className="text-xs text-gray-500 truncate">{c.nombreServicio}</p>
+                    <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate">{c.nombreCliente}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{c.nombreServicio}</p>
                   </div>
                   <div className="shrink-0 flex items-center gap-2">
                     <div className="text-right">
                       <EstadoBadge estado={c.estadoTexto} />
-                      <p className="text-xs font-semibold text-gray-500 mt-0.5">{formatPrecio(c.precio)}</p>
+                      <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mt-0.5">{formatPrecio(c.precio)}</p>
                     </div>
                     <ChevronRight size={14} className="text-slate-300" />
                   </div>
@@ -621,22 +607,22 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
       </div>
 
       {/* Próximas citas (mañana en adelante) */}
-      <div className="bg-white rounded-2xl border border-slate-100 p-5">
-        <h2 className="text-sm font-semibold text-gray-700 mb-4">Próximas citas</h2>
+      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-5">
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Próximas citas</h2>
         {cargandoProximas ? (
           <div className="space-y-2">
             {[0, 1, 2].map((i) => <Skeleton key={i} className="h-12 rounded-xl" />)}
           </div>
         ) : pendientesOConfirmadas.length === 0 ? (
-          <p className="text-gray-400 text-sm">Sin citas próximas</p>
+          <p className="text-gray-400 dark:text-gray-500 text-sm">Sin citas próximas</p>
         ) : (
           <div className="divide-y divide-slate-50">
             {pendientesOConfirmadas.map((c) => (
               <div key={c.id} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
                 <div className="min-w-0 mr-3">
-                  <p className="text-sm font-semibold text-gray-800 truncate">{c.nombreCliente}</p>
-                  <p className="text-xs text-gray-400 truncate">{c.nombreServicio}</p>
-                  <p className="text-xs text-gray-400">{formatFechaHora(c.inicioEn)}</p>
+                  <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate">{c.nombreCliente}</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 truncate">{c.nombreServicio}</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500">{formatFechaHora(c.inicioEn)}</p>
                 </div>
                 <EstadoBadge estado={c.estadoTexto} />
               </div>

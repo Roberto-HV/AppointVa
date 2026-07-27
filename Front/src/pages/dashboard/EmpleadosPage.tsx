@@ -1,4 +1,4 @@
-﻿import { useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -281,7 +281,7 @@ export default function EmpleadosPage() {
   return (
     <div className="p-4 sm:p-8">
       <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
-        <h1 className="text-2xl font-bold text-gray-900">Empleados</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Empleados</h1>
         <button onClick={abrirCrear}
           className="bg-slate-700 hover:bg-slate-800 text-white text-sm font-semibold px-4 py-2 rounded-lg transition">
           + Nuevo empleado
@@ -295,7 +295,7 @@ export default function EmpleadosPage() {
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
             placeholder="Buscar por nombre..."
-            className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700"
+            className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100 dark:border-slate-600"
           />
         </div>
       )}
@@ -303,14 +303,14 @@ export default function EmpleadosPage() {
       {isLoading ? (
         <SkeletonCards cantidad={4} />
       ) : empleados.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-100 p-12 text-center">
-          <div className="w-14 h-14 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+        <div className="bg-white rounded-xl border border-gray-100 p-12 text-center dark:bg-slate-800 dark:border-slate-700">
+          <div className="w-14 h-14 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 dark:bg-slate-700">
             <svg className="w-7 h-7 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a4 4 0 00-5.196-3.793M9 20H4v-2a4 4 0 015.196-3.793M15 7a4 4 0 11-8 0 4 4 0 018 0zm6 4a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
           </div>
-          <p className="font-medium text-gray-700 mb-1">Aún no tienes empleados</p>
-          <p className="text-sm text-gray-400 mb-5">Agrega a tu equipo para que puedan recibir citas</p>
+          <p className="font-medium text-gray-700 mb-1 dark:text-gray-300">Aún no tienes empleados</p>
+          <p className="text-sm text-gray-400 mb-5 dark:text-gray-500">Agrega a tu equipo para que puedan recibir citas</p>
           <button
             onClick={abrirCrear}
             className="bg-slate-700 hover:bg-slate-800 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition"
@@ -331,10 +331,10 @@ export default function EmpleadosPage() {
             <motion.div
               key={emp.id}
               variants={{ hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0, transition: { duration: 0.35 } } }}
-              className="bg-white rounded-xl border border-gray-100 p-5 flex gap-4 hover:-translate-y-0.5 hover:shadow-md transition-all"
+              className="bg-white rounded-xl border border-gray-100 p-5 flex gap-4 hover:-translate-y-0.5 hover:shadow-md transition-all dark:bg-slate-800 dark:border-slate-700"
             >
               <div
-                className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center shrink-0 overflow-hidden relative group cursor-pointer"
+                className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center shrink-0 overflow-hidden relative group cursor-pointer dark:bg-slate-700"
                 onClick={() => { empleadoFotoIdRef.current = emp.id; fotoInputRef.current?.click(); }}
                 title="Cambiar foto"
               >
@@ -351,14 +351,14 @@ export default function EmpleadosPage() {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-0.5">
-                  <p className="font-semibold text-gray-800 truncate">{emp.nombre}</p>
-                  <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${emp.activo ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-400"}`}>
+                  <p className="font-semibold text-gray-800 truncate dark:text-gray-200">{emp.nombre}</p>
+                  <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${emp.activo ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-400 dark:bg-slate-700 dark:text-gray-500"}`}>
                     {emp.activo ? "Activo" : "Inactivo"}
                   </span>
                 </div>
-                {emp.email && <p className="text-xs text-gray-400 truncate">{emp.email}</p>}
-                {emp.telefono && <p className="text-xs text-gray-400">{emp.telefono}</p>}
-                <p className="text-xs text-gray-400 mt-1">{emp.servicioIds.length} servicios asignados</p>
+                {emp.email && <p className="text-xs text-gray-400 truncate dark:text-gray-500">{emp.email}</p>}
+                {emp.telefono && <p className="text-xs text-gray-400 dark:text-gray-500">{emp.telefono}</p>}
+                <p className="text-xs text-gray-400 mt-1 dark:text-gray-500">{emp.servicioIds.length} servicios asignados</p>
 
                 <div className="mt-3 space-y-1.5">
                   <div className="flex gap-1.5">
@@ -416,13 +416,13 @@ export default function EmpleadosPage() {
             const err = formEmpleado.formState.errors[campo];
             return (
               <div key={campo}>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{labels[campo]}</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">{labels[campo]}</label>
                 {campo === "biografia" ? (
                   <textarea rows={2} {...formEmpleado.register(campo)}
-                    className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700 resize-none" />
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700 resize-none dark:bg-slate-800 dark:text-gray-100 dark:border-slate-600" />
                 ) : (
                   <input type={campo === "email" ? "email" : "text"} {...formEmpleado.register(campo)}
-                    className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700
+                    className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100 dark:border-slate-600
                       ${err ? "border-red-400 bg-red-50" : "border-gray-200"}`} />
                 )}
                 {err && <p className="text-red-500 text-xs mt-1">{err.message}</p>}
@@ -431,7 +431,7 @@ export default function EmpleadosPage() {
           })}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Servicios que ofrece</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">Servicios que ofrece</label>
             <div className="space-y-1.5 max-h-40 overflow-y-auto">
               {servicios.map((s) => (
                 <label key={s.id} className="flex items-center gap-2 cursor-pointer">
@@ -439,7 +439,7 @@ export default function EmpleadosPage() {
                     checked={serviciosSeleccionados.includes(s.id)}
                     onChange={() => toggleServicio(s.id)}
                     className="accent-slate-700" />
-                  <span className="text-sm text-gray-700">{s.nombre}</span>
+                  <span className="text-sm text-gray-700 dark:text-gray-300">{s.nombre}</span>
                 </label>
               ))}
             </div>
@@ -460,7 +460,7 @@ export default function EmpleadosPage() {
       >
         <div className="space-y-3">
           {horarioLocal.map((h, i) => (
-            <div key={h.diaSemana} className={`rounded-lg border p-3 transition ${h.activo ? "bg-white border-gray-200" : "bg-gray-50 border-gray-100"}`}>
+            <div key={h.diaSemana} className={`rounded-lg border p-3 transition ${h.activo ? "bg-white border-gray-200 dark:bg-slate-800 dark:border-slate-600" : "bg-gray-50 border-gray-100 dark:bg-slate-700 dark:border-slate-700"}`}>
               <div className="flex items-center justify-between mb-2">
                 <label className="flex items-center gap-2 cursor-pointer select-none">
                   <div
@@ -473,16 +473,16 @@ export default function EmpleadosPage() {
                   >
                     <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${h.activo ? "left-4" : "left-0.5"}`} />
                   </div>
-                  <span className={`text-sm font-medium ${h.activo ? "text-gray-800" : "text-gray-400"}`}>
+                  <span className={`text-sm font-medium ${h.activo ? "text-gray-800 dark:text-gray-200" : "text-gray-400 dark:text-gray-500"}`}>
                     {DIAS[h.diaSemana]}
                   </span>
                 </label>
-                {!h.activo && <span className="text-xs text-gray-400">Descanso</span>}
+                {!h.activo && <span className="text-xs text-gray-400 dark:text-gray-500">Descanso</span>}
               </div>
               {h.activo && (
                 <div className="flex items-center gap-3 ml-6">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-xs text-gray-500">De</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">De</span>
                     <input
                       type="time" value={h.horaInicio}
                       onChange={(e) => {
@@ -490,11 +490,11 @@ export default function EmpleadosPage() {
                         updated[i] = { ...h, horaInicio: e.target.value };
                         setHorarioLocal(updated);
                       }}
-                      className="px-2 py-1 rounded border border-gray-200 text-sm outline-none focus:border-slate-700"
+                      className="px-2 py-1 rounded border border-gray-200 text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100 dark:border-slate-600"
                     />
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <span className="text-xs text-gray-500">a</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">a</span>
                     <input
                       type="time" value={h.horaFin}
                       onChange={(e) => {
@@ -502,7 +502,7 @@ export default function EmpleadosPage() {
                         updated[i] = { ...h, horaFin: e.target.value };
                         setHorarioLocal(updated);
                       }}
-                      className="px-2 py-1 rounded border border-gray-200 text-sm outline-none focus:border-slate-700"
+                      className="px-2 py-1 rounded border border-gray-200 text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100 dark:border-slate-600"
                     />
                   </div>
                 </div>
@@ -529,20 +529,20 @@ export default function EmpleadosPage() {
         <div>
           {/* Lista bloqueos actuales */}
           <div className="mb-5">
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Bloqueos activos</p>
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2 dark:text-gray-400">Bloqueos activos</p>
             {cargandoBloqueos ? (
-              <p className="text-sm text-gray-400">Cargando...</p>
+              <p className="text-sm text-gray-400 dark:text-gray-500">Cargando...</p>
             ) : bloqueos.length === 0 ? (
-              <p className="text-sm text-gray-400">Sin bloqueos registrados</p>
+              <p className="text-sm text-gray-400 dark:text-gray-500">Sin bloqueos registrados</p>
             ) : (
               <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                 {bloqueos.map((b) => (
                   <div key={b.id} className="flex items-start justify-between gap-3 bg-orange-50 border border-orange-100 rounded-lg px-3 py-2">
                     <div className="min-w-0">
-                      <p className="text-xs font-medium text-gray-700 capitalize">
+                      <p className="text-xs font-medium text-gray-700 capitalize dark:text-gray-300">
                         {formatBloqueo(b.inicioEn)} → {formatBloqueo(b.finEn)}
                       </p>
-                      {b.motivo && <p className="text-xs text-gray-500 mt-0.5 truncate">{b.motivo}</p>}
+                      {b.motivo && <p className="text-xs text-gray-500 mt-0.5 truncate dark:text-gray-400">{b.motivo}</p>}
                     </div>
                     <button
                       onClick={() => b.id && eliminarBloqueo(b.id)}
@@ -557,12 +557,12 @@ export default function EmpleadosPage() {
           </div>
 
           {/* Formulario nuevo bloqueo */}
-          <div className="border-t border-gray-100 pt-4">
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Agregar bloqueo</p>
+          <div className="border-t border-gray-100 pt-4 dark:border-slate-700">
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3 dark:text-gray-400">Agregar bloqueo</p>
             <form onSubmit={formBloqueo.handleSubmit((d) => crearBloqueo(d))} className="space-y-3">
               {/* Inicio */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Inicio *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Inicio *</label>
                 <div className="grid grid-cols-2 gap-2">
                   <DatePicker
                     value={formBloqueo.watch("fechaInicio") ?? ""}
@@ -585,7 +585,7 @@ export default function EmpleadosPage() {
 
               {/* Fin */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Fin *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Fin *</label>
                 <div className="grid grid-cols-2 gap-2">
                   <DatePicker
                     value={formBloqueo.watch("fechaFin") ?? ""}
@@ -621,14 +621,14 @@ export default function EmpleadosPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Motivo <span className="text-gray-400 font-normal">(opcional)</span>
+                <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">
+                  Motivo <span className="text-gray-400 font-normal dark:text-gray-500">(opcional)</span>
                 </label>
                 <input
                   type="text"
                   {...formBloqueo.register("motivo")}
                   placeholder="Ej. Vacaciones, cita médica..."
-                  className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700"
+                  className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100 dark:border-slate-600"
                 />
               </div>
               <button
@@ -647,16 +647,16 @@ export default function EmpleadosPage() {
       <Modal abierto={!!empleadoEliminar} onCerrar={() => setEmpleadoEliminar(null)} titulo="Eliminar empleado" ancho="sm">
         {empleadoEliminar && (
           <div>
-            <p className="text-sm text-gray-600 mb-1">
-              ¿Seguro que deseas eliminar a <span className="font-semibold text-gray-900">{empleadoEliminar.nombre}</span>?
+            <p className="text-sm text-gray-600 mb-1 dark:text-gray-400">
+              ¿Seguro que deseas eliminar a <span className="font-semibold text-gray-900 dark:text-gray-100">{empleadoEliminar.nombre}</span>?
             </p>
-            <p className="text-xs text-gray-400 mb-6">
+            <p className="text-xs text-gray-400 mb-6 dark:text-gray-500">
               El empleado dejará de aparecer y no podrá recibir nuevas citas. Esta acción no se puede deshacer.
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setEmpleadoEliminar(null)}
-                className="flex-1 py-2.5 rounded-xl border-2 border-gray-200 text-sm font-medium text-gray-600 hover:border-gray-300 transition"
+                className="flex-1 py-2.5 rounded-xl border-2 border-gray-200 text-sm font-medium text-gray-600 hover:border-gray-300 transition dark:border-slate-600 dark:text-gray-400"
               >
                 Cancelar
               </button>
@@ -686,33 +686,33 @@ export default function EmpleadosPage() {
 
       {/* Modal invitar */}
       <Modal abierto={modalInvitar} onCerrar={() => setModalInvitar(false)} titulo="Invitar acceso al sistema" ancho="sm">
-        <p className="text-sm text-gray-500 mb-4">
+        <p className="text-sm text-gray-500 mb-4 dark:text-gray-400">
           Crea una cuenta para que <strong>{empleadoInvitar?.nombre}</strong> pueda iniciar sesión.
         </p>
         <form onSubmit={formInvitar.handleSubmit((d) => invitar(d))} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Correo de acceso *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Correo de acceso *</label>
             <input type="email" {...formInvitar.register("email")}
-              className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700
+              className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100 dark:border-slate-600
                 ${formInvitar.formState.errors.email ? "border-red-400 bg-red-50" : "border-gray-200"}`} />
             {formInvitar.formState.errors.email && (
               <p className="text-red-500 text-xs mt-1">{formInvitar.formState.errors.email.message}</p>
             )}
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña inicial *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Contraseña inicial *</label>
             <div className="relative">
               <input
                 type={mostrarPasswordInvitar ? "text" : "password"}
                 {...formInvitar.register("password")}
-                className={`w-full px-3 py-2 pr-10 rounded-lg border text-sm outline-none focus:border-slate-700
+                className={`w-full px-3 py-2 pr-10 rounded-lg border text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100 dark:border-slate-600
                   ${formInvitar.formState.errors.password ? "border-red-400 bg-red-50" : "border-gray-200"}`}
               />
               <button
                 type="button"
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => setMostrarPasswordInvitar((v) => !v)}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-gray-500"
                 tabIndex={-1}
               >
                 {mostrarPasswordInvitar ? <EyeOff size={16} /> : <Eye size={16} />}

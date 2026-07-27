@@ -408,7 +408,7 @@ export default function CitasPage() {
 
         {/* Fila 1 — título + acciones desktop */}
         <div className="flex items-center justify-between gap-3">
-          <h1 className="text-2xl font-bold text-gray-900">Citas</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Citas</h1>
           <div className="flex items-center gap-2">
             {/* Recepción y Exportar: solo desktop */}
             <Link
@@ -437,11 +437,11 @@ export default function CitasPage() {
         </div>
 
         {/* Fila 2 — tabs: ancho completo en móvil, auto en desktop */}
-        <div className="flex bg-gray-100 rounded-lg p-1 gap-1">
+        <div className="flex bg-gray-100 dark:bg-slate-700 rounded-lg p-1 gap-1">
           <button
             onClick={() => setVista("lista")}
             className={`flex-1 py-1.5 text-sm font-medium rounded-md transition whitespace-nowrap ${
-              vista === "lista" ? "bg-white text-gray-800 shadow-sm" : "text-gray-500 hover:text-gray-700"
+              vista === "lista" ? "bg-white dark:bg-slate-800 text-gray-800 dark:text-gray-200 shadow-sm" : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
             }`}
           >
             Lista
@@ -449,7 +449,7 @@ export default function CitasPage() {
           <button
             onClick={() => setVista("calendario")}
             className={`flex-1 py-1.5 text-sm font-medium rounded-md transition whitespace-nowrap ${
-              vista === "calendario" ? "bg-white text-gray-800 shadow-sm" : "text-gray-500 hover:text-gray-700"
+              vista === "calendario" ? "bg-white dark:bg-slate-800 text-gray-800 dark:text-gray-200 shadow-sm" : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
             }`}
           >
             Calendario
@@ -457,7 +457,7 @@ export default function CitasPage() {
           <button
             onClick={() => setVista("gantt")}
             className={`flex-1 py-1.5 text-sm font-medium rounded-md transition whitespace-nowrap ${
-              vista === "gantt" ? "bg-white text-gray-800 shadow-sm" : "text-gray-500 hover:text-gray-700"
+              vista === "gantt" ? "bg-white dark:bg-slate-800 text-gray-800 dark:text-gray-200 shadow-sm" : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
             }`}
           >
             Línea de tiempo
@@ -470,24 +470,24 @@ export default function CitasPage() {
       {vista === "lista" && (
         <div className="grid grid-cols-2 gap-2 mb-6 min-w-0">
           <div className="col-span-2 sm:col-span-1">
-            <label className="block text-xs text-gray-500 mb-1">Buscar cliente</label>
+            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Buscar cliente</label>
             <input
               type="text"
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
               placeholder="Nombre o teléfono..."
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700"
+              className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700"
             />
           </div>
           <div className="col-span-2">
-            <label className="block text-xs text-gray-500 mb-1">Profesional</label>
+            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Profesional</label>
             <Select value={empleadoId} onChange={(e) => { setEmpleadoId(e.target.value); setPagina(1); }} className="w-full">
               <option value="">Todos</option>
               {empleados.map((e) => <option key={e.id} value={e.id}>{e.nombre}</option>)}
             </Select>
           </div>
           <div className="col-span-2">
-            <label className="block text-xs text-gray-500 mb-1.5">Estado</label>
+            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1.5">Estado</label>
             <div className="flex flex-wrap gap-1.5">
               {(["", "Pendiente", "Confirmada", "Completada", "Cancelada", "Inasistencia"] as const).map((e) => {
                 const count = e ? conteoEstados[e] : citas.length;
@@ -498,13 +498,13 @@ export default function CitasPage() {
                     className={`px-3 py-1 text-xs font-medium rounded-full border transition ${
                       estadoFiltro === e
                         ? "bg-slate-700 text-white border-slate-700"
-                        : "bg-white text-gray-600 border-gray-200 hover:border-slate-400"
+                        : "bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-slate-600 hover:border-slate-400"
                     }`}
                   >
                     {e || "Todos"}
                     {count > 0 && (
                       <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
-                        estadoFiltro === e ? "bg-white/20" : "bg-gray-100"
+                        estadoFiltro === e ? "bg-white/20" : "bg-gray-100 dark:bg-slate-700"
                       }`}>
                         {count}
                       </span>
@@ -527,7 +527,7 @@ export default function CitasPage() {
                 className={`px-2.5 py-1 text-xs font-medium rounded-md border transition ${
                   desde === p.d && hasta === p.h
                     ? "bg-slate-700 text-white border-slate-700"
-                    : "bg-white text-gray-600 border-gray-200 hover:border-slate-400"
+                    : "bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-slate-600 hover:border-slate-400"
                 }`}
               >
                 {p.label}
@@ -537,15 +537,15 @@ export default function CitasPage() {
 
           <div className="col-span-2 flex gap-2">
             <div className="flex-1 min-w-0">
-              <label className="block text-xs text-gray-500 mb-1">Desde</label>
+              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Desde</label>
               <input type="date" value={desde} onChange={(e) => { setDesde(e.target.value); setPagina(1); }}
-                className="px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700"
+                className="px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700"
                 style={{ width: '100%', minWidth: 0, WebkitAppearance: 'none' }} />
             </div>
             <div className="flex-1 min-w-0">
-              <label className="block text-xs text-gray-500 mb-1">Hasta</label>
+              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Hasta</label>
               <input type="date" value={hasta} onChange={(e) => { setHasta(e.target.value); setPagina(1); }}
-                className="px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700"
+                className="px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700"
                 style={{ width: '100%', minWidth: 0, WebkitAppearance: 'none' }} />
             </div>
           </div>
@@ -561,7 +561,7 @@ export default function CitasPage() {
       )}
       {vista === "calendario" && empleados.length > 1 && (
         <div className="mb-4">
-          <label className="block text-xs text-gray-500 mb-1">Profesional</label>
+          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Profesional</label>
           <Select value={empleadoId} onChange={(e) => { setEmpleadoId(e.target.value); setPagina(1); }}>
             <option value="">Todos</option>
             {empleados.map((e) => <option key={e.id} value={e.id}>{e.nombre}</option>)}
@@ -594,18 +594,18 @@ export default function CitasPage() {
       {/* Vista lista */}
       {vista === "lista" && (
         isLoading ? (
-          <div className="bg-white rounded-xl border border-gray-100 overflow-x-auto">
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 overflow-x-auto">
             <table className="w-full text-sm">
               <tbody><SkeletonTableRows filas={6} columnas={5} /></tbody>
             </table>
           </div>
         ) : citas.length === 0 ? (
-          <div className="bg-white rounded-xl border border-gray-100 p-12 text-center flex flex-col items-center gap-3">
-            <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center">
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-12 text-center flex flex-col items-center gap-3">
+            <div className="w-14 h-14 rounded-full bg-gray-100 dark:bg-slate-700 flex items-center justify-center">
               <Calendar size={26} className="text-gray-300" />
             </div>
             <div>
-              <p className="font-medium text-gray-500">
+              <p className="font-medium text-gray-500 dark:text-gray-400">
                 {estadoFiltro ? `Sin citas ${estadoFiltro.toLowerCase()}s` : "No hay citas en este rango"}
               </p>
               {(estadoFiltro || busqueda) && (
@@ -619,10 +619,10 @@ export default function CitasPage() {
             </div>
           </div>
         ) : (
-          <div className="bg-white rounded-xl border border-gray-100 overflow-x-auto">
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-100 text-xs text-gray-400 uppercase tracking-wide">
+                <tr className="border-b border-gray-100 dark:border-slate-700 text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wide">
                   <th className="text-left px-4 py-3 font-medium">Cliente</th>
                   <th className="text-left px-4 py-3 font-medium">Servicio</th>
                   <th className="text-left px-4 py-3 font-medium hidden sm:table-cell">Profesional</th>
@@ -635,15 +635,15 @@ export default function CitasPage() {
               </thead>
               <tbody>
                 {citas.map((c) => (
-                  <tr key={c.id} className="border-b border-gray-50 hover:bg-gray-50 transition">
+                  <tr key={c.id} className="border-b border-gray-50 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 transition">
                     <td className="px-4 py-3">
-                      <p className="font-medium text-gray-800">{c.nombreCliente}</p>
-                      <p className="text-xs text-gray-400">{c.telefonoCliente}</p>
+                      <p className="font-medium text-gray-800 dark:text-gray-200">{c.nombreCliente}</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500">{c.telefonoCliente}</p>
                     </td>
-                    <td className="px-4 py-3 text-gray-700 text-xs sm:text-sm">{c.nombreServicio}</td>
-                    <td className="px-4 py-3 text-gray-700 hidden sm:table-cell">{c.nombreEmpleado}</td>
-                    <td className="px-4 py-3 text-gray-600 text-xs sm:text-sm">{formatFechaHora(c.inicioEn)}</td>
-                    <td className="px-4 py-3 text-right font-medium text-gray-800 hidden sm:table-cell">{formatPrecio(c.precio)}</td>
+                    <td className="px-4 py-3 text-gray-700 dark:text-gray-300 text-xs sm:text-sm">{c.nombreServicio}</td>
+                    <td className="px-4 py-3 text-gray-700 dark:text-gray-300 hidden sm:table-cell">{c.nombreEmpleado}</td>
+                    <td className="px-4 py-3 text-gray-600 dark:text-gray-400 text-xs sm:text-sm">{formatFechaHora(c.inicioEn)}</td>
+                    <td className="px-4 py-3 text-right font-medium text-gray-800 dark:text-gray-200 hidden sm:table-cell">{formatPrecio(c.precio)}</td>
 
                     {/* Columna de pago — solo desktop */}
                     <td className="px-4 py-3 text-center hidden sm:table-cell">
@@ -653,7 +653,7 @@ export default function CitasPage() {
                           className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full transition ${
                             c.pagada
                               ? "bg-green-100 text-green-700 hover:bg-green-200"
-                              : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                              : "bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-600"
                           }`}
                         >
                           {c.pagada
@@ -872,7 +872,7 @@ export default function CitasPage() {
               <p><span className="text-gray-500">Servicio:</span> <span className="font-medium">{citaNotas.nombreServicio}</span></p>
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">
+              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
                 Nota interna <span className="text-gray-400">(solo visible para el negocio)</span>
               </label>
               <textarea

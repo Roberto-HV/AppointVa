@@ -7,7 +7,7 @@ function getInitialTheme(): Theme {
     const stored = localStorage.getItem("appointva-theme");
     if (stored === "dark" || stored === "light") return stored;
   } catch {}
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  return "light";
 }
 
 export function useTheme() {
