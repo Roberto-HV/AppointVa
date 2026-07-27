@@ -179,7 +179,7 @@ export interface CitaDto {
   notas?: string;
   motivoCancelacion?: string;
   comprobanteUrl?: string;
-  fechaCreacion: string;
+  fechaCreacion?: string;
 }
 
 // ── Clientes ──────────────────────────────────────────────────────────────────
