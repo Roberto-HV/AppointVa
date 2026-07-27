@@ -211,7 +211,10 @@ export default function EmpleadosPage() {
       setModalEmpleado(false);
       toast(empleadoEdit ? "Empleado actualizado" : "Empleado creado");
     },
-    onError: () => toast("No se pudo guardar el empleado. Intenta de nuevo.", "error"),
+    onError: (err: unknown) => {
+      const msg = (err as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje;
+      toast(msg ?? "No se pudo guardar el empleado. Intenta de nuevo.", "error");
+    },
   });
 
   const { mutate: eliminar } = useMutation({

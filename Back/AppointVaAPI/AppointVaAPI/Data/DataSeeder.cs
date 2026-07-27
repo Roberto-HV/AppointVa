@@ -45,7 +45,7 @@ namespace AppointVaAPI.Data
                             Id = Guid.NewGuid(),
                             Nombre = "Pro",
                             PrecioMensual = 399.00m,
-                            MaxEmpleados = 10,
+                            MaxEmpleados = 6,
                             MaxCitasMes = 1000,
                             Activo = 1,
                             FechaCreacion = DateTime.UtcNow
