@@ -282,7 +282,7 @@ export default function ServiciosPage() {
                           </button>
                           <button
                             onClick={() => setServicioEliminar(s)}
-                            className="text-xs font-medium px-2.5 py-1 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 dark:bg-red-900/40 dark:text-red-400 dark:hover:bg-red-900/60 transition"
+                            className="text-xs font-medium px-2.5 py-1 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 dark:bg-red-900/40 dark:text-red-400 dark:hover:bg-red-900/60 dark:border dark:border-red-500/60 transition"
                           >
                             Eliminar
                           </button>
@@ -339,7 +339,7 @@ export default function ServiciosPage() {
                     </button>
                     <button
                       onClick={() => setCategoriaEliminar(c)}
-                      className="text-xs font-medium px-2.5 py-1 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 dark:bg-red-900/40 dark:text-red-400 dark:hover:bg-red-900/60 transition"
+                      className="text-xs font-medium px-2.5 py-1 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 dark:bg-red-900/40 dark:text-red-400 dark:hover:bg-red-900/60 dark:border dark:border-red-500/60 transition"
                     >
                       Eliminar
                     </button>

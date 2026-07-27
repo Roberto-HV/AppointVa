@@ -754,12 +754,14 @@ export default function CitasPage() {
                           </Tooltip>
                         )}
                         {(c.estadoTexto === "Pendiente" || c.estadoTexto === "Confirmada") && (
-                          <button
-                            onClick={() => abrirReagendar(c)}
-                            className="text-xs font-medium px-2.5 py-1 rounded-lg bg-violet-50 text-violet-600 hover:bg-violet-100 dark:bg-violet-900/40 dark:text-violet-400 dark:hover:bg-violet-900/60 dark:border dark:border-violet-500/60 transition"
-                          >
-                            Reagendar
-                          </button>
+                          <Tooltip text="Mover la cita a otra fecha u hora">
+                            <button
+                              onClick={() => abrirReagendar(c)}
+                              className="text-xs font-medium px-2.5 py-1 rounded-lg bg-violet-50 text-violet-600 hover:bg-violet-100 dark:bg-violet-900/40 dark:text-violet-400 dark:hover:bg-violet-900/60 dark:border dark:border-violet-500/60 transition"
+                            >
+                              Reagendar
+                            </button>
+                          </Tooltip>
                         )}
                         <Tooltip text="Crear una nueva cita con los mismos datos del cliente y servicio">
                           <button
@@ -770,12 +772,14 @@ export default function CitasPage() {
                           </button>
                         </Tooltip>
                         {TRANSICIONES[c.estadoTexto] && (
-                          <button
-                            onClick={() => abrirCambioEstado(c)}
-                            className="text-xs font-medium px-2.5 py-1 rounded-lg bg-slate-700/10 text-slate-700 hover:bg-slate-700/20 dark:bg-slate-600/30 dark:text-slate-300 dark:hover:bg-slate-600/50 dark:border dark:border-slate-500 transition"
-                          >
-                            Más
-                          </button>
+                          <Tooltip text="Ver más opciones de estado para esta cita">
+                            <button
+                              onClick={() => abrirCambioEstado(c)}
+                              className="text-xs font-medium px-2.5 py-1 rounded-lg bg-slate-700/10 text-slate-700 hover:bg-slate-700/20 dark:bg-slate-600/30 dark:text-slate-300 dark:hover:bg-slate-600/50 dark:border dark:border-slate-500 transition"
+                            >
+                              Más
+                            </button>
+                          </Tooltip>
                         )}
                       </div>
                     </td>
