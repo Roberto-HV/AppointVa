@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
-import { CheckCircle2, Circle, X, Scissors, Users, Link2, CalendarDays, BarChart2, UserCheck, ChevronRight, Clock, TrendingUp } from "lucide-react";
+import { CheckCircle2, Circle, X, Scissors, Users, CalendarDays, BarChart2, UserCheck, ChevronRight, Clock, TrendingUp } from "lucide-react";
 import { clientesApi } from "../../api/clientes";
 import type { ClienteCitaDto } from "../../types";
 import { NotificacionBanner } from "../../components/ui/NotificacionBanner";
@@ -47,7 +47,6 @@ function formatPrecioCorto(n: number) {
 // ── Wizard de onboarding ──────────────────────────────────────────────────────
 interface OnboardingProps {
   negocioId: string;
-  slug: string;
   tieneCitas: boolean;
   tieneServicios: boolean;
   tieneHorarios: boolean;
@@ -55,7 +54,7 @@ interface OnboardingProps {
   cargando: boolean;
 }
 
-function WizardOnboarding({ negocioId, slug, tieneCitas, tieneServicios, tieneHorarios, tieneEmpleados, cargando }: OnboardingProps) {
+function WizardOnboarding({ negocioId, tieneCitas, tieneServicios, tieneHorarios, tieneEmpleados, cargando }: OnboardingProps) {
   const keyStorage = `onboarding-ok-${negocioId}`;
   const [cerrado, setCerrado] = useState(() => !!localStorage.getItem(keyStorage));
 
@@ -99,17 +98,6 @@ function WizardOnboarding({ negocioId, slug, tieneCitas, tieneServicios, tieneHo
             <div className="flex-1 min-w-0">
               <p className={`text-sm font-medium ${p.hecho ? "text-gray-400 line-through" : "text-gray-800"}`}>{p.label}</p>
               {!p.hecho && <p className="text-xs text-gray-500 mt-0.5">{p.desc}</p>}
-              {!p.hecho && p.link && (
-                <div className="flex items-center gap-2 mt-2">
-                  <code className="text-xs bg-white border border-gray-200 px-2 py-1 rounded text-slate-700 truncate max-w-[200px] sm:max-w-xs">{p.link}</code>
-                  <button
-                    onClick={() => navigator.clipboard.writeText(p.link!)}
-                    className="text-xs text-slate-700 font-semibold hover:underline shrink-0"
-                  >
-                    Copiar
-                  </button>
-                </div>
-              )}
             </div>
             {!p.hecho && p.accion && (
               <Link to={p.accion.href} className="shrink-0 text-xs font-semibold text-slate-700 bg-slate-700/10 hover:bg-slate-700/20 px-3 py-1.5 rounded-lg transition">
@@ -201,7 +189,6 @@ function VistaPropietario({ nombre }: { nombre: string }) {
       {negocio && usuario?.negocioId && (
         <WizardOnboarding
           negocioId={usuario.negocioId}
-          slug={negocio.slug}
           tieneCitas={(data?.citasMes ?? 0) > 0}
           tieneServicios={(data?.topServicios?.length ?? 0) > 0}
           tieneHorarios={horarios.some(h => h.activo)}
