@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import PasoEmpleado, { SIN_PREFERENCIA_ID, SIN_PREFERENCIA } from "./PasoEmpleado";
+import PasoEmpleado, { SIN_PREFERENCIA_ID } from "./PasoEmpleado";
 import type { EmpleadoPublico } from "../../types";
 
 const mockEmpleados: EmpleadoPublico[] = [

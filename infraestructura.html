@@ -284,7 +284,7 @@ footer {
         </div>
         <div class="warn">
           <span>⚠</span>
-          <span>Plan Free: se duerme tras inactividad. El primer request puede tardar ~50 segundos al despertar. <strong>Keep-alive activo:</strong> cron-job.org ejecuta ping cada 15 min para mantenerlo activo.</span>
+          <span>Plan Free: se duerme tras inactividad. El primer request puede tardar ~50 segundos al despertar. <strong>Keep-alive activo:</strong> cron-job.org ejecuta ping cada 10 min para mantenerlo activo.</span>
         </div>
       </div>
     </div>
@@ -321,6 +321,46 @@ footer {
         <div class="field">
           <span class="field-lbl">Deploy</span>
           <span class="field-val plain">Automático al hacer push a main</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Staging -->
+    <div class="card">
+      <div class="card-stripe" style="background:#0891b2"></div>
+      <div class="card-head">
+        <div class="svc-badge" style="background:#0891b2">ST</div>
+        <div>
+          <div class="svc-name">Staging (Backend + Frontend + DB)</div>
+          <div class="svc-role">Ambiente de pruebas &middot; Branch develop</div>
+        </div>
+        <div class="plan-pill">Free</div>
+      </div>
+      <div class="card-body">
+        <div class="field">
+          <span class="field-lbl">URL backend</span>
+          <span class="field-val"><a href="https://appointva-api-staging.onrender.com">https://appointva-api-staging.onrender.com</a></span>
+        </div>
+        <div class="field">
+          <span class="field-lbl">URL frontend</span>
+          <span class="field-val"><a href="https://appointva-frontend-staging.onrender.com">https://appointva-frontend-staging.onrender.com</a></span>
+        </div>
+        <div class="field">
+          <span class="field-lbl">DB staging</span>
+          <span class="field-val plain">appointva-db-staging &middot; PostgreSQL 18 &middot; Render Basic</span>
+        </div>
+        <div class="sep"></div>
+        <div class="field">
+          <span class="field-lbl">Repositorio &middot; Branch</span>
+          <span class="field-val">Roberto-HV/AppointVa &middot; develop</span>
+        </div>
+        <div class="field">
+          <span class="field-lbl">Deploy</span>
+          <span class="field-val plain">Automático al hacer push a develop</span>
+        </div>
+        <div class="warn">
+          <span>⚠</span>
+          <span>Staging usa su propia BD aislada. Nunca apunta a datos de producción.</span>
         </div>
       </div>
     </div>
@@ -450,7 +490,7 @@ footer {
         </div>
         <div class="field">
           <span class="field-lbl">Uso principal</span>
-          <span class="field-val plain">Keep-alive del backend (ping cada 15 min) &middot; Recordatorios de citas</span>
+          <span class="field-val plain">Keep-alive del backend (ping cada 10 min) &middot; Recordatorios de citas</span>
         </div>
         <div class="sep"></div>
         <div class="field">
