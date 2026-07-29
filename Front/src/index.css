@@ -8,6 +8,11 @@
   --color-primary-dark:  30 41 59;    /* #1E293B slate-800 */
   --color-primary-light: 100 116 139; /* #64748B slate-500 */
 
+  /* ── Gold accent ─────────────────────────────────────────────────────────── */
+  --gold:       196 162 101;  /* #C4A265 */
+  --gold-dark:  168 132 90;   /* #A8845A */
+  --gold-light: 245 230 204;  /* #F5E6CC */
+
   /* ── shadcn/ui: variables HSL (zinc base + slate primary) ────────────────── */
   --background:           0 0% 100%;
   --foreground:           222 47% 11%;

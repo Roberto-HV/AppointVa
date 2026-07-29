@@ -216,7 +216,7 @@ export default function DashboardLayout() {
   }, []);
 
   return (
-    <div className="h-lvh flex overflow-hidden bg-white dark:bg-slate-950">
+    <div className="h-lvh flex overflow-hidden bg-[#FAFAF8] dark:bg-slate-950">
 
       {/* ── Overlay backdrop (móvil) — siempre montado, fade vía inline style ── */}
       <div
@@ -232,7 +232,7 @@ export default function DashboardLayout() {
       {/* ── Sidebar ── */}
       <aside
         className={`
-          fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-slate-900 border-r border-slate-100 dark:border-slate-700/50 flex flex-col
+          fixed inset-y-0 left-0 z-50 w-64 bg-[#0C1222] border-r border-white/5 flex flex-col
           transition-transform duration-200 ease-in-out
           md:static md:w-60 md:translate-x-0 md:h-full md:shrink-0
           ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
@@ -240,14 +240,14 @@ export default function DashboardLayout() {
       >
         {/* Logo + cerrar móvil */}
         <div
-          className="relative px-5 py-3 border-b border-slate-100 dark:border-slate-700/50 flex items-center justify-center"
+          className="relative px-5 py-3 border-b border-gold/20 flex items-center justify-center"
         >
           <div className="flex flex-col items-center gap-1">
             <NavLink to="/dashboard" end onClick={cerrarSidebar}>
               <img src="/MasterLogo.png" alt="AppointVa" className="h-9 object-contain rounded-lg" />
             </NavLink>
             {esEmpleado && (
-              <span className="text-[10px] font-bold bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full uppercase tracking-wide">
+              <span className="text-[10px] font-bold bg-gold/10 text-gold px-2 py-0.5 rounded-full uppercase tracking-wide border border-gold/20">
                 Empleado
               </span>
             )}
@@ -271,17 +271,17 @@ export default function DashboardLayout() {
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                     isActive
-                      ? "bg-slate-900 dark:bg-slate-700 text-white shadow-sm"
-                      : "text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white"
+                      ? "bg-gold/15 text-gold"
+                      : "text-slate-400 hover:text-white hover:bg-white/5"
                   }`
                 }
               >
                 {({ isActive }) => (
                   <>
                     <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
-                      isActive ? "bg-white/15" : "bg-transparent"
+                      isActive ? "bg-gold/20" : "bg-transparent"
                     }`}>
-                      <Icon size={15} className={isActive ? "text-white" : "text-slate-500 dark:text-slate-400"} />
+                      <Icon size={15} className={isActive ? "text-gold" : "text-slate-500 group-hover:text-slate-300"} />
                     </div>
                     <span className="flex-1">{item.label}</span>
                     {esCitas && hoyCnt > 0 && (
@@ -305,21 +305,21 @@ export default function DashboardLayout() {
           <div className="px-3 pb-3">
             <button
               onClick={copiarEnlace}
-              className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-medium bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-100 dark:border-slate-700 transition group"
+              className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-medium bg-gold/10 hover:bg-gold/20 border border-gold/25 transition group"
             >
-              <div className="w-6 h-6 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 flex items-center justify-center shrink-0">
-                {copiado ? <Check size={12} className="text-emerald-500" /> : <Link size={12} className="text-slate-500" />}
+              <div className="w-6 h-6 rounded-lg bg-gold/20 border border-gold/30 flex items-center justify-center shrink-0">
+                {copiado ? <Check size={12} className="text-gold" /> : <Link size={12} className="text-gold" />}
               </div>
-              <span className="flex-1 text-left text-slate-600 dark:text-slate-300 truncate">
+              <span className="flex-1 text-left text-gold/90 truncate">
                 {copiado ? "¡Copiado!" : "Enlace de reservas"}
               </span>
-              {!copiado && <Copy size={11} className="text-slate-300 group-hover:text-slate-400 transition shrink-0" />}
+              {!copiado && <Copy size={11} className="text-gold/50 group-hover:text-gold/80 transition shrink-0" />}
             </button>
           </div>
         )}
 
         {/* Usuario — popover hacia arriba */}
-        <div ref={sidebarUserRef} className="relative p-3 border-t border-slate-100 dark:border-slate-700/50 shrink-0">
+        <div ref={sidebarUserRef} className="relative p-3 border-t border-white/5 shrink-0">
           {userMenuOpen && (
             <div className="absolute bottom-full left-2 right-2 mb-2 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-2xl overflow-hidden z-50">
               <UserMenuContent {...menuProps} />
@@ -327,7 +327,7 @@ export default function DashboardLayout() {
           )}
           <button
             onClick={() => setUserMenuOpen((o) => !o)}
-            className="w-full flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition group"
+            className="w-full flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-white/5 transition group"
           >
             <div className="w-8 h-8 rounded-full bg-slate-900 flex items-center justify-center shrink-0 overflow-hidden">
               {usuario?.fotoUrl
@@ -336,8 +336,8 @@ export default function DashboardLayout() {
               }
             </div>
             <div className="flex-1 min-w-0 text-left">
-              <p className="text-xs font-semibold text-slate-800 dark:text-slate-100 truncate">{usuario?.nombreCompleto}</p>
-              <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate">{usuario?.email}</p>
+              <p className="text-xs font-semibold text-slate-100 truncate">{usuario?.nombreCompleto}</p>
+              <p className="text-[10px] text-slate-500 truncate">{usuario?.email}</p>
             </div>
             <ChevronUp
               size={13}
@@ -352,11 +352,11 @@ export default function DashboardLayout() {
 
         {/* ── Barra superior móvil ── */}
         <header
-          className="md:hidden bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-700/50 px-4 py-3 flex items-center gap-3 shrink-0 z-30"
+          className="md:hidden bg-[#0C1222] border-b border-white/5 px-4 py-3 flex items-center gap-3 shrink-0 z-30"
         >
           <button
             onClick={() => setSidebarOpen(true)}
-            className="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition"
+            className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/10 text-slate-300 hover:bg-white/15 transition"
           >
             <Menu size={18} />
           </button>
@@ -410,7 +410,7 @@ export default function DashboardLayout() {
         )}
 
         {/* ── Contenido principal ── */}
-        <main className="flex-1 overflow-y-auto overscroll-y-none bg-white dark:bg-slate-950">
+        <main className="flex-1 overflow-y-auto overscroll-y-none bg-[#FAFAF8] dark:bg-slate-950">
           <Outlet />
         </main>
 

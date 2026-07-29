@@ -15,6 +15,11 @@ export default {
           light:      "rgb(var(--color-primary-light) / <alpha-value>)",
           foreground: "hsl(var(--primary-foreground))",   /* blanco — shadcn button */
         },
+        gold: {
+          DEFAULT: "rgb(var(--gold) / <alpha-value>)",
+          dark:    "rgb(var(--gold-dark) / <alpha-value>)",
+          light:   "rgb(var(--gold-light) / <alpha-value>)",
+        },
         // ── shadcn/ui color tokens (HSL format) ──────────────────────────────
         border:      "hsl(var(--border))",
         input:       "hsl(var(--input))",
