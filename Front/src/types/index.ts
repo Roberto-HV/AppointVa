@@ -172,6 +172,10 @@ export interface CitaDto {
   precio: number;
   pagada: boolean;
   metodoPago?: string | null;
+  montoCobrado?: number | null;
+  montoRecibido?: number | null;
+  cambio?: number | null;
+  fechaPago?: string | null;
   inicioEn: string;
   finEn: string;
   estado: number;
@@ -301,6 +305,7 @@ export interface NegocioDto {
   tiktokUrl?: string;
   activo: boolean;
   planNombre?: string;
+  moduloPagosHabilitado?: boolean;
 }
 
 export interface ActualizarNegocioDto {
