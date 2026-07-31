@@ -46,7 +46,7 @@ vi.mock("../../api/servicios", () => ({
 
 vi.mock("../../api/negocios", () => ({
   negociosApi: {
-    obtenerPerfil: vi.fn().mockResolvedValue({ nombre: "Salón Test" }),
+    obtenerPerfil: vi.fn().mockResolvedValue({ nombre: "Salón Test", moduloPagosHabilitado: false }),
   },
 }));
 
@@ -118,6 +118,7 @@ vi.mock("../../components/ui/Select", () => ({
 }));
 
 import { citasApi } from "../../api/citas";
+import { negociosApi } from "../../api/negocios";
 
 const makeCita = (overrides = {}) => ({
   id: "cita-1",
@@ -424,5 +425,27 @@ describe("CitasPage — filtro de Profesional", () => {
       expect(screen.getByText("Profesional")).toBeInTheDocument()
     );
     expect(container.querySelector("select")).toBeInTheDocument();
+  });
+});
+
+describe("integración módulo de pagos", () => {
+  it("oculta la columna Pago y el botón Cobrar cuando el módulo está activo", async () => {
+    const override = { id: "n1", slug: "salon-test", nombre: "Salón Test", activo: true, moduloPagosHabilitado: true };
+    vi.mocked(negociosApi.obtenerPerfil)
+      .mockResolvedValueOnce(override)
+      .mockResolvedValueOnce(override);
+
+    vi.mocked(citasApi.obtenerTodas).mockResolvedValue({
+      datos: [makeCita()],
+      total: 1,
+      pagina: 1,
+      tamano: 50,
+    });
+
+    renderConQuery();
+    await waitFor(() => screen.getByText("Juan Pérez")); // wait for citas to load
+
+    expect(screen.queryByText("Pago")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /cobrar/i })).not.toBeInTheDocument();
   });
 });

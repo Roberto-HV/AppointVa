@@ -45,6 +45,7 @@ import { exportarExcel } from "../../utils/exportarExcel";
 import { intakeApi } from "../../api/intake";
 import { formatPrecio, formatFechaHoraCorta as formatFechaHora } from "../../utils/formatters";
 import Pagination from "../../components/ui/Pagination";
+import { useModuloPagos } from "../../hooks/useModuloPagos";
 
 const METODO_ICONO: Record<string, string> = {
   Efectivo: "💵",
@@ -67,6 +68,7 @@ const TRANSICIONES: Record<string, { label: string; estado: number; clase: strin
 export default function CitasPage() {
   const qc = useQueryClient();
   const { toast } = useToastStore();
+  const { habilitado: moduloPagosActivo } = useModuloPagos();
 
   const [vista, setVista] = useState<"lista" | "calendario" | "gantt">("lista");
   const [desde, setDesde] = useState(() => hoy());
@@ -521,24 +523,27 @@ export default function CitasPage() {
             </div>
           </div>
           {/* Atajos rápidos de fecha */}
-          <div className="col-span-2 flex flex-wrap gap-1.5">
-            {([
-              { label: "Hoy",    d: hoy(),        h: hoy() },
-              { label: "Semana", d: inicioSemana(), h: finSemana() },
-              { label: "Mes",    d: inicioMes(),   h: finMes() },
-            ] as const).map((p) => (
-              <button
-                key={p.label}
-                onClick={() => { setDesde(p.d); setHasta(p.h); setPagina(1); }}
-                className={`px-2.5 py-1 text-xs font-medium rounded-md border transition ${
-                  desde === p.d && hasta === p.h
-                    ? "bg-slate-700 text-white border-slate-700"
-                    : "bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-slate-600 hover:border-slate-400"
-                }`}
-              >
-                {p.label}
-              </button>
-            ))}
+          <div className="col-span-2">
+            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1.5">Período</label>
+            <div className="flex flex-wrap gap-1.5">
+              {([
+                { label: "Hoy",    d: hoy(),        h: hoy() },
+                { label: "Semana", d: inicioSemana(), h: finSemana() },
+                { label: "Mes",    d: inicioMes(),   h: finMes() },
+              ] as const).map((p) => (
+                <button
+                  key={p.label}
+                  onClick={() => { setDesde(p.d); setHasta(p.h); setPagina(1); }}
+                  className={`px-2.5 py-1 text-xs font-medium rounded-md border transition ${
+                    desde === p.d && hasta === p.h
+                      ? "bg-slate-700 text-white border-slate-700"
+                      : "bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-slate-600 hover:border-slate-400"
+                  }`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="col-span-2 flex gap-2">
@@ -632,7 +637,9 @@ export default function CitasPage() {
                   <th className="text-left px-4 py-3 font-medium hidden sm:table-cell">Profesional</th>
                   <th className="text-left px-4 py-3 font-medium">Fecha y hora</th>
                   <th className="text-right px-4 py-3 font-medium hidden sm:table-cell">Precio</th>
-                  <th className="text-center px-4 py-3 font-medium hidden sm:table-cell">Pago</th>
+                  {!moduloPagosActivo && (
+                    <th className="text-center px-4 py-3 font-medium hidden sm:table-cell">Pago</th>
+                  )}
                   <th className="text-center px-4 py-3 font-medium">Estado</th>
                   <th className="px-4 py-3 hidden sm:table-cell" />
                 </tr>
@@ -650,22 +657,24 @@ export default function CitasPage() {
                     <td className="px-4 py-3 text-right font-medium text-gray-800 dark:text-gray-200 hidden sm:table-cell">{formatPrecio(c.precio)}</td>
 
                     {/* Columna de pago — solo desktop */}
-                    <td className="px-4 py-3 text-center hidden sm:table-cell">
-                      <Tooltip text={c.pagada ? "Ver detalle o revertir el pago" : "Registrar el pago de esta cita"}>
-                        <button
-                          onClick={() => abrirPago(c)}
-                          className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full transition ${
-                            c.pagada
-                              ? "bg-green-100 text-green-700 hover:bg-green-200"
-                              : "bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-600"
-                          }`}
-                        >
-                          {c.pagada
-                            ? `✓ ${c.metodoPago ?? "Pagado"}`
-                            : "Cobrar"}
-                        </button>
-                      </Tooltip>
-                    </td>
+                    {!moduloPagosActivo && (
+                      <td className="px-4 py-3 text-center hidden sm:table-cell">
+                        <Tooltip text={c.pagada ? "Ver detalle o revertir el pago" : "Registrar el pago de esta cita"}>
+                          <button
+                            onClick={() => abrirPago(c)}
+                            className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full transition ${
+                              c.pagada
+                                ? "bg-green-100 text-green-700 hover:bg-green-200"
+                                : "bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-600"
+                            }`}
+                          >
+                            {c.pagada
+                              ? `✓ ${c.metodoPago ?? "Pagado"}`
+                              : "Cobrar"}
+                          </button>
+                        </Tooltip>
+                      </td>
+                    )}
 
                     <td className="px-4 py-3 text-center">
                       <div className="flex items-center justify-center gap-1.5 flex-wrap">
@@ -812,6 +821,7 @@ export default function CitasPage() {
       )}
 
       {/* ── Modal: Registrar / revertir pago ── */}
+      {!moduloPagosActivo && (
       <Modal abierto={!!citaPago} onCerrar={() => setCitaPago(null)} titulo="Pago de la cita" ancho="sm">
         {citaPago && (
           <div className="space-y-4">
@@ -877,6 +887,7 @@ export default function CitasPage() {
           </div>
         )}
       </Modal>
+      )}
 
       {/* ── Modal: Notas internas ── */}
       <Modal abierto={!!citaNotas} onCerrar={() => setCitaNotas(null)} titulo="Nota interna" ancho="sm">
