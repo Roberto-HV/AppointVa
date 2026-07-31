@@ -9,7 +9,12 @@ public class MarcarPagoDto
     [MaxLength(30)]
     public string? MetodoPago { get; set; }
 
+    [Range(0, double.MaxValue)]
     public decimal? MontoCobrado  { get; set; }
+
+    [Range(0, double.MaxValue)]
     public decimal? MontoRecibido { get; set; }
+
+    [Range(0, double.MaxValue)]
     public decimal? Cambio        { get; set; }
 }

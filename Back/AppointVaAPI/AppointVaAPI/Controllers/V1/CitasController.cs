@@ -354,6 +354,17 @@ namespace AppointVaAPI.Controllers.V1
 
             var cita = await _citaRepo.ObtenerPorIdAsync(id, _contexto.NegocioId.Value);
             if (cita is null) return NotFound(new { mensaje = "Cita no encontrada" });
+
+            // Empleados solo pueden enviar ticket de sus propias citas
+            if (_contexto.Rol == Roles.Empleado)
+            {
+                var empleado = await _db.Empleados
+                    .FirstOrDefaultAsync(e => e.UsuarioId == _contexto.UsuarioId
+                                           && e.NegocioId == _contexto.NegocioId);
+                if (empleado is null || cita.EmpleadoId != empleado.Id)
+                    return StatusCode(403, new { mensaje = "Solo puedes enviar el ticket de tus propias citas" });
+            }
+
             if (!cita.Pagada) return BadRequest(new { mensaje = "La cita no ha sido pagada aún" });
 
             var cliente = await _db.Clientes.FindAsync(cita.ClienteId);
