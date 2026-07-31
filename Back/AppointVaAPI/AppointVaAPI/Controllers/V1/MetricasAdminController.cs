@@ -69,7 +69,8 @@ namespace AppointVaAPI.Controllers.V1
                 MaxEmpleados = n.Plan?.MaxEmpleados ?? 0,
                 CitasMes = citasPorNegocio.GetValueOrDefault(n.Id, 0),
                 EmpleadosActivos = empleadosPorNegocio.GetValueOrDefault(n.Id, 0),
-                EmailsMes = emailsPorNegocio.GetValueOrDefault(n.Id, 0)
+                EmailsMes = emailsPorNegocio.GetValueOrDefault(n.Id, 0),
+                ModuloPagosHabilitado = n.ModuloPagosHabilitado
             }).ToList();
 
             return Ok(result);

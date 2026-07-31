@@ -330,6 +330,7 @@ function TarjetaNegocio({
   onCrearPropietario,
   onColores,
   onSuscripcion,
+  onTogglePagos,
 }: {
   negocio: NegocioMetricasDto;
   suscripcion: SuscripcionResumenDto | undefined;
@@ -338,6 +339,7 @@ function TarjetaNegocio({
   onCrearPropietario: () => void;
   onColores: () => void;
   onSuscripcion: () => void;
+  onTogglePagos: (habilitado: boolean) => void;
 }) {
   const esActivo = negocio.activo === 1;
   const iniciales = negocio.nombre.split(" ").slice(0, 2).map((p) => p[0]).join("").toUpperCase();
@@ -434,6 +436,23 @@ function TarjetaNegocio({
         >
           Ver booking
         </a>
+      </div>
+      <div className="flex items-center gap-2 px-4 py-2 border-t border-gray-50 dark:border-gray-800">
+        <span className="text-xs text-gray-400 flex-1">Módulo pagos</span>
+        <button
+          onClick={() => onTogglePagos(!negocio.moduloPagosHabilitado)}
+          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${
+            negocio.moduloPagosHabilitado ? "bg-emerald-500" : "bg-gray-200 dark:bg-gray-700"
+          }`}
+          title={negocio.moduloPagosHabilitado ? "Deshabilitar módulo de pagos" : "Habilitar módulo de pagos"}
+          aria-label={negocio.moduloPagosHabilitado ? "Deshabilitar módulo de pagos" : "Habilitar módulo de pagos"}
+        >
+          <span
+            className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${
+              negocio.moduloPagosHabilitado ? "translate-x-4" : "translate-x-1"
+            }`}
+          />
+        </button>
       </div>
     </div>
   );
@@ -537,6 +556,20 @@ export default function NegociosAdminPage() {
     },
   });
 
+  const { mutate: togglePagos } = useMutation({
+    mutationFn: ({ id, habilitado }: { id: string; habilitado: boolean }) =>
+      adminApi.toggleModuloPagos(id, habilitado),
+    onSuccess: (_, { id, habilitado }) => {
+      qc.setQueryData(
+        ["admin-negocios-metricas"],
+        (old: NegocioMetricasDto[] | undefined) =>
+          (old ?? []).map((n) => (n.id === id ? { ...n, moduloPagosHabilitado: habilitado } : n))
+      );
+      toast(habilitado ? "Módulo de pagos habilitado" : "Módulo de pagos deshabilitado");
+    },
+    onError: () => toast("Error al actualizar el módulo de pagos", "error"),
+  });
+
   const abrirColores = (neg: NegocioMetricasDto) => {
     setNegocioSel(neg);
     setColorPrimario(neg.colorPrimario ?? "#C8A961");
@@ -608,6 +641,7 @@ export default function NegociosAdminPage() {
               onCrearPropietario={() => abrirPropietario(neg)}
               onColores={() => abrirColores(neg)}
               onSuscripcion={() => abrirSuscripcion(neg)}
+              onTogglePagos={(habilitado) => togglePagos({ id: neg.id, habilitado })}
             />
           ))}
         </div>

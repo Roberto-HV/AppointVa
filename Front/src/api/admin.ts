@@ -51,6 +51,7 @@ export interface NegocioMetricasDto {
   citasMes: number;
   empleadosActivos: number;
   emailsMes: number;
+  moduloPagosHabilitado?: boolean;
 }
 
 export interface PagoSuscripcionDto {
@@ -157,5 +158,9 @@ export const adminApi = {
   obtenerPago: async (pagoId: string): Promise<PagoSuscripcionDto> => {
     const { data } = await api.get(`/admin/pagos/${pagoId}`);
     return data;
+  },
+
+  toggleModuloPagos: async (negocioId: string, habilitado: boolean): Promise<void> => {
+    await api.patch(`/admin/negocios/${negocioId}/modulo-pagos`, { habilitado });
   },
 };

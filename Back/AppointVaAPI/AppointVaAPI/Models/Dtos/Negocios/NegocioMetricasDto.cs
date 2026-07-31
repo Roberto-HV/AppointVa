@@ -17,5 +17,6 @@ namespace AppointVaAPI.Models.Dtos.Negocios
         public int CitasMes { get; set; }
         public int EmpleadosActivos { get; set; }
         public int EmailsMes { get; set; }
+        public bool ModuloPagosHabilitado { get; set; }
     }
 }
