@@ -81,6 +81,11 @@ export const citasApi = {
     const { data } = await api.patch(`/citas/${id}/notas`, { notas });
     return data;
   },
+
+  obtenerHistorialPagos: async (params: { desde: string; hasta: string }): Promise<CitaDto[]> => {
+    const { data } = await api.get('/citas/historial-pagos', { params });
+    return data;
+  },
 };
 
 export const ESTADOS = {
