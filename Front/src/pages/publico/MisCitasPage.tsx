@@ -175,6 +175,13 @@ export default function MisCitasPage() {
 
         {/* Header */}
         <div className="mb-8">
+          <Link
+            to={`/b/${slug}`}
+            className="inline-flex items-center gap-1 text-xs font-medium text-slate-400 hover:text-slate-600 transition mb-4"
+          >
+            <ChevronLeft size={14} />
+            Volver al negocio
+          </Link>
           <div className="flex items-center justify-between mb-1">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-slate-900 rounded-2xl flex items-center justify-center">
