@@ -30,6 +30,9 @@ export default function TicketRecibo({ cita, negocioNombre, negocioLogo, onClose
     const filaCambio = mostrarCambio
       ? `<tr><td style="color:#6b7280;padding:3px 8px 3px 0">Cambio</td><td style="text-align:right;font-weight:700">$${cita.cambio!.toFixed(2)}</td></tr>`
       : "";
+    const filaPropina = cita.propina && cita.propina > 0
+      ? `<tr><td style="color:#6b7280;padding:3px 8px 3px 0">Propina</td><td style="text-align:right">${cita.propina.toFixed(2)}</td></tr>`
+      : "";
 
     const html = `<!DOCTYPE html><html><head>
       <meta charset="utf-8"/>
@@ -58,6 +61,7 @@ export default function TicketRecibo({ cita, negocioNombre, negocioLogo, onClose
           <tr><td style="color:#6b7280;padding:3px 8px 3px 0">Total</td><td style="text-align:right;font-weight:700">$${monto}</td></tr>
           ${filaRecibido}
           ${filaCambio}
+          ${filaPropina}
         </table>
       </div>
       <div style="text-align:center;font-size:10px;color:#9ca3af;border-top:1px dashed #d1d5db;padding-top:8px">
@@ -143,6 +147,12 @@ export default function TicketRecibo({ cita, negocioNombre, negocioLogo, onClose
                   <tr>
                     <td className="text-gray-500 pr-2">Cambio</td>
                     <td className="text-right font-bold">${cita.cambio!.toFixed(2)}</td>
+                  </tr>
+                )}
+                {cita.propina && cita.propina > 0 && (
+                  <tr>
+                    <td className="text-gray-500 pr-2">Propina</td>
+                    <td className="text-right">${cita.propina.toFixed(2)}</td>
                   </tr>
                 )}
               </tbody>

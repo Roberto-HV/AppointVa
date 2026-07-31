@@ -1,11 +1,15 @@
 import React, { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { CreditCard, Clock, CheckCircle2, Circle, Banknote, Building2 } from "lucide-react";
+import {
+  CreditCard, Clock, CheckCircle2, Circle, Banknote, Building2,
+  RotateCcw, Download, Search, TrendingUp, AlertCircle
+} from "lucide-react";
 import { citasApi, METODOS_PAGO } from "../../api/citas";
 import { pagosApi } from "../../api/pagos";
 import { negociosApi } from "../../api/negocios";
 import { useAuthStore } from "../../store/authStore";
 import { useToastStore } from "../../store/toastStore";
+import { exportarExcel } from "../../utils/exportarExcel";
 import Modal from "../../components/ui/Modal";
 import TicketRecibo from "../../components/dashboard/TicketRecibo";
 import type { CitaDto } from "../../types";
@@ -16,7 +20,7 @@ type FiltroPeriodo = "hoy" | "semana" | "mes";
 const hoy = () => new Date().toISOString().slice(0, 10);
 const inicioSemana = () => {
   const d = new Date();
-  const day = d.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+  const day = d.getDay();
   d.setDate(d.getDate() - (day === 0 ? 6 : day - 1));
   return d.toISOString().slice(0, 10);
 };
@@ -31,17 +35,16 @@ const inicioMes = () =>
 const finMes = () =>
   new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString().slice(0, 10);
 
-const PERIODOS: { key: FiltroPeriodo; label: string; desde: () => string; hasta: () => string }[] =
-  [
-    { key: "hoy", label: "Hoy", desde: hoy, hasta: hoy },
-    { key: "semana", label: "Semana", desde: inicioSemana, hasta: finSemana },
-    { key: "mes", label: "Mes", desde: inicioMes, hasta: finMes },
-  ];
+const PERIODOS: { key: FiltroPeriodo; label: string; desde: () => string; hasta: () => string }[] = [
+  { key: "hoy",    label: "Hoy",    desde: hoy,         hasta: hoy },
+  { key: "semana", label: "Semana", desde: inicioSemana, hasta: finSemana },
+  { key: "mes",    label: "Mes",    desde: inicioMes,   hasta: finMes },
+];
 
 const METODO_ICONO: Record<string, React.ReactNode> = {
-  Efectivo: <Banknote size={20} strokeWidth={1.5} />,
-  Tarjeta: <CreditCard size={20} strokeWidth={1.5} />,
-  Transferencia: <Building2 size={20} strokeWidth={1.5} />,
+  Efectivo:      <Banknote   size={20} strokeWidth={1.5} />,
+  Tarjeta:       <CreditCard size={20} strokeWidth={1.5} />,
+  Transferencia: <Building2  size={20} strokeWidth={1.5} />,
 };
 
 export default function PagosPage() {
@@ -50,12 +53,14 @@ export default function PagosPage() {
   const { toast } = useToastStore();
   const esEmpleado = usuario?.rol === "Empleado";
 
-  const [periodo, setPeriodo] = useState<FiltroPeriodo>("hoy");
-  const [filtroPago, setFiltroPago] = useState<FiltroEstadoPago>("pendientes");
-  const [citaSel, setCitaSel] = useState<CitaDto | null>(null);
-  const [metodoPago, setMetodoPago] = useState("");
+  const [periodo,      setPeriodo]      = useState<FiltroPeriodo>("hoy");
+  const [filtroPago,   setFiltroPago]   = useState<FiltroEstadoPago>("pendientes");
+  const [busqueda,     setBusqueda]     = useState("");
+  const [citaSel,      setCitaSel]      = useState<CitaDto | null>(null);
+  const [metodoPago,   setMetodoPago]   = useState("");
   const [montoRecibido, setMontoRecibido] = useState("");
-  const [citaPagada, setCitaPagada] = useState<CitaDto | null>(null);
+  const [propina,      setPropina]      = useState("");
+  const [citaPagada,   setCitaPagada]   = useState<CitaDto | null>(null);
   const [enviandoEmail, setEnviandoEmail] = useState(false);
 
   const periodoActivo = PERIODOS.find((p) => p.key === periodo)!;
@@ -77,15 +82,34 @@ export default function PagosPage() {
       }),
   });
 
+  const todas = pagina?.datos ?? [];
+
+  // KPI computations — always from the full period dataset
+  const totalCobrado  = todas.filter(c => c.pagada).reduce((s, c) => s + (c.montoCobrado ?? c.precio), 0);
+  const totalPendiente = todas.filter(c => !c.pagada).reduce((s, c) => s + c.precio, 0);
+  const citasPagadas  = todas.filter(c => c.pagada).length;
+  const totalCitas    = todas.length;
+
+  // Breakdown by payment method
+  const desglose = METODOS_PAGO.reduce<Record<string, number>>((acc, m) => {
+    acc[m] = todas.filter(c => c.pagada && c.metodoPago === m).reduce((s, c) => s + (c.montoCobrado ?? c.precio), 0);
+    return acc;
+  }, {});
+
+  // Filtered list for the card grid
   const citas = useMemo(() => {
-    const todas = pagina?.datos ?? [];
-    if (filtroPago === "pendientes") return todas.filter((c) => !c.pagada);
-    if (filtroPago === "pagadas") return todas.filter((c) => c.pagada);
-    return todas;
-  }, [pagina, filtroPago]);
+    let lista = todas;
+    if (filtroPago === "pendientes") lista = lista.filter(c => !c.pagada);
+    if (filtroPago === "pagadas")    lista = lista.filter(c => c.pagada);
+    if (busqueda.trim()) {
+      const q = busqueda.trim().toLowerCase();
+      lista = lista.filter(c => c.nombreCliente.toLowerCase().includes(q));
+    }
+    return lista;
+  }, [todas, filtroPago, busqueda]);
 
   const mutPagar = useMutation({
-    mutationFn: (payload: { id: string; montoRec: number }) =>
+    mutationFn: (payload: { id: string; montoRec: number; prop: number }) =>
       pagosApi.registrar(payload.id, {
         pagada: true,
         metodoPago,
@@ -95,6 +119,7 @@ export default function PagosPage() {
           metodoPago === "Efectivo" && payload.montoRec > (citaSel?.precio ?? 0)
             ? payload.montoRec - (citaSel?.precio ?? 0)
             : undefined,
+        propina: payload.prop > 0 ? payload.prop : undefined,
       }),
     onSuccess: (citaActualizada) => {
       qc.invalidateQueries({ queryKey: ["citas-pagos"] });
@@ -102,8 +127,19 @@ export default function PagosPage() {
       setCitaSel(null);
       setMetodoPago("");
       setMontoRecibido("");
+      setPropina("");
       setCitaPagada(citaActualizada);
     },
+  });
+
+  const mutRevertir = useMutation({
+    mutationFn: (id: string) => pagosApi.registrar(id, { pagada: false }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["citas-pagos"] });
+      qc.invalidateQueries({ queryKey: ["citas"] });
+      toast("Pago revertido");
+    },
+    onError: () => toast("No se pudo revertir el pago", "error"),
   });
 
   const cambio =
@@ -118,7 +154,11 @@ export default function PagosPage() {
 
   const handleConfirmar = () => {
     if (!citaSel) return;
-    mutPagar.mutate({ id: citaSel.id, montoRec: parseFloat(montoRecibido || "0") });
+    mutPagar.mutate({
+      id: citaSel.id,
+      montoRec: parseFloat(montoRecibido || "0"),
+      prop: parseFloat(propina || "0"),
+    });
   };
 
   const handleEnviarEmail = async () => {
@@ -128,30 +168,98 @@ export default function PagosPage() {
       await pagosApi.enviarTicketEmail(citaPagada.id);
       toast("Ticket enviado al correo del cliente");
     } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje;
+      const msg = (err as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje;
       toast(msg ?? "El cliente no tiene correo registrado", "error");
     } finally {
       setEnviandoEmail(false);
     }
   };
 
+  const handleExportar = () => {
+    const pagadas = todas.filter(c => c.pagada);
+    if (pagadas.length === 0) { toast("No hay pagos en el período", "error"); return; }
+    const periodoLabel = periodoActivo.label.toLowerCase();
+    exportarExcel(
+      ["Cliente", "Servicio", "Empleado", "Fecha pago", "Método", "Total", "Propina"],
+      pagadas.map(c => [[
+        c.nombreCliente,
+        c.nombreServicio,
+        c.nombreEmpleado ?? "",
+        c.fechaPago ? new Date(c.fechaPago).toLocaleDateString("es-MX") : "",
+        c.metodoPago ?? "",
+        (c.montoCobrado ?? c.precio),
+        c.propina ?? 0,
+      ]]),
+      `pagos-${periodoLabel}`,
+      `Pagos — ${periodoActivo.label}`,
+      { totales: ["", "", "", "", "Total:", pagadas.reduce((s, c) => s + (c.montoCobrado ?? c.precio), 0), pagadas.reduce((s, c) => s + (c.propina ?? 0), 0)] }
+    );
+  };
+
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          Registro de pagos
-        </h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          {esEmpleado
-            ? "Tus citas del período seleccionado"
-            : "Citas del período seleccionado"}
-        </p>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Registro de pagos</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            {esEmpleado ? "Tus citas del período seleccionado" : "Citas del período seleccionado"}
+          </p>
+        </div>
+        <button
+          onClick={handleExportar}
+          className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-200 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-600 dark:text-gray-400 transition"
+        >
+          <Download size={15} /> Exportar Excel
+        </button>
       </div>
 
+      {/* KPI cards */}
+      {!isLoading && (
+        <div className="grid grid-cols-3 gap-4">
+          <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl p-4">
+            <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-1">
+              <TrendingUp size={14} /> Total cobrado
+            </div>
+            <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400">${totalCobrado.toFixed(2)}</p>
+          </div>
+          <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl p-4">
+            <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-1">
+              <AlertCircle size={14} /> Por cobrar
+            </div>
+            <p className="text-xl font-bold text-amber-500 dark:text-amber-400">${totalPendiente.toFixed(2)}</p>
+          </div>
+          <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl p-4">
+            <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-1">
+              <CheckCircle2 size={14} /> Citas pagadas
+            </div>
+            <p className="text-xl font-bold text-slate-700 dark:text-slate-200">
+              {citasPagadas}<span className="text-sm font-medium text-gray-400 dark:text-gray-500"> / {totalCitas}</span>
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Desglose por método */}
+      {!isLoading && citasPagadas > 0 && (
+        <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl p-4">
+          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Desglose por método</p>
+          <div className="flex flex-wrap gap-4">
+            {METODOS_PAGO.map(m => (
+              desglose[m] > 0 && (
+                <div key={m} className="flex items-center gap-2 text-sm">
+                  <span className="text-gray-400 dark:text-gray-500">{METODO_ICONO[m]}</span>
+                  <span className="text-gray-600 dark:text-gray-400">{m}</span>
+                  <span className="font-semibold text-gray-800 dark:text-gray-200">${desglose[m].toFixed(2)}</span>
+                </div>
+              )
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Filtros */}
-      <div className="flex flex-wrap gap-4 items-center">
+      <div className="flex flex-wrap gap-4 items-end">
         <div>
           <p className="text-xs text-gray-500 dark:text-gray-400 mb-1.5">Período</p>
           <div className="flex gap-1">
@@ -170,7 +278,6 @@ export default function PagosPage() {
             ))}
           </div>
         </div>
-
         <div>
           <p className="text-xs text-gray-500 dark:text-gray-400 mb-1.5">Estado</p>
           <div className="flex gap-1">
@@ -189,23 +296,35 @@ export default function PagosPage() {
             ))}
           </div>
         </div>
+        <div className="flex-1 min-w-[160px]">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1.5">Buscar cliente</p>
+          <div className="relative">
+            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Nombre del cliente..."
+              value={busqueda}
+              onChange={e => setBusqueda(e.target.value)}
+              className="w-full pl-8 pr-3 py-1.5 text-xs border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-700/30"
+            />
+          </div>
+        </div>
       </div>
 
       {/* Cards */}
       {isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div
-              key={i}
-              className="h-36 bg-gray-100 dark:bg-slate-800 rounded-xl animate-pulse"
-            />
+            <div key={i} className="h-36 bg-gray-100 dark:bg-slate-800 rounded-xl animate-pulse" />
           ))}
         </div>
       ) : citas.length === 0 ? (
         <div className="text-center py-16 text-gray-400 dark:text-gray-500">
           <CreditCard size={40} className="mx-auto mb-3 opacity-30" />
           <p className="font-medium">
-            {filtroPago === "pendientes"
+            {busqueda.trim()
+              ? "No hay citas para ese cliente"
+              : filtroPago === "pendientes"
               ? "No hay citas pendientes de pago en este período"
               : "No hay citas en este período"}
           </p>
@@ -216,11 +335,9 @@ export default function PagosPage() {
             <CitaCard
               key={cita.id}
               cita={cita}
-              onCobrar={() => {
-                setCitaSel(cita);
-                setMetodoPago("");
-                setMontoRecibido("");
-              }}
+              onCobrar={() => { setCitaSel(cita); setMetodoPago(""); setMontoRecibido(""); setPropina(""); }}
+              onRevertir={() => mutRevertir.mutate(cita.id)}
+              revertiendoId={mutRevertir.isPending && mutRevertir.variables === cita.id ? cita.id : null}
             />
           ))}
         </div>
@@ -229,38 +346,25 @@ export default function PagosPage() {
       {/* Modal: registrar pago */}
       <Modal
         abierto={!!citaSel}
-        onCerrar={() => {
-          setCitaSel(null);
-          setMetodoPago("");
-          setMontoRecibido("");
-        }}
+        onCerrar={() => { setCitaSel(null); setMetodoPago(""); setMontoRecibido(""); setPropina(""); }}
         titulo="Registrar pago"
         ancho="sm"
       >
         {citaSel && (
           <div className="space-y-4">
             <div className="bg-gray-50 dark:bg-slate-700/50 rounded-xl p-4 space-y-1 text-sm">
-              <p className="font-semibold text-gray-900 dark:text-gray-100">
-                {citaSel.nombreCliente}
-              </p>
+              <p className="font-semibold text-gray-900 dark:text-gray-100">{citaSel.nombreCliente}</p>
               <p className="text-gray-500 dark:text-gray-400">{citaSel.nombreServicio}</p>
-              <p className="text-lg font-bold text-slate-700 dark:text-slate-300 mt-2">
-                ${citaSel.precio.toFixed(2)}
-              </p>
+              <p className="text-lg font-bold text-slate-700 dark:text-slate-300 mt-2">${citaSel.precio.toFixed(2)}</p>
             </div>
 
             <div>
-              <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Método de pago
-              </p>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Método de pago</p>
               <div className="grid grid-cols-3 gap-2">
                 {METODOS_PAGO.map((m) => (
                   <button
                     key={m}
-                    onClick={() => {
-                      setMetodoPago(m);
-                      setMontoRecibido("");
-                    }}
+                    onClick={() => { setMetodoPago(m); setMontoRecibido(""); }}
                     className={`py-3 rounded-xl border text-sm font-medium flex flex-col items-center gap-1 transition ${
                       metodoPago === m
                         ? "bg-slate-700 text-white border-slate-700"
@@ -276,9 +380,7 @@ export default function PagosPage() {
 
             {metodoPago === "Efectivo" && (
               <div>
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Monto recibido
-                </label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Monto recibido</label>
                 <input
                   type="number"
                   step="0.01"
@@ -294,10 +396,24 @@ export default function PagosPage() {
                   </p>
                 )}
                 {cambio !== null && cambio < 0 && (
-                  <p className="mt-2 text-sm text-red-500">
-                    El monto recibido es menor al total
-                  </p>
+                  <p className="mt-2 text-sm text-red-500">El monto recibido es menor al total</p>
                 )}
+              </div>
+            )}
+
+            {/* Propina — optional */}
+            {metodoPago !== "" && (
+              <div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Propina (opcional)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  value={propina}
+                  onChange={(e) => setPropina(e.target.value)}
+                  className="mt-1 w-full border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-700/30"
+                />
               </div>
             )}
 
@@ -335,12 +451,19 @@ export default function PagosPage() {
 }
 
 /* ── CitaCard ────────────────────────────────────────────────── */
-function CitaCard({ cita, onCobrar }: { cita: CitaDto; onCobrar: () => void }) {
+function CitaCard({
+  cita,
+  onCobrar,
+  onRevertir,
+  revertiendoId,
+}: {
+  cita: CitaDto;
+  onCobrar: () => void;
+  onRevertir: () => void;
+  revertiendoId: string | null;
+}) {
   const hora = cita.inicioEn
-    ? new Date(cita.inicioEn).toLocaleTimeString("es-MX", {
-        hour: "2-digit",
-        minute: "2-digit",
-      })
+    ? new Date(cita.inicioEn).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })
     : "—";
 
   return (
@@ -353,12 +476,8 @@ function CitaCard({ cita, onCobrar }: { cita: CitaDto; onCobrar: () => void }) {
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="font-semibold text-gray-900 dark:text-gray-100 truncate">
-            {cita.nombreCliente}
-          </p>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
-            {cita.nombreServicio}
-          </p>
+          <p className="font-semibold text-gray-900 dark:text-gray-100 truncate">{cita.nombreCliente}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">{cita.nombreServicio}</p>
         </div>
         {cita.pagada ? (
           <CheckCircle2 size={18} className="text-emerald-500 shrink-0 mt-0.5" />
@@ -368,20 +487,26 @@ function CitaCard({ cita, onCobrar }: { cita: CitaDto; onCobrar: () => void }) {
       </div>
 
       <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
-        <span className="flex items-center gap-1">
-          <Clock size={12} /> {hora}
-        </span>
+        <span className="flex items-center gap-1"><Clock size={12} /> {hora}</span>
         {cita.nombreEmpleado && <span className="truncate">{cita.nombreEmpleado}</span>}
       </div>
 
       <div className="flex items-center justify-between pt-1">
-        <span className="text-sm font-bold text-slate-700 dark:text-slate-300">
-          ${cita.precio.toFixed(2)}
-        </span>
+        <span className="text-sm font-bold text-slate-700 dark:text-slate-300">${cita.precio.toFixed(2)}</span>
         {cita.pagada ? (
-          <span className="text-xs bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-full font-medium">
-            {cita.metodoPago ?? "Pagada"}
-          </span>
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-full font-medium">
+              {cita.metodoPago ?? "Pagada"}
+            </span>
+            <button
+              onClick={onRevertir}
+              disabled={revertiendoId === cita.id}
+              title="Revertir pago"
+              className="p-1 text-gray-400 hover:text-red-500 disabled:opacity-40 transition rounded"
+            >
+              <RotateCcw size={13} />
+            </button>
+          </div>
         ) : (
           <button
             onClick={onCobrar}
