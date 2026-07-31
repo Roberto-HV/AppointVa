@@ -15,12 +15,14 @@ type FiltroPeriodo = "hoy" | "semana" | "mes";
 const hoy = () => new Date().toISOString().slice(0, 10);
 const inicioSemana = () => {
   const d = new Date();
-  d.setDate(d.getDate() - d.getDay() + 1);
+  const day = d.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+  d.setDate(d.getDate() - (day === 0 ? 6 : day - 1));
   return d.toISOString().slice(0, 10);
 };
 const finSemana = () => {
   const d = new Date();
-  d.setDate(d.getDate() - d.getDay() + 7);
+  const day = d.getDay();
+  d.setDate(d.getDate() + (day === 0 ? 0 : 7 - day));
   return d.toISOString().slice(0, 10);
 };
 const inicioMes = () =>
