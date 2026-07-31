@@ -26,7 +26,7 @@ function finMes() {
 import { Calendar } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { citasApi, ESTADOS, METODOS_PAGO } from "../../api/citas";
+import { citasApi, ESTADOS } from "../../api/citas";
 import Select from "../../components/ui/Select";
 import { empleadosApi } from "../../api/empleados";
 import { serviciosApi } from "../../api/servicios";
@@ -45,7 +45,6 @@ import { exportarExcel } from "../../utils/exportarExcel";
 import { intakeApi } from "../../api/intake";
 import { formatPrecio, formatFechaHoraCorta as formatFechaHora } from "../../utils/formatters";
 import Pagination from "../../components/ui/Pagination";
-import { useModuloPagos } from "../../hooks/useModuloPagos";
 
 
 const TRANSICIONES: Record<string, { label: string; estado: number; clase: string }[]> = {
@@ -63,7 +62,6 @@ const TRANSICIONES: Record<string, { label: string; estado: number; clase: strin
 export default function CitasPage() {
   const qc = useQueryClient();
   const { toast } = useToastStore();
-  const { habilitado: moduloPagosActivo } = useModuloPagos();
 
   const [vista, setVista] = useState<"lista" | "calendario" | "gantt">("lista");
   const [desde, setDesde] = useState(() => hoy());
@@ -84,10 +82,6 @@ export default function CitasPage() {
   const [citaReag, setCitaReag] = useState<CitaDto | null>(null);
   const [fechaReag, setFechaReag] = useState("");
   const [slotReag, setSlotReag] = useState("");
-
-  // Modal pago
-  const [citaPago, setCitaPago] = useState<CitaDto | null>(null);
-  const [metodoPagoSel, setMetodoPagoSel] = useState<string>("");
 
   // Modal notas
   const [citaNotas, setCitaNotas] = useState<CitaDto | null>(null);
@@ -220,23 +214,6 @@ export default function CitasPage() {
     },
   });
 
-  const { mutate: marcarPagada, isPending: guardandoPago } = useMutation({
-    mutationFn: ({ id, pagada, metodo }: { id: string; pagada: boolean; metodo?: string }) =>
-      citasApi.marcarPagada(id, pagada, metodo),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["citas"] });
-      qc.invalidateQueries({ queryKey: ["dashboard-resumen"] });
-      setCitaPago(null);
-      setMetodoPagoSel("");
-      toast("Estado de pago actualizado");
-    },
-    onError: (err: unknown) => {
-      const msg = (err as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje
-        ?? "No se pudo actualizar el pago";
-      toast(msg, "error");
-    },
-  });
-
   const { mutate: crearCita, isPending: creando } = useMutation({
     mutationFn: () => citasApi.crear({
       servicioId: svcSel,
@@ -353,11 +330,6 @@ export default function CitasPage() {
   // ── Helpers ──────────────────────────────────────────────────────────────────
   const abrirReagendar = (c: CitaDto) => { setCitaReag(c); setFechaReag(""); setSlotReag(""); };
   const abrirCambioEstado = (c: CitaDto) => { setCitaSel(c); setNuevoEstado(null); setMotivo(""); };
-
-  const abrirPago = (c: CitaDto) => {
-    setCitaPago(c);
-    setMetodoPagoSel(c.metodoPago ?? "");
-  };
 
   const abrirNotas = (c: CitaDto) => {
     setCitaNotas(c);
