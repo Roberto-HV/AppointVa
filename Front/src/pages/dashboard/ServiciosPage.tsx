@@ -162,35 +162,12 @@ export default function ServiciosPage() {
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="p-4 sm:p-8">
-      {/* Header con tabs */}
-      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-        <div className="flex items-center gap-4">
+      {/* Header */}
+      <div className="flex items-start justify-between mb-1 flex-wrap gap-3">
+        <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Servicios</h1>
-          <div className="flex bg-gray-100 rounded-lg p-1 gap-1 dark:bg-slate-700">
-            <button
-              onClick={() => setTab("servicios")}
-              className={`px-3 py-1 text-sm font-medium rounded-md transition ${
-                tab === "servicios" ? "bg-white text-gray-800 shadow-sm dark:bg-slate-800 dark:text-gray-200" : "text-gray-500 hover:text-gray-700 dark:text-gray-400"
-              }`}
-            >
-              Servicios
-            </button>
-            <button
-              onClick={() => setTab("categorias")}
-              className={`px-3 py-1 text-sm font-medium rounded-md transition ${
-                tab === "categorias" ? "bg-white text-gray-800 shadow-sm dark:bg-slate-800 dark:text-gray-200" : "text-gray-500 hover:text-gray-700 dark:text-gray-400"
-              }`}
-            >
-              Categorías
-              {categorias.length > 0 && (
-                <span className="ml-1.5 text-xs bg-gray-200 text-gray-600 rounded-full px-1.5 py-0.5 dark:text-gray-400">
-                  {categorias.length}
-                </span>
-              )}
-            </button>
-          </div>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Gestión de servicios y categorías</p>
         </div>
-
         {tab === "servicios" ? (
           <button
             onClick={abrirCrearServicio}
@@ -206,6 +183,31 @@ export default function ServiciosPage() {
             + Nueva categoría
           </button>
         )}
+      </div>
+
+      {/* Tabs */}
+      <div className="flex bg-gray-100 dark:bg-slate-700 rounded-lg p-1 gap-1 mb-6">
+        <button
+          onClick={() => setTab("servicios")}
+          className={`flex-1 py-1.5 text-sm font-medium rounded-md transition whitespace-nowrap ${
+            tab === "servicios" ? "bg-white text-gray-800 shadow-sm dark:bg-slate-800 dark:text-gray-200" : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+          }`}
+        >
+          Servicios
+        </button>
+        <button
+          onClick={() => setTab("categorias")}
+          className={`flex-1 py-1.5 text-sm font-medium rounded-md transition whitespace-nowrap ${
+            tab === "categorias" ? "bg-white text-gray-800 shadow-sm dark:bg-slate-800 dark:text-gray-200" : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+          }`}
+        >
+          Categorías
+          {categorias.length > 0 && (
+            <span className="ml-1.5 text-xs bg-gray-200 text-gray-600 rounded-full px-1.5 py-0.5 dark:bg-slate-600 dark:text-gray-400">
+              {categorias.length}
+            </span>
+          )}
+        </button>
       </div>
 
       {/* ── Tab Servicios ──────────────────────────────────────────────────── */}
