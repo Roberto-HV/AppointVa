@@ -1,6 +1,6 @@
 ﻿import { useState, useRef, useEffect } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { Menu, X, LayoutDashboard, CalendarDays, Users, Scissors, UserCheck, Building2, Link, Copy, Check, BarChart2, ShieldCheck, UserCircle, Images, ClipboardList, Tag, LogOut, ChevronUp, Mail, BookOpen, Moon, Sun } from "lucide-react";
+import { Menu, X, LayoutDashboard, CalendarDays, Users, Scissors, UserCheck, Building2, Link, Copy, Check, BarChart2, ShieldCheck, UserCircle, Images, ClipboardList, Tag, LogOut, ChevronUp, Mail, BookOpen, Moon, Sun, CreditCard } from "lucide-react";
 import { useTheme } from "../hooks/useTheme";
 import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "../store/authStore";
@@ -98,6 +98,7 @@ const NAV_PROPIETARIO = [
   // { to: "/dashboard/espera", label: "Lista de espera", icon: Clock },
   { to: "/dashboard/intake", label: "Cuestionario", icon: ClipboardList },
   { to: "/dashboard/descuentos", label: "Descuentos", icon: Tag },
+  { to: "/dashboard/pagos", label: "Pagos", icon: CreditCard },
   { to: "/dashboard/reportes", label: "Reportes", icon: BarChart2 },
   { to: "/dashboard/seguridad", label: "Seguridad", icon: ShieldCheck },
 ];
@@ -105,6 +106,7 @@ const NAV_PROPIETARIO = [
 const NAV_EMPLEADO = [
   { to: "/dashboard", label: "Inicio", end: true, icon: LayoutDashboard },
   { to: "/dashboard/citas", label: "Mis citas", icon: CalendarDays },
+  { to: "/dashboard/pagos", label: "Pagos", icon: CreditCard },
   { to: "/dashboard/mi-perfil", label: "Mi perfil", icon: UserCircle },
 ];
 
@@ -220,7 +222,7 @@ export default function DashboardLayout() {
 
       {/* ── Overlay backdrop (móvil) — siempre montado, fade vía inline style ── */}
       <div
-        className="fixed inset-0 z-40 md:hidden transition-colors duration-200"
+        className="fixed inset-0 z-40 xl:hidden transition-colors duration-200"
         style={{
           backgroundColor: sidebarOpen ? "rgba(0,0,0,0.4)" : "rgba(0,0,0,0)",
           pointerEvents: sidebarOpen ? "auto" : "none",
@@ -234,7 +236,7 @@ export default function DashboardLayout() {
         className={`
           fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-slate-900 border-r border-slate-100 dark:border-slate-700/50 flex flex-col
           transition-transform duration-200 ease-in-out
-          md:static md:w-60 md:translate-x-0 md:h-full md:shrink-0
+          xl:static xl:w-60 xl:translate-x-0 xl:h-full xl:shrink-0
           ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
         `}
       >
@@ -252,7 +254,7 @@ export default function DashboardLayout() {
               </span>
             )}
           </div>
-          <button onClick={cerrarSidebar} className="absolute right-3 md:hidden text-slate-400 hover:text-slate-600">
+          <button onClick={cerrarSidebar} className="absolute right-3 xl:hidden text-slate-400 hover:text-slate-600">
             <X size={20} />
           </button>
         </div>
@@ -352,7 +354,7 @@ export default function DashboardLayout() {
 
         {/* ── Barra superior móvil ── */}
         <header
-          className="md:hidden bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-700/50 px-4 py-3 flex items-center gap-3 shrink-0 z-30"
+          className="xl:hidden bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-700/50 px-4 py-3 flex items-center gap-3 shrink-0 z-30"
         >
           <button
             onClick={() => setSidebarOpen(true)}

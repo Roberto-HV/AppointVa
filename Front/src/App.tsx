@@ -49,6 +49,7 @@ const ListaEsperaPage = lazy(() => import("./pages/dashboard/ListaEsperaPage"));
 const IntakePage = lazy(() => import("./pages/dashboard/IntakePage"));
 const DescuentosPage = lazy(() => import("./pages/dashboard/DescuentosPage"));
 const KioskPage = lazy(() => import("./pages/dashboard/KioskPage"));
+const PagosPage = lazy(() => import("./pages/dashboard/PagosPage"));
 
 // ── Admin ─────────────────────────────────────────────────────────────────
 const NegociosAdminPage = lazy(() => import("./pages/admin/NegociosAdminPage"));
@@ -97,6 +98,7 @@ export default function App() {
                     <Route path="/dashboard" element={<InicioPage />} />
                     <Route path="/dashboard/citas" element={<CitasPage />} />
                     <Route path="/dashboard/citas/:id" element={<CitaDetallePage />} />
+                    <Route path="/dashboard/pagos" element={<PagosPage />} />
                     <Route path="/dashboard/seguridad" element={<DosFactoresPage />} />
                     <Route path="/dashboard/mi-perfil" element={<MiPerfilPage />} />
 
