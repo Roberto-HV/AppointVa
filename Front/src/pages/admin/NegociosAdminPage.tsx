@@ -441,11 +441,13 @@ function TarjetaNegocio({
         <span className="text-xs text-gray-400 flex-1">Módulo pagos</span>
         <button
           onClick={() => onTogglePagos(!negocio.moduloPagosHabilitado)}
-          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${
+          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1 ${
             negocio.moduloPagosHabilitado ? "bg-emerald-500" : "bg-gray-200 dark:bg-gray-700"
           }`}
           title={negocio.moduloPagosHabilitado ? "Deshabilitar módulo de pagos" : "Habilitar módulo de pagos"}
           aria-label={negocio.moduloPagosHabilitado ? "Deshabilitar módulo de pagos" : "Habilitar módulo de pagos"}
+          role="switch"
+          aria-checked={!!negocio.moduloPagosHabilitado}
         >
           <span
             className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${
