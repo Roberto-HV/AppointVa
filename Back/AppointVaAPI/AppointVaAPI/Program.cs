@@ -262,6 +262,13 @@ using (var scope = app.Services.CreateScope())
     {
         await db.Database.MigrateAsync();
         await db.Database.ExecuteSqlRawAsync(@"ALTER TABLE ""Negocios"" ADD COLUMN IF NOT EXISTS ""ListaEsperaActiva"" boolean NOT NULL DEFAULT false;");
+        await db.Database.ExecuteSqlRawAsync("""
+            ALTER TABLE "Citas" ADD COLUMN IF NOT EXISTS "MontoCobrado"   numeric(10,2) NULL;
+            ALTER TABLE "Citas" ADD COLUMN IF NOT EXISTS "MontoRecibido"  numeric(10,2) NULL;
+            ALTER TABLE "Citas" ADD COLUMN IF NOT EXISTS "Cambio"         numeric(10,2) NULL;
+            ALTER TABLE "Citas" ADD COLUMN IF NOT EXISTS "FechaPago"      timestamptz   NULL;
+            ALTER TABLE "Citas" ADD COLUMN IF NOT EXISTS "RegistradoPorId" uuid         NULL;
+        """);
         await DataSeeder.SeedAsync(scope.ServiceProvider);
     }
     else

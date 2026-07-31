@@ -324,8 +324,23 @@ namespace AppointVaAPI.Controllers.V1
             var cita = await _citaRepo.ObtenerPorIdAsync(id, _contexto.NegocioId.Value);
             if (cita is null) return NotFound(new { mensaje = "Cita no encontrada" });
 
-            cita.Pagada = dto.Pagada;
-            cita.MetodoPago = dto.Pagada ? dto.MetodoPago : null;
+            // Empleados solo pueden cobrar sus propias citas
+            if (_contexto.Rol == Roles.Empleado)
+            {
+                var empleado = await _db.Empleados
+                    .FirstOrDefaultAsync(e => e.UsuarioId == _contexto.UsuarioId
+                                           && e.NegocioId == _contexto.NegocioId);
+                if (empleado is null || cita.EmpleadoId != empleado.Id)
+                    return StatusCode(403, new { mensaje = "Solo puedes registrar pagos de tus propias citas" });
+            }
+
+            cita.Pagada        = dto.Pagada;
+            cita.MetodoPago    = dto.Pagada ? dto.MetodoPago    : null;
+            cita.MontoCobrado  = dto.Pagada ? dto.MontoCobrado  : null;
+            cita.MontoRecibido = dto.Pagada ? dto.MontoRecibido : null;
+            cita.Cambio        = dto.Pagada ? dto.Cambio        : null;
+            cita.FechaPago     = dto.Pagada ? DateTime.UtcNow   : null;
+            cita.RegistradoPorId = dto.Pagada ? _contexto.UsuarioId : null;
             cita.FechaActualizacion = DateTime.UtcNow;
 
             await _citaRepo.ActualizarAsync(cita);
@@ -442,6 +457,10 @@ namespace AppointVaAPI.Controllers.V1
             Precio = c.Precio,
             Pagada = c.Pagada,
             MetodoPago = c.MetodoPago,
+            MontoCobrado  = c.MontoCobrado,
+            MontoRecibido = c.MontoRecibido,
+            Cambio        = c.Cambio,
+            FechaPago     = c.FechaPago,
             InicioEn = c.InicioEn,
             FinEn = c.FinEn,
             Estado = c.Estado,

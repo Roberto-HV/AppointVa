@@ -25,6 +25,10 @@
         public decimal Precio { get; set; }
         public bool Pagada { get; set; }
         public string? MetodoPago { get; set; }
+        public decimal?  MontoCobrado  { get; set; }
+        public decimal?  MontoRecibido { get; set; }
+        public decimal?  Cambio        { get; set; }
+        public DateTime? FechaPago     { get; set; }
         public DateTime InicioEn { get; set; }
         public DateTime FinEn { get; set; }
         public byte Estado { get; set; }

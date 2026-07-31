@@ -38,6 +38,11 @@ namespace AppointVaAPI.Models
         public bool Pagada { get; set; }
         [MaxLength(30)]
         public string? MetodoPago { get; set; }
+        public decimal? MontoCobrado  { get; set; }   // precio final cobrado
+        public decimal? MontoRecibido { get; set; }   // dinero entregado por el cliente
+        public decimal? Cambio        { get; set; }   // vuelto entregado
+        public DateTime? FechaPago    { get; set; }   // cuándo se registró el pago
+        public Guid?     RegistradoPorId { get; set; } // FK a ApplicationUser
         public Guid? CreadoPorUsuarioId { get; set; }
         public string? ComprobanteUrl { get; set; }
         [Required]
