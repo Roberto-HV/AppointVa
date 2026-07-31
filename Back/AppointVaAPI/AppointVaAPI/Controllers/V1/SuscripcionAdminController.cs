@@ -176,6 +176,21 @@ namespace AppointVaAPI.Controllers.V1
             return Ok(MapPago(pago));
         }
 
+        // PATCH /api/admin/negocios/{id}/modulo-pagos
+        // Toggle ModuloPagosHabilitado para un negocio
+        [HttpPatch("negocios/{id:guid}/modulo-pagos")]
+        public async Task<IActionResult> ToggleModuloPagos(Guid id, [FromBody] ToggleModuloPagosDto dto)
+        {
+            var negocio = await _db.Negocios.FindAsync(id);
+            if (negocio is null) return NotFound(new { mensaje = "Negocio no encontrado" });
+
+            negocio.ModuloPagosHabilitado = dto.Habilitado;
+            negocio.FechaActualizacion = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+
+            return Ok(new { negocioId = id, moduloPagosHabilitado = negocio.ModuloPagosHabilitado });
+        }
+
         private static PagoSuscripcionDto MapPago(PagoSuscripcion p) => new()
         {
             Id                 = p.Id,

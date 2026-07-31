@@ -559,6 +559,7 @@ namespace AppointVaAPI.Controllers.V1
             HorasCancelacion = n.HorasCancelacion,
             AutoConfirmar = n.AutoConfirmar,
             ListaEsperaActiva = n.ListaEsperaActiva,
+            ModuloPagosHabilitado = n.ModuloPagosHabilitado,
             MetodoNotificacion = n.MetodoNotificacion,
             TelefonoWhatsApp = n.TelefonoWhatsApp,
             RequiereAnticipo = n.RequiereAnticipo,
