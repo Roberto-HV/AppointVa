@@ -450,6 +450,43 @@ namespace AppointVaAPI.Controllers.V1
             return Ok(MapearDto(cita));
         }
 
+        // GET api/citas/historial-pagos?desde=2026-07-01&hasta=2026-07-31
+        [HttpGet("historial-pagos")]
+        public async Task<IActionResult> HistorialPagos(
+            [FromQuery] DateTime? desde,
+            [FromQuery] DateTime? hasta)
+        {
+            if (_contexto.NegocioId is null) return Unauthorized();
+
+            var query = _db.Citas
+                .Include(c => c.Cliente)
+                .Include(c => c.Empleado)
+                .Include(c => c.Servicio)
+                .Where(c => c.NegocioId == _contexto.NegocioId.Value && c.Pagada);
+
+            if (_contexto.Rol == Roles.Empleado)
+            {
+                var empleado = await _db.Empleados
+                    .FirstOrDefaultAsync(e =>
+                        e.UsuarioId == _contexto.UsuarioId &&
+                        e.NegocioId == _contexto.NegocioId);
+                if (empleado is null) return Forbid();
+                query = query.Where(c => c.EmpleadoId == empleado.Id);
+            }
+
+            if (desde.HasValue)
+                query = query.Where(c => c.FechaPago >= desde.Value);
+            if (hasta.HasValue)
+                query = query.Where(c => c.FechaPago < hasta.Value.Date.AddDays(1));
+
+            var citas = await query
+                .OrderByDescending(c => c.FechaPago)
+                .AsNoTracking()
+                .ToListAsync();
+
+            return Ok(citas.Select(MapearDto));
+        }
+
         private static bool EsConflictoSerializacion(Exception ex)
         {
             var inner = ex;
