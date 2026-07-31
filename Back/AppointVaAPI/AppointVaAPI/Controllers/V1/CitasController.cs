@@ -347,6 +347,23 @@ namespace AppointVaAPI.Controllers.V1
             return Ok(MapearDto(cita));
         }
 
+        [HttpPost("{id:guid}/ticket-email")]
+        public async Task<IActionResult> EnviarTicketEmail(Guid id)
+        {
+            if (_contexto.NegocioId is null) return Unauthorized();
+
+            var cita = await _citaRepo.ObtenerPorIdAsync(id, _contexto.NegocioId.Value);
+            if (cita is null) return NotFound(new { mensaje = "Cita no encontrada" });
+            if (!cita.Pagada) return BadRequest(new { mensaje = "La cita no ha sido pagada aún" });
+
+            var cliente = await _db.Clientes.FindAsync(cita.ClienteId);
+            if (string.IsNullOrEmpty(cliente?.Email))
+                return BadRequest(new { mensaje = "El cliente no tiene correo electrónico registrado" });
+
+            _jobClient.Enqueue<NotificacionJob>(j => j.EnviarTicketAsync(id));
+            return Ok(new { mensaje = "Ticket enviado al correo del cliente" });
+        }
+
         // PATCH api/citas/{id}/notas
         [HttpPatch("{id:guid}/notas")]
         public async Task<IActionResult> ActualizarNotas(Guid id, [FromBody] ActualizarNotasCitaDto dto)

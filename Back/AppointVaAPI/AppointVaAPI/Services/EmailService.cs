@@ -827,5 +827,42 @@ namespace AppointVaAPI.Services
                 </html>
                 """;
         }
+
+        public async Task EnviarTicketCitaAsync(
+            string destinoEmail, string clienteNombre, string negocioNombre,
+            string servicio, DateTime fechaCita, decimal montoCobrado,
+            string metodoPago, decimal? cambio)
+        {
+            if (!EstaHabilitado()) return;
+            var html = PlantillaTicket(clienteNombre, negocioNombre, servicio,
+                                       fechaCita, montoCobrado, metodoPago, cambio);
+            await EnviarAsync(destinoEmail, $"Recibo de pago — {negocioNombre}", html);
+        }
+
+        private static string PlantillaTicket(
+            string clienteNombre, string negocioNombre, string servicio,
+            DateTime fechaCita, decimal montoCobrado, string metodoPago, decimal? cambio)
+        {
+            var fecha = fechaCita.ToString("dd 'de' MMMM yyyy, HH:mm",
+                            new System.Globalization.CultureInfo("es-MX"));
+            var cambioHtml = cambio.HasValue && cambio > 0
+                ? $"<tr><td style=\"padding:8px 12px;\">Cambio</td><td style=\"padding:8px 12px;\"><strong>${cambio:F2}</strong></td></tr>"
+                : "";
+            return $"""
+            <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;">
+              <h2 style="color:#334155;margin-bottom:4px;">{negocioNombre}</h2>
+              <p style="color:#6b7280;font-size:13px;margin:0 0 24px;">Recibo de pago</p>
+              <table style="width:100%;border-collapse:collapse;font-size:14px;">
+                <tr style="background:#f8fafc;"><td style="padding:8px 12px;">Cliente</td><td style="padding:8px 12px;"><strong>{clienteNombre}</strong></td></tr>
+                <tr><td style="padding:8px 12px;">Servicio</td><td style="padding:8px 12px;">{servicio}</td></tr>
+                <tr style="background:#f8fafc;"><td style="padding:8px 12px;">Fecha</td><td style="padding:8px 12px;">{fecha}</td></tr>
+                <tr><td style="padding:8px 12px;">Método</td><td style="padding:8px 12px;">{metodoPago}</td></tr>
+                <tr style="background:#f8fafc;"><td style="padding:8px 12px;">Total</td><td style="padding:8px 12px;"><strong style="color:#c8a961;">${montoCobrado:F2}</strong></td></tr>
+                {cambioHtml}
+              </table>
+              <p style="margin-top:24px;font-size:12px;color:#9ca3af;text-align:center;">Gracias por su visita · AppointVa</p>
+            </div>
+            """;
+        }
     }
 }

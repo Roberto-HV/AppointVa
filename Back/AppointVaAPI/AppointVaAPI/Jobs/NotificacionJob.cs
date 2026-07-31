@@ -17,13 +17,15 @@ namespace AppointVaAPI.Jobs
         private readonly INotificacionService _notificacion;
         private readonly IConfiguration _config;
         private readonly IBackgroundJobClient _jobClient;
+        private readonly IEmailService _emailService;
 
-        public NotificacionJob(ApplicationDbContext db, INotificacionService notificacion, IConfiguration config, IBackgroundJobClient jobClient)
+        public NotificacionJob(ApplicationDbContext db, INotificacionService notificacion, IConfiguration config, IBackgroundJobClient jobClient, IEmailService emailService)
         {
             _db = db;
             _notificacion = notificacion;
             _config = config;
             _jobClient = jobClient;
+            _emailService = emailService;
         }
 
         private Task<Cita?> CargarCitaAsync(Guid citaId) =>
@@ -124,6 +126,28 @@ namespace AppointVaAPI.Jobs
             await _db.SaveChangesAsync();
 
             _jobClient.Enqueue<NotificacionJob>(j => j.NotificarListaEsperaAsync(negocioId, servicioId));
+        }
+
+        public async Task EnviarTicketAsync(Guid citaId)
+        {
+            var cita = await _db.Citas
+                .Include(c => c.Cliente)
+                .Include(c => c.Servicio)
+                .Include(c => c.Negocio)
+                .FirstOrDefaultAsync(c => c.Id == citaId);
+
+            if (cita is null || cita.Cliente is null || cita.Servicio is null || cita.Negocio is null) return;
+            if (string.IsNullOrEmpty(cita.Cliente.Email)) return;
+
+            await _emailService.EnviarTicketCitaAsync(
+                destinoEmail:  cita.Cliente.Email,
+                clienteNombre: cita.Cliente.NombreCompleto,
+                negocioNombre: cita.Negocio.Nombre,
+                servicio:      cita.Servicio.Nombre,
+                fechaCita:     cita.InicioEn,
+                montoCobrado:  cita.MontoCobrado ?? cita.Precio,
+                metodoPago:    cita.MetodoPago ?? "No especificado",
+                cambio:        cita.Cambio);
         }
     }
 }
