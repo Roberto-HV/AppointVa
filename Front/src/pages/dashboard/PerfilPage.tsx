@@ -6,7 +6,7 @@ import Select from "../../components/ui/Select";
 import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Copy, Check, Download, Mail, Trash2 } from "lucide-react";
+import { Download, Mail, Trash2 } from "lucide-react";
 import { SiInstagram, SiFacebook, SiTiktok } from "react-icons/si";
 import { QRCodeCanvas } from "qrcode.react";
 import { negociosApi } from "../../api/negocios";
@@ -85,7 +85,6 @@ export default function PerfilPage() {
   const [searchParams] = useSearchParams();
   const tabParam = searchParams.get("tab") as Tab | null;
   const [tab, setTab] = useState<Tab>(tabParam && ["perfil", "configuracion", "horarios"].includes(tabParam) ? tabParam : "perfil");
-  const [urlCopiada, setUrlCopiada] = useState(false);
   const [modalEliminar, setModalEliminar] = useState(false);
   const [contrasenaEliminar, setContrasenaEliminar] = useState("");
 
@@ -231,12 +230,6 @@ export default function PerfilPage() {
   // ── URL de reservas ───────────────────────────────────────────────────────
   const bookingUrl = negocio ? `${window.location.origin}/b/${negocio.slug}` : "";
 
-  const copiarUrl = () => {
-    navigator.clipboard.writeText(bookingUrl);
-    setUrlCopiada(true);
-    setTimeout(() => setUrlCopiada(false), 2000);
-  };
-
   const descargarQR = () => {
     const canvas = document.getElementById("qr-reservas") as HTMLCanvasElement | null;
     if (!canvas) return;
@@ -295,22 +288,10 @@ export default function PerfilPage() {
       <form onSubmit={handleSubmit(onSubmit)}>
         <div className={tab !== "perfil" ? "hidden" : "space-y-6"}>
 
-          {/* URL + QR */}
+          {/* QR */}
           {negocio && (
             <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
-              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Tu página de reservas</h2>
-              <div className="flex items-center gap-2 mb-5">
-                <a href={bookingUrl} target="_blank" rel="noreferrer"
-                  className="flex-1 px-3 py-2 rounded-lg bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 text-sm text-slate-700 dark:text-gray-300 font-mono truncate hover:underline">
-                  {bookingUrl}
-                </a>
-                <button onClick={copiarUrl}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700 transition whitespace-nowrap">
-                  {urlCopiada ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
-                  {urlCopiada ? "¡Copiado!" : "Copiar"}
-                </button>
-              </div>
-              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Código QR</h2>
+              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Código QR de reservas</h2>
               <div className="flex flex-col sm:flex-row items-start gap-4">
                 <div className="p-3 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl shadow-sm inline-block shrink-0">
                   <QRCodeCanvas id="qr-reservas" value={bookingUrl} size={120} level="M"
@@ -390,7 +371,6 @@ export default function PerfilPage() {
                 maxLength={7}
                 placeholder="#334155"
               />
-              <div className="w-10 h-10 rounded-lg border border-gray-200 dark:border-slate-600 shrink-0" style={{ backgroundColor: colorPrimario }} />
             </div>
             {/* Vista previa del header del booking */}
             <div className="rounded-xl overflow-hidden border border-gray-100 dark:border-slate-700 mb-4">

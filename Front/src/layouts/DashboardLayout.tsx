@@ -88,18 +88,20 @@ function UserMenuContent({ usuario, perfil, iniciales, rolChip, rol, onProfile, 
 }
 
 const NAV_PROPIETARIO = [
+  // Operación diaria
   { to: "/dashboard", label: "Inicio", end: true, icon: LayoutDashboard },
   { to: "/dashboard/citas", label: "Citas", icon: CalendarDays },
+  { to: "/dashboard/pagos", label: "Pagos", icon: CreditCard },
+  // Gestión
+  { to: "/dashboard/clientes", label: "Clientes", icon: UserCheck },
   { to: "/dashboard/empleados", label: "Empleados", icon: Users },
   { to: "/dashboard/servicios", label: "Servicios", icon: Scissors },
-  { to: "/dashboard/clientes", label: "Clientes", icon: UserCheck },
+  { to: "/dashboard/descuentos", label: "Descuentos", icon: Tag },
+  { to: "/dashboard/reportes", label: "Reportes", icon: BarChart2 },
+  // Configuración
   { to: "/dashboard/perfil", label: "Mi negocio", icon: Building2 },
   { to: "/dashboard/galeria", label: "Galería", icon: Images },
-  // { to: "/dashboard/espera", label: "Lista de espera", icon: Clock },
   { to: "/dashboard/intake", label: "Cuestionario", icon: ClipboardList },
-  { to: "/dashboard/descuentos", label: "Descuentos", icon: Tag },
-  { to: "/dashboard/pagos", label: "Pagos", icon: CreditCard },
-  { to: "/dashboard/reportes", label: "Reportes", icon: BarChart2 },
   { to: "/dashboard/seguridad", label: "Seguridad", icon: ShieldCheck },
 ];
 

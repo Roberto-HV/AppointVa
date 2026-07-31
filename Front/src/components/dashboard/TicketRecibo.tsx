@@ -4,12 +4,13 @@ import type { CitaDto } from "../../types";
 interface Props {
   cita: CitaDto;
   negocioNombre: string;
+  negocioLogo?: string;
   onClose: () => void;
   onEnviarEmail: () => void;
   enviandoEmail: boolean;
 }
 
-export default function TicketRecibo({ cita, negocioNombre, onClose, onEnviarEmail, enviandoEmail }: Props) {
+export default function TicketRecibo({ cita, negocioNombre, negocioLogo, onClose, onEnviarEmail, enviandoEmail }: Props) {
   const fecha = cita.inicioEn
     ? new Date(cita.inicioEn).toLocaleString("es-MX", {
         day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit",
@@ -18,20 +19,64 @@ export default function TicketRecibo({ cita, negocioNombre, onClose, onEnviarEma
 
   const mostrarCambio = cita.metodoPago === "Efectivo" && cita.cambio != null && cita.cambio > 0;
 
-  const handlePrint = () => window.print();
+  const handlePrint = () => {
+    const monto = (cita.montoCobrado ?? cita.precio).toFixed(2);
+    const filaEmpleado = cita.nombreEmpleado
+      ? `<tr><td style="color:#6b7280;padding:3px 8px 3px 0">Atendió</td><td style="text-align:right;font-weight:500">${cita.nombreEmpleado}</td></tr>`
+      : "";
+    const filaRecibido = cita.montoRecibido != null
+      ? `<tr><td style="color:#6b7280;padding:3px 8px 3px 0">Recibido</td><td style="text-align:right">$${cita.montoRecibido.toFixed(2)}</td></tr>`
+      : "";
+    const filaCambio = mostrarCambio
+      ? `<tr><td style="color:#6b7280;padding:3px 8px 3px 0">Cambio</td><td style="text-align:right;font-weight:700">$${cita.cambio!.toFixed(2)}</td></tr>`
+      : "";
+
+    const html = `<!DOCTYPE html><html><head>
+      <meta charset="utf-8"/>
+      <style>
+        @page { size: 80mm auto; margin: 4mm; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Courier New', Courier, monospace; font-size: 12px; width: 80mm; color: #111827; }
+        table { width: 100%; border-collapse: collapse; }
+        td { padding: 3px 0; vertical-align: top; }
+      </style>
+    </head><body>
+      <div style="text-align:center;padding-bottom:8px;border-bottom:1px dashed #d1d5db;margin-bottom:10px">
+        ${negocioLogo ? `<img src="${negocioLogo}" alt="${negocioNombre}" style="height:40px;width:auto;object-fit:contain;margin:0 auto 6px;display:block"/>` : ""}
+        <div style="font-weight:700;font-size:14px">${negocioNombre}</div>
+        <div style="color:#6b7280;font-size:10px;margin-top:2px">Comprobante de pago</div>
+      </div>
+      <table style="margin-bottom:10px">
+        <tr><td style="color:#6b7280;padding:3px 8px 3px 0">Cliente</td><td style="text-align:right;font-weight:500">${cita.nombreCliente}</td></tr>
+        <tr><td style="color:#6b7280;padding:3px 8px 3px 0">Servicio</td><td style="text-align:right">${cita.nombreServicio}</td></tr>
+        ${filaEmpleado}
+        <tr><td style="color:#6b7280;padding:3px 8px 3px 0">Fecha</td><td style="text-align:right">${fecha}</td></tr>
+      </table>
+      <div style="border-top:1px dashed #d1d5db;padding-top:10px;margin-bottom:10px">
+        <table>
+          <tr><td style="color:#6b7280;padding:3px 8px 3px 0">Método</td><td style="text-align:right">${cita.metodoPago ?? ""}</td></tr>
+          <tr><td style="color:#6b7280;padding:3px 8px 3px 0">Total</td><td style="text-align:right;font-weight:700">$${monto}</td></tr>
+          ${filaRecibido}
+          ${filaCambio}
+        </table>
+      </div>
+      <div style="text-align:center;font-size:10px;color:#9ca3af;border-top:1px dashed #d1d5db;padding-top:8px">
+        <div>Gracias por su visita</div>
+        <div style="margin-top:2px">AppointVa</div>
+      </div>
+    </body></html>`;
+
+    const ventana = window.open("", "_blank", "width=320,height=500");
+    if (!ventana) return;
+    ventana.document.write(html);
+    ventana.document.close();
+    ventana.focus();
+    setTimeout(() => { ventana.print(); ventana.close(); }, 300);
+  };
 
   return (
     <>
-      {/* Print styles — 80mm thermal receipt */}
-      <style>{`
-        @media print {
-          body > *:not(#ticket-recibo-wrapper) { display: none !important; }
-          #ticket-recibo-wrapper { display: block !important; }
-          @page { size: 80mm auto; margin: 4mm; }
-        }
-      `}</style>
-
-      <div id="ticket-recibo-wrapper">
+<div id="ticket-recibo-wrapper">
         <div
           id="ticket-recibo"
           className="bg-white text-gray-900 font-mono text-xs leading-relaxed p-4"
@@ -39,6 +84,13 @@ export default function TicketRecibo({ cita, negocioNombre, onClose, onEnviarEma
         >
           {/* Header */}
           <div className="text-center mb-3 border-b border-dashed border-gray-300 pb-3">
+            {negocioLogo && (
+              <img
+                src={negocioLogo}
+                alt={negocioNombre}
+                className="h-10 w-auto object-contain mx-auto mb-2"
+              />
+            )}
             <p className="font-bold text-sm">{negocioNombre}</p>
             <p className="text-gray-500 text-[10px]">Comprobante de pago</p>
           </div>

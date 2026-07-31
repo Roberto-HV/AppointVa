@@ -169,7 +169,7 @@ export default function DescuentosPage() {
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Fecha expiración (opcional)</label>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Fecha de expiración (opcional)</label>
               <input
                 type="date"
                 value={form.fechaExpiracion}

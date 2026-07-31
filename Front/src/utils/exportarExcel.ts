@@ -1,12 +1,22 @@
-const COLOR_PRIMARIO = "#C8A961";
-const COLOR_PRIMARIO_OSCURO = "#a88b45";
-const COLOR_TEXTO_CLARO = "#6b7280";
+import ExcelJS from "exceljs";
 
-const esc = (s: string) =>
-  String(s)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+const GOLD = "C8A961";
+const GOLD_DARK = "a88b45";
+const GOLD_LIGHT = "FFF8E8";
+const SLATE = "1E293B";
+const SLATE_MID = "334155";
+const BORDER_GRAY = "D1D5DB";
+const TEXT_DARK = "111827";
+const TEXT_MID = "6B7280";
+
+function colLetter(n: number): string {
+  let s = "";
+  while (n > 0) {
+    s = String.fromCharCode(64 + ((n - 1) % 26 + 1)) + s;
+    n = Math.floor((n - 1) / 26);
+  }
+  return s;
+}
 
 export interface OpcionesExcel {
   subtitulo?: string;
@@ -20,75 +30,189 @@ export function exportarExcel(
   titulo?: string,
   opciones?: OpcionesExcel,
 ) {
+  _generar(encabezados, filas, nombreArchivo, titulo, opciones).catch(console.error);
+}
+
+async function _generar(
+  encabezados: string[],
+  filas: (string | number)[][][],
+  nombreArchivo: string,
+  titulo?: string,
+  opciones?: OpcionesExcel,
+) {
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = "AppointVa";
+  const sheet = workbook.addWorksheet("Reporte");
+
   const filasProcesadas = filas.flat();
+  const cols = encabezados.length;
+  const lastCol = colLetter(cols);
+  let r = 0;
 
-  const th = `background:${COLOR_PRIMARIO};color:#ffffff;font-weight:bold;font-family:Arial,sans-serif;font-size:12px;padding:10px 14px;border:1px solid ${COLOR_PRIMARIO_OSCURO};white-space:nowrap;text-align:left;`;
-  const tdBase = `font-family:Arial,sans-serif;font-size:11px;padding:7px 14px;border:1px solid #e5e7eb;vertical-align:middle;color:#1f2937;`;
-  const tdTotales = `font-family:Arial,sans-serif;font-size:11px;padding:8px 14px;border:1px solid ${COLOR_PRIMARIO_OSCURO};vertical-align:middle;background:#f3f0e8;color:#7a6530;font-weight:bold;`;
+  function fillRow(rowNum: number, argb: string) {
+    const row = sheet.getRow(rowNum);
+    for (let c = 1; c <= cols; c++) {
+      row.getCell(c).fill = { type: "pattern", pattern: "solid", fgColor: { argb } };
+    }
+  }
 
-  const encabezadosHtml = encabezados.map((h) => `<th style="${th}">${esc(h)}</th>`).join("");
+  if (titulo) {
+    // ── Banner principal ────────────────────────────────────────────
+    r++;
+    const bannerRow = sheet.getRow(r);
+    bannerRow.height = 36;
+    fillRow(r, `FF${SLATE}`);
+    const bannerCell = bannerRow.getCell(1);
+    bannerCell.value = titulo.toUpperCase();
+    bannerCell.font = { bold: true, size: 16, color: { argb: `FF${GOLD}` }, name: "Arial" };
+    bannerCell.alignment = { vertical: "middle", horizontal: "left", indent: 2 };
+    sheet.mergeCells(`A${r}:${lastCol}${r}`);
 
-  const filasHtml = filasProcesadas
-    .map((fila, i) => {
-      const bg = i % 2 === 0 ? "#ffffff" : "#f9fafb";
-      const celdas = fila
-        .map((v) => `<td style="${tdBase}background:${bg};">${esc(String(v))}</td>`)
-        .join("");
-      return `<tr>${celdas}</tr>`;
-    })
-    .join("");
+    // ── Barra de meta (fecha + subtitulo) ───────────────────────────
+    r++;
+    const metaRow = sheet.getRow(r);
+    metaRow.height = 18;
+    fillRow(r, `FF${SLATE_MID}`);
+    const fecha = new Date().toLocaleDateString("es-MX", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    });
+    const parts = ["AppointVa", `Generado el ${fecha}`];
+    if (opciones?.subtitulo) parts.splice(1, 0, opciones.subtitulo);
+    const metaCell = metaRow.getCell(1);
+    metaCell.value = parts.join("  ·  ");
+    metaCell.font = { size: 9, color: { argb: "FFB0BAC8" }, name: "Arial" };
+    metaCell.alignment = { vertical: "middle", horizontal: "left", indent: 2 };
+    sheet.mergeCells(`A${r}:${lastCol}${r}`);
 
-  const totalesHtml = opciones?.totales
-    ? `<tr>${opciones.totales.map((v) => `<td style="${tdTotales}">${esc(String(v))}</td>`).join("")}</tr>`
-    : "";
+    // ── Separador visual ────────────────────────────────────────────
+    r++;
+    const sepRow = sheet.getRow(r);
+    sepRow.height = 8;
+    fillRow(r, `FF${GOLD}22`); // sutilísimo gold tint
+    sheet.mergeCells(`A${r}:${lastCol}${r}`);
+  }
 
-  const headerRows = titulo ? (opciones?.subtitulo ? 4 : 3) : 1;
+  // ── Encabezados de columna ────────────────────────────────────────
+  r++;
+  const headerRow = sheet.getRow(r);
+  headerRow.height = 26;
+  encabezados.forEach((h, i) => {
+    const cell = headerRow.getCell(i + 1);
+    cell.value = h;
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: `FF${SLATE_MID}` } };
+    cell.font = { bold: true, color: { argb: "FFFFFFFF" }, size: 10, name: "Arial" };
+    cell.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
+    cell.border = {
+      bottom: { style: "medium", color: { argb: `FF${GOLD_DARK}` } },
+      right: { style: "thin", color: { argb: "FF4B5563" } },
+    };
+  });
+  // Línea dorada sobre los headers
+  headerRow.getCell(1).border = {
+    ...headerRow.getCell(1).border,
+    left: { style: "medium", color: { argb: `FF${GOLD}` } },
+  };
 
-  const tituloHtml = titulo
-    ? `<h2 style="font-family:Arial,sans-serif;font-size:14px;color:#1f2937;margin:0 0 2px 0;font-weight:bold;">${esc(titulo)}</h2>
-       ${opciones?.subtitulo ? `<p style="font-family:Arial,sans-serif;font-size:11px;color:#374151;margin:0 0 2px 0;font-weight:500;">${esc(opciones.subtitulo)}</p>` : ""}
-       <p style="font-family:Arial,sans-serif;font-size:10px;color:${COLOR_TEXTO_CLARO};margin:0 0 14px 0;">AppointVa · Generado el ${new Date().toLocaleDateString("es-MX", { day: "2-digit", month: "long", year: "numeric" })}</p>`
-    : "";
+  sheet.views = [{ state: "frozen", ySplit: r }];
 
-  const html = `<!DOCTYPE html>
-<html xmlns:o="urn:schemas-microsoft-com:office:office"
-      xmlns:x="urn:schemas-microsoft-com:office:excel"
-      xmlns="http://www.w3.org/TR/REC-html40">
-<head>
-<meta charset="UTF-8">
-<!--[if gte mso 9]><xml>
-<x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet>
-  <x:Name>Reporte</x:Name>
-  <x:WorksheetOptions>
-    <x:FreezePanes/>
-    <x:FrozenNoSplit/>
-    <x:SplitHorizontal>${headerRows}</x:SplitHorizontal>
-    <x:TopRowBottomPane>${headerRows}</x:TopRowBottomPane>
-    <x:ActivePane>2</x:ActivePane>
-  </x:WorksheetOptions>
-</x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook>
-</xml><![endif]-->
-<style>
-  body { margin: 16px; }
-  table { border-collapse: collapse; }
-</style>
-</head>
-<body>
-${tituloHtml}
-<table>
-  <thead><tr>${encabezadosHtml}</tr></thead>
-  <tbody>${filasHtml}${totalesHtml}</tbody>
-</table>
-</body>
-</html>`;
+  // ── Filas de datos ────────────────────────────────────────────────
+  const dataStart = r + 1;
+  filasProcesadas.forEach((fila, i) => {
+    r++;
+    const row = sheet.getRow(r);
+    row.height = 20;
+    const isOdd = i % 2 === 1;
+    const bg = isOdd ? `FF${GOLD_LIGHT}` : "FFFFFFFF";
+    fila.forEach((v, j) => {
+      const cell = row.getCell(j + 1);
+      cell.value = String(v);
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: bg } };
+      cell.font = { size: 10, color: { argb: `FF${TEXT_DARK}` }, name: "Arial" };
+      cell.alignment = { vertical: "middle", indent: 1 };
+      cell.border = {
+        bottom: { style: "hair", color: { argb: `FF${BORDER_GRAY}` } },
+        right: { style: "hair", color: { argb: `FF${BORDER_GRAY}` } },
+      };
+    });
+    // Acento izquierdo dorado en filas impares
+    if (isOdd) {
+      row.getCell(1).border = {
+        ...row.getCell(1).border,
+        left: { style: "medium", color: { argb: `FF${GOLD}` } },
+      };
+    } else {
+      row.getCell(1).border = {
+        ...row.getCell(1).border,
+        left: { style: "thin", color: { argb: `FF${BORDER_GRAY}` } },
+      };
+    }
+    // Borde derecho externo
+    row.getCell(cols).border = {
+      ...row.getCell(cols).border,
+      right: { style: "thin", color: { argb: `FF${BORDER_GRAY}` } },
+    };
+  });
 
-  const blob = new Blob(["﻿" + html], {
-    type: "application/vnd.ms-excel;charset=utf-8",
+  // ── Fila de totales ───────────────────────────────────────────────
+  const dataEnd = r;
+  if (opciones?.totales) {
+    r++;
+    const totRow = sheet.getRow(r);
+    totRow.height = 24;
+    opciones.totales.forEach((v, i) => {
+      const cell = totRow.getCell(i + 1);
+      cell.value = String(v);
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: `FF${GOLD}18` } };
+      cell.font = { bold: true, size: 10, color: { argb: `FF${GOLD_DARK}` }, name: "Arial" };
+      cell.alignment = { vertical: "middle", indent: 1 };
+      cell.border = {
+        top: { style: "medium", color: { argb: `FF${GOLD}` } },
+        bottom: { style: "medium", color: { argb: `FF${GOLD_DARK}` } },
+        right: { style: "hair", color: { argb: `FF${BORDER_GRAY}` } },
+      };
+    });
+    totRow.getCell(1).border = {
+      ...totRow.getCell(1).border,
+      left: { style: "medium", color: { argb: `FF${GOLD}` } },
+    };
+  }
+
+  // ── Borde inferior del área de datos ─────────────────────────────
+  if (dataEnd >= dataStart) {
+    const lastDataRow = sheet.getRow(dataEnd);
+    for (let c = 1; c <= cols; c++) {
+      const cell = lastDataRow.getCell(c);
+      cell.border = {
+        ...cell.border,
+        bottom: { style: "thin", color: { argb: `FF${BORDER_GRAY}` } },
+      };
+    }
+  }
+
+  // ── Ancho de columnas ─────────────────────────────────────────────
+  encabezados.forEach((header, ci) => {
+    let max = header.length;
+    filasProcesadas.forEach((fila) => {
+      const len = String(fila[ci] ?? "").length;
+      if (len > max) max = len;
+    });
+    sheet.getColumn(ci + 1).width = Math.min(Math.max(max + 5, 12), 50);
+  });
+
+  // ── Pie de página ─────────────────────────────────────────────────
+  sheet.headerFooter.oddFooter = `&L&9&K${TEXT_MID}AppointVa&R&9&K${TEXT_MID}Página &P de &N`;
+
+  // ── Descarga ──────────────────────────────────────────────────────
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `${nombreArchivo}-${new Date().toISOString().slice(0, 10)}.xls`;
+  a.download = `${nombreArchivo}-${new Date().toISOString().slice(0, 10)}.xlsx`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);

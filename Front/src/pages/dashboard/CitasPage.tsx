@@ -47,11 +47,6 @@ import { formatPrecio, formatFechaHoraCorta as formatFechaHora } from "../../uti
 import Pagination from "../../components/ui/Pagination";
 import { useModuloPagos } from "../../hooks/useModuloPagos";
 
-const METODO_ICONO: Record<string, string> = {
-  Efectivo: "💵",
-  Tarjeta: "💳",
-  Transferencia: "🏦",
-};
 
 const TRANSICIONES: Record<string, { label: string; estado: number; clase: string }[]> = {
   Pendiente: [
@@ -637,9 +632,7 @@ export default function CitasPage() {
                   <th className="text-left px-4 py-3 font-medium hidden sm:table-cell">Profesional</th>
                   <th className="text-left px-4 py-3 font-medium">Fecha y hora</th>
                   <th className="text-right px-4 py-3 font-medium hidden sm:table-cell">Precio</th>
-                  {!moduloPagosActivo && (
-                    <th className="text-center px-4 py-3 font-medium hidden sm:table-cell">Pago</th>
-                  )}
+                  <th className="text-center px-4 py-3 font-medium hidden sm:table-cell">Pago</th>
                   <th className="text-center px-4 py-3 font-medium">Estado</th>
                   <th className="px-4 py-3 hidden sm:table-cell" />
                 </tr>
@@ -656,25 +649,16 @@ export default function CitasPage() {
                     <td className="px-4 py-3 text-gray-600 dark:text-gray-400 text-xs sm:text-sm">{formatFechaHora(c.inicioEn)}</td>
                     <td className="px-4 py-3 text-right font-medium text-gray-800 dark:text-gray-200 hidden sm:table-cell">{formatPrecio(c.precio)}</td>
 
-                    {/* Columna de pago — solo desktop */}
-                    {!moduloPagosActivo && (
-                      <td className="px-4 py-3 text-center hidden sm:table-cell">
-                        <Tooltip text={c.pagada ? "Ver detalle o revertir el pago" : "Registrar el pago de esta cita"}>
-                          <button
-                            onClick={() => abrirPago(c)}
-                            className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full transition ${
-                              c.pagada
-                                ? "bg-green-100 text-green-700 hover:bg-green-200"
-                                : "bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-600"
-                            }`}
-                          >
-                            {c.pagada
-                              ? `✓ ${c.metodoPago ?? "Pagado"}`
-                              : "Cobrar"}
-                          </button>
-                        </Tooltip>
-                      </td>
-                    )}
+                    {/* Columna de pago — solo lectura */}
+                    <td className="px-4 py-3 text-center hidden sm:table-cell">
+                      {c.pagada ? (
+                        <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full bg-green-100 text-green-700">
+                          ✓ {c.metodoPago ?? "Pagado"}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-gray-400 dark:text-gray-500">Por pagar</span>
+                      )}
+                    </td>
 
                     <td className="px-4 py-3 text-center">
                       <div className="flex items-center justify-center gap-1.5 flex-wrap">
@@ -820,74 +804,6 @@ export default function CitasPage() {
         )
       )}
 
-      {/* ── Modal: Registrar / revertir pago ── */}
-      {!moduloPagosActivo && (
-      <Modal abierto={!!citaPago} onCerrar={() => setCitaPago(null)} titulo="Pago de la cita" ancho="sm">
-        {citaPago && (
-          <div className="space-y-4">
-            <div className="bg-gray-50 rounded-lg p-3 text-sm space-y-1">
-              <p><span className="text-gray-500">Cliente:</span> <span className="font-medium">{citaPago.nombreCliente}</span></p>
-              <p><span className="text-gray-500">Servicio:</span> <span className="font-medium">{citaPago.nombreServicio}</span></p>
-              <p><span className="text-gray-500">Total:</span> <span className="font-bold text-gray-900">{formatPrecio(citaPago.precio)}</span></p>
-            </div>
-
-            {citaPago.pagada ? (
-              /* Ya pagada — mostrar info y opción de revertir */
-              <>
-                <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg p-3">
-                  <span className="text-green-600 text-lg">✓</span>
-                  <div>
-                    <p className="text-sm font-semibold text-green-700">Pago registrado</p>
-                    {citaPago.metodoPago && (
-                      <p className="text-xs text-green-600">
-                        {METODO_ICONO[citaPago.metodoPago] ?? ""} {citaPago.metodoPago}
-                      </p>
-                    )}
-                  </div>
-                </div>
-                <button
-                  onClick={() => marcarPagada({ id: citaPago.id, pagada: false })}
-                  disabled={guardandoPago}
-                  className="w-full border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-40 font-medium py-2.5 rounded-xl text-sm transition"
-                >
-                  {guardandoPago ? "Guardando..." : "Revertir pago"}
-                </button>
-              </>
-            ) : (
-              /* No pagada — seleccionar método */
-              <>
-                <div>
-                  <p className="text-sm font-medium text-gray-700 mb-3">¿Con qué método se pagó?</p>
-                  <div className="grid grid-cols-3 gap-2">
-                    {METODOS_PAGO.map((m) => (
-                      <button
-                        key={m}
-                        onClick={() => setMetodoPagoSel(m)}
-                        className={`flex flex-col items-center gap-1.5 py-3 rounded-xl border-2 text-sm font-medium transition ${
-                          metodoPagoSel === m
-                            ? "border-slate-700 bg-slate-700/5 text-slate-700"
-                            : "border-gray-200 text-gray-600 hover:border-gray-300"
-                        }`}
-                      >
-                        <span className="text-xl">{METODO_ICONO[m]}</span>
-                        {m}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <button
-                  onClick={() => metodoPagoSel && marcarPagada({ id: citaPago.id, pagada: true, metodo: metodoPagoSel })}
-                  disabled={!metodoPagoSel || guardandoPago}
-                  className="w-full bg-green-600 hover:bg-green-700 disabled:opacity-40 text-white font-semibold py-2.5 rounded-xl transition"
-                >
-                  {guardandoPago ? "Guardando..." : "Confirmar pago"}
-                </button>
-              </>
-            )}
-          </div>
-        )}
-      </Modal>
-      )}
 
       {/* ── Modal: Notas internas ── */}
       <Modal abierto={!!citaNotas} onCerrar={() => setCitaNotas(null)} titulo="Nota interna" ancho="sm">

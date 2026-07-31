@@ -1,10 +1,11 @@
-import { useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { CreditCard, Clock, CheckCircle2, Circle } from "lucide-react";
+import { CreditCard, Clock, CheckCircle2, Circle, Banknote, Building2 } from "lucide-react";
 import { citasApi, METODOS_PAGO } from "../../api/citas";
 import { pagosApi } from "../../api/pagos";
 import { negociosApi } from "../../api/negocios";
 import { useAuthStore } from "../../store/authStore";
+import { useToastStore } from "../../store/toastStore";
 import Modal from "../../components/ui/Modal";
 import TicketRecibo from "../../components/dashboard/TicketRecibo";
 import type { CitaDto } from "../../types";
@@ -37,15 +38,16 @@ const PERIODOS: { key: FiltroPeriodo; label: string; desde: () => string; hasta:
     { key: "mes", label: "Mes", desde: inicioMes, hasta: finMes },
   ];
 
-const METODO_ICONO: Record<string, string> = {
-  Efectivo: "💵",
-  Tarjeta: "💳",
-  Transferencia: "🏦",
+const METODO_ICONO: Record<string, React.ReactNode> = {
+  Efectivo: <Banknote size={20} strokeWidth={1.5} />,
+  Tarjeta: <CreditCard size={20} strokeWidth={1.5} />,
+  Transferencia: <Building2 size={20} strokeWidth={1.5} />,
 };
 
 export default function PagosPage() {
   const qc = useQueryClient();
   const { usuario } = useAuthStore();
+  const { toast } = useToastStore();
   const esEmpleado = usuario?.rol === "Empleado";
 
   const [periodo, setPeriodo] = useState<FiltroPeriodo>("hoy");
@@ -124,6 +126,11 @@ export default function PagosPage() {
     setEnviandoEmail(true);
     try {
       await pagosApi.enviarTicketEmail(citaPagada.id);
+      toast("Ticket enviado al correo del cliente");
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje;
+      toast(msg ?? "El cliente no tiene correo registrado", "error");
     } finally {
       setEnviandoEmail(false);
     }
@@ -260,7 +267,7 @@ export default function PagosPage() {
                         : "border-gray-200 dark:border-slate-600 text-gray-700 dark:text-gray-300 hover:border-slate-400"
                     }`}
                   >
-                    <span className="text-xl">{METODO_ICONO[m]}</span>
+                    {METODO_ICONO[m]}
                     {m}
                   </button>
                 ))}
@@ -316,6 +323,7 @@ export default function PagosPage() {
           <TicketRecibo
             cita={citaPagada}
             negocioNombre={negocio?.nombre ?? ""}
+            negocioLogo={negocio?.logoUrl}
             onClose={() => setCitaPagada(null)}
             onEnviarEmail={handleEnviarEmail}
             enviandoEmail={enviandoEmail}
