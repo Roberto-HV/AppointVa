@@ -11,7 +11,7 @@ interface Props {
 
 export default function TicketRecibo({ cita, negocioNombre, onClose, onEnviarEmail, enviandoEmail }: Props) {
   const fecha = cita.inicioEn
-    ? new Date(cita.inicioEn).toLocaleDateString("es-MX", {
+    ? new Date(cita.inicioEn).toLocaleString("es-MX", {
         day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit",
       })
     : "—";
