@@ -249,12 +249,12 @@ export default function PagosPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex bg-gray-100 dark:bg-slate-700 rounded-lg p-1 gap-1 w-fit">
+      <div className="flex bg-gray-100 dark:bg-slate-700 rounded-lg p-1 gap-1">
         {([["cobro", "Cobro"], ["historial", "Historial"]] as [Tab, string][]).map(([key, label]) => (
           <button
             key={key}
             onClick={() => setTab(key)}
-            className={`px-5 py-1.5 text-sm font-medium rounded-md transition whitespace-nowrap ${
+            className={`flex-1 py-1.5 text-sm font-medium rounded-md transition whitespace-nowrap ${
               tab === key
                 ? "bg-white dark:bg-slate-800 text-gray-800 dark:text-gray-200 shadow-sm"
                 : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
