@@ -339,6 +339,7 @@ namespace AppointVaAPI.Controllers.V1
             cita.MontoCobrado  = dto.Pagada ? dto.MontoCobrado  : null;
             cita.MontoRecibido = dto.Pagada ? dto.MontoRecibido : null;
             cita.Cambio        = dto.Pagada ? dto.Cambio        : null;
+            cita.Propina       = dto.Pagada ? dto.Propina       : null;
             cita.FechaPago     = dto.Pagada ? DateTime.UtcNow   : null;
             cita.RegistradoPorId = dto.Pagada ? _contexto.UsuarioId : null;
             cita.FechaActualizacion = DateTime.UtcNow;
@@ -488,6 +489,7 @@ namespace AppointVaAPI.Controllers.V1
             MontoCobrado  = c.MontoCobrado,
             MontoRecibido = c.MontoRecibido,
             Cambio        = c.Cambio,
+            Propina       = c.Propina,
             FechaPago     = c.FechaPago,
             InicioEn = c.InicioEn,
             FinEn = c.FinEn,

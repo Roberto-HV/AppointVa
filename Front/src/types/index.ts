@@ -175,6 +175,7 @@ export interface CitaDto {
   montoCobrado?: number | null;
   montoRecibido?: number | null;
   cambio?: number | null;
+  propina?: number | null;
   fechaPago?: string | null;
   inicioEn: string;
   finEn: string;

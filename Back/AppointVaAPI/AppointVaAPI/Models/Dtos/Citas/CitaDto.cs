@@ -28,6 +28,7 @@
         public decimal?  MontoCobrado  { get; set; }
         public decimal?  MontoRecibido { get; set; }
         public decimal?  Cambio        { get; set; }
+        public decimal?  Propina       { get; set; }
         public DateTime? FechaPago     { get; set; }
         public DateTime InicioEn { get; set; }
         public DateTime FinEn { get; set; }

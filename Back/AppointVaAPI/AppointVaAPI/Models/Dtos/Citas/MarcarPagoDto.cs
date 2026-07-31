@@ -17,4 +17,7 @@ public class MarcarPagoDto
 
     [Range(0, double.MaxValue)]
     public decimal? Cambio        { get; set; }
+
+    [Range(0, double.MaxValue)]
+    public decimal? Propina       { get; set; }
 }

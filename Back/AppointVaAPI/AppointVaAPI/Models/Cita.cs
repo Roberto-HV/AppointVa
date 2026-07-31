@@ -41,6 +41,7 @@ namespace AppointVaAPI.Models
         public decimal? MontoCobrado  { get; set; }   // precio final cobrado
         public decimal? MontoRecibido { get; set; }   // dinero entregado por el cliente
         public decimal? Cambio        { get; set; }   // vuelto entregado
+        public decimal? Propina       { get; set; }
         public DateTime? FechaPago    { get; set; }   // cuándo se registró el pago
         public Guid?     RegistradoPorId { get; set; } // FK a ApplicationUser
         public Guid? CreadoPorUsuarioId { get; set; }

@@ -7,6 +7,7 @@ export interface RegistrarPagoPayload {
   montoCobrado?: number;
   montoRecibido?: number;
   cambio?: number;
+  propina?: number;
 }
 
 export const pagosApi = {

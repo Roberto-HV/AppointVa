@@ -268,6 +268,7 @@ using (var scope = app.Services.CreateScope())
             ALTER TABLE "Citas" ADD COLUMN IF NOT EXISTS "Cambio"         numeric(10,2) NULL;
             ALTER TABLE "Citas" ADD COLUMN IF NOT EXISTS "FechaPago"      timestamptz   NULL;
             ALTER TABLE "Citas" ADD COLUMN IF NOT EXISTS "RegistradoPorId" uuid         NULL;
+            ALTER TABLE "Citas" ADD COLUMN IF NOT EXISTS "Propina"        numeric(10,2) NULL;
         """);
         await db.Database.ExecuteSqlRawAsync("""
             ALTER TABLE "Negocios" ADD COLUMN IF NOT EXISTS "ModuloPagosHabilitado" boolean NOT NULL DEFAULT false;
