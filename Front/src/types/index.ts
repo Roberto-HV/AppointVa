@@ -189,6 +189,31 @@ export interface CitaDto {
   fechaCreacion?: string;
 }
 
+export interface RetiroItem {
+  concepto: string;
+  monto: number;
+}
+
+export interface CierreCajaDto {
+  id?: string;
+  fecha: string;
+  efectivoInicial: number;
+  efectivoContado: number;
+  efectivoCobrado: number;
+  totalRetiros: number;
+  efectivoEsperado: number;
+  diferencia: number;
+  retiros: RetiroItem[];
+  cerradoEn?: string | null;
+}
+
+export interface GuardarCierreCajaDto {
+  fecha: string;
+  efectivoInicial: number;
+  efectivoContado: number;
+  retiros: RetiroItem[];
+}
+
 // ── Clientes ──────────────────────────────────────────────────────────────────
 export interface ClienteDto {
   id: string;

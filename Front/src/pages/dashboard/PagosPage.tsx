@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   CreditCard, Clock, CheckCircle2, Circle, Banknote, Building2,
-  RotateCcw, Download, Search, TrendingUp, AlertCircle, Receipt, Printer, Users,
+  RotateCcw, Download, Search, TrendingUp, AlertCircle, Receipt, Printer, Users, X,
 } from "lucide-react";
 import { citasApi, METODOS_PAGO } from "../../api/citas";
 import { pagosApi } from "../../api/pagos";
@@ -12,7 +12,8 @@ import { useToastStore } from "../../store/toastStore";
 import { exportarExcel } from "../../utils/exportarExcel";
 import Modal from "../../components/ui/Modal";
 import TicketRecibo from "../../components/dashboard/TicketRecibo";
-import type { CitaDto } from "../../types";
+import { cierreCajaApi } from "../../api/cierreCaja";
+import type { CitaDto, CierreCajaDto, GuardarCierreCajaDto, RetiroItem } from "../../types";
 
 type FiltroEstadoPago = "todas" | "pendientes" | "pagadas";
 type FiltroPeriodo = "hoy" | "semana" | "mes";
@@ -95,6 +96,13 @@ export default function PagosPage() {
   // ── Corte tab state ───────────────────────────────────────────────────────
   const [corteDate, setCorteDate] = useState(hoy);
 
+  // ── Cierre de caja state ──────────────────────────────────────────────────
+  const [cierreInicio,    setCierreInicio]    = useState<string>('');
+  const [cierreContado,   setCierreContado]   = useState<string>('');
+  const [retiros,         setRetiros]         = useState<RetiroItem[]>([]);
+  const [retiroConcepto,  setRetiroConcepto]  = useState('');
+  const [retiroMonto,     setRetiroMonto]     = useState('');
+
   // ── Sync metodoPago2 when metodoPago changes ───────────────────────────────
   useEffect(() => {
     const primera = METODOS_PAGO.find(m => m !== metodoPago) ?? 'Tarjeta';
@@ -139,6 +147,28 @@ export default function PagosPage() {
     enabled: tab === "corte",
     staleTime: 2 * 60 * 1000,
   });
+
+  const { data: cierreData } = useQuery<CierreCajaDto>({
+    queryKey: ['cierre-caja', corteDate],
+    queryFn: () => cierreCajaApi.obtener(corteDate),
+    enabled: tab === 'corte',
+  });
+
+  // Pre-populate from existing cierre when data loads
+  useEffect(() => {
+    if (cierreData) {
+      setCierreInicio(cierreData.efectivoInicial > 0 ? cierreData.efectivoInicial.toFixed(2) : '');
+      setCierreContado(cierreData.efectivoContado > 0 ? cierreData.efectivoContado.toFixed(2) : '');
+      setRetiros(cierreData.retiros ?? []);
+    }
+  }, [cierreData]);
+
+  // Reset fields when date changes
+  useEffect(() => {
+    setCierreInicio('');
+    setCierreContado('');
+    setRetiros([]);
+  }, [corteDate]);
 
   // ── Cobro derived data ────────────────────────────────────────────────────
   const todas = pagina?.datos ?? [];
@@ -223,6 +253,15 @@ export default function PagosPage() {
   ).sort((a, b) => b.monto - a.monto);
 
   const cortePromedio = corteData.length > 0 ? corteTotalCobrado / corteData.length : 0;
+
+  // ── Cierre computed values ────────────────────────────────────────────────
+  const efectivoCobradoDia = cierreData?.efectivoCobrado ?? 0;
+  const inicioDec          = parseFloat(cierreInicio) || 0;
+  const contadoDec         = parseFloat(cierreContado) || 0;
+  const totalRetirosDec    = retiros.reduce((s, r) => s + r.monto, 0);
+  const efectivoEsperado   = inicioDec + efectivoCobradoDia - totalRetirosDec;
+  const diferencia         = contadoDec - efectivoEsperado;
+  const cuadrado           = Math.abs(diferencia) < 0.01;
 
   const handleImprimirCorte = () => {
     const fechaLegible = new Date(corteDate + "T12:00:00").toLocaleDateString("es-MX", {
@@ -346,6 +385,16 @@ export default function PagosPage() {
       toast("Pago revertido");
     },
     onError: () => toast("No se pudo revertir el pago", "error"),
+  });
+
+  const mutCierre = useMutation({
+    mutationFn: (payload: GuardarCierreCajaDto) => cierreCajaApi.guardar(payload),
+    onSuccess: (data) => {
+      setCierreInicio(data.efectivoInicial.toFixed(2));
+      setCierreContado(data.efectivoContado.toFixed(2));
+      setRetiros(data.retiros);
+      qc.invalidateQueries({ queryKey: ['cierre-caja', corteDate] });
+    },
   });
 
   const handleConfirmar = () => {
@@ -784,6 +833,137 @@ export default function PagosPage() {
               )}
             </>
           )}
+
+          {/* Cierre formal de caja */}
+          <div className="mt-6 space-y-4">
+            <h3 className="text-base font-semibold text-gray-900 dark:text-white">
+              Cierre formal de caja
+            </h3>
+
+            {/* 3-column grid: inicio / cobrado / contado */}
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Efectivo inicial</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={cierreInicio}
+                  onChange={e => setCierreInicio(e.target.value)}
+                  placeholder="0.00"
+                  className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Cobrado en efectivo</label>
+                <input
+                  readOnly
+                  value={efectivoCobradoDia.toFixed(2)}
+                  className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-3 py-2 text-sm text-gray-600 dark:text-gray-400"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Efectivo contado</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={cierreContado}
+                  onChange={e => setCierreContado(e.target.value)}
+                  placeholder="0.00"
+                  className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                />
+              </div>
+            </div>
+
+            {/* Retiros */}
+            <div>
+              <p className="text-xs font-medium text-gray-500 mb-2">Retiros de caja</p>
+              {retiros.map((r, i) => (
+                <div key={i} className="flex items-center gap-2 mb-1">
+                  <span className="flex-1 text-sm">{r.concepto}</span>
+                  <span className="text-sm font-mono">${r.monto.toFixed(2)}</span>
+                  <button
+                    type="button"
+                    onClick={() => setRetiros(prev => prev.filter((_, j) => j !== i))}
+                    className="text-gray-400 hover:text-red-500"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
+              <div className="flex gap-2 mt-2">
+                <input
+                  type="text"
+                  value={retiroConcepto}
+                  onChange={e => setRetiroConcepto(e.target.value)}
+                  placeholder="Concepto"
+                  className="flex-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                />
+                <input
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  value={retiroMonto}
+                  onChange={e => setRetiroMonto(e.target.value)}
+                  placeholder="Monto"
+                  className="w-24 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const monto = parseFloat(retiroMonto);
+                    if (retiroConcepto.trim() && monto > 0) {
+                      setRetiros(prev => [...prev, { concepto: retiroConcepto.trim(), monto }]);
+                      setRetiroConcepto('');
+                      setRetiroMonto('');
+                    }
+                  }}
+                  className="px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-sm hover:bg-gray-200 dark:hover:bg-gray-600"
+                >
+                  + Agregar
+                </button>
+              </div>
+            </div>
+
+            {/* Formula summary */}
+            <div className={`rounded-xl p-4 border ${
+              cuadrado
+                ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700'
+                : 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-700'
+            }`}>
+              <div className="space-y-1 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">Inicio + Cobrado − Retiros</span>
+                  <span className="font-mono">${efectivoEsperado.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">Contado</span>
+                  <span className="font-mono">${contadoDec.toFixed(2)}</span>
+                </div>
+                <div className={`flex justify-between font-semibold border-t pt-1 mt-1 ${
+                  cuadrado ? 'text-green-700 dark:text-green-400' : 'text-yellow-700 dark:text-yellow-400'
+                }`}>
+                  <span>Diferencia</span>
+                  <span className="font-mono">{diferencia >= 0 ? '+' : ''}{diferencia.toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              disabled={mutCierre.isPending}
+              onClick={() => mutCierre.mutate({
+                fecha: corteDate,
+                efectivoInicial: inicioDec,
+                efectivoContado: contadoDec,
+                retiros,
+              })}
+              className="w-full py-2 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+            >
+              {mutCierre.isPending ? 'Guardando...' : 'Guardar cierre'}
+            </button>
+          </div>
         </div>
       )}
 
