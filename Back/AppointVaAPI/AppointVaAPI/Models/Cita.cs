@@ -38,6 +38,9 @@ namespace AppointVaAPI.Models
         public bool Pagada { get; set; }
         [MaxLength(30)]
         public string? MetodoPago { get; set; }
+        [MaxLength(30)]
+        public string? MetodoPago2 { get; set; }
+        public decimal? MontoPago2 { get; set; }
         public decimal? MontoCobrado  { get; set; }   // precio final cobrado
         public decimal? MontoRecibido { get; set; }   // dinero entregado por el cliente
         public decimal? Cambio        { get; set; }   // vuelto entregado

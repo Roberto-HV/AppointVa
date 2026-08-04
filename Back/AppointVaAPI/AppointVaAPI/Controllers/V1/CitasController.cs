@@ -336,6 +336,8 @@ namespace AppointVaAPI.Controllers.V1
 
             cita.Pagada        = dto.Pagada;
             cita.MetodoPago    = dto.Pagada ? dto.MetodoPago    : null;
+            cita.MetodoPago2   = dto.Pagada ? dto.MetodoPago2   : null;
+            cita.MontoPago2    = dto.Pagada ? dto.MontoPago2    : null;
             cita.MontoCobrado  = dto.Pagada ? dto.MontoCobrado  : null;
             cita.MontoRecibido = dto.Pagada ? dto.MontoRecibido : null;
             cita.Cambio        = dto.Pagada ? dto.Cambio        : null;
@@ -523,6 +525,8 @@ namespace AppointVaAPI.Controllers.V1
             Precio = c.Precio,
             Pagada = c.Pagada,
             MetodoPago = c.MetodoPago,
+            MetodoPago2  = c.MetodoPago2,
+            MontoPago2   = c.MontoPago2,
             MontoCobrado  = c.MontoCobrado,
             MontoRecibido = c.MontoRecibido,
             Cambio        = c.Cambio,

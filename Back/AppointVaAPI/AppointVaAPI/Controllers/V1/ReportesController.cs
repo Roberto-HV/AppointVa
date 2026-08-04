@@ -63,11 +63,33 @@ namespace AppointVaAPI.Controllers.V1
                 TotalInasistencias  = citas.Count(c => c.Estado == EstadosCitas.Inasistencia),
                 TotalIngresos       = completadas.Sum(c => c.Precio),
                 TotalIngresosEfectivo = completadas
-                    .Where(c => c.Pagada && c.MetodoPago?.ToLower() == "efectivo")
-                    .Sum(c => c.Precio),
+                    .Where(c => c.Pagada && (
+                        string.Equals(c.MetodoPago, "Efectivo", StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(c.MetodoPago2, "Efectivo", StringComparison.OrdinalIgnoreCase)))
+                    .Sum(c =>
+                    {
+                        decimal total = c.MontoCobrado ?? c.Precio;
+                        decimal m2    = c.MontoPago2 ?? 0m;
+                        decimal m1    = total - m2;
+                        decimal result = 0m;
+                        if (string.Equals(c.MetodoPago,  "Efectivo", StringComparison.OrdinalIgnoreCase)) result += m1;
+                        if (string.Equals(c.MetodoPago2, "Efectivo", StringComparison.OrdinalIgnoreCase)) result += m2;
+                        return result;
+                    }),
                 TotalIngresosTarjeta = completadas
-                    .Where(c => c.Pagada && c.MetodoPago?.ToLower() == "tarjeta")
-                    .Sum(c => c.Precio),
+                    .Where(c => c.Pagada && (
+                        string.Equals(c.MetodoPago, "Tarjeta", StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(c.MetodoPago2, "Tarjeta", StringComparison.OrdinalIgnoreCase)))
+                    .Sum(c =>
+                    {
+                        decimal total = c.MontoCobrado ?? c.Precio;
+                        decimal m2    = c.MontoPago2 ?? 0m;
+                        decimal m1    = total - m2;
+                        decimal result = 0m;
+                        if (string.Equals(c.MetodoPago,  "Tarjeta", StringComparison.OrdinalIgnoreCase)) result += m1;
+                        if (string.Equals(c.MetodoPago2, "Tarjeta", StringComparison.OrdinalIgnoreCase)) result += m2;
+                        return result;
+                    }),
                 Citas = citas.Select(c => new FilaCitaReporteDto
                 {
                     Id                  = c.Id,
