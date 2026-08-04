@@ -172,6 +172,8 @@ export interface CitaDto {
   precio: number;
   pagada: boolean;
   metodoPago?: string | null;
+  metodoPago2?: string | null;
+  montoPago2?: number | null;
   montoCobrado?: number | null;
   montoRecibido?: number | null;
   cambio?: number | null;
