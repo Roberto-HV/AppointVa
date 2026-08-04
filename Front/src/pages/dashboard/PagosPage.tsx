@@ -100,18 +100,24 @@ export default function PagosPage() {
         pagina: 1,
         tamano: 200,
       }),
+    staleTime: 0,
+    refetchInterval: 30_000,
   });
 
   const { data: historialData = [], isLoading: histLoading } = useQuery({
     queryKey: ["historial-pagos", histDesde, histHasta],
     queryFn: () => citasApi.obtenerHistorialPagos({ desde: histDesde, hasta: histHasta }),
     enabled: tab === "historial",
+    staleTime: 0,
+    refetchInterval: tab === "historial" ? 30_000 : false,
   });
 
   const { data: corteData = [], isLoading: corteLoading } = useQuery({
     queryKey: ["historial-pagos-corte", corteDate],
     queryFn: () => citasApi.obtenerHistorialPagos({ desde: corteDate, hasta: corteDate }),
     enabled: tab === "corte",
+    staleTime: 0,
+    refetchInterval: tab === "corte" ? 30_000 : false,
   });
 
   // ── Cobro derived data ────────────────────────────────────────────────────
