@@ -29,7 +29,8 @@ public class NotificacionJobCitasTests
                 ["BackendUrl"]  = "http://localhost:5048",
             })
             .Build();
-        return (db, new NotificacionJob(db, notificacion, config, jobClient), notificacion, jobClient);
+        var emailService = Substitute.For<IEmailService>();
+        return (db, new NotificacionJob(db, notificacion, config, jobClient, emailService), notificacion, jobClient);
     }
 
     private static async Task<Cita> SeedCitaAsync(ApplicationDbContext db)

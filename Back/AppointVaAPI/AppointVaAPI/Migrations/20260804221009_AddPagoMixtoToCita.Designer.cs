@@ -3,6 +3,7 @@ using System;
 using AppointVaAPI.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AppointVaAPI.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260804221009_AddPagoMixtoToCita")]
+    partial class AddPagoMixtoToCita
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -272,52 +275,6 @@ namespace AppointVaAPI.Migrations
                     b.HasIndex("NegocioId");
 
                     b.ToTable("CategoriasServicios");
-                });
-
-            modelBuilder.Entity("AppointVaAPI.Models.CierreCaja", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("CerradoEn")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.Property<Guid?>("CerradoPorId")
-                        .HasColumnType("uuid");
-
-                    b.Property<decimal>("EfectivoContado")
-                        .HasPrecision(10, 2)
-                        .HasColumnType("numeric(10,2)");
-
-                    b.Property<decimal>("EfectivoInicial")
-                        .HasPrecision(10, 2)
-                        .HasColumnType("numeric(10,2)");
-
-                    b.Property<DateTime>("Fecha")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.Property<DateTime>("FechaActualizacion")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.Property<DateTime>("FechaCreacion")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.Property<Guid>("NegocioId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("RetirosJson")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CerradoPorId");
-
-                    b.HasIndex("NegocioId", "Fecha")
-                        .IsUnique();
-
-                    b.ToTable("CierresCaja");
                 });
 
             modelBuilder.Entity("AppointVaAPI.Models.Cita", b =>
@@ -1326,24 +1283,6 @@ namespace AppointVaAPI.Migrations
                         .HasForeignKey("NegocioId")
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
-
-                    b.Navigation("Negocio");
-                });
-
-            modelBuilder.Entity("AppointVaAPI.Models.CierreCaja", b =>
-                {
-                    b.HasOne("AppointVaAPI.Models.ApplicationUser", "CerradoPor")
-                        .WithMany()
-                        .HasForeignKey("CerradoPorId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("AppointVaAPI.Models.Negocio", "Negocio")
-                        .WithMany()
-                        .HasForeignKey("NegocioId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("CerradoPor");
 
                     b.Navigation("Negocio");
                 });

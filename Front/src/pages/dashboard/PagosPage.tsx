@@ -1,8 +1,8 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   CreditCard, Clock, CheckCircle2, Circle, Banknote, Building2,
-  RotateCcw, Download, Search, TrendingUp, AlertCircle, Receipt, Printer, Users,
+  RotateCcw, Download, Search, TrendingUp, AlertCircle, Receipt, Printer, Users, X,
 } from "lucide-react";
 import { citasApi, METODOS_PAGO } from "../../api/citas";
 import { pagosApi } from "../../api/pagos";
@@ -12,7 +12,8 @@ import { useToastStore } from "../../store/toastStore";
 import { exportarExcel } from "../../utils/exportarExcel";
 import Modal from "../../components/ui/Modal";
 import TicketRecibo from "../../components/dashboard/TicketRecibo";
-import type { CitaDto } from "../../types";
+import { cierreCajaApi } from "../../api/cierreCaja";
+import type { CitaDto, CierreCajaDto, GuardarCierreCajaDto, RetiroItem } from "../../types";
 
 type FiltroEstadoPago = "todas" | "pendientes" | "pagadas";
 type FiltroPeriodo = "hoy" | "semana" | "mes";
@@ -54,6 +55,16 @@ const METODO_ICONO_LG: Record<string, React.ReactNode> = {
   Transferencia: <Building2  size={20} strokeWidth={1.5} />,
 };
 
+function montoParaMetodo(cita: CitaDto, metodo: string): number {
+  const total = cita.montoCobrado ?? cita.precio ?? 0;
+  const m2 = cita.montoPago2 ?? 0;
+  const m1 = total - m2;
+  let result = 0;
+  if ((cita.metodoPago?.toLowerCase() ?? '') === metodo.toLowerCase()) result += m1;
+  if ((cita.metodoPago2?.toLowerCase() ?? '') === metodo.toLowerCase()) result += m2;
+  return result;
+}
+
 export default function PagosPage() {
   const qc = useQueryClient();
   const { usuario } = useAuthStore();
@@ -71,6 +82,9 @@ export default function PagosPage() {
   const [metodoPago,    setMetodoPago]    = useState("");
   const [montoRecibido, setMontoRecibido] = useState("");
   const [propina,       setPropina]       = useState("");
+  const [isSplit,       setIsSplit]       = useState(false);
+  const [metodoPago2,   setMetodoPago2]   = useState<string>('Tarjeta');
+  const [montoPago2Input, setMontoPago2Input] = useState<string>('');
   const [citaPagada,    setCitaPagada]    = useState<CitaDto | null>(null);
   const [enviandoEmail, setEnviandoEmail] = useState(false);
 
@@ -81,6 +95,19 @@ export default function PagosPage() {
 
   // ── Corte tab state ───────────────────────────────────────────────────────
   const [corteDate, setCorteDate] = useState(hoy);
+
+  // ── Cierre de caja state ──────────────────────────────────────────────────
+  const [cierreInicio,    setCierreInicio]    = useState<string>('');
+  const [cierreContado,   setCierreContado]   = useState<string>('');
+  const [retiros,         setRetiros]         = useState<RetiroItem[]>([]);
+  const [retiroConcepto,  setRetiroConcepto]  = useState('');
+  const [retiroMonto,     setRetiroMonto]     = useState('');
+
+  // ── Sync metodoPago2 when metodoPago changes ───────────────────────────────
+  useEffect(() => {
+    const primera = METODOS_PAGO.find(m => m !== metodoPago) ?? 'Tarjeta';
+    setMetodoPago2(primera);
+  }, [metodoPago]);
 
   const periodoActivo = PERIODOS.find((p) => p.key === periodo)!;
 
@@ -121,6 +148,28 @@ export default function PagosPage() {
     staleTime: 2 * 60 * 1000,
   });
 
+  const { data: cierreData } = useQuery<CierreCajaDto>({
+    queryKey: ['cierre-caja', corteDate],
+    queryFn: () => cierreCajaApi.obtener(corteDate),
+    enabled: tab === 'corte',
+  });
+
+  // Pre-populate from existing cierre when data loads
+  useEffect(() => {
+    if (cierreData) {
+      setCierreInicio(cierreData.efectivoInicial > 0 ? cierreData.efectivoInicial.toFixed(2) : '');
+      setCierreContado(cierreData.efectivoContado > 0 ? cierreData.efectivoContado.toFixed(2) : '');
+      setRetiros(cierreData.retiros ?? []);
+    }
+  }, [cierreData]);
+
+  // Reset fields when date changes
+  useEffect(() => {
+    setCierreInicio('');
+    setCierreContado('');
+    setRetiros([]);
+  }, [corteDate]);
+
   // ── Cobro derived data ────────────────────────────────────────────────────
   const todas = pagina?.datos ?? [];
 
@@ -130,8 +179,8 @@ export default function PagosPage() {
   const totalCitas     = todas.length;
 
   const desglose = METODOS_PAGO.reduce<Record<string, number>>((acc, m) => {
-    acc[m] = todas.filter(c => c.pagada && c.metodoPago === m)
-      .reduce((s, c) => s + (c.montoCobrado ?? c.precio), 0);
+    acc[m] = todas.filter(c => c.pagada)
+      .reduce((s, c) => s + montoParaMetodo(c, m), 0);
     return acc;
   }, {});
 
@@ -141,7 +190,7 @@ export default function PagosPage() {
       cantidad: todas.filter(c => c.pagada && c.metodoPago === m).length,
       monto: desglose[m] ?? 0,
     }))
-    .filter(d => d.cantidad > 0);
+    .filter(d => d.monto > 0);
 
   const citasFiltradas = useMemo(() => {
     let lista = todas;
@@ -187,8 +236,8 @@ export default function PagosPage() {
   const corteDesglose = METODOS_PAGO
     .map(m => ({
       metodo: m,
-      cantidad: corteData.filter(c => c.metodoPago === m).length,
-      monto: corteData.filter(c => c.metodoPago === m).reduce((s, c) => s + (c.montoCobrado ?? c.precio), 0),
+      cantidad: corteData.filter(c => montoParaMetodo(c, m) > 0).length,
+      monto: corteData.reduce((s, c) => s + montoParaMetodo(c, m), 0),
     }))
     .filter(d => d.cantidad > 0);
 
@@ -204,6 +253,15 @@ export default function PagosPage() {
   ).sort((a, b) => b.monto - a.monto);
 
   const cortePromedio = corteData.length > 0 ? corteTotalCobrado / corteData.length : 0;
+
+  // ── Cierre computed values ────────────────────────────────────────────────
+  const efectivoCobradoDia = cierreData?.efectivoCobrado ?? 0;
+  const inicioDec          = parseFloat(cierreInicio) || 0;
+  const contadoDec         = parseFloat(cierreContado) || 0;
+  const totalRetirosDec    = retiros.reduce((s, r) => s + r.monto, 0);
+  const efectivoEsperado   = inicioDec + efectivoCobradoDia - totalRetirosDec;
+  const diferencia         = contadoDec - efectivoEsperado;
+  const cuadrado           = Math.abs(diferencia) < 0.01;
 
   const handleImprimirCorte = () => {
     const fechaLegible = new Date(corteDate + "T12:00:00").toLocaleDateString("es-MX", {
@@ -261,6 +319,34 @@ export default function PagosPage() {
     setTimeout(() => { w.print(); w.close(); }, 300);
   };
 
+  // ── Payment helpers ───────────────────────────────────────────────────────
+  const montoCobradoDec = citaSel?.precio ?? 0;
+  const montoRecibidoDec = parseFloat(montoRecibido || "0");
+  const montoPago2Dec = parseFloat(montoPago2Input) || 0;
+  const montoPago1Dec = isSplit ? Math.max(0, montoCobradoDec - montoPago2Dec) : montoCobradoDec;
+
+  const hayEfectivo =
+    metodoPago === 'Efectivo' ||
+    (isSplit && metodoPago2 === 'Efectivo');
+
+  const porcionEfectivo = (() => {
+    if (!hayEfectivo) return 0;
+    if (!isSplit) return montoCobradoDec;
+    if (metodoPago === 'Efectivo') return montoPago1Dec;
+    return montoPago2Dec;
+  })();
+
+  const cambio = hayEfectivo
+    ? Math.max(0, montoRecibidoDec - porcionEfectivo)
+    : 0;
+
+  const puedeConfirmar =
+    citaSel !== null &&
+    metodoPago !== "" &&
+    montoCobradoDec > 0 &&
+    (!isSplit || (montoPago2Dec > 0 && montoPago2Dec < montoCobradoDec)) &&
+    (!hayEfectivo || montoRecibidoDec >= porcionEfectivo);
+
   // ── Mutations ─────────────────────────────────────────────────────────────
   const mutPagar = useMutation({
     mutationFn: (payload: { id: string; montoRec: number; prop: number }) =>
@@ -268,12 +354,13 @@ export default function PagosPage() {
         pagada: true,
         metodoPago,
         montoCobrado: citaSel?.precio,
-        montoRecibido: metodoPago === "Efectivo" ? payload.montoRec : undefined,
-        cambio:
-          metodoPago === "Efectivo" && payload.montoRec > (citaSel?.precio ?? 0)
-            ? payload.montoRec - (citaSel?.precio ?? 0)
-            : undefined,
+        montoRecibido: hayEfectivo ? payload.montoRec : undefined,
+        cambio: hayEfectivo && cambio > 0 ? cambio : undefined,
         propina: payload.prop > 0 ? payload.prop : undefined,
+        ...(isSplit && {
+          metodoPago2,
+          montoPago2: montoPago2Dec,
+        }),
       }),
     onSuccess: (citaActualizada) => {
       qc.invalidateQueries({ queryKey: ["citas-pagos"] });
@@ -282,6 +369,9 @@ export default function PagosPage() {
       setMetodoPago("");
       setMontoRecibido("");
       setPropina("");
+      setIsSplit(false);
+      setMetodoPago2('Tarjeta');
+      setMontoPago2Input('');
       setCitaPagada(citaActualizada);
     },
   });
@@ -297,16 +387,15 @@ export default function PagosPage() {
     onError: () => toast("No se pudo revertir el pago", "error"),
   });
 
-  // ── Helpers ───────────────────────────────────────────────────────────────
-  const cambio =
-    metodoPago === "Efectivo" && montoRecibido && citaSel
-      ? parseFloat(montoRecibido) - citaSel.precio
-      : null;
-
-  const puedeConfirmar =
-    metodoPago !== "" &&
-    (metodoPago !== "Efectivo" ||
-      parseFloat(montoRecibido || "0") >= (citaSel?.precio ?? 0));
+  const mutCierre = useMutation({
+    mutationFn: (payload: GuardarCierreCajaDto) => cierreCajaApi.guardar(payload),
+    onSuccess: (data) => {
+      setCierreInicio(data.efectivoInicial.toFixed(2));
+      setCierreContado(data.efectivoContado.toFixed(2));
+      setRetiros(data.retiros);
+      qc.invalidateQueries({ queryKey: ['cierre-caja', corteDate] });
+    },
+  });
 
   const handleConfirmar = () => {
     if (!citaSel) return;
@@ -507,7 +596,7 @@ export default function PagosPage() {
                 <CitaCard
                   key={cita.id}
                   cita={cita}
-                  onCobrar={() => { setCitaSel(cita); setMetodoPago(""); setMontoRecibido(""); setPropina(""); }}
+                  onCobrar={() => { setCitaSel(cita); setMetodoPago(""); setMontoRecibido(""); setPropina(""); setIsSplit(false); setMetodoPago2('Tarjeta'); setMontoPago2Input(''); }}
                   onRevertir={() => mutRevertir.mutate(cita.id)}
                   revertiendoId={mutRevertir.isPending && mutRevertir.variables === cita.id ? cita.id : null}
                 />
@@ -744,13 +833,144 @@ export default function PagosPage() {
               )}
             </>
           )}
+
+          {/* Cierre formal de caja */}
+          <div className="mt-6 space-y-4">
+            <h3 className="text-base font-semibold text-gray-900 dark:text-white">
+              Cierre formal de caja
+            </h3>
+
+            {/* 3-column grid: inicio / cobrado / contado */}
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Efectivo inicial</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={cierreInicio}
+                  onChange={e => setCierreInicio(e.target.value)}
+                  placeholder="0.00"
+                  className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Cobrado en efectivo</label>
+                <input
+                  readOnly
+                  value={efectivoCobradoDia.toFixed(2)}
+                  className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-3 py-2 text-sm text-gray-600 dark:text-gray-400"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Efectivo contado</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={cierreContado}
+                  onChange={e => setCierreContado(e.target.value)}
+                  placeholder="0.00"
+                  className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                />
+              </div>
+            </div>
+
+            {/* Retiros */}
+            <div>
+              <p className="text-xs font-medium text-gray-500 mb-2">Retiros de caja</p>
+              {retiros.map((r, i) => (
+                <div key={i} className="flex items-center gap-2 mb-1">
+                  <span className="flex-1 text-sm">{r.concepto}</span>
+                  <span className="text-sm font-mono">${r.monto.toFixed(2)}</span>
+                  <button
+                    type="button"
+                    onClick={() => setRetiros(prev => prev.filter((_, j) => j !== i))}
+                    className="text-gray-400 hover:text-red-500"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
+              <div className="flex gap-2 mt-2">
+                <input
+                  type="text"
+                  value={retiroConcepto}
+                  onChange={e => setRetiroConcepto(e.target.value)}
+                  placeholder="Concepto"
+                  className="flex-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                />
+                <input
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  value={retiroMonto}
+                  onChange={e => setRetiroMonto(e.target.value)}
+                  placeholder="Monto"
+                  className="w-24 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const monto = parseFloat(retiroMonto);
+                    if (retiroConcepto.trim() && monto > 0) {
+                      setRetiros(prev => [...prev, { concepto: retiroConcepto.trim(), monto }]);
+                      setRetiroConcepto('');
+                      setRetiroMonto('');
+                    }
+                  }}
+                  className="px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-sm hover:bg-gray-200 dark:hover:bg-gray-600"
+                >
+                  + Agregar
+                </button>
+              </div>
+            </div>
+
+            {/* Formula summary */}
+            <div className={`rounded-xl p-4 border ${
+              cuadrado
+                ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700'
+                : 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-700'
+            }`}>
+              <div className="space-y-1 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">Inicio + Cobrado − Retiros</span>
+                  <span className="font-mono">${efectivoEsperado.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">Contado</span>
+                  <span className="font-mono">${contadoDec.toFixed(2)}</span>
+                </div>
+                <div className={`flex justify-between font-semibold border-t pt-1 mt-1 ${
+                  cuadrado ? 'text-green-700 dark:text-green-400' : 'text-yellow-700 dark:text-yellow-400'
+                }`}>
+                  <span>Diferencia</span>
+                  <span className="font-mono">{diferencia >= 0 ? '+' : ''}{diferencia.toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              disabled={mutCierre.isPending}
+              onClick={() => mutCierre.mutate({
+                fecha: corteDate,
+                efectivoInicial: inicioDec,
+                efectivoContado: contadoDec,
+                retiros,
+              })}
+              className="w-full py-2 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+            >
+              {mutCierre.isPending ? 'Guardando...' : 'Guardar cierre'}
+            </button>
+          </div>
         </div>
       )}
 
       {/* Modal: registrar pago */}
       <Modal
         abierto={!!citaSel}
-        onCerrar={() => { setCitaSel(null); setMetodoPago(""); setMontoRecibido(""); setPropina(""); }}
+        onCerrar={() => { setCitaSel(null); setMetodoPago(""); setMontoRecibido(""); setPropina(""); setIsSplit(false); setMetodoPago2('Tarjeta'); setMontoPago2Input(''); }}
         titulo="Registrar pago"
         ancho="sm"
       >
@@ -782,24 +1002,79 @@ export default function PagosPage() {
               </div>
             </div>
 
-            {metodoPago === "Efectivo" && (
+            {/* Split-payment toggle */}
+            <div className="flex items-center justify-between py-2">
+              <span className="text-sm text-gray-600 dark:text-gray-400">Dividir pago</span>
+              <button
+                type="button"
+                onClick={() => { setIsSplit(v => !v); setMontoPago2Input(''); }}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  isSplit ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'
+                }`}
+              >
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  isSplit ? 'translate-x-6' : 'translate-x-1'
+                }`} />
+              </button>
+            </div>
+
+            {isSplit && (
+              <div className="space-y-3 border-t border-dashed border-gray-200 dark:border-gray-700 pt-3">
+                <div className="flex gap-3">
+                  <div className="flex-1">
+                    <label className="block text-xs text-gray-500 mb-1">Monto en {metodoPago}</label>
+                    <input
+                      readOnly
+                      value={montoPago1Dec.toFixed(2)}
+                      className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-xs text-gray-500 mb-1">Segundo método</label>
+                    <select
+                      value={metodoPago2}
+                      onChange={e => setMetodoPago2(e.target.value)}
+                      className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                    >
+                      {['Efectivo','Tarjeta','Transferencia'].filter(m => m !== metodoPago).map(m => (
+                        <option key={m} value={m}>{m}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Monto en {metodoPago2}</label>
+                  <input
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    value={montoPago2Input}
+                    onChange={e => setMontoPago2Input(e.target.value)}
+                    placeholder="0.00"
+                    className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                  />
+                </div>
+              </div>
+            )}
+
+            {hayEfectivo && (
               <div>
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Monto recibido</label>
                 <input
                   type="number"
                   step="0.01"
-                  min={citaSel.precio}
+                  min={porcionEfectivo}
                   placeholder="Monto recibido"
                   value={montoRecibido}
                   onChange={(e) => setMontoRecibido(e.target.value)}
                   className="mt-1 w-full border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-700/30"
                 />
-                {cambio !== null && cambio >= 0 && (
+                {montoRecibido && cambio >= 0 && (
                   <p className="mt-2 text-sm text-emerald-600 dark:text-emerald-400 font-medium">
                     Cambio: <span className="font-bold">${cambio.toFixed(2)}</span>
                   </p>
                 )}
-                {cambio !== null && cambio < 0 && (
+                {montoRecibido && montoRecibidoDec < porcionEfectivo && (
                   <p className="mt-2 text-sm text-red-500">El monto recibido es menor al total</p>
                 )}
               </div>
@@ -939,7 +1214,7 @@ function CitaCard({
         {cita.pagada ? (
           <div className="flex items-center gap-1.5">
             <span className="text-xs bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-full font-medium">
-              {cita.metodoPago ?? "Pagada"}
+              {cita.metodoPago ?? "Pagada"}{cita.metodoPago2 ? ` + ${cita.metodoPago2}` : ''}
             </span>
             <button
               onClick={onRevertir}
@@ -986,7 +1261,7 @@ function HistorialRow({
       <td className="px-4 py-3">
         <span className="inline-flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400">
           {METODO_ICONO[cita.metodoPago ?? ""] ?? null}
-          {cita.metodoPago ?? "—"}
+          {cita.metodoPago ?? "—"}{cita.metodoPago2 ? ` + ${cita.metodoPago2}` : ''}
         </span>
       </td>
       <td className="px-4 py-3 text-right font-semibold text-gray-900 dark:text-gray-100 text-sm whitespace-nowrap">

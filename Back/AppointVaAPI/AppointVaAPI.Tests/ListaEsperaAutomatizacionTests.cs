@@ -64,7 +64,8 @@ public class ListaEsperaAutomatizacionTests
         var config = Substitute.For<IConfiguration>();
         config["FrontendUrl"].Returns("https://appointva.com");
 
-        var job = new NotificacionJob(db, notificacion, config, jobClient);
+        var emailService = Substitute.For<IEmailService>();
+        var job = new NotificacionJob(db, notificacion, config, jobClient, emailService);
         return (job, notificacion, jobClient, db);
     }
 

@@ -25,6 +25,8 @@
         public decimal Precio { get; set; }
         public bool Pagada { get; set; }
         public string? MetodoPago { get; set; }
+        public string? MetodoPago2 { get; set; }
+        public decimal?  MontoPago2    { get; set; }
         public decimal?  MontoCobrado  { get; set; }
         public decimal?  MontoRecibido { get; set; }
         public decimal?  Cambio        { get; set; }

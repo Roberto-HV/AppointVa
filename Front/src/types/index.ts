@@ -172,6 +172,8 @@ export interface CitaDto {
   precio: number;
   pagada: boolean;
   metodoPago?: string | null;
+  metodoPago2?: string | null;
+  montoPago2?: number | null;
   montoCobrado?: number | null;
   montoRecibido?: number | null;
   cambio?: number | null;
@@ -185,6 +187,31 @@ export interface CitaDto {
   motivoCancelacion?: string | null;
   comprobanteUrl?: string | null;
   fechaCreacion?: string;
+}
+
+export interface RetiroItem {
+  concepto: string;
+  monto: number;
+}
+
+export interface CierreCajaDto {
+  id?: string;
+  fecha: string;
+  efectivoInicial: number;
+  efectivoContado: number;
+  efectivoCobrado: number;
+  totalRetiros: number;
+  efectivoEsperado: number;
+  diferencia: number;
+  retiros: RetiroItem[];
+  cerradoEn?: string | null;
+}
+
+export interface GuardarCierreCajaDto {
+  fecha: string;
+  efectivoInicial: number;
+  efectivoContado: number;
+  retiros: RetiroItem[];
 }
 
 // ── Clientes ──────────────────────────────────────────────────────────────────
