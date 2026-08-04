@@ -101,23 +101,24 @@ export default function PagosPage() {
         tamano: 200,
       }),
     staleTime: 0,
-    refetchInterval: 30_000,
+    // Solo sigue el polling mientras el usuario está en el tab de cobro
+    refetchInterval: tab === "cobro" ? 30_000 : false,
   });
 
   const { data: historialData = [], isLoading: histLoading } = useQuery({
     queryKey: ["historial-pagos", histDesde, histHasta],
     queryFn: () => citasApi.obtenerHistorialPagos({ desde: histDesde, hasta: histHasta }),
+    // Se carga al entrar al tab; no necesita polling — es data histórica
     enabled: tab === "historial",
-    staleTime: 0,
-    refetchInterval: tab === "historial" ? 30_000 : false,
+    staleTime: 2 * 60 * 1000,
   });
 
   const { data: corteData = [], isLoading: corteLoading } = useQuery({
     queryKey: ["historial-pagos-corte", corteDate],
     queryFn: () => citasApi.obtenerHistorialPagos({ desde: corteDate, hasta: corteDate }),
+    // Se carga al entrar al tab o cambiar fecha; el corte es un reporte, no necesita polling
     enabled: tab === "corte",
-    staleTime: 0,
-    refetchInterval: tab === "corte" ? 30_000 : false,
+    staleTime: 2 * 60 * 1000,
   });
 
   // ── Cobro derived data ────────────────────────────────────────────────────

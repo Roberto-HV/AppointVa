@@ -530,8 +530,8 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
     queryKey: ["mis-citas-proximas"],
     queryFn: () => citasApi.obtenerTodas({ desde: manana }),
     select: (p) => p.datos,
-    staleTime: 0,
-    refetchInterval: 30_000,
+    staleTime: 2 * 60 * 1000,
+    refetchInterval: 2 * 60 * 1000,
   });
 
   const { data: citasSemana = [] } = useQuery({
