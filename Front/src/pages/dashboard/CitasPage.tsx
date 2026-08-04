@@ -347,12 +347,15 @@ export default function CitasPage() {
   const whatsappUrl = (c: CitaDto) => {
     const tel = c.telefonoCliente.replace(/\D/g, "");
     const negocio = nombreNegocio ? ` en *${nombreNegocio}*` : "";
+    const baseUrl = window.location.origin;
     const msg =
       `Hola ${c.nombreCliente} 👋, te recordamos tu cita${negocio}:\n\n` +
       `📌 *Servicio:* ${c.nombreServicio}\n` +
       `👤 *Con:* ${c.nombreEmpleado}\n` +
       `📅 *Fecha:* ${formatFechaHora(c.inicioEn)}\n` +
-      `💰 *Total:* ${formatPrecio(c.precio)}\n\n` +
+      `💰 *Total:* ${formatPrecio(c.precio)}\n` +
+      `🔖 *Código:* ${c.codigoConfirmacion}\n\n` +
+      `🔗 Ver tu cita: ${baseUrl}/cita/${c.codigoConfirmacion}\n\n` +
       `¡Te esperamos!`;
     return `https://wa.me/${tel}?text=${encodeURIComponent(msg)}`;
   };

@@ -6,8 +6,9 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
 import { CheckCircle2, Circle, X, Scissors, Users, CalendarDays, BarChart2, UserCheck, ChevronRight, Clock, TrendingUp, Store, Images, ExternalLink } from "lucide-react";
+import { SiWhatsapp } from "react-icons/si";
 import { clientesApi } from "../../api/clientes";
-import type { ClienteCitaDto } from "../../types";
+import type { CitaDto, ClienteCitaDto } from "../../types";
 import { NotificacionBanner } from "../../components/ui/NotificacionBanner";
 import { dashboardApi } from "../../api/dashboard";
 import { citasApi } from "../../api/citas";
@@ -134,6 +135,7 @@ function WizardOnboarding({ negocioId, slug, tieneServicios, tieneHorarios, tien
 function VistaPropietario({ nombre }: { nombre: string }) {
   const [dias, setDias] = useState(14);
   const usuario = useAuthStore((s) => s.usuario);
+  const hoy = new Date().toISOString().slice(0, 10);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["dashboard-resumen"],
@@ -170,6 +172,28 @@ function VistaPropietario({ nombre }: { nombre: string }) {
     queryFn: negociosApi.obtenerGaleria,
     staleTime: 1000 * 60 * 10,
   });
+
+  const { data: citasDeHoy = [], isLoading: cargandoAgenda } = useQuery({
+    queryKey: ["citas-agenda-hoy", hoy],
+    queryFn: () => citasApi.obtenerTodas({ desde: hoy, hasta: hoy, tamano: 100 }),
+    select: (p) => [...p.datos].sort((a, b) => new Date(a.inicioEn).getTime() - new Date(b.inicioEn).getTime()),
+    staleTime: 0,
+    refetchInterval: 30_000,
+  });
+
+  const whatsappHoy = (c: CitaDto) => {
+    const tel = c.telefonoCliente.replace(/\D/g, "");
+    const negocioText = negocio?.nombre ? ` en *${negocio.nombre}*` : "";
+    const msg =
+      `Hola ${c.nombreCliente} 👋, te recordamos tu cita${negocioText}:\n\n` +
+      `📌 *Servicio:* ${c.nombreServicio}\n` +
+      `👤 *Con:* ${c.nombreEmpleado}\n` +
+      `📅 *Fecha:* ${formatFechaHora(c.inicioEn)}\n` +
+      `💰 *Total:* ${formatPrecio(c.precio)}\n` +
+      `🔖 *Código:* ${c.codigoConfirmacion}\n\n` +
+      `¡Te esperamos!`;
+    return `https://wa.me/${tel}?text=${encodeURIComponent(msg)}`;
+  };
 
   return (
     <div className="p-4 sm:p-8">
@@ -374,6 +398,58 @@ function VistaPropietario({ nombre }: { nombre: string }) {
               </div>
             );
           })()}
+
+          {/* Agenda de hoy */}
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-5 mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-bold text-slate-800 dark:text-gray-200">Agenda de hoy</h2>
+              <span className="text-xs text-slate-400 capitalize">
+                {new Date().toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" })}
+              </span>
+            </div>
+            {cargandoAgenda ? (
+              <div className="space-y-2">
+                {[1, 2, 3].map((i) => <Skeleton key={i} className="h-14 rounded-xl" />)}
+              </div>
+            ) : citasDeHoy.length === 0 ? (
+              <p className="text-sm text-slate-400 text-center py-8">Sin citas para hoy</p>
+            ) : (
+              <div className="space-y-1.5">
+                {citasDeHoy.map((c) => {
+                  const hora = new Date(c.inicioEn).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", hour12: true });
+                  const isPast = new Date(c.finEn) < new Date();
+                  return (
+                    <div
+                      key={c.id}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition ${
+                        isPast
+                          ? "opacity-40"
+                          : "bg-slate-50 dark:bg-slate-700/40 hover:bg-slate-100 dark:hover:bg-slate-700/60"
+                      }`}
+                    >
+                      <span className="text-xs font-mono font-bold text-slate-500 dark:text-slate-400 w-16 shrink-0">{hora}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-slate-800 dark:text-gray-200 truncate">{c.nombreCliente}</p>
+                        <p className="text-xs text-slate-400 truncate">{c.nombreServicio} · {c.nombreEmpleado}</p>
+                      </div>
+                      <EstadoBadge estado={c.estadoTexto} />
+                      {c.telefonoCliente && (
+                        <a
+                          href={whatsappHoy(c)}
+                          target="_blank"
+                          rel="noreferrer"
+                          aria-label={`Recordatorio WhatsApp a ${c.nombreCliente}`}
+                          className="shrink-0 inline-flex items-center justify-center w-7 h-7 rounded-lg bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] transition"
+                        >
+                          <SiWhatsapp size={14} />
+                        </a>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
