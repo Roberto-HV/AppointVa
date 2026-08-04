@@ -344,6 +344,20 @@ export default function CitasPage() {
   }, {});
 
   // ── WhatsApp ─────────────────────────────────────────────────────────────────
+  const resenaUrl = (c: CitaDto) => {
+    const tel = c.telefonoCliente.replace(/\D/g, "");
+    const negocioTxt = nombreNegocio ? `*${nombreNegocio}*` : "nuestro negocio";
+    const link = perfil?.slug ? `${window.location.origin}/b/${perfil.slug}` : window.location.origin;
+    const nombre = c.nombreCliente.split(" ")[0];
+    const msg =
+      `Hola ${nombre} 😊, fue un placer atenderte en ${negocioTxt}.\n\n` +
+      `Tu opinión nos ayuda a mejorar y a que más personas conozcan nuestro trabajo. ` +
+      `¿Podrías dejarnos una reseña?\n\n` +
+      `👉 ${link}\n\n` +
+      `¡Muchas gracias! 🌟`;
+    return `https://wa.me/${tel}?text=${encodeURIComponent(msg)}`;
+  };
+
   const whatsappUrl = (c: CitaDto) => {
     const tel = c.telefonoCliente.replace(/\D/g, "");
     const negocio = nombreNegocio ? ` en *${nombreNegocio}*` : "";
@@ -688,6 +702,20 @@ export default function CitasPage() {
                             <SiWhatsapp size={14} />
                           </a>
                         </Tooltip>
+                        {/* Solicitar reseña — solo citas completadas */}
+                        {c.estadoTexto === "Completada" && c.telefonoCliente && (
+                          <Tooltip text="Solicitar reseña al cliente por WhatsApp">
+                            <a
+                              href={resenaUrl(c)}
+                              target="_blank"
+                              rel="noreferrer"
+                              aria-label={`Solicitar reseña a ${c.nombreCliente}`}
+                              className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-500 transition text-sm"
+                            >
+                              ⭐
+                            </a>
+                          </Tooltip>
+                        )}
                         <Tooltip text={c.notas ? "Ver o editar notas internas" : "Agregar una nota interna"}>
                           <button
                             onClick={() => abrirNotas(c)}

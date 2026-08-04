@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { clientesApi } from "../../api/clientes";
+import { negociosApi } from "../../api/negocios";
 import Modal from "../../components/ui/Modal";
 import EstadoBadge from "../../components/ui/EstadoBadge";
 import { exportarExcel } from "../../utils/exportarExcel";
@@ -9,24 +10,66 @@ import type { ClienteDto } from "../../types";
 import { formatPrecio, formatFecha, formatFechaHora } from "../../utils/formatters";
 import Pagination from "../../components/ui/Pagination";
 import { useToastStore } from "../../store/toastStore";
+import { SiWhatsapp } from "react-icons/si";
+import { UserX } from "lucide-react";
 
+type TabClientes = "todos" | "inactivos";
 const TAMANO = 30;
+const OPCIONES_DIAS = [30, 60, 90, 180] as const;
 
 export default function ClientesPage() {
   const qc = useQueryClient();
   const { toast } = useToastStore();
   const [searchParams, setSearchParams] = useSearchParams();
+  const [tab, setTab] = useState<TabClientes>("todos");
   const [buscar, setBuscar] = useState("");
   const [buscarActivo, setBuscarActivo] = useState("");
   const [pagina, setPagina] = useState(1);
   const [clienteSel, setClienteSel] = useState<ClienteDto | null>(null);
   const [notas, setNotas] = useState("");
   const [notasGuardadas, setNotasGuardadas] = useState(false);
+  const [diasInactivo, setDiasInactivo] = useState<typeof OPCIONES_DIAS[number]>(60);
 
   const { data: paginaClientes, isLoading } = useQuery({
     queryKey: ["clientes", buscarActivo, pagina],
     queryFn: () => clientesApi.obtenerTodos(buscarActivo || undefined, pagina, TAMANO),
   });
+
+  const { data: negocio } = useQuery({
+    queryKey: ["negocio-perfil"],
+    queryFn: negociosApi.obtenerPerfil,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: todosParaInactivos = [], isLoading: cargandoInactivos } = useQuery({
+    queryKey: ["clientes-inactivos-base"],
+    queryFn: () => clientesApi.obtenerTodos(undefined, 1, 500),
+    enabled: tab === "inactivos",
+    staleTime: 2 * 60 * 1000,
+    select: (p) => p.datos,
+  });
+
+  const ahora = useMemo(() => new Date(), []);
+
+  const clientesInactivos = useMemo(() => {
+    const umbral = new Date(ahora.getTime() - diasInactivo * 24 * 60 * 60 * 1000);
+    return todosParaInactivos
+      .filter((c) => c.ultimaCitaEn && new Date(c.ultimaCitaEn) < umbral)
+      .sort((a, b) => new Date(a.ultimaCitaEn!).getTime() - new Date(b.ultimaCitaEn!).getTime());
+  }, [todosParaInactivos, diasInactivo, ahora]);
+
+  const whatsappReactivacion = (c: ClienteDto) => {
+    const tel = c.telefono.replace(/\D/g, "");
+    const negocioNombre = negocio?.nombre ?? "nosotros";
+    const link = negocio?.slug ? `${window.location.origin}/b/${negocio.slug}` : "";
+    const dias = Math.floor((ahora.getTime() - new Date(c.ultimaCitaEn!).getTime()) / (1000 * 60 * 60 * 24));
+    const nombre = c.nombreCompleto.split(" ")[0];
+    const msg =
+      `Hola ${nombre} 👋, hace ${dias} días que no te vemos en *${negocioNombre}*.\n\n` +
+      `¡Nos encantaría verte de nuevo! Reserva tu próxima cita fácilmente aquí:\n${link}\n\n` +
+      `¡Te esperamos! 😊`;
+    return `https://wa.me/${tel}?text=${encodeURIComponent(msg)}`;
+  };
 
   // Auto-abrir detalle si viene clienteId en la URL (e.g. desde CitasPage)
   const clienteIdParam = searchParams.get("clienteId");
@@ -90,7 +133,7 @@ export default function ClientesPage() {
     <div className="p-4 sm:p-8">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Clientes</h1>
-        {clientes.length > 0 && (
+        {tab === "todos" && clientes.length > 0 && (
           <button
             onClick={exportarClientes}
             className="text-xs text-gray-500 hover:text-gray-700 border border-gray-200 hover:border-gray-300 px-3 py-1.5 rounded-lg transition dark:text-gray-400 dark:border-slate-600"
@@ -100,6 +143,112 @@ export default function ClientesPage() {
         )}
       </div>
 
+      {/* Tabs */}
+      <div className="flex bg-gray-100 dark:bg-slate-700 rounded-lg p-1 gap-1 mb-6">
+        {([["todos", "Todos"], ["inactivos", "Inactivos"]] as [TabClientes, string][]).map(([key, label]) => (
+          <button
+            key={key}
+            onClick={() => setTab(key)}
+            className={`flex-1 py-1.5 text-sm font-medium rounded-md transition ${
+              tab === key
+                ? "bg-white dark:bg-slate-800 text-gray-800 dark:text-gray-200 shadow-sm"
+                : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Tab: Inactivos ── */}
+      {tab === "inactivos" && (
+        <div className="space-y-5">
+          {/* Selector de días */}
+          <div className="flex items-center gap-3 flex-wrap">
+            <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">Sin visitar en:</span>
+            <div className="flex gap-1">
+              {OPCIONES_DIAS.map((d) => (
+                <button
+                  key={d}
+                  onClick={() => setDiasInactivo(d)}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-md border transition ${
+                    diasInactivo === d
+                      ? "bg-slate-700 text-white border-slate-700"
+                      : "bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-600 text-gray-600 dark:text-gray-400 hover:border-slate-400"
+                  }`}
+                >
+                  {d} días
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {cargandoInactivos ? (
+            <div className="space-y-2">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="h-16 bg-gray-100 dark:bg-slate-800 rounded-xl animate-pulse" />
+              ))}
+            </div>
+          ) : clientesInactivos.length === 0 ? (
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-12 text-center">
+              <UserX size={36} className="mx-auto mb-3 text-gray-300 dark:text-slate-600" />
+              <p className="font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Sin clientes inactivos
+              </p>
+              <p className="text-sm text-gray-400 dark:text-gray-500">
+                Todos tus clientes han visitado en los últimos {diasInactivo} días
+              </p>
+            </div>
+          ) : (
+            <>
+              <p className="text-xs text-gray-400 dark:text-gray-500">
+                {clientesInactivos.length} cliente{clientesInactivos.length !== 1 ? "s" : ""} sin visitar en más de {diasInactivo} días
+              </p>
+              <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 divide-y divide-gray-50 dark:divide-slate-700">
+                {clientesInactivos.map((c) => {
+                  const dias = Math.floor(
+                    (ahora.getTime() - new Date(c.ultimaCitaEn!).getTime()) / (1000 * 60 * 60 * 24)
+                  );
+                  return (
+                    <div key={c.id} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition">
+                      <div className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center shrink-0">
+                        <span className="text-sm font-bold text-slate-600 dark:text-slate-300">
+                          {c.nombreCompleto.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{c.nombreCompleto}</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500">
+                          {c.telefono} · {c.totalCitas} cita{c.totalCitas !== 1 ? "s" : ""}
+                        </p>
+                      </div>
+                      <div className="text-right shrink-0 mr-2">
+                        <p className="text-sm font-bold text-amber-500">{dias} días</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500">sin visitar</p>
+                      </div>
+                      {c.telefono && (
+                        <a
+                          href={whatsappReactivacion(c)}
+                          target="_blank"
+                          rel="noreferrer"
+                          title={`Enviar mensaje de reactivación a ${c.nombreCompleto}`}
+                          className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] text-xs font-semibold rounded-lg transition"
+                        >
+                          <SiWhatsapp size={13} />
+                          Reactivar
+                        </a>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ── Tab: Todos ── */}
+      {tab === "todos" && (<>
       {/* Buscador */}
       <div className="flex gap-2 mb-6">
         <input
@@ -227,6 +376,8 @@ export default function ClientesPage() {
           </div>
         </>
       )}
+
+      </>)}
 
       {/* Modal detalle cliente */}
       <Modal

@@ -470,25 +470,34 @@ export default function ReportesPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-100 dark:border-slate-700">
+                      <th className="px-3 py-3 w-8"></th>
                       <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Empleado</th>
                       <th className="px-5 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Citas</th>
                       <th className="px-5 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Ingresos</th>
-                      <th className="px-5 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Ticket promedio</th>
+                      <th className="px-5 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide hidden sm:table-cell">Ticket prom.</th>
                       <th className="px-5 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">% del total</th>
                     </tr>
                   </thead>
                   <tbody>
                     {(() => {
                       const totalEquipoIngresos = reporteIngresos.porEmpleado.reduce((s, e) => s + e.totalIngresos, 0);
+                      const ticketPromedioEquipo = reporteIngresos.porEmpleado.reduce((s, e) => s + e.totalCitas, 0) > 0
+                        ? totalEquipoIngresos / reporteIngresos.porEmpleado.reduce((s, e) => s + e.totalCitas, 0)
+                        : 0;
+                      const MEDALLAS = ["🥇", "🥈", "🥉"];
                       return reporteIngresos.porEmpleado
                         .slice()
                         .sort((a, b) => b.totalIngresos - a.totalIngresos)
                         .map((e, i) => {
                           const ticket = e.totalCitas > 0 ? e.totalIngresos / e.totalCitas : 0;
                           const pct = totalEquipoIngresos > 0 ? (e.totalIngresos / totalEquipoIngresos) * 100 : 0;
+                          const vsPromedio = ticketPromedioEquipo > 0 ? ((ticket - ticketPromedioEquipo) / ticketPromedioEquipo) * 100 : 0;
                           const iniciales = e.nombreEmpleado.split(" ").slice(0, 2).map((p) => p[0]).join("").toUpperCase();
                           return (
-                            <tr key={e.empleadoId} className="border-b border-gray-50 dark:border-slate-700 last:border-0 hover:bg-gray-50 dark:hover:bg-slate-700 transition">
+                            <tr key={e.empleadoId} className={`border-b border-gray-50 dark:border-slate-700 last:border-0 hover:bg-gray-50 dark:hover:bg-slate-700 transition ${i === 0 ? "bg-amber-50/40 dark:bg-amber-900/10" : ""}`}>
+                              <td className="px-3 py-3 text-center text-base">
+                                {i < 3 ? MEDALLAS[i] : <span className="text-xs text-gray-400">#{i + 1}</span>}
+                              </td>
                               <td className="px-5 py-3">
                                 <div className="flex items-center gap-3">
                                   <div
@@ -502,7 +511,16 @@ export default function ReportesPage() {
                               </td>
                               <td className="px-5 py-3 text-right text-gray-600 dark:text-gray-400">{e.totalCitas}</td>
                               <td className="px-5 py-3 text-right font-semibold text-gray-900 dark:text-gray-100">{formatPrecio(e.totalIngresos)}</td>
-                              <td className="px-5 py-3 text-right text-gray-600 dark:text-gray-400">{formatPrecio(ticket)}</td>
+                              <td className="px-5 py-3 text-right hidden sm:table-cell">
+                                <div>
+                                  <span className="text-gray-600 dark:text-gray-400">{formatPrecio(ticket)}</span>
+                                  {ticketPromedioEquipo > 0 && (
+                                    <span className={`ml-1.5 text-xs font-semibold ${vsPromedio >= 0 ? "text-emerald-500" : "text-red-400"}`}>
+                                      {vsPromedio >= 0 ? "↑" : "↓"}{Math.abs(vsPromedio).toFixed(0)}%
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
                               <td className="px-5 py-3 text-right">
                                 <div className="flex items-center justify-end gap-2">
                                   <div className="w-16 h-1.5 bg-gray-100 dark:bg-slate-600 rounded-full overflow-hidden">
@@ -511,7 +529,7 @@ export default function ReportesPage() {
                                       style={{ width: `${pct}%`, backgroundColor: COLORES_GRAFICA[i % COLORES_GRAFICA.length] }}
                                     />
                                   </div>
-                                  <span className="text-xs text-gray-500 dark:text-gray-400 w-10 text-right">{pct.toFixed(1)}%</span>
+                                  <span className="text-xs text-gray-500 dark:text-gray-400 w-10 text-right tabular-nums">{pct.toFixed(1)}%</span>
                                 </div>
                               </td>
                             </tr>
