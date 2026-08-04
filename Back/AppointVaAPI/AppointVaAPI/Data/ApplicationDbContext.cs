@@ -32,6 +32,7 @@ namespace AppointVaAPI.Data
         public DbSet<AuditLog> AuditLogs { get; set; }
         public DbSet<PagoSuscripcion> PagosSuscripcion { get; set; }
         public DbSet<PushSuscripcion> PushSuscripciones { get; set; }
+        public DbSet<CierreCaja> CierresCaja { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -292,6 +293,24 @@ namespace AppointVaAPI.Data
                 p.Property(x => x.Monto).HasPrecision(10, 2);
                 p.HasIndex(x => x.NegocioId);
                 p.HasIndex(x => x.FechaPago);
+            });
+
+            modelBuilder.Entity<CierreCaja>(e =>
+            {
+                e.HasOne(x => x.Negocio)
+                 .WithMany()
+                 .HasForeignKey(x => x.NegocioId)
+                 .OnDelete(DeleteBehavior.Cascade);
+
+                e.HasOne(x => x.CerradoPor)
+                 .WithMany()
+                 .HasForeignKey(x => x.CerradoPorId)
+                 .OnDelete(DeleteBehavior.SetNull);
+
+                e.HasIndex(x => new { x.NegocioId, x.Fecha }).IsUnique();
+
+                e.Property(x => x.EfectivoInicial).HasPrecision(10, 2);
+                e.Property(x => x.EfectivoContado).HasPrecision(10, 2);
             });
         }
     }
