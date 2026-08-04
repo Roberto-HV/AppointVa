@@ -36,7 +36,7 @@ public class CierreCajaController : ControllerBase
         var fechaUtc = fechaDate.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
 
         var cierre = await _db.CierresCaja
-            .FirstOrDefaultAsync(c => c.NegocioId == negocioId && c.Fecha.Date == fechaUtc.Date);
+            .FirstOrDefaultAsync(c => c.NegocioId == negocioId && c.Fecha == fechaUtc);
 
         var efectivoCobrado = await ComputarEfectivoCobradoAsync(negocioId, fechaUtc);
 
@@ -64,7 +64,7 @@ public class CierreCajaController : ControllerBase
         var fechaUtc = fechaDate.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
 
         var cierre = await _db.CierresCaja
-            .FirstOrDefaultAsync(c => c.NegocioId == negocioId && c.Fecha.Date == fechaUtc.Date);
+            .FirstOrDefaultAsync(c => c.NegocioId == negocioId && c.Fecha == fechaUtc);
 
         var retirosJson = JsonSerializer.Serialize(dto.Retiros);
 
@@ -108,7 +108,8 @@ public class CierreCajaController : ControllerBase
                 c.NegocioId == negocioId &&
                 c.Pagada &&
                 c.FechaPago.HasValue &&
-                c.FechaPago.Value.Date == fecha.Date)
+                c.FechaPago.Value >= fecha &&
+                c.FechaPago.Value < fecha.AddDays(1))
             .ToListAsync();
 
         return citas.Sum(c =>

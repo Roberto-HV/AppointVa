@@ -61,7 +61,7 @@ namespace AppointVaAPI.Controllers.V1
                 TotalCanceladas     = citas.Count(c => c.Estado == EstadosCitas.Cancelada),
                 TotalPendientes     = citas.Count(c => c.Estado == EstadosCitas.Pendiente || c.Estado == EstadosCitas.Confirmada),
                 TotalInasistencias  = citas.Count(c => c.Estado == EstadosCitas.Inasistencia),
-                TotalIngresos       = completadas.Sum(c => c.Precio),
+                TotalIngresos       = completadas.Sum(c => c.MontoCobrado ?? c.Precio),
                 TotalIngresosEfectivo = completadas
                     .Where(c => c.Pagada && (
                         string.Equals(c.MetodoPago, "Efectivo", StringComparison.OrdinalIgnoreCase) ||
