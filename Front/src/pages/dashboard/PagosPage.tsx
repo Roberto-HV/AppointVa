@@ -190,7 +190,7 @@ export default function PagosPage() {
       cantidad: todas.filter(c => c.pagada && c.metodoPago === m).length,
       monto: desglose[m] ?? 0,
     }))
-    .filter(d => d.cantidad > 0);
+    .filter(d => d.monto > 0);
 
   const citasFiltradas = useMemo(() => {
     let lista = todas;
