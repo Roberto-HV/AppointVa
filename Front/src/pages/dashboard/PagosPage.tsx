@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   CreditCard, Clock, CheckCircle2, Circle, Banknote, Building2,
@@ -94,6 +94,12 @@ export default function PagosPage() {
 
   // ── Corte tab state ───────────────────────────────────────────────────────
   const [corteDate, setCorteDate] = useState(hoy);
+
+  // ── Sync metodoPago2 when metodoPago changes ───────────────────────────────
+  useEffect(() => {
+    const primera = METODOS_PAGO.find(m => m !== metodoPago) ?? 'Tarjeta';
+    setMetodoPago2(primera);
+  }, [metodoPago]);
 
   const periodoActivo = PERIODOS.find((p) => p.key === periodo)!;
 
