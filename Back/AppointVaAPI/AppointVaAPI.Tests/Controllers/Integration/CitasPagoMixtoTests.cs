@@ -118,6 +118,26 @@ public class CitasPagoMixtoTests : IntegrationTestBase
     }
 
     [Fact]
+    public async Task MarcarPago_MontoPago2MayorOIgual_Retorna400()
+    {
+        var citaId = await SeedCitaAsync();
+
+        var dto = new MarcarPagoDto
+        {
+            Pagada        = true,
+            MetodoPago    = "Efectivo",
+            MontoCobrado  = 200m,
+            MontoRecibido = 200m,
+            Cambio        = 0m,
+            MetodoPago2   = "Tarjeta",
+            MontoPago2    = 200m  // equal to MontoCobrado — must be rejected
+        };
+
+        var response = await Client.PatchAsJsonAsync($"api/citas/{citaId}/pago", dto);
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
     public async Task MarcarPago_SinPago_LimpiaCamposMixtos()
     {
         var citaId = await SeedCitaAsync();

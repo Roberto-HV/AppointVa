@@ -334,6 +334,10 @@ namespace AppointVaAPI.Controllers.V1
                     return StatusCode(403, new { mensaje = "Solo puedes registrar pagos de tus propias citas" });
             }
 
+            if (dto.Pagada && dto.MontoPago2.HasValue && dto.MontoCobrado.HasValue
+                && dto.MontoPago2 >= dto.MontoCobrado)
+                return BadRequest("MontoPago2 debe ser menor que MontoCobrado.");
+
             cita.Pagada        = dto.Pagada;
             cita.MetodoPago    = dto.Pagada ? dto.MetodoPago    : null;
             cita.MetodoPago2   = dto.Pagada ? dto.MetodoPago2   : null;

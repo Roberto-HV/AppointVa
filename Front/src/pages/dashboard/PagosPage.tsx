@@ -60,8 +60,8 @@ function montoParaMetodo(cita: CitaDto, metodo: string): number {
   const m2 = cita.montoPago2 ?? 0;
   const m1 = total - m2;
   let result = 0;
-  if (String(cita.metodoPago).toLowerCase() === metodo.toLowerCase()) result += m1;
-  if (String(cita.metodoPago2).toLowerCase() === metodo.toLowerCase()) result += m2;
+  if ((cita.metodoPago?.toLowerCase() ?? '') === metodo.toLowerCase()) result += m1;
+  if ((cita.metodoPago2?.toLowerCase() ?? '') === metodo.toLowerCase()) result += m2;
   return result;
 }
 
@@ -179,8 +179,8 @@ export default function PagosPage() {
   const totalCitas     = todas.length;
 
   const desglose = METODOS_PAGO.reduce<Record<string, number>>((acc, m) => {
-    acc[m] = todas.filter(c => c.pagada && c.metodoPago === m)
-      .reduce((s, c) => s + (c.montoCobrado ?? c.precio), 0);
+    acc[m] = todas.filter(c => c.pagada)
+      .reduce((s, c) => s + montoParaMetodo(c, m), 0);
     return acc;
   }, {});
 
