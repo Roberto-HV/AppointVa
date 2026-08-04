@@ -128,6 +128,14 @@ export default function PagosPage() {
     return acc;
   }, {});
 
+  const cobroDesglose = METODOS_PAGO
+    .map(m => ({
+      metodo: m,
+      cantidad: todas.filter(c => c.pagada && c.metodoPago === m).length,
+      monto: desglose[m] ?? 0,
+    }))
+    .filter(d => d.cantidad > 0);
+
   const citasFiltradas = useMemo(() => {
     let lista = todas;
     if (filtroPago === "pendientes") lista = lista.filter(c => !c.pagada);
@@ -155,6 +163,16 @@ export default function PagosPage() {
     return acc;
   }, {});
 
+  const histDesgloseArr = METODOS_PAGO
+    .map(m => ({
+      metodo: m,
+      cantidad: histFiltrado.filter(c => c.metodoPago === m).length,
+      monto: histDesglose[m] ?? 0,
+    }))
+    .filter(d => d.cantidad > 0);
+
+  const histPromedio = histFiltrado.length > 0 ? histTotalCobrado / histFiltrado.length : 0;
+
   // ── Corte derived data ────────────────────────────────────────────────────
   const corteTotalCobrado  = corteData.reduce((s, c) => s + (c.montoCobrado ?? c.precio), 0);
   const corteTotalPropinas = corteData.reduce((s, c) => s + (c.propina ?? 0), 0);
@@ -177,6 +195,8 @@ export default function PagosPage() {
       return acc;
     }, {})
   ).sort((a, b) => b.monto - a.monto);
+
+  const cortePromedio = corteData.length > 0 ? corteTotalCobrado / corteData.length : 0;
 
   const handleImprimirCorte = () => {
     const fechaLegible = new Date(corteDate + "T12:00:00").toLocaleDateString("es-MX", {
@@ -382,22 +402,25 @@ export default function PagosPage() {
             </div>
           )}
 
-          {/* Desglose por método */}
-          {!cobroLoading && citasPagadas > 0 && (
-            <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl p-4">
-              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Desglose por método</p>
-              <div className="flex flex-wrap gap-4">
-                {METODOS_PAGO.map(m => (
-                  desglose[m] > 0 && (
-                    <div key={m} className="flex items-center gap-2 text-sm">
-                      <span className="text-gray-400 dark:text-gray-500">{METODO_ICONO[m]}</span>
-                      <span className="text-gray-600 dark:text-gray-400">{m}</span>
-                      <span className="font-semibold text-gray-800 dark:text-gray-200">${desglose[m].toFixed(2)}</span>
-                    </div>
-                  )
-                ))}
+          {/* Payment progress + desglose */}
+          {!cobroLoading && totalCitas > 0 && (
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-3">
+                <div className="flex-1 bg-gray-100 dark:bg-slate-700 rounded-full h-1.5">
+                  <div
+                    className="bg-emerald-500 h-1.5 rounded-full transition-all duration-500"
+                    style={{ width: `${totalCitas > 0 ? Math.round((citasPagadas / totalCitas) * 100) : 0}%` }}
+                  />
+                </div>
+                <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0 font-medium">
+                  {citasPagadas}/{totalCitas} cobradas
+                </span>
               </div>
             </div>
+          )}
+
+          {!cobroLoading && cobroDesglose.length > 0 && (
+            <DesglosePorMetodo titulo="Desglose por método" data={cobroDesglose} total={totalCobrado} />
           )}
 
           {/* Filtros */}
@@ -533,12 +556,18 @@ export default function PagosPage() {
 
           {/* KPIs historial */}
           {!histLoading && histFiltrado.length > 0 && (
-            <div className="grid grid-cols-3 gap-4">
-              <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl p-4">
-                <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-1">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="bg-slate-800 rounded-xl p-4">
+                <div className="flex items-center gap-2 text-xs text-slate-400 mb-1">
                   <TrendingUp size={14} /> Total cobrado
                 </div>
-                <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400">${histTotalCobrado.toFixed(2)}</p>
+                <p className="text-xl font-bold text-white">${histTotalCobrado.toFixed(2)}</p>
+              </div>
+              <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl p-4">
+                <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-1">
+                  <CheckCircle2 size={14} /> Pagos
+                </div>
+                <p className="text-xl font-bold text-slate-700 dark:text-slate-200">{histFiltrado.length}</p>
               </div>
               <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl p-4">
                 <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-1">
@@ -548,29 +577,15 @@ export default function PagosPage() {
               </div>
               <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl p-4">
                 <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-1">
-                  <CheckCircle2 size={14} /> Pagos
+                  <CreditCard size={14} /> Promedio/cita
                 </div>
-                <p className="text-xl font-bold text-slate-700 dark:text-slate-200">{histFiltrado.length}</p>
+                <p className="text-xl font-bold text-slate-700 dark:text-slate-200">${histPromedio.toFixed(2)}</p>
               </div>
             </div>
           )}
 
-          {/* Desglose historial */}
-          {!histLoading && histFiltrado.length > 0 && (
-            <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl p-4">
-              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Desglose por método</p>
-              <div className="flex flex-wrap gap-4">
-                {METODOS_PAGO.map(m => (
-                  histDesglose[m] > 0 && (
-                    <div key={m} className="flex items-center gap-2 text-sm">
-                      <span className="text-gray-400 dark:text-gray-500">{METODO_ICONO[m]}</span>
-                      <span className="text-gray-600 dark:text-gray-400">{m}</span>
-                      <span className="font-semibold text-gray-800 dark:text-gray-200">${histDesglose[m].toFixed(2)}</span>
-                    </div>
-                  )
-                ))}
-              </div>
-            </div>
+          {!histLoading && histDesgloseArr.length > 0 && (
+            <DesglosePorMetodo titulo="Desglose por método" data={histDesgloseArr} total={histTotalCobrado} />
           )}
 
           {/* Tabla historial */}
@@ -661,7 +676,7 @@ export default function PagosPage() {
           ) : (
             <>
               {/* KPI cards */}
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl p-4">
                   <p className="text-xs text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1.5"><CheckCircle2 size={13} /> Citas atendidas</p>
                   <p className="text-2xl font-black text-slate-800 dark:text-gray-100">{corteData.length}</p>
@@ -674,36 +689,13 @@ export default function PagosPage() {
                   <p className="text-xs text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1.5"><CreditCard size={13} /> Propinas</p>
                   <p className="text-2xl font-black text-teal-600 dark:text-teal-400">${corteTotalPropinas.toFixed(2)}</p>
                 </div>
-              </div>
-
-              {/* Desglose por método */}
-              <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl p-5">
-                <h3 className="text-sm font-bold text-gray-700 dark:text-gray-200 mb-4">Desglose por método de pago</h3>
-                <div className="space-y-3">
-                  {corteDesglose.map(d => (
-                    <div key={d.metodo} className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-slate-50 dark:bg-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 shrink-0">
-                        {METODO_ICONO_LG[d.metodo] ?? <CreditCard size={20} strokeWidth={1.5} />}
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex justify-between items-center mb-1">
-                          <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{d.metodo}</span>
-                          <span className="text-sm font-bold text-gray-800 dark:text-gray-100">${d.monto.toFixed(2)}</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1 bg-gray-100 dark:bg-slate-700 rounded-full h-1.5 mr-3">
-                            <div
-                              className="bg-slate-700 dark:bg-slate-400 h-1.5 rounded-full"
-                              style={{ width: `${Math.round((d.monto / corteTotalCobrado) * 100)}%` }}
-                            />
-                          </div>
-                          <span className="text-xs text-gray-400 shrink-0">{d.cantidad} cita{d.cantidad !== 1 ? "s" : ""} · {Math.round((d.monto / corteTotalCobrado) * 100)}%</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl p-4">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1.5"><Receipt size={13} /> Promedio/cita</p>
+                  <p className="text-2xl font-black text-slate-700 dark:text-slate-200">${cortePromedio.toFixed(2)}</p>
                 </div>
               </div>
+
+              <DesglosePorMetodo titulo="Desglose por método de pago" data={corteDesglose} total={corteTotalCobrado} />
 
               {/* Por empleado */}
               {cortePorEmpleado.length > 0 && (
@@ -850,6 +842,51 @@ export default function PagosPage() {
           />
         )}
       </Modal>
+    </div>
+  );
+}
+
+/* ── DesglosePorMetodo ─────────────────────────────────────────────────── */
+function DesglosePorMetodo({
+  titulo, data, total,
+}: {
+  titulo: string;
+  data: { metodo: string; monto: number; cantidad: number }[];
+  total: number;
+}) {
+  if (data.length === 0) return null;
+  return (
+    <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl p-5">
+      <h3 className="text-sm font-bold text-gray-700 dark:text-gray-200 mb-4">{titulo}</h3>
+      <div className="space-y-3">
+        {data.map(d => {
+          const pct = total > 0 ? Math.round((d.monto / total) * 100) : 0;
+          return (
+            <div key={d.metodo} className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-slate-50 dark:bg-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 shrink-0">
+                {METODO_ICONO_LG[d.metodo] ?? <CreditCard size={20} strokeWidth={1.5} />}
+              </div>
+              <div className="flex-1">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{d.metodo}</span>
+                  <span className="text-sm font-bold text-gray-800 dark:text-gray-100">${d.monto.toFixed(2)}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 bg-gray-100 dark:bg-slate-700 rounded-full h-1.5">
+                    <div
+                      className="bg-slate-700 dark:bg-slate-400 h-1.5 rounded-full transition-all duration-500"
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                  <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0 tabular-nums">
+                    {d.cantidad} cita{d.cantidad !== 1 ? "s" : ""} · {pct}%
+                  </span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
