@@ -290,12 +290,13 @@ if (app.Environment.IsDevelopment())
 }
 
 // Hangfire dashboard — protegido con cookie validada por HangfireAuthorizationFilter
-app.UseHangfireDashboard("/hangfire", new DashboardOptions
-{
-    Authorization = [new HangfireAuthorizationFilter(app.Configuration)],
-    DashboardTitle = "AppointVa — Jobs",
-    IsReadOnlyFunc = _ => false,
-});
+if (!app.Environment.IsEnvironment("Testing"))
+    app.UseHangfireDashboard("/hangfire", new DashboardOptions
+    {
+        Authorization = [new HangfireAuthorizationFilter(app.Configuration)],
+        DashboardTitle = "AppointVa — Jobs",
+        IsReadOnlyFunc = _ => false,
+    });
 
 // Endpoint que valida el JWT, pone la cookie y redirige al dashboard
 app.MapGet("/hangfire-session", (HttpContext ctx, IConfiguration config) =>
