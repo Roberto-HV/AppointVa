@@ -437,7 +437,7 @@ namespace AppointVaAPI.Controllers.V1
                 GoogleCalUrl = googleCalUrl,
                 HorasCancelacion = cita.Negocio?.HorasCancelacion ?? 0,
                 RequiereAnticipo = cita.Negocio?.RequiereAnticipo ?? false,
-                MontoAnticipo = cita.Negocio?.MontoAnticipo ?? 0,
+                MontoAnticipo = cita.MontoAnticipo,
                 InstruccionesAnticipo = cita.Negocio?.InstruccionesAnticipo,
                 PorcentajeAnticipo = cita.Negocio?.PorcentajeAnticipo ?? 0,
                 PoliticaCancelacionAnticipo = cita.Negocio?.PoliticaCancelacionAnticipo ?? string.Empty,

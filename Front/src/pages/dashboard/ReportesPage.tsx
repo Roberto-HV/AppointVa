@@ -187,7 +187,7 @@ export default function ReportesPage() {
   const inputCls = "px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-slate-600 outline-none focus:border-slate-700 bg-white dark:bg-slate-800 dark:text-gray-100";
 
   return (
-    <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6 overflow-x-hidden">
+    <div className="p-4 sm:p-8 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
@@ -283,26 +283,24 @@ export default function ReportesPage() {
       </div>
 
       {/* Tabs */}
-      <div className="overflow-x-auto -mx-1 px-1">
-        <div className="flex bg-gray-100 dark:bg-slate-700 p-1 rounded-lg min-w-max sm:min-w-0">
-          {([
-            { id: "citas", label: "Citas" },
-            { id: "ingresos", label: "Ingresos" },
-            { id: "empleados", label: "Empleados" },
-            { id: "heatmap", label: "Horarios" },
-            { id: "retencion", label: "Retención" },
-          ] as { id: Tab; label: string }[]).map((t) => (
-            <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              className={`flex-1 whitespace-nowrap px-3 py-1.5 rounded-md text-sm font-medium transition ${
-                tab === t.id ? "bg-white dark:bg-slate-800 shadow text-gray-900 dark:text-gray-100" : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
+      <div className="flex bg-gray-100 dark:bg-slate-700 p-1 rounded-lg">
+        {([
+          { id: "citas", label: "Citas" },
+          { id: "ingresos", label: "Ingresos" },
+          { id: "empleados", label: "Empleados" },
+          { id: "heatmap", label: "Horarios" },
+          { id: "retencion", label: "Retención" },
+        ] as { id: Tab; label: string }[]).map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            className={`flex-1 whitespace-nowrap px-1.5 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition ${
+              tab === t.id ? "bg-white dark:bg-slate-800 shadow text-gray-900 dark:text-gray-100" : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
 
       {/* ── Tab: Citas ── */}

@@ -132,4 +132,40 @@ public class PublicoAnticipoTests : IntegrationTestBase
         confirmacion!.RequiereAnticipo.Should().BeFalse();
         confirmacion.MontoAnticipo.Should().BeNull();
     }
+
+    [Fact]
+    public async Task ObtenerCita_DevuelveMontoAnticipoDelSnapshot()
+    {
+        // Arrange — negocio with 25% anticipo, servicio 200 -> montoAnticipo should be 50
+        var (_, slug, servicioId, empleadoId) = await SeedNegocioConAnticipoAsync(true, 25);
+        var client = NewClient();
+        ClearToken();
+
+        var inicio = DateTime.UtcNow.Date.AddDays(1).AddHours(10);
+        var payload = new
+        {
+            negocioSlug = slug,
+            servicioId,
+            empleadoId,
+            inicioEn = inicio,
+            nombreCliente = "Cliente Test",
+            telefonoCliente = "5512345678",
+            emailCliente = "obtener@test.com",
+        };
+
+        // Create the cita first to get its CodigoConfirmacion
+        var createResponse = await client.PostAsJsonAsync("/api/publico/citas", payload);
+        createResponse.EnsureSuccessStatusCode();
+        var created = await createResponse.Content.ReadFromJsonAsync<ConfirmacionCitaDto>();
+
+        // Act — GET the same cita by codigo
+        var getResponse = await client.GetAsync($"/api/publico/citas/{created!.CodigoConfirmacion}");
+
+        // Assert
+        getResponse.IsSuccessStatusCode.Should().BeTrue();
+        var dto = await getResponse.Content.ReadFromJsonAsync<ConfirmacionCitaDto>();
+        dto.Should().NotBeNull();
+        dto!.RequiereAnticipo.Should().BeTrue();
+        dto.MontoAnticipo.Should().Be(50m);
+    }
 }
