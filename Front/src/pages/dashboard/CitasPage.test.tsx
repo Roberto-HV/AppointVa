@@ -21,6 +21,7 @@ vi.mock("../../api/citas", () => ({
     marcarPagada: vi.fn(),
     crear: vi.fn(),
     actualizarNotas: vi.fn(),
+    registrarAnticipo: vi.fn().mockResolvedValue({}),
   },
   ESTADOS: {
     Pendiente: 1,
@@ -447,5 +448,82 @@ describe("integración módulo de pagos", () => {
 
     expect(screen.queryByText("Pago")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /cobrar/i })).not.toBeInTheDocument();
+  });
+});
+
+describe("anticipo badge y botón", () => {
+  function renderWithCitas(citas: object[]) {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    vi.mocked(citasApi.obtenerTodas).mockResolvedValue({
+      datos: citas,
+      total: citas.length,
+      pagina: 1,
+      tamano: 200,
+    });
+    return render(
+      <MemoryRouter>
+        <QueryClientProvider client={qc}>
+          <CitasPage />
+        </QueryClientProvider>
+      </MemoryRouter>
+    );
+  }
+
+  const baseCita = {
+    id: "cita-anticipo",
+    codigoConfirmacion: "ANT001",
+    clienteId: "c1",
+    empleadoId: "e1",
+    servicioId: "s1",
+    nombreCliente: "Luis Pérez",
+    telefonoCliente: "555-0001",
+    nombreEmpleado: "Ana Gómez",
+    nombreServicio: "Corte",
+    duracionMinutos: 30,
+    precio: 200,
+    pagada: false,
+    estado: 2,
+    estadoTexto: "Confirmada",
+    inicioEn: new Date(Date.now() + 86400000).toISOString(),
+    finEn: new Date(Date.now() + 86400000 + 1800000).toISOString(),
+  };
+
+  it("no muestra badge cuando anticipoRequerido es false", async () => {
+    renderWithCitas([{ ...baseCita, anticipoRequerido: false }]);
+    await waitFor(() => screen.getByText("Luis Pérez"));
+    expect(screen.queryByText(/Anticipo/)).toBeNull();
+  });
+
+  it("muestra badge ámbar cuando anticipo pendiente", async () => {
+    renderWithCitas([{
+      ...baseCita,
+      anticipoRequerido: true,
+      anticipoRecibido: false,
+      montoAnticipo: 50,
+    }]);
+    await waitFor(() => screen.getByText("Luis Pérez"));
+    expect(screen.getByText("⏳ Anticipo")).toBeInTheDocument();
+  });
+
+  it("muestra badge verde cuando anticipo recibido", async () => {
+    renderWithCitas([{
+      ...baseCita,
+      anticipoRequerido: true,
+      anticipoRecibido: true,
+      montoAnticipo: 50,
+    }]);
+    await waitFor(() => screen.getByText("Luis Pérez"));
+    expect(screen.getByText("✓ Anticipo")).toBeInTheDocument();
+  });
+
+  it("muestra botón $ Anticipo cuando pendiente y no pagada", async () => {
+    renderWithCitas([{
+      ...baseCita,
+      anticipoRequerido: true,
+      anticipoRecibido: false,
+      montoAnticipo: 50,
+    }]);
+    await waitFor(() => screen.getByText("Luis Pérez"));
+    expect(screen.getByText("$ Anticipo")).toBeInTheDocument();
   });
 });
