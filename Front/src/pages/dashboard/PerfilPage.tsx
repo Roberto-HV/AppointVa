@@ -121,7 +121,7 @@ export default function PerfilPage() {
         requiereAnticipo: negocio.requiereAnticipo ?? false,
         montoAnticipo: negocio.montoAnticipo ?? 0,
         instruccionesAnticipo: negocio.instruccionesAnticipo ?? "",
-        porcentajeAnticipo: negocio.porcentajeAnticipo || 10,
+        porcentajeAnticipo: negocio.porcentajeAnticipo ?? 10,
         horasCancelacionConReembolso: negocio.horasCancelacionConReembolso ?? 24,
         politicaCancelacionAnticipo: negocio.politicaCancelacionAnticipo ?? '',
         instagramUrl: negocio.instagramUrl ?? "",
