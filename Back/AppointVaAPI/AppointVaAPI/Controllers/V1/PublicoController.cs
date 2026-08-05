@@ -305,6 +305,10 @@ namespace AppointVaAPI.Controllers.V1
                         FinEn = finEn,
                         Estado = negocio.AutoConfirmar ? EstadosCitas.Confirmada : EstadosCitas.Pendiente,
                         Precio = precioFinal,
+                        AnticipoRequerido = negocio.RequiereAnticipo,
+                        MontoAnticipo = (negocio.RequiereAnticipo && negocio.PorcentajeAnticipo > 0)
+                            ? Math.Round(precioFinal * negocio.PorcentajeAnticipo / 100m, 2)
+                            : (decimal?)null,
                         Notas = dto.Notas,
                         FechaCreacion = DateTime.UtcNow,
                         FechaActualizacion = DateTime.UtcNow

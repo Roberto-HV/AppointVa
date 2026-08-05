@@ -130,6 +130,11 @@ namespace AppointVaAPI.Controllers.V1
             if (servicio is null)
                 return BadRequest(new { mensaje = "Servicio no válido" });
 
+            var negocioAnticipo = await _db.Negocios
+                .Where(n => n.Id == negocioId)
+                .Select(n => new { n.RequiereAnticipo, n.PorcentajeAnticipo })
+                .FirstOrDefaultAsync();
+
             // Validar que el empleado pertenece a este negocio
             var empleadoValido = await _db.Empleados
                 .AnyAsync(e => e.Id == dto.EmpleadoId && e.NegocioId == negocioId && e.FechaEliminacion == null);
@@ -183,6 +188,10 @@ namespace AppointVaAPI.Controllers.V1
                         FinEn = finEn,
                         Estado = EstadosCitas.Confirmada,
                         Precio = servicio.Precio,
+                        AnticipoRequerido = negocioAnticipo?.RequiereAnticipo ?? false,
+                        MontoAnticipo = (negocioAnticipo?.RequiereAnticipo == true && negocioAnticipo.PorcentajeAnticipo > 0)
+                            ? Math.Round(servicio.Precio * negocioAnticipo.PorcentajeAnticipo / 100m, 2)
+                            : (decimal?)null,
                         Notas = dto.Notas,
                         CreadoPorUsuarioId = _contexto.UsuarioId,
                         FechaCreacion = DateTime.UtcNow,
@@ -348,6 +357,39 @@ namespace AppointVaAPI.Controllers.V1
             cita.Propina       = dto.Pagada ? dto.Propina       : null;
             cita.FechaPago     = dto.Pagada ? DateTime.UtcNow   : null;
             cita.RegistradoPorId = dto.Pagada ? _contexto.UsuarioId : null;
+            cita.FechaActualizacion = DateTime.UtcNow;
+
+            await _citaRepo.ActualizarAsync(cita);
+            return Ok(MapearDto(cita));
+        }
+
+        // PATCH api/citas/{id}/anticipo
+        [HttpPatch("{id:guid}/anticipo")]
+        public async Task<IActionResult> MarcarAnticipo(Guid id, [FromBody] MarcarAnticipoDto dto)
+        {
+            if (_contexto.NegocioId is null) return Unauthorized();
+
+            var cita = await _citaRepo.ObtenerPorIdAsync(id, _contexto.NegocioId.Value);
+            if (cita is null) return NotFound(new { mensaje = "Cita no encontrada" });
+
+            if (dto.Recibido)
+            {
+                cita.AnticipoRecibido = true;
+                cita.AnticipoRecibidoPorId = _contexto.UsuarioId;
+                var userId = _contexto.UsuarioId;
+                cita.AnticipoRecibidoPorNombre = await _db.Users
+                    .Where(u => u.Id == userId)
+                    .Select(u => u.UserName ?? u.Email)
+                    .FirstOrDefaultAsync();
+                cita.AnticipoRecibidoEn = DateTime.UtcNow;
+            }
+            else
+            {
+                cita.AnticipoRecibido = false;
+                cita.AnticipoRecibidoPorId = null;
+                cita.AnticipoRecibidoPorNombre = null;
+                cita.AnticipoRecibidoEn = null;
+            }
             cita.FechaActualizacion = DateTime.UtcNow;
 
             await _citaRepo.ActualizarAsync(cita);
@@ -536,6 +578,11 @@ namespace AppointVaAPI.Controllers.V1
             Cambio        = c.Cambio,
             Propina       = c.Propina,
             FechaPago     = c.FechaPago,
+            AnticipoRequerido = c.AnticipoRequerido,
+            MontoAnticipo = c.MontoAnticipo,
+            AnticipoRecibido = c.AnticipoRecibido,
+            AnticipoRecibidoPorNombre = c.AnticipoRecibidoPorNombre,
+            AnticipoRecibidoEn = c.AnticipoRecibidoEn,
             InicioEn = c.InicioEn,
             FinEn = c.FinEn,
             Estado = c.Estado,
