@@ -86,6 +86,12 @@ namespace AppointVaAPI.Controllers.V1
             if (dto.MontoAnticipo.HasValue)
                 negocio.MontoAnticipo = Math.Max(0, dto.MontoAnticipo.Value);
             negocio.InstruccionesAnticipo = dto.InstruccionesAnticipo;
+            if (dto.PorcentajeAnticipo.HasValue)
+                negocio.PorcentajeAnticipo = dto.PorcentajeAnticipo.Value;
+            if (dto.HorasCancelacionConReembolso.HasValue)
+                negocio.HorasCancelacionConReembolso = dto.HorasCancelacionConReembolso.Value;
+            if (dto.PoliticaCancelacionAnticipo is not null)
+                negocio.PoliticaCancelacionAnticipo = dto.PoliticaCancelacionAnticipo;
             negocio.InstagramUrl = string.IsNullOrWhiteSpace(dto.InstagramUrl) ? null : dto.InstagramUrl.Trim();
             negocio.FacebookUrl = string.IsNullOrWhiteSpace(dto.FacebookUrl) ? null : dto.FacebookUrl.Trim();
             negocio.TiktokUrl = string.IsNullOrWhiteSpace(dto.TiktokUrl) ? null : dto.TiktokUrl.Trim();
@@ -565,6 +571,9 @@ namespace AppointVaAPI.Controllers.V1
             RequiereAnticipo = n.RequiereAnticipo,
             MontoAnticipo = n.MontoAnticipo,
             InstruccionesAnticipo = n.InstruccionesAnticipo,
+            PorcentajeAnticipo = n.PorcentajeAnticipo,
+            HorasCancelacionConReembolso = n.HorasCancelacionConReembolso,
+            PoliticaCancelacionAnticipo = n.PoliticaCancelacionAnticipo,
             InstagramUrl = n.InstagramUrl,
             FacebookUrl = n.FacebookUrl,
             TiktokUrl = n.TiktokUrl,

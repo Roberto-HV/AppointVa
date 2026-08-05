@@ -367,7 +367,9 @@ namespace AppointVaAPI.Controllers.V1
                 GoogleCalUrl = googleCalUrl,
                 RequiereAnticipo = negocio.RequiereAnticipo,
                 MontoAnticipo = negocio.MontoAnticipo,
-                InstruccionesAnticipo = negocio.InstruccionesAnticipo
+                InstruccionesAnticipo = negocio.InstruccionesAnticipo,
+                PorcentajeAnticipo = negocio.PorcentajeAnticipo,
+                PoliticaCancelacionAnticipo = negocio.PoliticaCancelacionAnticipo
             };
 
             // Enviar email de confirmación si el cliente tiene correo
@@ -428,6 +430,11 @@ namespace AppointVaAPI.Controllers.V1
                 WebcalUrl = icalUrl?.Replace("https://", "webcal://").Replace("http://", "webcal://"),
                 GoogleCalUrl = googleCalUrl,
                 HorasCancelacion = cita.Negocio?.HorasCancelacion ?? 0,
+                RequiereAnticipo = cita.Negocio?.RequiereAnticipo ?? false,
+                MontoAnticipo = cita.Negocio?.MontoAnticipo ?? 0,
+                InstruccionesAnticipo = cita.Negocio?.InstruccionesAnticipo,
+                PorcentajeAnticipo = cita.Negocio?.PorcentajeAnticipo ?? 0,
+                PoliticaCancelacionAnticipo = cita.Negocio?.PoliticaCancelacionAnticipo ?? string.Empty,
                 InstagramUrl = cita.Negocio?.InstagramUrl,
                 FacebookUrl = cita.Negocio?.FacebookUrl,
                 TiktokUrl = cita.Negocio?.TiktokUrl,

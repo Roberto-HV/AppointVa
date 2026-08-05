@@ -44,6 +44,12 @@ namespace AppointVaAPI.Models.Dtos.Negocios
         public decimal? MontoAnticipo { get; set; }
         [MaxLength(500)]
         public string? InstruccionesAnticipo { get; set; }
+        [Range(0, 80)]
+        public int? PorcentajeAnticipo { get; set; }
+        [Range(0, 720)]
+        public int? HorasCancelacionConReembolso { get; set; }
+        [MaxLength(500)]
+        public string? PoliticaCancelacionAnticipo { get; set; }
         [MaxLength(200)]
         public string? InstagramUrl { get; set; }
         [MaxLength(200)]
