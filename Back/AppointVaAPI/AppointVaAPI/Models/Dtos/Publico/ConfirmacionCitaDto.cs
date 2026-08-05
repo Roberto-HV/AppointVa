@@ -22,7 +22,7 @@ namespace AppointVaAPI.Models.Dtos.Publico
         public string? GoogleCalUrl { get; set; }
         public int HorasCancelacion { get; set; }
         public bool RequiereAnticipo { get; set; }
-        public decimal MontoAnticipo { get; set; }
+        public decimal? MontoAnticipo { get; set; }
         public string? InstruccionesAnticipo { get; set; }
         public int PorcentajeAnticipo { get; set; }
         public string PoliticaCancelacionAnticipo { get; set; } = string.Empty;

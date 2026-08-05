@@ -134,6 +134,8 @@ namespace AppointVaAPI.Controllers.V1
                 RequiereAnticipo = negocio.RequiereAnticipo,
                 MontoAnticipo = negocio.MontoAnticipo,
                 InstruccionesAnticipo = negocio.InstruccionesAnticipo,
+                PorcentajeAnticipo = negocio.PorcentajeAnticipo,
+                PoliticaCancelacionAnticipo = negocio.PoliticaCancelacionAnticipo,
                 InstagramUrl = negocio.InstagramUrl,
                 FacebookUrl = negocio.FacebookUrl,
                 TiktokUrl = negocio.TiktokUrl,
@@ -370,7 +372,7 @@ namespace AppointVaAPI.Controllers.V1
                 WebcalUrl = icalUrl?.Replace("https://", "webcal://").Replace("http://", "webcal://"),
                 GoogleCalUrl = googleCalUrl,
                 RequiereAnticipo = negocio.RequiereAnticipo,
-                MontoAnticipo = negocio.MontoAnticipo,
+                MontoAnticipo = cita.MontoAnticipo,
                 InstruccionesAnticipo = negocio.InstruccionesAnticipo,
                 PorcentajeAnticipo = negocio.PorcentajeAnticipo,
                 PoliticaCancelacionAnticipo = negocio.PoliticaCancelacionAnticipo
