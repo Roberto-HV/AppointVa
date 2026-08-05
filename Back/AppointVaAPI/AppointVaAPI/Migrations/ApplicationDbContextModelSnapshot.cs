@@ -786,6 +786,7 @@ namespace AppointVaAPI.Migrations
                         .HasColumnType("integer");
 
                     b.Property<int>("HorasCancelacionConReembolso")
+                        .HasDefaultValue(24)
                         .HasColumnType("integer");
 
                     b.Property<int>("HorasRecordatorio")

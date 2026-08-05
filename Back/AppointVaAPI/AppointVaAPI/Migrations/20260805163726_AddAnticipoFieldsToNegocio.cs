@@ -15,7 +15,7 @@ namespace AppointVaAPI.Migrations
                 table: "Negocios",
                 type: "integer",
                 nullable: false,
-                defaultValue: 0);
+                defaultValue: 24);
 
             migrationBuilder.AddColumn<string>(
                 name: "PoliticaCancelacionAnticipo",
