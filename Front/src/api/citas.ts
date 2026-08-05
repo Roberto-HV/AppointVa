@@ -82,6 +82,11 @@ export const citasApi = {
     return data;
   },
 
+  registrarAnticipo: async (id: string, recibido: boolean): Promise<CitaDto> => {
+    const { data } = await api.patch<CitaDto>(`/citas/${id}/anticipo`, { recibido });
+    return data;
+  },
+
   obtenerHistorialPagos: async (params: { desde: string; hasta: string }): Promise<CitaDto[]> => {
     const { data } = await api.get('/citas/historial-pagos', { params });
     return data;
