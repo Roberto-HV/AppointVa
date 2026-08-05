@@ -356,7 +356,7 @@ export default function PagosPage() {
       pagosApi.registrar(payload.id, {
         pagada: true,
         metodoPago,
-        montoCobrado: citaSel?.precio,
+        montoCobrado: montoCobradoDec,
         montoRecibido: hayEfectivo ? payload.montoRec : undefined,
         cambio: hayEfectivo && cambio > 0 ? cambio : undefined,
         propina: payload.prop > 0 ? payload.prop : undefined,
