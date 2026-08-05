@@ -360,6 +360,9 @@ export interface ActualizarNegocioDto {
   requiereAnticipo?: boolean;
   montoAnticipo?: number;
   instruccionesAnticipo?: string;
+  porcentajeAnticipo?: number;
+  horasCancelacionConReembolso?: number;
+  politicaCancelacionAnticipo?: string;
   instagramUrl?: string;
   facebookUrl?: string;
   tiktokUrl?: string;

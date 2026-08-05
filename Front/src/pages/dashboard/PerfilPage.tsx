@@ -67,13 +67,16 @@ const schema = z.object({
   requiereAnticipo: z.boolean().optional(),
   montoAnticipo: z.coerce.number().min(0).optional(),
   instruccionesAnticipo: z.string().max(500).optional(),
+  porcentajeAnticipo: z.number().int().min(0).max(80).default(0),
+  horasCancelacionConReembolso: z.number().int().min(0).default(24),
+  politicaCancelacionAnticipo: z.string().max(500).default(''),
   instagramUrl: z.string().max(200).optional(),
   facebookUrl: z.string().max(200).optional(),
   tiktokUrl: z.string().max(200).optional(),
 });
 type PerfilForm = z.infer<typeof schema>;
 
-type Tab = "perfil" | "configuracion" | "horarios";
+type Tab = "perfil" | "citas" | "anticipos" | "horarios" | "cuenta";
 
 export default function PerfilPage() {
   const qc = useQueryClient();
@@ -84,7 +87,11 @@ export default function PerfilPage() {
   const portadaRef = useRef<HTMLInputElement>(null);
   const [searchParams] = useSearchParams();
   const tabParam = searchParams.get("tab") as Tab | null;
-  const [tab, setTab] = useState<Tab>(tabParam && ["perfil", "configuracion", "horarios"].includes(tabParam) ? tabParam : "perfil");
+  const [tab, setTab] = useState<Tab>(
+    tabParam && ["perfil", "citas", "anticipos", "horarios", "cuenta"].includes(tabParam)
+      ? tabParam as Tab
+      : "perfil"
+  );
   const [modalEliminar, setModalEliminar] = useState(false);
   const [contrasenaEliminar, setContrasenaEliminar] = useState("");
 
@@ -114,6 +121,9 @@ export default function PerfilPage() {
         requiereAnticipo: negocio.requiereAnticipo ?? false,
         montoAnticipo: negocio.montoAnticipo ?? 0,
         instruccionesAnticipo: negocio.instruccionesAnticipo ?? "",
+        porcentajeAnticipo: negocio.porcentajeAnticipo ?? 0,
+        horasCancelacionConReembolso: negocio.horasCancelacionConReembolso ?? 24,
+        politicaCancelacionAnticipo: negocio.politicaCancelacionAnticipo ?? '',
         instagramUrl: negocio.instagramUrl ?? "",
         facebookUrl: negocio.facebookUrl ?? "",
         tiktokUrl: negocio.tiktokUrl ?? "",
@@ -269,17 +279,25 @@ export default function PerfilPage() {
       <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">Mi negocio</h1>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-gray-100 dark:bg-slate-700 rounded-xl p-1 mb-6">
-        {(["perfil", "configuracion", "horarios"] as Tab[]).map((t) => (
+      <div className="flex gap-1 bg-gray-100 dark:bg-slate-700 rounded-xl p-1 mb-6 overflow-x-auto">
+        {([
+          { id: "perfil", label: "Perfil" },
+          { id: "citas", label: "Citas" },
+          { id: "anticipos", label: "Anticipos" },
+          { id: "horarios", label: "Horarios" },
+          { id: "cuenta", label: "Cuenta" },
+        ] as { id: Tab; label: string }[]).map((t) => (
           <button
-            key={t}
+            key={t.id}
             type="button"
-            onClick={() => setTab(t)}
-            className={`flex-1 py-2 text-sm font-medium rounded-lg transition ${
-              tab === t ? "bg-white dark:bg-slate-800 shadow-sm text-gray-900 dark:text-gray-100" : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+            onClick={() => setTab(t.id)}
+            className={`flex-1 whitespace-nowrap py-2 px-2 sm:px-3 text-xs sm:text-sm font-medium rounded-lg transition ${
+              tab === t.id
+                ? "bg-white dark:bg-slate-800 shadow-sm text-gray-900 dark:text-gray-100"
+                : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
             }`}
           >
-            {t === "perfil" ? "Perfil" : t === "configuracion" ? "Configuración" : "Horarios"}
+            {t.label}
           </button>
         ))}
       </div>
@@ -488,168 +506,189 @@ export default function PerfilPage() {
           {btnGuardar}
         </div>
 
-        {/* ── TAB: CONFIGURACIÓN ──────────────────────────────────────────────── */}
-        <div className={tab !== "configuracion" ? "hidden" : "space-y-6"}>
-          {/* Subscription plan — read-only */}
-          <div className="bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl p-4 mb-4">
-            <p className="text-xs font-semibold text-slate-400 dark:text-gray-500 uppercase tracking-wide mb-1">Tu suscripción</p>
-            <p className="text-base font-bold text-slate-800 dark:text-gray-200">
-              {negocio?.planNombre ?? "Sin plan asignado"}
-            </p>
-            <p className="text-xs text-slate-400 dark:text-gray-500 mt-2">
-              ¿Quieres cambiar de plan? Escríbenos a{" "}
-              <a
-                href="mailto:hola@appointva.com"
-                className="text-slate-600 dark:text-gray-400 font-semibold underline"
-              >
-                hola@appointva.com
-              </a>
-            </p>
-          </div>
+        {/* ── TAB: CITAS ──────────────────────────────────────────────────────── */}
+        {tab === "citas" && (
+          <div className="space-y-6">
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5 space-y-5">
+              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Ajustes de citas</h2>
 
-          <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5 space-y-5">
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Ajustes de citas</h2>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Zona horaria</label>
-                <Select {...register("zonaHoraria")} value={watch("zonaHoraria") ?? ""} className="w-full">
-                  <option value="">Seleccionar...</option>
-                  {ZONAS_HORARIAS.map((z) => (
-                    <option key={z.valor} value={z.valor}>{z.texto}</option>
-                  ))}
-                </Select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Recordatorio al cliente</label>
-                <Select {...register("horasRecordatorio")} value={watch("horasRecordatorio") ?? ""} className="w-full">
-                  {HORAS_RECORDATORIO.map((h) => (
-                    <option key={h.valor} value={h.valor}>{h.texto}</option>
-                  ))}
-                </Select>
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Cuánto antes se envía el recordatorio por email.</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Política de cancelación</label>
-                <Select {...register("horasCancelacion")} value={watch("horasCancelacion") ?? ""} className="w-full">
-                  {HORAS_CANCELACION.map((h) => (
-                    <option key={h.valor} value={h.valor}>{h.texto}</option>
-                  ))}
-                </Select>
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Anticipación mínima para que el cliente cancele.</p>
-              </div>
-              {negocio?.planNombre && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Plan activo</label>
-                  <p className="px-3 py-2 rounded-lg bg-gray-50 dark:bg-slate-700 text-sm text-gray-600 dark:text-gray-400">{negocio.planNombre}</p>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Zona horaria</label>
+                  <Select {...register("zonaHoraria")} value={watch("zonaHoraria") ?? ""} className="w-full">
+                    <option value="">Seleccionar...</option>
+                    {ZONAS_HORARIAS.map((z) => (
+                      <option key={z.valor} value={z.valor}>{z.texto}</option>
+                    ))}
+                  </Select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Recordatorio al cliente</label>
+                  <Select {...register("horasRecordatorio")} value={watch("horasRecordatorio") ?? ""} className="w-full">
+                    {HORAS_RECORDATORIO.map((h) => (
+                      <option key={h.valor} value={h.valor}>{h.texto}</option>
+                    ))}
+                  </Select>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Cuánto antes se envía el recordatorio por email.</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Política de cancelación</label>
+                  <Select {...register("horasCancelacion")} value={watch("horasCancelacion") ?? ""} className="w-full">
+                    {HORAS_CANCELACION.map((h) => (
+                      <option key={h.valor} value={h.valor}>{h.texto}</option>
+                    ))}
+                  </Select>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Anticipación mínima para que el cliente cancele.</p>
+                </div>
+                {negocio?.planNombre && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Plan activo</label>
+                    <p className="px-3 py-2 rounded-lg bg-gray-50 dark:bg-slate-700 text-sm text-gray-600 dark:text-gray-400">{negocio.planNombre}</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-slate-700 rounded-lg border border-gray-100 dark:border-slate-600">
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Confirmación automática de citas</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                    Activado: las reservas quedan confirmadas de inmediato.<br />
+                    Desactivado: quedan pendientes y debes confirmarlas manualmente.
+                  </p>
+                </div>
+                <div
+                  onClick={() => setValue("autoConfirmar", !(watch("autoConfirmar") ?? true), { shouldDirty: true })}
+                  className={`shrink-0 w-11 h-6 rounded-full transition relative cursor-pointer ${
+                    watch("autoConfirmar") ?? true ? "bg-slate-700" : "bg-gray-300"
+                  }`}
+                >
+                  <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${
+                    watch("autoConfirmar") ?? true ? "left-6" : "left-1"
+                  }`} />
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-slate-700 rounded-lg border border-gray-100 dark:border-slate-600">
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Lista de espera</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                    Activado: cuando canceles una cita se notificará automáticamente al primer cliente en espera.<br />
+                    Desactivado: la lista de espera no genera notificaciones automáticas.
+                  </p>
+                </div>
+                <div
+                  onClick={() => setValue("listaEsperaActiva", !(watch("listaEsperaActiva") ?? false), { shouldDirty: true })}
+                  className={`shrink-0 w-11 h-6 rounded-full transition relative cursor-pointer ${
+                    watch("listaEsperaActiva") ? "bg-slate-700" : "bg-gray-300"
+                  }`}
+                >
+                  <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${
+                    watch("listaEsperaActiva") ? "left-6" : "left-1"
+                  }`} />
+                </div>
+              </div>
+
+              <div className="p-3 bg-gray-50 dark:bg-slate-700 rounded-lg border border-gray-100 dark:border-slate-600">
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Canal de notificaciones al cliente</p>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  <button type="button"
+                    className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-medium bg-slate-700 text-white">
+                    <Mail size={13} /> Correo
+                  </button>
+                </div>
+                <p className="text-xs text-gray-400 dark:text-gray-500">Los clientes reciben confirmaciones, recordatorios y cancelaciones por correo electrónico.</p>
+              </div>
+            </div>
+
+            {btnGuardar}
+          </div>
+        )}
+
+        {/* ── TAB: ANTICIPOS ──────────────────────────────────────────────────── */}
+        {tab === "anticipos" && (
+          <div className="space-y-6">
+            <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl p-5 space-y-4">
+              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">Anticipo al reservar</h3>
+
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-200">Requerir anticipo al reservar</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">El cliente deberá pagar un anticipo antes de confirmar su cita</p>
+                </div>
+                <input type="checkbox" {...register("requiereAnticipo")} className="w-4 h-4 rounded" />
+              </div>
+
+              {watch("requiereAnticipo") && (
+                <div className="space-y-4 pt-3 border-t border-gray-100 dark:border-slate-700">
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                      Porcentaje del anticipo
+                    </label>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="range"
+                        min={10}
+                        max={80}
+                        step={5}
+                        {...register("porcentajeAnticipo", { valueAsNumber: true })}
+                        className="flex-1 accent-slate-700"
+                      />
+                      <span className="text-sm font-bold text-gray-800 dark:text-gray-200 w-12 text-right">
+                        {watch("porcentajeAnticipo")}%
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-1">Entre 10% y 80% del costo del servicio</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                      Horas mínimas de anticipación para reembolso
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      {...register("horasCancelacionConReembolso", { valueAsNumber: true })}
+                      className="w-32 px-3 py-1.5 text-sm border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                    />
+                    <p className="text-xs text-gray-400 mt-1">0 = sin reembolso en ningún caso</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                      Política de cancelación <span className="text-gray-400">(visible para el cliente)</span>
+                    </label>
+                    <textarea
+                      maxLength={500}
+                      rows={3}
+                      placeholder="Ej: El anticipo es reembolsable si cancelas con al menos 24 horas de anticipación..."
+                      {...register("politicaCancelacionAnticipo")}
+                      className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-slate-400 resize-none"
+                    />
+                    <p className="text-xs text-gray-400 mt-1">
+                      {(watch("politicaCancelacionAnticipo") ?? '').length}/500 caracteres
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                      Instrucciones de pago del anticipo <span className="text-gray-400">(visible para el cliente)</span>
+                    </label>
+                    <textarea
+                      maxLength={500}
+                      rows={3}
+                      placeholder="Ej: Transferir a la cuenta CLABE 012345678901234567 a nombre de..."
+                      {...register("instruccionesAnticipo")}
+                      className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-slate-400 resize-none"
+                    />
+                  </div>
                 </div>
               )}
             </div>
 
-            <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-slate-700 rounded-lg border border-gray-100 dark:border-slate-600">
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Confirmación automática de citas</p>
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-                  Activado: las reservas quedan confirmadas de inmediato.<br />
-                  Desactivado: quedan pendientes y debes confirmarlas manualmente.
-                </p>
-              </div>
-              <div
-                onClick={() => setValue("autoConfirmar", !(watch("autoConfirmar") ?? true), { shouldDirty: true })}
-                className={`shrink-0 w-11 h-6 rounded-full transition relative cursor-pointer ${
-                  watch("autoConfirmar") ?? true ? "bg-slate-700" : "bg-gray-300"
-                }`}
-              >
-                <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${
-                  watch("autoConfirmar") ?? true ? "left-6" : "left-1"
-                }`} />
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-slate-700 rounded-lg border border-gray-100 dark:border-slate-600">
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Lista de espera</p>
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-                  Activado: cuando canceles una cita se notificará automáticamente al primer cliente en espera.<br />
-                  Desactivado: la lista de espera no genera notificaciones automáticas.
-                </p>
-              </div>
-              <div
-                onClick={() => setValue("listaEsperaActiva", !(watch("listaEsperaActiva") ?? false), { shouldDirty: true })}
-                className={`shrink-0 w-11 h-6 rounded-full transition relative cursor-pointer ${
-                  watch("listaEsperaActiva") ? "bg-slate-700" : "bg-gray-300"
-                }`}
-              >
-                <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${
-                  watch("listaEsperaActiva") ? "left-6" : "left-1"
-                }`} />
-              </div>
-            </div>
-
-            <div className="p-3 bg-gray-50 dark:bg-slate-700 rounded-lg border border-gray-100 dark:border-slate-600">
-              <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Canal de notificaciones al cliente</p>
-              <div className="flex flex-wrap gap-2 mb-2">
-                <button type="button"
-                  className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-medium bg-slate-700 text-white">
-                  <Mail size={13} /> Correo
-                </button>
-              </div>
-              <p className="text-xs text-gray-400 dark:text-gray-500">Los clientes reciben confirmaciones, recordatorios y cancelaciones por correo electrónico.</p>
-            </div>
+            {btnGuardar}
           </div>
-
-          {/* Anticipo */}
-          <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Anticipo / Depósito</h2>
-            <label className="flex items-center justify-between cursor-pointer select-none mb-4">
-              <div>
-                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Requerir anticipo al reservar</p>
-                <p className="text-xs text-gray-400 dark:text-gray-500">El cliente recibe instrucciones de pago y la cita queda pendiente hasta que confirmes el depósito</p>
-              </div>
-              <button type="button"
-                onClick={() => setValue("requiereAnticipo", !(watch("requiereAnticipo") ?? false), { shouldDirty: true })}
-                className={`relative w-12 h-6 rounded-full transition-colors shrink-0 ml-4 ${watch("requiereAnticipo") ? "bg-slate-700" : "bg-gray-300"}`}>
-                <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${watch("requiereAnticipo") ? "left-7" : "left-1"}`} />
-              </button>
-            </label>
-            {watch("requiereAnticipo") && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Monto del anticipo ($)</label>
-                  <input {...register("montoAnticipo")} type="number" min="0" step="0.01" placeholder="0.00"
-                    className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700" />
-                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Cantidad que el cliente debe pagar por adelantado</p>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Instrucciones de pago</label>
-                  <textarea {...register("instruccionesAnticipo")} rows={3} maxLength={500}
-                    placeholder={"CLABE: 012345678901234567\nBanco: BBVA\nNombre: Nombre del negocio"}
-                    className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700 resize-none" />
-                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">El cliente verá esto al confirmar su reserva</p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {btnGuardar}
-
-          {/* Zona de peligro */}
-          <div className="border border-red-200 rounded-xl p-5">
-            <h2 className="text-sm font-semibold text-red-600 mb-1 flex items-center gap-2">
-              <Trash2 size={15} /> Zona de peligro
-            </h2>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
-              Eliminar tu cuenta es permanente. Todos tus datos personales serán eliminados de forma irreversible. El historial de citas se conservará de forma anonimizada.
-            </p>
-            <button
-              type="button"
-              onClick={() => { setContrasenaEliminar(""); setModalEliminar(true); }}
-              className="px-4 py-2 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm font-medium hover:bg-red-100 transition"
-            >
-              Eliminar mi cuenta
-            </button>
-          </div>
-        </div>
+        )}
       </form>
 
       {/* ── Modal: eliminar cuenta ─────────────────────────────────────────── */}
@@ -685,6 +724,43 @@ export default function PerfilPage() {
                 {eliminando ? "Eliminando..." : "Sí, eliminar cuenta"}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── TAB: CUENTA ─────────────────────────────────────────────────────── */}
+      {tab === "cuenta" && (
+        <div className="space-y-6">
+          <div className="bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl p-4">
+            <p className="text-xs font-semibold text-slate-400 dark:text-gray-500 uppercase tracking-wide mb-1">Tu suscripción</p>
+            <p className="text-base font-bold text-slate-800 dark:text-gray-200">
+              {negocio?.planNombre ?? "Sin plan asignado"}
+            </p>
+            <p className="text-xs text-slate-400 dark:text-gray-500 mt-2">
+              ¿Quieres cambiar de plan? Escríbenos a{" "}
+              <a
+                href="mailto:hola@appointva.com"
+                className="text-slate-600 dark:text-gray-400 font-semibold underline"
+              >
+                hola@appointva.com
+              </a>
+            </p>
+          </div>
+
+          <div className="border border-red-200 rounded-xl p-5">
+            <h2 className="text-sm font-semibold text-red-600 mb-1 flex items-center gap-2">
+              <Trash2 size={15} /> Zona de peligro
+            </h2>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+              Eliminar tu cuenta es permanente. Todos tus datos personales serán eliminados de forma irreversible. El historial de citas se conservará de forma anonimizada.
+            </p>
+            <button
+              type="button"
+              onClick={() => { setContrasenaEliminar(""); setModalEliminar(true); }}
+              className="px-4 py-2 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm font-medium hover:bg-red-100 transition"
+            >
+              Eliminar mi cuenta
+            </button>
           </div>
         </div>
       )}
