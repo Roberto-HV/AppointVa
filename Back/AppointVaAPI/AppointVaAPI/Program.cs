@@ -352,7 +352,7 @@ app.Use(async (ctx, next) =>
 });
 app.UseMiddleware<AppointVaAPI.Middleware.ExceptionHandlingMiddleware>();
 app.UseResponseCompression();
-app.UseHttpsRedirection();
+if (!app.Environment.IsDevelopment()) app.UseHttpsRedirection();
 app.UseCors("FrontendPolicy");
 if (!string.IsNullOrEmpty(sentryDsn)) app.UseSentryTracing();
 app.UseStaticFiles(); // sirve wwwroot/uploads/ cuando Cloudinary no está configurado
