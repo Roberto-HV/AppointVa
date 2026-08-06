@@ -133,12 +133,17 @@ function ModalSuscripcion({
 }) {
   const qc = useQueryClient();
   const { toast } = useToastStore();
-  const [meses, setMeses] = useState(1);
-  const [monto, setMonto] = useState("249");
-  const [notas, setNotas] = useState("");
 
-  const PRECIO_MES = 249;
-  const PRECIO_ANUAL = 2490;
+  const PRECIO_EXTRA_EMP = 49;
+  const LIFETIME_SENTINEL = 1200;
+
+  const [empleadosExtra, setEmpleadosExtra] = useState(suscripcion?.empleadosExtra ?? 0);
+  const precioBase = suscripcion?.precioBase ?? 0;
+  const totalMensual = precioBase + empleadosExtra * PRECIO_EXTRA_EMP;
+
+  const [meses, setMeses] = useState(1);
+  const [monto, setMonto] = useState("");
+  const [notas, setNotas] = useState("");
 
   const { data: historial = [], isLoading: cargandoHistorial } = useQuery({
     queryKey: ["pagos-negocio", negocio.id],
@@ -166,14 +171,19 @@ function ModalSuscripcion({
     },
   });
 
-  const LIFETIME = 1200;
+  const mutarEmpleadosExtra = useMutation({
+    mutationFn: (val: number) => adminApi.setEmpleadosExtra(negocio.id, val),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-suscripciones'] });
+    },
+  });
 
   const handleMesesChange = (val: number) => {
     setMeses(val);
-    if (val === LIFETIME) {
-      setMonto("0");
+    if (val === LIFETIME_SENTINEL) {
+      setMonto('');
     } else {
-      setMonto(val === 12 ? String(PRECIO_ANUAL) : String(PRECIO_MES * val));
+      setMonto(String(totalMensual * val));
     }
   };
 
@@ -200,6 +210,45 @@ function ModalSuscripcion({
       <div>
         <p className="text-sm font-semibold text-gray-700 mb-3">Registrar nuevo pago</p>
 
+        {/* Billing summary */}
+        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 mb-4 space-y-2 text-sm">
+          <div className="flex justify-between">
+            <span className="text-gray-500 dark:text-gray-400">Plan</span>
+            <span className="font-medium text-gray-800 dark:text-gray-200">
+              {suscripcion?.planNombre ?? '—'} · {precioBase}/mes
+            </span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-gray-500 dark:text-gray-400">Emp. base</span>
+            <span className="font-medium text-gray-800 dark:text-gray-200">
+              {suscripcion?.maxEmpleadosBase ?? 0}
+            </span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-gray-500 dark:text-gray-400">Emp. extra</span>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min={0}
+                value={empleadosExtra}
+                onChange={e => {
+                  const val = Math.max(0, Number(e.target.value));
+                  setEmpleadosExtra(val);
+                }}
+                onBlur={e => mutarEmpleadosExtra.mutate(Math.max(0, Number(e.target.value)))}
+                className="w-16 text-right rounded-lg border border-gray-300 dark:border-gray-600 px-2 py-0.5 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+              />
+              {empleadosExtra > 0 && (
+                <span className="text-xs text-gray-400">+{formatPrecio(empleadosExtra * PRECIO_EXTRA_EMP)}/mes</span>
+              )}
+            </div>
+          </div>
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-2 flex justify-between font-semibold">
+            <span className="text-gray-700 dark:text-gray-300">Total mensual</span>
+            <span className="text-[#C8A961]">{formatPrecio(totalMensual)}/mes</span>
+          </div>
+        </div>
+
         {/* Selector de meses */}
         <div className="flex gap-2 mb-2">
           {[1, 3, 6, 12].map((m) => (
@@ -217,9 +266,9 @@ function ModalSuscripcion({
           ))}
         </div>
         <button
-          onClick={() => handleMesesChange(LIFETIME)}
+          onClick={() => handleMesesChange(LIFETIME_SENTINEL)}
           className={`w-full py-2 rounded-lg text-xs font-bold border transition mb-3 ${
-            meses === LIFETIME
+            meses === LIFETIME_SENTINEL
               ? "bg-amber-600 text-white border-amber-600"
               : "bg-white text-amber-700 border-amber-300 hover:bg-amber-50"
           }`}
@@ -231,17 +280,16 @@ function ModalSuscripcion({
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Monto (MXN)</label>
             <input
-              type="number"
+              type="text"
+              inputMode="decimal"
               value={monto}
               onChange={(e) => setMonto(e.target.value)}
-              min={0}
-              step={0.01}
               className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-gray-400 font-variant-numeric"
             />
             {meses === 12 && (
               <p className="text-[10px] text-emerald-600 mt-1 font-medium">2 meses gratis vs precio mensual</p>
             )}
-            {meses === LIFETIME && (
+            {meses === LIFETIME_SENTINEL && (
               <p className="text-[10px] text-amber-600 mt-1 font-medium">Acceso permanente — sin vencimiento</p>
             )}
           </div>
@@ -264,7 +312,7 @@ function ModalSuscripcion({
         >
           {registrando
             ? "Registrando..."
-            : meses === LIFETIME
+            : meses === LIFETIME_SENTINEL
             ? "Registrar acceso de por vida"
             : `Registrar pago · $${parseFloat(monto || "0").toLocaleString("es-MX", { minimumFractionDigits: 2 })} MXN`}
         </button>
