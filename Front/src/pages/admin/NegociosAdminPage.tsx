@@ -17,6 +17,18 @@ import BarraProgreso from "../../components/ui/BarraProgreso";
 import { useToastStore } from "../../store/toastStore";
 import { formatPrecio } from "../../utils/formatters";
 
+// ── Constants ──────────────────────────────────────────────────────────────
+const ESTADO_ORDER: Record<string, number> = {
+  Vencida: 0, PorVencer: 1, Activa: 2, SinSuscripcion: 3
+};
+
+const ESTADO_BADGE: Record<string, { label: string; className: string }> = {
+  Activa: { label: 'Activa', className: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
+  PorVencer: { label: 'Por vencer', className: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
+  Vencida: { label: 'Vencida', className: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
+  SinSuscripcion: { label: 'Sin suscripción', className: 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400' },
+};
+
 // ── Schemas ────────────────────────────────────────────────────────────────
 const schemaNegocio = z.object({
   nombre: z.string().min(2, "Nombre requerido"),
@@ -527,17 +539,6 @@ export default function NegociosAdminPage() {
   const queryClient = qc;
   const [tab, setTab] = useState<'negocios' | 'facturacion'>('negocios');
 
-  const ESTADO_ORDER: Record<string, number> = {
-    Vencida: 0, PorVencer: 1, Activa: 2, SinSuscripcion: 3
-  };
-
-  const ESTADO_BADGE: Record<string, { label: string; className: string }> = {
-    Activa: { label: 'Activa', className: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
-    PorVencer: { label: 'Por vencer', className: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
-    Vencida: { label: 'Vencida', className: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
-    SinSuscripcion: { label: 'Sin suscripción', className: 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400' },
-  };
-
   const { data: metricas = [], isLoading } = useQuery({
     queryKey: ["admin-negocios-metricas"],
     queryFn: adminApi.obtenerMetricas,
@@ -786,9 +787,13 @@ export default function NegociosAdminPage() {
                             defaultValue={s.empleadosExtra}
                             onBlur={e => {
                               const val = Math.max(0, Number(e.target.value));
-                              adminApi.setEmpleadosExtra(s.negocioId, val).then(() => {
-                                queryClient.invalidateQueries({ queryKey: ['admin-suscripciones'] });
-                              });
+                              adminApi.setEmpleadosExtra(s.negocioId, val)
+                                .then(() => {
+                                  queryClient.invalidateQueries({ queryKey: ['admin-suscripciones'] });
+                                })
+                                .catch(() => {
+                                  toast('No se pudo actualizar los empleados extra', 'error');
+                                });
                             }}
                             className="w-14 text-center rounded-lg border border-gray-200 dark:border-gray-600 px-1.5 py-0.5 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-sm"
                           />
