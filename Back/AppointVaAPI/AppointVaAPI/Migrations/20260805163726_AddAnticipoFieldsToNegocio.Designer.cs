@@ -3,6 +3,7 @@ using System;
 using AppointVaAPI.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AppointVaAPI.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260805163726_AddAnticipoFieldsToNegocio")]
+    partial class AddAnticipoFieldsToNegocio
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -326,22 +329,6 @@ namespace AppointVaAPI.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<bool>("AnticipoRecibido")
-                        .HasColumnType("boolean");
-
-                    b.Property<DateTime?>("AnticipoRecibidoEn")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.Property<Guid?>("AnticipoRecibidoPorId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("AnticipoRecibidoPorNombre")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<bool>("AnticipoRequerido")
-                        .HasColumnType("boolean");
-
                     b.Property<decimal?>("Cambio")
                         .HasColumnType("numeric");
 
@@ -386,9 +373,6 @@ namespace AppointVaAPI.Migrations
                     b.Property<string>("MetodoPago2")
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)");
-
-                    b.Property<decimal?>("MontoAnticipo")
-                        .HasColumnType("decimal(10,2)");
 
                     b.Property<decimal?>("MontoCobrado")
                         .HasColumnType("numeric");

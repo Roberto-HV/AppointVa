@@ -1,5 +1,7 @@
+using System.Net.Http.Headers;
 using System.Text;
 using AppointVaAPI.Data;
+using AppointVaAPI.Models;
 using AppointVaAPI.Services.IServices;
 using Hangfire;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -144,6 +146,32 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
             services.AddScoped(_ => Substitute.For<IPushService>());
             services.AddScoped(_ => Substitute.For<IBlobStorageService>());
         });
+    }
+
+    public async Task SeedNegocioAsync(Guid negocioId)
+    {
+        await using var scope = Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+        var negocio = new Negocio
+        {
+            Id = negocioId,
+            Nombre = "Test Negocio",
+            Slug = $"test-negocio-{Guid.NewGuid().ToString("N")[..8]}",
+            Activo = 1,
+            FechaCreacion = DateTime.UtcNow,
+            FechaActualizacion = DateTime.UtcNow
+        };
+        db.Negocios.Add(negocio);
+        await db.SaveChangesAsync();
+    }
+
+    public HttpClient CreateAuthenticatedClient(string token)
+    {
+        var client = CreateClient();
+        client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", token);
+        return client;
     }
 
     // Returns true if a type (or any of its generic arguments, recursively)

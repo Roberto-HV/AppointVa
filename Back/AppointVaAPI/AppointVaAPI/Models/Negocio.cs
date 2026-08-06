@@ -37,6 +37,10 @@ namespace AppointVaAPI.Models
         public decimal MontoAnticipo { get; set; } = 0;
         [MaxLength(500)]
         public string? InstruccionesAnticipo { get; set; }
+        public int PorcentajeAnticipo { get; set; } = 0;
+        public int HorasCancelacionConReembolso { get; set; } = 24;
+        [MaxLength(500)]
+        public string PoliticaCancelacionAnticipo { get; set; } = string.Empty;
         [MaxLength(200)]
         public string? InstagramUrl { get; set; }
         [MaxLength(200)]

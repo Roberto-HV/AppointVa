@@ -32,6 +32,11 @@
         public decimal?  Cambio        { get; set; }
         public decimal?  Propina       { get; set; }
         public DateTime? FechaPago     { get; set; }
+        public bool AnticipoRequerido { get; set; }
+        public decimal? MontoAnticipo { get; set; }
+        public bool AnticipoRecibido { get; set; }
+        public string? AnticipoRecibidoPorNombre { get; set; }
+        public DateTime? AnticipoRecibidoEn { get; set; }
         public DateTime InicioEn { get; set; }
         public DateTime FinEn { get; set; }
         public byte Estado { get; set; }

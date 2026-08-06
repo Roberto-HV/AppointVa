@@ -179,6 +179,11 @@ export interface CitaDto {
   cambio?: number | null;
   propina?: number | null;
   fechaPago?: string | null;
+  anticipoRequerido?: boolean;
+  montoAnticipo?: number | null;
+  anticipoRecibido?: boolean;
+  anticipoRecibidoPorNombre?: string | null;
+  anticipoRecibidoEn?: string | null;
   inicioEn: string;
   finEn: string;
   estado: number;
@@ -328,6 +333,9 @@ export interface NegocioDto {
   requiereAnticipo?: boolean;
   montoAnticipo?: number;
   instruccionesAnticipo?: string;
+  porcentajeAnticipo?: number;
+  horasCancelacionConReembolso?: number;
+  politicaCancelacionAnticipo?: string;
   instagramUrl?: string;
   facebookUrl?: string;
   tiktokUrl?: string;
@@ -352,6 +360,9 @@ export interface ActualizarNegocioDto {
   requiereAnticipo?: boolean;
   montoAnticipo?: number;
   instruccionesAnticipo?: string;
+  porcentajeAnticipo?: number;
+  horasCancelacionConReembolso?: number;
+  politicaCancelacionAnticipo?: string;
   instagramUrl?: string;
   facebookUrl?: string;
   tiktokUrl?: string;

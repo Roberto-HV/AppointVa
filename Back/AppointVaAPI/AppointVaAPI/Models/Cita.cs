@@ -46,6 +46,14 @@ namespace AppointVaAPI.Models
         public decimal? Cambio        { get; set; }   // vuelto entregado
         public decimal? Propina       { get; set; }
         public DateTime? FechaPago    { get; set; }   // cuándo se registró el pago
+        public bool AnticipoRequerido { get; set; } = false;
+        [Column(TypeName = "decimal(10,2)")]
+        public decimal? MontoAnticipo { get; set; }
+        public bool AnticipoRecibido { get; set; } = false;
+        public Guid? AnticipoRecibidoPorId { get; set; }
+        [MaxLength(100)]
+        public string? AnticipoRecibidoPorNombre { get; set; }
+        public DateTime? AnticipoRecibidoEn { get; set; }
         public Guid?     RegistradoPorId { get; set; } // FK a ApplicationUser
         public Guid? CreadoPorUsuarioId { get; set; }
         public string? ComprobanteUrl { get; set; }

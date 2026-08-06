@@ -85,6 +85,7 @@ export default function PagosPage() {
   const [isSplit,       setIsSplit]       = useState(false);
   const [metodoPago2,   setMetodoPago2]   = useState<string>('Tarjeta');
   const [montoPago2Input, setMontoPago2Input] = useState<string>('');
+  const [montoCobradoInput, setMontoCobradoInput] = useState<string>('');
   const [citaPagada,    setCitaPagada]    = useState<CitaDto | null>(null);
   const [enviandoEmail, setEnviandoEmail] = useState(false);
 
@@ -320,7 +321,9 @@ export default function PagosPage() {
   };
 
   // ── Payment helpers ───────────────────────────────────────────────────────
-  const montoCobradoDec = citaSel?.precio ?? 0;
+  const montoCobradoDec = montoCobradoInput !== ''
+    ? (parseFloat(montoCobradoInput) || 0)
+    : (citaSel?.precio ?? 0);
   const montoRecibidoDec = parseFloat(montoRecibido || "0");
   const montoPago2Dec = parseFloat(montoPago2Input) || 0;
   const montoPago1Dec = isSplit ? Math.max(0, montoCobradoDec - montoPago2Dec) : montoCobradoDec;
@@ -353,7 +356,7 @@ export default function PagosPage() {
       pagosApi.registrar(payload.id, {
         pagada: true,
         metodoPago,
-        montoCobrado: citaSel?.precio,
+        montoCobrado: montoCobradoDec,
         montoRecibido: hayEfectivo ? payload.montoRec : undefined,
         cambio: hayEfectivo && cambio > 0 ? cambio : undefined,
         propina: payload.prop > 0 ? payload.prop : undefined,
@@ -443,7 +446,7 @@ export default function PagosPage() {
   };
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-6">
+    <div className="p-4 sm:p-8 space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Pagos</h1>
@@ -596,7 +599,22 @@ export default function PagosPage() {
                 <CitaCard
                   key={cita.id}
                   cita={cita}
-                  onCobrar={() => { setCitaSel(cita); setMetodoPago(""); setMontoRecibido(""); setPropina(""); setIsSplit(false); setMetodoPago2('Tarjeta'); setMontoPago2Input(''); }}
+                  onCobrar={() => {
+                    setCitaSel(cita);
+                    setMetodoPago("");
+                    setMontoRecibido("");
+                    setPropina("");
+                    setIsSplit(false);
+                    setMetodoPago2('Tarjeta');
+                    setMontoPago2Input('');
+                    if (cita.anticipoRecibido && cita.montoAnticipo) {
+                      setMontoCobradoInput(
+                        String(Math.max(0, cita.precio - cita.montoAnticipo))
+                      );
+                    } else {
+                      setMontoCobradoInput('');
+                    }
+                  }}
                   onRevertir={() => mutRevertir.mutate(cita.id)}
                   revertiendoId={mutRevertir.isPending && mutRevertir.variables === cita.id ? cita.id : null}
                 />
@@ -611,22 +629,22 @@ export default function PagosPage() {
         <>
           {/* Filtros historial */}
           <div className="flex flex-wrap gap-4 items-end">
-            <div>
+            <div className="w-full sm:w-auto">
               <p className="text-xs text-gray-500 dark:text-gray-400 mb-1.5">Fecha pago desde</p>
               <input
                 type="date"
                 value={histDesde}
                 onChange={e => setHistDesde(e.target.value)}
-                className="px-3 py-1.5 text-xs border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-700/30"
+                className="w-full sm:w-auto px-3 py-1.5 text-xs border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-700/30"
               />
             </div>
-            <div>
+            <div className="w-full sm:w-auto">
               <p className="text-xs text-gray-500 dark:text-gray-400 mb-1.5">Hasta</p>
               <input
                 type="date"
                 value={histHasta}
                 onChange={e => setHistHasta(e.target.value)}
-                className="px-3 py-1.5 text-xs border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-700/30"
+                className="w-full sm:w-auto px-3 py-1.5 text-xs border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-700/30"
               />
             </div>
             <div className="flex-1 min-w-[160px]">
@@ -742,13 +760,13 @@ export default function PagosPage() {
         <div className="space-y-5">
           {/* Selector de fecha + botón imprimir */}
           <div className="flex items-center justify-between gap-3 flex-wrap">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2 w-full sm:w-auto">
               <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Fecha del corte</label>
               <input
                 type="date"
                 value={corteDate}
                 onChange={e => setCorteDate(e.target.value)}
-                className="text-sm border border-gray-200 dark:border-slate-600 rounded-lg px-3 py-1.5 bg-white dark:bg-slate-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                className="w-full sm:w-auto text-sm border border-gray-200 dark:border-slate-600 rounded-lg px-3 py-1.5 bg-white dark:bg-slate-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-slate-400"
               />
             </div>
             <button
@@ -761,7 +779,7 @@ export default function PagosPage() {
           </div>
 
           {corteLoading ? (
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {[1, 2, 3].map(i => <div key={i} className="h-20 bg-gray-100 dark:bg-slate-700 rounded-xl animate-pulse" />)}
             </div>
           ) : corteData.length === 0 ? (
@@ -841,7 +859,7 @@ export default function PagosPage() {
             </h3>
 
             {/* 3-column grid: inicio / cobrado / contado */}
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label className="block text-xs text-gray-500 mb-1">Efectivo inicial</label>
                 <input
@@ -892,7 +910,7 @@ export default function PagosPage() {
                   </button>
                 </div>
               ))}
-              <div className="flex gap-2 mt-2">
+              <div className="flex flex-wrap gap-2 mt-2">
                 <input
                   type="text"
                   value={retiroConcepto}
@@ -970,7 +988,7 @@ export default function PagosPage() {
       {/* Modal: registrar pago */}
       <Modal
         abierto={!!citaSel}
-        onCerrar={() => { setCitaSel(null); setMetodoPago(""); setMontoRecibido(""); setPropina(""); setIsSplit(false); setMetodoPago2('Tarjeta'); setMontoPago2Input(''); }}
+        onCerrar={() => { setCitaSel(null); setMetodoPago(""); setMontoRecibido(""); setPropina(""); setIsSplit(false); setMetodoPago2('Tarjeta'); setMontoPago2Input(''); setMontoCobradoInput(''); }}
         titulo="Registrar pago"
         ancho="sm"
       >
@@ -981,6 +999,39 @@ export default function PagosPage() {
               <p className="text-gray-500 dark:text-gray-400">{citaSel.nombreServicio}</p>
               <p className="text-lg font-bold text-slate-700 dark:text-slate-300 mt-2">${citaSel.precio.toFixed(2)}</p>
             </div>
+
+            {citaSel?.anticipoRecibido && citaSel.montoAnticipo && (
+              <div className="flex items-start gap-2.5 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl p-3">
+                <CheckCircle2 size={16} className="text-emerald-600 dark:text-emerald-400 mt-0.5 shrink-0" />
+                <div className="text-sm text-emerald-800 dark:text-emerald-300">
+                  <span className="font-semibold">Anticipo registrado: ${citaSel.montoAnticipo.toFixed(2)}</span>
+                  <br />
+                  <span className="text-xs">Total a cobrar ajustado automáticamente. Puedes modificarlo abajo.</span>
+                </div>
+              </div>
+            )}
+
+            {citaSel?.anticipoRecibido && citaSel.montoAnticipo && (
+              <div>
+                <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+                  Total a cobrar
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
+                  <input
+                    type="number"
+                    min={0}
+                    step={0.01}
+                    value={montoCobradoInput}
+                    onChange={e => setMontoCobradoInput(e.target.value)}
+                    className="w-full pl-7 pr-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                  />
+                </div>
+                <p className="text-xs text-gray-400 mt-1">
+                  Precio original: ${citaSel.precio.toFixed(2)} — Anticipo: −${citaSel.montoAnticipo.toFixed(2)}
+                </p>
+              </div>
+            )}
 
             <div>
               <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Método de pago</p>

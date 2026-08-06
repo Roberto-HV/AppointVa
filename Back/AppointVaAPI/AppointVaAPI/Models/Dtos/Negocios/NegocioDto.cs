@@ -25,6 +25,9 @@
         public bool RequiereAnticipo { get; set; }
         public decimal MontoAnticipo { get; set; }
         public string? InstruccionesAnticipo { get; set; }
+        public int PorcentajeAnticipo { get; set; }
+        public int HorasCancelacionConReembolso { get; set; }
+        public string PoliticaCancelacionAnticipo { get; set; } = string.Empty;
         public string? InstagramUrl { get; set; }
         public string? FacebookUrl { get; set; }
         public string? TiktokUrl { get; set; }

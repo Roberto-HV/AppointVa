@@ -327,6 +327,16 @@ export default function CitasPage() {
     },
   });
 
+  const mutAnticipo = useMutation({
+    mutationFn: ({ id, recibido }: { id: string; recibido: boolean }) =>
+      citasApi.registrarAnticipo(id, recibido),
+    onSuccess: (_, { recibido }) => {
+      qc.invalidateQueries({ queryKey: ["citas"] });
+      toast(recibido ? "Anticipo registrado" : "Anticipo anulado");
+    },
+    onError: () => toast("No se pudo actualizar el anticipo", "error"),
+  });
+
   // ── Helpers ──────────────────────────────────────────────────────────────────
   const abrirReagendar = (c: CitaDto) => { setCitaReag(c); setFechaReag(""); setSlotReag(""); };
   const abrirCambioEstado = (c: CitaDto) => { setCitaSel(c); setNuevoEstado(null); setMotivo(""); };
@@ -652,6 +662,15 @@ export default function CitasPage() {
                     <td className="px-4 py-3 text-center">
                       <div className="flex items-center justify-center gap-1.5 flex-wrap">
                         <EstadoBadge estado={c.estadoTexto} />
+                        {c.anticipoRequerido && (
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                            c.anticipoRecibido
+                              ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
+                              : 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-500'
+                          }`}>
+                            {c.anticipoRecibido ? '✓ Anticipo' : '⏳ Anticipo'}
+                          </span>
+                        )}
                         {c.comprobanteUrl && c.estadoTexto === "Pendiente" && (
                           <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-600">
                             🧾
@@ -735,6 +754,21 @@ export default function CitasPage() {
                               className="text-xs font-medium px-2.5 py-1 rounded-lg bg-purple-50 text-purple-600 hover:bg-purple-100 transition"
                             >
                               🧾
+                            </button>
+                          </Tooltip>
+                        )}
+                        {c.anticipoRequerido && !c.pagada && (
+                          <Tooltip text={c.anticipoRecibido ? 'Anular anticipo' : `Registrar anticipo $${(c.montoAnticipo ?? 0).toFixed(2)}`}>
+                            <button
+                              onClick={() => mutAnticipo.mutate({ id: c.id, recibido: !c.anticipoRecibido })}
+                              disabled={mutAnticipo.isPending && mutAnticipo.variables?.id === c.id}
+                              className={`text-xs font-medium px-2.5 py-1 rounded-lg transition disabled:opacity-50 ${
+                                c.anticipoRecibido
+                                  ? 'bg-gray-50 dark:bg-slate-700 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-600'
+                                  : 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 hover:bg-amber-100'
+                              }`}
+                            >
+                              {c.anticipoRecibido ? '↩ Anticipo' : '$ Anticipo'}
                             </button>
                           </Tooltip>
                         )}
