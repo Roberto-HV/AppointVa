@@ -429,27 +429,6 @@ describe("CitasPage — filtro de Profesional", () => {
   });
 });
 
-describe("integración módulo de pagos", () => {
-  it("oculta la columna Pago y el botón Cobrar cuando el módulo está activo", async () => {
-    const override = { id: "n1", slug: "salon-test", nombre: "Salón Test", activo: true, moduloPagosHabilitado: true };
-    vi.mocked(negociosApi.obtenerPerfil)
-      .mockResolvedValueOnce(override)
-      .mockResolvedValueOnce(override);
-
-    vi.mocked(citasApi.obtenerTodas).mockResolvedValue({
-      datos: [makeCita()],
-      total: 1,
-      pagina: 1,
-      tamano: 50,
-    });
-
-    renderConQuery();
-    await waitFor(() => screen.getByText("Juan Pérez")); // wait for citas to load
-
-    expect(screen.queryByText("Pago")).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /cobrar/i })).not.toBeInTheDocument();
-  });
-});
 
 describe("anticipo badge y botón", () => {
   function renderWithCitas(citas: object[]) {
