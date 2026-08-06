@@ -77,6 +77,12 @@ export interface SuscripcionResumenDto {
   diasRestantes: number | null;
   totalPagos: number;
   ultimoPago: PagoSuscripcionDto | null;
+  // Billing fields
+  planNombre: string | null;
+  precioBase: number;
+  maxEmpleadosBase: number;
+  empleadosExtra: number;
+  totalMensual: number;
 }
 
 export interface RegistrarPagoDto {
@@ -162,5 +168,9 @@ export const adminApi = {
 
   toggleModuloPagos: async (negocioId: string, habilitado: boolean): Promise<void> => {
     await api.patch(`/admin/negocios/${negocioId}/modulo-pagos`, { habilitado });
+  },
+
+  setEmpleadosExtra: async (negocioId: string, empleadosExtra: number): Promise<void> => {
+    await api.patch(`/admin/negocios/${negocioId}/empleados-extra`, { empleadosExtra });
   },
 };
