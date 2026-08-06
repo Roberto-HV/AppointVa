@@ -436,7 +436,7 @@ namespace AppointVaAPI.Controllers.V1
                 WebcalUrl = icalUrl?.Replace("https://", "webcal://").Replace("http://", "webcal://"),
                 GoogleCalUrl = googleCalUrl,
                 HorasCancelacion = cita.Negocio?.HorasCancelacion ?? 0,
-                RequiereAnticipo = cita.Negocio?.RequiereAnticipo ?? false,
+                RequiereAnticipo = cita.AnticipoRequerido,
                 MontoAnticipo = cita.MontoAnticipo,
                 InstruccionesAnticipo = cita.Negocio?.InstruccionesAnticipo,
                 PorcentajeAnticipo = cita.Negocio?.PorcentajeAnticipo ?? 0,
