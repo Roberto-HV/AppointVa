@@ -28,6 +28,7 @@ namespace AppointVaAPI.Models
         public bool AutoConfirmar { get; set; } = false;
         public bool ListaEsperaActiva { get; set; } = false;
         public bool ModuloPagosHabilitado { get; set; } = false;
+        public int EmpleadosExtra { get; set; } = 0;
         // Notificaciones: "Correo" | "WhatsApp" | "Ambos"
         public string MetodoNotificacion { get; set; } = "Correo";
         public string? TelefonoWhatsApp { get; set; }
