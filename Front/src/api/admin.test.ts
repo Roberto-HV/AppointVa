@@ -17,7 +17,7 @@ describe('adminApi.setEmpleadosExtra', () => {
   });
 
   it('calls PATCH /admin/negocios/{id}/empleados-extra with correct body', async () => {
-    const mockApi = axiosModule.api as any;
+    const mockApi = vi.mocked(axiosModule.api);
     mockApi.patch.mockResolvedValueOnce(undefined);
 
     await adminApi.setEmpleadosExtra('negocio-1', 3);
@@ -29,7 +29,7 @@ describe('adminApi.setEmpleadosExtra', () => {
   });
 
   it('rejects when api.patch fails', async () => {
-    const mockApi = axiosModule.api as any;
+    const mockApi = vi.mocked(axiosModule.api);
     const error = new Error('Network error');
     mockApi.patch.mockRejectedValueOnce(error);
 
