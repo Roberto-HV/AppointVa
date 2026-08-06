@@ -73,8 +73,9 @@ describe('ModalSuscripcion billing header', () => {
     fireEvent.click(btn!);
 
     await waitFor(() => {
-      expect(screen.getByText('Pro')).toBeInTheDocument();
-      expect(screen.getByText(/\$449/)).toBeInTheDocument();
+      const billingSummary = screen.getByTestId('billing-summary');
+      expect(billingSummary.textContent).toContain('Pro');
+      expect(billingSummary.textContent).toMatch(/\$449/);
     });
   });
 
@@ -91,7 +92,8 @@ describe('ModalSuscripcion billing header', () => {
     fireEvent.change(input, { target: { value: '2' } });
 
     // 449 + 2*49 = 547
-    expect(screen.getByText(/\$547/)).toBeInTheDocument();
+    const billingSummary = screen.getByTestId('billing-summary');
+    expect(billingSummary.textContent).toMatch(/\$547/);
   });
 
   it('pre-fills monto with totalMensual when 1-month button clicked', async () => {

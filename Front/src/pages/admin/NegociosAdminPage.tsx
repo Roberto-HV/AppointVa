@@ -211,11 +211,11 @@ function ModalSuscripcion({
         <p className="text-sm font-semibold text-gray-700 mb-3">Registrar nuevo pago</p>
 
         {/* Billing summary */}
-        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 mb-4 space-y-2 text-sm">
+        <div data-testid="billing-summary" className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 mb-4 space-y-2 text-sm">
           <div className="flex justify-between">
             <span className="text-gray-500 dark:text-gray-400">Plan</span>
             <span className="font-medium text-gray-800 dark:text-gray-200">
-              {suscripcion?.planNombre ?? '—'} · {precioBase}/mes
+              {suscripcion?.planNombre ?? '—'} · {formatPrecio(precioBase)}/mes
             </span>
           </div>
           <div className="flex justify-between">
@@ -234,6 +234,7 @@ function ModalSuscripcion({
                 onChange={e => {
                   const val = Math.max(0, Number(e.target.value));
                   setEmpleadosExtra(val);
+                  setMonto(String(precioBase + val * PRECIO_EXTRA_EMP));
                 }}
                 onBlur={e => mutarEmpleadosExtra.mutate(Math.max(0, Number(e.target.value)))}
                 className="w-16 text-right rounded-lg border border-gray-300 dark:border-gray-600 px-2 py-0.5 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"
