@@ -524,6 +524,20 @@ export default function NegociosAdminPage() {
   const [colorPrimario, setColorPrimario] = useState("#C8A961");
   const [colorSecundario, setColorSecundario] = useState("#a07830");
 
+  const queryClient = qc;
+  const [tab, setTab] = useState<'negocios' | 'facturacion'>('negocios');
+
+  const ESTADO_ORDER: Record<string, number> = {
+    Vencida: 0, PorVencer: 1, Activa: 2, SinSuscripcion: 3
+  };
+
+  const ESTADO_BADGE: Record<string, { label: string; className: string }> = {
+    Activa: { label: 'Activa', className: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
+    PorVencer: { label: 'Por vencer', className: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
+    Vencida: { label: 'Vencida', className: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
+    SinSuscripcion: { label: 'Sin suscripción', className: 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400' },
+  };
+
   const { data: metricas = [], isLoading } = useQuery({
     queryKey: ["admin-negocios-metricas"],
     queryFn: adminApi.obtenerMetricas,
@@ -537,6 +551,16 @@ export default function NegociosAdminPage() {
   });
 
   const suscripcionMap = Object.fromEntries(suscripciones.map((s) => [s.negocioId, s]));
+
+  const sortedSuscripciones = [...suscripciones].sort(
+    (a, b) => (ESTADO_ORDER[a.estado] ?? 4) - (ESTADO_ORDER[b.estado] ?? 4)
+  );
+
+  const totalEstimado = suscripciones
+    .filter(s => s.estado !== 'SinSuscripcion')
+    .reduce((sum, s) => sum + s.totalMensual, 0);
+
+  const negociosConPlan = suscripciones.filter(s => s.estado !== 'SinSuscripcion').length;
 
   const { data: planes = [] } = useQuery({
     queryKey: ["planes"],
@@ -651,7 +675,7 @@ export default function NegociosAdminPage() {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Negocios</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Panel de negocios</h1>
           <p className="text-sm text-gray-400 mt-0.5">{metricas.length} registrados en total</p>
         </div>
         <button
@@ -662,39 +686,153 @@ export default function NegociosAdminPage() {
         </button>
       </div>
 
-      {/* Buscador */}
-      <input
-        type="text"
-        placeholder="Buscar por nombre o slug..."
-        value={busqueda}
-        onChange={(e) => setBusqueda(e.target.value)}
-        className="w-full max-w-sm px-4 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-gray-400 mb-6"
-      />
+      {/* Tab bar */}
+      <div className="flex bg-gray-100 dark:bg-slate-700 rounded-lg p-1 gap-1 mb-6">
+        <button
+          onClick={() => setTab('negocios')}
+          className={`flex-1 py-1.5 text-sm font-medium rounded-md transition whitespace-nowrap ${
+            tab === 'negocios'
+              ? 'bg-white text-gray-800 shadow-sm dark:bg-slate-800 dark:text-gray-200'
+              : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+          }`}
+        >
+          Negocios
+        </button>
+        <button
+          onClick={() => setTab('facturacion')}
+          className={`flex-1 py-1.5 text-sm font-medium rounded-md transition whitespace-nowrap ${
+            tab === 'facturacion'
+              ? 'bg-white text-gray-800 shadow-sm dark:bg-slate-800 dark:text-gray-200'
+              : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+          }`}
+        >
+          Facturación
+        </button>
+      </div>
 
-      {/* Grid de tarjetas */}
-      {isLoading ? (
-        <p className="text-gray-400">Cargando negocios...</p>
-      ) : metricasFiltradas.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-100 p-12 text-center">
-          <p className="text-gray-400">
-            {busqueda ? "Sin resultados para esa búsqueda" : "No hay negocios registrados"}
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-          {metricasFiltradas.map((neg) => (
-            <TarjetaNegocio
-              key={neg.id}
-              negocio={neg}
-              suscripcion={suscripcionMap[neg.id]}
-              onActivar={() => activar(neg.id)}
-              onDesactivar={() => desactivar(neg.id)}
-              onCrearPropietario={() => abrirPropietario(neg)}
-              onColores={() => abrirColores(neg)}
-              onSuscripcion={() => abrirSuscripcion(neg)}
-              onTogglePagos={(habilitado) => togglePagos({ id: neg.id, habilitado })}
-            />
-          ))}
+      {tab === 'negocios' && (
+        <>
+          {/* Buscador */}
+          <input
+            type="text"
+            placeholder="Buscar por nombre o slug..."
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            className="w-full max-w-sm px-4 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-gray-400 mb-6"
+          />
+
+          {/* Grid de tarjetas */}
+          {isLoading ? (
+            <p className="text-gray-400">Cargando negocios...</p>
+          ) : metricasFiltradas.length === 0 ? (
+            <div className="bg-white rounded-xl border border-gray-100 p-12 text-center">
+              <p className="text-gray-400">
+                {busqueda ? "Sin resultados para esa búsqueda" : "No hay negocios registrados"}
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+              {metricasFiltradas.map((neg) => (
+                <TarjetaNegocio
+                  key={neg.id}
+                  negocio={neg}
+                  suscripcion={suscripcionMap[neg.id]}
+                  onActivar={() => activar(neg.id)}
+                  onDesactivar={() => desactivar(neg.id)}
+                  onCrearPropietario={() => abrirPropietario(neg)}
+                  onColores={() => abrirColores(neg)}
+                  onSuscripcion={() => abrirSuscripcion(neg)}
+                  onTogglePagos={(habilitado) => togglePagos({ id: neg.id, habilitado })}
+                />
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {tab === 'facturacion' && (
+        <div>
+          {sortedSuscripciones.length === 0 ? (
+            <p className="text-gray-400 dark:text-gray-500 text-sm text-center py-12">
+              Ningún negocio tiene un plan activo todavía.
+            </p>
+          ) : (
+            <div className="overflow-x-auto rounded-xl border border-gray-100 dark:border-slate-700">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-gray-50 dark:bg-slate-800 text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wide">
+                    <th className="px-4 py-3 text-left">Negocio</th>
+                    <th className="px-4 py-3 text-left">Plan</th>
+                    <th className="px-4 py-3 text-center">Emp. base</th>
+                    <th className="px-4 py-3 text-center">Emp. extra</th>
+                    <th className="px-4 py-3 text-right">Total/mes</th>
+                    <th className="px-4 py-3 text-center">Vence</th>
+                    <th className="px-4 py-3 text-center">Estado</th>
+                    <th className="px-4 py-3"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
+                  {sortedSuscripciones.map(s => {
+                    const badge = ESTADO_BADGE[s.estado] ?? ESTADO_BADGE.SinSuscripcion;
+                    return (
+                      <tr key={s.negocioId} className="bg-white dark:bg-slate-900 hover:bg-gray-50 dark:hover:bg-slate-800/60 transition">
+                        <td className="px-4 py-3 font-medium text-gray-800 dark:text-gray-200">{s.negocioNombre}</td>
+                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{s.planNombre ?? '—'}</td>
+                        <td className="px-4 py-3 text-center text-gray-600 dark:text-gray-400">{s.maxEmpleadosBase}</td>
+                        <td className="px-4 py-3 text-center">
+                          <input
+                            type="number"
+                            min={0}
+                            defaultValue={s.empleadosExtra}
+                            onBlur={e => {
+                              const val = Math.max(0, Number(e.target.value));
+                              adminApi.setEmpleadosExtra(s.negocioId, val).then(() => {
+                                queryClient.invalidateQueries({ queryKey: ['admin-suscripciones'] });
+                              });
+                            }}
+                            className="w-14 text-center rounded-lg border border-gray-200 dark:border-gray-600 px-1.5 py-0.5 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-sm"
+                          />
+                        </td>
+                        <td className="px-4 py-3 text-right font-semibold text-[#C8A961]">
+                          {formatPrecio(s.totalMensual)}
+                        </td>
+                        <td className="px-4 py-3 text-center text-gray-500 dark:text-gray-400">
+                          {s.fechaVencimiento
+                            ? new Date(s.fechaVencimiento).toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' })
+                            : '—'}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${badge.className}`}>
+                            {badge.label}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <button
+                            onClick={() => {
+                              const neg = metricas?.find(m => m.id === s.negocioId);
+                              if (neg) abrirSuscripcion(neg);
+                            }}
+                            className="text-xs text-[#C8A961] hover:underline whitespace-nowrap"
+                          >
+                            Ver suscripción
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+                <tfoot>
+                  <tr className="bg-gray-50 dark:bg-slate-800 font-semibold text-gray-700 dark:text-gray-300">
+                    <td colSpan={4} className="px-4 py-3 text-right text-xs uppercase tracking-wide text-gray-400">
+                      Total estimado ({negociosConPlan} negocio{negociosConPlan !== 1 ? 's' : ''})
+                    </td>
+                    <td className="px-4 py-3 text-right text-[#C8A961]">{formatPrecio(totalEstimado)}</td>
+                    <td colSpan={3}></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          )}
         </div>
       )}
 

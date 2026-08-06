@@ -111,3 +111,61 @@ describe('ModalSuscripcion billing header', () => {
     expect(montoInput).toBeInTheDocument();
   });
 });
+
+describe('Facturación tab', () => {
+  const mockSuscripcionVencida = {
+    ...mockSuscripcion,
+    negocioId: 'neg-2',
+    negocioNombre: 'Barbería Vencida',
+    estado: 'Vencida' as const,
+    diasRestantes: 0,
+    totalMensual: 249,
+    precioBase: 249,
+    planNombre: 'Básico',
+  };
+
+  beforeEach(() => {
+    vi.mocked(adminModule.adminApi.obtenerMetricas).mockResolvedValue([mockNegocio]);
+    vi.mocked(adminModule.adminApi.obtenerSuscripciones).mockResolvedValue([
+      mockSuscripcion,
+      mockSuscripcionVencida,
+    ]);
+    vi.mocked(adminModule.adminApi.obtenerPagos).mockResolvedValue([]);
+  });
+
+  it('renders Facturación tab when clicked', async () => {
+    renderPage();
+    await waitFor(() => screen.getByText('Negocios'));
+
+    fireEvent.click(screen.getByText('Facturación'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Peluquería Test')).toBeInTheDocument();
+    });
+  });
+
+  it('shows Vencida rows before Activa in the billing table', async () => {
+    renderPage();
+    await waitFor(() => screen.getByText('Negocios'));
+
+    fireEvent.click(screen.getByText('Facturación'));
+
+    await waitFor(() => screen.getByText('Barbería Vencida'));
+
+    const rows = screen.getAllByRole('row');
+    const names = rows.map(r => r.textContent ?? '');
+    const vencidaIdx = names.findIndex(t => t.includes('Barbería Vencida'));
+    const activaIdx = names.findIndex(t => t.includes('Peluquería Test'));
+    expect(vencidaIdx).toBeLessThan(activaIdx);
+  });
+
+  it('shows estimated monthly total in the summary footer', async () => {
+    renderPage();
+    fireEvent.click(screen.getByText('Facturación'));
+
+    await waitFor(() => {
+      // 449 + 249 = 698
+      expect(screen.getByText(/\$698/)).toBeInTheDocument();
+    });
+  });
+});
