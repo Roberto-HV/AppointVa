@@ -542,21 +542,26 @@ export default function BookingPage() {
                 <h1 className="text-white font-black text-[1.05rem] leading-none tracking-tight">
                   {negocio.nombre}
                 </h1>
-                {(negocio.totalResenas ?? 0) > 0 && (
-                  <div
-                    className="flex items-center gap-1 rounded-full px-2 py-0.5"
-                    style={{ background: "rgba(255,255,255,0.08)" }}
-                  >
-                    <Star size={9} fill="#F59E0B" stroke="#F59E0B" strokeWidth={0} />
-                    <span className="text-[10px]" style={{ color: "rgba(255,255,255,0.55)" }}>
-                      {(negocio.promedioResenas ?? 0).toFixed(1)}
-                    </span>
-                  </div>
-                )}
+                <div
+                  className="flex items-center gap-1 rounded-full px-2 py-0.5"
+                  style={{ background: "rgba(255,255,255,0.08)" }}
+                >
+                  <Star size={9} fill="#F59E0B" stroke="#F59E0B" strokeWidth={0} />
+                  <span className="text-[10px]" style={{ color: "rgba(255,255,255,0.55)" }}>
+                    {(negocio.totalResenas ?? 0) > 0
+                      ? (negocio.promedioResenas ?? 0).toFixed(1)
+                      : "Sin reseñas"}
+                  </span>
+                </div>
               </div>
               {negocio.descripcion && (
-                <p className="text-xs mt-1 line-clamp-2 leading-snug" style={{ color: "rgba(255,255,255,0.62)" }}>
+                <p className="text-xs mt-1 leading-snug" style={{ color: "rgba(255,255,255,0.62)" }}>
                   {negocio.descripcion}
+                </p>
+              )}
+              {negocio.direccion && (
+                <p className="text-xs mt-2 leading-snug" style={{ color: "rgba(255,255,255,0.45)" }}>
+                  📍 {negocio.direccion}
                 </p>
               )}
               <div className="mt-1.5">

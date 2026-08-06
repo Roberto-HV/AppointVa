@@ -52,6 +52,7 @@ export interface NegocioPublico {
   instagramUrl?: string;
   facebookUrl?: string;
   tiktokUrl?: string;
+  direccion?: string;
   servicios: ServicioPublico[];
   empleados: EmpleadoPublico[];
   galeria: ImagenGaleria[];

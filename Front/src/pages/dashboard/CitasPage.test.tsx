@@ -3,6 +3,7 @@ import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import CitasPage from "./CitasPage";
+import type { CitaDto } from "../../types";
 
 vi.mock("react-router-dom", async (importOriginal) => {
   const mod = await importOriginal<typeof import("react-router-dom")>();
@@ -119,7 +120,6 @@ vi.mock("../../components/ui/Select", () => ({
 }));
 
 import { citasApi } from "../../api/citas";
-import { negociosApi } from "../../api/negocios";
 
 const makeCita = (overrides = {}) => ({
   id: "cita-1",
@@ -431,7 +431,7 @@ describe("CitasPage — filtro de Profesional", () => {
 
 
 describe("anticipo badge y botón", () => {
-  function renderWithCitas(citas: object[]) {
+  function renderWithCitas(citas: CitaDto[]) {
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     vi.mocked(citasApi.obtenerTodas).mockResolvedValue({
       datos: citas,
