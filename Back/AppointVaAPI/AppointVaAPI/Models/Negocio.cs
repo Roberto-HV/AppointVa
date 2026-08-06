@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace AppointVaAPI.Models
@@ -48,6 +49,9 @@ namespace AppointVaAPI.Models
         public string? FacebookUrl { get; set; }
         [MaxLength(200)]
         public string? TiktokUrl { get; set; }
+        [MaxLength(20)]
+        [DefaultValue("belleza")]
+        public string Sector { get; set; } = "belleza";
         public Guid? PlanId { get; set; }
         [ForeignKey("PlanId")]
         public Plan? Plan { get; set; }
