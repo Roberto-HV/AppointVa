@@ -33,5 +33,6 @@
         public string? TiktokUrl { get; set; }
         public bool Activo { get; set; }
         public string? PlanNombre { get; set; }
+        public string Sector { get; set; } = "belleza";
     }
 }

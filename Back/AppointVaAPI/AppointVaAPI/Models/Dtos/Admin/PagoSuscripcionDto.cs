@@ -32,6 +32,7 @@ namespace AppointVaAPI.Models.Dtos.Admin
         public int MaxEmpleadosBase { get; set; }
         public int EmpleadosExtra { get; set; }
         public decimal TotalMensual { get; set; }
+        public string Sector { get; set; } = "belleza";
     }
 
     public record SetEmpleadosExtraDto(int EmpleadosExtra);

@@ -38,6 +38,7 @@ namespace AppointVaAPI.Controllers.V1
                     n.Slug,
                     n.FechaVencimiento,
                     n.EmpleadosExtra,
+                    n.Sector,
                     PlanNombre = n.Plan != null ? n.Plan.Nombre : null,
                     PrecioBase = n.Plan != null ? n.Plan.PrecioMensual : 0m,
                     MaxEmpleadosBase = n.Plan != null ? n.Plan.MaxEmpleados : 0
@@ -95,7 +96,8 @@ namespace AppointVaAPI.Controllers.V1
                     PrecioBase       = n.PrecioBase,
                     MaxEmpleadosBase = n.MaxEmpleadosBase,
                     EmpleadosExtra   = n.EmpleadosExtra,
-                    TotalMensual     = n.PrecioBase + (n.EmpleadosExtra * 49m)
+                    TotalMensual     = n.PrecioBase + (n.EmpleadosExtra * 49m),
+                    Sector           = n.Sector
                 };
             }).ToList();
 

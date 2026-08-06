@@ -24,6 +24,7 @@
         public string? FacebookUrl { get; set; }
         public string? TiktokUrl { get; set; }
         public string? Direccion { get; set; }
+        public string Sector { get; set; } = "belleza";
         public List<ServicioPublicoDto> Servicios { get; set; } = new();
         public List<EmpleadoPublicoDto> Empleados { get; set; } = new();
         public List<ImagenGaleriaDto> Galeria { get; set; } = new();
