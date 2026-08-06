@@ -36,7 +36,11 @@ namespace AppointVaAPI.Controllers.V1
                     n.Id,
                     n.Nombre,
                     n.Slug,
-                    n.FechaVencimiento
+                    n.FechaVencimiento,
+                    n.EmpleadosExtra,
+                    PlanNombre = n.Plan != null ? n.Plan.Nombre : null,
+                    PrecioBase = n.Plan != null ? n.Plan.PrecioMensual : 0m,
+                    MaxEmpleadosBase = n.Plan != null ? n.Plan.MaxEmpleados : 0
                 })
                 .ToListAsync();
 
@@ -79,14 +83,19 @@ namespace AppointVaAPI.Controllers.V1
 
                 return new SuscripcionResumenDto
                 {
-                    NegocioId      = n.Id,
-                    NegocioNombre  = n.Nombre,
-                    NegocioSlug    = n.Slug,
+                    NegocioId        = n.Id,
+                    NegocioNombre    = n.Nombre,
+                    NegocioSlug      = n.Slug,
                     FechaVencimiento = n.FechaVencimiento,
-                    Estado         = estado,
-                    DiasRestantes  = diasRestantes,
-                    TotalPagos     = totalPagos,
-                    UltimoPago     = ultimoPago == null ? null : MapPago(ultimoPago)
+                    Estado           = estado,
+                    DiasRestantes    = diasRestantes,
+                    TotalPagos       = totalPagos,
+                    UltimoPago       = ultimoPago == null ? null : MapPago(ultimoPago),
+                    PlanNombre       = n.PlanNombre,
+                    PrecioBase       = n.PrecioBase,
+                    MaxEmpleadosBase = n.MaxEmpleadosBase,
+                    EmpleadosExtra   = n.EmpleadosExtra,
+                    TotalMensual     = n.PrecioBase + (n.EmpleadosExtra * 49m)
                 };
             }).ToList();
 
@@ -189,6 +198,26 @@ namespace AppointVaAPI.Controllers.V1
             await _db.SaveChangesAsync();
 
             return Ok(new { negocioId = id, moduloPagosHabilitado = negocio.ModuloPagosHabilitado });
+        }
+
+        // PATCH /api/admin/negocios/{id}/empleados-extra
+        // Actualizar cantidad de empleados extra para un negocio
+        [HttpPatch("negocios/{id:guid}/empleados-extra")]
+        public async Task<IActionResult> SetEmpleadosExtra(Guid id, [FromBody] SetEmpleadosExtraDto dto)
+        {
+            if (dto.EmpleadosExtra < 0)
+                return BadRequest("EmpleadosExtra no puede ser negativo.");
+
+            var negocio = await _db.Negocios
+                .FirstOrDefaultAsync(n => n.Id == id && n.Activo == 1);
+
+            if (negocio == null) return NotFound();
+
+            negocio.EmpleadosExtra = dto.EmpleadosExtra;
+            negocio.FechaActualizacion = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+
+            return Ok();
         }
 
         private static PagoSuscripcionDto MapPago(PagoSuscripcion p) => new()

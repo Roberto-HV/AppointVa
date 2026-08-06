@@ -25,5 +25,14 @@ namespace AppointVaAPI.Models.Dtos.Admin
         public int? DiasRestantes { get; set; }
         public int TotalPagos { get; set; }
         public PagoSuscripcionDto? UltimoPago { get; set; }
+
+        // Billing fields
+        public string? PlanNombre { get; set; }
+        public decimal PrecioBase { get; set; }
+        public int MaxEmpleadosBase { get; set; }
+        public int EmpleadosExtra { get; set; }
+        public decimal TotalMensual { get; set; }
     }
+
+    public record SetEmpleadosExtraDto(int EmpleadosExtra);
 }
