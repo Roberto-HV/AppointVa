@@ -29,6 +29,9 @@ const ESTADO_BADGE: Record<string, { label: string; className: string }> = {
   SinSuscripcion: { label: 'Sin suscripción', className: 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400' },
 };
 
+const PRECIO_EXTRA_EMP = 49;
+const LIFETIME_SENTINEL = 1200;
+
 // ── Schemas ────────────────────────────────────────────────────────────────
 const schemaNegocio = z.object({
   nombre: z.string().min(2, "Nombre requerido"),
@@ -145,9 +148,6 @@ function ModalSuscripcion({
 }) {
   const qc = useQueryClient();
   const { toast } = useToastStore();
-
-  const PRECIO_EXTRA_EMP = 49;
-  const LIFETIME_SENTINEL = 1200;
 
   const [empleadosExtra, setEmpleadosExtra] = useState(suscripcion?.empleadosExtra ?? 0);
   const precioBase = suscripcion?.precioBase ?? 0;
@@ -299,9 +299,6 @@ function ModalSuscripcion({
               onChange={(e) => setMonto(e.target.value)}
               className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-gray-400 font-variant-numeric"
             />
-            {meses === 12 && (
-              <p className="text-[10px] text-emerald-600 mt-1 font-medium">2 meses gratis vs precio mensual</p>
-            )}
             {meses === LIFETIME_SENTINEL && (
               <p className="text-[10px] text-amber-600 mt-1 font-medium">Acceso permanente — sin vencimiento</p>
             )}
@@ -776,7 +773,7 @@ export default function NegociosAdminPage() {
                   {sortedSuscripciones.map(s => {
                     const badge = ESTADO_BADGE[s.estado] ?? ESTADO_BADGE.SinSuscripcion;
                     return (
-                      <tr key={s.negocioId} className="bg-white dark:bg-slate-900 hover:bg-gray-50 dark:hover:bg-slate-800/60 transition">
+                      <tr key={`${s.negocioId}-${s.empleadosExtra}`} className="bg-white dark:bg-slate-900 hover:bg-gray-50 dark:hover:bg-slate-800/60 transition">
                         <td className="px-4 py-3 font-medium text-gray-800 dark:text-gray-200">{s.negocioNombre}</td>
                         <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{s.planNombre ?? '—'}</td>
                         <td className="px-4 py-3 text-center text-gray-600 dark:text-gray-400">{s.maxEmpleadosBase}</td>
