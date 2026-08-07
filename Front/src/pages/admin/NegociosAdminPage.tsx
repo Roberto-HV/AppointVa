@@ -190,6 +190,15 @@ function ModalSuscripcion({
     },
   });
 
+  const handleSetSector = async (sector: string) => {
+    try {
+      await adminApi.setSector(negocio.id, sector);
+      await qc.invalidateQueries({ queryKey: ['admin-suscripciones'] });
+    } catch (err) {
+      console.error('Error al cambiar sector:', err);
+    }
+  };
+
   const handleMesesChange = (val: number) => {
     setMeses(val);
     if (val === LIFETIME_SENTINEL) {
@@ -259,6 +268,27 @@ function ModalSuscripcion({
           <div className="border-t border-gray-200 dark:border-gray-700 pt-2 flex justify-between font-semibold">
             <span className="text-gray-700 dark:text-gray-300">Total mensual</span>
             <span className="text-[#C8A961]">{formatPrecio(totalMensual)}/mes</span>
+          </div>
+        </div>
+
+        {/* Sector */}
+        <div className="mt-4">
+          <p className="text-xs font-medium text-gray-700 mb-1">Sector</p>
+          <div className="flex gap-2">
+            {(['belleza', 'salud'] as const).map(s => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => handleSetSector(s)}
+                className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                  suscripcion?.sector === s
+                    ? 'bg-indigo-600 text-white border-indigo-600'
+                    : 'bg-white text-gray-600 border-gray-300 hover:border-indigo-400'
+                }`}
+              >
+                {s === 'salud' ? '🏥 Salud' : '💆 Belleza'}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -433,6 +463,17 @@ function TarjetaNegocio({
         </span>
         {suscripcion && (
           <BadgeSuscripcion estado={suscripcion.estado} dias={suscripcion.diasRestantes} />
+        )}
+        {suscripcion && (
+          <span
+            className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${
+              suscripcion.sector === 'salud'
+                ? 'bg-blue-100 text-blue-800'
+                : 'bg-pink-100 text-pink-800'
+            }`}
+          >
+            {suscripcion.sector === 'salud' ? '🏥 Salud' : '💆 Belleza'}
+          </span>
         )}
       </div>
 
