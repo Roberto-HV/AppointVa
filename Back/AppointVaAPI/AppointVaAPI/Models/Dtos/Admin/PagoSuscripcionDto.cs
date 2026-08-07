@@ -36,4 +36,5 @@ namespace AppointVaAPI.Models.Dtos.Admin
     }
 
     public record SetEmpleadosExtraDto(int EmpleadosExtra);
+    public record SetSectorDto(string Sector);
 }

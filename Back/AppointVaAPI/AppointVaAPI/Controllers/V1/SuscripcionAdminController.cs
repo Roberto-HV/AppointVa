@@ -222,6 +222,24 @@ namespace AppointVaAPI.Controllers.V1
             return Ok();
         }
 
+        // PATCH /api/admin/negocios/{id}/sector
+        // Actualizar sector para un negocio
+        [HttpPatch("negocios/{id:guid}/sector")]
+        public async Task<IActionResult> SetSector(Guid id, [FromBody] SetSectorDto dto)
+        {
+            string[] sectoresValidos = ["belleza", "salud"];
+            if (!sectoresValidos.Contains(dto.Sector))
+                return BadRequest("Sector inválido. Valores permitidos: belleza, salud.");
+
+            var negocio = await _db.Negocios.FindAsync(id);
+            if (negocio == null) return NotFound();
+
+            negocio.Sector = dto.Sector;
+            negocio.FechaActualizacion = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+            return Ok();
+        }
+
         private static PagoSuscripcionDto MapPago(PagoSuscripcion p) => new()
         {
             Id                 = p.Id,
