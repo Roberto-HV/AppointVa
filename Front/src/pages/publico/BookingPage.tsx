@@ -470,6 +470,10 @@ export default function BookingPage() {
 
   const color = negocio.colorPrimario ?? DEFAULT_COLOR;
 
+  const textos = negocio.sector === 'salud'
+    ? { cta: 'Agenda tu consulta', cita: 'consulta' }
+    : { cta: 'Reserva tu cita',    cita: 'cita'     };
+
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Header oscuro del negocio */}
@@ -639,6 +643,7 @@ export default function BookingPage() {
         {/* Paso 1 */}
         {paso === 1 && (
           <>
+            <h2 className="text-xl font-bold text-slate-900 mb-5">{textos.cta}</h2>
             {/* Galería */}
             {negocio.galeria?.length > 0 && <GaleriaSection imagenes={negocio.galeria} />}
 
@@ -968,7 +973,7 @@ export default function BookingPage() {
             {negocio && !negocio.autoConfirmar && (
               <div className="mb-4 flex items-center gap-2 text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5">
                 <AlertCircle size={13} className="shrink-0 text-slate-400" />
-                <span>Tu cita quedará <strong>pendiente de confirmación</strong> por el negocio.</span>
+                <span>Tu {textos.cita} quedará <strong>pendiente de confirmación</strong> por el negocio.</span>
               </div>
             )}
 
@@ -991,6 +996,7 @@ export default function BookingPage() {
               datosIniciales={datosPreRellenos ?? undefined}
               onEnviar={confirmarCita}
               color={color}
+              notasLabel={negocio.sector === 'salud' ? 'Motivo de consulta' : undefined}
             />
             {errorEnvio && (
               <div className="mt-4 flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3">

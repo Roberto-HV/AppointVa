@@ -74,3 +74,33 @@ describe("PasoDatosCliente — aviso de email", () => {
     ).not.toBeInTheDocument();
   });
 });
+
+describe("PasoDatosCliente — notasLabel prop", () => {
+  it('shows "Notas (opcional)" label by default', () => {
+    render(
+      <PasoDatosCliente
+        servicio={mockServicio}
+        empleado={mockEmpleado}
+        slot={mockSlot}
+        enviando={false}
+        onEnviar={vi.fn()}
+      />
+    );
+    expect(screen.getByText('Notas (opcional)')).toBeInTheDocument();
+  });
+
+  it('shows the notasLabel prop when provided', () => {
+    render(
+      <PasoDatosCliente
+        servicio={mockServicio}
+        empleado={mockEmpleado}
+        slot={mockSlot}
+        enviando={false}
+        onEnviar={vi.fn()}
+        notasLabel="Motivo de consulta"
+      />
+    );
+    expect(screen.getByText('Motivo de consulta')).toBeInTheDocument();
+    expect(screen.queryByText('Notas (opcional)')).not.toBeInTheDocument();
+  });
+});

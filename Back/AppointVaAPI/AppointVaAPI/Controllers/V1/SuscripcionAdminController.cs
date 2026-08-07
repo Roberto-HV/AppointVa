@@ -38,6 +38,7 @@ namespace AppointVaAPI.Controllers.V1
                     n.Slug,
                     n.FechaVencimiento,
                     n.EmpleadosExtra,
+                    n.Sector,
                     PlanNombre = n.Plan != null ? n.Plan.Nombre : null,
                     PrecioBase = n.Plan != null ? n.Plan.PrecioMensual : 0m,
                     MaxEmpleadosBase = n.Plan != null ? n.Plan.MaxEmpleados : 0
@@ -95,7 +96,8 @@ namespace AppointVaAPI.Controllers.V1
                     PrecioBase       = n.PrecioBase,
                     MaxEmpleadosBase = n.MaxEmpleadosBase,
                     EmpleadosExtra   = n.EmpleadosExtra,
-                    TotalMensual     = n.PrecioBase + (n.EmpleadosExtra * 49m)
+                    TotalMensual     = n.PrecioBase + (n.EmpleadosExtra * 49m),
+                    Sector           = n.Sector
                 };
             }).ToList();
 
@@ -217,6 +219,24 @@ namespace AppointVaAPI.Controllers.V1
             negocio.FechaActualizacion = DateTime.UtcNow;
             await _db.SaveChangesAsync();
 
+            return Ok();
+        }
+
+        // PATCH /api/admin/negocios/{id}/sector
+        // Actualizar sector para un negocio
+        [HttpPatch("negocios/{id:guid}/sector")]
+        public async Task<IActionResult> SetSector(Guid id, [FromBody] SetSectorDto dto)
+        {
+            string[] sectoresValidos = ["belleza", "salud"];
+            if (!sectoresValidos.Contains(dto.Sector))
+                return BadRequest("Sector inválido. Valores permitidos: belleza, salud.");
+
+            var negocio = await _db.Negocios.FindAsync(id);
+            if (negocio == null) return NotFound();
+
+            negocio.Sector = dto.Sector;
+            negocio.FechaActualizacion = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
             return Ok();
         }
 

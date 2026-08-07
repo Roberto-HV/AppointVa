@@ -578,7 +578,8 @@ namespace AppointVaAPI.Controllers.V1
             FacebookUrl = n.FacebookUrl,
             TiktokUrl = n.TiktokUrl,
             Activo = n.Activo == 1,
-            PlanNombre = n.Plan?.Nombre
+            PlanNombre = n.Plan?.Nombre,
+            Sector = n.Sector
         };
     }
 }

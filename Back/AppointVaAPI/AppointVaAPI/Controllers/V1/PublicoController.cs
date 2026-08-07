@@ -140,6 +140,7 @@ namespace AppointVaAPI.Controllers.V1
                 FacebookUrl = negocio.FacebookUrl,
                 TiktokUrl = negocio.TiktokUrl,
                 Direccion = negocio.Direccion,
+                Sector = negocio.Sector,
                 Servicios = servicios.Select(s => new ServicioPublicoDto
                 {
                     Id = s.Id,

@@ -38,3 +38,31 @@ describe('adminApi.setEmpleadosExtra', () => {
     );
   });
 });
+
+describe('adminApi.setSector', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('calls PATCH /admin/negocios/{id}/sector with the given sector', async () => {
+    const mockApi = vi.mocked(axiosModule.api);
+    mockApi.patch.mockResolvedValueOnce(undefined);
+
+    await adminApi.setSector('abc-123', 'salud');
+
+    expect(mockApi.patch).toHaveBeenCalledWith(
+      '/admin/negocios/abc-123/sector',
+      { sector: 'salud' }
+    );
+  });
+
+  it('rejects when api.patch fails', async () => {
+    const mockApi = vi.mocked(axiosModule.api);
+    const error = new Error('Network error');
+    mockApi.patch.mockRejectedValueOnce(error);
+
+    await expect(adminApi.setSector('abc-123', 'salud')).rejects.toThrow(
+      'Network error'
+    );
+  });
+});
