@@ -53,6 +53,7 @@ export interface NegocioPublico {
   facebookUrl?: string;
   tiktokUrl?: string;
   direccion?: string;
+  sector: string;
   servicios: ServicioPublico[];
   empleados: EmpleadoPublico[];
   galeria: ImagenGaleria[];
@@ -343,6 +344,7 @@ export interface NegocioDto {
   activo: boolean;
   planNombre?: string;
   moduloPagosHabilitado?: boolean;
+  sector: string;
 }
 
 export interface ActualizarNegocioDto {

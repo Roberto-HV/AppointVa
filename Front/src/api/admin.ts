@@ -83,6 +83,7 @@ export interface SuscripcionResumenDto {
   maxEmpleadosBase: number;
   empleadosExtra: number;
   totalMensual: number;
+  sector: string;
 }
 
 export interface RegistrarPagoDto {
@@ -172,5 +173,9 @@ export const adminApi = {
 
   setEmpleadosExtra: async (negocioId: string, empleadosExtra: number): Promise<void> => {
     await api.patch(`/admin/negocios/${negocioId}/empleados-extra`, { empleadosExtra });
+  },
+
+  setSector: async (negocioId: string, sector: string): Promise<void> => {
+    await api.patch(`/admin/negocios/${negocioId}/sector`, { sector });
   },
 };

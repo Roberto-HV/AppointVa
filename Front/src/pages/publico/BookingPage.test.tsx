@@ -111,6 +111,7 @@ const mockNegocio: NegocioPublico = {
   autoConfirmar: true,
   requiereAnticipo: false,
   montoAnticipo: 0,
+  sector: 'belleza',
   servicios: [
     {
       id: "srv-1",
