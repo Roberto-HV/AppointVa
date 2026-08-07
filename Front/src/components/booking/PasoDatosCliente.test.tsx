@@ -76,7 +76,7 @@ describe("PasoDatosCliente — aviso de email", () => {
 });
 
 describe("PasoDatosCliente — notasLabel prop", () => {
-  it('shows "Notas adicionales" label by default', () => {
+  it('shows "Notas (opcional)" label by default', () => {
     render(
       <PasoDatosCliente
         servicio={mockServicio}
@@ -86,7 +86,7 @@ describe("PasoDatosCliente — notasLabel prop", () => {
         onEnviar={vi.fn()}
       />
     );
-    expect(screen.getByText('Notas adicionales')).toBeInTheDocument();
+    expect(screen.getByText('Notas (opcional)')).toBeInTheDocument();
   });
 
   it('shows the notasLabel prop when provided', () => {
@@ -101,6 +101,6 @@ describe("PasoDatosCliente — notasLabel prop", () => {
       />
     );
     expect(screen.getByText('Motivo de consulta')).toBeInTheDocument();
-    expect(screen.queryByText('Notas adicionales')).not.toBeInTheDocument();
+    expect(screen.queryByText('Notas (opcional)')).not.toBeInTheDocument();
   });
 });

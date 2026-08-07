@@ -643,6 +643,7 @@ export default function BookingPage() {
         {/* Paso 1 */}
         {paso === 1 && (
           <>
+            <h2 className="text-xl font-bold text-slate-900 mb-5">{textos.cta}</h2>
             {/* Galería */}
             {negocio.galeria?.length > 0 && <GaleriaSection imagenes={negocio.galeria} />}
 
@@ -972,7 +973,7 @@ export default function BookingPage() {
             {negocio && !negocio.autoConfirmar && (
               <div className="mb-4 flex items-center gap-2 text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5">
                 <AlertCircle size={13} className="shrink-0 text-slate-400" />
-                <span>Tu cita quedará <strong>pendiente de confirmación</strong> por el negocio.</span>
+                <span>Tu {textos.cita} quedará <strong>pendiente de confirmación</strong> por el negocio.</span>
               </div>
             )}
 

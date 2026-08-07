@@ -27,7 +27,7 @@ interface Props {
   notasLabel?: string;
 }
 
-export default function PasoDatosCliente({ servicio, empleado, slot, enviando, datosIniciales, onEnviar, color = "#334155", notasLabel = 'Notas adicionales' }: Props) {
+export default function PasoDatosCliente({ servicio, empleado, slot, enviando, datosIniciales, onEnviar, color = "#334155", notasLabel = 'Notas (opcional)' }: Props) {
   const { register, handleSubmit, watch, formState: { errors } } = useForm<DatosClienteForm>({
     resolver: zodResolver(schema),
     defaultValues: datosIniciales,
