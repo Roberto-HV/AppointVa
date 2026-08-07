@@ -24,9 +24,10 @@ interface Props {
   datosIniciales?: Partial<DatosClienteForm>;
   onEnviar: (datos: DatosClienteForm) => void;
   color?: string;
+  notasLabel?: string;
 }
 
-export default function PasoDatosCliente({ servicio, empleado, slot, enviando, datosIniciales, onEnviar, color = "#334155" }: Props) {
+export default function PasoDatosCliente({ servicio, empleado, slot, enviando, datosIniciales, onEnviar, color = "#334155", notasLabel = 'Notas adicionales' }: Props) {
   const { register, handleSubmit, watch, formState: { errors } } = useForm<DatosClienteForm>({
     resolver: zodResolver(schema),
     defaultValues: datosIniciales,
@@ -143,8 +144,8 @@ export default function PasoDatosCliente({ servicio, empleado, slot, enviando, d
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">
-            Notas <span className="text-slate-400 font-normal normal-case">(opcional)</span>
+          <label className="block text-xs font-medium text-gray-600 mb-1">
+            {notasLabel}
           </label>
           <textarea
             {...register("notas")}
