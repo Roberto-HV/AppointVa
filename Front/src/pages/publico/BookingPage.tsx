@@ -470,6 +470,10 @@ export default function BookingPage() {
 
   const color = negocio.colorPrimario ?? DEFAULT_COLOR;
 
+  const textos = negocio.sector === 'salud'
+    ? { cta: 'Agenda tu consulta', cita: 'consulta' }
+    : { cta: 'Reserva tu cita',    cita: 'cita'     };
+
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Header oscuro del negocio */}
@@ -991,6 +995,7 @@ export default function BookingPage() {
               datosIniciales={datosPreRellenos ?? undefined}
               onEnviar={confirmarCita}
               color={color}
+              notasLabel={negocio.sector === 'salud' ? 'Motivo de consulta' : undefined}
             />
             {errorEnvio && (
               <div className="mt-4 flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
