@@ -46,6 +46,7 @@ const mockSuscripcion = {
   maxEmpleadosBase: 3,
   empleadosExtra: 0,
   totalMensual: 449,
+  sector: 'belleza',
 };
 
 function renderPage() {
