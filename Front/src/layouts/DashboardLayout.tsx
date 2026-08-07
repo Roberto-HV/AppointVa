@@ -1,5 +1,5 @@
 ﻿import { useState, useRef, useEffect } from "react";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { Menu, X, LayoutDashboard, CalendarDays, Users, Scissors, UserCheck, Building2, Link, Copy, Check, BarChart2, ShieldCheck, UserCircle, Images, ClipboardList, Tag, LogOut, ChevronUp, Mail, BookOpen, Moon, Sun, CreditCard } from "lucide-react";
 import { useTheme } from "../hooks/useTheme";
 import { useQuery } from "@tanstack/react-query";
@@ -112,6 +112,33 @@ const NAV_EMPLEADO = [
   { to: "/dashboard/mi-perfil", label: "Mi perfil", icon: UserCircle },
 ];
 
+export interface NavItem {
+  label: string;
+  to: string;
+  end?: boolean;
+  icon: React.ComponentType<{ size?: number; className?: string }>;
+}
+
+const HIDDEN_IN_SALUD = new Set(["/dashboard/pagos", "/dashboard/galeria"]);
+
+const SALUD_LABELS: Record<string, string> = {
+  "/dashboard/empleados": "Médicos",
+  "/dashboard/servicios": "Tipos de consulta",
+  "/dashboard/clientes": "Pacientes",
+};
+
+export function getNav(sector: string): NavItem[] {
+  return (NAV_PROPIETARIO as NavItem[])
+    .filter((item) => sector !== "salud" || !HIDDEN_IN_SALUD.has(item.to))
+    .map((item) => ({
+      ...item,
+      label:
+        sector === "salud" && SALUD_LABELS[item.to]
+          ? SALUD_LABELS[item.to]
+          : item.label,
+    }));
+}
+
 export default function DashboardLayout() {
   const { usuario, refreshToken, cerrarSesion } = useAuthStore();
   const navigate = useNavigate();
@@ -124,8 +151,8 @@ export default function DashboardLayout() {
   const sidebarUserRef = useRef<HTMLDivElement>(null);
   const headerUserRef = useRef<HTMLDivElement>(null);
 
+  const location = useLocation();
   const esEmpleado = usuario?.rol === "Empleado";
-  const navItems = esEmpleado ? NAV_EMPLEADO : NAV_PROPIETARIO;
 
   const { data: perfil } = useQuery({
     queryKey: ["negocio-perfil-layout"],
@@ -133,6 +160,18 @@ export default function DashboardLayout() {
     enabled: !esEmpleado,
     staleTime: 1000 * 60 * 5,
   });
+
+  const navItems = esEmpleado ? NAV_EMPLEADO : getNav(perfil?.sector ?? "belleza");
+
+  useEffect(() => {
+    if (
+      perfil?.sector === "salud" &&
+      (location.pathname.startsWith("/dashboard/pagos") ||
+        location.pathname.startsWith("/dashboard/galeria"))
+    ) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [perfil?.sector, location.pathname, navigate]);
 
   const hoy = new Date().toISOString().split("T")[0];
   const { data: citasHoy = [] } = useQuery({
@@ -241,6 +280,7 @@ export default function DashboardLayout() {
           xl:static xl:w-60 xl:translate-x-0 xl:h-full xl:shrink-0
           ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
         `}
+        style={perfil?.sector === "salud" ? { backgroundColor: "#0F4C75" } : undefined}
       >
         {/* Logo + cerrar móvil */}
         <div
@@ -278,6 +318,11 @@ export default function DashboardLayout() {
                       ? "bg-slate-900 dark:bg-slate-700 text-white shadow-sm"
                       : "text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white"
                   }`
+                }
+                style={({ isActive }) =>
+                  isActive && perfil?.sector === "salud"
+                    ? { backgroundColor: "#1B6CA8" }
+                    : undefined
                 }
               >
                 {({ isActive }) => (
@@ -357,6 +402,7 @@ export default function DashboardLayout() {
         {/* ── Barra superior móvil ── */}
         <header
           className="xl:hidden bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-700/50 px-4 py-3 flex items-center gap-3 shrink-0 z-30"
+          style={perfil?.sector === "salud" ? { backgroundColor: "#1B6CA8" } : undefined}
         >
           <button
             onClick={() => setSidebarOpen(true)}
