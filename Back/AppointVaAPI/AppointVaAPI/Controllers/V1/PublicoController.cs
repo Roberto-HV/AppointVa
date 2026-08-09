@@ -392,6 +392,16 @@ namespace AppointVaAPI.Controllers.V1
             // Notificación push al empleado asignado (Hangfire crea su propio scope/DbContext)
             _jobClient.Enqueue<IPushService>(s => s.EnviarNuevaCitaEmpleadoAsync(cita.Id));
 
+            _db.NotificacionesDashboard.Add(new NotificacionDashboard
+            {
+                NegocioId = negocio.Id,
+                Tipo = "NuevaCita",
+                Titulo = $"Nueva cita de {cliente.NombreCompleto}",
+                Descripcion = $"{servicio.Nombre} con {empleado?.Nombre ?? "Empleado"} · {cita.InicioEn.ToLocalTime():ddd d 'de' MMM, HH:mm}",
+                CitaId = cita.Id
+            });
+            await _db.SaveChangesAsync();
+
             // Agendar recordatorio configurable antes de la cita si el cliente tiene correo
             if (!string.IsNullOrWhiteSpace(dto.EmailCliente))
             {
@@ -527,6 +537,16 @@ namespace AppointVaAPI.Controllers.V1
             cita.MotivoCancelacion = "Cancelada por el cliente";
             cita.FechaActualizacion = DateTime.UtcNow;
             await _citaRepo.ActualizarAsync(cita);
+
+            _db.NotificacionesDashboard.Add(new NotificacionDashboard
+            {
+                NegocioId = cita.NegocioId,
+                Tipo = "Cancelacion",
+                Titulo = $"Cita cancelada — {cita.Cliente?.NombreCompleto ?? ""}",
+                Descripcion = $"{cita.Servicio?.Nombre ?? "Servicio"} con {cita.Empleado?.Nombre ?? "Empleado"} · {cita.InicioEn.ToLocalTime():ddd d 'de' MMM, HH:mm}",
+                CitaId = cita.Id
+            });
+            await _db.SaveChangesAsync();
 
             if (!string.IsNullOrWhiteSpace(emailCliente))
                 _jobClient.Enqueue<NotificacionJob>(j => j.EnviarCancelacionAsync(cita.Id, emailCliente, cita.Cliente!.NombreCompleto));

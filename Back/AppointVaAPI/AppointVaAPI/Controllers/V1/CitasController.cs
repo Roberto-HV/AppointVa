@@ -235,6 +235,17 @@ namespace AppointVaAPI.Controllers.V1
             }
 
             var creada = await _citaRepo.ObtenerPorIdAsync(cita.Id, negocioId);
+
+            _db.NotificacionesDashboard.Add(new NotificacionDashboard
+            {
+                NegocioId = cita.NegocioId,
+                Tipo = "NuevaCita",
+                Titulo = $"Nueva cita de {dto.NombreCliente}",
+                Descripcion = $"{servicio.Nombre} con {creada!.Empleado?.Nombre ?? "Empleado"} · {cita.InicioEn.ToLocalTime():ddd d 'de' MMM, HH:mm}",
+                CitaId = cita.Id
+            });
+            await _db.SaveChangesAsync();
+
             return CreatedAtAction(nameof(ObtenerPorId), new { id = cita.Id }, MapearDto(creada!));
         }
 
@@ -267,6 +278,19 @@ namespace AppointVaAPI.Controllers.V1
                     cliente.FechaActualizacion = DateTime.UtcNow;
                     await _clienteRepo.ActualizarAsync(cliente);
                 }
+            }
+
+            if (dto.NuevoEstado == EstadosCitas.Cancelada)
+            {
+                _db.NotificacionesDashboard.Add(new NotificacionDashboard
+                {
+                    NegocioId = cita.NegocioId,
+                    Tipo = "Cancelacion",
+                    Titulo = $"Cita cancelada — {cita.Cliente?.NombreCompleto ?? ""}",
+                    Descripcion = $"{cita.Servicio?.Nombre ?? "Servicio"} con {cita.Empleado?.Nombre ?? "Empleado"} · {cita.InicioEn.ToLocalTime():ddd d 'de' MMM, HH:mm}",
+                    CitaId = cita.Id
+                });
+                await _db.SaveChangesAsync();
             }
 
             // Disparar lista de espera si el negocio la tiene activa y hay personas esperando
