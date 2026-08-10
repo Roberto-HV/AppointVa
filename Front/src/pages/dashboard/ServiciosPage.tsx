@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { Pencil, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Select from "../../components/ui/Select";
@@ -278,14 +279,16 @@ export default function ServiciosPage() {
                         <div className="flex gap-2">
                           <button
                             onClick={() => abrirEditarServicio(s)}
-                            className="text-xs font-medium px-2.5 py-1 rounded-lg bg-slate-700/10 text-slate-700 hover:bg-slate-700/20 dark:bg-slate-600/30 dark:text-slate-300 dark:hover:bg-slate-600/50 dark:border dark:border-slate-500 transition"
+                            className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg bg-slate-700/10 text-slate-700 hover:bg-slate-700/20 dark:bg-slate-600/30 dark:text-slate-300 dark:hover:bg-slate-600/50 dark:border dark:border-slate-500 transition"
                           >
+                            <Pencil size={12} />
                             Editar
                           </button>
                           <button
                             onClick={() => setServicioEliminar(s)}
-                            className="text-xs font-medium px-2.5 py-1 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 dark:bg-red-900/40 dark:text-red-400 dark:hover:bg-red-900/60 dark:border dark:border-red-500/60 transition"
+                            className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 dark:bg-red-900/40 dark:text-red-400 dark:hover:bg-red-900/60 dark:border dark:border-red-500/60 transition"
                           >
+                            <Trash2 size={12} />
                             Eliminar
                           </button>
                         </div>
@@ -335,14 +338,16 @@ export default function ServiciosPage() {
                   <div className="flex gap-2 shrink-0">
                     <button
                       onClick={() => abrirEditarCategoria(c)}
-                      className="text-xs font-medium px-2.5 py-1 rounded-lg bg-slate-700/10 text-slate-700 hover:bg-slate-700/20 dark:bg-slate-600/30 dark:text-slate-300 dark:hover:bg-slate-600/50 dark:border dark:border-slate-500 transition"
+                      className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg bg-slate-700/10 text-slate-700 hover:bg-slate-700/20 dark:bg-slate-600/30 dark:text-slate-300 dark:hover:bg-slate-600/50 dark:border dark:border-slate-500 transition"
                     >
+                      <Pencil size={12} />
                       Editar
                     </button>
                     <button
                       onClick={() => setCategoriaEliminar(c)}
-                      className="text-xs font-medium px-2.5 py-1 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 dark:bg-red-900/40 dark:text-red-400 dark:hover:bg-red-900/60 dark:border dark:border-red-500/60 transition"
+                      className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 dark:bg-red-900/40 dark:text-red-400 dark:hover:bg-red-900/60 dark:border dark:border-red-500/60 transition"
                     >
+                      <Trash2 size={12} />
                       Eliminar
                     </button>
                   </div>
