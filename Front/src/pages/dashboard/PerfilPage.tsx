@@ -306,33 +306,41 @@ export default function PerfilPage() {
       <form onSubmit={handleSubmit(onSubmit)}>
         <div className={tab !== "perfil" ? "hidden" : "space-y-6"}>
 
-          {/* QR */}
-          {negocio && (
-            <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
-              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Código QR de reservas</h2>
-              <div className="flex flex-col sm:flex-row items-start gap-4">
-                <div className="p-3 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl shadow-sm inline-block shrink-0">
-                  <QRCodeCanvas id="qr-reservas" value={bookingUrl} size={120} level="M"
-                    includeMargin={false} bgColor="#ffffff" fgColor="#1a1a1a" />
-                </div>
-                <div className="flex flex-col justify-center gap-3">
-                  <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs">
-                    Comparte este código en tu negocio para que los clientes reserven escaneándolo.
-                  </p>
-                  <div className="flex gap-2">
-                    <button type="button" onClick={descargarQR}
-                      className="flex items-center gap-2 px-4 py-2 bg-gray-900 hover:bg-gray-700 text-white text-sm font-semibold rounded-lg transition">
-                      <Download size={14} /> Descargar PNG
-                    </button>
-                    <button type="button" onClick={() => window.print()}
-                      className="flex items-center gap-2 px-4 py-2 border border-gray-200 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg transition">
-                      Imprimir
-                    </button>
-                  </div>
-                </div>
+          {/* Información del negocio */}
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Información del negocio</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre del negocio *</label>
+                <input {...register("nombre")}
+                  className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100
+                    ${errors.nombre ? "border-red-400 bg-red-50" : "border-gray-200 dark:border-slate-600"}`} />
+                {errors.nombre && <p className="text-red-500 text-xs mt-1">{errors.nombre.message}</p>}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Teléfono</label>
+                <input {...register("telefono")}
+                  className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Correo de contacto</label>
+                <input type="email" {...register("email")}
+                  className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100
+                    ${errors.email ? "border-red-400 bg-red-50" : "border-gray-200 dark:border-slate-600"}`} />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Dirección</label>
+                <input {...register("direccion")}
+                  className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700" />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Descripción</label>
+                <textarea rows={3} maxLength={500} {...register("descripcion")}
+                  className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700 resize-none" />
+                <p className="text-xs text-gray-400 dark:text-gray-500 text-right mt-0.5">{(watch("descripcion") ?? "").length}/500</p>
               </div>
             </div>
-          )}
+          </div>
 
           {/* Imágenes */}
           <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
@@ -467,41 +475,33 @@ export default function PerfilPage() {
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-3">Pega la URL completa. Deja vacío si no usas esa red.</p>
           </div>
 
-          {/* Información básica */}
-          <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Información del negocio</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre del negocio *</label>
-                <input {...register("nombre")}
-                  className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100
-                    ${errors.nombre ? "border-red-400 bg-red-50" : "border-gray-200 dark:border-slate-600"}`} />
-                {errors.nombre && <p className="text-red-500 text-xs mt-1">{errors.nombre.message}</p>}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Teléfono</label>
-                <input {...register("telefono")}
-                  className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Correo de contacto</label>
-                <input type="email" {...register("email")}
-                  className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100
-                    ${errors.email ? "border-red-400 bg-red-50" : "border-gray-200 dark:border-slate-600"}`} />
-              </div>
-              <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Dirección</label>
-                <input {...register("direccion")}
-                  className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700" />
-              </div>
-              <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Descripción</label>
-                <textarea rows={3} maxLength={500} {...register("descripcion")}
-                  className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700 resize-none" />
-                <p className="text-xs text-gray-400 dark:text-gray-500 text-right mt-0.5">{(watch("descripcion") ?? "").length}/500</p>
+          {/* QR */}
+          {negocio && (
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
+              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Código QR de reservas</h2>
+              <div className="flex flex-col sm:flex-row items-start gap-4">
+                <div className="p-3 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl shadow-sm inline-block shrink-0">
+                  <QRCodeCanvas id="qr-reservas" value={bookingUrl} size={120} level="M"
+                    includeMargin={false} bgColor="#ffffff" fgColor="#1a1a1a" />
+                </div>
+                <div className="flex flex-col justify-center gap-3">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs">
+                    Comparte este código en tu negocio para que los clientes reserven escaneándolo.
+                  </p>
+                  <div className="flex gap-2">
+                    <button type="button" onClick={descargarQR}
+                      className="flex items-center gap-2 px-4 py-2 bg-gray-900 hover:bg-gray-700 text-white text-sm font-semibold rounded-lg transition">
+                      <Download size={14} /> Descargar PNG
+                    </button>
+                    <button type="button" onClick={() => window.print()}
+                      className="flex items-center gap-2 px-4 py-2 border border-gray-200 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg transition">
+                      Imprimir
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {btnGuardar}
         </div>
