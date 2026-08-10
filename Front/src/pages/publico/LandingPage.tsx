@@ -600,11 +600,11 @@ export default function LandingPage() {
               />
               <PricingCard
                 delay={100} name="Pro" price={449} employees={4}
-                features={["Todo lo del plan Básico", "4 empleados", "Códigos de descuento", "Galería de fotos", "Reseñas automáticas"]}
+                features={["Todo lo del plan Básico", "4 empleados", "Módulo de pagos integrado", "Recibos digitales", "Conexión a periféricos de pago", "Códigos de descuento"]}
               />
               <PricingCard
                 delay={200} name="Premium" price={799} employees={50} comingSoon
-                features={["Todo lo del plan Pro", "50 empleados", "Formularios de admisión", "Reportes avanzados", "Soporte prioritario"]}
+                features={["Todo lo del plan Pro", "Formularios de admisión", "Reportes avanzados", "Soporte prioritario"]}
               />
             </div>
 
