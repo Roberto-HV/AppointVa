@@ -185,7 +185,6 @@ export default function ReportesPage() {
     exportarExcel(encabezados, [filas], "reporte-ingresos", "Reporte de Ingresos", { subtitulo, totales });
   };
 
-  const inputCls = "px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-slate-600 outline-none focus:border-slate-700 bg-white dark:bg-slate-800 dark:text-gray-100";
 
   return (
     <div className="p-4 sm:p-8 space-y-6">
