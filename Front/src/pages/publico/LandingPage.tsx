@@ -599,8 +599,8 @@ export default function LandingPage() {
                 features={["Portal de reservas público", "3 empleados", "Notificaciones por email", "Dashboard y calendario", "Campana de notificaciones", "Gestión de clientes"]}
               />
               <PricingCard
-                delay={100} name="Pro" price={449} employees={10}
-                features={["Todo lo del plan Básico", "10 empleados", "Códigos de descuento", "Galería de fotos", "Reseñas automáticas"]}
+                delay={100} name="Pro" price={449} employees={4}
+                features={["Todo lo del plan Básico", "4 empleados", "Códigos de descuento", "Galería de fotos", "Reseñas automáticas"]}
               />
               <PricingCard
                 delay={200} name="Premium" price={799} employees={50} comingSoon
