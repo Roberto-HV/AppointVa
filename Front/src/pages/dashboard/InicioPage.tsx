@@ -14,6 +14,7 @@ import { dashboardApi } from "../../api/dashboard";
 import { citasApi } from "../../api/citas";
 import { negociosApi } from "../../api/negocios";
 import { empleadosApi } from "../../api/empleados";
+import { serviciosApi } from "../../api/servicios";
 import { useAuthStore } from "../../store/authStore";
 import EstadoBadge from "../../components/ui/EstadoBadge";
 import { Skeleton } from "../../components/ui/Skeleton";
@@ -161,6 +162,12 @@ function VistaPropietario({ nombre }: { nombre: string }) {
     staleTime: 1000 * 60 * 10,
   });
 
+  const { data: servicios = [] } = useQuery({
+    queryKey: ["servicios-wizard"],
+    queryFn: () => serviciosApi.obtenerTodos(),
+    staleTime: 1000 * 60 * 10,
+  });
+
   const { data: horarios = [] } = useQuery({
     queryKey: ["horarios-wizard"],
     queryFn: () => negociosApi.obtenerHorarios(),
@@ -247,7 +254,7 @@ function VistaPropietario({ nombre }: { nombre: string }) {
           negocioId={usuario.negocioId}
           slug={negocio.slug ?? ""}
 
-          tieneServicios={(data?.topServicios?.length ?? 0) > 0}
+          tieneServicios={servicios.length > 0}
           tieneHorarios={horarios.some(h => h.activo)}
           tieneEmpleados={empleados.length > 0}
           tieneDescripcion={!!negocio.descripcion}

@@ -303,9 +303,9 @@ function FaqItem({ q, a, defaultOpen = false }: { q: string; a: string; defaultO
 
 // ─── Pricing card ─────────────────────────────────────────────────────────────
 function PricingCard({
-  name, price, annualPrice, employees, citas, features, highlighted = false, delay = 0, comingSoon = false, billedAnnually = false,
+  name, price, annualPrice, employees, features, highlighted = false, delay = 0, comingSoon = false, billedAnnually = false,
 }: {
-  name: string; price: number; annualPrice?: number; employees: number; citas: string;
+  name: string; price: number; annualPrice?: number; employees: number;
   features: string[]; highlighted?: boolean; delay?: number; comingSoon?: boolean; billedAnnually?: boolean;
 }) {
   const fade = useFadeInUp(delay);
@@ -325,27 +325,19 @@ function PricingCard({
       <div className="mb-6">
         <p className={`text-xs font-bold uppercase tracking-widest mb-3 ${highlighted ? "text-amber-400" : "text-slate-400"}`}>{name}</p>
 
-        {comingSoon ? (
-          <div className="mb-1">
-            <span className="inline-block px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-widest" style={{ backgroundColor: highlighted ? "#1E293B" : "#F8FAFC", color: highlighted ? GOLD : "#94A3B8", border: `1px solid ${highlighted ? "#334155" : "#E2E8F0"}` }}>
-              Próximamente
-            </span>
-            <p className="text-xs text-slate-400 mt-2">{employees} empleados · {citas} citas/mes</p>
-          </div>
-        ) : (
-          <>
-            <div className="flex items-baseline gap-1.5 mb-1">
-              <span className={`text-5xl font-black tabular-nums ${highlighted ? "text-white" : "text-slate-900"}`}>${displayPrice.toLocaleString()}</span>
-              <span className="text-sm text-slate-400">/mes</span>
-            </div>
-            {billedAnnually && annualPrice && (
-              <p className="text-xs font-semibold mb-1" style={{ color: GOLD }}>
-                Facturado anual · Ahorras ${((price - annualPrice) * 12).toLocaleString()}/año
-              </p>
-            )}
-            <p className="text-xs text-slate-400">{employees} empleados · {citas} citas/mes</p>
-          </>
+        <div className="flex items-baseline gap-1.5 mb-1">
+          <span className={`text-5xl font-black tabular-nums ${highlighted ? "text-white" : "text-slate-900"}`}>${displayPrice.toLocaleString()}</span>
+          <span className="text-sm text-slate-400">/mes</span>
+        </div>
+        {billedAnnually && annualPrice && (
+          <p className="text-xs font-semibold mb-1" style={{ color: GOLD }}>
+            Facturado anual · Ahorras ${((price - annualPrice) * 12).toLocaleString()}/año
+          </p>
         )}
+        <p className="text-xs text-slate-400">
+          {employees} empleados
+          {comingSoon && <span className="ml-2 inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest" style={{ backgroundColor: "#F1F5F9", color: "#94A3B8", border: "1px solid #E2E8F0" }}>Próximamente</span>}
+        </p>
       </div>
 
       <ul className="flex flex-col gap-3 mb-8 flex-1">
@@ -602,17 +594,17 @@ export default function LandingPage() {
 
             <div className="grid md:grid-cols-3 gap-5 items-stretch">
               <PricingCard
-                delay={0} name="Básico" price={249} annualPrice={199} employees={3} citas="200"
+                delay={0} name="Básico" price={249} annualPrice={199} employees={3}
                 highlighted billedAnnually={billedAnnually}
-                features={["Portal de reservas público", "3 empleados", "200 citas por mes", "Notificaciones por email", "Dashboard y calendario", "Campana de notificaciones", "Gestión de clientes"]}
+                features={["Portal de reservas público", "3 empleados", "Notificaciones por email", "Dashboard y calendario", "Campana de notificaciones", "Gestión de clientes"]}
               />
               <PricingCard
-                delay={100} name="Pro" price={449} employees={10} citas="1,000" comingSoon
-                features={["Todo lo del plan Básico", "10 empleados", "1,000 citas por mes", "Notificaciones por WhatsApp", "Códigos de descuento", "Galería de fotos", "Reseñas automáticas"]}
+                delay={100} name="Pro" price={449} employees={10}
+                features={["Todo lo del plan Básico", "10 empleados", "Códigos de descuento", "Galería de fotos", "Reseñas automáticas"]}
               />
               <PricingCard
-                delay={200} name="Premium" price={799} employees={50} citas="10,000" comingSoon
-                features={["Todo lo del plan Pro", "50 empleados", "10,000 citas por mes", "Formularios de admisión", "Reportes avanzados", "Soporte prioritario"]}
+                delay={200} name="Premium" price={799} employees={50} comingSoon
+                features={["Todo lo del plan Pro", "50 empleados", "Formularios de admisión", "Reportes avanzados", "Soporte prioritario"]}
               />
             </div>
 

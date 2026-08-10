@@ -175,6 +175,7 @@ export default function DashboardLayout() {
   const prevPendientesRef = useRef<number | null>(null);
   const sidebarUserRef = useRef<HTMLDivElement>(null);
   const headerUserRef = useRef<HTMLDivElement>(null);
+  const desktopUserRef = useRef<HTMLDivElement>(null);
 
   const location = useLocation();
   const esEmpleado = usuario?.rol === "Empleado";
@@ -253,7 +254,8 @@ export default function DashboardLayout() {
       const target = e.target as Node;
       const fueraSidebar = !sidebarUserRef.current?.contains(target);
       const fueraHeader = !headerUserRef.current?.contains(target);
-      if (fueraSidebar && fueraHeader) setUserMenuOpen(false);
+      const fueraDesktop = !desktopUserRef.current?.contains(target);
+      if (fueraSidebar && fueraHeader && fueraDesktop) setUserMenuOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -492,6 +494,22 @@ export default function DashboardLayout() {
           <header className="hidden xl:flex items-center justify-end gap-3 border-b border-slate-200 bg-white px-6 py-3 dark:border-slate-700 dark:bg-slate-900">
             <FechaHoraActual />
             {!esEmpleado && <NotificacionesBell />}
+            <div ref={desktopUserRef} className="relative flex items-center">
+              <button
+                onClick={() => setUserMenuOpen((o) => !o)}
+                className="w-8 h-8 rounded-full bg-slate-900 flex items-center justify-center overflow-hidden"
+              >
+                {usuario?.fotoUrl
+                  ? <img src={usuario.fotoUrl} alt="Avatar" className="w-full h-full object-cover" />
+                  : <span className="text-[10px] font-bold text-white">{iniciales}</span>
+                }
+              </button>
+              {userMenuOpen && (
+                <div className="absolute top-full right-0 mt-2 w-64 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-2xl overflow-hidden z-50">
+                  <UserMenuContent {...menuProps} />
+                </div>
+              )}
+            </div>
           </header>
           <Outlet />
         </main>
