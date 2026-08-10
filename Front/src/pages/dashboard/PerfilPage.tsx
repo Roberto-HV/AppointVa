@@ -14,7 +14,7 @@ import { authApi } from "../../api/auth";
 import { useAuthStore } from "../../store/authStore";
 import { useToastStore } from "../../store/toastStore";
 import { Skeleton } from "../../components/ui/Skeleton";
-import { TimePicker } from "../../components/ui/DateTimePicker";
+import { TimePicker, DatePicker } from "../../components/ui/DateTimePicker";
 import type { ActualizarNegocioDto, HorarioDto } from "../../types";
 
 const ZONAS_HORARIAS = [
@@ -807,11 +807,9 @@ export default function PerfilPage() {
             <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Días sin atención</h2>
             <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">Bloquea días donde el negocio no trabajará (feriados, vacaciones). Los clientes no podrán reservar esos días.</p>
             <div className="flex gap-2 mb-4 flex-wrap items-end">
-              <div>
+              <div className="w-48">
                 <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Fecha</label>
-                <input type="date" value={nuevaFecha} min={new Date().toISOString().split("T")[0]}
-                  onChange={(e) => setNuevaFecha(e.target.value)}
-                  className="px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700" />
+                <DatePicker value={nuevaFecha} onChange={(v) => setNuevaFecha(v)} minDate={new Date().toISOString().split("T")[0]} />
               </div>
               <div className="flex-1 min-w-[180px]">
                 <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Motivo <span className="text-gray-400 dark:text-gray-500">(opcional)</span></label>
