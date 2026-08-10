@@ -180,11 +180,12 @@ export function DatePicker({ value, onChange, label, minDate, error }: DatePicke
                   disabled={isDis}
                   onClick={() => !isDis && seleccionarCelda(cell)}
                   className={`h-9 w-9 mx-auto text-xs rounded-full font-medium transition ${
-                    isSel || isHoy ? "bg-blue-500 text-white"
-                    : isDis        ? "text-gray-300 dark:text-slate-600 cursor-not-allowed"
-                    : isAdj        ? "text-gray-300 dark:text-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700/50"
-                    : isWeekend    ? "text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
-                                   : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700"
+                    isSel      ? "bg-blue-500 text-white"
+                    : isDis    ? "text-gray-300 dark:text-slate-600 cursor-not-allowed"
+                    : isAdj    ? "text-gray-300 dark:text-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700/50"
+                    : isHoy    ? "ring-2 ring-blue-500 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                    : isWeekend ? "text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+                               : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700"
                   }`}>
                   {cell.day}
                 </button>
