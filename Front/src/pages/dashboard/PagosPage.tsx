@@ -11,6 +11,7 @@ import { useAuthStore } from "../../store/authStore";
 import { useToastStore } from "../../store/toastStore";
 import { exportarExcel } from "../../utils/exportarExcel";
 import Modal from "../../components/ui/Modal";
+import { DatePicker } from "../../components/ui/DateTimePicker";
 import TicketRecibo from "../../components/dashboard/TicketRecibo";
 import { cierreCajaApi } from "../../api/cierreCaja";
 import type { CitaDto, CierreCajaDto, GuardarCierreCajaDto, RetiroItem } from "../../types";
@@ -629,23 +630,13 @@ export default function PagosPage() {
         <>
           {/* Filtros historial */}
           <div className="flex flex-wrap gap-4 items-end">
-            <div className="w-full sm:w-auto">
+            <div className="w-full sm:w-48">
               <p className="text-xs text-gray-500 dark:text-gray-400 mb-1.5">Fecha pago desde</p>
-              <input
-                type="date"
-                value={histDesde}
-                onChange={e => setHistDesde(e.target.value)}
-                className="w-full sm:w-auto px-3 py-1.5 text-xs border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-700/30"
-              />
+              <DatePicker value={histDesde} onChange={v => setHistDesde(v)} />
             </div>
-            <div className="w-full sm:w-auto">
+            <div className="w-full sm:w-48">
               <p className="text-xs text-gray-500 dark:text-gray-400 mb-1.5">Hasta</p>
-              <input
-                type="date"
-                value={histHasta}
-                onChange={e => setHistHasta(e.target.value)}
-                className="w-full sm:w-auto px-3 py-1.5 text-xs border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-700/30"
-              />
+              <DatePicker value={histHasta} onChange={v => setHistHasta(v)} />
             </div>
             <div className="flex-1 min-w-[160px]">
               <p className="text-xs text-gray-500 dark:text-gray-400 mb-1.5">Buscar cliente</p>
@@ -762,12 +753,9 @@ export default function PagosPage() {
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2 w-full sm:w-auto">
               <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Fecha del corte</label>
-              <input
-                type="date"
-                value={corteDate}
-                onChange={e => setCorteDate(e.target.value)}
-                className="w-full sm:w-auto text-sm border border-gray-200 dark:border-slate-600 rounded-lg px-3 py-1.5 bg-white dark:bg-slate-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-slate-400"
-              />
+              <div className="w-full sm:w-48">
+                <DatePicker value={corteDate} onChange={v => setCorteDate(v)} />
+              </div>
             </div>
             <button
               onClick={handleImprimirCorte}

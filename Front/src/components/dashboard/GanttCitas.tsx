@@ -5,6 +5,7 @@ import { empleadosApi } from "../../api/empleados";
 import { useAuthStore } from "../../store/authStore";
 import type { CitaDto } from "../../types";
 import { toUtcDate } from "../../utils/formatters";
+import { DatePicker } from "../ui/DateTimePicker";
 
 const HORA_INICIO = 7;
 const HORA_FIN = 21;
@@ -133,12 +134,9 @@ export default function GanttCitas({ onCitaClick }: Props) {
           >
             ←
           </button>
-          <input
-            type="date"
-            value={fecha}
-            onChange={(e) => setFecha(e.target.value)}
-            className="text-sm font-semibold text-gray-800 border border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:border-slate-700 cursor-pointer"
-          />
+          <div className="w-44">
+            <DatePicker value={fecha} onChange={(v) => setFecha(v)} />
+          </div>
           <button
             onClick={() => setFecha(navFecha(fecha, 1))}
             className="p-2 rounded-lg hover:bg-gray-100 transition text-gray-500 text-sm leading-none"

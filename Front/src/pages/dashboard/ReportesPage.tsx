@@ -11,6 +11,7 @@ import { exportarExcel } from "../../utils/exportarExcel";
 import { empleadosApi } from "../../api/empleados";
 import { serviciosApi } from "../../api/servicios";
 import EstadoBadge from "../../components/ui/EstadoBadge";
+import { DatePicker } from "../../components/ui/DateTimePicker";
 import { SkeletonTableRows } from "../../components/ui/Skeleton";
 import { formatPrecio, formatFechaHora as formatFecha } from "../../utils/formatters";
 
@@ -238,15 +239,13 @@ export default function ReportesPage() {
           ))}
         </div>
         <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-3 items-end">
-          <div className="flex flex-col gap-1 min-w-0">
+          <div className="flex flex-col gap-1 min-w-0 w-full sm:w-48">
             <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Desde</label>
-            <input type="date" value={desde} onChange={(e) => setDesde(e.target.value)} className={inputCls}
-              style={{ width: '100%', minWidth: 0, WebkitAppearance: 'none' }} />
+            <DatePicker value={desde} onChange={(v) => setDesde(v)} />
           </div>
-          <div className="flex flex-col gap-1 min-w-0">
+          <div className="flex flex-col gap-1 min-w-0 w-full sm:w-48">
             <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Hasta</label>
-            <input type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} className={inputCls}
-              style={{ width: '100%', minWidth: 0, WebkitAppearance: 'none' }} />
+            <DatePicker value={hasta} onChange={(v) => setHasta(v)} />
           </div>
           {tab === "citas" && (
             <>
