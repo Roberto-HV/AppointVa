@@ -171,7 +171,8 @@ export default function DashboardLayout() {
   const { theme, toggle: toggleTheme } = useTheme();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [copiado, setCopiado] = useState(false);
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [sidebarMenuOpen, setSidebarMenuOpen] = useState(false);
+  const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
   const prevPendientesRef = useRef<number | null>(null);
   const sidebarUserRef = useRef<HTMLDivElement>(null);
   const headerUserRef = useRef<HTMLDivElement>(null);
@@ -249,17 +250,25 @@ export default function DashboardLayout() {
   };
 
   useEffect(() => {
-    if (!userMenuOpen) return;
+    if (!sidebarMenuOpen) return;
     const handler = (e: MouseEvent) => {
-      const target = e.target as Node;
-      const fueraSidebar = !sidebarUserRef.current?.contains(target);
-      const fueraHeader = !headerUserRef.current?.contains(target);
-      const fueraDesktop = !desktopUserRef.current?.contains(target);
-      if (fueraSidebar && fueraHeader && fueraDesktop) setUserMenuOpen(false);
+      if (!sidebarUserRef.current?.contains(e.target as Node)) setSidebarMenuOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, [userMenuOpen]);
+  }, [sidebarMenuOpen]);
+
+  useEffect(() => {
+    if (!headerMenuOpen) return;
+    const handler = (e: MouseEvent) => {
+      const target = e.target as Node;
+      const fueraHeader = !headerUserRef.current?.contains(target);
+      const fueraDesktop = !desktopUserRef.current?.contains(target);
+      if (fueraHeader && fueraDesktop) setHeaderMenuOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [headerMenuOpen]);
 
   const rolChip = usuario?.rol === "Empleado"
     ? { label: "Empleado", cls: "bg-blue-100 text-blue-700" }
@@ -273,8 +282,8 @@ export default function DashboardLayout() {
     iniciales,
     rolChip,
     rol: usuario?.rol ?? "",
-    onProfile: () => { navigate("/dashboard/mi-perfil"); setUserMenuOpen(false); cerrarSidebar(); },
-    onLogout: () => { setUserMenuOpen(false); handleLogout(); },
+    onProfile: () => { navigate("/dashboard/mi-perfil"); setSidebarMenuOpen(false); setHeaderMenuOpen(false); cerrarSidebar(); },
+    onLogout: () => { setSidebarMenuOpen(false); setHeaderMenuOpen(false); handleLogout(); },
     theme,
     onToggleTheme: toggleTheme,
   };
@@ -396,13 +405,13 @@ export default function DashboardLayout() {
 
         {/* Usuario — popover hacia arriba */}
         <div ref={sidebarUserRef} className="relative p-3 border-t border-slate-100 dark:border-slate-700/50 shrink-0">
-          {userMenuOpen && (
+          {sidebarMenuOpen && (
             <div className="absolute bottom-full left-2 right-2 mb-2 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-2xl overflow-hidden z-50">
               <UserMenuContent {...menuProps} />
             </div>
           )}
           <button
-            onClick={() => setUserMenuOpen((o) => !o)}
+            onClick={() => setSidebarMenuOpen((o) => !o)}
             className="w-full flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition group"
           >
             <div className="w-8 h-8 rounded-full bg-slate-900 flex items-center justify-center shrink-0 overflow-hidden">
@@ -417,7 +426,7 @@ export default function DashboardLayout() {
             </div>
             <ChevronUp
               size={13}
-              className={`text-slate-300 group-hover:text-slate-400 transition-transform shrink-0 ${userMenuOpen ? "" : "rotate-180"}`}
+              className={`text-slate-300 group-hover:text-slate-400 transition-transform shrink-0 ${sidebarMenuOpen ? "" : "rotate-180"}`}
             />
           </button>
         </div>
@@ -456,7 +465,7 @@ export default function DashboardLayout() {
               </Tooltip>
             )}
             <button
-              onClick={() => setUserMenuOpen((o) => !o)}
+              onClick={() => setHeaderMenuOpen((o) => !o)}
               className="w-8 h-8 rounded-full bg-slate-900 flex items-center justify-center overflow-hidden"
             >
               {usuario?.fotoUrl
@@ -464,7 +473,7 @@ export default function DashboardLayout() {
                 : <span className="text-[10px] font-bold text-white">{iniciales}</span>
               }
             </button>
-            {userMenuOpen && (
+            {headerMenuOpen && (
               <div className="absolute top-full right-0 mt-2 w-64 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-2xl overflow-hidden z-50">
                 <UserMenuContent {...menuProps} />
               </div>
@@ -496,7 +505,7 @@ export default function DashboardLayout() {
             {!esEmpleado && <NotificacionesBell />}
             <div ref={desktopUserRef} className="relative flex items-center">
               <button
-                onClick={() => setUserMenuOpen((o) => !o)}
+                onClick={() => setHeaderMenuOpen((o) => !o)}
                 className="w-8 h-8 rounded-full bg-slate-900 flex items-center justify-center overflow-hidden"
               >
                 {usuario?.fotoUrl
@@ -504,7 +513,7 @@ export default function DashboardLayout() {
                   : <span className="text-[10px] font-bold text-white">{iniciales}</span>
                 }
               </button>
-              {userMenuOpen && (
+              {headerMenuOpen && (
                 <div className="absolute top-full right-0 mt-2 w-64 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-2xl overflow-hidden z-50">
                   <UserMenuContent {...menuProps} />
                 </div>
