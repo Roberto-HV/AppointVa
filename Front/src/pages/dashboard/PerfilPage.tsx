@@ -14,6 +14,7 @@ import { authApi } from "../../api/auth";
 import { useAuthStore } from "../../store/authStore";
 import { useToastStore } from "../../store/toastStore";
 import { Skeleton } from "../../components/ui/Skeleton";
+import { TimePicker } from "../../components/ui/DateTimePicker";
 import type { ActualizarNegocioDto, HorarioDto } from "../../types";
 
 const ZONAS_HORARIAS = [
@@ -782,13 +783,13 @@ export default function PerfilPage() {
                   </label>
                   {h.activo ? (
                     <div className="flex items-center gap-2 pl-11 sm:pl-0">
-                      <input type="time" value={h.horaInicio}
-                        onChange={(e) => actualizarHorario(h.diaSemana!, "horaInicio", e.target.value)}
-                        className="flex-1 min-w-0 sm:w-32 sm:flex-none px-2 py-1 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700" />
+                      <div className="w-32">
+                        <TimePicker value={h.horaInicio} onChange={(v) => actualizarHorario(h.diaSemana!, "horaInicio", v)} />
+                      </div>
                       <span className="text-gray-400 dark:text-gray-500 text-sm shrink-0">—</span>
-                      <input type="time" value={h.horaFin}
-                        onChange={(e) => actualizarHorario(h.diaSemana!, "horaFin", e.target.value)}
-                        className="flex-1 min-w-0 sm:w-32 sm:flex-none px-2 py-1 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700" />
+                      <div className="w-32">
+                        <TimePicker value={h.horaFin} onChange={(v) => actualizarHorario(h.diaSemana!, "horaFin", v)} />
+                      </div>
                     </div>
                   ) : (
                     <span className="text-sm text-gray-400 dark:text-gray-500 pl-11 sm:pl-0">Cerrado</span>
