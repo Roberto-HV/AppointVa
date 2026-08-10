@@ -9,6 +9,30 @@ import { negociosApi } from "../api/negocios";
 import { citasApi, ESTADOS } from "../api/citas";
 import { useToastStore } from "../store/toastStore";
 import { Tooltip } from "../components/ui/Tooltip";
+import { NotificacionesBell } from '../components/dashboard/NotificacionesBell';
+
+function FechaHoraActual() {
+  const [ahora, setAhora] = useState(new Date());
+  useEffect(() => {
+    const id = setInterval(() => setAhora(new Date()), 60_000);
+    return () => clearInterval(id);
+  }, []);
+  const fecha = ahora.toLocaleDateString('es-MX', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  });
+  const hora = ahora.toLocaleTimeString('es-MX', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+  return (
+    <span className="hidden sm:block select-none text-sm capitalize text-slate-500 dark:text-slate-400">
+      {fecha} · {hora}
+    </span>
+  );
+}
 
 interface UserMenuContentProps {
   usuario: { fotoUrl?: string | null; nombreCompleto: string; email: string; rol: string } | null;
@@ -419,6 +443,8 @@ export default function DashboardLayout() {
             </span>
           )}
           <div ref={headerUserRef} className="ml-auto flex items-center gap-2 relative">
+            <FechaHoraActual />
+            <NotificacionesBell />
             {pendientesCnt > 0 && (
               <Tooltip text={`${pendientesCnt} cita${pendientesCnt !== 1 ? "s" : ""} pendiente${pendientesCnt !== 1 ? "s" : ""} por confirmar`}>
                 <span className="flex items-center gap-1 bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-700 text-[10px] font-bold px-2 py-0.5 rounded-full cursor-default">
@@ -461,6 +487,11 @@ export default function DashboardLayout() {
 
         {/* ── Contenido principal ── */}
         <main className="flex-1 overflow-y-auto overscroll-y-none bg-white dark:bg-slate-950">
+          {/* Desktop topbar — hidden on mobile (mobile has its own header) */}
+          <header className="hidden xl:flex items-center justify-end gap-3 border-b border-slate-200 bg-white px-6 py-3 dark:border-slate-700 dark:bg-slate-900">
+            <FechaHoraActual />
+            <NotificacionesBell />
+          </header>
           <Outlet />
         </main>
 
