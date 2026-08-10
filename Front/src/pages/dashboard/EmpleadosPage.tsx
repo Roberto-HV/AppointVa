@@ -384,7 +384,7 @@ export default function EmpleadosPage() {
                   <div className="flex gap-1.5">
                     <button
                       onClick={() => abrirInvitar(emp)}
-                      className="flex-1 inline-flex items-center justify-center gap-1.5 text-xs font-medium py-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/40 dark:text-blue-400 dark:hover:bg-blue-900/60 dark:border dark:border-blue-500/60 transition"
+                      className="flex-1 inline-flex items-center justify-center gap-1.5 text-xs font-medium py-1.5 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600 transition"
                     >
                       <Mail size={12} /> Invitar acceso
                     </button>

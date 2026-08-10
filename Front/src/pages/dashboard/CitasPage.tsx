@@ -34,6 +34,7 @@ import { negociosApi } from "../../api/negocios";
 import { api } from "../../api/axios";
 import EstadoBadge from "../../components/ui/EstadoBadge";
 import Modal from "../../components/ui/Modal";
+import { DatePicker } from "../../components/ui/DateTimePicker";
 import CalendarioCitas from "../../components/dashboard/CalendarioCitas";
 import GanttCitas from "../../components/dashboard/GanttCitas";
 import PasoFechaHora from "../../components/booking/PasoFechaHora";
@@ -543,15 +544,11 @@ export default function CitasPage() {
           <div className="col-span-2 flex gap-2">
             <div className="flex-1 min-w-0">
               <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Desde</label>
-              <input type="date" value={desde} onChange={(e) => { setDesde(e.target.value); setPagina(1); }}
-                className="px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700"
-                style={{ width: '100%', minWidth: 0, WebkitAppearance: 'none' }} />
+              <DatePicker value={desde} onChange={(v) => { setDesde(v); setPagina(1); }} />
             </div>
             <div className="flex-1 min-w-0">
               <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Hasta</label>
-              <input type="date" value={hasta} onChange={(e) => { setHasta(e.target.value); setPagina(1); }}
-                className="px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700"
-                style={{ width: '100%', minWidth: 0, WebkitAppearance: 'none' }} />
+              <DatePicker value={hasta} onChange={(v) => { setHasta(v); setPagina(1); }} />
             </div>
           </div>
           {(desde || hasta || empleadoId || busqueda || estadoFiltro) && (
@@ -731,7 +728,7 @@ export default function CitasPage() {
                           <Tooltip text="Reagendar">
                             <button
                               onClick={() => abrirReagendar(c)}
-                              className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 transition"
+                              className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-violet-100 text-violet-600 hover:bg-violet-200 dark:bg-violet-900/40 dark:text-violet-400 dark:hover:bg-violet-900/60 transition"
                             >
                               <CalendarClock size={16} />
                             </button>
@@ -741,7 +738,7 @@ export default function CitasPage() {
                         <Tooltip text="Repetir cita">
                           <button
                             onClick={() => abrirRepetirCita(c)}
-                            className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 transition"
+                            className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-cyan-100 text-cyan-600 hover:bg-cyan-200 dark:bg-cyan-900/40 dark:text-cyan-400 dark:hover:bg-cyan-900/60 transition"
                           >
                             <RotateCcw size={15} />
                           </button>
@@ -764,7 +761,7 @@ export default function CitasPage() {
                         <Tooltip text={c.notas ? "Ver o editar notas internas" : "Agregar nota interna"}>
                           <button
                             onClick={() => abrirNotas(c)}
-                            className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 transition relative"
+                            className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-yellow-100 text-yellow-600 hover:bg-yellow-200 dark:bg-yellow-900/40 dark:text-yellow-400 dark:hover:bg-yellow-900/60 transition relative"
                           >
                             <StickyNote size={15} />
                             {c.notas && <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-amber-400" />}
@@ -775,7 +772,7 @@ export default function CitasPage() {
                           <Tooltip text="Ver comprobante de anticipo">
                             <button
                               onClick={() => setUrlComprobante(c.comprobanteUrl!)}
-                              className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 transition"
+                              className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 hover:bg-indigo-200 dark:bg-indigo-900/40 dark:text-indigo-400 dark:hover:bg-indigo-900/60 transition"
                             >
                               <Receipt size={15} />
                             </button>
@@ -789,8 +786,8 @@ export default function CitasPage() {
                               disabled={mutAnticipo.isPending && mutAnticipo.variables?.id === c.id}
                               className={`inline-flex items-center justify-center w-8 h-8 rounded-lg transition disabled:opacity-50 ${
                                 c.anticipoRecibido
-                                  ? 'bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300'
-                                  : 'bg-amber-100 text-amber-700 hover:bg-amber-200'
+                                  ? 'bg-slate-100 text-slate-400 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-400'
+                                  : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-400 dark:hover:bg-emerald-900/60'
                               }`}
                             >
                               <Banknote size={15} />
