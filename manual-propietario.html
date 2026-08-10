@@ -529,7 +529,7 @@
           <rect x="4" y="8" width="3" height="3" rx="0.8" fill="#C8A961" fill-opacity="0.6"/>
           <rect x="9" y="8" width="3" height="3" rx="0.8" fill="#C8A961" fill-opacity="0.3"/>
         </svg>
-        <span class="toc-header-title">Manual del Propietario — 10 secciones</span>
+        <span class="toc-header-title">Manual del Propietario — 11 secciones</span>
         <span class="toc-header-label">Ir a sección</span>
       </div>
 
@@ -625,9 +625,19 @@
           <div class="toc-arrow" aria-hidden="true">→</div>
         </a>
 
-        <a class="toc-item" href="#seguridad" role="listitem">
+        <a class="toc-item" href="#notificaciones" role="listitem">
           <div class="toc-rail" aria-hidden="true"></div>
           <div class="toc-num" aria-hidden="true">10</div>
+          <div class="toc-content">
+            <div class="toc-name">Campana de notificaciones</div>
+            <div class="toc-desc">Alertas en tiempo real de nuevas citas y cancelaciones</div>
+          </div>
+          <div class="toc-arrow" aria-hidden="true">→</div>
+        </a>
+
+        <a class="toc-item" href="#seguridad" role="listitem">
+          <div class="toc-rail" aria-hidden="true"></div>
+          <div class="toc-num" aria-hidden="true">11</div>
           <div class="toc-content">
             <div class="toc-name">Seguridad</div>
             <div class="toc-desc">2FA y cambio de contraseña</div>
@@ -1284,12 +1294,90 @@
   </section>
 
   <!-- ══════════════════════════════════════════════════════════ -->
+  <!--  10 — CAMPANA DE NOTIFICACIONES                            -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <section class="section anchor-target" id="notificaciones" aria-labelledby="h-notificaciones">
+    <div class="divider" aria-hidden="true"></div>
+    <div style="padding-top: 52px;">
+      <div class="section-label">Sección 10</div>
+      <h2 class="section-title" id="h-notificaciones">Campana de notificaciones</h2>
+      <p style="font-size:14px; color:var(--gray); margin-bottom:24px;">La campana aparece en la barra superior del Dashboard, junto a la fecha y la hora. Es exclusiva del rol <strong>Propietario</strong> — los empleados no la ven.</p>
+
+      <div class="card">
+        <div class="card-title">¿Cómo funciona?</div>
+        <p>Cuando llega una notificación nueva, la campana muestra un <strong>badge rojo</strong> con el número de alertas no leídas. Al hacer clic se abre un dropdown con el historial completo. El badge desaparece en cuanto abres el panel, porque todas las notificaciones se marcan como leídas automáticamente.</p>
+      </div>
+
+      <h3 style="font-size:16px; font-weight:700; margin:24px 0 14px;">Tipos de notificación</h3>
+      <div class="feat-list">
+        <div class="feat-item">
+          <div class="feat-dot"></div>
+          <div class="feat-text">
+            <strong>Nueva cita</strong>
+            <span>Se genera cada vez que un cliente agenda una cita a través de tu página pública de reservas.</span>
+          </div>
+        </div>
+        <div class="feat-item">
+          <div class="feat-dot"></div>
+          <div class="feat-text">
+            <strong>Cancelación</strong>
+            <span>Se genera cuando una cita es cancelada, ya sea por el cliente o manualmente desde el panel.</span>
+          </div>
+        </div>
+      </div>
+
+      <h3 style="font-size:16px; font-weight:700; margin:24px 0 14px;">Gestionar las notificaciones</h3>
+      <div class="steps">
+        <div class="step-item">
+          <div class="step-num" aria-hidden="true">1</div>
+          <div class="step-body">
+            <div class="step-title">Haz clic en la campana</div>
+            <p class="step-desc">Abre el dropdown desde la barra superior del Dashboard. El badge rojo desaparece y todas las notificaciones del listado se marcan como leídas.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num" aria-hidden="true">2</div>
+          <div class="step-body">
+            <div class="step-title">Revisa el historial</div>
+            <p class="step-desc">El dropdown muestra todas las notificaciones recientes — tipo, cliente y hora. Puedes consultarlas aunque ya estén leídas.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num" aria-hidden="true">3</div>
+          <div class="step-body">
+            <div class="step-title">Elimina las que ya no necesites</div>
+            <p class="step-desc">Cada notificación tiene un botón <strong>×</strong> para quitarla individualmente del historial. Útil para mantener el panel limpio.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="info">
+        <svg class="info-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+          <circle cx="11" cy="11" r="9" stroke="#2563eb" stroke-width="1.5"/>
+          <line x1="11" y1="7" x2="11" y2="11.5" stroke="#2563eb" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="11" cy="14.5" r="1.2" fill="#2563eb"/>
+        </svg>
+        <p><strong>Actualización automática:</strong> La campana consulta el servidor cada 30 segundos, por lo que el badge se actualiza solo mientras tienes el panel abierto, sin necesidad de recargar la página.</p>
+      </div>
+
+      <div class="tip">
+        <svg class="tip-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+          <circle cx="11" cy="11" r="9" stroke="#C8A961" stroke-width="1.5"/>
+          <line x1="11" y1="7" x2="11" y2="11.5" stroke="#C8A961" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="11" cy="14.5" r="1.2" fill="#C8A961"/>
+        </svg>
+        <p><strong>Consejo:</strong> La campana complementa las notificaciones push de los empleados. Tú como propietario ves el panorama completo en el dashboard; tus empleados reciben alertas directas en sus dispositivos.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
   <!--  11 — SEGURIDAD                                            -->
   <!-- ══════════════════════════════════════════════════════════ -->
   <section class="section anchor-target" id="seguridad" aria-labelledby="h-seguridad">
     <div class="divider" aria-hidden="true"></div>
     <div style="padding-top: 52px;">
-      <div class="section-label">Sección 10</div>
+      <div class="section-label">Sección 11</div>
       <h2 class="section-title" id="h-seguridad">Seguridad</h2>
       <p style="font-size:14px; color:var(--gray); margin-bottom:24px;">Ve a <strong>Configuración → Seguridad</strong>. Desde aquí protege el acceso a tu cuenta.</p>
 

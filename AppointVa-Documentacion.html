@@ -1326,8 +1326,14 @@
   <div class="change-item">
     <div class="change-icon" style="background:#dbeafe;">🔔</div>
     <div>
-      <div class="change-title">Polling de notificaciones en DashboardLayout</div>
-      <div class="change-desc">Query con <code>refetchInterval: 30_000</code> y <code>staleTime: 0</code>. Cuando el conteo de pendientes sube, muestra un toast "N nuevas citas pendientes". Badge rojo en sidebar y header móvil.</div>
+      <div class="change-title">Campana de notificaciones en DashboardLayout (propietario)</div>
+      <div class="change-desc">
+        <strong>Polling:</strong> Query con <code>refetchInterval: 30_000</code> y <code>staleTime: 0</code>. Cuando el conteo de pendientes sube, muestra un toast "N nuevas citas pendientes".<br>
+        <strong>Campana con badge:</strong> Ícono de campana en el topbar del dashboard con badge rojo que muestra el conteo de notificaciones no leídas. Al hacer clic en la campana el badge se limpia automáticamente.<br>
+        <strong>Dropdown de notificaciones:</strong> Lista desplegable bajo la campana con dos tipos de evento: <em>Nueva cita</em> y <em>Cancelación</em>. Cada entrada muestra nombre del cliente, servicio y fecha/hora de la cita.<br>
+        <strong>Borrado manual:</strong> Cada notificación incluye un botón × que la elimina individualmente sin cerrar el dropdown.<br>
+        <strong>Fecha y hora en topbar:</strong> El topbar muestra la fecha y hora actual del sistema junto a la campana, actualizándose cada minuto.
+      </div>
       <div class="change-files">
         <span class="file-chip">DashboardLayout.tsx</span>
       </div>
@@ -2271,6 +2277,67 @@
 
 </div>
 
+<!-- ══════════════════ SECCIÓN 5h: CAMBIOS v4.4 ══════════════════ -->
+<div class="container page-break">
+  <h2>5h. Registro de Cambios — v4.4 (agosto de 2026)</h2>
+  <p style="color:#6b7280;margin-bottom:24px;">Campana de notificaciones para el propietario, fecha y hora en topbar, corrección de parseo UTC de fechas del backend y soporte del vertical de salud.</p>
+
+  <h3>v4.4 — Notificaciones y mejoras del dashboard</h3>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#dbeafe;">🔔</div>
+    <div>
+      <div class="change-title">Campana de notificaciones con dropdown y badge <span class="tag tag-new" style="vertical-align:middle;">Nuevo</span></div>
+      <div class="change-desc">
+        Ícono de campana en el topbar del dashboard del propietario con badge rojo que muestra el conteo de notificaciones no leídas. Al abrir el dropdown el badge se limpia. La lista muestra dos tipos de evento: <em>Nueva cita</em> y <em>Cancelación</em>, con nombre del cliente, servicio y fecha/hora. Cada entrada puede eliminarse con el botón ×.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">DashboardLayout.tsx</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#f0fdf4;">🕐</div>
+    <div>
+      <div class="change-title">Fecha y hora actual en topbar del dashboard <span class="tag tag-new" style="vertical-align:middle;">Nuevo</span></div>
+      <div class="change-desc">
+        El topbar del dashboard muestra la fecha y hora actuales del sistema junto a la campana de notificaciones, con actualización cada minuto.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">DashboardLayout.tsx</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#fee2e2;">🔧</div>
+    <div>
+      <div class="change-title">Fix: parseo UTC de fechas del backend — helper <code>toUtcDate</code> <span class="tag tag-fix" style="vertical-align:middle;">Fix</span></div>
+      <div class="change-desc">
+        Las fechas devueltas por el backend en formato UTC (<code>2026-08-04T15:00:00</code>) se interpretaban como hora local en el navegador, causando desfase horario en la UI. Se creó el helper <code>toUtcDate()</code> que fuerza la interpretación UTC antes de cualquier formateo, garantizando que la hora mostrada coincida con la almacenada en el servidor.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">utils/formatters.ts</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="change-item">
+    <div class="change-icon" style="background:#f0fdf4;">🏥</div>
+    <div>
+      <div class="change-title">Soporte del vertical de salud <span class="tag tag-new" style="vertical-align:middle;">Nuevo</span></div>
+      <div class="change-desc">
+        AppointVa incorpora el sector salud como vertical soportado: clínicas, consultorios médicos, veterinarias y fisioterapia. No requiere cambios de código — la plataforma es genérica y se adapta solo con configuración de negocio, servicios y horarios.
+      </div>
+      <div class="change-files">
+        <span class="file-chip">DataSeeder.cs</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
 <!-- ══════════════════ SECCIÓN 6: DATOS DEMO ══════════════════ -->
 <div class="container page-break">
   <h2>6. Datos Demo Precargados</h2>
@@ -2329,6 +2396,18 @@
     <tr><td>Pro</td><td>$399 MXN</td><td>10</td><td>1,000</td></tr>
     <tr><td>Premium</td><td>Próximamente</td><td>—</td><td>—</td></tr>
   </table>
+
+  <h3 style="margin-top:28px;">Sectores / Verticales soportados</h3>
+  <div class="card card-green">
+    <p style="margin-bottom:10px;">AppointVa es agnóstico al sector. Cualquier negocio basado en citas con hora fija puede usarlo configurando sus propios servicios, empleados y horarios.</p>
+    <table style="margin:0;">
+      <tr><th>Sector</th><th>Ejemplos</th><th>Estado</th></tr>
+      <tr><td>Belleza y estética</td><td>Barberías, salones de belleza, spas, uñas</td><td><span class="tag tag-new">✅ En producción</span></td></tr>
+      <tr><td>Salud</td><td>Clínicas, consultorios médicos, veterinarias, fisioterapia</td><td><span class="tag tag-new">✅ v4.4</span></td></tr>
+      <tr><td>Fitness y bienestar</td><td>Entrenadores personales, yoga, pilates</td><td><span class="tag tag-mod">Compatible</span></td></tr>
+      <tr><td>Educación</td><td>Tutores, academias, clases particulares</td><td><span class="tag tag-mod">Compatible</span></td></tr>
+    </table>
+  </div>
 
   <h2>7. Stack Tecnológico</h2>
   <table>

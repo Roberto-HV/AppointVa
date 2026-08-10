@@ -502,7 +502,7 @@ export default function LandingPage() {
 
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <FeatureCard delay={0}   icon={<Ico d={dCalendar} />} title="Booking público 24/7" desc="Tu página en /b/tu-negocio, siempre activa. Clientes reservan en cualquier momento sin llamadas ni mensajes." />
-              <FeatureCard delay={80}  icon={<Ico d={dBell} />}     title="Notificaciones automáticas" desc="Confirmaciones y recordatorios por email. Cero intervención manual, cero citas olvidadas." />
+              <FeatureCard delay={80}  icon={<Ico d={dBell} />}     title="Notificaciones automáticas" desc="Confirmaciones y recordatorios por email. Campana en el dashboard con historial de nuevas citas y cancelaciones en tiempo real." />
               <FeatureCard delay={160} icon={<Ico d={dUsers} />}    title="Equipo con horarios propios" desc="Cada empleado tiene su agenda independiente. Los clientes eligen servicio, profesional y horario." />
               <FeatureCard delay={0}   icon={<Ico d={dTag} />}      title="Descuentos y códigos" desc="Crea promociones para nuevos clientes o temporadas. Fideliza con un código y sin complejidad extra." />
               <FeatureCard delay={80}  icon={<Ico d={dStar} />}     title="Reseñas automáticas" desc="Solicita opiniones tras cada cita completada. Construye tu reputación en piloto automático." />
@@ -604,7 +604,7 @@ export default function LandingPage() {
               <PricingCard
                 delay={0} name="Básico" price={199} annualPrice={159} employees={3} citas="200"
                 highlighted billedAnnually={billedAnnually}
-                features={["Portal de reservas público", "3 empleados", "200 citas por mes", "Notificaciones por email", "Dashboard y calendario", "Gestión de clientes"]}
+                features={["Portal de reservas público", "3 empleados", "200 citas por mes", "Notificaciones por email", "Dashboard y calendario", "Campana de notificaciones", "Gestión de clientes"]}
               />
               <PricingCard
                 delay={100} name="Pro" price={399} employees={10} citas="1,000" comingSoon

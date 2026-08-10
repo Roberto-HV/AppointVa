@@ -1,6 +1,6 @@
 # AppointVa
 
-SaaS de reservas y gestión de citas para negocios de servicios (salones, barberías, spas, consultores y similares).
+SaaS de reservas y gestión de citas para negocios de servicios (salones, barberías, spas, clínicas, consultorios, veterinarias, fisioterapia y similares).
 
 Los negocios reciben un enlace público personalizado (`/b/{slug}`) donde sus clientes pueden reservar citas en línea sin crear una cuenta.
 
@@ -10,7 +10,7 @@ Los negocios reciben un enlace público personalizado (`/b/{slug}`) donde sus cl
 AppointVa/
 ├── Front/          # Frontend — React + TypeScript + Vite
 └── Back/
-    └── AppointVaAPI/  # Backend — ASP.NET Core 8 + C#
+    └── AppointVaAPI/  # Backend — ASP.NET Core 10 + C#
 ```
 
 ## Stack
@@ -18,9 +18,9 @@ AppointVa/
 | Capa | Tecnología |
 |------|------------|
 | Frontend | React 19, TypeScript, Vite, Tailwind CSS, TanStack Query, Radix UI |
-| Backend | ASP.NET Core 8, Entity Framework Core, C# |
+| Backend | ASP.NET Core 10, Entity Framework Core 10, C# |
 | Base de datos | PostgreSQL (Render) |
-| Email | Resend |
+| Email | Brevo (SMTP relay) |
 | Auth | JWT + refresh tokens |
 | Deploy frontend | Vercel (rama `main`) |
 | Deploy backend | Render (rama `main`) |
@@ -48,7 +48,7 @@ dotnet run --project AppointVaAPI
 Variables de entorno necesarias en `appsettings.Development.json`:
 - `ConnectionStrings:DefaultConnection` — PostgreSQL local o Render
 - `Jwt:Key` — clave secreta para JWT
-- `Resend:ApiKey` — API key de Resend
+- `SmtpHost` / `SmtpUser` / `SmtpPassword` — credenciales SMTP de Brevo
 - `FrontendUrl` — URL del frontend (ej. `http://localhost:5173`)
 
 ### Frontend
@@ -102,5 +102,5 @@ git push origin main:develop
 - **Dashboard** — citas, servicios, empleados, horarios, clientes, reportes, galería
 - **Kiosk** — pantalla de recepción para el negocio
 - **Intake** — cuestionario previo a la cita configurable por servicio
-- **Notificaciones** — email automático en reserva, recordatorio y cambios de estado
+- **Notificaciones** — email automático en reserva, recordatorio y cambios de estado; push web para empleados; campana en el dashboard del propietario con historial de nuevas citas y cancelaciones
 - **PWA** — instalable en móvil como app nativa
