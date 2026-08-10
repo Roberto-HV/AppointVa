@@ -444,7 +444,7 @@ export default function DashboardLayout() {
           )}
           <div ref={headerUserRef} className="ml-auto flex items-center gap-2 relative">
             <FechaHoraActual />
-            <NotificacionesBell />
+            {!esEmpleado && <NotificacionesBell />}
             {pendientesCnt > 0 && (
               <Tooltip text={`${pendientesCnt} cita${pendientesCnt !== 1 ? "s" : ""} pendiente${pendientesCnt !== 1 ? "s" : ""} por confirmar`}>
                 <span className="flex items-center gap-1 bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-700 text-[10px] font-bold px-2 py-0.5 rounded-full cursor-default">
@@ -490,7 +490,7 @@ export default function DashboardLayout() {
           {/* Desktop topbar — hidden on mobile (mobile has its own header) */}
           <header className="hidden xl:flex items-center justify-end gap-3 border-b border-slate-200 bg-white px-6 py-3 dark:border-slate-700 dark:bg-slate-900">
             <FechaHoraActual />
-            <NotificacionesBell />
+            {!esEmpleado && <NotificacionesBell />}
           </header>
           <Outlet />
         </main>

@@ -4,12 +4,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { notificacionesApi, type NotificacionDto } from '../../api/notificaciones';
 
 function tiempoRelativo(fechaIso: string): string {
-  const diff = Date.now() - new Date(fechaIso).getTime();
+  const utcStr = fechaIso.endsWith('Z') ? fechaIso : fechaIso + 'Z';
+  const diff = Date.now() - new Date(utcStr).getTime();
   const minutos = Math.floor(diff / 60_000);
   if (minutos < 60) return `hace ${minutos} min`;
   const horas = Math.floor(minutos / 60);
   if (horas < 24) return `hace ${horas} h`;
-  return new Date(fechaIso).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
+  return new Date(utcStr).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
 }
 
 export function NotificacionesBell() {
