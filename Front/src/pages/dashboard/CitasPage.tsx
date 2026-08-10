@@ -23,7 +23,7 @@ function finMes() {
   const d = new Date();
   return fechaStr(new Date(d.getFullYear(), d.getMonth() + 1, 0));
 }
-import { Calendar } from "lucide-react";
+import { Calendar, CheckCircle2, CheckCheck, CalendarClock, RotateCcw, MoreHorizontal, StickyNote, Receipt, Banknote, Star, MoreVertical } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { citasApi, ESTADOS } from "../../api/citas";
@@ -633,7 +633,7 @@ export default function CitasPage() {
                   <th className="text-right px-4 py-3 font-medium hidden sm:table-cell">Precio</th>
                   <th className="text-center px-4 py-3 font-medium hidden sm:table-cell">Pago</th>
                   <th className="text-center px-4 py-3 font-medium">Estado</th>
-                  <th className="px-4 py-3 hidden sm:table-cell" />
+                  <th className="text-right px-4 py-3 font-medium hidden sm:table-cell">Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -690,10 +690,10 @@ export default function CitasPage() {
                         {TRANSICIONES[c.estadoTexto] && (
                           <button
                             onClick={() => abrirCambioEstado(c)}
-                            className="sm:hidden text-gray-400 hover:text-gray-700 p-1 rounded transition text-base leading-none"
+                            className="sm:hidden inline-flex items-center justify-center w-7 h-7 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 transition"
                             title="Cambiar estado"
                           >
-                            ⋮
+                            <MoreVertical size={14} />
                           </button>
                         )}
                       </div>
@@ -702,13 +702,59 @@ export default function CitasPage() {
                     {/* Acciones — solo desktop */}
                     <td className="px-4 py-3 text-right hidden sm:table-cell">
                       {confirmCompletar === c.id && (
-                        <div className="flex items-center gap-2 mt-2 text-xs justify-end mb-2">
+                        <div className="flex items-center gap-2 mb-2 text-xs justify-end">
                           <span className="text-gray-500 dark:text-gray-400">¿Marcar como completada?</span>
                           <button onClick={() => { cambiarEstado({ id: c.id, estado: ESTADOS.Completada, mot: "" }); setConfirmCompletar(null); }} className="bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 transition">Sí</button>
                           <button onClick={() => setConfirmCompletar(null)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 px-2 py-1">No</button>
                         </div>
                       )}
-                      <div className="flex justify-end items-center gap-2">
+                      <div className="flex justify-end items-center gap-1">
+                        {/* Confirmar — Pendiente */}
+                        {c.estadoTexto === "Pendiente" && (
+                          <Tooltip text="Confirmar cita">
+                            <button
+                              onClick={() => cambiarEstado({ id: c.id, estado: ESTADOS.Confirmada, mot: "" })}
+                              disabled={isPending}
+                              className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 disabled:opacity-40 transition"
+                            >
+                              <CheckCircle2 size={16} />
+                            </button>
+                          </Tooltip>
+                        )}
+                        {/* Completar — Confirmada */}
+                        {c.estadoTexto === "Confirmada" && (
+                          <Tooltip text="Marcar como completada">
+                            <button
+                              onClick={() => setConfirmCompletar(c.id)}
+                              disabled={isPending}
+                              className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/40 dark:text-blue-400 disabled:opacity-40 transition"
+                            >
+                              <CheckCheck size={16} />
+                            </button>
+                          </Tooltip>
+                        )}
+                        {/* Reagendar */}
+                        {(c.estadoTexto === "Pendiente" || c.estadoTexto === "Confirmada") && (
+                          <Tooltip text="Reagendar">
+                            <button
+                              onClick={() => abrirReagendar(c)}
+                              className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-violet-100 text-violet-600 hover:bg-violet-200 dark:bg-violet-900/40 dark:text-violet-400 transition"
+                            >
+                              <CalendarClock size={16} />
+                            </button>
+                          </Tooltip>
+                        )}
+                        {/* Repetir */}
+                        <Tooltip text="Repetir cita">
+                          <button
+                            onClick={() => abrirRepetirCita(c)}
+                            className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-sky-100 text-sky-600 hover:bg-sky-200 dark:bg-sky-900/40 dark:text-sky-400 transition"
+                          >
+                            <RotateCcw size={15} />
+                          </button>
+                        </Tooltip>
+                        {/* Separador visual */}
+                        <div className="w-px h-5 bg-gray-200 dark:bg-slate-600 mx-0.5" />
                         {/* WhatsApp */}
                         <Tooltip text="Enviar recordatorio por WhatsApp">
                           <a
@@ -716,109 +762,73 @@ export default function CitasPage() {
                             target="_blank"
                             rel="noreferrer"
                             aria-label={`Enviar WhatsApp a ${c.nombreCliente}`}
-                          className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] transition"
+                            className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] transition"
                           >
-                            <SiWhatsapp size={14} />
+                            <SiWhatsapp size={15} />
                           </a>
                         </Tooltip>
-                        {/* Solicitar reseña — solo citas completadas */}
-                        {c.estadoTexto === "Completada" && c.telefonoCliente && (
-                          <Tooltip text="Solicitar reseña al cliente por WhatsApp">
-                            <a
-                              href={resenaUrl(c)}
-                              target="_blank"
-                              rel="noreferrer"
-                              aria-label={`Solicitar reseña a ${c.nombreCliente}`}
-                              className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-500 transition text-sm"
-                            >
-                              ⭐
-                            </a>
-                          </Tooltip>
-                        )}
-                        <Tooltip text={c.notas ? "Ver o editar notas internas" : "Agregar una nota interna"}>
+                        {/* Notas */}
+                        <Tooltip text={c.notas ? "Ver o editar notas internas" : "Agregar nota interna"}>
                           <button
                             onClick={() => abrirNotas(c)}
-                            className={`text-xs font-medium px-2.5 py-1 rounded-lg transition ${
+                            className={`inline-flex items-center justify-center w-8 h-8 rounded-lg transition ${
                               c.notas
-                                ? "bg-amber-50 text-amber-600 hover:bg-amber-100"
+                                ? "bg-amber-100 text-amber-600 hover:bg-amber-200"
                                 : "bg-gray-100 text-gray-400 hover:bg-gray-200"
                             }`}
                           >
-                            📝
+                            <StickyNote size={15} />
                           </button>
                         </Tooltip>
+                        {/* Comprobante */}
                         {c.comprobanteUrl && (
                           <Tooltip text="Ver comprobante de anticipo">
                             <button
                               onClick={() => setUrlComprobante(c.comprobanteUrl!)}
-                              className="text-xs font-medium px-2.5 py-1 rounded-lg bg-purple-50 text-purple-600 hover:bg-purple-100 transition"
+                              className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-purple-100 text-purple-600 hover:bg-purple-200 transition"
                             >
-                              🧾
+                              <Receipt size={15} />
                             </button>
                           </Tooltip>
                         )}
+                        {/* Anticipo */}
                         {c.anticipoRequerido && !c.pagada && (
                           <Tooltip text={c.anticipoRecibido ? 'Anular anticipo' : `Registrar anticipo $${(c.montoAnticipo ?? 0).toFixed(2)}`}>
                             <button
                               onClick={() => mutAnticipo.mutate({ id: c.id, recibido: !c.anticipoRecibido })}
                               disabled={mutAnticipo.isPending && mutAnticipo.variables?.id === c.id}
-                              className={`text-xs font-medium px-2.5 py-1 rounded-lg transition disabled:opacity-50 ${
+                              className={`inline-flex items-center justify-center w-8 h-8 rounded-lg transition disabled:opacity-50 ${
                                 c.anticipoRecibido
-                                  ? 'bg-gray-50 dark:bg-slate-700 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-600'
-                                  : 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 hover:bg-amber-100'
+                                  ? 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                                  : 'bg-amber-100 text-amber-700 hover:bg-amber-200'
                               }`}
                             >
-                              {c.anticipoRecibido ? '↩ Anticipo' : '$ Anticipo'}
+                              <Banknote size={15} />
                             </button>
                           </Tooltip>
                         )}
-                        {c.estadoTexto === "Pendiente" && (
-                          <Tooltip text="Confirmar esta cita directamente">
-                            <button
-                              onClick={() => cambiarEstado({ id: c.id, estado: ESTADOS.Confirmada, mot: "" })}
-                              disabled={isPending}
-                              className="text-xs font-medium px-2.5 py-1 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 disabled:opacity-40 transition"
+                        {/* Reseña — solo Completadas */}
+                        {c.estadoTexto === "Completada" && c.telefonoCliente && (
+                          <Tooltip text="Solicitar reseña al cliente">
+                            <a
+                              href={resenaUrl(c)}
+                              target="_blank"
+                              rel="noreferrer"
+                              aria-label={`Solicitar reseña a ${c.nombreCliente}`}
+                              className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-amber-100 text-amber-500 hover:bg-amber-200 transition"
                             >
-                              ✓ Confirmar
-                            </button>
+                              <Star size={15} />
+                            </a>
                           </Tooltip>
                         )}
-                        {c.estadoTexto === "Confirmada" && (
-                          <Tooltip text="Marcar como completada directamente">
-                            <button
-                              onClick={() => setConfirmCompletar(c.id)}
-                              disabled={isPending}
-                              className="text-xs font-medium px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/40 dark:text-blue-400 dark:hover:bg-blue-900/60 dark:border dark:border-blue-500/60 disabled:opacity-40 transition"
-                            >
-                              ✓ Completar
-                            </button>
-                          </Tooltip>
-                        )}
-                        {(c.estadoTexto === "Pendiente" || c.estadoTexto === "Confirmada") && (
-                          <Tooltip text="Mover la cita a otra fecha u hora">
-                            <button
-                              onClick={() => abrirReagendar(c)}
-                              className="text-xs font-medium px-2.5 py-1 rounded-lg bg-violet-50 text-violet-600 hover:bg-violet-100 dark:bg-violet-900/40 dark:text-violet-400 dark:hover:bg-violet-900/60 dark:border dark:border-violet-500/60 transition"
-                            >
-                              Reagendar
-                            </button>
-                          </Tooltip>
-                        )}
-                        <Tooltip text="Crear una nueva cita con los mismos datos del cliente y servicio">
-                          <button
-                            onClick={() => abrirRepetirCita(c)}
-                            className="text-xs font-medium px-2.5 py-1 rounded-lg bg-sky-50 text-sky-600 hover:bg-sky-100 dark:bg-sky-900/40 dark:text-sky-400 dark:hover:bg-sky-900/60 dark:border dark:border-sky-500/60 transition"
-                          >
-                            Repetir
-                          </button>
-                        </Tooltip>
+                        {/* Más — Cancelar / Inasistencia */}
                         {TRANSICIONES[c.estadoTexto] && (
-                          <Tooltip text="Ver más opciones de estado para esta cita">
+                          <Tooltip text="Más opciones">
                             <button
                               onClick={() => abrirCambioEstado(c)}
-                              className="text-xs font-medium px-2.5 py-1 rounded-lg bg-slate-700/10 text-slate-700 hover:bg-slate-700/20 dark:bg-slate-600/30 dark:text-slate-300 dark:hover:bg-slate-600/50 dark:border dark:border-slate-500 transition"
+                              className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-600/30 dark:text-slate-300 transition"
                             >
-                              Más
+                              <MoreHorizontal size={16} />
                             </button>
                           </Tooltip>
                         )}
