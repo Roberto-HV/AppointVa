@@ -1,0 +1,116 @@
+import { useState, useRef, useEffect } from 'react';
+import { Bell } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { notificacionesApi, type NotificacionDto } from '../../api/notificaciones';
+
+function tiempoRelativo(fechaIso: string): string {
+  const diff = Date.now() - new Date(fechaIso).getTime();
+  const minutos = Math.floor(diff / 60_000);
+  if (minutos < 60) return `hace ${minutos} min`;
+  const horas = Math.floor(minutos / 60);
+  if (horas < 24) return `hace ${horas} h`;
+  return new Date(fechaIso).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
+}
+
+export function NotificacionesBell() {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const qc = useQueryClient();
+
+  const { data: notificaciones = [] } = useQuery<NotificacionDto[]>({
+    queryKey: ['notificaciones'],
+    queryFn: notificacionesApi.listar,
+    refetchInterval: 30_000,
+  });
+
+  const marcarLeidas = useMutation({
+    mutationFn: notificacionesApi.marcarLeidas,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['notificaciones'] }),
+  });
+
+  const eliminar = useMutation({
+    mutationFn: notificacionesApi.eliminar,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['notificaciones'] }),
+  });
+
+  const noLeidas = notificaciones.filter(n => !n.leida).length;
+
+  function handleOpen() {
+    setOpen(true);
+    marcarLeidas.mutate();
+  }
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    if (open) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [open]);
+
+  return (
+    <div ref={containerRef} className="relative">
+      <button
+        onClick={handleOpen}
+        className="relative p-2 rounded-full text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-700 transition-colors"
+        aria-label="Notificaciones"
+      >
+        <Bell className="w-5 h-5" />
+        {noLeidas > 0 && (
+          <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+            {noLeidas > 9 ? '9+' : noLeidas}
+          </span>
+        )}
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-10 z-50 w-80 rounded-xl border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-800">
+          <div className="border-b border-slate-100 px-4 py-3 dark:border-slate-700">
+            <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+              Notificaciones
+            </span>
+          </div>
+
+          {notificaciones.length === 0 ? (
+            <div className="py-8 text-center text-sm text-slate-400">
+              Sin notificaciones
+            </div>
+          ) : (
+            <ul className="max-h-80 divide-y divide-slate-100 overflow-y-auto dark:divide-slate-700">
+              {notificaciones.map(n => (
+                <li
+                  key={n.id}
+                  className="flex items-start gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50"
+                >
+                  <span className="mt-0.5 text-base">
+                    {n.tipo === 'NuevaCita' ? '🗓' : '❌'}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-100">
+                      {n.titulo}
+                    </p>
+                    <p className="truncate text-xs text-slate-500 dark:text-slate-400">
+                      {n.descripcion}
+                    </p>
+                    <p className="text-xs text-slate-400 dark:text-slate-500">
+                      {tiempoRelativo(n.fechaCreacion)}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => eliminar.mutate(n.id)}
+                    className="shrink-0 text-lg leading-none text-slate-300 hover:text-slate-500 dark:text-slate-600 dark:hover:text-slate-400"
+                    aria-label="Eliminar notificación"
+                  >
+                    ×
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
