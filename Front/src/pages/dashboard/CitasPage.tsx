@@ -111,8 +111,8 @@ export default function CitasPage() {
   // Issue 12 — drag-to-reschedule confirmation
   const [confirmDrag, setConfirmDrag] = useState<{id: string; nombre: string; nuevoInicio: string; label: string} | null>(null);
 
-  // Issue 15 — completar confirmation
-  const [confirmCompletar, setConfirmCompletar] = useState<string | null>(null);
+  // Modal completar
+  const [citaACompletar, setCitaACompletar] = useState<CitaDto | null>(null);
   const validarEmailCliente = (v: string) =>
     v.trim() && !EMAIL_RE.test(v.trim()) ? "Correo no válido (ej: nombre@dominio.com)" : "";
 
@@ -701,13 +701,6 @@ export default function CitasPage() {
 
                     {/* Acciones — solo desktop */}
                     <td className="px-4 py-3 text-right hidden sm:table-cell">
-                      {confirmCompletar === c.id && (
-                        <div className="flex items-center gap-2 mb-2 text-xs justify-end">
-                          <span className="text-gray-500 dark:text-gray-400">¿Marcar como completada?</span>
-                          <button onClick={() => { cambiarEstado({ id: c.id, estado: ESTADOS.Completada, mot: "" }); setConfirmCompletar(null); }} className="bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 transition">Sí</button>
-                          <button onClick={() => setConfirmCompletar(null)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 px-2 py-1">No</button>
-                        </div>
-                      )}
                       <div className="flex justify-end items-center gap-1">
                         {/* Confirmar — Pendiente */}
                         {c.estadoTexto === "Pendiente" && (
@@ -725,9 +718,9 @@ export default function CitasPage() {
                         {c.estadoTexto === "Confirmada" && (
                           <Tooltip text="Marcar como completada">
                             <button
-                              onClick={() => setConfirmCompletar(c.id)}
+                              onClick={() => setCitaACompletar(c)}
                               disabled={isPending}
-                              className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/40 dark:text-blue-400 disabled:opacity-40 transition"
+                              className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 disabled:opacity-40 transition"
                             >
                               <CheckCheck size={16} />
                             </button>
@@ -738,7 +731,7 @@ export default function CitasPage() {
                           <Tooltip text="Reagendar">
                             <button
                               onClick={() => abrirReagendar(c)}
-                              className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-violet-100 text-violet-600 hover:bg-violet-200 dark:bg-violet-900/40 dark:text-violet-400 transition"
+                              className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 transition"
                             >
                               <CalendarClock size={16} />
                             </button>
@@ -748,7 +741,7 @@ export default function CitasPage() {
                         <Tooltip text="Repetir cita">
                           <button
                             onClick={() => abrirRepetirCita(c)}
-                            className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-sky-100 text-sky-600 hover:bg-sky-200 dark:bg-sky-900/40 dark:text-sky-400 transition"
+                            className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 transition"
                           >
                             <RotateCcw size={15} />
                           </button>
@@ -771,13 +764,10 @@ export default function CitasPage() {
                         <Tooltip text={c.notas ? "Ver o editar notas internas" : "Agregar nota interna"}>
                           <button
                             onClick={() => abrirNotas(c)}
-                            className={`inline-flex items-center justify-center w-8 h-8 rounded-lg transition ${
-                              c.notas
-                                ? "bg-amber-100 text-amber-600 hover:bg-amber-200"
-                                : "bg-gray-100 text-gray-400 hover:bg-gray-200"
-                            }`}
+                            className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 transition relative"
                           >
                             <StickyNote size={15} />
+                            {c.notas && <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-amber-400" />}
                           </button>
                         </Tooltip>
                         {/* Comprobante */}
@@ -785,7 +775,7 @@ export default function CitasPage() {
                           <Tooltip text="Ver comprobante de anticipo">
                             <button
                               onClick={() => setUrlComprobante(c.comprobanteUrl!)}
-                              className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-purple-100 text-purple-600 hover:bg-purple-200 transition"
+                              className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 transition"
                             >
                               <Receipt size={15} />
                             </button>
@@ -799,7 +789,7 @@ export default function CitasPage() {
                               disabled={mutAnticipo.isPending && mutAnticipo.variables?.id === c.id}
                               className={`inline-flex items-center justify-center w-8 h-8 rounded-lg transition disabled:opacity-50 ${
                                 c.anticipoRecibido
-                                  ? 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                                  ? 'bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300'
                                   : 'bg-amber-100 text-amber-700 hover:bg-amber-200'
                               }`}
                             >
@@ -826,7 +816,7 @@ export default function CitasPage() {
                           <Tooltip text="Más opciones">
                             <button
                               onClick={() => abrirCambioEstado(c)}
-                              className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-600/30 dark:text-slate-300 transition"
+                              className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 transition"
                             >
                               <MoreHorizontal size={16} />
                             </button>
@@ -851,6 +841,35 @@ export default function CitasPage() {
         )
       )}
 
+
+      {/* ── Modal: Completar cita ── */}
+      <Modal abierto={!!citaACompletar} onCerrar={() => setCitaACompletar(null)} titulo="Marcar como completada" ancho="sm">
+        {citaACompletar && (
+          <div className="space-y-4">
+            <div className="bg-gray-50 dark:bg-slate-700/50 rounded-xl p-4 text-sm space-y-1.5">
+              <p><span className="text-gray-500 dark:text-gray-400">Cliente:</span> <span className="font-medium text-gray-800 dark:text-gray-200">{citaACompletar.nombreCliente}</span></p>
+              <p><span className="text-gray-500 dark:text-gray-400">Servicio:</span> <span className="font-medium text-gray-800 dark:text-gray-200">{citaACompletar.nombreServicio}</span></p>
+              <p><span className="text-gray-500 dark:text-gray-400">Profesional:</span> <span className="font-medium text-gray-800 dark:text-gray-200">{citaACompletar.nombreEmpleado}</span></p>
+            </div>
+            <p className="text-sm text-gray-500 dark:text-gray-400">¿Confirmas que esta cita fue atendida y deseas marcarla como completada?</p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setCitaACompletar(null)}
+                className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-slate-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 rounded-xl text-sm transition"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => { cambiarEstado({ id: citaACompletar.id, estado: ESTADOS.Completada, mot: "" }); setCitaACompletar(null); }}
+                disabled={isPending}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white font-semibold py-2.5 rounded-xl text-sm transition"
+              >
+                Marcar como completada
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
 
       {/* ── Modal: Notas internas ── */}
       <Modal abierto={!!citaNotas} onCerrar={() => setCitaNotas(null)} titulo="Nota interna" ancho="sm">

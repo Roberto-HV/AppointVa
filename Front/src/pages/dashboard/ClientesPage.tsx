@@ -11,7 +11,7 @@ import { formatPrecio, formatFecha, formatFechaHora } from "../../utils/formatte
 import Pagination from "../../components/ui/Pagination";
 import { useToastStore } from "../../store/toastStore";
 import { SiWhatsapp } from "react-icons/si";
-import { UserX } from "lucide-react";
+import { UserX, Eye } from "lucide-react";
 
 type TabClientes = "todos" | "inactivos";
 const TAMANO = 30;
@@ -356,8 +356,9 @@ export default function ClientesPage() {
                     <td className="px-5 py-3 text-right">
                       <button
                         onClick={() => abrirCliente(c)}
-                        className="text-xs font-medium px-2.5 py-1 rounded-lg bg-slate-700/10 text-slate-700 hover:bg-slate-700/20 dark:bg-slate-600/30 dark:text-slate-300 dark:hover:bg-slate-600/50 dark:border dark:border-slate-500 transition"
+                        className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg bg-slate-700/10 text-slate-700 hover:bg-slate-700/20 dark:bg-slate-600/30 dark:text-slate-300 dark:hover:bg-slate-600/50 dark:border dark:border-slate-500 transition"
                       >
+                        <Eye size={13} />
                         Ver detalle
                       </button>
                     </td>
