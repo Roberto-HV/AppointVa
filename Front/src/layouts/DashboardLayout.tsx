@@ -10,6 +10,7 @@ import { citasApi, ESTADOS } from "../api/citas";
 import { useToastStore } from "../store/toastStore";
 import { Tooltip } from "../components/ui/Tooltip";
 import { NotificacionesBell } from '../components/dashboard/NotificacionesBell';
+import { toUtcDate } from '../utils/formatters';
 
 function FechaHoraActual() {
   const [ahora, setAhora] = useState(new Date());
@@ -209,7 +210,7 @@ export default function DashboardLayout() {
   const hoyCnt = citasHoy.filter((c) =>
     c.estado !== ESTADOS.Cancelada &&
     c.estado !== ESTADOS.Inasistencia &&
-    new Date(c.finEn) > ahora
+    toUtcDate(c.finEn) > ahora
   ).length;
   const pendientesCnt = citasHoy.filter((c) => c.estado === ESTADOS.Pendiente).length;
 

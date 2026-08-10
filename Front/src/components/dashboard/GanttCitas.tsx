@@ -4,6 +4,7 @@ import { citasApi } from "../../api/citas";
 import { empleadosApi } from "../../api/empleados";
 import { useAuthStore } from "../../store/authStore";
 import type { CitaDto } from "../../types";
+import { toUtcDate } from "../../utils/formatters";
 
 const HORA_INICIO = 7;
 const HORA_FIN = 21;
@@ -44,7 +45,7 @@ function horaLabel(h: number): string {
 }
 
 function calcTop(iso: string): number {
-  const d = new Date(iso);
+  const d = toUtcDate(iso);
   const h = d.getHours() + d.getMinutes() / 60;
   return Math.max(0, (h - HORA_INICIO) * PX_POR_HORA);
 }
@@ -273,7 +274,7 @@ export default function GanttCitas({ onCitaClick }: Props) {
                       >
                         <div className={`px-2 py-1 overflow-hidden h-full flex flex-col gap-0.5 ${textCls}`}>
                           <span className="text-[10px] font-bold leading-none opacity-90">
-                            {new Date(cita.inicioEn).toLocaleTimeString("es-MX", {
+                            {toUtcDate(cita.inicioEn).toLocaleTimeString("es-MX", {
                               hour: "2-digit",
                               minute: "2-digit",
                               hour12: true,

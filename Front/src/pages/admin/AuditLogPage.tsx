@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { adminApi, type AuditLogDto } from "../../api/admin";
+import { toUtcDate } from "../../utils/formatters";
 
 const ACCIONES = [
   "Login", "LoginFallido", "Logout", "CambiarPassword",
@@ -25,7 +26,7 @@ export default function AuditLogPage() {
   const totalPaginas = data ? Math.ceil(data.total / data.tamano) : 1;
 
   const formatFecha = (iso: string) => {
-    const d = new Date(iso);
+    const d = toUtcDate(iso);
     return d.toLocaleString("es-MX", {
       year: "numeric", month: "2-digit", day: "2-digit",
       hour: "2-digit", minute: "2-digit", second: "2-digit",

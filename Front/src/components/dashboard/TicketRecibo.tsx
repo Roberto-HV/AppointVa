@@ -1,5 +1,6 @@
 import { Printer, Mail } from "lucide-react";
 import type { CitaDto } from "../../types";
+import { toUtcDate } from "../../utils/formatters";
 
 interface Props {
   cita: CitaDto;
@@ -12,7 +13,7 @@ interface Props {
 
 export default function TicketRecibo({ cita, negocioNombre, negocioLogo, onClose, onEnviarEmail, enviandoEmail }: Props) {
   const fecha = cita.inicioEn
-    ? new Date(cita.inicioEn).toLocaleString("es-MX", {
+    ? toUtcDate(cita.inicioEn).toLocaleString("es-MX", {
         day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit",
       })
     : "—";

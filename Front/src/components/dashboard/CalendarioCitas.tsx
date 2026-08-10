@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, CalendarDays, List } from "lucide-react";
 import { citasApi } from "../../api/citas";
 import type { CitaDto } from "../../types";
+import { toUtcDate } from "../../utils/formatters";
 
 const HORA_INICIO = 7;
 const HORA_FIN = 21;
@@ -73,7 +74,7 @@ export default function CalendarioCitas({ empleadoId, onCitaClick, onReagendar }
   };
 
   function calcTop(cita: CitaDto): number {
-    const d = new Date(cita.inicioEn);
+    const d = toUtcDate(cita.inicioEn);
     return Math.max(0, (d.getHours() + d.getMinutes() / 60 - HORA_INICIO) * PX_POR_HORA);
   }
 

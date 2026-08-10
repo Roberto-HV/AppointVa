@@ -15,7 +15,7 @@ import {
 import Modal from "../../components/ui/Modal";
 import BarraProgreso from "../../components/ui/BarraProgreso";
 import { useToastStore } from "../../store/toastStore";
-import { formatPrecio } from "../../utils/formatters";
+import { formatPrecio, toUtcDate } from "../../utils/formatters";
 
 // ── Constants ──────────────────────────────────────────────────────────────
 const ESTADO_ORDER: Record<string, number> = {
@@ -56,7 +56,7 @@ type PropietarioForm = z.infer<typeof schemaPropietario>;
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 function formatFechaMx(iso: string) {
-  return new Date(iso).toLocaleDateString("es-MX", {
+  return toUtcDate(iso).toLocaleDateString("es-MX", {
     day: "2-digit", month: "2-digit", year: "numeric",
   });
 }
@@ -841,7 +841,7 @@ export default function NegociosAdminPage() {
                         </td>
                         <td className="px-4 py-3 text-center text-gray-500 dark:text-gray-400">
                           {s.fechaVencimiento
-                            ? new Date(s.fechaVencimiento).toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' })
+                            ? toUtcDate(s.fechaVencimiento).toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' })
                             : '—'}
                         </td>
                         <td className="px-4 py-3 text-center">
