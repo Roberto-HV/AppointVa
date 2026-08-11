@@ -108,8 +108,8 @@ export default function LoginPage() {
         <div className="w-full max-w-sm relative z-10">
 
           {/* Logo — centrado en mobile, izquierda en desktop */}
-          <div className="mb-10 flex justify-center md:justify-start">
-            <img src="/MasterLogo.png" alt="AppointVa" className="h-20 md:h-14 w-auto object-contain rounded-xl" />
+          <div className="mb-10 flex justify-center">
+            <img src="/MasterLogo.png" alt="AppointVa" className="h-20 md:h-16 w-auto object-contain rounded-xl" />
           </div>
 
           {/* Alertas */}
@@ -258,7 +258,7 @@ export default function LoginPage() {
             </>
           )}
 
-          <p className="text-xs text-gray-400 mt-10 space-x-2 text-center md:text-left">
+          <p className="text-xs text-gray-400 mt-10 space-x-2 text-center">
             <Link to="/privacidad" className="hover:underline hover:text-gray-600 transition">Privacidad</Link>
             <span>·</span>
             <Link to="/terminos" className="hover:underline hover:text-gray-600 transition">Términos</Link>
