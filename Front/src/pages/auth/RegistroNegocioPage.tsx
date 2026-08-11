@@ -53,6 +53,7 @@ export default function RegistroNegocioPage() {
   const [reenvioEnviando, setReenvioEnviando] = useState(false);
   const [mostrarContrasena, setMostrarContrasena] = useState(false);
   const [mostrarConfirmar, setMostrarConfirmar] = useState(false);
+  const [sector, setSector] = useState("");
 
   const {
     register,
@@ -82,6 +83,7 @@ export default function RegistroNegocioPage() {
         email: data.email,
         contrasena: data.contrasena,
         telefono: data.telefono || undefined,
+        sector: sector || undefined,
       });
       setEmailRegistrado(data.email);
       setRegistroExitoso(true);
@@ -189,6 +191,36 @@ export default function RegistroNegocioPage() {
                 />
               </div>
               {errors.slug && <p className="text-red-500 text-xs mt-1">{errors.slug.message}</p>}
+            </div>
+
+            {/* Giro del negocio */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Giro del negocio <span className="text-gray-400 font-normal">(opcional)</span>
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { value: "belleza", emoji: "💇", label: "Belleza" },
+                  { value: "salud", emoji: "🏥", label: "Salud" },
+                  { value: "veterinaria", emoji: "🐾", label: "Veterinaria" },
+                  { value: "tatuaje", emoji: "🎨", label: "Tatuaje" },
+                  { value: "otro", emoji: "📋", label: "Otro" },
+                ].map((g) => (
+                  <button
+                    key={g.value}
+                    type="button"
+                    onClick={() => setSector(sector === g.value ? "" : g.value)}
+                    className={`flex flex-col items-center gap-1 py-3 rounded-xl border-2 text-sm font-medium transition ${
+                      sector === g.value
+                        ? "border-slate-700 bg-slate-50 text-slate-700"
+                        : "border-gray-200 text-gray-500 hover:border-gray-300"
+                    }`}
+                  >
+                    <span className="text-xl">{g.emoji}</span>
+                    <span className="text-xs">{g.label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Teléfono */}

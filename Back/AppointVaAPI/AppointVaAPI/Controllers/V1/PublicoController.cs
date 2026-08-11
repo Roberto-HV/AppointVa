@@ -709,6 +709,7 @@ namespace AppointVaAPI.Controllers.V1
                 Slug = dto.Slug,
                 Nombre = dto.NombreNegocio,
                 Telefono = dto.Telefono,
+                Sector = dto.Sector,
                 Activo = 0, // inactivo hasta que el SuperAdmin apruebe y asigne un plan
                 FechaCreacion = DateTime.UtcNow,
                 FechaActualizacion = DateTime.UtcNow

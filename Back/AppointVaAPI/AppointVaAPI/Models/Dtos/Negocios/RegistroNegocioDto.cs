@@ -28,5 +28,8 @@ namespace AppointVaAPI.Models.Dtos.Negocios
 
         [MaxLength(20)]
         public string? Telefono { get; set; }
+
+        [MaxLength(50)]
+        public string? Sector { get; set; }
     }
 }
