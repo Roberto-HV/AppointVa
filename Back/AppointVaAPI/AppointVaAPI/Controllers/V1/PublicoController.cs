@@ -848,13 +848,18 @@ namespace AppointVaAPI.Controllers.V1
             return Ok(new { mensaje = "¡Gracias por tu reseña!" });
         }
 
-        // GET api/publico/cliente?email=xxx&slug=yyy — pre-relleno de datos para cliente recurrente
+        // GET api/publico/cliente?slug=yyy&email=xxx  OR  &telefono=xxx
         [HttpGet("cliente")]
         [EnableRateLimiting("PublicoGeneral")]
-        public async Task<IActionResult> BuscarClienteDatos([FromQuery] string email, [FromQuery] string slug)
+        public async Task<IActionResult> BuscarClienteDatos(
+            [FromQuery] string slug,
+            [FromQuery] string? email,
+            [FromQuery] string? telefono)
         {
-            if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(slug))
+            if (string.IsNullOrWhiteSpace(slug))
                 return BadRequest();
+            if (string.IsNullOrWhiteSpace(email) && string.IsNullOrWhiteSpace(telefono))
+                return BadRequest(new { mensaje = "Debes proporcionar correo o teléfono." });
 
             var negocio = await _db.Negocios
                 .AsNoTracking()
@@ -862,19 +867,34 @@ namespace AppointVaAPI.Controllers.V1
             if (negocio is null)
                 return NotFound();
 
-            var emailNorm = email.Trim().ToLower();
-            var cliente = await _db.Clientes
-                .AsNoTracking()
-                .Where(c => c.NegocioId == negocio.Id && c.Email == emailNorm)
-                .FirstOrDefaultAsync();
+            Cliente? cliente = null;
+
+            if (!string.IsNullOrWhiteSpace(email))
+            {
+                var emailNorm = email.Trim().ToLower();
+                cliente = await _db.Clientes
+                    .AsNoTracking()
+                    .Where(c => c.NegocioId == negocio.Id && c.Email == emailNorm)
+                    .FirstOrDefaultAsync();
+            }
+
+            if (cliente is null && !string.IsNullOrWhiteSpace(telefono))
+            {
+                var telNorm = new string(telefono.Where(char.IsDigit).ToArray());
+                cliente = await _db.Clientes
+                    .AsNoTracking()
+                    .Where(c => c.NegocioId == negocio.Id && c.Telefono == telNorm)
+                    .FirstOrDefaultAsync();
+            }
 
             if (cliente is null)
-                return NotFound(new { mensaje = "No encontramos citas con ese correo." });
+                return NotFound(new { mensaje = "No encontramos registros con ese dato." });
 
             return Ok(new
             {
                 nombreCliente = cliente.NombreCompleto,
                 emailCliente = cliente.Email,
+                telefonoCliente = cliente.Telefono,
             });
         }
 

@@ -192,7 +192,9 @@ export default function BookingPage() {
 
   // Sub-flujo paso 4: elegir → buscar | listo
   const [modoCliente, setModoCliente] = useState<"elegir" | "buscar" | "listo">("elegir");
+  const [tipoBusqueda, setTipoBusqueda] = useState<"email" | "telefono">("email");
   const [emailBusqueda, setEmailBusqueda] = useState("");
+  const [telefonoBusqueda, setTelefonoBusqueda] = useState("");
   const [buscandoCliente, setBuscandoCliente] = useState(false);
   const [errorBusqueda, setErrorBusqueda] = useState("");
   const [datosPreRellenos, setDatosPreRellenos] = useState<Partial<DatosClienteForm> | null>(null);
@@ -311,7 +313,7 @@ export default function BookingPage() {
       return;
     }
     if (paso === 4 && modoCliente !== "elegir") {
-      if (modoCliente === "listo") { setDatosPreRellenos(null); setEmailBusqueda(""); }
+      if (modoCliente === "listo") { setDatosPreRellenos(null); setEmailBusqueda(""); setTelefonoBusqueda(""); }
       setModoCliente("elegir");
       setErrorBusqueda("");
       return;
@@ -324,15 +326,19 @@ export default function BookingPage() {
   };
 
   const buscarCliente = async () => {
-    if (!emailBusqueda || !slug) return;
+    if (!slug) return;
+    const opts = tipoBusqueda === "email"
+      ? { email: emailBusqueda }
+      : { telefono: telefonoBusqueda };
+    if (!opts.email && !opts.telefono) return;
     setBuscandoCliente(true);
     setErrorBusqueda("");
     try {
-      const datos = await publicoApi.buscarClienteDatos(emailBusqueda, slug);
+      const datos = await publicoApi.buscarClienteDatos(slug, opts);
       setDatosPreRellenos(datos);
       setModoCliente("listo");
     } catch {
-      setErrorBusqueda("No encontramos citas con ese correo. Puedes continuar como invitado.");
+      setErrorBusqueda("No encontramos registros con ese dato. Puedes continuar como invitado.");
     } finally {
       setBuscandoCliente(false);
     }
@@ -506,7 +512,7 @@ export default function BookingPage() {
           }}
         />
         {/* Contenido con padding-top para dejar ver la foto arriba */}
-        <div className={`relative z-10 px-5 pb-4 ${negocio.portadaUrl ? "pt-28" : "pt-8"}`}>
+        <div className={`relative z-10 px-5 pb-4 ${negocio.portadaUrl ? "pt-44" : "pt-8"}`}>
           {/* Fila: logo + nombre alineados arriba */}
           <div className="flex items-start gap-3.5">
             {/* Logo */}
@@ -831,7 +837,8 @@ export default function BookingPage() {
               {/* Opción 2 — Invitado */}
               <button
                 onClick={() => setModoCliente("listo")}
-                className="w-full flex items-center gap-4 bg-slate-900 hover:bg-slate-800 rounded-2xl p-4 text-left transition group"
+                className="w-full flex items-center gap-4 rounded-2xl p-4 text-left transition group hover:opacity-90"
+                style={{ background: color }}
               >
                 <div className="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
                   <UserCheck size={20} className="text-white" />
@@ -854,22 +861,52 @@ export default function BookingPage() {
         {paso === 4 && modoCliente === "buscar" && (
           <div>
             <h2 className="text-xl font-bold text-slate-900 mb-1">Buscar mis datos</h2>
-            <p className="text-sm text-slate-500 mb-5">Ingresa el correo con el que reservaste anteriormente.</p>
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">Correo electrónico</label>
-              <input
-                type="email"
-                value={emailBusqueda}
-                onChange={(e) => { setEmailBusqueda(e.target.value); setErrorBusqueda(""); }}
-                onKeyDown={(e) => e.key === "Enter" && buscarCliente()}
-                placeholder="correo@ejemplo.com"
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-slate-700/20 focus:border-slate-700 transition bg-white"
-              />
-              {errorBusqueda && <p className="text-red-600 dark:text-red-400 text-xs mt-1.5 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2">{errorBusqueda}</p>}
+            <p className="text-sm text-slate-500 mb-4">Busca con tu correo o número de teléfono.</p>
+
+            {/* Toggle email / teléfono */}
+            <div className="flex gap-2 mb-4 bg-slate-100 rounded-xl p-1">
+              {(["email", "telefono"] as const).map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => { setTipoBusqueda(t); setErrorBusqueda(""); }}
+                  className={`flex-1 py-2 rounded-lg text-xs font-semibold transition ${
+                    tipoBusqueda === t ? "bg-white text-slate-800 shadow-sm" : "text-slate-400"
+                  }`}
+                >
+                  {t === "email" ? "Correo electrónico" : "Teléfono"}
+                </button>
+              ))}
             </div>
+
+            <div>
+              {tipoBusqueda === "email" ? (
+                <input
+                  type="email"
+                  value={emailBusqueda}
+                  onChange={(e) => { setEmailBusqueda(e.target.value); setErrorBusqueda(""); }}
+                  onKeyDown={(e) => e.key === "Enter" && buscarCliente()}
+                  placeholder="correo@ejemplo.com"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-slate-700/20 focus:border-slate-700 transition bg-white"
+                  autoFocus
+                />
+              ) : (
+                <input
+                  type="tel"
+                  value={telefonoBusqueda}
+                  onChange={(e) => { setTelefonoBusqueda(e.target.value); setErrorBusqueda(""); }}
+                  onKeyDown={(e) => e.key === "Enter" && buscarCliente()}
+                  placeholder="55 1234 5678"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-slate-700/20 focus:border-slate-700 transition bg-white"
+                  autoFocus
+                />
+              )}
+              {errorBusqueda && <p className="text-red-600 text-xs mt-1.5 bg-red-50 border border-red-200 rounded-xl px-3 py-2">{errorBusqueda}</p>}
+            </div>
+
             <button
               onClick={buscarCliente}
-              disabled={buscandoCliente || !emailBusqueda.includes("@")}
+              disabled={buscandoCliente || (tipoBusqueda === "email" ? !emailBusqueda.includes("@") : telefonoBusqueda.replace(/\D/g, "").length < 8)}
               className="mt-4 w-full disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-2xl transition text-sm hover:opacity-90"
               style={{ background: color }}
             >
