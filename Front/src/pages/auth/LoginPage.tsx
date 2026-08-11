@@ -99,8 +99,13 @@ export default function LoginPage() {
     <div className="min-h-screen flex">
 
       {/* ── Panel izquierdo — formulario ── */}
-      <div className="flex-1 flex flex-col justify-center items-center bg-white px-8 py-12 sm:px-12">
-        <div className="w-full max-w-sm">
+      <div className="flex-1 flex flex-col justify-center items-center bg-white px-8 py-12 sm:px-12 relative overflow-hidden">
+        {/* Decoración mobile — oculta en desktop donde el panel derecho ya tiene los elementos */}
+        <div className="absolute -top-16 -right-16 w-52 h-52 bg-blue-100/60 rounded-full md:hidden" />
+        <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-slate-100/80 rounded-full md:hidden" />
+        <div className="absolute top-1/3 -right-8 w-20 h-20 bg-blue-50/80 rounded-full md:hidden" />
+
+        <div className="w-full max-w-sm relative z-10">
 
           {/* Logo — centrado en mobile, izquierda en desktop */}
           <div className="mb-10 flex justify-center md:justify-start">
