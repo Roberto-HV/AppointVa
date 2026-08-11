@@ -112,7 +112,7 @@ export default function RegistroNegocioPage() {
 
   if (registroExitoso) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-white flex items-center justify-center p-4">
         <div className="w-full max-w-md text-center">
           <img src="/MasterLogo.png" alt="AppointVa" className="h-20 object-contain mx-auto mb-6" />
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
@@ -140,7 +140,7 @@ export default function RegistroNegocioPage() {
             )}
             <Link
               to="/login"
-              className="inline-block w-full border border-gray-200 hover:bg-gray-50 text-gray-700 font-medium py-2.5 rounded-lg transition text-sm"
+              className="inline-block w-full border border-gray-200 hover:bg-gray-50 text-gray-700 font-medium py-3 rounded-xl transition text-sm"
             >
               Ir al inicio de sesión
             </Link>
@@ -152,7 +152,7 @@ export default function RegistroNegocioPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-white flex items-center justify-center p-4">
       <div className="w-full max-w-lg">
         <div className="text-center mb-8">
           <img src="/MasterLogo.png" alt="AppointVa" className="h-20 object-contain mx-auto mb-2 rounded-xl" />
@@ -160,7 +160,8 @@ export default function RegistroNegocioPage() {
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8">
-          <h2 className="text-xl font-semibold text-gray-800 mb-6">Crear cuenta</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-1">Crear cuenta</h2>
+          <p className="text-sm text-gray-400 mb-6">Completa los datos para registrar tu negocio</p>
 
           <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-5">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Tu negocio</p>
@@ -173,7 +174,7 @@ export default function RegistroNegocioPage() {
                 {...register("nombreNegocio")}
                 onChange={onNombreChange}
                 placeholder="Ej. Salón Belleza Luna"
-                className={`w-full px-4 py-2.5 rounded-lg border text-sm outline-none transition focus:ring-2 focus:ring-slate-700/40 focus:border-slate-700 ${errors.nombreNegocio ? "border-red-400 bg-red-50" : "border-gray-300"}`}
+                className={`w-full px-4 py-3 rounded-xl border text-sm outline-none transition focus:ring-2 focus:ring-slate-700/30 focus:border-slate-700 ${errors.nombreNegocio ? "border-red-400 bg-red-50" : "border-gray-200"}`}
               />
               {errors.nombreNegocio && <p className="text-red-500 text-xs mt-1">{errors.nombreNegocio.message}</p>}
             </div>
@@ -184,7 +185,7 @@ export default function RegistroNegocioPage() {
                 Identificador (URL) *
                 <span className="text-gray-400 font-normal ml-1">— tu link de reservas</span>
               </label>
-              <div className="flex items-center border rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-slate-700/40 focus-within:border-slate-700 border-gray-300">
+              <div className="flex items-center border rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-slate-700/30 focus-within:border-slate-700 border-gray-200">
                 <span className="px-3 py-2.5 bg-gray-50 text-gray-400 text-sm border-r border-gray-200 whitespace-nowrap">appointva.com/b/</span>
                 <input
                   type="text"
@@ -233,7 +234,7 @@ export default function RegistroNegocioPage() {
                 type="tel"
                 {...register("telefono")}
                 placeholder="+52 55 1234 5678"
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm outline-none transition focus:ring-2 focus:ring-slate-700/40 focus:border-slate-700"
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm outline-none transition focus:ring-2 focus:ring-slate-700/30 focus:border-slate-700"
               />
             </div>
 
@@ -246,7 +247,7 @@ export default function RegistroNegocioPage() {
                 type="text"
                 {...register("nombrePropietario")}
                 placeholder="Nombre y apellido"
-                className={`w-full px-4 py-2.5 rounded-lg border text-sm outline-none transition focus:ring-2 focus:ring-slate-700/40 focus:border-slate-700 ${errors.nombrePropietario ? "border-red-400 bg-red-50" : "border-gray-300"}`}
+                className={`w-full px-4 py-3 rounded-xl border text-sm outline-none transition focus:ring-2 focus:ring-slate-700/30 focus:border-slate-700 ${errors.nombrePropietario ? "border-red-400 bg-red-50" : "border-gray-200"}`}
               />
               {errors.nombrePropietario && <p className="text-red-500 text-xs mt-1">{errors.nombrePropietario.message}</p>}
             </div>
@@ -258,7 +259,7 @@ export default function RegistroNegocioPage() {
                 type="email"
                 {...register("email")}
                 placeholder="correo@ejemplo.com"
-                className={`w-full px-4 py-2.5 rounded-lg border text-sm outline-none transition focus:ring-2 focus:ring-slate-700/40 focus:border-slate-700 ${errors.email ? "border-red-400 bg-red-50" : "border-gray-300"}`}
+                className={`w-full px-4 py-3 rounded-xl border text-sm outline-none transition focus:ring-2 focus:ring-slate-700/30 focus:border-slate-700 ${errors.email ? "border-red-400 bg-red-50" : "border-gray-200"}`}
               />
               {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}
             </div>
@@ -272,7 +273,7 @@ export default function RegistroNegocioPage() {
                   autoComplete="new-password"
                   {...register("contrasena")}
                   placeholder="Mín. 6 caracteres, una mayúscula y un número"
-                  className={`w-full px-4 py-2.5 pr-11 rounded-lg border text-sm outline-none transition focus:ring-2 focus:ring-slate-700/40 focus:border-slate-700 ${errors.contrasena ? "border-red-400 bg-red-50" : "border-gray-300"}`}
+                  className={`w-full px-4 py-3 pr-11 rounded-xl border text-sm outline-none transition focus:ring-2 focus:ring-slate-700/30 focus:border-slate-700 ${errors.contrasena ? "border-red-400 bg-red-50" : "border-gray-200"}`}
                 />
                 <button
                   type="button"
@@ -297,7 +298,7 @@ export default function RegistroNegocioPage() {
                   autoComplete="new-password"
                   {...register("confirmarContrasena")}
                   placeholder="Repite tu contraseña"
-                  className={`w-full px-4 py-2.5 pr-11 rounded-lg border text-sm outline-none transition focus:ring-2 focus:ring-slate-700/40 focus:border-slate-700 ${errors.confirmarContrasena ? "border-red-400 bg-red-50" : "border-gray-300"}`}
+                  className={`w-full px-4 py-3 pr-11 rounded-xl border text-sm outline-none transition focus:ring-2 focus:ring-slate-700/30 focus:border-slate-700 ${errors.confirmarContrasena ? "border-red-400 bg-red-50" : "border-gray-200"}`}
                 />
                 <button
                   type="button"
@@ -313,7 +314,7 @@ export default function RegistroNegocioPage() {
             </div>
 
             {errorGeneral && (
-              <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-4 py-3">
+              <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl px-4 py-3">
                 {errorGeneral}
               </div>
             )}
@@ -321,7 +322,7 @@ export default function RegistroNegocioPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full bg-slate-700 hover:bg-slate-800 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-lg transition text-sm"
+              className="w-full bg-slate-700 hover:bg-slate-800 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition text-sm"
             >
               {isSubmitting ? "Creando cuenta..." : "Crear cuenta"}
             </button>
