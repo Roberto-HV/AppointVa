@@ -164,7 +164,7 @@ export default function ServiciosPage() {
   return (
     <div className="p-4 sm:p-8">
       {/* Header */}
-      <div className="flex items-start justify-between mb-1 flex-wrap gap-3">
+      <div className="flex items-center justify-between mb-1 gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Servicios</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Gestión de servicios y categorías</p>
@@ -327,15 +327,17 @@ export default function ServiciosPage() {
             {categorias.map((c) => {
               const count = serviciosPorCategoria(c.id);
               return (
-                <div key={c.id} className="bg-white rounded-xl border border-gray-100 px-4 py-3 flex items-center gap-3 dark:bg-slate-800 dark:border-slate-700">
-                  <div className="w-2 h-2 rounded-full bg-slate-700/40 shrink-0" />
-                  <span className="font-medium text-gray-800 flex-1 min-w-0 dark:text-gray-200">{c.nombre}</span>
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full shrink-0 ${
-                    count > 0 ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-400 dark:bg-slate-700 dark:text-gray-500"
-                  }`}>
-                    {count} {count === 1 ? "servicio" : "servicios"}
-                  </span>
-                  <div className="flex gap-2 shrink-0">
+                <div key={c.id} className="bg-white rounded-xl border border-gray-100 px-4 py-3 dark:bg-slate-800 dark:border-slate-700">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-2 h-2 rounded-full bg-slate-700/40 shrink-0" />
+                    <span className="font-medium text-gray-800 dark:text-gray-200 flex-1 min-w-0">{c.nombre}</span>
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full shrink-0 ${
+                      count > 0 ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-400 dark:bg-slate-700 dark:text-gray-500"
+                    }`}>
+                      {count} {count === 1 ? "servicio" : "servicios"}
+                    </span>
+                  </div>
+                  <div className="flex gap-2 pl-4">
                     <button
                       onClick={() => abrirEditarCategoria(c)}
                       className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50 transition"
