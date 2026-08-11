@@ -895,6 +895,7 @@ export default function BookingPage() {
         {/* Paso 4 — formulario (invitado o datos pre-rellenos) */}
         {paso === 4 && modoCliente === "listo" && servicio && empleado && slot && (
           <>
+            {/* Banner: datos pre-rellenos */}
             {datosPreRellenos && (
               <div className="mb-4 flex items-center gap-3 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
                 <svg className="w-5 h-5 text-green-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -903,8 +904,43 @@ export default function BookingPage() {
                 <p className="text-sm text-green-700 font-medium">¡Datos encontrados! Verifica que sean correctos.</p>
               </div>
             )}
-            {/* Código de descuento */}
-            <div className="mb-4">
+
+            {/* Confirmación pendiente */}
+            {negocio && !negocio.autoConfirmar && (
+              <div className="mb-4 flex items-center gap-2 text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5">
+                <AlertCircle size={13} className="shrink-0 text-slate-400" />
+                <span>Tu {textos.cita} quedará <strong>pendiente de confirmación</strong> por el negocio.</span>
+              </div>
+            )}
+
+            {/* Aviso de privacidad */}
+            <div className="mb-4 flex items-start gap-2 text-xs text-slate-400 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2.5">
+              <Lock size={12} className="shrink-0 mt-0.5 text-slate-300" />
+              <span>
+                Tus datos serán compartidos únicamente con{" "}
+                <strong className="text-slate-500">{negocio.nombre}</strong> para gestionar tu cita,
+                de acuerdo con nuestra{" "}
+                <a href="/privacidad" target="_blank" rel="noreferrer" className="underline hover:text-slate-600 transition">
+                  política de privacidad
+                </a>.
+              </span>
+            </div>
+
+            {/* Formulario — el error aparece dentro, justo antes del submit */}
+            <PasoDatosCliente
+              servicio={servicio}
+              empleado={empleado}
+              slot={slot}
+              enviando={enviando}
+              datosIniciales={datosPreRellenos ?? undefined}
+              onEnviar={confirmarCita}
+              color={color}
+              notasLabel={negocio.sector === 'salud' ? 'Motivo de consulta' : undefined}
+              error={errorEnvio || undefined}
+            />
+
+            {/* Código de descuento — después del resumen para que el usuario vea el precio primero */}
+            <div className="mt-4">
               {descuentoAplicado ? (
                 <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-xl px-4 py-3">
                   <div className="flex items-center gap-2 min-w-0">
@@ -945,12 +981,12 @@ export default function BookingPage() {
                       onKeyDown={(e) => e.key === "Enter" && validarCupon()}
                       placeholder="PROMO20"
                       maxLength={50}
-                      className="flex-1 px-3 py-2 rounded-lg border border-gray-300 text-sm font-mono uppercase focus:outline-none focus:ring-2 focus:ring-slate-700/40 focus:border-slate-700 transition"
+                      className="flex-1 px-3 py-2 rounded-xl border border-slate-200 text-sm font-mono uppercase focus:outline-none focus:ring-2 focus:ring-slate-700/40 focus:border-slate-700 transition"
                     />
                     <button
                       onClick={validarCupon}
                       disabled={validandoCupon || !codigoInput.trim()}
-                      className="px-4 py-2 text-white text-sm font-semibold rounded-lg disabled:opacity-50 hover:opacity-90 transition"
+                      className="px-4 py-2 text-white text-sm font-semibold rounded-xl disabled:opacity-50 hover:opacity-90 transition"
                       style={{ background: color }}
                     >
                       {validandoCupon ? "Aplicando…" : "Aplicar"}
@@ -959,7 +995,7 @@ export default function BookingPage() {
                   {errorCupon && <p className="text-red-500 text-xs">{errorCupon}</p>}
                   <button
                     onClick={() => { setMostrarCupon(false); setCodigoInput(""); setErrorCupon(""); }}
-                    className="text-xs text-gray-400 hover:text-gray-600 transition"
+                    className="text-xs text-slate-400 hover:text-slate-600 transition"
                   >
                     Cancelar
                   </button>
@@ -967,54 +1003,14 @@ export default function BookingPage() {
               ) : (
                 <button
                   onClick={() => setMostrarCupon(true)}
-                  className="text-sm text-slate-700 font-medium hover:underline"
+                  className="text-sm text-slate-500 font-medium hover:underline"
                 >
                   ¿Tienes un código de descuento?
                 </button>
               )}
             </div>
 
-            {/* Confirmación pendiente */}
-            {negocio && !negocio.autoConfirmar && (
-              <div className="mb-4 flex items-center gap-2 text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5">
-                <AlertCircle size={13} className="shrink-0 text-slate-400" />
-                <span>Tu {textos.cita} quedará <strong>pendiente de confirmación</strong> por el negocio.</span>
-              </div>
-            )}
-
-            <div className="mb-4 flex items-start gap-2 text-xs text-slate-400 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2.5">
-              <Lock size={12} className="shrink-0 mt-0.5 text-slate-300" />
-              <span>
-                Tus datos serán compartidos únicamente con{" "}
-                <strong className="text-slate-500">{negocio.nombre}</strong> para gestionar tu cita,
-                de acuerdo con nuestra{" "}
-                <a href="/privacidad" target="_blank" rel="noreferrer" className="underline hover:text-slate-600 transition">
-                  política de privacidad
-                </a>.
-              </span>
-            </div>
-            <PasoDatosCliente
-              servicio={servicio}
-              empleado={empleado}
-              slot={slot}
-              enviando={enviando}
-              datosIniciales={datosPreRellenos ?? undefined}
-              onEnviar={confirmarCita}
-              color={color}
-              notasLabel={negocio.sector === 'salud' ? 'Motivo de consulta' : undefined}
-            />
-            {errorEnvio && (
-              <div className="mt-4 flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
-                <svg className="w-5 h-5 text-red-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-                </svg>
-                <div>
-                  <p className="text-sm font-semibold text-red-700">No se pudo agendar la cita</p>
-                  <p className="text-sm text-red-600 mt-0.5">{errorEnvio}</p>
-                </div>
-              </div>
-            )}
-            <button onClick={irAtras} className="mt-3 w-full py-3 rounded-2xl border-2 border-slate-200 text-sm font-medium text-slate-600 hover:border-slate-300 transition inline-flex items-center justify-center gap-1.5">
+            <button onClick={irAtras} className="mt-4 w-full py-3 rounded-2xl border-2 border-slate-200 text-sm font-medium text-slate-600 hover:border-slate-300 transition inline-flex items-center justify-center gap-1.5">
               <ChevronLeft size={15} />
               Atrás
             </button>
