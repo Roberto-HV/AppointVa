@@ -11,7 +11,7 @@ import PasoServicio from "../../components/booking/PasoServicio";
 import PasoEmpleado, { SIN_PREFERENCIA_ID } from "../../components/booking/PasoEmpleado";
 import PasoFechaHora from "../../components/booking/PasoFechaHora";
 import PasoDatosCliente, { type DatosClienteForm } from "../../components/booking/PasoDatosCliente";
-import { Star, X, UserCircle, UserCheck, Tag, AlertCircle, ChevronRight, Lock } from "lucide-react";
+import { Star, X, UserCircle, UserCheck, Tag, AlertCircle, ChevronLeft, ChevronRight, Lock } from "lucide-react";
 import { SiWhatsapp } from "react-icons/si";
 import PublicFooter from "../../components/PublicFooter";
 
@@ -643,7 +643,7 @@ export default function BookingPage() {
         {/* Paso 1 */}
         {paso === 1 && (
           <>
-            <h2 className="text-xl font-bold text-slate-900 mb-5">{textos.cta}</h2>
+            <p className="text-sm font-medium text-slate-400 mb-4">{textos.cta}</p>
             {/* Galería */}
             {negocio.galeria?.length > 0 && <GaleriaSection imagenes={negocio.galeria} />}
 
@@ -684,7 +684,8 @@ export default function BookingPage() {
               color={color}
             />
             <div className="mt-6 flex gap-3">
-              <button onClick={irAtras} className="flex-1 py-3 rounded-xl border-2 border-gray-200 text-sm font-medium text-gray-600 hover:border-gray-300 transition">
+              <button onClick={irAtras} className="flex-1 py-3 rounded-2xl border-2 border-slate-200 text-sm font-medium text-slate-600 hover:border-slate-300 transition inline-flex items-center justify-center gap-1.5">
+                <ChevronLeft size={15} />
                 Atrás
               </button>
               <button
@@ -731,7 +732,8 @@ export default function BookingPage() {
               </div>
             )}
             <div className="mt-6 flex gap-3">
-              <button onClick={irAtras} className="flex-1 py-3 rounded-xl border-2 border-gray-200 text-sm font-medium text-gray-600 hover:border-gray-300 transition">
+              <button onClick={irAtras} className="flex-1 py-3 rounded-2xl border-2 border-slate-200 text-sm font-medium text-slate-600 hover:border-slate-300 transition inline-flex items-center justify-center gap-1.5">
+                <ChevronLeft size={15} />
                 Atrás
               </button>
               <button
@@ -781,8 +783,9 @@ export default function BookingPage() {
             <div className="mt-6 flex gap-3">
               <button
                 onClick={irAtras}
-                className="flex-1 py-3 rounded-2xl border-2 border-slate-200 text-sm font-medium text-slate-600 hover:border-slate-300 transition"
+                className="flex-1 py-3 rounded-2xl border-2 border-slate-200 text-sm font-medium text-slate-600 hover:border-slate-300 transition inline-flex items-center justify-center gap-1.5"
               >
+                <ChevronLeft size={15} />
                 Atrás
               </button>
               <button
@@ -850,8 +853,9 @@ export default function BookingPage() {
                 <ChevronRight size={16} className="text-white/30 group-hover:text-white/50 transition shrink-0" />
               </button>
             </div>
-            <button onClick={irAtras} className="mt-5 w-full py-3 rounded-2xl border-2 border-slate-200 text-sm font-medium text-slate-600 hover:border-slate-300 transition">
-              ← Atrás
+            <button onClick={irAtras} className="mt-5 w-full py-3 rounded-2xl border-2 border-slate-200 text-sm font-medium text-slate-600 hover:border-slate-300 transition inline-flex items-center justify-center gap-1.5">
+              <ChevronLeft size={15} />
+              Atrás
             </button>
           </div>
         )}
@@ -881,8 +885,9 @@ export default function BookingPage() {
             >
               {buscandoCliente ? "Buscando…" : "Buscar mis datos"}
             </button>
-            <button onClick={irAtras} className="mt-3 w-full py-3 rounded-2xl border-2 border-slate-200 text-sm font-medium text-slate-600 hover:border-slate-300 transition">
-              ← Atrás
+            <button onClick={irAtras} className="mt-3 w-full py-3 rounded-2xl border-2 border-slate-200 text-sm font-medium text-slate-600 hover:border-slate-300 transition inline-flex items-center justify-center gap-1.5">
+              <ChevronLeft size={15} />
+              Atrás
             </button>
           </div>
         )}
@@ -1009,8 +1014,9 @@ export default function BookingPage() {
                 </div>
               </div>
             )}
-            <button onClick={irAtras} className="mt-3 w-full py-3 rounded-2xl border-2 border-slate-200 text-sm font-medium text-slate-600 hover:border-slate-300 transition">
-              ← Atrás
+            <button onClick={irAtras} className="mt-3 w-full py-3 rounded-2xl border-2 border-slate-200 text-sm font-medium text-slate-600 hover:border-slate-300 transition inline-flex items-center justify-center gap-1.5">
+              <ChevronLeft size={15} />
+              Atrás
             </button>
           </>
         )}
