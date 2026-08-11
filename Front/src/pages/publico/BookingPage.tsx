@@ -568,42 +568,32 @@ export default function BookingPage() {
                   📍 {negocio.direccion}
                 </p>
               )}
-              <div className="mt-1.5">
+              <div className="mt-1.5 flex items-center gap-3 flex-wrap">
                 <SocialLinks
                   instagramUrl={negocio.instagramUrl}
                   facebookUrl={negocio.facebookUrl}
                   tiktokUrl={negocio.tiktokUrl}
                   variant="header"
                 />
+                {negocio.telefonoWhatsApp && (
+                  <a
+                    href={`https://wa.me/${negocio.telefonoWhatsApp.replace(/\D/g, "").replace(/^(\d{10})$/, "52$1")}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-xs font-medium text-[#25D366] hover:opacity-80 transition"
+                  >
+                    <SiWhatsapp size={12} className="shrink-0" />
+                    {negocio.telefonoWhatsApp}
+                  </a>
+                )}
               </div>
             </div>
-          </div>
-          {/* Fila secundaria: WhatsApp + Mis citas */}
-          <div className="mt-4 pt-3 flex items-center justify-between" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
-            {negocio.telefonoWhatsApp ? (
-              <a
-                href={`https://wa.me/${negocio.telefonoWhatsApp.replace(/\D/g, "").replace(/^(\d{10})$/, "52$1")}`}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1.5 text-xs font-medium text-[#25D366] hover:opacity-80 transition"
-              >
-                <SiWhatsapp size={14} className="shrink-0" />
-                {negocio.telefonoWhatsApp}
-              </a>
-            ) : <span />}
-            <a
-              href={`/b/${negocio.slug}/mis-citas`}
-              className="text-xs font-medium hover:opacity-80 transition"
-              style={{ color: "rgba(255,255,255,0.4)" }}
-            >
-              Mis citas →
-            </a>
           </div>
         </div>
       </div>
 
       {/* Tira de pasos — full width, fondo oscuro */}
-      <IndicadorPasos pasoActual={paso} pasos={PASOS} color={color} />
+      <IndicadorPasos pasoActual={paso} pasos={PASOS} color={color} slug={negocio.slug} />
 
       {/* Contenido */}
       <div className="max-w-lg mx-auto px-4 pt-5 pb-10">
