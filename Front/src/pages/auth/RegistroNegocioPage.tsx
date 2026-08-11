@@ -202,8 +202,6 @@ export default function RegistroNegocioPage() {
                 {[
                   { value: "belleza", emoji: "💇", label: "Belleza" },
                   { value: "salud", emoji: "🏥", label: "Salud" },
-                  { value: "veterinaria", emoji: "🐾", label: "Veterinaria" },
-                  { value: "tatuaje", emoji: "🎨", label: "Tatuaje" },
                   { value: "otro", emoji: "📋", label: "Otro" },
                 ].map((g) => (
                   <button
