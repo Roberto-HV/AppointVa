@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Link } from "react-router-dom";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Scissors, HeartPulse } from "lucide-react";
 import { api } from "../../api/axios";
 import PasswordStrengthBar from "../../components/PasswordStrengthBar";
 
@@ -75,6 +75,10 @@ export default function RegistroNegocioPage() {
 
   const onSubmit = async (data: FormData) => {
     setErrorGeneral("");
+    if (!sector) {
+      setErrorGeneral("Selecciona el giro de tu negocio");
+      return;
+    }
     try {
       await api.post("/publico/registro", {
         nombreNegocio: data.nombreNegocio,
@@ -83,7 +87,7 @@ export default function RegistroNegocioPage() {
         email: data.email,
         contrasena: data.contrasena,
         telefono: data.telefono || undefined,
-        sector: sector || undefined,
+        sector,
       });
       setEmailRegistrado(data.email);
       setRegistroExitoso(true);
@@ -151,7 +155,7 @@ export default function RegistroNegocioPage() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="w-full max-w-lg">
         <div className="text-center mb-8">
-          <img src="/MasterLogo.png" alt="AppointVa" className="h-20 object-contain mx-auto mb-2" />
+          <img src="/MasterLogo.png" alt="AppointVa" className="h-20 object-contain mx-auto mb-2 rounded-xl" />
           <p className="text-gray-500 text-sm">Registra tu negocio gratis</p>
         </div>
 
@@ -196,26 +200,25 @@ export default function RegistroNegocioPage() {
             {/* Giro del negocio */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Giro del negocio <span className="text-gray-400 font-normal">(opcional)</span>
+                Giro del negocio <span className="text-red-400">*</span>
               </label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-3">
                 {[
-                  { value: "belleza", emoji: "💇", label: "Belleza" },
-                  { value: "salud", emoji: "🏥", label: "Salud" },
-                  { value: "otro", emoji: "📋", label: "Otro" },
-                ].map((g) => (
+                  { value: "belleza", Icon: Scissors, label: "Belleza y estética" },
+                  { value: "salud", Icon: HeartPulse, label: "Salud" },
+                ].map(({ value, Icon, label }) => (
                   <button
-                    key={g.value}
+                    key={value}
                     type="button"
-                    onClick={() => setSector(sector === g.value ? "" : g.value)}
-                    className={`flex flex-col items-center gap-1 py-3 rounded-xl border-2 text-sm font-medium transition ${
-                      sector === g.value
+                    onClick={() => setSector(value)}
+                    className={`flex flex-col items-center gap-2 py-4 rounded-xl border-2 text-sm font-medium transition ${
+                      sector === value
                         ? "border-slate-700 bg-slate-50 text-slate-700"
                         : "border-gray-200 text-gray-500 hover:border-gray-300"
                     }`}
                   >
-                    <span className="text-xl">{g.emoji}</span>
-                    <span className="text-xs">{g.label}</span>
+                    <Icon size={22} />
+                    <span className="text-xs">{label}</span>
                   </button>
                 ))}
               </div>
