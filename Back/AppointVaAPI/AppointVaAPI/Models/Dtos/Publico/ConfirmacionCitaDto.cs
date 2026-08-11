@@ -11,6 +11,7 @@ namespace AppointVaAPI.Models.Dtos.Publico
         public string NombreServicio { get; set; } = string.Empty;
         public string NombreEmpleado { get; set; } = string.Empty;
         public string NombreCliente { get; set; } = string.Empty;
+        public string? EmailCliente { get; set; }
         public DateTime InicioEn { get; set; }
         public DateTime FinEn { get; set; }
         public decimal Precio { get; set; }

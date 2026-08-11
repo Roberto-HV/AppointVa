@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Bell } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { notificacionesApi, type NotificacionDto } from '../../api/notificaciones';
@@ -17,6 +18,7 @@ export function NotificacionesBell() {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const qc = useQueryClient();
+  const navigate = useNavigate();
 
   const { data: notificaciones = [] } = useQuery<NotificacionDto[]>({
     queryKey: ['notificaciones'],
@@ -83,7 +85,13 @@ export function NotificacionesBell() {
               {notificaciones.map(n => (
                 <li
                   key={n.id}
-                  className="flex items-start gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50"
+                  className={`flex items-start gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 ${n.citaId ? 'cursor-pointer' : ''}`}
+                  onClick={() => {
+                    if (n.citaId) {
+                      setOpen(false);
+                      navigate(`/dashboard/citas/${n.citaId}`);
+                    }
+                  }}
                 >
                   <span className="mt-0.5 text-base">
                     {n.tipo === 'NuevaCita' ? '🗓' : '❌'}
@@ -100,7 +108,7 @@ export function NotificacionesBell() {
                     </p>
                   </div>
                   <button
-                    onClick={() => eliminar.mutate(n.id)}
+                    onClick={(e) => { e.stopPropagation(); eliminar.mutate(n.id); }}
                     className="shrink-0 text-lg leading-none text-slate-300 hover:text-slate-500 dark:text-slate-600 dark:hover:text-slate-400"
                     aria-label="Eliminar notificación"
                   >

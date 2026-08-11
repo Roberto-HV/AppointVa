@@ -364,6 +364,7 @@ namespace AppointVaAPI.Controllers.V1
                 NombreServicio = servicio.Nombre,
                 NombreEmpleado = empleado?.Nombre ?? string.Empty,
                 NombreCliente = cliente.NombreCompleto,
+                EmailCliente = dto.EmailCliente,
                 InicioEn = cita.InicioEn,
                 FinEn = cita.FinEn,
                 Precio = cita.Precio,
@@ -397,7 +398,7 @@ namespace AppointVaAPI.Controllers.V1
                 NegocioId = negocio.Id,
                 Tipo = "NuevaCita",
                 Titulo = $"Nueva cita de {cliente.NombreCompleto}",
-                Descripcion = $"{servicio.Nombre} con {empleado?.Nombre ?? "Empleado"} · {cita.InicioEn.ToLocalTime():ddd d 'de' MMM, HH:mm}",
+                Descripcion = $"{servicio.Nombre} con {empleado?.Nombre ?? "Empleado"} · {cita.InicioEn.ToLocalTime().ToString("ddd d 'de' MMM, HH:mm", new System.Globalization.CultureInfo("es-MX"))}",
                 CitaId = cita.Id
             });
             await _db.SaveChangesAsync();
@@ -438,6 +439,7 @@ namespace AppointVaAPI.Controllers.V1
                 NombreServicio = cita.Servicio?.Nombre ?? string.Empty,
                 NombreEmpleado = cita.Empleado?.Nombre ?? string.Empty,
                 NombreCliente = cita.Cliente?.NombreCompleto ?? string.Empty,
+                EmailCliente = cita.Cliente?.Email,
                 InicioEn = cita.InicioEn,
                 FinEn = cita.FinEn,
                 Precio = cita.Precio,
@@ -543,7 +545,7 @@ namespace AppointVaAPI.Controllers.V1
                 NegocioId = cita.NegocioId,
                 Tipo = "Cancelacion",
                 Titulo = $"Cita cancelada — {cita.Cliente?.NombreCompleto ?? ""}",
-                Descripcion = $"{cita.Servicio?.Nombre ?? "Servicio"} con {cita.Empleado?.Nombre ?? "Empleado"} · {cita.InicioEn.ToLocalTime():ddd d 'de' MMM, HH:mm}",
+                Descripcion = $"{cita.Servicio?.Nombre ?? "Servicio"} con {cita.Empleado?.Nombre ?? "Empleado"} · {cita.InicioEn.ToLocalTime().ToString("ddd d 'de' MMM, HH:mm", new System.Globalization.CultureInfo("es-MX"))}",
                 CitaId = cita.Id
             });
             await _db.SaveChangesAsync();
