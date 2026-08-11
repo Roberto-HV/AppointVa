@@ -295,7 +295,7 @@ export default function DashboardLayout() {
   }, []);
 
   return (
-    <div className="h-lvh flex overflow-hidden bg-white dark:bg-slate-950">
+    <div className="h-dvh flex overflow-hidden bg-white dark:bg-slate-950">
 
       {/* ── Overlay backdrop (móvil) — siempre montado, fade vía inline style ── */}
       <div
@@ -498,7 +498,7 @@ export default function DashboardLayout() {
         )}
 
         {/* ── Contenido principal ── */}
-        <main className="flex-1 overflow-y-auto overscroll-y-none bg-white dark:bg-slate-950">
+        <main className="flex-1 overflow-y-auto bg-white dark:bg-slate-950" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
           {/* Desktop topbar — hidden on mobile (mobile has its own header) */}
           <header className="hidden xl:flex items-center justify-end gap-3 border-b border-slate-200 bg-white px-6 py-3 dark:border-slate-700 dark:bg-slate-900">
             <FechaHoraActual />
