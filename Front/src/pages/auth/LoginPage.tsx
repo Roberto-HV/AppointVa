@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useNavigate, Link, useLocation } from "react-router-dom";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, CalendarCheck, Star, Users } from "lucide-react";
 import { authApi } from "../../api/auth";
 import { useAuthStore } from "../../store/authStore";
 import { api } from "../../api/axios";
@@ -102,9 +102,9 @@ export default function LoginPage() {
       <div className="flex-1 flex flex-col justify-center items-center bg-white px-8 py-12 sm:px-12">
         <div className="w-full max-w-sm">
 
-          {/* Logo */}
-          <div className="mb-10">
-            <img src="/MasterLogo.png" alt="AppointVa" className="h-14 w-auto object-contain rounded-xl" />
+          {/* Logo — centrado en mobile, izquierda en desktop */}
+          <div className="mb-10 flex justify-center md:justify-start">
+            <img src="/MasterLogo.png" alt="AppointVa" className="h-20 md:h-14 w-auto object-contain rounded-xl" />
           </div>
 
           {/* Alertas */}
@@ -253,7 +253,7 @@ export default function LoginPage() {
             </>
           )}
 
-          <p className="text-xs text-gray-400 mt-10 space-x-2">
+          <p className="text-xs text-gray-400 mt-10 space-x-2 text-center md:text-left">
             <Link to="/privacidad" className="hover:underline hover:text-gray-600 transition">Privacidad</Link>
             <span>·</span>
             <Link to="/terminos" className="hover:underline hover:text-gray-600 transition">Términos</Link>
@@ -263,18 +263,52 @@ export default function LoginPage() {
 
       {/* ── Panel derecho — branding (solo md+) ── */}
       <div className="hidden md:flex md:w-[45%] lg:w-2/5 bg-slate-800 flex-col items-center justify-center relative overflow-hidden p-12">
-        {/* Formas decorativas */}
-        <div className="absolute -top-20 -right-20 w-80 h-80 bg-slate-700/50 rounded-full" />
-        <div className="absolute -bottom-24 -left-16 w-96 h-96 bg-slate-700/40 rounded-full" />
-        <div className="absolute top-1/2 right-8 w-20 h-20 bg-slate-600/30 rounded-full -translate-y-1/2" />
-        <div className="absolute top-16 left-12 w-10 h-10 bg-slate-600/40 rounded-full" />
+        {/* Formas decorativas de fondo */}
+        <div className="absolute -top-24 -right-24 w-80 h-80 bg-slate-700/50 rounded-full" />
+        <div className="absolute -bottom-28 -left-20 w-96 h-96 bg-slate-700/40 rounded-full" />
 
         {/* Contenido central */}
-        <div className="relative text-center z-10 max-w-xs">
+        <div className="relative z-10 w-full max-w-xs text-center">
           <h2 className="text-3xl font-bold text-white mb-3">¿Nuevo por aquí?</h2>
           <p className="text-slate-400 text-sm leading-relaxed mb-8">
             Registra tu negocio gratis y empieza a gestionar tus citas desde el primer día.
           </p>
+
+          {/* Mini-cards de producto */}
+          <div className="space-y-3 mb-8 text-left">
+            <div className="bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-4 py-3 flex items-center gap-3">
+              <div className="w-9 h-9 bg-green-400/20 rounded-xl flex items-center justify-center shrink-0">
+                <CalendarCheck size={18} className="text-green-400" />
+              </div>
+              <div>
+                <p className="text-white text-xs font-semibold">Cita confirmada</p>
+                <p className="text-slate-400 text-xs">María G. · Hoy 3:00 PM</p>
+              </div>
+              <span className="ml-auto text-xs text-green-400 font-medium">Nueva</span>
+            </div>
+
+            <div className="bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-4 py-3 flex items-center gap-3">
+              <div className="w-9 h-9 bg-blue-400/20 rounded-xl flex items-center justify-center shrink-0">
+                <Users size={18} className="text-blue-400" />
+              </div>
+              <div>
+                <p className="text-white text-xs font-semibold">Esta semana</p>
+                <p className="text-slate-400 text-xs">12 citas agendadas</p>
+              </div>
+              <span className="ml-auto text-xs text-blue-400 font-medium">+18%</span>
+            </div>
+
+            <div className="bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-4 py-3 flex items-center gap-3">
+              <div className="w-9 h-9 bg-amber-400/20 rounded-xl flex items-center justify-center shrink-0">
+                <Star size={18} className="text-amber-400" />
+              </div>
+              <div>
+                <p className="text-white text-xs font-semibold">Nueva reseña</p>
+                <p className="text-slate-400 text-xs">★★★★★ "Excelente servicio"</p>
+              </div>
+            </div>
+          </div>
+
           <Link
             to="/registro"
             className="inline-block w-full border-2 border-white text-white font-semibold py-3 rounded-xl hover:bg-white hover:text-slate-800 transition text-sm"
