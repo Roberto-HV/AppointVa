@@ -109,7 +109,7 @@ export default function LoginPage() {
 
           {/* Logo — centrado en mobile, izquierda en desktop */}
           <div className="mb-10 flex justify-center">
-            <img src="/MasterLogo.png" alt="AppointVa" className="h-20 md:h-16 w-auto object-contain rounded-xl" />
+            <img src="/MasterLogo.png" alt="AppointVa" className="h-20 md:h-24 w-auto object-contain rounded-xl" />
           </div>
 
           {/* Alertas */}
