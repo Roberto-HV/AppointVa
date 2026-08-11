@@ -11,6 +11,7 @@ import { useToastStore } from "../store/toastStore";
 import { Tooltip } from "../components/ui/Tooltip";
 import { NotificacionesBell } from '../components/dashboard/NotificacionesBell';
 import { toUtcDate } from '../utils/formatters';
+import { useInactividadTimeout } from '../hooks/useInactividadTimeout';
 
 function FechaHoraActual() {
   const [ahora, setAhora] = useState(new Date());
@@ -243,6 +244,8 @@ export default function DashboardLayout() {
       navigate("/login");
     }
   };
+
+  useInactividadTimeout(handleLogout);
 
   const cerrarSidebar = () => {
     (document.activeElement as HTMLElement)?.blur();

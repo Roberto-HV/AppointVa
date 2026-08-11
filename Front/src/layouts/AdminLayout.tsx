@@ -3,6 +3,7 @@ import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { useAuthStore } from "../store/authStore";
 import { authApi } from "../api/auth";
+import { useInactividadTimeout } from "../hooks/useInactividadTimeout";
 
 export default function AdminLayout() {
   const { usuario, token, refreshToken, cerrarSesion } = useAuthStore();
@@ -17,6 +18,8 @@ export default function AdminLayout() {
       navigate("/login");
     }
   };
+
+  useInactividadTimeout(handleLogout);
 
   const cerrarSidebar = () => setSidebarOpen(false);
 
