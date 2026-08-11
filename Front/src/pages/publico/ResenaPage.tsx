@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { publicoApi } from "../../api/publico";
 import { Star } from "lucide-react";
+import PublicFooter from "../../components/PublicFooter";
 
 export default function ResenaPage() {
   const { token } = useParams<{ token: string }>();
@@ -43,7 +44,7 @@ export default function ResenaPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="animate-spin w-8 h-8 border-2 border-slate-700 border-t-transparent rounded-full" />
       </div>
     );
@@ -51,8 +52,8 @@ export default function ResenaPage() {
 
   if (isError) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
-        <div className="bg-white rounded-2xl border border-gray-100 p-8 max-w-sm w-full text-center shadow-sm">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
+        <div className="bg-white rounded-2xl border border-slate-100 p-8 max-w-sm w-full text-center shadow-sm">
           <div className="text-4xl mb-4">😔</div>
           <h1 className="text-xl font-bold text-gray-900 mb-2">Enlace no válido</h1>
           <p className="text-sm text-gray-500">{errorMsg ?? "Este enlace ha expirado o ya fue utilizado."}</p>
@@ -63,8 +64,8 @@ export default function ResenaPage() {
 
   if (enviado) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
-        <div className="bg-white rounded-2xl border border-gray-100 p-8 max-w-sm w-full text-center shadow-sm">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
+        <div className="bg-white rounded-2xl border border-slate-100 p-8 max-w-sm w-full text-center shadow-sm">
           <div className="text-5xl mb-4">⭐</div>
           <h1 className="text-xl font-bold text-gray-900 mb-2">¡Gracias por tu reseña!</h1>
           <p className="text-sm text-gray-500">Tu opinión ayuda a <strong>{info?.negocioNombre}</strong> a seguir mejorando.</p>
@@ -74,8 +75,8 @@ export default function ResenaPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
-      <div className="bg-white rounded-2xl border border-gray-100 p-8 max-w-sm w-full shadow-sm">
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
+      <div className="bg-white rounded-2xl border border-slate-100 p-8 max-w-sm w-full shadow-sm">
         {/* Header */}
         <div className="text-center mb-6">
           <h1 className="text-xl font-bold text-gray-900">{info?.negocioNombre}</h1>
@@ -133,6 +134,7 @@ export default function ResenaPage() {
           {isPending ? "Enviando..." : "Enviar reseña"}
         </button>
       </div>
+      <PublicFooter />
     </div>
   );
 }

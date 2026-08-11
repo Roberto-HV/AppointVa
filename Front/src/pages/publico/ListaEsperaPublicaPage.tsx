@@ -36,12 +36,14 @@ function NegocioHeader({ negocio, color }: { negocio: NegocioPublico; color: str
           />
         ) : (
           <div
-            className="w-14 h-14 rounded-2xl flex items-center justify-center"
+            className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl"
             style={{
               background: `rgb(${hexToChannels(color)} / 0.18)`,
               border: `1.5px solid rgb(${hexToChannels(color)} / 0.40)`,
             }}
-          />
+          >
+            🏪
+          </div>
         )}
         <h1 className="text-white font-black text-base leading-tight tracking-tight">
           {negocio.nombre}

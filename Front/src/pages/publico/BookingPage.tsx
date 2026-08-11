@@ -506,7 +506,7 @@ export default function BookingPage() {
           }}
         />
         {/* Contenido con padding-top para dejar ver la foto arriba */}
-        <div className="relative z-10 px-5 pt-28 pb-4">
+        <div className={`relative z-10 px-5 pb-4 ${negocio.portadaUrl ? "pt-28" : "pt-8"}`}>
           {/* Fila: logo + nombre alineados arriba */}
           <div className="flex items-start gap-3.5">
             {/* Logo */}
@@ -578,32 +578,32 @@ export default function BookingPage() {
               </div>
             </div>
           </div>
+          {/* Fila secundaria: WhatsApp + Mis citas */}
+          <div className="mt-4 pt-3 flex items-center justify-between" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+            {negocio.telefonoWhatsApp ? (
+              <a
+                href={`https://wa.me/${negocio.telefonoWhatsApp.replace(/\D/g, "").replace(/^(\d{10})$/, "52$1")}`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-[#25D366] hover:opacity-80 transition"
+              >
+                <SiWhatsapp size={14} className="shrink-0" />
+                {negocio.telefonoWhatsApp}
+              </a>
+            ) : <span />}
+            <a
+              href={`/b/${negocio.slug}/mis-citas`}
+              className="text-xs font-medium hover:opacity-80 transition"
+              style={{ color: "rgba(255,255,255,0.4)" }}
+            >
+              Mis citas →
+            </a>
+          </div>
         </div>
       </div>
 
       {/* Tira de pasos — full width, fondo oscuro */}
       <IndicadorPasos pasoActual={paso} pasos={PASOS} color={color} />
-
-      {/* Sub-header: acciones del negocio */}
-      <div className="bg-white border-b border-slate-100 px-5 py-2.5 flex items-center justify-between">
-        {negocio.telefonoWhatsApp ? (
-          <a
-            href={`https://wa.me/${negocio.telefonoWhatsApp.replace(/\D/g, "").replace(/^(\d{10})$/, "52$1")}`}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-1.5 text-xs font-medium text-[#25D366] hover:opacity-80 transition"
-          >
-            <SiWhatsapp size={14} className="shrink-0" />
-            {negocio.telefonoWhatsApp}
-          </a>
-        ) : <span />}
-        <a
-          href={`/b/${negocio.slug}/mis-citas`}
-          className="text-xs font-medium text-slate-400 hover:text-slate-600 transition"
-        >
-          Mis citas →
-        </a>
-      </div>
 
       {/* Contenido */}
       <div className="max-w-lg mx-auto px-4 pt-5 pb-10">

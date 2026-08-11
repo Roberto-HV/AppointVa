@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { api } from "../../api/axios";
+import PublicFooter from "../../components/PublicFooter";
 
 interface CitaResumen {
   codigoConfirmacion: string;
@@ -65,7 +66,7 @@ export default function CancelarCitaPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <p className="text-gray-400 text-sm">Cargando...</p>
       </div>
     );
@@ -73,8 +74,8 @@ export default function CancelarCitaPage() {
 
   if (isError || !cita) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-        <div className="bg-white rounded-2xl border border-gray-100 p-8 max-w-sm w-full text-center shadow-sm">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
+        <div className="bg-white rounded-2xl border border-slate-100 p-8 max-w-sm w-full text-center shadow-sm">
           <div className="w-14 h-14 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg className="w-7 h-7 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
@@ -89,8 +90,8 @@ export default function CancelarCitaPage() {
 
   if (cancelada) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-        <div className="bg-white rounded-2xl border border-gray-100 p-8 max-w-sm w-full text-center shadow-sm">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
+        <div className="bg-white rounded-2xl border border-slate-100 p-8 max-w-sm w-full text-center shadow-sm">
           <div className="w-14 h-14 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg className="w-7 h-7 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
@@ -105,8 +106,8 @@ export default function CancelarCitaPage() {
 
   if (cita.estado === 3) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-        <div className="bg-white rounded-2xl border border-gray-100 p-8 max-w-sm w-full text-center shadow-sm">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
+        <div className="bg-white rounded-2xl border border-slate-100 p-8 max-w-sm w-full text-center shadow-sm">
           <p className="font-semibold text-gray-700 mb-1">Esta cita ya está cancelada</p>
           <p className="text-sm text-gray-400">No es necesario hacer nada más.</p>
         </div>
@@ -115,8 +116,8 @@ export default function CancelarCitaPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-12">
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm w-full max-w-sm overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4 py-12">
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm w-full max-w-sm overflow-hidden">
         {/* Header */}
         <div className="bg-slate-700 px-6 py-5 text-center">
           <p className="text-white font-semibold text-base">{cita.nombreNegocio}</p>
@@ -148,7 +149,7 @@ export default function CancelarCitaPage() {
           </div>
 
           {cita.horasCancelacion > 0 && (
-            <div className="bg-amber-50 border border-amber-100 rounded-lg px-4 py-3 text-xs text-amber-700">
+            <div className="bg-amber-50 border border-amber-100 rounded-xl px-4 py-3 text-xs text-amber-700">
               Esta cita solo puede cancelarse con al menos {cita.horasCancelacion} hora{cita.horasCancelacion === 1 ? "" : "s"} de anticipación.
             </div>
           )}
@@ -164,7 +165,7 @@ export default function CancelarCitaPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="tucorreo@ejemplo.com"
-                  className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700"
+                  className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm outline-none focus:border-slate-700"
                 />
               </div>
               {errorMsg && (
@@ -173,14 +174,14 @@ export default function CancelarCitaPage() {
               <button
                 onClick={() => { setErrorMsg(null); setConfirmado(true); }}
                 disabled={!email.trim()}
-                className="w-full py-2.5 rounded-lg bg-red-500 hover:bg-red-600 disabled:opacity-40 text-white text-sm font-semibold transition"
+                className="w-full py-2.5 rounded-xl bg-red-500 hover:bg-red-600 disabled:opacity-40 text-white text-sm font-semibold transition"
               >
                 Cancelar mi cita
               </button>
             </>
           ) : (
             <>
-              <div className="bg-red-50 border border-red-100 rounded-lg px-4 py-3 text-sm text-red-700">
+              <div className="bg-red-50 border border-red-100 rounded-xl px-4 py-3 text-sm text-red-700">
                 ¿Confirmas que deseas cancelar esta cita? Esta acción no se puede deshacer.
               </div>
               {errorMsg && (
@@ -189,14 +190,14 @@ export default function CancelarCitaPage() {
               <div className="flex gap-3">
                 <button
                   onClick={() => { setConfirmado(false); setErrorMsg(null); }}
-                  className="flex-1 py-2.5 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition"
+                  className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-slate-50 transition"
                 >
                   Volver
                 </button>
                 <button
                   onClick={handleCancelar}
                   disabled={isPending}
-                  className="flex-1 py-2.5 rounded-lg bg-red-500 hover:bg-red-600 disabled:opacity-40 text-white text-sm font-semibold transition"
+                  className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 disabled:opacity-40 text-white text-sm font-semibold transition"
                 >
                   {isPending ? "Cancelando..." : "Sí, cancelar"}
                 </button>
@@ -205,6 +206,7 @@ export default function CancelarCitaPage() {
           )}
         </div>
       </div>
+      <PublicFooter />
     </div>
   );
 }
