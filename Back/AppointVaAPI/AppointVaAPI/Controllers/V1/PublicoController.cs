@@ -407,8 +407,10 @@ namespace AppointVaAPI.Controllers.V1
             if (!string.IsNullOrWhiteSpace(dto.EmailCliente))
             {
                 var horas = negocio.HorasRecordatorio > 0 ? negocio.HorasRecordatorio : 24;
-                var horaRecordatorio = cita.InicioEn.AddHours(-horas);
-                if (horaRecordatorio > DateTime.UtcNow)
+                var tz = AppointVaAPI.Helpers.ZonaHorariaHelper.Resolver(negocio.ZonaHoraria);
+                var horaRecordatorio = AppointVaAPI.Helpers.ZonaHorariaHelper
+                    .ToDateTimeOffset(cita.InicioEn, tz).AddHours(-horas);
+                if (horaRecordatorio > DateTimeOffset.UtcNow)
                     _jobClient.Schedule<IRecordatorioService>(s => s.EnviarRecordatorioCitaAsync(cita.Id), horaRecordatorio);
             }
 

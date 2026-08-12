@@ -222,13 +222,15 @@ namespace AppointVaAPI.Controllers.V1
             // Programar recordatorio usando el setting del negocio (no hardcodeado)
             if (!string.IsNullOrWhiteSpace(cliente.Email))
             {
-                var horasAntes = await _db.Negocios
+                var negocioInfo = await _db.Negocios
                     .Where(n => n.Id == negocioId)
-                    .Select(n => n.HorasRecordatorio)
+                    .Select(n => new { n.HorasRecordatorio, n.ZonaHoraria })
                     .FirstOrDefaultAsync();
-                var horas = horasAntes > 0 ? horasAntes : 24;
-                var horaRecordatorio = cita.InicioEn.AddHours(-horas);
-                if (horaRecordatorio > DateTime.UtcNow)
+                var horas = negocioInfo?.HorasRecordatorio > 0 ? negocioInfo.HorasRecordatorio : 24;
+                var tz = AppointVaAPI.Helpers.ZonaHorariaHelper.Resolver(negocioInfo?.ZonaHoraria);
+                var horaRecordatorio = AppointVaAPI.Helpers.ZonaHorariaHelper
+                    .ToDateTimeOffset(cita.InicioEn, tz).AddHours(-horas);
+                if (horaRecordatorio > DateTimeOffset.UtcNow)
                     _jobClient.Schedule<IRecordatorioService>(
                         s => s.EnviarRecordatorioCitaAsync(cita.Id),
                         horaRecordatorio);
