@@ -52,8 +52,10 @@ namespace AppointVaAPI.Services
         {
             if (!EstaHabilitado()) return;
 
-            var asunto = $"Recordatorio: tu cita es mañana — {cita.Servicio?.Nombre ?? "AppointVa"}";
-            var html = PlantillaRecordatorio(cita, nombreCliente, icalUrl, googleCalUrl);
+            var diasHasta = (cita.InicioEn.Date - DateTime.Now.Date).TotalDays;
+            var cuandoTexto = diasHasta switch { <= 0 => "hoy", 1 => "mañana", _ => "pronto" };
+            var asunto = $"Recordatorio: tu cita es {cuandoTexto} — {cita.Servicio?.Nombre ?? "AppointVa"}";
+            var html = PlantillaRecordatorio(cita, nombreCliente, cuandoTexto, icalUrl, googleCalUrl);
             await EnviarAsync(emailDestino, asunto, html);
             if (cita.NegocioId != Guid.Empty) await RegistrarEmailAsync(cita.NegocioId, "Recordatorio");
         }
@@ -374,7 +376,7 @@ namespace AppointVaAPI.Services
                 """;
         }
 
-        private static string PlantillaRecordatorio(Cita cita, string nombreCliente, string? icalUrl = null, string? googleCalUrl = null)
+        private static string PlantillaRecordatorio(Cita cita, string nombreCliente, string cuandoTexto, string? icalUrl = null, string? googleCalUrl = null)
         {
             nombreCliente = nombreCliente.Trim();
             var negocio  = cita.Negocio?.Nombre ?? "el negocio";
@@ -431,7 +433,7 @@ namespace AppointVaAPI.Services
                           </td>
                         </tr>
                       </table>
-                      <p style="font-size:15px;color:#374151;line-height:1.6;margin:0 0 24px;">Hola, <strong>{nombreCliente}</strong>. Te recordamos que tu cita en <strong>{negocio}</strong> es <strong>mañana</strong>. ¡Ya casi!</p>
+                      <p style="font-size:15px;color:#374151;line-height:1.6;margin:0 0 24px;">Hola, <strong>{nombreCliente}</strong>. Te recordamos que tu cita en <strong>{negocio}</strong> es <strong>{cuandoTexto}</strong>. ¡Ya casi!</p>
                       <table style="width:100%;border-collapse:collapse;margin-bottom:24px;" cellpadding="0" cellspacing="0" border="0">
                         <tr>
                           <td style="padding:10px 12px;background:#f8fafc;color:#6b7280;width:38%;font-size:14px;">Servicio</td>
