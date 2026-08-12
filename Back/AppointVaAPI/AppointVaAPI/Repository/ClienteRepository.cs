@@ -71,5 +71,16 @@ namespace AppointVaAPI.Repository
             _db.Clientes.Update(cliente);
             await _db.SaveChangesAsync();
         }
+
+        public async Task<bool> EliminarAsync(Guid id, Guid negocioId)
+        {
+            var cliente = await ObtenerPorIdAsync(id, negocioId);
+            if (cliente is null) return false;
+            cliente.FechaEliminacion = DateTime.UtcNow;
+            cliente.FechaActualizacion = DateTime.UtcNow;
+            _db.Clientes.Update(cliente);
+            await _db.SaveChangesAsync();
+            return true;
+        }
     }
 }

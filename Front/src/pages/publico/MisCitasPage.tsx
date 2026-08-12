@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../api/axios";
@@ -80,31 +80,38 @@ export default function MisCitasPage() {
   const [errorCancelacion, setErrorCancelacion] = useState<{id: string; msg: string} | null>(null);
   const [buscado, setBuscado] = useState<Session | null>(session);
   const [pagina, setPagina] = useState(1);
-  const [total, setTotal] = useState(0);
 
   const [reagendando, setReagendando] = useState<MiCita | null>(null);
   const [slotNuevo, setSlotNuevo] = useState<SlotDisponible | null>(null);
   const [guardandoReagenda, setGuardandoReagenda] = useState(false);
   const [errorReagenda, setErrorReagenda] = useState("");
   const [exitoReagenda, setExitoReagenda] = useState("");
+  const reagendaTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (reagendaTimerRef.current) clearTimeout(reagendaTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     if (session && !buscado) setBuscado(session);
   }, []);
 
-  const { data: citas, isLoading, error } = useQuery<MiCita[]>({
+  const { data: queryData, isLoading, error } = useQuery<{ citas: MiCita[]; total: number }>({
     queryKey: ["mis-citas", slug, buscado?.email, buscado?.telefono, pagina],
     queryFn: async () => {
       const { data, headers } = await api.get("/publico/mis-citas", {
         params: { slug, email: buscado!.email, telefono: buscado!.telefono, pagina, tamano: TAMANO },
       });
-      setTotal(parseInt(headers["x-total-count"] ?? "0", 10));
-      return data;
+      return { citas: data, total: parseInt(headers["x-total-count"] ?? "0", 10) };
     },
     enabled: !!buscado && !!slug,
     retry: false,
   });
 
+  const citas = queryData?.citas;
+  const total = queryData?.total ?? 0;
   const totalPaginas = Math.max(1, Math.ceil(total / TAMANO));
 
   const buscar = (e: React.FormEvent) => {
@@ -152,7 +159,7 @@ export default function MisCitasPage() {
       );
       setExitoReagenda("¡Cita reagendada exitosamente!");
       qc.invalidateQueries({ queryKey: ["mis-citas", slug, buscado.email, buscado.telefono] });
-      setTimeout(() => { setReagendando(null); setSlotNuevo(null); setExitoReagenda(""); }, 5000);
+      reagendaTimerRef.current = setTimeout(() => { setReagendando(null); setSlotNuevo(null); setExitoReagenda(""); }, 5000);
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje ?? "No se pudo reagendar la cita.";
       setErrorReagenda(msg);
@@ -161,7 +168,7 @@ export default function MisCitasPage() {
     }
   };
 
-  const now = new Date();
+  const now = useMemo(() => new Date(), [citas]);
   const proximas = (citas ?? []).filter(
     (c) => (c.estado === 1 || c.estado === 2) && new Date(c.inicioEn) >= now
   );

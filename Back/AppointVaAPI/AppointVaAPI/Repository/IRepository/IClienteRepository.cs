@@ -9,5 +9,6 @@ namespace AppointVaAPI.Repository.IRepository
         Task<List<Cliente>> ObtenerTodosAsync(Guid negocioId);
         Task<Cliente?> ObtenerPorIdAsync(Guid id, Guid negocioId);
         Task ActualizarAsync(Cliente cliente);
+        Task<bool> EliminarAsync(Guid id, Guid negocioId);
     }
 }

@@ -57,6 +57,7 @@ namespace AppointVaAPI.Models
         public Guid?     RegistradoPorId { get; set; } // FK a ApplicationUser
         public Guid? CreadoPorUsuarioId { get; set; }
         public string? ComprobanteUrl { get; set; }
+        public string? HangfireJobId { get; set; }
         [Required]
         public DateTime FechaCreacion { get; set; }
         [Required]

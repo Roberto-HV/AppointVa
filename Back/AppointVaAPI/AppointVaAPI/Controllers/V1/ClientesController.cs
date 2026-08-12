@@ -116,6 +116,18 @@ namespace AppointVaAPI.Controllers.V1
             return Ok(MapearDto(cliente));
         }
 
+        // DELETE api/clientes/{id}
+        [HttpDelete("{id:guid}")]
+        public async Task<IActionResult> Eliminar(Guid id)
+        {
+            if (_contexto.NegocioId is null) return Unauthorized();
+
+            var eliminado = await _repo.EliminarAsync(id, _contexto.NegocioId.Value);
+            if (!eliminado) return NotFound(new { mensaje = "Cliente no encontrado" });
+
+            return NoContent();
+        }
+
         private static object MapearDto(Cliente c) => new
         {
             id = c.Id,

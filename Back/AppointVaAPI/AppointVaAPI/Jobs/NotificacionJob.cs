@@ -1,4 +1,5 @@
 using AppointVaAPI.Data;
+using AppointVaAPI.Helpers;
 using AppointVaAPI.Models;
 using AppointVaAPI.Services.IServices;
 using Hangfire;
@@ -65,8 +66,11 @@ namespace AppointVaAPI.Jobs
         {
             var titulo = Uri.EscapeDataString(
                 $"{cita.Servicio?.Nombre ?? "Cita"} - {cita.Negocio?.Nombre ?? "AppointVa"}");
-            var inicio = cita.InicioEn.ToString("yyyyMMddTHHmmssZ");
-            var fin = cita.FinEn.ToString("yyyyMMddTHHmmssZ");
+            var tz = ZonaHorariaHelper.Resolver(cita.Negocio?.ZonaHoraria);
+            var inicioUtc = ZonaHorariaHelper.ToDateTimeOffset(cita.InicioEn, tz).UtcDateTime;
+            var finUtc = ZonaHorariaHelper.ToDateTimeOffset(cita.FinEn, tz).UtcDateTime;
+            var inicio = inicioUtc.ToString("yyyyMMddTHHmmssZ");
+            var fin = finUtc.ToString("yyyyMMddTHHmmssZ");
             var detalles = Uri.EscapeDataString(
                 $"Cita con {cita.Empleado?.Nombre ?? "el equipo"} en {cita.Negocio?.Nombre ?? "AppointVa"}");
             return $"https://calendar.google.com/calendar/render?action=TEMPLATE&text={titulo}&dates={inicio}/{fin}&details={detalles}";

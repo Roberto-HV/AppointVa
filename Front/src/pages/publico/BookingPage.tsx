@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+﻿import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -113,7 +113,7 @@ function IntakeCampoInput({
           <input
             type="checkbox"
             checked={valor === "true"}
-            onChange={(e) => onChange(e.target.checked ? "true" : "false")}
+            onChange={(e) => onChange(e.target.checked ? "true" : "")}
             className="accent-slate-700 w-4 h-4"
           />
           <span className="text-sm text-gray-700">
@@ -219,6 +219,12 @@ export default function BookingPage() {
   // Pre-selección vía URL params (Repetir cita)
   const [yaPreseleccionado, setYaPreseleccionado] = useState(false);
 
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
+
   const { data: negocio, isLoading, isError, error } = useQuery({
     queryKey: ["negocio", slug],
     queryFn: () => publicoApi.obtenerNegocio(slug!),
@@ -231,7 +237,7 @@ export default function BookingPage() {
     },
   });
 
-  const { data: camposIntake = [], isLoading: cargandoIntake } = useQuery<CampoIntake[]>({
+  const { data: camposIntake = [], isLoading: cargandoIntake, isError: intakeError } = useQuery<CampoIntake[]>({
     queryKey: ["intake-publico", slug, servicio?.id],
     queryFn: () => intakePublicoApi.getCampos(slug!, servicio?.id),
     enabled: !!slug && !!servicio,
@@ -335,12 +341,14 @@ export default function BookingPage() {
     setErrorBusqueda("");
     try {
       const datos = await publicoApi.buscarClienteDatos(slug, opts);
+      if (!mountedRef.current) return;
       setDatosPreRellenos(datos);
       setModoCliente("listo");
     } catch {
+      if (!mountedRef.current) return;
       setErrorBusqueda("No encontramos registros con ese dato. Puedes continuar como invitado.");
     } finally {
-      setBuscandoCliente(false);
+      if (mountedRef.current) setBuscandoCliente(false);
     }
   };
 
@@ -352,13 +360,15 @@ export default function BookingPage() {
     setErrorCupon("");
     try {
       const descuento = await descuentosPublicoApi.validar(codigoInput.trim(), slug);
+      if (!mountedRef.current) return;
       setDescuentoAplicado(descuento);
       setMostrarCupon(false);
       setCodigoInput("");
     } catch {
+      if (!mountedRef.current) return;
       setErrorCupon("Código inválido, expirado o agotado.");
     } finally {
-      setValidandoCupon(false);
+      if (mountedRef.current) setValidandoCupon(false);
     }
   };
 
@@ -368,6 +378,10 @@ export default function BookingPage() {
     setEnviando(true);
     try {
       const empleadoIdFinal = sinPreferencia ? (slot.empleadoId ?? "") : empleado.id;
+      const respuestasIntakeList = Object.entries(respuestasIntake).map(([campoIntakeId, valor]) => ({
+        campoIntakeId,
+        valor: valor || undefined,
+      }));
       const cita = await publicoApi.crearCita({
         negocioSlug: slug!,
         servicioId: servicio.id,
@@ -378,20 +392,11 @@ export default function BookingPage() {
         emailCliente: datos.emailCliente || undefined,
         notas: datos.notas || undefined,
         codigoDescuento: descuentoAplicado?.codigo,
+        respuestasIntake: respuestasIntakeList.length > 0 ? respuestasIntakeList : undefined,
       });
-      if (Object.keys(respuestasIntake).length > 0) {
-        const resps = Object.entries(respuestasIntake).map(([campoIntakeId, valor]) => ({
-          campoIntakeId,
-          valor,
-        }));
-        try {
-          await intakePublicoApi.guardarRespuestas(cita.id, resps);
-        } catch {
-          // intake save failure is non-blocking
-        }
-      }
       navigate(`/b/${slug}/confirmacion/${cita.codigoConfirmacion}`);
     } catch (err: unknown) {
+      if (!mountedRef.current) return;
       const status = (err as { response?: { status?: number } })?.response?.status;
       const msg = (err as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje;
       if (status === 409 || msg?.toLowerCase().includes("disponible") || msg?.toLowerCase().includes("ocupado")) {
@@ -734,13 +739,18 @@ export default function BookingPage() {
               </button>
               <button
                 onClick={irSiguiente}
-                disabled={!slot || cargandoIntake}
+                disabled={!slot || cargandoIntake || intakeError}
                 className="flex-1 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-3 rounded-2xl transition text-sm hover:opacity-90"
                 style={{ background: color }}
               >
                 {cargandoIntake ? "Cargando..." : "Continuar"}
               </button>
             </div>
+            {intakeError && (
+              <p className="text-xs text-red-500 text-center mt-2">
+                No se pudo cargar el formulario adicional. Recarga la página e intenta de nuevo.
+              </p>
+            )}
             {negocio.listaEsperaActiva === true && (
               <div className="mt-4 text-center">
                 <a

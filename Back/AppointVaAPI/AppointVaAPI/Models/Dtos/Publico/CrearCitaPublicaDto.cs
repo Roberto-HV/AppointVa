@@ -32,5 +32,15 @@ namespace AppointVaAPI.Models.Dtos.Publico
 
         [MaxLength(50)]
         public string? CodigoDescuento { get; set; }
+
+        public List<RespuestaIntakeInput>? RespuestasIntake { get; set; }
+    }
+
+    public class RespuestaIntakeInput
+    {
+        [Required]
+        public Guid CampoIntakeId { get; set; }
+
+        public string? Valor { get; set; }
     }
 }

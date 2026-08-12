@@ -28,7 +28,7 @@ namespace AppointVaAPI.Services
                 .FirstOrDefaultAsync(c => c.Id == citaId);
 
             if (cita is null) return;
-            if (cita.Estado == EstadosCitas.Cancelada || cita.Estado == EstadosCitas.Completada) return;
+            if (cita.Estado == EstadosCitas.Cancelada || cita.Estado == EstadosCitas.Completada || cita.Estado == EstadosCitas.Inasistencia) return;
 
             var backendUrl = _config["BackendUrl"] ?? string.Empty;
             var icalUrl = string.IsNullOrWhiteSpace(backendUrl)

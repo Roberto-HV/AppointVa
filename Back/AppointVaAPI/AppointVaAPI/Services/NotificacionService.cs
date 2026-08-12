@@ -69,18 +69,25 @@ namespace AppointVaAPI.Services
             return TimeZoneInfo.Utc;
         }
 
-        private static string FormatearFechaHora(DateTime fechaUtc, string zonaHoraria)
+        private static string NormalizarTelefonoE164(string tel)
+        {
+            var digits = new string(tel.Where(char.IsDigit).ToArray());
+            if (digits.Length == 10) return $"+52{digits}";
+            if (digits.Length == 12 && digits.StartsWith("52")) return $"+{digits}";
+            return tel.StartsWith("+") ? tel : $"+{digits}";
+        }
+
+        private static string FormatearFechaHora(DateTime fechaLocal, string zonaHoraria)
         {
             try
             {
-                var tz = ResolverZona(zonaHoraria);
-                var local = TimeZoneInfo.ConvertTimeFromUtc(fechaUtc, tz);
-                return local.ToString("dddd dd 'de' MMMM 'a las' HH:mm",
+                // InicioEn is already local time (Unspecified) — no conversion needed.
+                return fechaLocal.ToString("dddd dd 'de' MMMM 'a las' HH:mm",
                     new System.Globalization.CultureInfo("es-MX"));
             }
             catch
             {
-                return fechaUtc.ToString("dd/MM/yyyy HH:mm") + " (UTC)";
+                return fechaLocal.ToString("dd/MM/yyyy HH:mm");
             }
         }
 
@@ -107,7 +114,7 @@ namespace AppointVaAPI.Services
                               $"✂️ {cita.Servicio?.Nombre}\n" +
                               $"👤 Con {cita.Empleado?.Nombre}" +
                               ContactoNegocio(cita);
-                    await _whatsApp.EnviarMensajeAsync(tel, msg);
+                    await _whatsApp.EnviarMensajeAsync(NormalizarTelefonoE164(tel), msg);
                 }
             }
         }
@@ -130,7 +137,7 @@ namespace AppointVaAPI.Services
                               $"del {fecha} ha sido cancelada.\n\n" +
                               $"¿Deseas reagendar?" +
                               ContactoNegocio(cita);
-                    await _whatsApp.EnviarMensajeAsync(tel, msg);
+                    await _whatsApp.EnviarMensajeAsync(NormalizarTelefonoE164(tel), msg);
                 }
             }
         }
@@ -155,7 +162,7 @@ namespace AppointVaAPI.Services
                               $"✂️ {cita.Servicio?.Nombre} con {cita.Empleado?.Nombre}\n" +
                               $"📍 {cita.Negocio?.Nombre}" +
                               ContactoNegocio(cita);
-                    await _whatsApp.EnviarMensajeAsync(tel, msg);
+                    await _whatsApp.EnviarMensajeAsync(NormalizarTelefonoE164(tel), msg);
                 }
             }
         }
@@ -179,7 +186,7 @@ namespace AppointVaAPI.Services
                               $"✅ Nueva fecha: {fechaNueva}\n" +
                               $"✂️ {cita.Servicio?.Nombre} con {cita.Empleado?.Nombre}" +
                               ContactoNegocio(cita);
-                    await _whatsApp.EnviarMensajeAsync(tel, msg);
+                    await _whatsApp.EnviarMensajeAsync(NormalizarTelefonoE164(tel), msg);
                 }
             }
         }
@@ -206,7 +213,7 @@ namespace AppointVaAPI.Services
                               $"Hola {nombreCliente}, gracias por visitar *{cita.Negocio?.Nombre}*. " +
                               $"¿Nos dejas una reseña?\n\n" +
                               $"👉 {urlResena}";
-                    await _whatsApp.EnviarMensajeAsync(tel, msg);
+                    await _whatsApp.EnviarMensajeAsync(NormalizarTelefonoE164(tel), msg);
                 }
             }
         }

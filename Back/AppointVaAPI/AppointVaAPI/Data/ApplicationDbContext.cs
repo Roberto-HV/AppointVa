@@ -191,15 +191,26 @@ namespace AppointVaAPI.Data
             modelBuilder.Entity<Cita>()
                 .HasIndex(c => c.CodigoConfirmacion).IsUnique();
             modelBuilder.Entity<Negocio>()
-                .HasIndex(n => n.Slug).IsUnique();
+                .HasIndex(n => n.Slug).IsUnique()
+                .HasFilter("\"FechaEliminacion\" IS NULL");
             modelBuilder.Entity<Cliente>()
-                .HasIndex(c => new { c.NegocioId, c.Telefono });
+                .HasQueryFilter(c => c.FechaEliminacion == null);
             modelBuilder.Entity<Cliente>()
-                .HasIndex(c => new { c.NegocioId, c.Email });
+                .HasIndex(c => new { c.NegocioId, c.Telefono }).IsUnique()
+                .HasFilter("\"FechaEliminacion\" IS NULL");
+            modelBuilder.Entity<Cliente>()
+                .HasIndex(c => new { c.NegocioId, c.Email })
+                .HasFilter("\"FechaEliminacion\" IS NULL");
             modelBuilder.Entity<Cita>()
                 .HasIndex(c => new { c.NegocioId, c.InicioEn });
             modelBuilder.Entity<Cita>()
                 .HasIndex(c => new { c.EmpleadoId, c.InicioEn });
+            modelBuilder.Entity<Cita>()
+                .HasIndex(c => c.ClienteId);
+            modelBuilder.Entity<Cita>()
+                .HasIndex(c => c.FechaPago);
+            modelBuilder.Entity<Empleado>()
+                .HasIndex(e => e.NegocioId);
 
             // ListaEspera
             modelBuilder.Entity<ListaEspera>()

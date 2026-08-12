@@ -52,7 +52,9 @@ namespace AppointVaAPI.Services
         {
             if (!EstaHabilitado()) return;
 
-            var diasHasta = (cita.InicioEn.Date - DateTime.Now.Date).TotalDays;
+            var tzEmail = AppointVaAPI.Helpers.ZonaHorariaHelper.Resolver(cita.Negocio?.ZonaHoraria);
+            var hoyLocal = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tzEmail).Date;
+            var diasHasta = (cita.InicioEn.Date - hoyLocal).TotalDays;
             var cuandoTexto = diasHasta switch { <= 0 => "hoy", 1 => "mañana", _ => "pronto" };
             var asunto = $"Recordatorio: tu cita es {cuandoTexto} — {cita.Servicio?.Nombre ?? "AppointVa"}";
             var html = PlantillaRecordatorio(cita, nombreCliente, cuandoTexto, icalUrl, googleCalUrl);

@@ -19,7 +19,11 @@ namespace AppointVaAPI.Helpers
             return TimeZoneInfo.Utc;
         }
 
-        public static DateTimeOffset ToDateTimeOffset(DateTime localUnspecified, TimeZoneInfo tz) =>
-            new DateTimeOffset(localUnspecified, tz.GetUtcOffset(localUnspecified));
+        public static DateTimeOffset ToDateTimeOffset(DateTime localUnspecified, TimeZoneInfo tz)
+        {
+            // Strip Kind so DateTimeOffset accepts any timezone offset regardless of how the DateTime was constructed
+            var dt = DateTime.SpecifyKind(localUnspecified, DateTimeKind.Unspecified);
+            return new DateTimeOffset(dt, tz.GetUtcOffset(dt));
+        }
     }
 }

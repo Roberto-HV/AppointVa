@@ -1,5 +1,6 @@
 using AppointVaAPI.Constants;
 using AppointVaAPI.Data;
+using AppointVaAPI.Helpers;
 using AppointVaAPI.Models.Dtos.Publico;
 using AppointVaAPI.Services.IServices;
 using Microsoft.EntityFrameworkCore;
@@ -31,17 +32,25 @@ namespace AppointVaAPI.Services
                 .FirstOrDefaultAsync(s => s.Id == servicioId && s.NegocioId == negocioId && s.Activo == 1);
             if (servicio is null) return new();
 
+            var negocioTz = await _db.Negocios
+                .Where(n => n.Id == negocioId)
+                .Select(n => n.ZonaHoraria)
+                .AsNoTracking()
+                .FirstOrDefaultAsync();
+            var tz = ZonaHorariaHelper.Resolver(negocioTz);
+
             var diaSemana = (byte)(fechaDt.DayOfWeek == DayOfWeek.Sunday ? 7 : (int)fechaDt.DayOfWeek);
 
             if (empleadoId.HasValue)
             {
-                var nombreEmpleado = await _db.Empleados
-                    .Where(e => e.Id == empleadoId.Value)
-                    .Select(e => e.Nombre)
+                var empleadoInfo = await _db.Empleados
+                    .Where(e => e.Id == empleadoId.Value && e.NegocioId == negocioId)
+                    .Select(e => new { e.Nombre })
                     .AsNoTracking()
                     .FirstOrDefaultAsync();
-                var slots = await ObtenerSlotsEmpleadoAsync(servicio, empleadoId.Value, fecha, fechaDt, finDia, diaSemana);
-                foreach (var s in slots) { s.EmpleadoId = empleadoId; s.EmpleadoNombre = nombreEmpleado; }
+                if (empleadoInfo is null) return new();
+                var slots = await ObtenerSlotsEmpleadoAsync(servicio, empleadoId.Value, fecha, fechaDt, finDia, diaSemana, tz);
+                foreach (var s in slots) { s.EmpleadoId = empleadoId; s.EmpleadoNombre = empleadoInfo.Nombre; }
                 return slots;
             }
 
@@ -84,7 +93,7 @@ namespace AppointVaAPI.Services
 
             var duracion = TimeSpan.FromMinutes(servicio.DuracionMinutos);
             var buffer = TimeSpan.FromMinutes(servicio.BufferMinutos);
-            var ahora = DateTime.UtcNow;
+            var ahoraUtc = DateTimeOffset.UtcNow;
             var todos = new List<SlotDisponibleDto>();
 
             foreach (var emp in empleadosActivos)
@@ -105,7 +114,7 @@ namespace AppointVaAPI.Services
                     var solapaCita = citasEmp.Any(c => c.InicioEn < slotFin && c.FinEn.Add(buffer) > slotInicio);
                     var solapaBloqueo = bloqueosEmp.Any(b => b.InicioEn < slotFin && b.FinEn > slotInicio);
 
-                    if (!solapaCita && !solapaBloqueo && slotInicio > ahora)
+                    if (!solapaCita && !solapaBloqueo && ZonaHorariaHelper.ToDateTimeOffset(slotInicio, tz) > ahoraUtc)
                     {
                         todos.Add(new SlotDisponibleDto
                         {
@@ -125,7 +134,8 @@ namespace AppointVaAPI.Services
 
         private async Task<List<SlotDisponibleDto>> ObtenerSlotsEmpleadoAsync(
             AppointVaAPI.Models.Servicio servicio, Guid empleadoId,
-            DateOnly fecha, DateTime fechaDt, DateTime finDia, byte diaSemana)
+            DateOnly fecha, DateTime fechaDt, DateTime finDia, byte diaSemana,
+            TimeZoneInfo tz)
         {
             var empleadoOfreceServicio = await _db.EmpleadosServicios
                 .AnyAsync(es => es.EmpleadoId == empleadoId && es.ServicioId == servicio.Id);
@@ -153,7 +163,7 @@ namespace AppointVaAPI.Services
 
             var duracion = TimeSpan.FromMinutes(servicio.DuracionMinutos);
             var buffer = TimeSpan.FromMinutes(servicio.BufferMinutos);
-            var ahora = DateTime.UtcNow;
+            var ahoraUtc = DateTimeOffset.UtcNow;
             var slots = new List<SlotDisponibleDto>();
 
             var slotInicio = fechaDt.Add(horario.HoraInicio);
@@ -165,7 +175,7 @@ namespace AppointVaAPI.Services
                 var solapaCita = citasExistentes.Any(c => c.InicioEn < slotFin && c.FinEn.Add(buffer) > slotInicio);
                 var solapaBloqueo = bloqueosExistentes.Any(b => b.InicioEn < slotFin && b.FinEn > slotInicio);
 
-                if (!solapaCita && !solapaBloqueo && slotInicio > ahora)
+                if (!solapaCita && !solapaBloqueo && ZonaHorariaHelper.ToDateTimeOffset(slotInicio, tz) > ahoraUtc)
                 {
                     slots.Add(new SlotDisponibleDto
                     {

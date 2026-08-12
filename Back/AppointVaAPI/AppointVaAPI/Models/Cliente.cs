@@ -26,5 +26,6 @@ namespace AppointVaAPI.Models
         public DateTime FechaCreacion { get; set; }
         [Required]
         public DateTime FechaActualizacion { get; set; }
+        public DateTime? FechaEliminacion { get; set; }
     }
 }

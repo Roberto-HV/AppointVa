@@ -23,6 +23,7 @@ export interface CrearCitaDto {
   emailCliente?: string;
   notas?: string;
   codigoDescuento?: string;
+  respuestasIntake?: { campoIntakeId: string; valor?: string }[];
 }
 
 export const publicoApi = {
@@ -52,12 +53,16 @@ export const publicoApi = {
     return data;
   },
 
-  cancelarCita: async (codigo: string): Promise<void> => {
-    await api.delete(`/publico/citas/${codigo}`);
+  cancelarCita: async (codigo: string, email?: string): Promise<void> => {
+    await api.delete(`/publico/citas/${codigo}`, { params: email ? { email } : undefined });
   },
 
-  reagendarCita: async (codigo: string, inicioEn: string): Promise<{ mensaje: string }> => {
-    const { data } = await api.patch(`/publico/citas/${codigo}/reagendar`, { inicioEn });
+  reagendarCita: async (codigo: string, inicioEn: string, email?: string): Promise<{ mensaje: string }> => {
+    const { data } = await api.patch(
+      `/publico/citas/${codigo}/reagendar`,
+      { inicioEn },
+      { params: email ? { email } : undefined }
+    );
     return data;
   },
 

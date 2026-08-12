@@ -3,6 +3,7 @@ using System;
 using AppointVaAPI.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AppointVaAPI.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260812160202_BugFixes_HangfireJobId_Indexes")]
+    partial class BugFixes_HangfireJobId_Indexes
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -434,8 +437,6 @@ namespace AppointVaAPI.Migrations
                     b.HasIndex("CodigoConfirmacion")
                         .IsUnique();
 
-                    b.HasIndex("FechaPago");
-
                     b.HasIndex("ServicioId");
 
                     b.HasIndex("EmpleadoId", "InicioEn");
@@ -463,9 +464,6 @@ namespace AppointVaAPI.Migrations
                     b.Property<DateTime>("FechaCreacion")
                         .HasColumnType("timestamp without time zone");
 
-                    b.Property<DateTime?>("FechaEliminacion")
-                        .HasColumnType("timestamp without time zone");
-
                     b.Property<Guid>("NegocioId")
                         .HasColumnType("uuid");
 
@@ -488,12 +486,10 @@ namespace AppointVaAPI.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("NegocioId", "Email")
-                        .HasFilter("\"FechaEliminacion\" IS NULL");
+                    b.HasIndex("NegocioId", "Email");
 
                     b.HasIndex("NegocioId", "Telefono")
-                        .IsUnique()
-                        .HasFilter("\"FechaEliminacion\" IS NULL");
+                        .IsUnique();
 
                     b.ToTable("Clientes");
                 });

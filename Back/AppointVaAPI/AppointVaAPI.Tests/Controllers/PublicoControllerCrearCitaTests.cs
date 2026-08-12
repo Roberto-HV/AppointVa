@@ -73,16 +73,18 @@ public class PublicoControllerCrearCitaTests
     };
 
     /// <summary>
-    /// Siembra Servicio + Empleado + vínculo EmpleadoServicio en la base InMemory
+    /// Siembra Negocio + Servicio + Empleado + vínculo EmpleadoServicio en la base InMemory
     /// y devuelve las entidades ya persistidas.
     /// </summary>
     private static async Task<(Servicio servicio, Empleado empleado)> SeedDataAsync(
-        ApplicationDbContext db, Guid negocioId)
+        ApplicationDbContext db, Negocio negocio)
     {
+        db.Negocios.Add(negocio);
+
         var servicio = new Servicio
         {
             Id = Guid.NewGuid(),
-            NegocioId = negocioId,
+            NegocioId = negocio.Id,
             Nombre = "Corte de Cabello",
             DuracionMinutos = 60,
             BufferMinutos = 0,
@@ -96,7 +98,7 @@ public class PublicoControllerCrearCitaTests
         var empleado = new Empleado
         {
             Id = Guid.NewGuid(),
-            NegocioId = negocioId,
+            NegocioId = negocio.Id,
             Nombre = "Ana Estilista",
             Activo = 1,
             FechaCreacion = DateTime.UtcNow,
@@ -272,7 +274,7 @@ public class PublicoControllerCrearCitaTests
         var negocio = NegocioActivo();
         negocioRepo.ObtenerPorSlugAsync(negocio.Slug).Returns(negocio);
 
-        var (servicio, empleado) = await SeedDataAsync(db, negocio.Id);
+        var (servicio, empleado) = await SeedDataAsync(db, negocio);
         citaRepo.ExisteSolapamientoAsync(
             Arg.Any<Guid>(), Arg.Any<DateTime>(), Arg.Any<DateTime>(), Arg.Any<Guid?>())
             .Returns(true);
@@ -290,7 +292,7 @@ public class PublicoControllerCrearCitaTests
         var negocio = NegocioActivo(autoConfirmar: true);
         negocioRepo.ObtenerPorSlugAsync(negocio.Slug).Returns(negocio);
 
-        var (servicio, empleado) = await SeedDataAsync(db, negocio.Id);
+        var (servicio, empleado) = await SeedDataAsync(db, negocio);
         citaRepo.ExisteSolapamientoAsync(
             Arg.Any<Guid>(), Arg.Any<DateTime>(), Arg.Any<DateTime>(), Arg.Any<Guid?>())
             .Returns(false);
@@ -314,7 +316,7 @@ public class PublicoControllerCrearCitaTests
         var negocio = NegocioActivo(autoConfirmar: false);
         negocioRepo.ObtenerPorSlugAsync(negocio.Slug).Returns(negocio);
 
-        var (servicio, empleado) = await SeedDataAsync(db, negocio.Id);
+        var (servicio, empleado) = await SeedDataAsync(db, negocio);
         citaRepo.ExisteSolapamientoAsync(
             Arg.Any<Guid>(), Arg.Any<DateTime>(), Arg.Any<DateTime>(), Arg.Any<Guid?>())
             .Returns(false);
@@ -338,7 +340,7 @@ public class PublicoControllerCrearCitaTests
         var negocio = NegocioActivo(autoConfirmar: true);
         negocioRepo.ObtenerPorSlugAsync(negocio.Slug).Returns(negocio);
 
-        var (servicio, empleado) = await SeedDataAsync(db, negocio.Id);
+        var (servicio, empleado) = await SeedDataAsync(db, negocio);
         citaRepo.ExisteSolapamientoAsync(
             Arg.Any<Guid>(), Arg.Any<DateTime>(), Arg.Any<DateTime>(), Arg.Any<Guid?>())
             .Returns(false);
@@ -362,7 +364,7 @@ public class PublicoControllerCrearCitaTests
         var negocio = NegocioActivo(autoConfirmar: true);
         negocioRepo.ObtenerPorSlugAsync(negocio.Slug).Returns(negocio);
 
-        var (servicio, empleado) = await SeedDataAsync(db, negocio.Id);
+        var (servicio, empleado) = await SeedDataAsync(db, negocio);
         citaRepo.ExisteSolapamientoAsync(
             Arg.Any<Guid>(), Arg.Any<DateTime>(), Arg.Any<DateTime>(), Arg.Any<Guid?>())
             .Returns(false);

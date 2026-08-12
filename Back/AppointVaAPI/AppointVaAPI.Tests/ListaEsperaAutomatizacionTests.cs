@@ -135,7 +135,11 @@ public class ListaEsperaAutomatizacionTests
         await db.SaveChangesAsync();
 
         var cita = CitaCancelable();
-        cita.InicioEn = DateTime.UtcNow.AddMinutes(90); // menos de 2 horas
+        // InicioEn stores LOCAL time (Unspecified Kind) as PostgreSQL returns it.
+        // 90 local minutes from now converts to < 2h UTC, so no waitlist notification fires.
+        var tzMexico = AppointVaAPI.Helpers.ZonaHorariaHelper.Resolver("Central Standard Time (Mexico)");
+        var localNow = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tzMexico);
+        cita.InicioEn = DateTime.SpecifyKind(localNow.AddMinutes(90), DateTimeKind.Unspecified);
         citaRepo.ObtenerPorIdAsync(cita.Id, NegocioId).Returns(cita);
 
         await controller.CambiarEstado(cita.Id, new CambiarEstadoCitaDto { NuevoEstado = EstadosCitas.Cancelada });

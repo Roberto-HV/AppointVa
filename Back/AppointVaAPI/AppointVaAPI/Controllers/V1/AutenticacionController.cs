@@ -114,8 +114,9 @@ namespace AppointVaAPI.Controllers.V1
             if (!usuario.Activo)
                 return Unauthorized(new { mensaje = "Cuenta inactiva" });
 
-            // Marcar el token anterior como usado
+            // Marcar el token anterior como usado antes de generar el nuevo (reduce ventana de race)
             refreshToken.Usado = true;
+            await _db.SaveChangesAsync();
 
             var roles = await _userManager.GetRolesAsync(usuario);
             var rol = roles.FirstOrDefault() ?? string.Empty;
@@ -236,6 +237,7 @@ namespace AppointVaAPI.Controllers.V1
 
         // POST api/auth/cambiar-password
         [Authorize]
+        [EnableRateLimiting("Auth")]
         [HttpPost("cambiar-password")]
         public async Task<IActionResult> CambiarPassword([FromBody] CambiarPasswordDto dto)
         {
@@ -247,7 +249,10 @@ namespace AppointVaAPI.Controllers.V1
 
             var resultado = await _userManager.ChangePasswordAsync(usuario, dto.PasswordActual, dto.PasswordNuevo);
             if (!resultado.Succeeded)
+            {
+                await _userManager.AccessFailedAsync(usuario);
                 return BadRequest(new { errores = resultado.Errors.Select(e => e.Description) });
+            }
 
             // Revocar todos los refresh tokens para forzar nuevo login
             await _jwtService.RevocarTodosRefreshTokensAsync(usuario.Id);

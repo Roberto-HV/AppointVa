@@ -229,8 +229,9 @@ namespace AppointVaAPI.Controllers.V1
                 .FirstOrDefaultAsync();
             if (planLimite > 0)
             {
-                var ahora = DateTime.UtcNow;
-                var inicioMes = new DateTime(ahora.Year, ahora.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+                var tzPlan = AppointVaAPI.Helpers.ZonaHorariaHelper.Resolver(negocio.ZonaHoraria);
+                var ahoraLocal = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tzPlan);
+                var inicioMes = new DateTime(ahoraLocal.Year, ahoraLocal.Month, 1);
                 var citasMes = await _db.Citas.CountAsync(c => c.NegocioId == negocio.Id && c.InicioEn >= inicioMes);
                 if (citasMes >= planLimite)
                     return StatusCode(402, new { mensaje = "Este negocio ha alcanzado su límite de citas para este mes. Por favor contáctalo directamente." });
@@ -251,6 +252,10 @@ namespace AppointVaAPI.Controllers.V1
                 .AnyAsync(es => es.EmpleadoId == dto.EmpleadoId && es.ServicioId == dto.ServicioId);
             if (!empleadoOfreceServicio)
                 return BadRequest(new { mensaje = "El empleado no ofrece este servicio" });
+
+            var tzCrear = AppointVaAPI.Helpers.ZonaHorariaHelper.Resolver(negocio.ZonaHoraria);
+            if (AppointVaAPI.Helpers.ZonaHorariaHelper.ToDateTimeOffset(dto.InicioEn, tzCrear) <= DateTimeOffset.UtcNow)
+                return BadRequest(new { mensaje = "La fecha de la cita debe ser en el futuro" });
 
             var finEn = dto.InicioEn.AddMinutes(servicio.DuracionMinutos);
 
@@ -287,11 +292,51 @@ namespace AppointVaAPI.Controllers.V1
             {
                 try
                 {
+                    var negocioActivo = await _db.Negocios
+                        .Where(n => n.Id == negocio.Id)
+                        .Select(n => n.Activo)
+                        .FirstOrDefaultAsync();
+                    if (negocioActivo != 1)
+                    {
+                        await tx.RollbackAsync();
+                        return NotFound(new { mensaje = "Este negocio ya no está disponible para reservas" });
+                    }
+
                     var haySolapamiento = await _citaRepo.ExisteSolapamientoAsync(dto.EmpleadoId, dto.InicioEn, finEn);
                     if (haySolapamiento)
                     {
                         await tx.RollbackAsync();
                         return Conflict(new { mensaje = "El horario seleccionado ya no está disponible" });
+                    }
+
+                    // Re-verificar cuota mensual dentro de la transacción (evita TOCTOU)
+                    if (planLimite > 0)
+                    {
+                        var tzPlanTx = AppointVaAPI.Helpers.ZonaHorariaHelper.Resolver(negocio.ZonaHoraria);
+                        var ahoraLocalTx = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tzPlanTx);
+                        var inicioMesTx = new DateTime(ahoraLocalTx.Year, ahoraLocalTx.Month, 1);
+                        var citasMesTx = await _db.Citas.CountAsync(c => c.NegocioId == negocio.Id && c.InicioEn >= inicioMesTx);
+                        if (citasMesTx >= planLimite)
+                        {
+                            await tx.RollbackAsync();
+                            return StatusCode(402, new { mensaje = "Este negocio ha alcanzado su límite de citas para este mes. Por favor contáctalo directamente." });
+                        }
+                    }
+
+                    // Re-verificar límite de descuento dentro de la transacción serializable
+                    if (descuentoAplicado != null)
+                    {
+                        var dActual = await _db.Descuentos
+                            .Where(d => d.Id == descuentoAplicado.Id)
+                            .Select(d => new { d.UsoActual, d.UsoMaximo, d.FechaExpiracion, d.Activo })
+                            .FirstOrDefaultAsync();
+                        if (dActual is null || !dActual.Activo ||
+                            (dActual.FechaExpiracion.HasValue && dActual.FechaExpiracion < DateTime.UtcNow) ||
+                            (dActual.UsoMaximo.HasValue && dActual.UsoActual >= dActual.UsoMaximo))
+                        {
+                            await tx.RollbackAsync();
+                            return BadRequest(new { mensaje = "El código de descuento ya no está disponible" });
+                        }
                     }
 
                     cliente = await _clienteRepo.ObtenerOCrearAsync(
@@ -319,6 +364,40 @@ namespace AppointVaAPI.Controllers.V1
                     };
 
                     await _citaRepo.CrearAsync(cita);
+
+                    // Validar y guardar campos intake dentro de la transacción
+                    var camposIntake = await _db.CamposIntake
+                        .Where(c => c.NegocioId == negocio.Id
+                                 && c.Activo
+                                 && (c.ServicioId == null || c.ServicioId == dto.ServicioId))
+                        .ToListAsync();
+
+                    var respuestasMap = (dto.RespuestasIntake ?? [])
+                        .ToDictionary(r => r.CampoIntakeId, r => r.Valor);
+
+                    foreach (var campo in camposIntake.Where(c => c.Requerido))
+                    {
+                        if (!respuestasMap.TryGetValue(campo.Id, out var valor) || string.IsNullOrWhiteSpace(valor))
+                        {
+                            await tx.RollbackAsync();
+                            return BadRequest(new { mensaje = $"El campo '{campo.Etiqueta}' es obligatorio." });
+                        }
+                    }
+
+                    var camposIds = camposIntake.Select(c => c.Id).ToHashSet();
+                    foreach (var resp in dto.RespuestasIntake ?? [])
+                    {
+                        if (camposIds.Contains(resp.CampoIntakeId))
+                        {
+                            _db.RespuestasIntake.Add(new RespuestaIntake
+                            {
+                                Id = Guid.NewGuid(),
+                                CitaId = cita.Id,
+                                CampoIntakeId = resp.CampoIntakeId,
+                                Valor = resp.Valor
+                            });
+                        }
+                    }
 
                     cliente.TotalCitas++;
                     cliente.UltimaCitaEn = dto.InicioEn;
@@ -387,23 +466,13 @@ namespace AppointVaAPI.Controllers.V1
                 var frontendUrl = _config["FrontendUrl"] ?? "https://appointva.com";
                 var urlCita = $"{frontendUrl}/b/{negocio.Slug}/confirmacion/{codigo}";
                 var urlCancelacion = $"{frontendUrl}/cancelar/{codigo}";
-                _ = Task.Run(() => _notificacion.EnviarConfirmacionCitaAsync(cita, dto.EmailCliente, cliente.NombreCompleto, urlCita, icalUrl, googleCalUrl, urlCancelacion));
+                _jobClient.Enqueue<NotificacionJob>(j => j.EnviarConfirmacionAsync(cita.Id, dto.EmailCliente ?? string.Empty, cliente.NombreCompleto));
             }
 
             // Notificación push al empleado asignado (Hangfire crea su propio scope/DbContext)
             _jobClient.Enqueue<IPushService>(s => s.EnviarNuevaCitaEmpleadoAsync(cita.Id));
 
-            _db.NotificacionesDashboard.Add(new NotificacionDashboard
-            {
-                NegocioId = negocio.Id,
-                Tipo = "NuevaCita",
-                Titulo = $"Nueva cita de {cliente.NombreCompleto}",
-                Descripcion = $"{servicio.Nombre} con {empleado?.Nombre ?? "Empleado"} · {cita.InicioEn.ToLocalTime().ToString("ddd d 'de' MMM, HH:mm", new System.Globalization.CultureInfo("es-MX"))}",
-                CitaId = cita.Id
-            });
-            await _db.SaveChangesAsync();
-
-            // Agendar recordatorio configurable antes de la cita si el cliente tiene correo
+            // Agendar recordatorio y capturar el job ID antes de SaveChangesAsync
             if (!string.IsNullOrWhiteSpace(dto.EmailCliente))
             {
                 var horas = negocio.HorasRecordatorio > 0 ? negocio.HorasRecordatorio : 24;
@@ -411,8 +480,18 @@ namespace AppointVaAPI.Controllers.V1
                 var horaRecordatorio = AppointVaAPI.Helpers.ZonaHorariaHelper
                     .ToDateTimeOffset(cita.InicioEn, tz).AddHours(-horas);
                 if (horaRecordatorio > DateTimeOffset.UtcNow)
-                    _jobClient.Schedule<IRecordatorioService>(s => s.EnviarRecordatorioCitaAsync(cita.Id), horaRecordatorio);
+                    cita.HangfireJobId = _jobClient.Schedule<IRecordatorioService>(s => s.EnviarRecordatorioCitaAsync(cita.Id), horaRecordatorio);
             }
+
+            _db.NotificacionesDashboard.Add(new NotificacionDashboard
+            {
+                NegocioId = negocio.Id,
+                Tipo = "NuevaCita",
+                Titulo = $"Nueva cita de {cliente.NombreCompleto}",
+                Descripcion = $"{servicio.Nombre} con {empleado?.Nombre ?? "Empleado"} · {cita.InicioEn.ToString("ddd d 'de' MMM, HH:mm", new System.Globalization.CultureInfo("es-MX"))}",
+                CitaId = cita.Id
+            });
+            await _db.SaveChangesAsync();
 
             return CreatedAtAction(nameof(ObtenerCita), new { codigo }, respuesta);
         }
@@ -479,8 +558,11 @@ namespace AppointVaAPI.Controllers.V1
             sb.Append("CALSCALE:GREGORIAN\r\n");
             sb.Append("METHOD:PUBLISH\r\n");
             sb.Append("BEGIN:VEVENT\r\n");
-            sb.Append($"DTSTART:{cita.InicioEn:yyyyMMddTHHmmssZ}\r\n");
-            sb.Append($"DTEND:{cita.FinEn:yyyyMMddTHHmmssZ}\r\n");
+            var tzIcal = AppointVaAPI.Helpers.ZonaHorariaHelper.Resolver(cita.Negocio?.ZonaHoraria);
+            var inicioUtcIcal = AppointVaAPI.Helpers.ZonaHorariaHelper.ToDateTimeOffset(cita.InicioEn, tzIcal).UtcDateTime;
+            var finUtcIcal = AppointVaAPI.Helpers.ZonaHorariaHelper.ToDateTimeOffset(cita.FinEn, tzIcal).UtcDateTime;
+            sb.Append($"DTSTART:{inicioUtcIcal:yyyyMMddTHHmmssZ}\r\n");
+            sb.Append($"DTEND:{finUtcIcal:yyyyMMddTHHmmssZ}\r\n");
             sb.Append($"DTSTAMP:{DateTime.UtcNow:yyyyMMddTHHmmssZ}\r\n");
             sb.Append($"UID:{cita.CodigoConfirmacion}@appointva\r\n");
             sb.Append($"SUMMARY:{cita.Servicio?.Nombre ?? "Cita"} con {cita.Empleado?.Nombre ?? "el equipo"}\r\n");
@@ -519,6 +601,8 @@ namespace AppointVaAPI.Controllers.V1
                 return NotFound(new { mensaje = "Cita no encontrada" });
 
             var emailCliente = cita.Cliente?.Email ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(emailCliente))
+                return BadRequest(new { mensaje = "Esta cita no tiene correo asociado. Por favor contacta directamente al negocio para cancelar." });
             if (!emailCliente.Equals(email.Trim(), StringComparison.OrdinalIgnoreCase))
                 return Forbid();
 
@@ -529,10 +613,12 @@ namespace AppointVaAPI.Controllers.V1
                 return BadRequest(new { mensaje = "No se puede cancelar una cita completada" });
 
             // Verificar política de cancelación del negocio
+            var tzCancel = AppointVaAPI.Helpers.ZonaHorariaHelper.Resolver(cita.Negocio?.ZonaHoraria);
+            var inicioUtcCancel = AppointVaAPI.Helpers.ZonaHorariaHelper.ToDateTimeOffset(cita.InicioEn, tzCancel);
             var horasCancelacion = cita.Negocio?.HorasCancelacion ?? 0;
             if (horasCancelacion > 0)
             {
-                var tiempoRestante = cita.InicioEn - DateTime.UtcNow;
+                var tiempoRestante = inicioUtcCancel - DateTimeOffset.UtcNow;
                 if (tiempoRestante.TotalHours < horasCancelacion)
                     return BadRequest(new { mensaje = $"No se puede cancelar con menos de {horasCancelacion} hora{(horasCancelacion == 1 ? "" : "s")} de anticipación." });
             }
@@ -540,6 +626,13 @@ namespace AppointVaAPI.Controllers.V1
             cita.Estado = EstadosCitas.Cancelada;
             cita.MotivoCancelacion = "Cancelada por el cliente";
             cita.FechaActualizacion = DateTime.UtcNow;
+
+            if (!string.IsNullOrWhiteSpace(cita.HangfireJobId))
+            {
+                BackgroundJob.Delete(cita.HangfireJobId);
+                cita.HangfireJobId = null;
+            }
+
             await _citaRepo.ActualizarAsync(cita);
 
             _db.NotificacionesDashboard.Add(new NotificacionDashboard
@@ -547,7 +640,7 @@ namespace AppointVaAPI.Controllers.V1
                 NegocioId = cita.NegocioId,
                 Tipo = "Cancelacion",
                 Titulo = $"Cita cancelada — {cita.Cliente?.NombreCompleto ?? ""}",
-                Descripcion = $"{cita.Servicio?.Nombre ?? "Servicio"} con {cita.Empleado?.Nombre ?? "Empleado"} · {cita.InicioEn.ToLocalTime().ToString("ddd d 'de' MMM, HH:mm", new System.Globalization.CultureInfo("es-MX"))}",
+                Descripcion = $"{cita.Servicio?.Nombre ?? "Servicio"} con {cita.Empleado?.Nombre ?? "Empleado"} · {cita.InicioEn.ToString("ddd d 'de' MMM, HH:mm", new System.Globalization.CultureInfo("es-MX"))}",
                 CitaId = cita.Id
             });
             await _db.SaveChangesAsync();
@@ -555,7 +648,7 @@ namespace AppointVaAPI.Controllers.V1
             if (!string.IsNullOrWhiteSpace(emailCliente))
                 _jobClient.Enqueue<NotificacionJob>(j => j.EnviarCancelacionAsync(cita.Id, emailCliente, cita.Cliente!.NombreCompleto));
 
-            if (cita.Negocio?.ListaEsperaActiva == true && cita.InicioEn > DateTime.UtcNow.AddHours(2))
+            if (cita.Negocio?.ListaEsperaActiva == true && inicioUtcCancel > DateTimeOffset.UtcNow.AddHours(2))
             {
                 var hayEnEspera = await _db.ListaEspera
                     .AnyAsync(le => le.NegocioId == cita.NegocioId
@@ -571,16 +664,26 @@ namespace AppointVaAPI.Controllers.V1
         // POST api/publico/citas/{codigo}/comprobante — el cliente sube su comprobante de anticipo
         [HttpPost("citas/{codigo}/comprobante")]
         [EnableRateLimiting("PublicoEstricto")]
-        public async Task<IActionResult> SubirComprobante(string codigo, IFormFile archivo)
+        public async Task<IActionResult> SubirComprobante(string codigo, [FromQuery] string? email, IFormFile archivo)
         {
             if (archivo == null || archivo.Length == 0)
                 return BadRequest(new { mensaje = "El archivo es obligatorio" });
 
             var cita = await _db.Citas
                 .Include(c => c.Negocio)
+                .Include(c => c.Cliente)
                 .FirstOrDefaultAsync(c => c.CodigoConfirmacion == codigo);
             if (cita is null)
                 return NotFound(new { mensaje = "Cita no encontrada" });
+
+            var emailCliente = cita.Cliente?.Email ?? string.Empty;
+            if (!string.IsNullOrWhiteSpace(emailCliente))
+            {
+                if (string.IsNullOrWhiteSpace(email))
+                    return BadRequest(new { mensaje = "El correo es requerido para subir el comprobante." });
+                if (!emailCliente.Equals(email.Trim(), StringComparison.OrdinalIgnoreCase))
+                    return Forbid();
+            }
 
             if (cita.Estado == EstadosCitas.Cancelada || cita.Estado == EstadosCitas.Completada)
                 return BadRequest(new { mensaje = "No se puede subir comprobante para esta cita" });
@@ -606,31 +709,71 @@ namespace AppointVaAPI.Controllers.V1
                 return NotFound(new { mensaje = "Cita no encontrada" });
 
             var emailCliente = cita.Cliente?.Email ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(emailCliente))
+                return BadRequest(new { mensaje = "Esta cita no tiene correo asociado. Por favor contacta directamente al negocio para reagendar." });
             if (!emailCliente.Equals(email.Trim(), StringComparison.OrdinalIgnoreCase))
                 return Forbid();
 
             if (cita.Estado == EstadosCitas.Cancelada || cita.Estado == EstadosCitas.Completada)
                 return BadRequest(new { mensaje = "No se puede reagendar esta cita" });
 
+            var tzReag = AppointVaAPI.Helpers.ZonaHorariaHelper.Resolver(cita.Negocio?.ZonaHoraria);
+            var inicioUtcReag = AppointVaAPI.Helpers.ZonaHorariaHelper.ToDateTimeOffset(cita.InicioEn, tzReag);
             var horasCancelacion = cita.Negocio?.HorasCancelacion ?? 0;
-            if (horasCancelacion > 0 && (cita.InicioEn - DateTime.UtcNow).TotalHours < horasCancelacion)
+            if (horasCancelacion > 0 && (inicioUtcReag - DateTimeOffset.UtcNow).TotalHours < horasCancelacion)
                 return BadRequest(new { mensaje = $"No puedes reagendar con menos de {horasCancelacion} hora{(horasCancelacion == 1 ? "" : "s")} de anticipación." });
+
+            var nuevoInicioOffset = AppointVaAPI.Helpers.ZonaHorariaHelper.ToDateTimeOffset(dto.InicioEn, tzReag);
+            if (nuevoInicioOffset <= DateTimeOffset.UtcNow)
+                return BadRequest(new { mensaje = "La nueva fecha debe ser en el futuro" });
 
             var duracion = (int)(cita.FinEn - cita.InicioEn).TotalMinutes;
             var nuevoFin = dto.InicioEn.AddMinutes(duracion);
 
-            var haySolapamiento = await _citaRepo.ExisteSolapamientoAsync(cita.EmpleadoId, dto.InicioEn, nuevoFin, cita.Id);
-            if (haySolapamiento)
-                return Conflict(new { mensaje = "El horario seleccionado ya no está disponible. Elige otro." });
-
             var fechaOriginal = cita.InicioEn;
-            cita.InicioEn = dto.InicioEn;
-            cita.FinEn = nuevoFin;
-            cita.FechaActualizacion = DateTime.UtcNow;
-            await _citaRepo.ActualizarAsync(cita);
+            using (var tx = await _db.Database.BeginTransactionAsync(IsolationLevel.Serializable))
+            {
+                try
+                {
+                    var haySolapamiento = await _citaRepo.ExisteSolapamientoAsync(cita.EmpleadoId, dto.InicioEn, nuevoFin, cita.Id);
+                    if (haySolapamiento)
+                    {
+                        await tx.RollbackAsync();
+                        return Conflict(new { mensaje = "El horario seleccionado ya no está disponible. Elige otro." });
+                    }
+
+                    cita.InicioEn = dto.InicioEn;
+                    cita.FinEn = nuevoFin;
+                    cita.FechaActualizacion = DateTime.UtcNow;
+                    await _citaRepo.ActualizarAsync(cita);
+                    await tx.CommitAsync();
+                }
+                catch (Exception ex) when (EsConflictoSerializacion(ex))
+                {
+                    await tx.RollbackAsync();
+                    return Conflict(new { mensaje = "El horario fue reservado en este momento. Intenta de nuevo." });
+                }
+                catch
+                {
+                    await tx.RollbackAsync();
+                    throw;
+                }
+            }
+
+            // Cancel old reminder job and schedule a new one for the updated date
+            if (!string.IsNullOrWhiteSpace(cita.HangfireJobId))
+                BackgroundJob.Delete(cita.HangfireJobId);
 
             if (!string.IsNullOrWhiteSpace(emailCliente))
+            {
+                var horasRec = cita.Negocio?.HorasRecordatorio > 0 ? cita.Negocio.HorasRecordatorio : 24;
+                var horaRec = AppointVaAPI.Helpers.ZonaHorariaHelper.ToDateTimeOffset(cita.InicioEn, tzReag).AddHours(-horasRec);
+                cita.HangfireJobId = horaRec > DateTimeOffset.UtcNow
+                    ? _jobClient.Schedule<IRecordatorioService>(s => s.EnviarRecordatorioCitaAsync(cita.Id), horaRec)
+                    : null;
+                await _citaRepo.ActualizarAsync(cita);
                 _jobClient.Enqueue<NotificacionJob>(j => j.EnviarReagendaAsync(cita.Id, emailCliente, cita.Cliente!.NombreCompleto, fechaOriginal));
+            }
 
             return Ok(new { mensaje = "¡Cita reagendada exitosamente!" });
         }
@@ -897,8 +1040,8 @@ namespace AppointVaAPI.Controllers.V1
             return Ok(new
             {
                 nombreCliente = cliente.NombreCompleto,
-                emailCliente = cliente.Email,
-                telefonoCliente = cliente.Telefono,
+                emailCliente = !string.IsNullOrWhiteSpace(email) ? cliente.Email : null,
+                telefonoCliente = !string.IsNullOrWhiteSpace(telefono) ? cliente.Telefono : null,
             });
         }
 
@@ -938,8 +1081,11 @@ namespace AppointVaAPI.Controllers.V1
         {
             var titulo = Uri.EscapeDataString(
                 $"{cita.Servicio?.Nombre ?? "Cita"} - {cita.Negocio?.Nombre ?? "AppointVa"}");
-            var inicio = cita.InicioEn.ToString("yyyyMMddTHHmmssZ");
-            var fin = cita.FinEn.ToString("yyyyMMddTHHmmssZ");
+            var tz = AppointVaAPI.Helpers.ZonaHorariaHelper.Resolver(cita.Negocio?.ZonaHoraria);
+            var inicioUtc = AppointVaAPI.Helpers.ZonaHorariaHelper.ToDateTimeOffset(cita.InicioEn, tz).UtcDateTime;
+            var finUtc = AppointVaAPI.Helpers.ZonaHorariaHelper.ToDateTimeOffset(cita.FinEn, tz).UtcDateTime;
+            var inicio = inicioUtc.ToString("yyyyMMddTHHmmssZ");
+            var fin = finUtc.ToString("yyyyMMddTHHmmssZ");
             var detalles = Uri.EscapeDataString(
                 $"Cita con {cita.Empleado?.Nombre ?? "el equipo"} en {cita.Negocio?.Nombre ?? "AppointVa"}");
             return $"https://calendar.google.com/calendar/render?action=TEMPLATE&text={titulo}&dates={inicio}/{fin}&details={detalles}";

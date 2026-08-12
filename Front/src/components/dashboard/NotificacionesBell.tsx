@@ -20,7 +20,7 @@ export function NotificacionesBell() {
   const qc = useQueryClient();
   const navigate = useNavigate();
 
-  const { data: notificaciones = [] } = useQuery<NotificacionDto[]>({
+  const { data: notificaciones = [], isError: notifError } = useQuery<NotificacionDto[]>({
     queryKey: ['notificaciones'],
     queryFn: notificacionesApi.listar,
     refetchInterval: 30_000,
@@ -40,7 +40,7 @@ export function NotificacionesBell() {
 
   function handleOpen() {
     setOpen(true);
-    marcarLeidas.mutate();
+    if (noLeidas > 0) marcarLeidas.mutate();
   }
 
   useEffect(() => {
@@ -60,11 +60,14 @@ export function NotificacionesBell() {
         className="relative p-2 rounded-full text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-700 transition-colors"
         aria-label="Notificaciones"
       >
-        <Bell className="w-5 h-5" />
-        {noLeidas > 0 && (
+        <Bell className={`w-5 h-5 ${notifError ? 'text-amber-500' : ''}`} />
+        {noLeidas > 0 && !notifError && (
           <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
             {noLeidas > 9 ? '9+' : noLeidas}
           </span>
+        )}
+        {notifError && (
+          <span className="absolute top-1 right-1 flex h-2 w-2 rounded-full bg-amber-400" title="No se pudieron cargar las notificaciones" />
         )}
       </button>
 

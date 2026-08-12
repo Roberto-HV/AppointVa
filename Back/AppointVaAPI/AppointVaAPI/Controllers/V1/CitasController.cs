@@ -108,10 +108,16 @@ namespace AppointVaAPI.Controllers.V1
         {
             if (_contexto.NegocioId is null) return Unauthorized();
 
-            if (dto.InicioEn <= DateTime.UtcNow)
-                return BadRequest(new { mensaje = "La fecha de la cita debe ser en el futuro" });
-
             var negocioId = _contexto.NegocioId.Value;
+
+            var negocioZona = await _db.Negocios
+                .Where(n => n.Id == negocioId)
+                .Select(n => n.ZonaHoraria)
+                .AsNoTracking()
+                .FirstOrDefaultAsync();
+            var tzCita = AppointVaAPI.Helpers.ZonaHorariaHelper.Resolver(negocioZona);
+            if (AppointVaAPI.Helpers.ZonaHorariaHelper.ToDateTimeOffset(dto.InicioEn, tzCita) <= DateTimeOffset.UtcNow)
+                return BadRequest(new { mensaje = "La fecha de la cita debe ser en el futuro" });
 
             // Verificar límite de citas del plan
             var planLimite = await _db.Negocios
@@ -120,7 +126,8 @@ namespace AppointVaAPI.Controllers.V1
                 .FirstOrDefaultAsync();
             if (planLimite > 0)
             {
-                var inicioMes = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+                var ahoraLocal = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tzCita);
+                var inicioMes = new DateTime(ahoraLocal.Year, ahoraLocal.Month, 1);
                 var citasMes = await _db.Citas.CountAsync(c => c.NegocioId == negocioId && c.InicioEn >= inicioMes);
                 if (citasMes >= planLimite)
                     return StatusCode(402, new { mensaje = $"Has alcanzado el límite de {planLimite} citas para este mes. Actualiza tu plan para continuar." });
@@ -231,7 +238,7 @@ namespace AppointVaAPI.Controllers.V1
                 var horaRecordatorio = AppointVaAPI.Helpers.ZonaHorariaHelper
                     .ToDateTimeOffset(cita.InicioEn, tz).AddHours(-horas);
                 if (horaRecordatorio > DateTimeOffset.UtcNow)
-                    _jobClient.Schedule<IRecordatorioService>(
+                    cita.HangfireJobId = _jobClient.Schedule<IRecordatorioService>(
                         s => s.EnviarRecordatorioCitaAsync(cita.Id),
                         horaRecordatorio);
             }
@@ -243,7 +250,7 @@ namespace AppointVaAPI.Controllers.V1
                 NegocioId = cita.NegocioId,
                 Tipo = "NuevaCita",
                 Titulo = $"Nueva cita de {dto.NombreCliente}",
-                Descripcion = $"{servicio.Nombre} con {creada!.Empleado?.Nombre ?? "Empleado"} · {cita.InicioEn.ToLocalTime().ToString("ddd d 'de' MMM, HH:mm", new System.Globalization.CultureInfo("es-MX"))}",
+                Descripcion = $"{servicio.Nombre} con {creada!.Empleado?.Nombre ?? "Empleado"} · {cita.InicioEn.ToString("ddd d 'de' MMM, HH:mm", new System.Globalization.CultureInfo("es-MX"))}",
                 CitaId = cita.Id
             });
             await _db.SaveChangesAsync();
@@ -260,6 +267,14 @@ namespace AppointVaAPI.Controllers.V1
             var cita = await _citaRepo.ObtenerPorIdAsync(id, _contexto.NegocioId.Value);
             if (cita is null) return NotFound(new { mensaje = "Cita no encontrada" });
 
+            if (_contexto.Rol == Roles.Empleado)
+            {
+                var emp = await _db.Empleados
+                    .FirstOrDefaultAsync(e => e.UsuarioId == _contexto.UsuarioId && e.NegocioId == _contexto.NegocioId);
+                if (emp is null || cita.EmpleadoId != emp.Id)
+                    return StatusCode(403, new { mensaje = "Solo puedes modificar el estado de tus propias citas" });
+            }
+
             if (cita.Estado == EstadosCitas.Cancelada || cita.Estado == EstadosCitas.Completada)
                 return BadRequest(new { mensaje = "No se puede modificar una cita ya finalizada" });
 
@@ -268,53 +283,97 @@ namespace AppointVaAPI.Controllers.V1
             cita.MotivoCancelacion = dto.NuevoEstado == EstadosCitas.Cancelada ? dto.Motivo : null;
             cita.FechaActualizacion = DateTime.UtcNow;
 
-            await _citaRepo.ActualizarAsync(cita);
-
-            // Actualizar estadísticas de inasistencia
-            if (dto.NuevoEstado == EstadosCitas.Inasistencia && estadoAnterior != EstadosCitas.Inasistencia)
+            if (dto.NuevoEstado == EstadosCitas.Cancelada && !string.IsNullOrWhiteSpace(cita.HangfireJobId))
             {
-                var cliente = await _clienteRepo.ObtenerPorIdAsync(cita.ClienteId, _contexto.NegocioId.Value);
-                if (cliente is not null)
-                {
-                    cliente.CantidadInasistencias++;
-                    cliente.FechaActualizacion = DateTime.UtcNow;
-                    await _clienteRepo.ActualizarAsync(cliente);
-                }
+                BackgroundJob.Delete(cita.HangfireJobId);
+                cita.HangfireJobId = null;
             }
 
-            if (dto.NuevoEstado == EstadosCitas.Cancelada)
-            {
-                _db.NotificacionesDashboard.Add(new NotificacionDashboard
-                {
-                    NegocioId = cita.NegocioId,
-                    Tipo = "Cancelacion",
-                    Titulo = $"Cita cancelada — {cita.Cliente?.NombreCompleto ?? ""}",
-                    Descripcion = $"{cita.Servicio?.Nombre ?? "Servicio"} con {cita.Empleado?.Nombre ?? "Empleado"} · {cita.InicioEn.ToLocalTime().ToString("ddd d 'de' MMM, HH:mm", new System.Globalization.CultureInfo("es-MX"))}",
-                    CitaId = cita.Id
-                });
-                await _db.SaveChangesAsync();
-            }
-
-            // Disparar lista de espera si el negocio la tiene activa y hay personas esperando
-            if (dto.NuevoEstado == EstadosCitas.Cancelada)
-            {
-                var listaEsperaActiva = await _db.Negocios
-                    .Where(n => n.Id == cita.NegocioId)
-                    .Select(n => n.ListaEsperaActiva)
-                    .FirstOrDefaultAsync();
-                if (listaEsperaActiva && cita.InicioEn > DateTime.UtcNow.AddHours(2))
-                {
-                    var hayEnEspera = await _db.ListaEspera
-                        .AnyAsync(le => le.NegocioId == cita.NegocioId
-                                     && le.ServicioId == cita.ServicioId
-                                     && le.Estado == "Esperando");
-                    if (hayEnEspera)
-                        _jobClient.Enqueue<NotificacionJob>(j => j.NotificarListaEsperaAsync(cita.NegocioId, cita.ServicioId));
-                }
-            }
-
-            // Notificar por email si el cliente tiene correo
+            // Datos para los jobs de Hangfire (se despachan después del commit)
             var emailDestino = cita.Cliente?.Email;
+            string? resenaToken = null;
+            string? urlResena = null;
+            bool notificarListaEspera = false;
+
+            using (var tx = await _db.Database.BeginTransactionAsync())
+            {
+                await _citaRepo.ActualizarAsync(cita);
+
+                // Actualizar estadísticas de inasistencia
+                if (dto.NuevoEstado == EstadosCitas.Inasistencia && estadoAnterior != EstadosCitas.Inasistencia)
+                {
+                    var cliente = await _clienteRepo.ObtenerPorIdAsync(cita.ClienteId, _contexto.NegocioId.Value);
+                    if (cliente is not null)
+                    {
+                        cliente.CantidadInasistencias = Math.Max(0, cliente.CantidadInasistencias + 1);
+                        cliente.FechaActualizacion = DateTime.UtcNow;
+                        await _clienteRepo.ActualizarAsync(cliente);
+                    }
+                }
+                else if (estadoAnterior == EstadosCitas.Inasistencia && dto.NuevoEstado != EstadosCitas.Inasistencia)
+                {
+                    var cliente = await _clienteRepo.ObtenerPorIdAsync(cita.ClienteId, _contexto.NegocioId.Value);
+                    if (cliente is not null)
+                    {
+                        cliente.CantidadInasistencias = Math.Max(0, cliente.CantidadInasistencias - 1);
+                        cliente.FechaActualizacion = DateTime.UtcNow;
+                        await _clienteRepo.ActualizarAsync(cliente);
+                    }
+                }
+
+                if (dto.NuevoEstado == EstadosCitas.Cancelada)
+                {
+                    _db.NotificacionesDashboard.Add(new NotificacionDashboard
+                    {
+                        NegocioId = cita.NegocioId,
+                        Tipo = "Cancelacion",
+                        Titulo = $"Cita cancelada — {cita.Cliente?.NombreCompleto ?? ""}",
+                        Descripcion = $"{cita.Servicio?.Nombre ?? "Servicio"} con {cita.Empleado?.Nombre ?? "Empleado"} · {cita.InicioEn.ToString("ddd d 'de' MMM, HH:mm", new System.Globalization.CultureInfo("es-MX"))}",
+                        CitaId = cita.Id
+                    });
+
+                    // Verificar lista de espera dentro de la transacción
+                    var negocioWl = await _db.Negocios
+                        .Where(n => n.Id == cita.NegocioId)
+                        .Select(n => new { n.ListaEsperaActiva, n.ZonaHoraria })
+                        .FirstOrDefaultAsync();
+                    var tzWl = AppointVaAPI.Helpers.ZonaHorariaHelper.Resolver(negocioWl?.ZonaHoraria);
+                    var inicioUtcWl = AppointVaAPI.Helpers.ZonaHorariaHelper.ToDateTimeOffset(cita.InicioEn, tzWl);
+                    if ((negocioWl?.ListaEsperaActiva ?? false) && inicioUtcWl > DateTimeOffset.UtcNow.AddHours(2))
+                    {
+                        notificarListaEspera = await _db.ListaEspera
+                            .AnyAsync(le => le.NegocioId == cita.NegocioId
+                                         && le.ServicioId == cita.ServicioId
+                                         && le.Estado == "Esperando");
+                    }
+                }
+
+                // Crear Resena al completar (dentro de la misma transacción)
+                if (dto.NuevoEstado == EstadosCitas.Completada && estadoAnterior != EstadosCitas.Completada
+                    && !string.IsNullOrWhiteSpace(emailDestino))
+                {
+                    resenaToken = Convert.ToHexString(RandomNumberGenerator.GetBytes(16)).ToLower();
+                    var frontendUrl = _config["FrontendUrl"] ?? "https://appointva.com";
+                    urlResena = $"{frontendUrl}/resena/{resenaToken}";
+                    _db.Resenas.Add(new Resena
+                    {
+                        Id = Guid.NewGuid(),
+                        NegocioId = cita.NegocioId,
+                        CitaId = cita.Id,
+                        NombreCliente = cita.Cliente!.NombreCompleto,
+                        Token = resenaToken,
+                        Respondida = false,
+                        Aprobada = true,
+                        FechaCreacion = DateTime.UtcNow,
+                        FechaExpiracion = DateTime.UtcNow.AddDays(7)
+                    });
+                }
+
+                await _db.SaveChangesAsync();
+                await tx.CommitAsync();
+            }
+
+            // Post-commit: despachar jobs de Hangfire
             if (!string.IsNullOrWhiteSpace(emailDestino))
             {
                 if (dto.NuevoEstado == EstadosCitas.Confirmada && estadoAnterior == EstadosCitas.Pendiente)
@@ -323,29 +382,12 @@ namespace AppointVaAPI.Controllers.V1
                 if (dto.NuevoEstado == EstadosCitas.Cancelada)
                     _jobClient.Enqueue<NotificacionJob>(j => j.EnviarCancelacionAsync(cita.Id, emailDestino, cita.Cliente!.NombreCompleto));
 
-                if (dto.NuevoEstado == EstadosCitas.Completada && estadoAnterior != EstadosCitas.Completada)
-                {
-                    var token = Convert.ToHexString(RandomNumberGenerator.GetBytes(16)).ToLower();
-                    var resena = new Resena
-                    {
-                        Id = Guid.NewGuid(),
-                        NegocioId = cita.NegocioId,
-                        CitaId = cita.Id,
-                        NombreCliente = cita.Cliente!.NombreCompleto,
-                        Token = token,
-                        Respondida = false,
-                        Aprobada = true,
-                        FechaCreacion = DateTime.UtcNow,
-                        FechaExpiracion = DateTime.UtcNow.AddDays(7)
-                    };
-                    await _db.Resenas.AddAsync(resena);
-                    await _db.SaveChangesAsync();
-
-                    var frontendUrl = _config["FrontendUrl"] ?? "https://appointva.com";
-                    var urlResena = $"{frontendUrl}/resena/{token}";
+                if (resenaToken is not null && urlResena is not null)
                     _jobClient.Enqueue<NotificacionJob>(j => j.EnviarSolicitudResenaAsync(cita.Id, emailDestino, cita.Cliente!.NombreCompleto, urlResena));
-                }
             }
+
+            if (notificarListaEspera)
+                _jobClient.Enqueue<NotificacionJob>(j => j.NotificarListaEsperaAsync(cita.NegocioId, cita.ServicioId));
 
             return Ok(MapearDto(cita));
         }
@@ -397,6 +439,14 @@ namespace AppointVaAPI.Controllers.V1
 
             var cita = await _citaRepo.ObtenerPorIdAsync(id, _contexto.NegocioId.Value);
             if (cita is null) return NotFound(new { mensaje = "Cita no encontrada" });
+
+            if (_contexto.Rol == Roles.Empleado)
+            {
+                var emp = await _db.Empleados
+                    .FirstOrDefaultAsync(e => e.UsuarioId == _contexto.UsuarioId && e.NegocioId == _contexto.NegocioId);
+                if (emp is null || cita.EmpleadoId != emp.Id)
+                    return StatusCode(403, new { mensaje = "Solo puedes registrar anticipos de tus propias citas" });
+            }
 
             if (dto.Recibido)
             {
@@ -459,6 +509,14 @@ namespace AppointVaAPI.Controllers.V1
             var cita = await _citaRepo.ObtenerPorIdAsync(id, _contexto.NegocioId.Value);
             if (cita is null) return NotFound(new { mensaje = "Cita no encontrada" });
 
+            if (_contexto.Rol == Roles.Empleado)
+            {
+                var emp = await _db.Empleados
+                    .FirstOrDefaultAsync(e => e.UsuarioId == _contexto.UsuarioId && e.NegocioId == _contexto.NegocioId);
+                if (emp is null || cita.EmpleadoId != emp.Id)
+                    return StatusCode(403, new { mensaje = "Solo puedes editar las notas de tus propias citas" });
+            }
+
             cita.Notas = string.IsNullOrWhiteSpace(dto.Notas) ? null : dto.Notas.Trim();
             cita.FechaActualizacion = DateTime.UtcNow;
 
@@ -475,10 +533,24 @@ namespace AppointVaAPI.Controllers.V1
             var cita = await _citaRepo.ObtenerPorIdAsync(id, _contexto.NegocioId.Value);
             if (cita is null) return NotFound(new { mensaje = "Cita no encontrada" });
 
+            if (_contexto.Rol == Roles.Empleado)
+            {
+                var emp = await _db.Empleados
+                    .FirstOrDefaultAsync(e => e.UsuarioId == _contexto.UsuarioId && e.NegocioId == _contexto.NegocioId);
+                if (emp is null || cita.EmpleadoId != emp.Id)
+                    return StatusCode(403, new { mensaje = "Solo puedes reagendar tus propias citas" });
+            }
+
             if (cita.Estado == EstadosCitas.Cancelada || cita.Estado == EstadosCitas.Completada)
                 return BadRequest(new { mensaje = "No se puede reagendar una cita ya finalizada" });
 
-            if (dto.InicioEn <= DateTime.UtcNow)
+            var negocioInfoReag = await _db.Negocios
+                .Where(n => n.Id == cita.NegocioId)
+                .Select(n => new { n.ZonaHoraria, n.HorasRecordatorio })
+                .AsNoTracking()
+                .FirstOrDefaultAsync();
+            var tzReag = AppointVaAPI.Helpers.ZonaHorariaHelper.Resolver(negocioInfoReag?.ZonaHoraria);
+            if (AppointVaAPI.Helpers.ZonaHorariaHelper.ToDateTimeOffset(dto.InicioEn, tzReag) <= DateTimeOffset.UtcNow)
                 return BadRequest(new { mensaje = "La nueva fecha debe ser en el futuro" });
 
             var duracion = (int)(cita.FinEn - cita.InicioEn).TotalMinutes;
@@ -518,6 +590,25 @@ namespace AppointVaAPI.Controllers.V1
 
             var emailCliente = cita.Cliente?.Email ?? string.Empty;
             var nombreCliente = cita.Cliente?.NombreCompleto ?? string.Empty;
+
+            // Cancel old reminder job and schedule a new one for the updated date
+            if (!string.IsNullOrWhiteSpace(cita.HangfireJobId))
+                BackgroundJob.Delete(cita.HangfireJobId);
+
+            if (!string.IsNullOrWhiteSpace(emailCliente))
+            {
+                var horasRec = negocioInfoReag?.HorasRecordatorio > 0 ? negocioInfoReag.HorasRecordatorio : 24;
+                var horaRec = AppointVaAPI.Helpers.ZonaHorariaHelper.ToDateTimeOffset(cita.InicioEn, tzReag).AddHours(-horasRec);
+                cita.HangfireJobId = horaRec > DateTimeOffset.UtcNow
+                    ? _jobClient.Schedule<IRecordatorioService>(s => s.EnviarRecordatorioCitaAsync(cita.Id), horaRec)
+                    : null;
+            }
+            else
+            {
+                cita.HangfireJobId = null;
+            }
+            await _citaRepo.ActualizarAsync(cita);
+
             _jobClient.Enqueue<NotificacionJob>(j => j.EnviarReagendaAsync(cita.Id, emailCliente, nombreCliente, fechaOriginal));
             _jobClient.Enqueue<IPushService>(s => s.EnviarReagendarEmpleadoAsync(cita.Id));
 
