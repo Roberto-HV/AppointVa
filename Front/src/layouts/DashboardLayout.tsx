@@ -10,6 +10,8 @@ import { citasApi, ESTADOS } from "../api/citas";
 import { useToastStore } from "../store/toastStore";
 import { Tooltip } from "../components/ui/Tooltip";
 import { NotificacionesBell } from '../components/dashboard/NotificacionesBell';
+import { EncuestaSatisfaccionModal } from '../components/dashboard/EncuestaSatisfaccionModal';
+import { encuestaApi } from '../api/encuesta';
 import { toUtcDate } from '../utils/formatters';
 import { useInactividadTimeout } from '../hooks/useInactividadTimeout';
 
@@ -188,6 +190,14 @@ export default function DashboardLayout() {
     enabled: !esEmpleado,
     staleTime: 1000 * 60 * 5,
   });
+
+  const { data: encuestaEstado } = useQuery({
+    queryKey: ["encuesta-estado"],
+    queryFn: encuestaApi.obtenerEstado,
+    enabled: usuario?.rol === "Propietario",
+    staleTime: 1000 * 60 * 60,
+  });
+  const [encuestaCerrada, setEncuestaCerrada] = useState(false);
 
   const navItems = esEmpleado ? NAV_EMPLEADO : getNav(perfil?.sector ?? "belleza");
 
@@ -527,6 +537,10 @@ export default function DashboardLayout() {
         </main>
 
       </div>
+
+      {encuestaEstado?.mostrar && !encuestaCerrada && (
+        <EncuestaSatisfaccionModal onCerrar={() => setEncuestaCerrada(true)} />
+      )}
     </div>
   );
 }

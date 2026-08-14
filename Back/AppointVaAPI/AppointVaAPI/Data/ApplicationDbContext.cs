@@ -25,6 +25,7 @@ namespace AppointVaAPI.Data
         public DbSet<BloqueoNegocio> BloqueosNegocio { get; set; }
         public DbSet<Resena> Resenas { get; set; }
         public DbSet<ListaEspera> ListaEspera { get; set; }
+        public DbSet<EncuestaNegocio> EncuestasNegocio { get; set; }
         public DbSet<CampoIntake> CamposIntake { get; set; }
         public DbSet<RespuestaIntake> RespuestasIntake { get; set; }
         public DbSet<Descuento> Descuentos { get; set; }
