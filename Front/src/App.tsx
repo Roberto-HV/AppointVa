@@ -1,7 +1,8 @@
 import { lazy, Suspense } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
+import { useSectorFeatures, type SectorFeatures } from "./hooks/useSectorFeatures";
 
 import RutaProtegida from "./components/RutaProtegida";
 import RutaPublica from "./components/RutaPublica";
@@ -61,6 +62,13 @@ const LandingPage = lazy(() => import("./pages/publico/LandingPage"));
 // ── 404 ───────────────────────────────────────────────────────────────────
 const NotFoundPage = lazy(() => import("./pages/NotFoundPage"));
 
+// ── Componente para rutas con features de sector ──────────────────────────
+function RutaConFeature({ feature, children }: { feature: keyof SectorFeatures; children: React.ReactNode }) {
+  const features = useSectorFeatures();
+  if (features.isLoading) return null;
+  if (!features[feature]) return <Navigate to="/dashboard" replace />;
+  return <>{children}</>;
+}
 
 export default function App() {
   return (
@@ -98,7 +106,9 @@ export default function App() {
                     <Route path="/dashboard" element={<InicioPage />} />
                     <Route path="/dashboard/citas" element={<CitasPage />} />
                     <Route path="/dashboard/citas/:id" element={<CitaDetallePage />} />
-                    <Route path="/dashboard/pagos" element={<PagosPage />} />
+                    <Route path="/dashboard/pagos" element={
+                      <RutaConFeature feature="pagos"><PagosPage /></RutaConFeature>
+                    } />
                     <Route path="/dashboard/seguridad" element={<DosFactoresPage />} />
                     <Route path="/dashboard/mi-perfil" element={<MiPerfilPage />} />
 
@@ -107,10 +117,14 @@ export default function App() {
                       <Route path="/dashboard/servicios" element={<ServiciosPage />} />
                       <Route path="/dashboard/clientes" element={<ClientesPage />} />
                       <Route path="/dashboard/perfil" element={<PerfilPage />} />
-                      <Route path="/dashboard/galeria" element={<GaleriaPage />} />
+                      <Route path="/dashboard/galeria" element={
+                        <RutaConFeature feature="galeria"><GaleriaPage /></RutaConFeature>
+                      } />
                       <Route path="/dashboard/espera" element={<ListaEsperaPage />} />
                       <Route path="/dashboard/intake" element={<IntakePage />} />
-                      <Route path="/dashboard/descuentos" element={<DescuentosPage />} />
+                      <Route path="/dashboard/descuentos" element={
+                        <RutaConFeature feature="descuentos"><DescuentosPage /></RutaConFeature>
+                      } />
                       <Route path="/dashboard/reportes" element={<ReportesPage />} />
                     </Route>
                   </Route>
