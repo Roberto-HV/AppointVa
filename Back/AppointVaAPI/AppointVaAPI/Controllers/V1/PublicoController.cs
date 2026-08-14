@@ -862,6 +862,14 @@ namespace AppointVaAPI.Controllers.V1
                 FechaActualizacion = DateTime.UtcNow
             };
 
+            // Health sector: disable features that don't apply
+            if (dto.Sector == "salud")
+            {
+                negocio.ModuloPagosHabilitado = false;
+                negocio.RequiereAnticipo = false;
+                negocio.ListaEsperaActiva = false;
+            }
+
             ApplicationUser usuario;
             using (var tx = await _db.Database.BeginTransactionAsync())
             {
