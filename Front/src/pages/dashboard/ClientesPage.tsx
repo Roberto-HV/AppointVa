@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { clientesApi } from "../../api/clientes";
 import { negociosApi } from "../../api/negocios";
+import { useSectorTerms } from "../../hooks/useSectorTerms";
 import Modal from "../../components/ui/Modal";
 import EstadoBadge from "../../components/ui/EstadoBadge";
 import { exportarExcel } from "../../utils/exportarExcel";
@@ -20,6 +21,7 @@ const OPCIONES_DIAS = [30, 60, 90, 180] as const;
 export default function ClientesPage() {
   const qc = useQueryClient();
   const { toast } = useToastStore();
+  const terms = useSectorTerms();
   const [searchParams, setSearchParams] = useSearchParams();
   const [tab, setTab] = useState<TabClientes>("todos");
   const [buscar, setBuscar] = useState("");
@@ -126,13 +128,13 @@ export default function ClientesPage() {
       c.ultimaCitaEn ? new Date(c.ultimaCitaEn).toLocaleDateString("es-MX") : "",
       new Date(c.fechaCreacion).toLocaleDateString("es-MX"),
     ]);
-    exportarExcel(enc, [filas], "clientes", "Clientes");
+    exportarExcel(enc, [filas], "clientes", terms.clientes);
   };
 
   return (
     <div className="p-4 sm:p-8">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Clientes</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{terms.clientes}</h1>
         {tab === "todos" && clientes.length > 0 && (
           <button
             onClick={exportarClientes}
@@ -303,8 +305,8 @@ export default function ClientesPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
               </div>
-              <p className="font-medium text-gray-700 mb-1 dark:text-gray-300">Aún no hay clientes</p>
-              <p className="text-sm text-gray-400 dark:text-gray-500">Los clientes aparecerán aquí automáticamente cuando hagan su primera reserva</p>
+              <p className="font-medium text-gray-700 mb-1 dark:text-gray-300">{`Aún no hay ${terms.clientes.toLowerCase()}`}</p>
+              <p className="text-sm text-gray-400 dark:text-gray-500">{`Los ${terms.clientes.toLowerCase()} aparecerán aquí automáticamente cuando hagan su primera reserva`}</p>
             </>
           )}
         </div>
@@ -315,9 +317,9 @@ export default function ClientesPage() {
             <table className="w-full text-sm min-w-[560px]">
               <thead>
                 <tr className="border-b border-gray-100 text-xs text-gray-400 uppercase tracking-wide dark:border-slate-700 dark:text-gray-500">
-                  <th className="text-left px-5 py-3 font-medium">Cliente</th>
+                  <th className="text-left px-5 py-3 font-medium">{terms.cliente}</th>
                   <th className="text-left px-5 py-3 font-medium">Contacto</th>
-                  <th className="text-center px-5 py-3 font-medium">Citas</th>
+                  <th className="text-center px-5 py-3 font-medium">{terms.citas}</th>
                   <th className="text-center px-5 py-3 font-medium">Inasistencias</th>
                   <th className="text-left px-5 py-3 font-medium">Última visita</th>
                   <th className="px-5 py-3" />
@@ -411,7 +413,7 @@ export default function ClientesPage() {
                 </p>
               </div>
               <div className="bg-gray-50 rounded-lg px-3 py-2 col-span-2 dark:bg-slate-700">
-                <p className="text-xs text-gray-400 mb-0.5 dark:text-gray-500">Cliente desde</p>
+                <p className="text-xs text-gray-400 mb-0.5 dark:text-gray-500">{`${terms.cliente} desde`}</p>
                 <p className="font-medium text-gray-800 dark:text-gray-200">{formatFecha(clienteSel.fechaCreacion)}</p>
               </div>
             </div>

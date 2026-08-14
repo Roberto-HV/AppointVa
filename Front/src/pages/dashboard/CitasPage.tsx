@@ -1,5 +1,6 @@
 ﻿import { useState, useEffect } from "react";
 import { SiWhatsapp } from "react-icons/si";
+import { useSectorTerms } from "../../hooks/useSectorTerms";
 
 function fechaStr(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -63,6 +64,7 @@ const TRANSICIONES: Record<string, { label: string; estado: number; clase: strin
 export default function CitasPage() {
   const qc = useQueryClient();
   const { toast } = useToastStore();
+  const terms = useSectorTerms();
 
   const [vista, setVista] = useState<"lista" | "calendario" | "gantt">("lista");
   const [desde, setDesde] = useState(() => hoy());
@@ -206,11 +208,11 @@ export default function CitasPage() {
       qc.invalidateQueries({ queryKey: ["citas-gantt"] });
       qc.invalidateQueries({ queryKey: ["dashboard-resumen"] });
       setCitaReag(null); setFechaReag(""); setSlotReag("");
-      toast("Cita reagendada");
+      toast(`${terms.cita} reagendada`);
     },
     onError: (err: unknown) => {
       const msg = (err as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje
-        ?? "No se pudo reagendar la cita";
+        ?? `No se pudo reagendar la ${terms.cita.toLowerCase()}`;
       toast(msg, "error");
     },
   });
@@ -237,11 +239,11 @@ export default function CitasPage() {
       setSvcSel(""); setEmpSel(""); setFechaNueva(""); setSlotNuevo("");
       setFCliente({ nombre: "", telefono: "", email: "", notas: "" });
       setEmailClienteError("");
-      toast("Cita creada");
+      toast(`${terms.cita} creada`);
     },
     onError: (err: unknown) => {
       const msg = (err as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje
-        ?? "No se pudo crear la cita";
+        ?? `No se pudo crear la ${terms.cita.toLowerCase()}`;
       toast(msg, "error");
     },
   });
@@ -301,10 +303,10 @@ export default function CitasPage() {
       setPasoRepetir(1);
       setFClienteRepetir({ nombre: "", telefono: "", email: "", notas: "" });
       setEmailRepetirError("");
-      toast("Cita creada");
+      toast(`${terms.cita} creada`);
     },
     onError: (err: unknown) => {
-      const msg = (err as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje ?? "No se pudo crear la cita";
+      const msg = (err as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje ?? `No se pudo crear la ${terms.cita.toLowerCase()}`;
       toast(msg, "error");
     },
   });
@@ -400,7 +402,7 @@ export default function CitasPage() {
       c.metodoPago ?? "",
       c.notas ?? "",
     ]);
-    exportarExcel(encabezados, [filas], "citas", "Reporte de Citas");
+    exportarExcel(encabezados, [filas], "citas", `Reporte de ${terms.citas}`);
   };
 
   // ── Render ───────────────────────────────────────────────────────────────────
@@ -411,7 +413,7 @@ export default function CitasPage() {
 
         {/* Fila 1 — título + acciones desktop */}
         <div className="flex items-center justify-between gap-3">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Citas</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{terms.citas}</h1>
           <div className="flex items-center gap-2">
             {/* Recepción y Exportar: solo desktop */}
             <Link
@@ -434,7 +436,7 @@ export default function CitasPage() {
               onClick={abrirNuevaCita}
               className="whitespace-nowrap px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white text-sm font-semibold rounded-lg transition"
             >
-              + Nueva cita
+              {`+ Nueva ${terms.cita.toLowerCase()}`}
             </button>
           </div>
         </div>
@@ -606,7 +608,7 @@ export default function CitasPage() {
             </div>
             <div>
               <p className="font-medium text-gray-500 dark:text-gray-400">
-                {estadoFiltro ? `Sin citas ${estadoFiltro.toLowerCase()}s` : "No hay citas en este rango"}
+                {estadoFiltro ? `Sin ${terms.citas.toLowerCase()} ${estadoFiltro.toLowerCase()}s` : `No hay ${terms.citas.toLowerCase()} en este rango`}
               </p>
               {(estadoFiltro || busqueda) && (
                 <button
@@ -913,7 +915,7 @@ export default function CitasPage() {
       </Modal>
 
       {/* ── Modal: Nueva cita ── */}
-      <Modal abierto={modalNueva} onCerrar={() => setModalNueva(false)} titulo="Nueva cita" ancho="md">
+      <Modal abierto={modalNueva} onCerrar={() => setModalNueva(false)} titulo={`Nueva ${terms.cita.toLowerCase()}`} ancho="md">
         {/* Paso 1 — Servicio, empleado, fecha, slot */}
         {pasoCita === 1 && (
           <div className="space-y-4">
@@ -1115,7 +1117,7 @@ export default function CitasPage() {
       </Modal>
 
       {/* ── Modal: Reagendar ── */}
-      <Modal abierto={!!citaReag} onCerrar={() => setCitaReag(null)} titulo="Reagendar cita" ancho="sm">
+      <Modal abierto={!!citaReag} onCerrar={() => setCitaReag(null)} titulo={`Reagendar ${terms.cita.toLowerCase()}`} ancho="sm">
         {citaReag && (
           <div className="space-y-4">
             <div className="bg-gray-50 dark:bg-slate-700 rounded-lg p-3 text-sm space-y-1">
@@ -1194,7 +1196,7 @@ export default function CitasPage() {
       </Modal>
 
       {/* ── Modal: Cambiar estado ── */}
-      <Modal abierto={!!citaSel} onCerrar={() => setCitaSel(null)} titulo="Cambiar estado de la cita" ancho="sm">
+      <Modal abierto={!!citaSel} onCerrar={() => setCitaSel(null)} titulo={`Cambiar estado de la ${terms.cita.toLowerCase()}`} ancho="sm">
         {citaSel && (
           <div>
             <div className="bg-gray-50 dark:bg-slate-700 rounded-lg p-3 mb-5 text-sm space-y-1">
@@ -1266,8 +1268,8 @@ export default function CitasPage() {
       {confirmDrag && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-800 rounded-xl p-6 max-w-sm w-full shadow-xl">
-            <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-1">Reagendar cita</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">¿Mover la cita de <strong>{confirmDrag.nombre}</strong> para el {confirmDrag.label}?</p>
+            <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-1">{`Reagendar ${terms.cita.toLowerCase()}`}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{`¿Mover la ${terms.cita.toLowerCase()} de `}<strong>{confirmDrag.nombre}</strong>{` para el ${confirmDrag.label}?`}</p>
             <div className="flex gap-3 justify-end">
               <button onClick={() => setConfirmDrag(null)} className="text-sm text-gray-500 px-4 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition">Cancelar</button>
               <button onClick={() => { reagendar({ id: confirmDrag.id, inicioEn: confirmDrag.nuevoInicio }); setConfirmDrag(null); }} className="text-sm bg-violet-600 text-white px-4 py-2 rounded-lg hover:bg-violet-700 transition">Confirmar</button>
@@ -1277,7 +1279,7 @@ export default function CitasPage() {
       )}
 
       {/* ── Modal: Repetir cita ── */}
-      <Modal abierto={!!citaRepetir} onCerrar={() => setCitaRepetir(null)} titulo="Repetir cita" ancho="sm">
+      <Modal abierto={!!citaRepetir} onCerrar={() => setCitaRepetir(null)} titulo={`Repetir ${terms.cita.toLowerCase()}`} ancho="sm">
         {citaRepetir && (
           <>
             {/* Paso 1 — elegir nueva fecha y slot */}

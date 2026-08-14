@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Calendar, User, Clock, DollarSign, FileText } from "lucide-react";
 import { SiGooglecalendar } from "react-icons/si";
 import { citasApi, ESTADOS } from "../../api/citas";
+import { useSectorTerms } from "../../hooks/useSectorTerms";
 
 const ESTADO_ESTILOS: Record<number, { label: string; clase: string }> = {
   [ESTADOS.Pendiente]:    { label: "Pendiente",    clase: "bg-yellow-100 text-yellow-800" },
@@ -30,6 +31,7 @@ function buildGoogleCalUrl(
 export default function CitaDetallePage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const terms = useSectorTerms();
 
   const { data: cita, isLoading, error } = useQuery({
     queryKey: ["cita", id],
@@ -46,14 +48,15 @@ export default function CitaDetallePage() {
   }
 
   if (error || !cita) {
+    const terms = useSectorTerms();
     return (
       <div className="max-w-xl mx-auto p-6 text-center">
-        <p className="text-gray-500 dark:text-gray-400 mb-4">No se encontró la cita o no tienes acceso.</p>
+        <p className="text-gray-500 dark:text-gray-400 mb-4">{`No se encontró la ${terms.cita.toLowerCase()} o no tienes acceso.`}</p>
         <button
           onClick={() => navigate("/dashboard/citas")}
           className="text-sm text-slate-700 hover:underline"
         >
-          ← Volver a mis citas
+          {`← Volver a mis ${terms.citas.toLowerCase()}`}
         </button>
       </div>
     );
@@ -89,7 +92,7 @@ export default function CitaDetallePage() {
           <ArrowLeft size={20} />
         </button>
         <div>
-          <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Detalle de cita</h1>
+          <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{`Detalle de ${terms.cita.toLowerCase()}`}</h1>
           <p className="text-xs text-gray-400 dark:text-gray-500 font-mono">{cita.codigoConfirmacion}</p>
         </div>
         <span className={`ml-auto text-xs font-semibold px-2.5 py-1 rounded-full ${estado.clase}`}>

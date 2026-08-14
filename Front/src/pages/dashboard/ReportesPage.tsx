@@ -6,6 +6,7 @@ import {
 } from "recharts";
 import { Download, TrendingUp, Calendar, DollarSign, CheckCircle } from "lucide-react";
 import { reportesApi, type FiltrosReporteCitas } from "../../api/reportes";
+import { useSectorTerms } from "../../hooks/useSectorTerms";
 import { Users, RefreshCw } from "lucide-react";
 import { exportarExcel } from "../../utils/exportarExcel";
 import { empleadosApi } from "../../api/empleados";
@@ -65,6 +66,7 @@ function Tarjeta({ label, valor, subvalor, icono }: TarjetaProps) {
 }
 
 export default function ReportesPage() {
+  const terms = useSectorTerms();
   const [tab, setTab] = useState<Tab>("citas");
   const [desde, setDesde] = useState(inicioMes());
   const [hasta, setHasta] = useState(hoy());
@@ -149,7 +151,7 @@ export default function ReportesPage() {
       "", "", "", "",
     ];
 
-    exportarExcel(encabezados, [filas], "reporte-citas", "Reporte de Citas", { subtitulo, totales });
+    exportarExcel(encabezados, [filas], "reporte-citas", `Reporte de ${terms.citas}`, { subtitulo, totales });
   };
 
   const handleExportarEmpleados = () => {
@@ -283,7 +285,7 @@ export default function ReportesPage() {
       {/* Tabs */}
       <div className="flex bg-gray-100 dark:bg-slate-700 p-1 rounded-lg">
         {([
-          { id: "citas", label: "Citas" },
+          { id: "citas", label: terms.citas },
           { id: "ingresos", label: "Ingresos" },
           { id: "empleados", label: "Empleados" },
           { id: "heatmap", label: "Horarios" },
@@ -306,7 +308,7 @@ export default function ReportesPage() {
         <>
           {/* Tarjetas resumen */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <Tarjeta label="Total citas" valor={String(reporteCitas?.totalCitas ?? "—")} icono={<Calendar size={18} />} />
+            <Tarjeta label={`Total ${terms.citas.toLowerCase()}`} valor={String(reporteCitas?.totalCitas ?? "—")} icono={<Calendar size={18} />} />
             <Tarjeta label="Completadas" valor={String(reporteCitas?.totalCompletadas ?? "—")}
               subvalor={reporteCitas ? `${reporteCitas.totalCanceladas} canceladas` : undefined}
               icono={<CheckCircle size={18} />} />
@@ -379,7 +381,7 @@ export default function ReportesPage() {
                 ) : !reporteCitas?.citas.length ? (
                   <tr>
                     <td colSpan={8} className="px-4 py-10 text-center text-gray-400 dark:text-gray-500 text-sm">
-                      No hay citas en el rango seleccionado.
+                      {`No hay ${terms.citas.toLowerCase()} en el rango seleccionado.`}
                     </td>
                   </tr>
                 ) : (
@@ -562,7 +564,7 @@ export default function ReportesPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Ingresos por servicio */}
               <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
-                <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Ingresos por servicio</h2>
+                <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">{`Ingresos por ${terms.servicios.toLowerCase()}`}</h2>
                 {!reporteIngresos?.porServicio.length ? (
                   <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-6">Sin datos</p>
                 ) : (
@@ -641,12 +643,12 @@ export default function ReportesPage() {
             </div>
           ) : !heatmap || heatmap.totalCitas === 0 ? (
             <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-10 text-center text-sm text-gray-400 dark:text-gray-500">
-              No hay citas en el rango seleccionado.
+              {`No hay ${terms.citas.toLowerCase()} en el rango seleccionado.`}
             </div>
           ) : (
             <>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                <Tarjeta label="Total citas analizadas" valor={String(heatmap.totalCitas)} icono={<Calendar size={18} />} />
+                <Tarjeta label={`Total ${terms.citas.toLowerCase()} analizadas`} valor={String(heatmap.totalCitas)} icono={<Calendar size={18} />} />
                 <Tarjeta label="Hora pico" valor={heatmap.horaPico} subvalor="hora con más demanda" icono={<TrendingUp size={18} />} />
                 <Tarjeta label="Día pico" valor={heatmap.diaPico} subvalor="día con más demanda" icono={<CheckCircle size={18} />} />
               </div>
@@ -674,7 +676,7 @@ export default function ReportesPage() {
                           return (
                             <div
                               key={dia}
-                              title={val > 0 ? `${val} cita${val !== 1 ? "s" : ""}` : "Sin citas"}
+                              title={val > 0 ? `${val} ${val === 1 ? terms.cita.toLowerCase() : terms.citas.toLowerCase()}` : `Sin ${terms.citas.toLowerCase()}`}
                               className="h-7 rounded-md flex items-center justify-center text-xs font-medium cursor-default"
                               style={{
                                 backgroundColor: val === 0 ? "#f1f5f9" : `rgba(51, 65, 85, ${alpha})`,
@@ -705,14 +707,14 @@ export default function ReportesPage() {
             </div>
           ) : !retencion || retencion.totalClientes === 0 ? (
             <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-10 text-center text-sm text-gray-400 dark:text-gray-500">
-              No hay datos de clientes en el rango seleccionado.
+              {`No hay datos de ${terms.clientes.toLowerCase()} en el rango seleccionado.`}
             </div>
           ) : (
             <>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <Tarjeta label="Total clientes" valor={String(retencion.totalClientes)} icono={<Users size={18} />} />
-                <Tarjeta label="Clientes nuevos" valor={String(retencion.clientesNuevos)} subvalor="primera visita" icono={<TrendingUp size={18} />} />
-                <Tarjeta label="Clientes recurrentes" valor={String(retencion.clientesRecurrentes)} subvalor="ya visitaron antes" icono={<RefreshCw size={18} />} />
+                <Tarjeta label={`Total ${terms.clientes.toLowerCase()}`} valor={String(retencion.totalClientes)} icono={<Users size={18} />} />
+                <Tarjeta label={`${terms.clientes} nuevos`} valor={String(retencion.clientesNuevos)} subvalor="primera visita" icono={<TrendingUp size={18} />} />
+                <Tarjeta label={`${terms.clientes} recurrentes`} valor={String(retencion.clientesRecurrentes)} subvalor="ya visitaron antes" icono={<RefreshCw size={18} />} />
                 <Tarjeta label="Tasa de retención" valor={`${retencion.tasaRetencion.toFixed(1)}%`} subvalor="recurrentes / total" icono={<CheckCircle size={18} />} />
               </div>
 

@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { citasApi } from "../../api/citas";
 import { empleadosApi } from "../../api/empleados";
 import { negociosApi } from "../../api/negocios";
+import { useSectorTerms } from "../../hooks/useSectorTerms";
 import type { CitaDto } from "../../types";
 
 const EMP_COLORS = [
@@ -32,6 +33,7 @@ function estaEnProgreso(cita: CitaDto): boolean {
 export default function KioskPage() {
   const [ahora, setAhora] = useState(new Date());
   const today = fechaLocalStr(ahora);
+  const terms = useSectorTerms();
 
   useEffect(() => {
     const id = setInterval(() => setAhora(new Date()), 1000);
@@ -132,7 +134,7 @@ export default function KioskPage() {
                     <div className="flex-1 min-w-0">
                       <div className="font-semibold text-sm truncate leading-tight">{emp.nombre}</div>
                       <div className="text-xs text-white/35 mt-0.5">
-                        {empCitas.length} cita{empCitas.length !== 1 ? "s" : ""} hoy
+                        {`${empCitas.length} ${empCitas.length === 1 ? terms.cita.toLowerCase() : terms.citas.toLowerCase()} hoy`}
                       </div>
                     </div>
                     <div
@@ -148,7 +150,7 @@ export default function KioskPage() {
                   <div className="flex-1 overflow-y-auto p-3 space-y-2">
                     {empCitas.length === 0 ? (
                       <div className="h-full min-h-[80px] flex items-center justify-center">
-                        <p className="text-white/20 text-xs">Sin citas</p>
+                        <p className="text-white/20 text-xs">{`Sin ${terms.citas.toLowerCase()}`}</p>
                       </div>
                     ) : (
                       empCitas.map((cita) => {
@@ -227,7 +229,7 @@ export default function KioskPage() {
       {/* Footer */}
       <div className="flex items-center justify-between px-6 py-3 border-t border-white/10 flex-shrink-0">
         <div className="flex items-center gap-6 text-xs text-white/30">
-          <span>{citasValidas.length} citas hoy</span>
+          <span>{`${citasValidas.length} ${terms.citas.toLowerCase()} hoy`}</span>
           <span>{completadas} completadas</span>
           {revenue > 0 && (
             <span className="text-emerald-400/80">
