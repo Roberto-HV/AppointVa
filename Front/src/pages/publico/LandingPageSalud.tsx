@@ -213,7 +213,7 @@ function PricingCard({
           Próximamente disponible
         </div>
       ) : (
-        <Link to="/registro?sector=belleza" className="block text-center py-3 rounded-xl text-sm font-bold transition-all hover:opacity-90 active:scale-95" style={{ backgroundColor: highlighted ? GOLD : SLATE_700, color: highlighted ? DARK : "white" }}>
+        <Link to="/registro?sector=salud" className="block text-center py-3 rounded-xl text-sm font-bold transition-all hover:opacity-90 active:scale-95" style={{ backgroundColor: highlighted ? GOLD : SLATE_700, color: highlighted ? DARK : "white" }}>
           Empezar con {name} →
         </Link>
       )}
