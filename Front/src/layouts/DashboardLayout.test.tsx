@@ -8,15 +8,16 @@ describe('getNav', () => {
     expect(nav.some(n => n.to === '/dashboard/galeria')).toBe(true);
   });
 
-  it('excludes Pagos and Galería for salud', () => {
+  it('excludes Pagos, Galería, and Descuentos for salud', () => {
     const nav = getNav('salud');
     expect(nav.some(n => n.to === '/dashboard/pagos')).toBe(false);
     expect(nav.some(n => n.to === '/dashboard/galeria')).toBe(false);
+    expect(nav.some(n => n.to === '/dashboard/descuentos')).toBe(false);
   });
 
-  it('renames Empleados to Médicos for salud', () => {
+  it('renames Empleados to Profesionales for salud', () => {
     const emp = getNav('salud').find(n => n.to === '/dashboard/empleados');
-    expect(emp?.label).toBe('Médicos');
+    expect(emp?.label).toBe('Profesionales');
   });
 
   it('renames Servicios to Tipos de consulta for salud', () => {

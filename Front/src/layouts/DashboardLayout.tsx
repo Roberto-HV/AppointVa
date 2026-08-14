@@ -14,6 +14,8 @@ import { EncuestaSatisfaccionModal } from '../components/dashboard/EncuestaSatis
 import { encuestaApi } from '../api/encuesta';
 import { toUtcDate } from '../utils/formatters';
 import { useInactividadTimeout } from '../hooks/useInactividadTimeout';
+import { useSectorTerms, getSectorTerms } from "../hooks/useSectorTerms";
+import { useSectorFeatures } from "../hooks/useSectorFeatures";
 
 function FechaHoraActual() {
   const [ahora, setAhora] = useState(new Date());
@@ -115,24 +117,6 @@ function UserMenuContent({ usuario, perfil, iniciales, rolChip, rol, onProfile, 
   );
 }
 
-const NAV_PROPIETARIO = [
-  // Operación diaria
-  { to: "/dashboard", label: "Inicio", end: true, icon: LayoutDashboard },
-  { to: "/dashboard/citas", label: "Citas", icon: CalendarDays },
-  { to: "/dashboard/pagos", label: "Pagos", icon: CreditCard },
-  // Gestión
-  { to: "/dashboard/clientes", label: "Clientes", icon: UserCheck },
-  { to: "/dashboard/empleados", label: "Empleados", icon: Users },
-  { to: "/dashboard/servicios", label: "Servicios", icon: Scissors },
-  { to: "/dashboard/descuentos", label: "Descuentos", icon: Tag },
-  { to: "/dashboard/reportes", label: "Reportes", icon: BarChart2 },
-  // Configuración
-  { to: "/dashboard/perfil", label: "Mi negocio", icon: Building2 },
-  { to: "/dashboard/galeria", label: "Galería", icon: Images },
-  { to: "/dashboard/intake", label: "Cuestionario", icon: ClipboardList },
-  { to: "/dashboard/seguridad", label: "Seguridad", icon: ShieldCheck },
-];
-
 const NAV_EMPLEADO = [
   { to: "/dashboard", label: "Inicio", end: true, icon: LayoutDashboard },
   { to: "/dashboard/citas", label: "Mis citas", icon: CalendarDays },
@@ -147,24 +131,31 @@ export interface NavItem {
   icon: React.ComponentType<{ size?: number; className?: string }>;
 }
 
-const HIDDEN_IN_SALUD = new Set(["/dashboard/pagos", "/dashboard/galeria"]);
-
-const SALUD_LABELS: Record<string, string> = {
-  "/dashboard/empleados": "Médicos",
-  "/dashboard/servicios": "Tipos de consulta",
-  "/dashboard/clientes": "Pacientes",
-};
+const HIDDEN_IN_SALUD = new Set([
+  "/dashboard/pagos",
+  "/dashboard/galeria",
+  "/dashboard/descuentos",
+]);
 
 export function getNav(sector: string): NavItem[] {
-  return (NAV_PROPIETARIO as NavItem[])
-    .filter((item) => sector !== "salud" || !HIDDEN_IN_SALUD.has(item.to))
-    .map((item) => ({
-      ...item,
-      label:
-        sector === "salud" && SALUD_LABELS[item.to]
-          ? SALUD_LABELS[item.to]
-          : item.label,
-    }));
+  const terms = getSectorTerms(sector);
+  const all: NavItem[] = [
+    { to: "/dashboard",            label: "Inicio",          end: true, icon: LayoutDashboard },
+    { to: "/dashboard/citas",      label: terms.citas,                  icon: CalendarDays },
+    { to: "/dashboard/pagos",      label: "Pagos",                      icon: CreditCard },
+    { to: "/dashboard/clientes",   label: terms.clientes,               icon: UserCheck },
+    { to: "/dashboard/empleados",  label: terms.empleados,              icon: Users },
+    { to: "/dashboard/servicios",  label: terms.servicios,              icon: Scissors },
+    { to: "/dashboard/descuentos", label: "Descuentos",                 icon: Tag },
+    { to: "/dashboard/reportes",   label: "Reportes",                   icon: BarChart2 },
+    { to: "/dashboard/perfil",     label: "Mi negocio",                 icon: Building2 },
+    { to: "/dashboard/galeria",    label: "Galería",                    icon: Images },
+    { to: "/dashboard/intake",     label: "Cuestionario",               icon: ClipboardList },
+    { to: "/dashboard/seguridad",  label: "Seguridad",                  icon: ShieldCheck },
+  ];
+  return sector === "salud"
+    ? all.filter((item) => !HIDDEN_IN_SALUD.has(item.to))
+    : all;
 }
 
 export default function DashboardLayout() {
@@ -184,6 +175,24 @@ export default function DashboardLayout() {
   const location = useLocation();
   const esEmpleado = usuario?.rol === "Empleado";
 
+  const terms = useSectorTerms();
+  const features = useSectorFeatures();
+
+  const NAV_PROPIETARIO: NavItem[] = [
+    { to: "/dashboard",            label: "Inicio",          end: true, icon: LayoutDashboard },
+    { to: "/dashboard/citas",      label: terms.citas,                  icon: CalendarDays },
+    ...(features.pagos      ? [{ to: "/dashboard/pagos",      label: "Pagos",      icon: CreditCard }] : []),
+    { to: "/dashboard/clientes",   label: terms.clientes,               icon: UserCheck },
+    { to: "/dashboard/empleados",  label: terms.empleados,              icon: Users },
+    { to: "/dashboard/servicios",  label: terms.servicios,              icon: Scissors },
+    ...(features.descuentos ? [{ to: "/dashboard/descuentos", label: "Descuentos", icon: Tag }]      : []),
+    { to: "/dashboard/reportes",   label: "Reportes",                   icon: BarChart2 },
+    { to: "/dashboard/perfil",     label: "Mi negocio",                 icon: Building2 },
+    ...(features.galeria    ? [{ to: "/dashboard/galeria",    label: "Galería",    icon: Images }]   : []),
+    { to: "/dashboard/intake",     label: "Cuestionario",               icon: ClipboardList },
+    { to: "/dashboard/seguridad",  label: "Seguridad",                  icon: ShieldCheck },
+  ];
+
   const { data: perfil } = useQuery({
     queryKey: ["negocio-perfil-layout"],
     queryFn: negociosApi.obtenerPerfil,
@@ -199,13 +208,14 @@ export default function DashboardLayout() {
   });
   const [encuestaCerrada, setEncuestaCerrada] = useState(false);
 
-  const navItems = esEmpleado ? NAV_EMPLEADO : getNav(perfil?.sector ?? "belleza");
+  const navItems = esEmpleado ? NAV_EMPLEADO : NAV_PROPIETARIO;
 
   useEffect(() => {
     if (
       perfil?.sector === "salud" &&
       (location.pathname.startsWith("/dashboard/pagos") ||
-        location.pathname.startsWith("/dashboard/galeria"))
+        location.pathname.startsWith("/dashboard/galeria") ||
+        location.pathname.startsWith("/dashboard/descuentos"))
     ) {
       navigate("/dashboard", { replace: true });
     }
