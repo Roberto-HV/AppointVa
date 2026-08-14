@@ -453,7 +453,7 @@ export default function LandingPage() {
             <div className="flex flex-wrap items-center gap-x-6 gap-y-3 justify-center md:justify-between">
               <p className="text-xs font-semibold text-slate-400 whitespace-nowrap uppercase tracking-widest">Ideal para</p>
               <div className="flex flex-wrap gap-2 justify-center">
-                {["Barberías", "Salones de belleza", "Clínicas", "Spas", "Estudios de yoga", "Talleres de uñas", "Veterinarias", "Fisioterapia"].map(cat => (
+                {["Barberías", "Salones de belleza", "Clínicas", "Spas", "Talleres de uñas"].map(cat => (
                   <span key={cat} className="px-3 py-1.5 rounded-full text-xs font-medium bg-white text-slate-600 border border-slate-200">
                     {cat}
                   </span>
@@ -534,11 +534,11 @@ export default function LandingPage() {
               />
               <TestimonialCard
                 delay={240}
-                quote="Tengo 2 instructoras y antes era un caos coordinar horarios por WhatsApp. Ahora cada quien administra su propia agenda y mis alumnas eligen con quién tomar clase. Pasé de 60 a más de 100 clases al mes."
-                metric="+67% clases mensuales"
-                name="Sofía Vargas"
-                role="Studio Pilates Mvmt · Monterrey"
-                initials="SV"
+                quote="Tenía clientas que llegaban el día y hora equivocada porque todo se coordinaba por mensaje. Desde que uso AppointVa ellas mismas eligen su horario y llegan puntual. Mis técnicas trabajan sin interrupciones y yo dejé de vivir pegada al teléfono."
+                metric="Cero confusiones de horario"
+                name="Valeria Torres"
+                role="Nails Studio VT · Monterrey"
+                initials="VT"
               />
             </div>
           </div>
