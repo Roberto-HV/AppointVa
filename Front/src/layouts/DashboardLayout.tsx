@@ -194,7 +194,7 @@ export default function DashboardLayout() {
   ];
 
   const { data: perfil } = useQuery({
-    queryKey: ["negocio-perfil-layout"],
+    queryKey: ["negocio-perfil"],
     queryFn: negociosApi.obtenerPerfil,
     enabled: !esEmpleado,
     staleTime: 1000 * 60 * 5,
