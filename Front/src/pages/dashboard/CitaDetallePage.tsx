@@ -48,7 +48,6 @@ export default function CitaDetallePage() {
   }
 
   if (error || !cita) {
-    const terms = useSectorTerms();
     return (
       <div className="max-w-xl mx-auto p-6 text-center">
         <p className="text-gray-500 dark:text-gray-400 mb-4">{`No se encontró la ${terms.cita.toLowerCase()} o no tienes acceso.`}</p>

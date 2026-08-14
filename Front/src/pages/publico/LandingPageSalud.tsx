@@ -431,7 +431,14 @@ export function LandingPageSalud() {
               <PricingCard
                 delay={100} name="Pro" price={449} employees={4}
                 highlighted billedAnnually={billedAnnually}
-                features={["Todo lo del plan Básico", "4 empleados", "Módulo de pagos integrado", "Recibos digitales", "Conexión a periféricos de pago", "Códigos de descuento"]}
+                features={[
+                  "Todo lo del plan Básico",
+                  "Hasta 4 profesionales",
+                  "Historial completo de pacientes",
+                  "Exportar reportes en Excel",
+                  "Recordatorios por WhatsApp",
+                  "Personalización de colores"
+                ]}
               />
               <PricingCard
                 delay={200} name="Premium" price={799} employees={50} comingSoon

@@ -123,7 +123,9 @@ export default function App() {
                       <Route path="/dashboard/galeria" element={
                         <RutaConFeature feature="galeria"><GaleriaPage /></RutaConFeature>
                       } />
-                      <Route path="/dashboard/espera" element={<ListaEsperaPage />} />
+                      <Route path="/dashboard/espera" element={
+                        <RutaConFeature feature="listaEspera"><ListaEsperaPage /></RutaConFeature>
+                      } />
                       <Route path="/dashboard/intake" element={<IntakePage />} />
                       <Route path="/dashboard/descuentos" element={
                         <RutaConFeature feature="descuentos"><DescuentosPage /></RutaConFeature>
@@ -146,11 +148,7 @@ export default function App() {
 
                 {/* Landing */}
                 <Route path="/" element={<LandingPage />} />
-                <Route path="/salud" element={
-                  <Suspense fallback={<div />}>
-                    <LandingPageSalud />
-                  </Suspense>
-                } />
+                <Route path="/salud" element={<LandingPageSalud />} />
                 <Route path="*" element={<NotFoundPage />} />
               </Routes>
             </Suspense>

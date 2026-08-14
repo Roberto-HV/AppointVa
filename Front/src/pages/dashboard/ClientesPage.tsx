@@ -312,7 +312,7 @@ export default function ClientesPage() {
         </div>
       ) : (
         <>
-          <p className="text-xs text-gray-400 mb-3 dark:text-gray-500">{totalClientes} cliente{totalClientes !== 1 ? "s" : ""}</p>
+          <p className="text-xs text-gray-400 mb-3 dark:text-gray-500">{totalClientes} {totalClientes !== 1 ? terms.clientes.toLowerCase() : terms.cliente.toLowerCase()}</p>
           <div className="bg-white rounded-xl border border-gray-100 overflow-x-auto dark:bg-slate-800 dark:border-slate-700">
             <table className="w-full text-sm min-w-[560px]">
               <thead>

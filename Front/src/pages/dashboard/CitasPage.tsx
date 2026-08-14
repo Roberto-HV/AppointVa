@@ -1109,7 +1109,7 @@ export default function CitasPage() {
                 disabled={!fCliente.nombre.trim() || !fCliente.telefono.trim() || creando || !!emailClienteError}
                 className="flex-1 bg-slate-700 hover:bg-slate-800 disabled:opacity-40 text-white font-semibold py-2.5 rounded-xl text-sm transition"
               >
-                {creando ? "Creando..." : "Crear cita"}
+                {creando ? "Creando..." : `Crear ${terms.cita.toLowerCase()}`}
               </button>
             </div>
           </div>
@@ -1382,7 +1382,7 @@ export default function CitasPage() {
                     disabled={!fClienteRepetir.nombre.trim() || !fClienteRepetir.telefono.trim() || repitiendo || !!emailRepetirError}
                     className="flex-1 bg-slate-700 hover:bg-slate-800 disabled:opacity-40 text-white font-semibold py-2.5 rounded-xl text-sm transition"
                   >
-                    {repitiendo ? "Creando..." : "Crear cita"}
+                    {repitiendo ? "Creando..." : `Crear ${terms.cita.toLowerCase()}`}
                   </button>
                 </div>
               </div>
