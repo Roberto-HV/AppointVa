@@ -2,7 +2,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { Eye, EyeOff, Scissors, HeartPulse } from "lucide-react";
 import { api } from "../../api/axios";
 import PasswordStrengthBar from "../../components/PasswordStrengthBar";
@@ -53,7 +53,13 @@ export default function RegistroNegocioPage() {
   const [reenvioEnviando, setReenvioEnviando] = useState(false);
   const [mostrarContrasena, setMostrarContrasena] = useState(false);
   const [mostrarConfirmar, setMostrarConfirmar] = useState(false);
-  const [sector, setSector] = useState("");
+
+  const [searchParams] = useSearchParams();
+  const sectorParam = searchParams.get("sector");
+  const sectorBloqueado = sectorParam === "belleza" || sectorParam === "salud";
+  const [sector, setSector] = useState<"belleza" | "salud">(
+    sectorParam === "salud" ? "salud" : "belleza"
+  );
 
   const {
     register,
@@ -211,18 +217,24 @@ export default function RegistroNegocioPage() {
                   <button
                     key={value}
                     type="button"
-                    onClick={() => setSector(value)}
+                    onClick={() => setSector(value as "belleza" | "salud")}
+                    disabled={sectorBloqueado}
                     className={`flex flex-col items-center gap-2 py-4 rounded-xl border-2 text-sm font-medium transition ${
                       sector === value
                         ? "border-slate-700 bg-slate-50 text-slate-700"
                         : "border-gray-200 text-gray-500 hover:border-gray-300"
-                    }`}
+                    } ${sectorBloqueado ? "opacity-75 cursor-not-allowed" : "cursor-pointer"}`}
                   >
                     <Icon size={22} />
                     <span className="text-xs">{label}</span>
                   </button>
                 ))}
               </div>
+              {sectorBloqueado && (
+                <p className="text-xs text-slate-400 mt-1 text-center">
+                  Sector pre-seleccionado desde la página de registro.
+                </p>
+              )}
             </div>
 
             {/* Teléfono */}
