@@ -13,6 +13,7 @@ import Modal from "../../components/ui/Modal";
 import { DatePicker, TimePicker, citasABusySlots } from "../../components/ui/DateTimePicker";
 import { SkeletonCards } from "../../components/ui/Skeleton";
 import { useToastStore } from "../../store/toastStore";
+import { useSectorTerms } from "../../hooks/useSectorTerms";
 import type { EmpleadoDto, HorarioDto } from "../../types";
 
 const DIAS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
@@ -54,6 +55,7 @@ const schemaBloqueo = z.object({
 type BloqueoForm = z.infer<typeof schemaBloqueo>;
 
 export default function EmpleadosPage() {
+  const terms = useSectorTerms();
   const qc = useQueryClient();
   const { toast } = useToastStore();
   const [busqueda, setBusqueda] = useState("");
@@ -209,18 +211,18 @@ export default function EmpleadosPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["empleados"] });
       setModalEmpleado(false);
-      toast(empleadoEdit ? "Empleado actualizado" : "Empleado creado");
+      toast(`${terms.empleado} guardado`);
     },
     onError: (err: unknown) => {
       const msg = (err as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje;
-      toast(msg ?? "No se pudo guardar el empleado. Intenta de nuevo.", "error");
+      toast(msg ?? `No se pudo guardar el ${terms.empleado.toLowerCase()}. Intenta de nuevo.`, "error");
     },
   });
 
   const { mutate: eliminar } = useMutation({
     mutationFn: (id: string) => empleadosApi.eliminar(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["empleados"] }); toast("Empleado eliminado"); },
-    onError: () => toast("No se pudo eliminar el empleado. Intenta de nuevo.", "error"),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["empleados"] }); toast(`${terms.empleado} eliminado`); },
+    onError: () => toast(`No se pudo eliminar el ${terms.empleado.toLowerCase()}. Intenta de nuevo.`, "error"),
   });
 
   const { mutate: guardarHorario, isPending: guardandoHorario } = useMutation({
@@ -281,10 +283,10 @@ export default function EmpleadosPage() {
   return (
     <div className="p-4 sm:p-8">
       <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Empleados</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{terms.empleados}</h1>
         <button onClick={abrirCrear}
           className="bg-slate-700 hover:bg-slate-800 text-white text-sm font-semibold px-4 py-2 rounded-lg transition">
-          + Nuevo empleado
+          + Nuevo {terms.empleado.toLowerCase()}
         </button>
       </div>
 
@@ -309,13 +311,13 @@ export default function EmpleadosPage() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a4 4 0 00-5.196-3.793M9 20H4v-2a4 4 0 015.196-3.793M15 7a4 4 0 11-8 0 4 4 0 018 0zm6 4a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
           </div>
-          <p className="font-medium text-gray-700 mb-1 dark:text-gray-300">Aún no tienes empleados</p>
+          <p className="font-medium text-gray-700 mb-1 dark:text-gray-300">Aún no tienes {terms.empleados.toLowerCase()}</p>
           <p className="text-sm text-gray-400 mb-5 dark:text-gray-500">Agrega a tu equipo para que puedan recibir citas</p>
           <button
             onClick={abrirCrear}
             className="bg-slate-700 hover:bg-slate-800 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition"
           >
-            Agregar primer empleado
+            Agregar primer {terms.empleado.toLowerCase()}
           </button>
         </div>
       ) : (
@@ -358,7 +360,7 @@ export default function EmpleadosPage() {
                 </div>
                 {emp.email && <p className="text-xs text-gray-400 truncate dark:text-gray-500">{emp.email}</p>}
                 {emp.telefono && <p className="text-xs text-gray-400 dark:text-gray-500">{emp.telefono}</p>}
-                <p className="text-xs text-gray-400 mt-1 dark:text-gray-500">{emp.servicioIds.length} servicios asignados</p>
+                <p className="text-xs text-gray-400 mt-1 dark:text-gray-500">{emp.servicioIds.length} {emp.servicioIds.length === 1 ? terms.servicio : terms.servicios} asignados</p>
 
                 <div className="mt-3 space-y-1.5">
                   <div className="flex gap-1.5">
@@ -406,7 +408,7 @@ export default function EmpleadosPage() {
       <Modal
         abierto={modalEmpleado}
         onCerrar={() => setModalEmpleado(false)}
-        titulo={empleadoEdit ? "Editar empleado" : "Nuevo empleado"}
+        titulo={empleadoEdit ? `Editar ${terms.empleado.toLowerCase()}` : `Nuevo ${terms.empleado.toLowerCase()}`}
       >
         <form onSubmit={formEmpleado.handleSubmit((d) => guardarEmpleado(d))} className="space-y-4">
           {(["nombre", "telefono", "email", "biografia"] as const).map((campo) => {
@@ -431,7 +433,7 @@ export default function EmpleadosPage() {
           })}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">Servicios que ofrece</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">{terms.servicios} que ofrece</label>
             <div className="space-y-1.5 max-h-40 overflow-y-auto">
               {servicios.map((s) => (
                 <label key={s.id} className="flex items-center gap-2 cursor-pointer">
@@ -644,14 +646,14 @@ export default function EmpleadosPage() {
       </Modal>
 
       {/* Modal confirmar eliminar empleado */}
-      <Modal abierto={!!empleadoEliminar} onCerrar={() => setEmpleadoEliminar(null)} titulo="Eliminar empleado" ancho="sm">
+      <Modal abierto={!!empleadoEliminar} onCerrar={() => setEmpleadoEliminar(null)} titulo={`Eliminar ${terms.empleado.toLowerCase()}`} ancho="sm">
         {empleadoEliminar && (
           <div>
             <p className="text-sm text-gray-600 mb-1 dark:text-gray-400">
               ¿Seguro que deseas eliminar a <span className="font-semibold text-gray-900 dark:text-gray-100">{empleadoEliminar.nombre}</span>?
             </p>
             <p className="text-xs text-gray-400 mb-6 dark:text-gray-500">
-              El empleado dejará de aparecer y no podrá recibir nuevas citas. Esta acción no se puede deshacer.
+              El {terms.empleado.toLowerCase()} dejará de aparecer y no podrá recibir nuevas citas. Esta acción no se puede deshacer.
             </p>
             <div className="flex gap-3">
               <button

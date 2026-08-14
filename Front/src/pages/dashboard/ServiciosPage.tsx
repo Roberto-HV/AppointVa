@@ -9,6 +9,7 @@ import { z } from "zod";
 import { serviciosApi, categoriasApi } from "../../api/servicios";
 import Modal from "../../components/ui/Modal";
 import { useToastStore } from "../../store/toastStore";
+import { useSectorTerms } from "../../hooks/useSectorTerms";
 import type { CategoriaDto, ServicioDto } from "../../types";
 import { formatPrecio } from "../../utils/formatters";
 
@@ -31,6 +32,7 @@ const schemaCategoria = z.object({
 type CategoriaForm = z.infer<typeof schemaCategoria>;
 
 export default function ServiciosPage() {
+  const terms = useSectorTerms();
   const qc = useQueryClient();
   const { toast } = useToastStore();
   const [tab, setTab] = useState<"servicios" | "categorias">("servicios");
@@ -107,15 +109,15 @@ export default function ServiciosPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["servicios"] });
       setModal(false);
-      toast(servicioEdit ? "Servicio actualizado" : "Servicio creado");
+      toast(`${terms.servicio} guardado`);
     },
-    onError: () => toast("No se pudo guardar el servicio. Intenta de nuevo.", "error"),
+    onError: () => toast(`No se pudo guardar el ${terms.servicio.toLowerCase()}. Intenta de nuevo.`, "error"),
   });
 
   const { mutate: eliminarServicio } = useMutation({
     mutationFn: (id: string) => serviciosApi.eliminar(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["servicios"] }); toast("Servicio eliminado"); },
-    onError: () => toast("No se pudo eliminar el servicio. Intenta de nuevo.", "error"),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["servicios"] }); toast(`${terms.servicio} eliminado`); },
+    onError: () => toast(`No se pudo eliminar el ${terms.servicio.toLowerCase()}. Intenta de nuevo.`, "error"),
   });
 
   const { mutate: subirImagen } = useMutation({
@@ -166,15 +168,15 @@ export default function ServiciosPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-1 gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Servicios</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Gestión de servicios y categorías</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{terms.servicios}</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Gestión de {terms.servicios.toLowerCase()} y categorías</p>
         </div>
         {tab === "servicios" ? (
           <button
             onClick={abrirCrearServicio}
             className="bg-slate-700 hover:bg-slate-800 text-white text-sm font-semibold px-4 py-2 rounded-lg transition"
           >
-            + Nuevo servicio
+            + Nuevo {terms.servicio.toLowerCase()}
           </button>
         ) : (
           <button
@@ -194,7 +196,7 @@ export default function ServiciosPage() {
             tab === "servicios" ? "bg-white text-gray-800 shadow-sm dark:bg-slate-800 dark:text-gray-200" : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
           }`}
         >
-          Servicios
+          {terms.servicios}
         </button>
         <button
           onClick={() => setTab("categorias")}
@@ -214,7 +216,7 @@ export default function ServiciosPage() {
       {/* ── Tab Servicios ──────────────────────────────────────────────────── */}
       {tab === "servicios" && (
         isLoading ? (
-          <p className="text-gray-400 dark:text-gray-500">Cargando servicios...</p>
+          <p className="text-gray-400 dark:text-gray-500">Cargando {terms.servicios.toLowerCase()}...</p>
         ) : servicios.length === 0 ? (
           <div className="bg-white rounded-xl border border-gray-100 p-12 text-center dark:bg-slate-800 dark:border-slate-700">
             <div className="w-14 h-14 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 dark:bg-slate-700">
@@ -222,13 +224,13 @@ export default function ServiciosPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>
             </div>
-            <p className="font-medium text-gray-700 mb-1 dark:text-gray-300">Aún no tienes servicios</p>
-            <p className="text-sm text-gray-400 mb-5 dark:text-gray-500">Crea tus servicios para que los clientes puedan reservar</p>
+            <p className="font-medium text-gray-700 mb-1 dark:text-gray-300">Aún no tienes {terms.servicios.toLowerCase()}</p>
+            <p className="text-sm text-gray-400 mb-5 dark:text-gray-500">Crea tus {terms.servicios.toLowerCase()} para que los clientes puedan reservar</p>
             <button
               onClick={abrirCrearServicio}
               className="bg-slate-700 hover:bg-slate-800 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition"
             >
-              Crear primer servicio
+              Crear primer {terms.servicio.toLowerCase()}
             </button>
           </div>
         ) : (
@@ -334,7 +336,7 @@ export default function ServiciosPage() {
                     <span className={`text-xs font-medium px-2 py-0.5 rounded-full shrink-0 ${
                       count > 0 ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-400 dark:bg-slate-700 dark:text-gray-500"
                     }`}>
-                      {count} {count === 1 ? "servicio" : "servicios"}
+                      {count} {count === 1 ? terms.servicio : terms.servicios}
                     </span>
                   </div>
                   <div className="flex gap-2 pl-4">
@@ -377,7 +379,7 @@ export default function ServiciosPage() {
       <Modal
         abierto={modal}
         onCerrar={() => setModal(false)}
-        titulo={servicioEdit ? "Editar servicio" : "Nuevo servicio"}
+        titulo={servicioEdit ? `Editar ${terms.servicio.toLowerCase()}` : `Nuevo ${terms.servicio.toLowerCase()}`}
       >
         <form onSubmit={handleSubmit((d) => guardarServicio(d))} className="space-y-4">
           <div>
@@ -460,7 +462,7 @@ export default function ServiciosPage() {
       </Modal>
 
       {/* Modal confirmar eliminar servicio */}
-      <Modal abierto={!!servicioEliminar} onCerrar={() => setServicioEliminar(null)} titulo="Eliminar servicio" ancho="sm">
+      <Modal abierto={!!servicioEliminar} onCerrar={() => setServicioEliminar(null)} titulo={`Eliminar ${terms.servicio.toLowerCase()}`} ancho="sm">
         {servicioEliminar && (
           <div>
             <p className="text-sm text-gray-600 mb-1 dark:text-gray-400">
