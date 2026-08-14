@@ -6,6 +6,7 @@ import { publicoApi } from "../../api/publico";
 import { intakePublicoApi, type CampoIntake } from "../../api/intake";
 import { descuentosPublicoApi, type DescuentoValidado } from "../../api/descuentos";
 import type { ServicioPublico, EmpleadoPublico, SlotDisponible, ImagenGaleria, ResenaPublica } from "../../types";
+import { getSectorTerms } from "../../hooks/useSectorTerms";
 import IndicadorPasos from "../../components/booking/IndicadorPasos";
 import PasoServicio from "../../components/booking/PasoServicio";
 import PasoEmpleado, { SIN_PREFERENCIA_ID } from "../../components/booking/PasoEmpleado";
@@ -480,6 +481,7 @@ export default function BookingPage() {
   }
 
   const color = negocio.colorPrimario ?? DEFAULT_COLOR;
+  const terms = getSectorTerms(negocio.sector);
 
   const textos = negocio.sector === 'salud'
     ? { cta: 'Agenda tu consulta', cita: 'consulta' }
@@ -653,6 +655,7 @@ export default function BookingPage() {
               seleccionado={servicio}
               onSeleccionar={setServicio}
               color={color}
+              sector={negocio.sector}
             />
             <button
               onClick={irSiguiente}
@@ -683,6 +686,7 @@ export default function BookingPage() {
               seleccionado={empleado}
               onSeleccionar={setEmpleado}
               color={color}
+              sector={negocio.sector}
             />
             <div className="mt-6 flex gap-3">
               <button onClick={irAtras} className="flex-1 py-3 rounded-2xl border-2 border-slate-200 text-sm font-medium text-slate-600 hover:border-slate-300 transition inline-flex items-center justify-center gap-1.5">
@@ -728,7 +732,7 @@ export default function BookingPage() {
                   <strong>
                     {negocio.horasCancelacion} hora{negocio.horasCancelacion !== 1 ? "s" : ""}
                   </strong>{" "}
-                  antes de la cita.
+                  {`antes de la ${terms.cita.toLowerCase()}.`}
                 </span>
               </div>
             )}

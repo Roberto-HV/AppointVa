@@ -1,5 +1,6 @@
 ﻿import type { ServicioPublico } from "../../types";
 import { formatPrecio } from "../../utils/formatters";
+import { getSectorTerms } from "../../hooks/useSectorTerms";
 import { Clock } from "lucide-react";
 
 interface Props {
@@ -7,10 +8,12 @@ interface Props {
   seleccionado: ServicioPublico | null;
   onSeleccionar: (s: ServicioPublico) => void;
   color?: string;
+  sector?: string;
 }
 
-export default function PasoServicio({ servicios, seleccionado, onSeleccionar, color = "#334155" }: Props) {
-  const categorias = Array.from(new Set(servicios.map((s) => s.categoriaNombre ?? "Servicios")));
+export default function PasoServicio({ servicios, seleccionado, onSeleccionar, color = "#334155", sector }: Props) {
+  const terms = getSectorTerms(sector);
+  const categorias = Array.from(new Set(servicios.map((s) => s.categoriaNombre ?? terms.servicios)));
 
   const masPopularId = servicios.length > 0
     ? servicios.reduce((a, b) => a.orden <= b.orden ? a : b).id
@@ -18,8 +21,8 @@ export default function PasoServicio({ servicios, seleccionado, onSeleccionar, c
 
   return (
     <div>
-      <h2 className="text-xl font-bold text-slate-900 mb-1">¿Qué servicio necesitas?</h2>
-      <p className="text-sm text-slate-500 mb-5">Selecciona un servicio para continuar</p>
+      <h2 className="text-xl font-bold text-slate-900 mb-1">{`¿Qué ${terms.servicio.toLowerCase()} necesitas?`}</h2>
+      <p className="text-sm text-slate-500 mb-5">{`Selecciona un ${terms.servicio.toLowerCase()} para continuar`}</p>
 
       <div className="space-y-5">
         {categorias.map((cat) => (
@@ -27,7 +30,7 @@ export default function PasoServicio({ servicios, seleccionado, onSeleccionar, c
             <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2.5">{cat}</p>
             <div className="space-y-2">
               {servicios
-                .filter((s) => (s.categoriaNombre ?? "Servicios") === cat)
+                .filter((s) => (s.categoriaNombre ?? terms.servicios) === cat)
                 .map((servicio) => {
                   const activo = seleccionado?.id === servicio.id;
                   const esPopular = servicio.id === masPopularId;

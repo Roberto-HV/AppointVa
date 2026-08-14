@@ -1,4 +1,5 @@
 ﻿import type { EmpleadoPublico } from "../../types";
+import { getSectorTerms } from "../../hooks/useSectorTerms";
 
 export const SIN_PREFERENCIA_ID = "sin-preferencia";
 
@@ -16,9 +17,11 @@ interface Props {
   seleccionado: EmpleadoPublico | null;
   onSeleccionar: (e: EmpleadoPublico) => void;
   color?: string;
+  sector?: string;
 }
 
-export default function PasoEmpleado({ empleados, servicioId, seleccionado, onSeleccionar, color = "#334155" }: Props) {
+export default function PasoEmpleado({ empleados, servicioId, seleccionado, onSeleccionar, color = "#334155", sector }: Props) {
+  const terms = getSectorTerms(sector);
   const disponibles = empleados.filter((e) => e.servicioIds.includes(servicioId));
 
   const activoSinPreferencia = seleccionado?.id === SIN_PREFERENCIA_ID;
@@ -26,7 +29,7 @@ export default function PasoEmpleado({ empleados, servicioId, seleccionado, onSe
   return (
     <div>
       <h2 className="text-xl font-bold text-slate-900 mb-1">¿Con quién?</h2>
-      <p className="text-sm text-slate-500 mb-5">Elige un profesional o deja que asignemos el más disponible</p>
+      <p className="text-sm text-slate-500 mb-5">{`Elige un ${terms.empleado.toLowerCase()} o deja que asignemos el más disponible`}</p>
 
       {/* Opción sin preferencia */}
       <button
@@ -64,7 +67,7 @@ export default function PasoEmpleado({ empleados, servicioId, seleccionado, onSe
       <div className="grid grid-cols-2 gap-2.5">
         {disponibles.length === 0 && (
           <p className="col-span-2 text-slate-400 text-sm text-center py-4">
-            No hay profesionales asignados a este servicio.
+            {`No hay ${terms.empleados.toLowerCase()} asignados a este servicio.`}
           </p>
         )}
         {disponibles.map((emp) => {
