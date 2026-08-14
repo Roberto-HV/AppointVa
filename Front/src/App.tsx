@@ -58,6 +58,9 @@ const AuditLogPage = lazy(() => import("./pages/admin/AuditLogPage"));
 
 // ── Landing ───────────────────────────────────────────────────────────────
 const LandingPage = lazy(() => import("./pages/publico/LandingPage"));
+const LandingPageSalud = lazy(() =>
+  import("./pages/publico/LandingPageSalud").then(m => ({ default: m.LandingPageSalud }))
+);
 
 // ── 404 ───────────────────────────────────────────────────────────────────
 const NotFoundPage = lazy(() => import("./pages/NotFoundPage"));
@@ -143,6 +146,11 @@ export default function App() {
 
                 {/* Landing */}
                 <Route path="/" element={<LandingPage />} />
+                <Route path="/salud" element={
+                  <Suspense fallback={<div />}>
+                    <LandingPageSalud />
+                  </Suspense>
+                } />
                 <Route path="*" element={<NotFoundPage />} />
               </Routes>
             </Suspense>
