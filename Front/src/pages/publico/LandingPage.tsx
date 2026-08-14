@@ -73,6 +73,10 @@ function Navbar() {
           <a href="#caracteristicas" className="hover:text-slate-900 transition-colors">Características</a>
           <a href="#como-funciona" className="hover:text-slate-900 transition-colors">Cómo funciona</a>
           <a href="#precios" className="hover:text-slate-900 transition-colors">Precios</a>
+          <span className="text-slate-200">·</span>
+          <Link to="/salud" className="text-sm text-slate-500 hover:text-slate-700 transition-colors">
+            ¿Tienes un consultorio? →
+          </Link>
         </div>
 
         <div className="hidden md:flex items-center gap-2">
@@ -80,7 +84,7 @@ function Navbar() {
             Iniciar sesión
           </Link>
           <Link
-            to="/registro"
+            to="/registro?sector=belleza"
             className="px-5 py-2 text-sm font-bold text-white rounded-xl transition-colors"
             style={{ backgroundColor: SLATE_700 }}
           >
@@ -102,9 +106,10 @@ function Navbar() {
           <a href="#caracteristicas" className="py-2 text-sm font-medium text-slate-700" onClick={() => setOpen(false)}>Características</a>
           <a href="#como-funciona" className="py-2 text-sm font-medium text-slate-700" onClick={() => setOpen(false)}>Cómo funciona</a>
           <a href="#precios" className="py-2 text-sm font-medium text-slate-700" onClick={() => setOpen(false)}>Precios</a>
+          <Link to="/salud" className="py-2 text-sm font-medium text-slate-500 hover:text-slate-700 transition-colors" onClick={() => setOpen(false)}>¿Tienes un consultorio? →</Link>
           <div className="border-t border-slate-100 pt-3 flex flex-col gap-2">
             <Link to="/login" className="py-2.5 text-sm font-medium text-center text-slate-600 border border-slate-200 rounded-xl">Iniciar sesión</Link>
-            <Link to="/registro" className="py-2.5 text-sm font-bold text-center text-white rounded-xl" style={{ backgroundColor: SLATE_700 }}>Comenzar gratis →</Link>
+            <Link to="/registro?sector=belleza" className="py-2.5 text-sm font-bold text-center text-white rounded-xl" style={{ backgroundColor: SLATE_700 }}>Comenzar gratis →</Link>
           </div>
         </div>
       )}
@@ -354,7 +359,7 @@ function PricingCard({
           Próximamente disponible
         </div>
       ) : (
-        <Link to="/registro" className="block text-center py-3 rounded-xl text-sm font-bold transition-all hover:opacity-90 active:scale-95" style={{ backgroundColor: highlighted ? GOLD : SLATE_700, color: highlighted ? DARK : "white" }}>
+        <Link to="/registro?sector=belleza" className="block text-center py-3 rounded-xl text-sm font-bold transition-all hover:opacity-90 active:scale-95" style={{ backgroundColor: highlighted ? GOLD : SLATE_700, color: highlighted ? DARK : "white" }}>
           Empezar con {name} →
         </Link>
       )}
@@ -410,7 +415,7 @@ export default function LandingPage() {
 
                 <div className="flex flex-wrap gap-3 mb-8">
                   <Link
-                    to="/registro"
+                    to="/registro?sector=belleza"
                     className="inline-flex items-center gap-2 px-7 py-3.5 text-sm font-bold text-white rounded-xl transition-all hover:-translate-y-0.5 hover:shadow-lg active:scale-95"
                     style={{ backgroundColor: SLATE_700, boxShadow: `0 4px 16px -2px ${SLATE_700}44` }}
                   >
@@ -662,7 +667,7 @@ export default function LandingPage() {
             </h2>
             <p className="text-slate-400 mb-10 text-lg">Únete en 5 minutos. Sin tarjeta de crédito.</p>
             <Link
-              to="/registro"
+              to="/registro?sector=belleza"
               className="inline-flex items-center gap-2.5 px-8 py-4 rounded-2xl font-black text-base transition-all hover:scale-105 hover:opacity-95 active:scale-95 shadow-2xl"
               style={{ backgroundColor: GOLD, color: DARK, boxShadow: `0 20px 60px -10px ${GOLD}55` }}
             >
@@ -692,7 +697,7 @@ export default function LandingPage() {
                   <a href="#caracteristicas" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">Características</a>
                   <a href="#como-funciona" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">Cómo funciona</a>
                   <a href="#precios" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">Precios</a>
-                  <Link to="/registro" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">Registrarse</Link>
+                  <Link to="/registro?sector=belleza" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">Registrarse</Link>
                   <Link to="/login" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">Iniciar sesión</Link>
                 </nav>
               </div>
