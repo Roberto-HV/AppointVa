@@ -240,6 +240,32 @@ namespace AppointVaAPI.Controllers.V1
             return Ok();
         }
 
+        // PATCH /api/admin/negocios/{id}/plan
+        [HttpPatch("negocios/{id:guid}/plan")]
+        public async Task<IActionResult> SetPlan(Guid id, [FromBody] SetPlanDto dto)
+        {
+            var negocio = await _db.Negocios.FindAsync(id);
+            if (negocio is null) return NotFound(new { mensaje = "Negocio no encontrado" });
+
+            if (dto.PlanId.HasValue)
+            {
+                var plan = await _db.Planes.FindAsync(dto.PlanId.Value);
+                if (plan is null) return BadRequest(new { mensaje = "Plan no encontrado" });
+
+                negocio.PlanId = dto.PlanId;
+                negocio.ModuloPagosHabilitado = plan.Nombre.Contains("Pro", StringComparison.OrdinalIgnoreCase);
+            }
+            else
+            {
+                negocio.PlanId = null;
+                negocio.ModuloPagosHabilitado = false;
+            }
+
+            negocio.FechaActualizacion = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+            return Ok();
+        }
+
         private static PagoSuscripcionDto MapPago(PagoSuscripcion p) => new()
         {
             Id                 = p.Id,
