@@ -539,7 +539,7 @@ function TarjetaNegocio({
       </div>
 
       {/* Acciones */}
-      <div className="border-t border-gray-100 px-4 py-3 flex flex-wrap gap-2">
+      <div className="border-t border-gray-100 px-4 py-3 flex flex-wrap gap-2 items-center">
         <button
           onClick={esActivo ? onDesactivar : onActivar}
           className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition ${
@@ -577,7 +577,7 @@ function TarjetaNegocio({
           Ver booking
         </a>
       </div>
-      <div className="flex items-center gap-2 px-4 py-2 border-t border-gray-50 dark:border-gray-800">
+      <div className="flex items-center gap-2 px-4 py-2 border-t border-gray-100 dark:border-gray-700">
         <span className="text-xs text-gray-400 flex-1">Módulo pagos</span>
         <button
           onClick={() => onTogglePagos(!negocio.moduloPagosHabilitado)}
@@ -744,11 +744,13 @@ export default function NegociosAdminPage() {
     setModalSuscripcion(true);
   };
 
-  const metricasFiltradas = metricas.filter(
-    (n) =>
-      n.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
-      n.slug.toLowerCase().includes(busqueda.toLowerCase())
-  );
+  const metricasFiltradas = metricas
+    .filter(
+      (n) =>
+        n.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
+        n.slug.toLowerCase().includes(busqueda.toLowerCase())
+    )
+    .sort((a, b) => b.activo - a.activo);
 
   return (
     <div className="p-4 sm:p-8">
@@ -765,6 +767,23 @@ export default function NegociosAdminPage() {
           + Nuevo negocio
         </button>
       </div>
+
+      {/* Metrics strip */}
+      {!isLoading && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+          {[
+            { label: "Total", value: metricas.length, color: "text-gray-700 dark:text-gray-200" },
+            { label: "Activos", value: metricas.filter(n => n.activo === 1).length, color: "text-emerald-600 dark:text-emerald-400" },
+            { label: "Con plan", value: suscripciones.filter(s => s.planNombre !== null).length, color: "text-amber-600 dark:text-amber-400" },
+            { label: "Ingresos est.", value: formatPrecio(totalEstimado) + "/mes", color: "text-[#C8A961]" },
+          ].map(({ label, value, color }) => (
+            <div key={label} className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 px-4 py-3">
+              <p className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">{label}</p>
+              <p className={`text-lg font-bold ${color}`}>{value}</p>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Tab bar */}
       <div className="flex bg-gray-100 dark:bg-slate-700 rounded-lg p-1 gap-1 mb-6">
