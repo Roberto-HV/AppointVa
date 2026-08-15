@@ -178,4 +178,8 @@ export const adminApi = {
   setSector: async (negocioId: string, sector: string): Promise<void> => {
     await api.patch(`/admin/negocios/${negocioId}/sector`, { sector });
   },
+
+  setPlan: async (negocioId: string, planId: string | null): Promise<void> => {
+    await api.patch(`/admin/negocios/${negocioId}/plan`, { planId });
+  },
 };

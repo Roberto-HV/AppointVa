@@ -140,10 +140,12 @@ function BadgeSuscripcion({ estado, dias }: { estado: SuscripcionResumenDto["est
 function ModalSuscripcion({
   negocio,
   suscripcion,
+  planes,
   onCerrar,
 }: {
   negocio: NegocioMetricasDto;
   suscripcion: SuscripcionResumenDto | undefined;
+  planes: PlanDto[];
   onCerrar: () => void;
 }) {
   const qc = useQueryClient();
@@ -199,6 +201,16 @@ function ModalSuscripcion({
     }
   };
 
+  const handleSetPlan = async (planId: string | null) => {
+    try {
+      await adminApi.setPlan(negocio.id, planId);
+      await qc.invalidateQueries({ queryKey: ['admin-suscripciones'] });
+      await qc.invalidateQueries({ queryKey: ['admin-negocios-metricas'] });
+    } catch (err) {
+      console.error('Error al cambiar plan:', err);
+    }
+  };
+
   const handleMesesChange = (val: number) => {
     setMeses(val);
     if (val === LIFETIME_SENTINEL) {
@@ -213,8 +225,8 @@ function ModalSuscripcion({
 
   return (
     <div className="space-y-5">
-      {/* Estado actual */}
-      <div className="bg-gray-50 rounded-xl p-4 flex items-center justify-between gap-3">
+      {/* ── Estado actual ── */}
+      <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 flex items-center justify-between gap-3">
         <div>
           <p className="text-xs text-gray-400 mb-1">Estado de suscripción</p>
           <BadgeSuscripcion estado={estado} dias={suscripcion?.diasRestantes ?? null} />
@@ -222,17 +234,62 @@ function ModalSuscripcion({
         {vencimiento && (
           <div className="text-right">
             <p className="text-xs text-gray-400">Vence</p>
-            <p className="text-sm font-semibold text-gray-800">{formatFechaMx(vencimiento)}</p>
+            <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{formatFechaMx(vencimiento)}</p>
           </div>
         )}
       </div>
 
-      {/* Formulario de pago */}
+      {/* ── Configuración ── */}
       <div>
-        <p className="text-sm font-semibold text-gray-700 mb-3">Registrar nuevo pago</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-3">Configuración</p>
 
-        {/* Billing summary */}
-        <div data-testid="billing-summary" className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 mb-4 space-y-2 text-sm">
+        {/* Plan selector */}
+        <div className="mb-4">
+          <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Plan</p>
+          <div className="flex gap-2 flex-wrap">
+            {planes.map(p => (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => handleSetPlan(p.id)}
+                className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                  suscripcion?.planNombre === p.nombre
+                    ? 'bg-gray-900 text-white border-gray-900 dark:bg-gray-100 dark:text-gray-900 dark:border-gray-100'
+                    : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-gray-500'
+                }`}
+              >
+                {p.nombre}
+              </button>
+            ))}
+            {planes.length === 0 && (
+              <span className="text-xs text-gray-400">Cargando planes…</span>
+            )}
+          </div>
+        </div>
+
+        {/* Sector selector */}
+        <div className="mb-4">
+          <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Sector</p>
+          <div className="flex gap-2">
+            {(['belleza', 'salud'] as const).map(s => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => handleSetSector(s)}
+                className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                  suscripcion?.sector === s
+                    ? 'bg-indigo-600 text-white border-indigo-600'
+                    : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-indigo-400'
+                }`}
+              >
+                {s === 'salud' ? 'Salud' : 'Belleza'}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Billing summary: empleados + precio */}
+        <div data-testid="billing-summary" className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 space-y-2 text-sm">
           <div className="flex justify-between">
             <span className="text-gray-500 dark:text-gray-400">Plan</span>
             <span className="font-medium text-gray-800 dark:text-gray-200">
@@ -270,29 +327,13 @@ function ModalSuscripcion({
             <span className="text-[#C8A961]">{formatPrecio(totalMensual)}/mes</span>
           </div>
         </div>
+      </div>
 
-        {/* Sector */}
-        <div className="mt-4">
-          <p className="text-xs font-medium text-gray-700 mb-1">Sector</p>
-          <div className="flex gap-2">
-            {(['belleza', 'salud'] as const).map(s => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => handleSetSector(s)}
-                className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
-                  suscripcion?.sector === s
-                    ? 'bg-indigo-600 text-white border-indigo-600'
-                    : 'bg-white text-gray-600 border-gray-300 hover:border-indigo-400'
-                }`}
-              >
-                {s === 'salud' ? '🏥 Salud' : '💆 Belleza'}
-              </button>
-            ))}
-          </div>
-        </div>
+      {/* ── Registrar pago ── */}
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-3">Registrar pago</p>
 
-        {/* Selector de meses */}
+        {/* Meses selector */}
         <div className="flex gap-2 mb-2">
           {[1, 3, 6, 12].map((m) => (
             <button
@@ -301,7 +342,7 @@ function ModalSuscripcion({
               className={`flex-1 py-2 rounded-lg text-xs font-bold border transition ${
                 meses === m
                   ? "bg-gray-900 text-white border-gray-900"
-                  : "bg-white text-gray-600 border-gray-200 hover:border-gray-400"
+                  : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:border-gray-400"
               }`}
             >
               {m === 12 ? "1 año" : `${m} mes${m > 1 ? "es" : ""}`}
@@ -313,7 +354,7 @@ function ModalSuscripcion({
           className={`w-full py-2 rounded-lg text-xs font-bold border transition mb-3 ${
             meses === LIFETIME_SENTINEL
               ? "bg-amber-600 text-white border-amber-600"
-              : "bg-white text-amber-700 border-amber-300 hover:bg-amber-50"
+              : "bg-white dark:bg-gray-800 text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/20"
           }`}
         >
           ♾ De por vida
@@ -321,26 +362,26 @@ function ModalSuscripcion({
 
         <div className="grid grid-cols-2 gap-3 mb-3">
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Monto (MXN)</label>
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Monto (MXN)</label>
             <input
               type="text"
               inputMode="decimal"
               value={monto}
               onChange={(e) => setMonto(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-gray-400 font-variant-numeric"
+              className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-sm outline-none focus:border-gray-400 font-variant-numeric"
             />
             {meses === LIFETIME_SENTINEL && (
               <p className="text-[10px] text-amber-600 mt-1 font-medium">Acceso permanente — sin vencimiento</p>
             )}
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Método / Notas</label>
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Método / Notas</label>
             <input
               type="text"
               value={notas}
               onChange={(e) => setNotas(e.target.value)}
               placeholder="Efectivo, transferencia…"
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-gray-400"
+              className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-sm outline-none focus:border-gray-400"
             />
           </div>
         </div>
@@ -358,23 +399,23 @@ function ModalSuscripcion({
         </button>
       </div>
 
-      {/* Historial */}
+      {/* ── Historial ── */}
       <div>
-        <p className="text-sm font-semibold text-gray-700 mb-2">Historial de pagos</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Historial de pagos</p>
         {cargandoHistorial ? (
           <p className="text-xs text-gray-400 py-4 text-center">Cargando historial…</p>
         ) : historial.length === 0 ? (
           <p className="text-xs text-gray-400 py-4 text-center">Sin pagos registrados</p>
         ) : (
-          <div className="divide-y divide-gray-100 border border-gray-100 rounded-xl overflow-hidden">
+          <div className="divide-y divide-gray-100 dark:divide-gray-700 border border-gray-100 dark:border-gray-700 rounded-xl overflow-hidden">
             {historial.map((pago) => (
-              <div key={pago.id} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition">
+              <div key={pago.id} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold font-mono bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">
+                    <span className="text-[10px] font-bold font-mono bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 px-1.5 py-0.5 rounded">
                       #{String(pago.numeroPago).padStart(3, "0")}
                     </span>
-                    <span className="text-xs font-semibold text-gray-800">
+                    <span className="text-xs font-semibold text-gray-800 dark:text-gray-200">
                       ${pago.monto.toLocaleString("es-MX", { minimumFractionDigits: 2 })} MXN
                     </span>
                     <span className="text-[10px] text-gray-400">
@@ -389,7 +430,7 @@ function ModalSuscripcion({
                 <button
                   onClick={() => imprimirComprobante(pago)}
                   title="Imprimir comprobante"
-                  className="text-gray-400 hover:text-gray-700 transition p-1.5 rounded-lg hover:bg-gray-100"
+                  className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
                 >
                   <Printer size={14} />
                 </button>
@@ -401,7 +442,7 @@ function ModalSuscripcion({
 
       <button
         onClick={onCerrar}
-        className="w-full py-2 rounded-xl border border-gray-200 text-sm text-gray-500 hover:bg-gray-50 transition"
+        className="w-full py-2 rounded-xl border border-gray-200 dark:border-gray-600 text-sm text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800 transition"
       >
         Cerrar
       </button>
@@ -472,7 +513,7 @@ function TarjetaNegocio({
                 : 'bg-pink-100 text-pink-800'
             }`}
           >
-            {suscripcion.sector === 'salud' ? '🏥 Salud' : '💆 Belleza'}
+            {suscripcion.sector === 'salud' ? 'Salud' : 'Belleza'}
           </span>
         )}
       </div>
@@ -890,6 +931,7 @@ export default function NegociosAdminPage() {
           <ModalSuscripcion
             negocio={negocioSel}
             suscripcion={suscripcionMap[negocioSel.id]}
+            planes={planes}
             onCerrar={() => setModalSuscripcion(false)}
           />
         )}
