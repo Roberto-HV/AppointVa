@@ -197,6 +197,10 @@ export const adminApi = {
     await api.delete(`/admin/pagos/${pagoId}`);
   },
 
+  restablecerPasswordPropietario: async (negocioId: string, nuevaPassword: string): Promise<void> => {
+    await api.patch(`/negocios/${negocioId}/propietario/password`, { nuevaPassword });
+  },
+
   setPlan: async (negocioId: string, planId: string | null): Promise<void> => {
     await api.patch(`/admin/negocios/${negocioId}/plan`, { planId });
   },

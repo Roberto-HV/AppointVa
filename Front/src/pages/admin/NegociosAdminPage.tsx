@@ -768,6 +768,9 @@ export default function NegociosAdminPage() {
   const [negocioSel, setNegocioSel] = useState<NegocioMetricasDto | null>(null);
   const [errorPropietario, setErrorPropietario] = useState("");
   const [mostrarPasswordProp, setMostrarPasswordProp] = useState(false);
+  const [nuevaPasswordProp, setNuevaPasswordProp] = useState("");
+  const [mostrarNuevaPassword, setMostrarNuevaPassword] = useState(false);
+  const [resetandoPassword, setResetandoPassword] = useState(false);
   const [busqueda, setBusqueda] = useState("");
   const [colorPrimario, setColorPrimario] = useState("#C8A961");
   const [colorSecundario, setColorSecundario] = useState("#a07830");
@@ -892,8 +895,27 @@ export default function NegociosAdminPage() {
   const abrirPropietario = (neg: NegocioMetricasDto) => {
     setNegocioSel(neg);
     setErrorPropietario("");
+    setNuevaPasswordProp("");
+    setMostrarNuevaPassword(false);
     formPropietario.reset({ nombre: "", apellido: "", email: "", password: "" });
     setModalPropietario(true);
+  };
+
+  const handleRestablecerPassword = async () => {
+    if (!negocioSel || nuevaPasswordProp.length < 6) return;
+    setResetandoPassword(true);
+    try {
+      await adminApi.restablecerPasswordPropietario(negocioSel.id, nuevaPasswordProp);
+      setNuevaPasswordProp("");
+      setModalPropietario(false);
+      toast("Contraseña restablecida correctamente");
+    } catch (err) {
+      const msg = (err as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje
+        ?? "No se pudo restablecer la contraseña.";
+      setErrorPropietario(msg);
+    } finally {
+      setResetandoPassword(false);
+    }
   };
 
   const abrirSuscripcion = (neg: NegocioMetricasDto) => {
@@ -1206,97 +1228,140 @@ export default function NegociosAdminPage() {
         {negocioSel && (
           <div className="space-y-4">
             {negocioSel.propietarioEmail ? (
-              <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 rounded-xl px-4 py-3 flex items-center gap-3">
-                <CheckCircle size={16} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
-                <div className="min-w-0">
-                  {negocioSel.propietarioNombre && (
-                    <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-300 truncate">
-                      {negocioSel.propietarioNombre}
+              <>
+                {/* Existing propietario card */}
+                <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 rounded-xl px-4 py-3 flex items-center gap-3">
+                  <CheckCircle size={16} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <div className="min-w-0">
+                    {negocioSel.propietarioNombre && (
+                      <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-300 truncate">
+                        {negocioSel.propietarioNombre}
+                      </p>
+                    )}
+                    <p className="text-xs text-emerald-600 dark:text-emerald-400 truncate">
+                      {negocioSel.propietarioEmail}
                     </p>
-                  )}
-                  <p className="text-xs text-emerald-600 dark:text-emerald-400 truncate">
-                    {negocioSel.propietarioEmail}
+                  </div>
+                </div>
+
+                {/* Password reset section */}
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+                    Establece una nueva contraseña para el acceso de{" "}
+                    <strong className="text-gray-700 dark:text-gray-200">{negocioSel.nombre}</strong>.
                   </p>
-                </div>
-              </div>
-            ) : null}
-
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              {negocioSel.propietarioEmail
-                ? <>Crear acceso adicional para <strong className="text-gray-700 dark:text-gray-200">{negocioSel.nombre}</strong>.</>
-                : <>Crea la cuenta de acceso para el propietario de <strong className="text-gray-700 dark:text-gray-200">{negocioSel.nombre}</strong>.</>
-              }
-            </p>
-
-            <form onSubmit={formPropietario.handleSubmit((d) => crearPropietario(d))} className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
-                  <input
-                    {...formPropietario.register("nombre")}
-                    className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-primary
-                      ${formPropietario.formState.errors.nombre ? "border-red-400 bg-red-50" : "border-gray-200"}`}
-                  />
-                  {formPropietario.formState.errors.nombre && (
-                    <p className="text-red-500 text-xs mt-1">{formPropietario.formState.errors.nombre.message}</p>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Nueva contraseña
+                  </label>
+                  <div className="relative mb-3">
+                    <input
+                      type={mostrarNuevaPassword ? "text" : "password"}
+                      value={nuevaPasswordProp}
+                      onChange={e => setNuevaPasswordProp(e.target.value)}
+                      placeholder="Mínimo 6 caracteres"
+                      className="w-full px-3 py-2 pr-10 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-sm outline-none focus:border-gray-400"
+                    />
+                    <button
+                      type="button"
+                      onMouseDown={e => e.preventDefault()}
+                      onClick={() => setMostrarNuevaPassword(v => !v)}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                      tabIndex={-1}
+                    >
+                      {mostrarNuevaPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                  {errorPropietario && (
+                    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm rounded-lg px-3 py-2 mb-3">
+                      {errorPropietario}
+                    </div>
                   )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Apellido</label>
-                  <input
-                    {...formPropietario.register("apellido")}
-                    className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Correo de acceso *</label>
-                <input
-                  type="email"
-                  {...formPropietario.register("email")}
-                  className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-primary
-                    ${formPropietario.formState.errors.email ? "border-red-400 bg-red-50" : "border-gray-200"}`}
-                />
-                {formPropietario.formState.errors.email && (
-                  <p className="text-red-500 text-xs mt-1">{formPropietario.formState.errors.email.message}</p>
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña inicial *</label>
-                <div className="relative">
-                  <input
-                    type={mostrarPasswordProp ? "text" : "password"}
-                    {...formPropietario.register("password")}
-                    className={`w-full px-3 py-2 pr-10 rounded-lg border text-sm outline-none focus:border-primary
-                      ${formPropietario.formState.errors.password ? "border-red-400 bg-red-50" : "border-gray-200"}`}
-                  />
                   <button
-                    type="button"
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => setMostrarPasswordProp((v) => !v)}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                    tabIndex={-1}
+                    onClick={handleRestablecerPassword}
+                    disabled={resetandoPassword || nuevaPasswordProp.length < 6}
+                    className="w-full bg-gray-900 dark:bg-gray-100 hover:bg-gray-700 dark:hover:bg-gray-200 disabled:opacity-50 text-white dark:text-gray-900 font-semibold py-2.5 rounded-xl transition text-sm"
                   >
-                    {mostrarPasswordProp ? <EyeOff size={16} /> : <Eye size={16} />}
+                    {resetandoPassword ? "Restableciendo…" : "Restablecer contraseña"}
                   </button>
                 </div>
-                {formPropietario.formState.errors.password && (
-                  <p className="text-red-500 text-xs mt-1">{formPropietario.formState.errors.password.message}</p>
-                )}
-              </div>
-              {errorPropietario && (
-                <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-3 py-2">
-                  {errorPropietario}
-                </div>
-              )}
-              <button
-                type="submit"
-                disabled={creandoPropietario}
-                className="w-full bg-gray-900 hover:bg-gray-700 disabled:opacity-50 text-white font-semibold py-2.5 rounded-xl transition"
-              >
-                {creandoPropietario ? "Creando cuenta..." : "Crear propietario"}
-              </button>
-            </form>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Crea la cuenta de acceso para el propietario de{" "}
+                  <strong className="text-gray-700 dark:text-gray-200">{negocioSel.nombre}</strong>.
+                </p>
+                <form onSubmit={formPropietario.handleSubmit((d) => crearPropietario(d))} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre *</label>
+                      <input
+                        {...formPropietario.register("nombre")}
+                        className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-primary
+                          ${formPropietario.formState.errors.nombre ? "border-red-400 bg-red-50" : "border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200"}`}
+                      />
+                      {formPropietario.formState.errors.nombre && (
+                        <p className="text-red-500 text-xs mt-1">{formPropietario.formState.errors.nombre.message}</p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Apellido</label>
+                      <input
+                        {...formPropietario.register("apellido")}
+                        className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-sm outline-none focus:border-primary"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Correo de acceso *</label>
+                    <input
+                      type="email"
+                      {...formPropietario.register("email")}
+                      className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-primary
+                        ${formPropietario.formState.errors.email ? "border-red-400 bg-red-50" : "border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200"}`}
+                    />
+                    {formPropietario.formState.errors.email && (
+                      <p className="text-red-500 text-xs mt-1">{formPropietario.formState.errors.email.message}</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Contraseña inicial *</label>
+                    <div className="relative">
+                      <input
+                        type={mostrarPasswordProp ? "text" : "password"}
+                        {...formPropietario.register("password")}
+                        className={`w-full px-3 py-2 pr-10 rounded-lg border text-sm outline-none focus:border-primary
+                          ${formPropietario.formState.errors.password ? "border-red-400 bg-red-50" : "border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200"}`}
+                      />
+                      <button
+                        type="button"
+                        onMouseDown={e => e.preventDefault()}
+                        onClick={() => setMostrarPasswordProp(v => !v)}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                        tabIndex={-1}
+                      >
+                        {mostrarPasswordProp ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                    {formPropietario.formState.errors.password && (
+                      <p className="text-red-500 text-xs mt-1">{formPropietario.formState.errors.password.message}</p>
+                    )}
+                  </div>
+                  {errorPropietario && (
+                    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm rounded-lg px-3 py-2">
+                      {errorPropietario}
+                    </div>
+                  )}
+                  <button
+                    type="submit"
+                    disabled={creandoPropietario}
+                    className="w-full bg-gray-900 dark:bg-gray-100 hover:bg-gray-700 dark:hover:bg-gray-200 disabled:opacity-50 text-white dark:text-gray-900 font-semibold py-2.5 rounded-xl transition"
+                  >
+                    {creandoPropietario ? "Creando cuenta…" : "Crear propietario"}
+                  </button>
+                </form>
+              </>
+            )}
           </div>
         )}
       </Modal>
