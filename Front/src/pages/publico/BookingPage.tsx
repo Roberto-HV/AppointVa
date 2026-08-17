@@ -181,6 +181,56 @@ function GaleriaSection({ imagenes }: { imagenes: ImagenGaleria[] }) {
   );
 }
 
+function GaleriaDesktop({ imagenes }: { imagenes: ImagenGaleria[] }) {
+  const [lightbox, setLightbox] = useState<string | null>(null);
+
+  const hero = imagenes[0];
+  const thumbs = imagenes.slice(1, 5);
+  const remaining = Math.max(0, imagenes.length - 5);
+
+  return (
+    <>
+      <div className="space-y-2">
+        <button
+          onClick={() => setLightbox(hero.url)}
+          className="block w-full rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+        >
+          <img src={hero.url} alt={hero.descripcion ?? ""} className="w-full h-56 object-cover" draggable={false} />
+        </button>
+        {thumbs.length > 0 && (
+          <div className="grid grid-cols-2 gap-2">
+            {thumbs.map((img, i) => {
+              const isLast = i === thumbs.length - 1 && remaining > 0;
+              return (
+                <button
+                  key={i}
+                  onClick={() => setLightbox(img.url)}
+                  className="relative rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                >
+                  <img src={img.url} alt={img.descripcion ?? ""} className="w-full h-28 object-cover" draggable={false} />
+                  {isLast && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                      <span className="text-white font-bold text-sm">+{remaining}</span>
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+      {lightbox && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={() => setLightbox(null)}>
+          <button className="absolute top-4 right-4 text-white/80 hover:text-white" onClick={() => setLightbox(null)}>
+            <X size={28} />
+          </button>
+          <img src={lightbox} alt="" className="max-w-full max-h-[85vh] rounded-xl object-contain" />
+        </div>
+      )}
+    </>
+  );
+}
+
 function ResenasSection({ resenas, promedio, total }: { resenas: ResenaPublica[]; promedio: number; total: number }) {
   if (!resenas.length) return null;
   return (
@@ -735,7 +785,26 @@ export default function BookingPage() {
       <IndicadorPasos pasoActual={paso} pasos={PASOS} color={color} slug={negocio.slug} />
 
       {/* Contenido */}
-      <div className="max-w-lg mx-auto px-4 pt-5 pb-10">
+      <div className="lg:max-w-5xl lg:mx-auto lg:px-8 lg:flex lg:gap-10 lg:items-start lg:pt-8 lg:pb-12">
+
+        {/* Left column — galería + reseñas, solo desktop */}
+        {negocio.galeria?.length > 0 && (
+          <div className="hidden lg:block w-[360px] shrink-0 sticky top-4">
+            <GaleriaDesktop imagenes={negocio.galeria} />
+            {negocio.resenas?.length > 0 && (
+              <div className="mt-6">
+                <ResenasSection
+                  resenas={negocio.resenas}
+                  promedio={negocio.promedioResenas}
+                  total={negocio.totalResenas}
+                />
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Right column — flujo de reserva */}
+        <div className="max-w-lg mx-auto px-4 pt-5 pb-10 lg:flex-1 lg:max-w-none lg:mx-0 lg:px-0 lg:pt-0 lg:pb-0">
 
         {/* Mini-resumen breadcrumb */}
         {paso >= 2 && (servicio || empleado) && (
@@ -774,7 +843,11 @@ export default function BookingPage() {
           <>
             <p className="text-sm font-medium text-slate-400 mb-4">{textos.cta}</p>
             {/* Galería */}
-            {negocio.galeria?.length > 0 && <GaleriaSection imagenes={negocio.galeria} />}
+            {negocio.galeria?.length > 0 && (
+              <div className="lg:hidden">
+                <GaleriaSection imagenes={negocio.galeria} />
+              </div>
+            )}
 
             <PasoServicio
               servicios={negocio.servicios}
@@ -792,13 +865,15 @@ export default function BookingPage() {
               Continuar
             </button>
 
-            {/* Reseñas */}
+            {/* Reseñas — solo mobile; en desktop aparecen en la columna izquierda */}
             {negocio.resenas?.length > 0 && (
-              <ResenasSection
-                resenas={negocio.resenas}
-                promedio={negocio.promedioResenas}
-                total={negocio.totalResenas}
-              />
+              <div className="lg:hidden">
+                <ResenasSection
+                  resenas={negocio.resenas}
+                  promedio={negocio.promedioResenas}
+                  total={negocio.totalResenas}
+                />
+              </div>
             )}
           </>
         )}
@@ -1186,7 +1261,8 @@ export default function BookingPage() {
 
         </motion.div>
         </AnimatePresence>
-        <PublicFooter />
+          <PublicFooter />
+        </div>
       </div>
 
       {/* Lightbox logo */}
