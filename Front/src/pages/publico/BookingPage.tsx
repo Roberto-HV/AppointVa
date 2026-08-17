@@ -20,32 +20,116 @@ import { hexToChannels, DEFAULT_COLOR } from "../../lib/colorUtils";
 import SocialLinks from "../../components/icons/SocialLinks";
 
 function GaleriaSection({ imagenes }: { imagenes: ImagenGaleria[] }) {
+  const [activeIndex, setActiveIndex] = useState(0);
   const [lightbox, setLightbox] = useState<string | null>(null);
+  const dragStartX = useRef<number | null>(null);
+
   if (!imagenes.length) return null;
+
+  const total = imagenes.length;
+  const prev = () => setActiveIndex(i => (i - 1 + total) % total);
+  const next = () => setActiveIndex(i => (i + 1) % total);
+
+  const getOffset = (i: number) => {
+    let d = i - activeIndex;
+    if (d > total / 2) d -= total;
+    if (d < -total / 2) d += total;
+    return d;
+  };
+
+  const onPointerDown = (e: React.PointerEvent) => { dragStartX.current = e.clientX; };
+  const onPointerUp = (e: React.PointerEvent) => {
+    if (dragStartX.current === null) return;
+    const dx = e.clientX - dragStartX.current;
+    if (dx < -40) next();
+    else if (dx > 40) prev();
+    dragStartX.current = null;
+  };
+
   return (
     <>
-      <div className="overflow-x-auto pb-2 -mx-4 px-4 mb-5">
-        <div className="flex gap-2" style={{ width: "max-content" }}>
-          {imagenes.map((img) => (
+      <div
+        className="relative -mx-4 mb-5 overflow-hidden rounded-2xl bg-gray-950 select-none"
+        style={{ height: 260, cursor: "grab" }}
+        onPointerDown={onPointerDown}
+        onPointerUp={onPointerUp}
+      >
+        <div className="relative w-full h-full flex items-center justify-center" style={{ perspective: 900 }}>
+          {imagenes.map((img, i) => {
+            const offset = getOffset(i);
+            if (Math.abs(offset) > 2) return null;
+            const isCenter = offset === 0;
+            const tx = offset * 140;
+            const scale = isCenter ? 1 : Math.max(0.72, 1 - Math.abs(offset) * 0.14);
+            const ry = offset * -18;
+            const opacity = Math.abs(offset) > 1 ? 0.45 : 1;
+            const z = 10 - Math.abs(offset);
+            return (
+              <button
+                key={img.id}
+                onClick={() => { if (isCenter) setLightbox(img.url); else setActiveIndex(i); }}
+                style={{
+                  position: "absolute",
+                  width: 170,
+                  height: 200,
+                  borderRadius: 16,
+                  overflow: "hidden",
+                  transform: `translateX(${tx}px) scale(${scale}) rotateY(${ry}deg)`,
+                  zIndex: z,
+                  opacity,
+                  transition: "transform 0.4s cubic-bezier(0.25,0.46,0.45,0.94), opacity 0.4s",
+                  boxShadow: isCenter ? "0 20px 60px rgba(0,0,0,0.6)" : "0 8px 24px rgba(0,0,0,0.4)",
+                  pointerEvents: "auto",
+                }}
+              >
+                <img src={img.url} alt={img.descripcion ?? ""} className="w-full h-full object-cover" draggable={false} />
+              </button>
+            );
+          })}
+        </div>
+
+        {total > 1 && (
+          <>
             <button
-              key={img.id}
-              onClick={() => setLightbox(img.url)}
-              className="shrink-0 w-28 h-28 rounded-xl overflow-hidden border border-gray-100 hover:opacity-90 transition"
+              onClick={prev}
+              className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition"
             >
-              <img src={img.url} alt={img.descripcion ?? ""} className="w-full h-full object-cover" />
+              <ChevronLeft size={18} />
             </button>
+            <button
+              onClick={next}
+              className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition"
+            >
+              <ChevronRight size={18} />
+            </button>
+          </>
+        )}
+
+        <p className="absolute bottom-2.5 left-1/2 -translate-x-1/2 text-white/30 text-[11px] tracking-widest uppercase z-20 pointer-events-none">
+          Arrastra o navega
+        </p>
+
+        <div className="absolute bottom-7 left-1/2 -translate-x-1/2 flex gap-1.5 z-20 pointer-events-none">
+          {imagenes.map((_, i) => (
+            <div
+              key={i}
+              className="rounded-full transition-all"
+              style={{
+                width: i === activeIndex ? 16 : 6,
+                height: 6,
+                background: i === activeIndex ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.3)",
+              }}
+            />
           ))}
         </div>
       </div>
+
       {lightbox && (
         <div
           className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
           onClick={() => setLightbox(null)}
         >
-          <button
-            className="absolute top-4 right-4 text-white/80 hover:text-white"
-            onClick={() => setLightbox(null)}
-          >
+          <button className="absolute top-4 right-4 text-white/80 hover:text-white" onClick={() => setLightbox(null)}>
             <X size={28} />
           </button>
           <img src={lightbox} alt="" className="max-w-full max-h-[85vh] rounded-xl object-contain" />
