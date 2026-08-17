@@ -200,13 +200,13 @@ function GaleriaDesktop({ imagenes, onOpen }: { imagenes: ImagenGaleria[]; onOpe
       <div className="relative rounded-2xl overflow-hidden shadow-sm">
         <Splide
           ref={mainRef}
-          options={{ type: "loop", pagination: false, arrows: false }}
+          options={{ type: "loop", pagination: false, arrows: false, speed: 300, waitForTransition: false }}
           onMove={(_splide: unknown, index: number) => setCurrentIdx(index)}
         >
           {imagenes.map((img, i) => (
             <SplideSlide key={i}>
               <button onClick={() => onOpen(i)} className="block w-full focus:outline-none">
-                <img src={img.url} alt={img.descripcion ?? ""} className="w-full h-72 object-cover" draggable={false} />
+                <img src={img.url} alt={img.descripcion ?? ""} className="w-full h-[350px] object-cover" draggable={false} />
               </button>
             </SplideSlide>
           ))}
@@ -239,8 +239,8 @@ function GaleriaDesktop({ imagenes, onOpen }: { imagenes: ImagenGaleria[]; onOpe
             rewind: true,
             gap: 6,
             pagination: false,
-            fixedWidth: 72,
-            fixedHeight: 52,
+            fixedWidth: 88,
+            fixedHeight: 68,
             cover: true,
             isNavigation: true,
             arrows: false,
@@ -879,7 +879,7 @@ export default function BookingPage() {
 
         {/* Left column — galería + reseñas, solo desktop */}
         {negocio.galeria?.length > 0 && (
-          <div className="hidden lg:block w-[400px] shrink-0 sticky top-4 mt-8">
+          <div className="hidden lg:block w-[400px] shrink-0 sticky top-0 h-screen flex flex-col justify-center py-8 overflow-y-auto">
             <GaleriaDesktop imagenes={negocio.galeria} onOpen={setGaleriaViewerIdx} />
             {negocio.resenas?.length > 0 && (
               <div className="mt-6">
