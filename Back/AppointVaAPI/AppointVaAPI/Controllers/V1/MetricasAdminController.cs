@@ -53,24 +53,63 @@ namespace AppointVaAPI.Controllers.V1
                 .Select(g => new { NegocioId = g.Key, Total = g.Count() })
                 .ToDictionaryAsync(x => x.NegocioId, x => x.Total);
 
-            var result = negocios.Select(n => new NegocioMetricasDto
+            var rolePropietarioId = (await _db.Roles
+                .FirstOrDefaultAsync(r => r.Name == Roles.Propietario))?.Id;
+
+            Dictionary<Guid, (string? Email, string? Nombre)> propietariosPorNegocio = new();
+            if (rolePropietarioId.HasValue)
             {
-                Id = n.Id,
-                Nombre = n.Nombre,
-                Slug = n.Slug,
-                Activo = n.Activo,
-                LogoUrl = n.LogoUrl,
-                Email = n.Email,
-                ColorPrimario = n.ColorPrimario,
-                ColorSecundario = n.ColorSecundario,
-                PlanNombre = n.Plan?.Nombre,
-                PlanId = n.PlanId,
-                MaxCitasMes = n.Plan?.MaxCitasMes ?? 0,
-                MaxEmpleados = n.Plan?.MaxEmpleados ?? 0,
-                CitasMes = citasPorNegocio.GetValueOrDefault(n.Id, 0),
-                EmpleadosActivos = empleadosPorNegocio.GetValueOrDefault(n.Id, 0),
-                EmailsMes = emailsPorNegocio.GetValueOrDefault(n.Id, 0),
-                ModuloPagosHabilitado = n.ModuloPagosHabilitado
+                var propietarioRows = await (
+                    from ur in _db.UserRoles
+                    where ur.RoleId == rolePropietarioId.Value
+                    join u in _db.Users on ur.UserId equals u.Id
+                    where u.NegocioId.HasValue && ids.Contains(u.NegocioId.Value)
+                    select new
+                    {
+                        NegocioId = u.NegocioId!.Value,
+                        u.Email,
+                        u.Nombre,
+                        u.Apellido
+                    }
+                ).ToListAsync();
+
+                propietariosPorNegocio = propietarioRows
+                    .GroupBy(x => x.NegocioId)
+                    .ToDictionary(
+                        g => g.Key,
+                        g =>
+                        {
+                            var p = g.First();
+                            var nombre = $"{p.Nombre} {p.Apellido}".Trim();
+                            return (Email: (string?)p.Email, Nombre: nombre.Length > 0 ? nombre : (string?)null);
+                        }
+                    );
+            }
+
+            var result = negocios.Select(n =>
+            {
+                propietariosPorNegocio.TryGetValue(n.Id, out var prop);
+                return new NegocioMetricasDto
+                {
+                    Id = n.Id,
+                    Nombre = n.Nombre,
+                    Slug = n.Slug,
+                    Activo = n.Activo,
+                    LogoUrl = n.LogoUrl,
+                    Email = n.Email,
+                    ColorPrimario = n.ColorPrimario,
+                    ColorSecundario = n.ColorSecundario,
+                    PlanNombre = n.Plan?.Nombre,
+                    PlanId = n.PlanId,
+                    MaxCitasMes = n.Plan?.MaxCitasMes ?? 0,
+                    MaxEmpleados = n.Plan?.MaxEmpleados ?? 0,
+                    CitasMes = citasPorNegocio.GetValueOrDefault(n.Id, 0),
+                    EmpleadosActivos = empleadosPorNegocio.GetValueOrDefault(n.Id, 0),
+                    EmailsMes = emailsPorNegocio.GetValueOrDefault(n.Id, 0),
+                    ModuloPagosHabilitado = n.ModuloPagosHabilitado,
+                    PropietarioEmail = prop.Email,
+                    PropietarioNombre = prop.Nombre,
+                };
             }).ToList();
 
             return Ok(result);
