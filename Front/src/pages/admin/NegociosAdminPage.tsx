@@ -769,7 +769,9 @@ export default function NegociosAdminPage() {
   const [errorPropietario, setErrorPropietario] = useState("");
   const [mostrarPasswordProp, setMostrarPasswordProp] = useState(false);
   const [nuevaPasswordProp, setNuevaPasswordProp] = useState("");
+  const [confirmarPasswordProp, setConfirmarPasswordProp] = useState("");
   const [mostrarNuevaPassword, setMostrarNuevaPassword] = useState(false);
+  const [mostrarConfirmarPassword, setMostrarConfirmarPassword] = useState(false);
   const [resetandoPassword, setResetandoPassword] = useState(false);
   const [busqueda, setBusqueda] = useState("");
   const [colorPrimario, setColorPrimario] = useState("#334155");
@@ -844,7 +846,6 @@ export default function NegociosAdminPage() {
     mutationFn: () =>
       adminApi.actualizarColores(negocioSel!.id, {
         colorPrimario: colorPrimario || undefined,
-        colorSecundario: colorSecundario || undefined,
       }),
     onSuccess: () => {
       invalidar();
@@ -896,17 +897,24 @@ export default function NegociosAdminPage() {
     setNegocioSel(neg);
     setErrorPropietario("");
     setNuevaPasswordProp("");
+    setConfirmarPasswordProp("");
     setMostrarNuevaPassword(false);
+    setMostrarConfirmarPassword(false);
     formPropietario.reset({ nombre: "", apellido: "", email: "", password: "" });
     setModalPropietario(true);
   };
 
   const handleRestablecerPassword = async () => {
     if (!negocioSel || nuevaPasswordProp.length < 6) return;
+    if (nuevaPasswordProp !== confirmarPasswordProp) {
+      setErrorPropietario("Las contraseñas no coinciden.");
+      return;
+    }
     setResetandoPassword(true);
     try {
       await adminApi.restablecerPasswordPropietario(negocioSel.id, nuevaPasswordProp);
       setNuevaPasswordProp("");
+      setConfirmarPasswordProp("");
       setModalPropietario(false);
       toast("Contraseña restablecida correctamente");
     } catch (err) {
@@ -1271,6 +1279,27 @@ export default function NegociosAdminPage() {
                       {mostrarNuevaPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   </div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Confirmar contraseña
+                  </label>
+                  <div className="relative mb-3">
+                    <input
+                      type={mostrarConfirmarPassword ? "text" : "password"}
+                      value={confirmarPasswordProp}
+                      onChange={e => setConfirmarPasswordProp(e.target.value)}
+                      placeholder="Repite la contraseña"
+                      className="w-full px-3 py-2 pr-10 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-sm outline-none focus:border-gray-400"
+                    />
+                    <button
+                      type="button"
+                      onMouseDown={e => e.preventDefault()}
+                      onClick={() => setMostrarConfirmarPassword(v => !v)}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                      tabIndex={-1}
+                    >
+                      {mostrarConfirmarPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
                   {errorPropietario && (
                     <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm rounded-lg px-3 py-2 mb-3">
                       {errorPropietario}
@@ -1278,7 +1307,7 @@ export default function NegociosAdminPage() {
                   )}
                   <button
                     onClick={handleRestablecerPassword}
-                    disabled={resetandoPassword || nuevaPasswordProp.length < 6}
+                    disabled={resetandoPassword || nuevaPasswordProp.length < 6 || confirmarPasswordProp.length < 6}
                     className="w-full bg-gray-900 dark:bg-gray-100 hover:bg-gray-700 dark:hover:bg-gray-200 disabled:opacity-50 text-white dark:text-gray-900 font-semibold py-2.5 rounded-xl transition text-sm"
                   >
                     {resetandoPassword ? "Restableciendo…" : "Restablecer contraseña"}
@@ -1374,23 +1403,16 @@ export default function NegociosAdminPage() {
               Personaliza los colores del panel de{" "}
               <span className="font-semibold text-gray-800">{negocioSel.nombre}</span>.
             </p>
-            <div className="space-y-4">
-              {([
-                { label: "Color primario", val: colorPrimario, set: setColorPrimario, ph: "#334155" },
-                { label: "Color secundario", val: colorSecundario, set: setColorSecundario, ph: "#a07830" },
-              ] as const).map(({ label, val, set, ph }) => (
-                <div key={label}>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">{label}</label>
-                  <div className="flex gap-3 items-center">
-                    <input type="color" value={val} onChange={(e) => set(e.target.value)}
-                      className="w-12 h-12 rounded-lg cursor-pointer border border-gray-200 p-0.5" />
-                    <input type="text" value={val} onChange={(e) => set(e.target.value)}
-                      className="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-gray-400 font-mono uppercase"
-                      maxLength={7} placeholder={ph} />
-                    <div className="w-10 h-10 rounded-lg border border-gray-200 shrink-0" style={{ backgroundColor: val }} />
-                  </div>
-                </div>
-              ))}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Color primario</label>
+              <div className="flex gap-3 items-center">
+                <input type="color" value={colorPrimario} onChange={(e) => setColorPrimario(e.target.value)}
+                  className="w-12 h-12 rounded-lg cursor-pointer border border-gray-200 p-0.5" />
+                <input type="text" value={colorPrimario} onChange={(e) => setColorPrimario(e.target.value)}
+                  className="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-gray-400 font-mono uppercase"
+                  maxLength={7} placeholder="#334155" />
+                <div className="w-10 h-10 rounded-lg border border-gray-200 shrink-0" style={{ backgroundColor: colorPrimario }} />
+              </div>
             </div>
             <div className="rounded-xl border border-gray-100 p-3 bg-gray-50">
               <p className="text-xs text-gray-400 mb-2">Vista previa</p>
