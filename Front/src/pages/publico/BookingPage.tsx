@@ -163,16 +163,17 @@ function GaleriaSection({ imagenes }: { imagenes: ImagenGaleria[] }) {
         </div>
       )}
 
-      {lightbox && (
+      {lightbox && createPortal(
         <div
-          className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/92 z-[9999] flex items-center justify-center p-4"
           onClick={() => setLightbox(null)}
         >
           <button className="absolute top-4 right-4 text-white/80 hover:text-white" onClick={() => setLightbox(null)}>
             <X size={28} />
           </button>
           <img src={lightbox} alt="" className="max-w-full max-h-[85vh] rounded-xl object-contain" />
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
