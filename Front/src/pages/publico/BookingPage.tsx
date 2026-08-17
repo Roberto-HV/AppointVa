@@ -1,4 +1,5 @@
 ﻿import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -235,8 +236,8 @@ function GaleriaViewer({ imagenes, idx, onChange, onClose }: {
     return () => window.removeEventListener("keydown", onKey);
   }, [idx]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  return (
-    <div className="fixed inset-0 bg-black/92 z-[500] flex items-center justify-center" onClick={onClose}>
+  return createPortal(
+    <div className="fixed inset-0 bg-black/92 z-[9999] flex items-center justify-center" onClick={onClose}>
       <div className="absolute top-4 left-1/2 -translate-x-1/2 text-white/60 text-sm tabular-nums select-none">
         {idx + 1} de {total}
       </div>
@@ -265,7 +266,8 @@ function GaleriaViewer({ imagenes, idx, onChange, onClose }: {
           </button>
         </>
       )}
-    </div>
+    </div>,
+    document.body
   );
 }
 
