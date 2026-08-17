@@ -52,6 +52,8 @@ export interface NegocioMetricasDto {
   empleadosActivos: number;
   emailsMes: number;
   moduloPagosHabilitado?: boolean;
+  propietarioEmail?: string;
+  propietarioNombre?: string;
 }
 
 export interface PagoSuscripcionDto {
