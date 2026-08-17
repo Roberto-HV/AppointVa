@@ -59,8 +59,8 @@ function GaleriaSection({ imagenes }: { imagenes: ImagenGaleria[] }) {
             <button
               key={img.id}
               onClick={() => setLightbox(img.url)}
-              className="snap-center shrink-0 rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-shadow"
-              style={{ width: "calc(100% - 40px)", height: 224 }}
+              className="snap-center shrink-0 rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-shadow h-44 sm:h-72"
+              style={{ width: "calc(100% - 40px)" }}
             >
               <img
                 src={img.url}
@@ -93,19 +93,25 @@ function GaleriaSection({ imagenes }: { imagenes: ImagenGaleria[] }) {
       </div>
 
       {total > 1 && (
-        <div className="flex justify-center gap-1.5 mt-2 mb-4">
-          {imagenes.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => scrollTo(i)}
-              className="rounded-full transition-all"
-              style={{
-                width: i === activeIndex ? 16 : 6,
-                height: 6,
-                background: i === activeIndex ? "#334155" : "#cbd5e1",
-              }}
-            />
-          ))}
+        <div className="flex justify-center items-center gap-1.5 mt-2 mb-4">
+          {total <= 7 ? (
+            imagenes.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => scrollTo(i)}
+                className="rounded-full transition-all"
+                style={{
+                  width: i === activeIndex ? 16 : 6,
+                  height: 6,
+                  background: i === activeIndex ? "#334155" : "#cbd5e1",
+                }}
+              />
+            ))
+          ) : (
+            <span className="text-xs text-slate-400 font-medium tabular-nums">
+              {activeIndex + 1} / {total}
+            </span>
+          )}
         </div>
       )}
 
