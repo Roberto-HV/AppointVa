@@ -197,37 +197,40 @@ function GaleriaDesktop({ imagenes, onOpen }: { imagenes: ImagenGaleria[]; onOpe
 
   return (
     <div className="space-y-2">
-      <div className="relative rounded-2xl overflow-hidden shadow-sm">
-        <Splide
-          ref={mainRef}
-          options={{ type: "slide", rewind: true, rewindSpeed: 300, pagination: false, arrows: false, speed: 300, waitForTransition: false, drag: false }}
-          onMove={(_splide: unknown, index: number) => setCurrentIdx(index)}
-        >
-          {imagenes.map((img, i) => (
-            <SplideSlide key={i}>
-              <button onClick={() => onOpen(i)} className="block w-full focus:outline-none">
-                <img src={img.url} alt={img.descripcion ?? ""} className="w-full h-[350px] object-cover" draggable={false} />
-              </button>
-            </SplideSlide>
-          ))}
-        </Splide>
+      {/* Outer div: positioning context for arrows (no overflow-hidden here) */}
+      <div className="relative">
+        {/* Inner div: overflow clip for the carousel only */}
+        <div className="rounded-2xl overflow-hidden shadow-sm">
+          <Splide
+            ref={mainRef}
+            options={{ type: "slide", rewind: true, rewindSpeed: 300, pagination: false, arrows: false, speed: 300, waitForTransition: false, drag: false }}
+            onMove={(_splide: unknown, index: number) => setCurrentIdx(index)}
+          >
+            {imagenes.map((img, i) => (
+              <SplideSlide key={i}>
+                <button onClick={() => onOpen(i)} className="block w-full focus:outline-none">
+                  <img src={img.url} alt={img.descripcion ?? ""} className="w-full h-[350px] object-cover" draggable={false} />
+                </button>
+              </SplideSlide>
+            ))}
+          </Splide>
+        </div>
+        {/* Arrows outside overflow-hidden — pointer events never clipped */}
         {total > 1 && (
           <>
             <button
-              onPointerDown={e => e.stopPropagation()}
               onClick={() => mainRef.current?.splide?.go("<")}
-              className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-white/90 shadow-md flex items-center justify-center text-gray-600 hover:bg-white transition"
+              className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-white/90 shadow-md flex items-center justify-center text-gray-600 hover:bg-white transition"
             >
               <ChevronLeft size={18} />
             </button>
             <button
-              onPointerDown={e => e.stopPropagation()}
               onClick={() => mainRef.current?.splide?.go(">")}
-              className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-white/90 shadow-md flex items-center justify-center text-gray-600 hover:bg-white transition"
+              className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-white/90 shadow-md flex items-center justify-center text-gray-600 hover:bg-white transition"
             >
               <ChevronRight size={18} />
             </button>
-            <div className="absolute bottom-2 right-2 bg-black/50 text-white text-xs tabular-nums px-2 py-0.5 rounded-full select-none">
+            <div className="absolute bottom-2 right-2 bg-black/50 text-white text-xs tabular-nums px-2 py-0.5 rounded-full select-none pointer-events-none">
               {currentIdx + 1} de {total}
             </div>
           </>
