@@ -4,13 +4,14 @@ import Select from "../../components/ui/Select";
 import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Eye, EyeOff, CreditCard, Clock, CheckCircle, XCircle, AlertTriangle, Printer } from "lucide-react";
+import { Eye, EyeOff, CreditCard, Clock, CheckCircle, XCircle, AlertTriangle, Printer, Pencil, Trash2 } from "lucide-react";
 import {
   adminApi,
   type NegocioMetricasDto,
   type PlanDto,
   type SuscripcionResumenDto,
   type PagoSuscripcionDto,
+  type EditarPagoRequestDto,
 } from "../../api/admin";
 import Modal from "../../components/ui/Modal";
 import BarraProgreso from "../../components/ui/BarraProgreso";
@@ -151,6 +152,10 @@ function ModalSuscripcion({
   const qc = useQueryClient();
   const { toast } = useToastStore();
 
+  const [editandoId, setEditandoId] = useState<string | null>(null);
+  const [confirmandoEliminarId, setConfirmandoEliminarId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({ monto: "", notas: "", desde: "", hasta: "" });
+
   const [empleadosExtra, setEmpleadosExtra] = useState(suscripcion?.empleadosExtra ?? 0);
   const precioBase = suscripcion?.precioBase ?? 0;
   const totalMensual = precioBase + empleadosExtra * PRECIO_EXTRA_EMP;
@@ -191,6 +196,40 @@ function ModalSuscripcion({
       qc.invalidateQueries({ queryKey: ['admin-suscripciones'] });
     },
   });
+
+  const mutarEditar = useMutation({
+    mutationFn: ({ pagoId, dto }: { pagoId: string; dto: EditarPagoRequestDto }) =>
+        adminApi.editarPago(pagoId, dto),
+    onSuccess: () => {
+        qc.invalidateQueries({ queryKey: ["pagos-negocio", negocio.id] });
+        qc.invalidateQueries({ queryKey: ["admin-suscripciones"] });
+        setEditandoId(null);
+        toast("Pago actualizado");
+    },
+    onError: () => toast("No se pudo actualizar el pago", "error"),
+  });
+
+  const mutarEliminar = useMutation({
+    mutationFn: (pagoId: string) => adminApi.eliminarPago(pagoId),
+    onSuccess: () => {
+        qc.invalidateQueries({ queryKey: ["pagos-negocio", negocio.id] });
+        qc.invalidateQueries({ queryKey: ["admin-suscripciones"] });
+        setConfirmandoEliminarId(null);
+        toast("Pago eliminado");
+    },
+    onError: () => toast("No se pudo eliminar el pago", "error"),
+  });
+
+  const iniciarEdicion = (pago: PagoSuscripcionDto) => {
+    setEditandoId(pago.id);
+    setConfirmandoEliminarId(null);
+    setEditForm({
+        monto: String(pago.monto),
+        notas: pago.notas ?? "",
+        desde: toUtcDate(pago.periodoDesde).toISOString().slice(0, 10),
+        hasta: toUtcDate(pago.periodoHasta).toISOString().slice(0, 10),
+    });
+  };
 
   const handleSetSector = async (sector: string) => {
     try {
@@ -278,7 +317,7 @@ function ModalSuscripcion({
                 onClick={() => handleSetSector(s)}
                 className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
                   suscripcion?.sector === s
-                    ? 'bg-indigo-600 text-white border-indigo-600'
+                    ? 'bg-gray-900 text-white border-gray-900 dark:bg-gray-100 dark:text-gray-900 dark:border-gray-100'
                     : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-indigo-400'
                 }`}
               >
@@ -408,34 +447,152 @@ function ModalSuscripcion({
           <p className="text-xs text-gray-400 py-4 text-center">Sin pagos registrados</p>
         ) : (
           <div className="divide-y divide-gray-100 dark:divide-gray-700 border border-gray-100 dark:border-gray-700 rounded-xl overflow-hidden">
-            {historial.map((pago) => (
-              <div key={pago.id} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold font-mono bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 px-1.5 py-0.5 rounded">
-                      #{String(pago.numeroPago).padStart(3, "0")}
-                    </span>
-                    <span className="text-xs font-semibold text-gray-800 dark:text-gray-200">
-                      ${pago.monto.toLocaleString("es-MX", { minimumFractionDigits: 2 })} MXN
-                    </span>
-                    <span className="text-[10px] text-gray-400">
-                      · {pago.mesesPagados >= 600 ? "♾ De por vida" : pago.mesesPagados === 1 ? "1 mes" : `${pago.mesesPagados} meses`}
-                    </span>
+            {historial.map((pago) => {
+              const enEdicion = editandoId === pago.id;
+              const enConfirmar = confirmandoEliminarId === pago.id;
+
+              if (enEdicion) {
+                return (
+                  <div key={pago.id} className="px-4 py-3 bg-gray-50 dark:bg-gray-800/60 space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-[10px] font-medium text-gray-500 dark:text-gray-400 mb-0.5">Monto (MXN)</label>
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          value={editForm.monto}
+                          onChange={e => setEditForm(f => ({ ...f, monto: e.target.value }))}
+                          className="w-full px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs outline-none focus:border-gray-400"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-medium text-gray-500 dark:text-gray-400 mb-0.5">Notas</label>
+                        <input
+                          type="text"
+                          value={editForm.notas}
+                          onChange={e => setEditForm(f => ({ ...f, notas: e.target.value }))}
+                          placeholder="Efectivo, transferencia…"
+                          className="w-full px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs outline-none focus:border-gray-400"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-[10px] font-medium text-gray-500 dark:text-gray-400 mb-0.5">Período desde</label>
+                        <input
+                          type="date"
+                          value={editForm.desde}
+                          onChange={e => setEditForm(f => ({ ...f, desde: e.target.value }))}
+                          className="w-full px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs outline-none focus:border-gray-400"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-medium text-gray-500 dark:text-gray-400 mb-0.5">Período hasta</label>
+                        <input
+                          type="date"
+                          value={editForm.hasta}
+                          onChange={e => setEditForm(f => ({ ...f, hasta: e.target.value }))}
+                          className="w-full px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs outline-none focus:border-gray-400"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex gap-2 pt-1">
+                      <button
+                        onClick={() => mutarEditar.mutate({
+                          pagoId: pago.id,
+                          dto: {
+                            monto: parseFloat(editForm.monto) || 0,
+                            notas: editForm.notas.trim() || undefined,
+                            periodoDesde: editForm.desde,
+                            periodoHasta: editForm.hasta,
+                          },
+                        })}
+                        disabled={mutarEditar.isPending}
+                        className="flex-1 py-1.5 rounded-lg bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-xs font-semibold hover:bg-gray-700 dark:hover:bg-gray-200 disabled:opacity-50 transition"
+                      >
+                        {mutarEditar.isPending ? "Guardando…" : "Guardar cambios"}
+                      </button>
+                      <button
+                        onClick={() => setEditandoId(null)}
+                        className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 text-xs hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
                   </div>
-                  <p className="text-[11px] text-gray-400 mt-0.5">
-                    {formatFechaMx(pago.periodoDesde)} – {formatFechaMx(pago.periodoHasta)}
-                    {pago.notas && <span className="ml-2 text-gray-400">· {pago.notas}</span>}
-                  </p>
+                );
+              }
+
+              return (
+                <div key={pago.id} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold font-mono bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 px-1.5 py-0.5 rounded">
+                        #{String(pago.numeroPago).padStart(3, "0")}
+                      </span>
+                      <span className="text-xs font-semibold text-gray-800 dark:text-gray-200">
+                        ${pago.monto.toLocaleString("es-MX", { minimumFractionDigits: 2 })} MXN
+                      </span>
+                      <span className="text-[10px] text-gray-400">
+                        · {pago.mesesPagados >= 600 ? "♾ De por vida" : pago.mesesPagados === 1 ? "1 mes" : `${pago.mesesPagados} meses`}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-gray-400 mt-0.5">
+                      {formatFechaMx(pago.periodoDesde)} – {formatFechaMx(pago.periodoHasta)}
+                      {pago.notas && <span className="ml-2 text-gray-400">· {pago.notas}</span>}
+                    </p>
+                    {enConfirmar && (
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="text-[11px] text-red-600 dark:text-red-400 font-medium">¿Eliminar este pago?</span>
+                        <button
+                          onClick={() => mutarEliminar.mutate(pago.id)}
+                          disabled={mutarEliminar.isPending}
+                          className="text-[11px] font-semibold text-red-600 dark:text-red-400 hover:underline disabled:opacity-50"
+                        >
+                          {mutarEliminar.isPending ? "Eliminando…" : "Confirmar"}
+                        </button>
+                        <button
+                          onClick={() => setConfirmandoEliminarId(null)}
+                          className="text-[11px] text-gray-400 hover:underline"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      onClick={() => imprimirComprobante(pago)}
+                      title="Imprimir comprobante"
+                      className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+                    >
+                      <Printer size={14} />
+                    </button>
+                    <button
+                      onClick={() => iniciarEdicion(pago)}
+                      title="Editar pago"
+                      className="text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+                    >
+                      <Pencil size={14} />
+                    </button>
+                    <button
+                      onClick={() => {
+                        setConfirmandoEliminarId(enConfirmar ? null : pago.id);
+                        setEditandoId(null);
+                      }}
+                      title="Eliminar pago"
+                      className={`transition p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 ${
+                        enConfirmar
+                          ? "text-red-500 dark:text-red-400"
+                          : "text-gray-400 hover:text-red-500 dark:hover:text-red-400"
+                      }`}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 </div>
-                <button
-                  onClick={() => imprimirComprobante(pago)}
-                  title="Imprimir comprobante"
-                  className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-                >
-                  <Printer size={14} />
-                </button>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -944,7 +1101,7 @@ export default function NegociosAdminPage() {
         abierto={modalSuscripcion}
         onCerrar={() => setModalSuscripcion(false)}
         titulo={`Suscripción — ${negocioSel?.nombre ?? ""}`}
-        ancho="sm"
+        ancho="lg"
       >
         {negocioSel && (
           <ModalSuscripcion

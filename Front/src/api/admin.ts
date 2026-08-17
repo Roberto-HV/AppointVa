@@ -92,6 +92,13 @@ export interface RegistrarPagoDto {
   notas?: string;
 }
 
+export interface EditarPagoRequestDto {
+  monto: number;
+  notas?: string;
+  periodoDesde: string; // YYYY-MM-DD
+  periodoHasta: string; // YYYY-MM-DD
+}
+
 export const adminApi = {
   obtenerNegocios: async (): Promise<NegocioDto[]> => {
     const { data } = await api.get("/negocios");
@@ -177,6 +184,15 @@ export const adminApi = {
 
   setSector: async (negocioId: string, sector: string): Promise<void> => {
     await api.patch(`/admin/negocios/${negocioId}/sector`, { sector });
+  },
+
+  editarPago: async (pagoId: string, dto: EditarPagoRequestDto): Promise<PagoSuscripcionDto> => {
+    const { data } = await api.patch(`/admin/pagos/${pagoId}`, dto);
+    return data;
+  },
+
+  eliminarPago: async (pagoId: string): Promise<void> => {
+    await api.delete(`/admin/pagos/${pagoId}`);
   },
 
   setPlan: async (negocioId: string, planId: string | null): Promise<void> => {
