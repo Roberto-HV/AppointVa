@@ -187,6 +187,63 @@ namespace AppointVaAPI.Controllers.V1
             return Ok(MapPago(pago));
         }
 
+        // PATCH /api/admin/pagos/{pagoId}
+        [HttpPatch("pagos/{pagoId:guid}")]
+        public async Task<IActionResult> EditarPago(Guid pagoId, [FromBody] EditarPagoDto dto)
+        {
+            var pago = await _db.PagosSuscripcion.FirstOrDefaultAsync(p => p.Id == pagoId);
+            if (pago is null) return NotFound(new { mensaje = "Pago no encontrado" });
+
+            var negocio = await _db.Negocios.FindAsync(pago.NegocioId);
+            if (negocio is null) return NotFound(new { mensaje = "Negocio no encontrado" });
+
+            pago.Monto        = dto.Monto;
+            pago.Notas        = dto.Notas?.Trim();
+            pago.PeriodoDesde = dto.PeriodoDesde.Date;
+            pago.PeriodoHasta = dto.PeriodoHasta.Date;
+
+            // Recalculate vencimiento from all payments (other payments + updated one in memory)
+            var otrosHasta = await _db.PagosSuscripcion
+                .Where(p => p.NegocioId == negocio.Id && p.Id != pagoId)
+                .Select(p => (DateTime?)p.PeriodoHasta)
+                .ToListAsync();
+
+            var todasHasta = otrosHasta.Append((DateTime?)pago.PeriodoHasta).Where(d => d.HasValue).Select(d => d!.Value);
+            negocio.FechaVencimiento   = todasHasta.Any() ? todasHasta.Max() : null;
+            negocio.FechaActualizacion = DateTime.UtcNow;
+
+            await _db.SaveChangesAsync();
+
+            await _db.Entry(pago).Reference(p => p.RegistradoPor).LoadAsync();
+            await _db.Entry(pago).Reference(p => p.Negocio).LoadAsync();
+
+            return Ok(MapPago(pago));
+        }
+
+        // DELETE /api/admin/pagos/{pagoId}
+        [HttpDelete("pagos/{pagoId:guid}")]
+        public async Task<IActionResult> EliminarPago(Guid pagoId)
+        {
+            var pago = await _db.PagosSuscripcion.FirstOrDefaultAsync(p => p.Id == pagoId);
+            if (pago is null) return NotFound(new { mensaje = "Pago no encontrado" });
+
+            var negocio = await _db.Negocios.FindAsync(pago.NegocioId);
+            if (negocio is null) return NotFound(new { mensaje = "Negocio no encontrado" });
+
+            _db.PagosSuscripcion.Remove(pago);
+            await _db.SaveChangesAsync();
+
+            var maxVencimiento = await _db.PagosSuscripcion
+                .Where(p => p.NegocioId == negocio.Id)
+                .MaxAsync(p => (DateTime?)p.PeriodoHasta);
+
+            negocio.FechaVencimiento   = maxVencimiento;
+            negocio.FechaActualizacion = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+
+            return Ok();
+        }
+
         // PATCH /api/admin/negocios/{id}/modulo-pagos
         // Toggle ModuloPagosHabilitado para un negocio
         [HttpPatch("negocios/{id:guid}/modulo-pagos")]

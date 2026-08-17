@@ -38,4 +38,5 @@ namespace AppointVaAPI.Models.Dtos.Admin
     public record SetEmpleadosExtraDto(int EmpleadosExtra);
     public record SetSectorDto(string Sector);
     public record SetPlanDto(Guid? PlanId);
+    public record EditarPagoDto(decimal Monto, string? Notas, DateTime PeriodoDesde, DateTime PeriodoHasta);
 }
