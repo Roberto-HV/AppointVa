@@ -24,7 +24,7 @@ function GaleriaSection({ imagenes }: { imagenes: ImagenGaleria[] }) {
   const [lightbox, setLightbox] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const jumpingRef = useRef(false);
-  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   if (!imagenes.length) return null;
   const total = imagenes.length;
