@@ -200,7 +200,7 @@ function GaleriaDesktop({ imagenes, onOpen }: { imagenes: ImagenGaleria[]; onOpe
       <div className="relative rounded-2xl overflow-hidden shadow-sm">
         <Splide
           ref={mainRef}
-          options={{ type: "loop", pagination: false, arrows: false, speed: 300, waitForTransition: false }}
+          options={{ type: "slide", rewind: true, rewindSpeed: 300, pagination: false, arrows: false, speed: 300, waitForTransition: false }}
           onMove={(_splide: unknown, index: number) => setCurrentIdx(index)}
         >
           {imagenes.map((img, i) => (
@@ -215,14 +215,14 @@ function GaleriaDesktop({ imagenes, onOpen }: { imagenes: ImagenGaleria[]; onOpe
           <>
             <button
               onPointerDown={e => e.stopPropagation()}
-              onClick={() => mainRef.current?.go("<")}
+              onClick={() => mainRef.current?.splide?.go("<")}
               className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-white/90 shadow-md flex items-center justify-center text-gray-600 hover:bg-white transition"
             >
               <ChevronLeft size={18} />
             </button>
             <button
               onPointerDown={e => e.stopPropagation()}
-              onClick={() => mainRef.current?.go(">")}
+              onClick={() => mainRef.current?.splide?.go(">")}
               className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-white/90 shadow-md flex items-center justify-center text-gray-600 hover:bg-white transition"
             >
               <ChevronRight size={18} />
