@@ -167,13 +167,13 @@ function GaleriaSection({ imagenes }: { imagenes: ImagenGaleria[] }) {
 
       {lightbox && createPortal(
         <div
-          className="fixed inset-0 bg-black/92 z-[9999] flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/95 z-[9999] flex items-center justify-center p-4"
           onClick={() => setLightbox(null)}
         >
           <button className="absolute top-4 right-4 text-white/80 hover:text-white" onClick={() => setLightbox(null)}>
             <X size={28} />
           </button>
-          <img src={lightbox} alt="" className="max-w-full max-h-[85vh] rounded-xl object-contain" />
+          <img src={lightbox} alt="" className="max-w-full max-h-[85vh] rounded-xl object-contain shadow-2xl" />
         </div>,
         document.body
       )}
@@ -286,7 +286,7 @@ function GaleriaViewer({ imagenes, idx, onChange, onClose }: {
   }, [idx]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return createPortal(
-    <div className="fixed inset-0 bg-black/92 z-[9999] flex items-center justify-center" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/95 z-[9999] flex items-center justify-center" onClick={onClose}>
       <div className="absolute top-4 left-1/2 -translate-x-1/2 text-white/60 text-sm tabular-nums select-none">
         {idx + 1} de {total}
       </div>
@@ -296,7 +296,7 @@ function GaleriaViewer({ imagenes, idx, onChange, onClose }: {
       <img
         src={imagenes[idx].url}
         alt={imagenes[idx].descripcion ?? ""}
-        className="max-w-[90vw] max-h-[85vh] rounded-xl object-contain"
+        className="max-w-[90vw] max-h-[85vh] rounded-xl object-contain shadow-2xl"
         onClick={e => e.stopPropagation()}
       />
       {total > 1 && (
