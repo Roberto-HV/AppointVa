@@ -22,107 +22,92 @@ import SocialLinks from "../../components/icons/SocialLinks";
 function GaleriaSection({ imagenes }: { imagenes: ImagenGaleria[] }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [lightbox, setLightbox] = useState<string | null>(null);
-  const dragStartX = useRef<number | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   if (!imagenes.length) return null;
-
   const total = imagenes.length;
-  const prev = () => setActiveIndex(i => (i - 1 + total) % total);
-  const next = () => setActiveIndex(i => (i + 1) % total);
 
-  const getOffset = (i: number) => {
-    let d = i - activeIndex;
-    if (d > total / 2) d -= total;
-    if (d < -total / 2) d += total;
-    return d;
+  const getSlideW = () => {
+    const el = scrollRef.current?.firstElementChild as HTMLElement | null;
+    return el?.offsetWidth ?? 280;
   };
 
-  const onPointerDown = (e: React.PointerEvent) => { dragStartX.current = e.clientX; };
-  const onPointerUp = (e: React.PointerEvent) => {
-    if (dragStartX.current === null) return;
-    const dx = e.clientX - dragStartX.current;
-    if (dx < -40) next();
-    else if (dx > 40) prev();
-    dragStartX.current = null;
+  const scrollTo = (index: number) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTo({ left: index * (getSlideW() + 12), behavior: "smooth" });
+    setActiveIndex(index);
+  };
+
+  const handleScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const i = Math.round(el.scrollLeft / (getSlideW() + 12));
+    setActiveIndex(Math.max(0, Math.min(total - 1, i)));
   };
 
   return (
     <>
-      <div
-        className="relative -mx-4 mb-5 overflow-hidden rounded-2xl bg-gray-950 select-none"
-        style={{ height: 260, cursor: "grab" }}
-        onPointerDown={onPointerDown}
-        onPointerUp={onPointerUp}
-      >
-        <div className="relative w-full h-full flex items-center justify-center" style={{ perspective: 900 }}>
-          {imagenes.map((img, i) => {
-            const offset = getOffset(i);
-            if (Math.abs(offset) > 2) return null;
-            const isCenter = offset === 0;
-            const tx = offset * 140;
-            const scale = isCenter ? 1 : Math.max(0.72, 1 - Math.abs(offset) * 0.14);
-            const ry = offset * -18;
-            const opacity = Math.abs(offset) > 1 ? 0.45 : 1;
-            const z = 10 - Math.abs(offset);
-            return (
-              <button
-                key={img.id}
-                onClick={() => { if (isCenter) setLightbox(img.url); else setActiveIndex(i); }}
-                style={{
-                  position: "absolute",
-                  width: 170,
-                  height: 200,
-                  borderRadius: 16,
-                  overflow: "hidden",
-                  transform: `translateX(${tx}px) scale(${scale}) rotateY(${ry}deg)`,
-                  zIndex: z,
-                  opacity,
-                  transition: "transform 0.4s cubic-bezier(0.25,0.46,0.45,0.94), opacity 0.4s",
-                  boxShadow: isCenter ? "0 20px 60px rgba(0,0,0,0.6)" : "0 8px 24px rgba(0,0,0,0.4)",
-                  pointerEvents: "auto",
-                }}
-              >
-                <img src={img.url} alt={img.descripcion ?? ""} className="w-full h-full object-cover" draggable={false} />
-              </button>
-            );
-          })}
+      <div className="relative -mx-4 mb-1">
+        <div
+          ref={scrollRef}
+          className="flex snap-x snap-mandatory gap-3 px-5 overflow-x-auto"
+          style={{ scrollbarWidth: "none" }}
+          onScroll={handleScroll}
+        >
+          {imagenes.map((img) => (
+            <button
+              key={img.id}
+              onClick={() => setLightbox(img.url)}
+              className="snap-center shrink-0 rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-shadow"
+              style={{ width: "calc(100% - 40px)", height: 224 }}
+            >
+              <img
+                src={img.url}
+                alt={img.descripcion ?? ""}
+                className="w-full h-full object-cover"
+                draggable={false}
+              />
+            </button>
+          ))}
         </div>
 
         {total > 1 && (
           <>
             <button
-              onClick={prev}
-              className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition"
+              onClick={() => scrollTo(activeIndex - 1)}
+              disabled={activeIndex === 0}
+              className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-white/90 shadow-md flex items-center justify-center text-gray-600 disabled:opacity-0 transition"
             >
               <ChevronLeft size={18} />
             </button>
             <button
-              onClick={next}
-              className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition"
+              onClick={() => scrollTo(activeIndex + 1)}
+              disabled={activeIndex === total - 1}
+              className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-white/90 shadow-md flex items-center justify-center text-gray-600 disabled:opacity-0 transition"
             >
               <ChevronRight size={18} />
             </button>
           </>
         )}
+      </div>
 
-        <p className="absolute bottom-2.5 left-1/2 -translate-x-1/2 text-white/30 text-[11px] tracking-widest uppercase z-20 pointer-events-none">
-          Arrastra o navega
-        </p>
-
-        <div className="absolute bottom-7 left-1/2 -translate-x-1/2 flex gap-1.5 z-20 pointer-events-none">
+      {total > 1 && (
+        <div className="flex justify-center gap-1.5 mt-2 mb-4">
           {imagenes.map((_, i) => (
-            <div
+            <button
               key={i}
+              onClick={() => scrollTo(i)}
               className="rounded-full transition-all"
               style={{
                 width: i === activeIndex ? 16 : 6,
                 height: 6,
-                background: i === activeIndex ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.3)",
+                background: i === activeIndex ? "#334155" : "#cbd5e1",
               }}
             />
           ))}
         </div>
-      </div>
+      )}
 
       {lightbox && (
         <div
