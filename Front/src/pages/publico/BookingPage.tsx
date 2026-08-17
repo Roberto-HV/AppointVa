@@ -800,7 +800,7 @@ export default function BookingPage() {
         )}
 
         {/* Right column — flujo de reserva */}
-        <div className="max-w-lg mx-auto px-4 pt-5 pb-10 lg:flex-1 lg:mx-0 lg:px-0 lg:pt-0 lg:pb-0">
+        <div className="max-w-lg sm:max-w-2xl mx-auto px-4 pt-5 pb-10 lg:flex-1 lg:mx-0 lg:px-0 lg:pt-0 lg:pb-0">
 
         {/* Mini-resumen breadcrumb */}
         {paso >= 2 && (servicio || empleado) && (
