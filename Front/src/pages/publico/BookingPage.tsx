@@ -177,99 +177,95 @@ function GaleriaSection({ imagenes }: { imagenes: ImagenGaleria[] }) {
   );
 }
 
-function GaleriaDesktop({ imagenes }: { imagenes: ImagenGaleria[] }) {
-  const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
-
-  const total = imagenes.length;
+function GaleriaDesktop({ imagenes, onOpen }: { imagenes: ImagenGaleria[]; onOpen: (idx: number) => void }) {
   const hero = imagenes[0];
   const thumbs = imagenes.slice(1, 5);
-  const remaining = Math.max(0, total - 5);
+  const remaining = Math.max(0, imagenes.length - 5);
 
-  const goPrev = () => setLightboxIdx(i => i !== null ? (i - 1 + total) % total : null);
-  const goNext = () => setLightboxIdx(i => i !== null ? (i + 1) % total : null);
+  return (
+    <div className="space-y-2">
+      <button
+        onClick={() => onOpen(0)}
+        className="block w-full rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+      >
+        <img src={hero.url} alt={hero.descripcion ?? ""} className="w-full h-64 object-cover" draggable={false} />
+      </button>
+      {thumbs.length > 0 && (
+        <div className="grid grid-cols-2 gap-2">
+          {thumbs.map((img, i) => {
+            const isLast = i === thumbs.length - 1 && remaining > 0;
+            return (
+              <button
+                key={i}
+                onClick={() => onOpen(i + 1)}
+                className="relative rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+              >
+                <img src={img.url} alt={img.descripcion ?? ""} className="w-full h-28 object-cover" draggable={false} />
+                {isLast && (
+                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                    <span className="text-white font-bold text-lg">+{remaining}</span>
+                  </div>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function GaleriaViewer({ imagenes, idx, onChange, onClose }: {
+  imagenes: ImagenGaleria[];
+  idx: number;
+  onChange: (idx: number) => void;
+  onClose: () => void;
+}) {
+  const total = imagenes.length;
+  const goPrev = () => onChange((idx - 1 + total) % total);
+  const goNext = () => onChange((idx + 1) % total);
 
   useEffect(() => {
-    if (lightboxIdx === null) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "ArrowLeft") goPrev();
       else if (e.key === "ArrowRight") goNext();
-      else if (e.key === "Escape") setLightboxIdx(null);
+      else if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [lightboxIdx]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [idx]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <>
-      <div className="space-y-2">
-        <button
-          onClick={() => setLightboxIdx(0)}
-          className="block w-full rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
-        >
-          <img src={hero.url} alt={hero.descripcion ?? ""} className="w-full h-64 object-cover" draggable={false} />
-        </button>
-        {thumbs.length > 0 && (
-          <div className="grid grid-cols-2 gap-2">
-            {thumbs.map((img, i) => {
-              const isLast = i === thumbs.length - 1 && remaining > 0;
-              return (
-                <button
-                  key={i}
-                  onClick={() => setLightboxIdx(i + 1)}
-                  className="relative rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
-                >
-                  <img src={img.url} alt={img.descripcion ?? ""} className="w-full h-28 object-cover" draggable={false} />
-                  {isLast && (
-                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                      <span className="text-white font-bold text-lg">+{remaining}</span>
-                    </div>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        )}
+    <div className="fixed inset-0 bg-black/92 z-[500] flex items-center justify-center" onClick={onClose}>
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 text-white/60 text-sm tabular-nums select-none">
+        {idx + 1} de {total}
       </div>
-
-      {lightboxIdx !== null && (
-        <div
-          className="fixed inset-0 bg-black/92 z-[200] flex items-center justify-center"
-          onClick={() => setLightboxIdx(null)}
-        >
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 text-white/60 text-sm tabular-nums">
-            {lightboxIdx + 1} de {total}
-          </div>
+      <button className="absolute top-4 right-4 text-white/70 hover:text-white transition" onClick={onClose}>
+        <X size={26} />
+      </button>
+      <img
+        src={imagenes[idx].url}
+        alt={imagenes[idx].descripcion ?? ""}
+        className="max-w-[90vw] max-h-[85vh] rounded-xl object-contain"
+        onClick={e => e.stopPropagation()}
+      />
+      {total > 1 && (
+        <>
           <button
-            className="absolute top-4 right-4 text-white/70 hover:text-white transition"
-            onClick={() => setLightboxIdx(null)}
+            className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center text-white transition"
+            onClick={e => { e.stopPropagation(); goPrev(); }}
           >
-            <X size={26} />
+            <ChevronLeft size={20} />
           </button>
-          <img
-            src={imagenes[lightboxIdx].url}
-            alt={imagenes[lightboxIdx].descripcion ?? ""}
-            className="max-w-[90vw] max-h-[85vh] rounded-xl object-contain"
-            onClick={e => e.stopPropagation()}
-          />
-          {total > 1 && (
-            <>
-              <button
-                className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center text-white transition"
-                onClick={e => { e.stopPropagation(); goPrev(); }}
-              >
-                <ChevronLeft size={20} />
-              </button>
-              <button
-                className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center text-white transition"
-                onClick={e => { e.stopPropagation(); goNext(); }}
-              >
-                <ChevronRight size={20} />
-              </button>
-            </>
-          )}
-        </div>
+          <button
+            className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center text-white transition"
+            onClick={e => { e.stopPropagation(); goNext(); }}
+          >
+            <ChevronRight size={20} />
+          </button>
+        </>
       )}
-    </>
+    </div>
   );
 }
 
@@ -408,6 +404,7 @@ export default function BookingPage() {
   const [enviando, setEnviando] = useState(false);
   const [errorEnvio, setErrorEnvio] = useState("");
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [galeriaViewerIdx, setGaleriaViewerIdx] = useState<number | null>(null);
 
   // Sub-flujo paso 4: elegir → buscar | listo
   const [modoCliente, setModoCliente] = useState<"elegir" | "buscar" | "listo">("elegir");
@@ -832,7 +829,7 @@ export default function BookingPage() {
         {/* Left column — galería + reseñas, solo desktop */}
         {negocio.galeria?.length > 0 && (
           <div className="hidden lg:block w-[400px] shrink-0 sticky top-4 mt-8">
-            <GaleriaDesktop imagenes={negocio.galeria} />
+            <GaleriaDesktop imagenes={negocio.galeria} onOpen={setGaleriaViewerIdx} />
             {negocio.resenas?.length > 0 && (
               <div className="mt-6">
                 <ResenasSection
@@ -1306,6 +1303,16 @@ export default function BookingPage() {
           <PublicFooter />
         </div>
       </div>
+
+      {/* Galería viewer — fuera de cualquier sticky/transform para evitar stacking context */}
+      {galeriaViewerIdx !== null && negocio.galeria?.length > 0 && (
+        <GaleriaViewer
+          imagenes={negocio.galeria}
+          idx={galeriaViewerIdx}
+          onChange={setGaleriaViewerIdx}
+          onClose={() => setGaleriaViewerIdx(null)}
+        />
+      )}
 
       {/* Lightbox logo */}
       {lightboxUrl && (
