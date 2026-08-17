@@ -200,7 +200,7 @@ function GaleriaDesktop({ imagenes, onOpen }: { imagenes: ImagenGaleria[]; onOpe
       <div className="relative rounded-2xl overflow-hidden shadow-sm">
         <Splide
           ref={mainRef}
-          options={{ type: "slide", rewind: true, rewindSpeed: 300, pagination: false, arrows: false, speed: 300, waitForTransition: false }}
+          options={{ type: "slide", rewind: true, rewindSpeed: 300, pagination: false, arrows: false, speed: 300, waitForTransition: false, drag: false }}
           onMove={(_splide: unknown, index: number) => setCurrentIdx(index)}
         >
           {imagenes.map((img, i) => (
