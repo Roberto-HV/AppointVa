@@ -23,27 +23,102 @@ function GaleriaSection({ imagenes }: { imagenes: ImagenGaleria[] }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [lightbox, setLightbox] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const jumpingRef = useRef(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout>>();
 
   if (!imagenes.length) return null;
   const total = imagenes.length;
 
-  const getSlideW = () => {
-    const el = scrollRef.current?.firstElementChild as HTMLElement | null;
-    return el?.offsetWidth ?? 280;
-  };
+  // Infinite loop: prepend last clone, append first clone
+  const loop = total > 1;
+  const extended = loop ? [imagenes[total - 1], ...imagenes, imagenes[0]] : imagenes;
 
-  const scrollTo = (index: number) => {
+  // Center the slide at position `p` in the extended list
+  const centerSlide = (p: number, smooth: boolean) => {
     const el = scrollRef.current;
     if (!el) return;
-    el.scrollTo({ left: index * (getSlideW() + 12), behavior: "smooth" });
+    const slide = el.children[p] as HTMLElement | undefined;
+    if (!slide) return;
+    const target = slide.offsetLeft + slide.offsetWidth / 2 - el.offsetWidth / 2;
+    if (smooth) el.scrollTo({ left: target, behavior: "smooth" });
+    else el.scrollLeft = target;
+  };
+
+  // Find which extended index is centered right now
+  const centeredExtIdx = () => {
+    const el = scrollRef.current;
+    if (!el) return loop ? 1 : 0;
+    const vc = el.scrollLeft + el.offsetWidth / 2;
+    let best = 0, bestDist = Infinity;
+    Array.from(el.children).forEach((c, i) => {
+      const ch = c as HTMLElement;
+      const d = Math.abs(ch.offsetLeft + ch.offsetWidth / 2 - vc);
+      if (d < bestDist) { bestDist = d; best = i; }
+    });
+    return best;
+  };
+
+  // Scroll to a real image index
+  const scrollTo = (index: number) => {
+    centerSlide(loop ? index + 1 : index, true);
     setActiveIndex(index);
   };
 
+  // On mount: jump to real first (clone is at position 0)
+  useEffect(() => {
+    if (!loop) return;
+    requestAnimationFrame(() => centerSlide(1, false));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleScroll = () => {
     const el = scrollRef.current;
-    if (!el) return;
-    const i = Math.round(el.scrollLeft / (getSlideW() + 12));
-    setActiveIndex(Math.max(0, Math.min(total - 1, i)));
+    if (!el || jumpingRef.current) return;
+
+    const extIdx = centeredExtIdx();
+    const realIdx = loop
+      ? extIdx === 0 ? total - 1 : extIdx === total + 1 ? 0 : extIdx - 1
+      : extIdx;
+    setActiveIndex(Math.max(0, Math.min(total - 1, realIdx)));
+
+    // Debounced jump from clone to real slide
+    if (loop) {
+      clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => {
+        const el2 = scrollRef.current;
+        if (!el2 || jumpingRef.current) return;
+        const idx = centeredExtIdx();
+        if (idx === 0 || idx === total + 1) {
+          jumpingRef.current = true;
+          centerSlide(idx === 0 ? total : 1, false);
+          setTimeout(() => { jumpingRef.current = false; }, 80);
+        }
+      }, 120);
+    }
+  };
+
+  // Windowed dots — max 5 visible
+  const MAX_DOTS = 5;
+  const renderDots = () => {
+    const dots = total <= MAX_DOTS ? total : MAX_DOTS;
+    const start = total <= MAX_DOTS ? 0 : Math.max(0, Math.min(activeIndex - Math.floor(MAX_DOTS / 2), total - MAX_DOTS));
+    return Array.from({ length: dots }, (_, j) => {
+      const i = start + j;
+      const isActive = i === activeIndex;
+      const isEdge = total > MAX_DOTS && (j === 0 || j === dots - 1) && !isActive;
+      return (
+        <button
+          key={i}
+          onClick={() => scrollTo(i)}
+          className="rounded-full transition-all"
+          style={{
+            width: isActive ? 16 : 6,
+            height: isEdge ? 4 : 6,
+            background: isActive ? "#334155" : "#cbd5e1",
+            opacity: isEdge ? 0.45 : 1,
+          }}
+        />
+      );
+    });
   };
 
   return (
@@ -55,19 +130,14 @@ function GaleriaSection({ imagenes }: { imagenes: ImagenGaleria[] }) {
           style={{ scrollbarWidth: "none" }}
           onScroll={handleScroll}
         >
-          {imagenes.map((img) => (
+          {extended.map((img, i) => (
             <button
-              key={img.id}
+              key={i}
               onClick={() => setLightbox(img.url)}
-              className="snap-center shrink-0 rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-shadow h-44 sm:h-72"
+              className="snap-center shrink-0 rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-shadow h-36 sm:h-72"
               style={{ width: "calc(100% - 40px)" }}
             >
-              <img
-                src={img.url}
-                alt={img.descripcion ?? ""}
-                className="w-full h-full object-cover"
-                draggable={false}
-              />
+              <img src={img.url} alt={img.descripcion ?? ""} className="w-full h-full object-cover" draggable={false} />
             </button>
           ))}
         </div>
@@ -75,16 +145,14 @@ function GaleriaSection({ imagenes }: { imagenes: ImagenGaleria[] }) {
         {total > 1 && (
           <>
             <button
-              onClick={() => scrollTo(activeIndex - 1)}
-              disabled={activeIndex === 0}
-              className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-white/90 shadow-md flex items-center justify-center text-gray-600 disabled:opacity-0 transition"
+              onClick={() => scrollTo((activeIndex - 1 + total) % total)}
+              className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-white/90 shadow-md flex items-center justify-center text-gray-600 transition hover:bg-white"
             >
               <ChevronLeft size={18} />
             </button>
             <button
-              onClick={() => scrollTo(activeIndex + 1)}
-              disabled={activeIndex === total - 1}
-              className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-white/90 shadow-md flex items-center justify-center text-gray-600 disabled:opacity-0 transition"
+              onClick={() => scrollTo((activeIndex + 1) % total)}
+              className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-white/90 shadow-md flex items-center justify-center text-gray-600 transition hover:bg-white"
             >
               <ChevronRight size={18} />
             </button>
@@ -94,24 +162,7 @@ function GaleriaSection({ imagenes }: { imagenes: ImagenGaleria[] }) {
 
       {total > 1 && (
         <div className="flex justify-center items-center gap-1.5 mt-2 mb-4">
-          {total <= 7 ? (
-            imagenes.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => scrollTo(i)}
-                className="rounded-full transition-all"
-                style={{
-                  width: i === activeIndex ? 16 : 6,
-                  height: 6,
-                  background: i === activeIndex ? "#334155" : "#cbd5e1",
-                }}
-              />
-            ))
-          ) : (
-            <span className="text-xs text-slate-400 font-medium tabular-nums">
-              {activeIndex + 1} / {total}
-            </span>
-          )}
+          {renderDots()}
         </div>
       )}
 
