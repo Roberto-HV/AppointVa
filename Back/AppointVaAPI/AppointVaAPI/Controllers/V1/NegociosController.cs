@@ -21,6 +21,7 @@ namespace AppointVaAPI.Controllers.V1
         private readonly IContextoNegocio _contexto;
         private readonly IBlobStorageService _storage;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly RoleManager<IdentityRole<Guid>> _roleManager;
         private readonly ApplicationDbContext _db;
         private readonly IOutputCacheStore _cacheStore;
 
@@ -29,6 +30,7 @@ namespace AppointVaAPI.Controllers.V1
             IContextoNegocio contexto,
             IBlobStorageService storage,
             UserManager<ApplicationUser> userManager,
+            RoleManager<IdentityRole<Guid>> roleManager,
             ApplicationDbContext db,
             IOutputCacheStore cacheStore)
         {
@@ -36,6 +38,7 @@ namespace AppointVaAPI.Controllers.V1
             _contexto = contexto;
             _storage = storage;
             _userManager = userManager;
+            _roleManager = roleManager;
             _db = db;
             _cacheStore = cacheStore;
         }
@@ -544,6 +547,37 @@ namespace AppointVaAPI.Controllers.V1
             await _db.SaveChangesAsync();
 
             return NoContent();
+        }
+
+        // PATCH api/negocios/{id}/propietario/password — super-admin restablece la contraseña del propietario
+        [HttpPatch("{id:guid}/propietario/password")]
+        [Authorize(Roles = Roles.SuperAdmin)]
+        public async Task<IActionResult> RestablecerPasswordPropietario(Guid id, [FromBody] RestablecerPasswordDto dto)
+        {
+            if (string.IsNullOrWhiteSpace(dto.NuevaPassword) || dto.NuevaPassword.Length < 6)
+                return BadRequest(new { mensaje = "La contraseña debe tener al menos 6 caracteres." });
+
+            var rolePropietario = await _roleManager.FindByNameAsync(Roles.Propietario);
+            if (rolePropietario is null) return NotFound(new { mensaje = "Rol Propietario no encontrado." });
+
+            var propietario = await _userManager.Users
+                .Where(u => u.NegocioId == id)
+                .FirstOrDefaultAsync(u => _db.UserRoles.Any(ur => ur.UserId == u.Id && ur.RoleId == rolePropietario.Id));
+
+            if (propietario is null) return NotFound(new { mensaje = "Este negocio no tiene propietario registrado." });
+
+            var removeResult = await _userManager.RemovePasswordAsync(propietario);
+            if (!removeResult.Succeeded)
+                return BadRequest(new { mensaje = "No se pudo remover la contraseña actual." });
+
+            var addResult = await _userManager.AddPasswordAsync(propietario, dto.NuevaPassword);
+            if (!addResult.Succeeded)
+            {
+                var errores = string.Join(", ", addResult.Errors.Select(e => e.Description));
+                return BadRequest(new { mensaje = errores });
+            }
+
+            return Ok(new { mensaje = "Contraseña restablecida correctamente." });
         }
 
         private static NegocioDto MapearDto(Negocio n) => new()
