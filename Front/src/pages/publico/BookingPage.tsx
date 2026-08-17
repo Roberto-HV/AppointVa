@@ -770,7 +770,7 @@ export default function BookingPage() {
           }}
         />
         {/* Contenido con padding-top para dejar ver la foto arriba */}
-        <div className={`relative z-10 px-5 pb-4 ${negocio.portadaUrl ? "pt-44" : "pt-8"}`}>
+        <div className={`relative z-10 px-5 pb-4 ${negocio.portadaUrl ? "pt-28 sm:pt-44" : "pt-8"}`}>
           {/* Fila: logo + nombre alineados arriba */}
           <div className="flex items-start gap-3.5">
             {/* Logo */}
