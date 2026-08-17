@@ -214,12 +214,14 @@ function GaleriaDesktop({ imagenes, onOpen }: { imagenes: ImagenGaleria[]; onOpe
         {total > 1 && (
           <>
             <button
+              onPointerDown={e => e.stopPropagation()}
               onClick={() => mainRef.current?.go("<")}
               className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-white/90 shadow-md flex items-center justify-center text-gray-600 hover:bg-white transition"
             >
               <ChevronLeft size={18} />
             </button>
             <button
+              onPointerDown={e => e.stopPropagation()}
               onClick={() => mainRef.current?.go(">")}
               className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-white/90 shadow-md flex items-center justify-center text-gray-600 hover:bg-white transition"
             >
