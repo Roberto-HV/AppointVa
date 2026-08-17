@@ -775,7 +775,6 @@ export default function NegociosAdminPage() {
   const [resetandoPassword, setResetandoPassword] = useState(false);
   const [busqueda, setBusqueda] = useState("");
   const [colorPrimario, setColorPrimario] = useState("#334155");
-  const [colorSecundario, setColorSecundario] = useState("#a07830");
 
   const queryClient = qc;
   const [tab, setTab] = useState<'negocios' | 'facturacion'>('negocios');
@@ -889,7 +888,6 @@ export default function NegociosAdminPage() {
   const abrirColores = (neg: NegocioMetricasDto) => {
     setNegocioSel(neg);
     setColorPrimario(neg.colorPrimario ?? "#334155");
-    setColorSecundario(neg.colorSecundario ?? "#a07830");
     setModalColores(true);
   };
 
