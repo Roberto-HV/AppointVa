@@ -178,17 +178,32 @@ function GaleriaSection({ imagenes }: { imagenes: ImagenGaleria[] }) {
 }
 
 function GaleriaDesktop({ imagenes }: { imagenes: ImagenGaleria[] }) {
-  const [lightbox, setLightbox] = useState<string | null>(null);
+  const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
 
+  const total = imagenes.length;
   const hero = imagenes[0];
   const thumbs = imagenes.slice(1, 5);
-  const remaining = Math.max(0, imagenes.length - 5);
+  const remaining = Math.max(0, total - 5);
+
+  const goPrev = () => setLightboxIdx(i => i !== null ? (i - 1 + total) % total : null);
+  const goNext = () => setLightboxIdx(i => i !== null ? (i + 1) % total : null);
+
+  useEffect(() => {
+    if (lightboxIdx === null) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft") goPrev();
+      else if (e.key === "ArrowRight") goNext();
+      else if (e.key === "Escape") setLightboxIdx(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [lightboxIdx]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <>
       <div className="space-y-2">
         <button
-          onClick={() => setLightbox(hero.url)}
+          onClick={() => setLightboxIdx(0)}
           className="block w-full rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
         >
           <img src={hero.url} alt={hero.descripcion ?? ""} className="w-full h-64 object-cover" draggable={false} />
@@ -200,13 +215,13 @@ function GaleriaDesktop({ imagenes }: { imagenes: ImagenGaleria[] }) {
               return (
                 <button
                   key={i}
-                  onClick={() => setLightbox(img.url)}
+                  onClick={() => setLightboxIdx(i + 1)}
                   className="relative rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
                 >
                   <img src={img.url} alt={img.descripcion ?? ""} className="w-full h-28 object-cover" draggable={false} />
                   {isLast && (
-                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                      <span className="text-white font-bold text-sm">+{remaining}</span>
+                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                      <span className="text-white font-bold text-lg">+{remaining}</span>
                     </div>
                   )}
                 </button>
@@ -215,12 +230,43 @@ function GaleriaDesktop({ imagenes }: { imagenes: ImagenGaleria[] }) {
           </div>
         )}
       </div>
-      {lightbox && (
-        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={() => setLightbox(null)}>
-          <button className="absolute top-4 right-4 text-white/80 hover:text-white" onClick={() => setLightbox(null)}>
-            <X size={28} />
+
+      {lightboxIdx !== null && (
+        <div
+          className="fixed inset-0 bg-black/92 z-[200] flex items-center justify-center"
+          onClick={() => setLightboxIdx(null)}
+        >
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 text-white/60 text-sm tabular-nums">
+            {lightboxIdx + 1} de {total}
+          </div>
+          <button
+            className="absolute top-4 right-4 text-white/70 hover:text-white transition"
+            onClick={() => setLightboxIdx(null)}
+          >
+            <X size={26} />
           </button>
-          <img src={lightbox} alt="" className="max-w-full max-h-[85vh] rounded-xl object-contain" />
+          <img
+            src={imagenes[lightboxIdx].url}
+            alt={imagenes[lightboxIdx].descripcion ?? ""}
+            className="max-w-[90vw] max-h-[85vh] rounded-xl object-contain"
+            onClick={e => e.stopPropagation()}
+          />
+          {total > 1 && (
+            <>
+              <button
+                className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center text-white transition"
+                onClick={e => { e.stopPropagation(); goPrev(); }}
+              >
+                <ChevronLeft size={20} />
+              </button>
+              <button
+                className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center text-white transition"
+                onClick={e => { e.stopPropagation(); goNext(); }}
+              >
+                <ChevronRight size={20} />
+              </button>
+            </>
+          )}
         </div>
       )}
     </>
@@ -785,7 +831,7 @@ export default function BookingPage() {
 
         {/* Left column — galería + reseñas, solo desktop */}
         {negocio.galeria?.length > 0 && (
-          <div className="hidden lg:block w-[400px] shrink-0 sticky top-4">
+          <div className="hidden lg:block w-[400px] shrink-0 sticky top-4 mt-8">
             <GaleriaDesktop imagenes={negocio.galeria} />
             {negocio.resenas?.length > 0 && (
               <div className="mt-6">
