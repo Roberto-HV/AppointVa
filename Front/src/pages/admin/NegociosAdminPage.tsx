@@ -772,7 +772,7 @@ export default function NegociosAdminPage() {
   const [mostrarNuevaPassword, setMostrarNuevaPassword] = useState(false);
   const [resetandoPassword, setResetandoPassword] = useState(false);
   const [busqueda, setBusqueda] = useState("");
-  const [colorPrimario, setColorPrimario] = useState("#C8A961");
+  const [colorPrimario, setColorPrimario] = useState("#334155");
   const [colorSecundario, setColorSecundario] = useState("#a07830");
 
   const queryClient = qc;
@@ -887,7 +887,7 @@ export default function NegociosAdminPage() {
 
   const abrirColores = (neg: NegocioMetricasDto) => {
     setNegocioSel(neg);
-    setColorPrimario(neg.colorPrimario ?? "#C8A961");
+    setColorPrimario(neg.colorPrimario ?? "#334155");
     setColorSecundario(neg.colorSecundario ?? "#a07830");
     setModalColores(true);
   };
@@ -1376,7 +1376,7 @@ export default function NegociosAdminPage() {
             </p>
             <div className="space-y-4">
               {([
-                { label: "Color primario", val: colorPrimario, set: setColorPrimario, ph: "#C8A961" },
+                { label: "Color primario", val: colorPrimario, set: setColorPrimario, ph: "#334155" },
                 { label: "Color secundario", val: colorSecundario, set: setColorSecundario, ph: "#a07830" },
               ] as const).map(({ label, val, set, ph }) => (
                 <div key={label}>
