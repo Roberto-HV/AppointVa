@@ -74,26 +74,22 @@ function GaleriaSection({ imagenes }: { imagenes: ImagenGaleria[] }) {
     const el = scrollRef.current;
     if (!el || jumpingRef.current) return;
 
-    const extIdx = centeredExtIdx();
-    const realIdx = loop
-      ? extIdx === 0 ? total - 1 : extIdx === total + 1 ? 0 : extIdx - 1
-      : extIdx;
-    setActiveIndex(Math.max(0, Math.min(total - 1, realIdx)));
-
-    // Debounced jump from clone to real slide
-    if (loop) {
-      clearTimeout(timerRef.current);
-      timerRef.current = setTimeout(() => {
-        const el2 = scrollRef.current;
-        if (!el2 || jumpingRef.current) return;
-        const idx = centeredExtIdx();
-        if (idx === 0 || idx === total + 1) {
-          jumpingRef.current = true;
-          centerSlide(idx === 0 ? total : 1, false);
-          setTimeout(() => { jumpingRef.current = false; }, 80);
-        }
-      }, 120);
-    }
+    // Debounce everything: state update + clone jump run once scroll settles
+    clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      const el2 = scrollRef.current;
+      if (!el2 || jumpingRef.current) return;
+      const extIdx = centeredExtIdx();
+      const realIdx = loop
+        ? extIdx === 0 ? total - 1 : extIdx === total + 1 ? 0 : extIdx - 1
+        : extIdx;
+      setActiveIndex(Math.max(0, Math.min(total - 1, realIdx)));
+      if (loop && (extIdx === 0 || extIdx === total + 1)) {
+        jumpingRef.current = true;
+        centerSlide(extIdx === 0 ? total : 1, false);
+        setTimeout(() => { jumpingRef.current = false; }, 80);
+      }
+    }, 80);
   };
 
   // Windowed dots — max 5 visible
@@ -195,7 +191,7 @@ function GaleriaDesktop({ imagenes }: { imagenes: ImagenGaleria[] }) {
           onClick={() => setLightbox(hero.url)}
           className="block w-full rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
         >
-          <img src={hero.url} alt={hero.descripcion ?? ""} className="w-full h-56 object-cover" draggable={false} />
+          <img src={hero.url} alt={hero.descripcion ?? ""} className="w-full h-64 object-cover" draggable={false} />
         </button>
         {thumbs.length > 0 && (
           <div className="grid grid-cols-2 gap-2">
@@ -785,11 +781,11 @@ export default function BookingPage() {
       <IndicadorPasos pasoActual={paso} pasos={PASOS} color={color} slug={negocio.slug} />
 
       {/* Contenido */}
-      <div className="lg:max-w-5xl lg:mx-auto lg:px-8 lg:flex lg:gap-10 lg:items-start lg:pt-8 lg:pb-12">
+      <div className="lg:max-w-5xl lg:mx-auto lg:px-8 lg:flex lg:gap-8 lg:items-start lg:pt-8 lg:pb-12">
 
         {/* Left column — galería + reseñas, solo desktop */}
         {negocio.galeria?.length > 0 && (
-          <div className="hidden lg:block w-[360px] shrink-0 sticky top-4">
+          <div className="hidden lg:block w-[400px] shrink-0 sticky top-4">
             <GaleriaDesktop imagenes={negocio.galeria} />
             {negocio.resenas?.length > 0 && (
               <div className="mt-6">
@@ -804,7 +800,7 @@ export default function BookingPage() {
         )}
 
         {/* Right column — flujo de reserva */}
-        <div className="max-w-lg mx-auto px-4 pt-5 pb-10 lg:flex-1 lg:max-w-none lg:mx-0 lg:px-0 lg:pt-0 lg:pb-0">
+        <div className="max-w-lg mx-auto px-4 pt-5 pb-10 lg:flex-1 lg:mx-0 lg:px-0 lg:pt-0 lg:pb-0">
 
         {/* Mini-resumen breadcrumb */}
         {paso >= 2 && (servicio || empleado) && (

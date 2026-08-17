@@ -34,7 +34,7 @@ export default function IndicadorPasos({ pasoActual, pasos, color = "#334155", s
           className="ml-2 text-xs"
           style={{ color: "rgba(255,255,255,0.35)" }}
         >
-          {pasoActual}/{pasos.length}
+          {pasoActual} de {pasos.length}
         </span>
       </div>
 
