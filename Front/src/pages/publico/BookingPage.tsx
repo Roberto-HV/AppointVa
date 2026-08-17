@@ -19,6 +19,8 @@ import PublicFooter from "../../components/PublicFooter";
 
 import { hexToChannels, DEFAULT_COLOR } from "../../lib/colorUtils";
 import SocialLinks from "../../components/icons/SocialLinks";
+import { Splide, SplideSlide } from "@splidejs/react-splide";
+import "@splidejs/react-splide/css/core";
 
 function GaleriaSection({ imagenes }: { imagenes: ImagenGaleria[] }) {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -180,38 +182,84 @@ function GaleriaSection({ imagenes }: { imagenes: ImagenGaleria[] }) {
 }
 
 function GaleriaDesktop({ imagenes, onOpen }: { imagenes: ImagenGaleria[]; onOpen: (idx: number) => void }) {
-  const hero = imagenes[0];
-  const thumbs = imagenes.slice(1, 5);
-  const remaining = Math.max(0, imagenes.length - 5);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const mainRef = useRef<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const thumbsRef = useRef<any>(null);
+  const [currentIdx, setCurrentIdx] = useState(0);
+  const total = imagenes.length;
+
+  useEffect(() => {
+    if (mainRef.current && thumbsRef.current?.splide) {
+      mainRef.current.sync(thumbsRef.current.splide);
+    }
+  }, []);
 
   return (
     <div className="space-y-2">
-      <button
-        onClick={() => onOpen(0)}
-        className="block w-full rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
-      >
-        <img src={hero.url} alt={hero.descripcion ?? ""} className="w-full h-64 object-cover" draggable={false} />
-      </button>
-      {thumbs.length > 0 && (
-        <div className="grid grid-cols-2 gap-2">
-          {thumbs.map((img, i) => {
-            const isLast = i === thumbs.length - 1 && remaining > 0;
-            return (
-              <button
-                key={i}
-                onClick={() => onOpen(i + 1)}
-                className="relative rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
-              >
-                <img src={img.url} alt={img.descripcion ?? ""} className="w-full h-28 object-cover" draggable={false} />
-                {isLast && (
-                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                    <span className="text-white font-bold text-lg">+{remaining}</span>
-                  </div>
-                )}
+      <div className="relative rounded-2xl overflow-hidden shadow-sm">
+        <Splide
+          ref={mainRef}
+          options={{ type: "loop", pagination: false, arrows: false }}
+          onMove={(_splide: unknown, index: number) => setCurrentIdx(index)}
+        >
+          {imagenes.map((img, i) => (
+            <SplideSlide key={i}>
+              <button onClick={() => onOpen(i)} className="block w-full focus:outline-none">
+                <img src={img.url} alt={img.descripcion ?? ""} className="w-full h-72 object-cover" draggable={false} />
               </button>
-            );
-          })}
-        </div>
+            </SplideSlide>
+          ))}
+        </Splide>
+        {total > 1 && (
+          <>
+            <button
+              onClick={() => mainRef.current?.go("<")}
+              className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-white/90 shadow-md flex items-center justify-center text-gray-600 hover:bg-white transition"
+            >
+              <ChevronLeft size={18} />
+            </button>
+            <button
+              onClick={() => mainRef.current?.go(">")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-white/90 shadow-md flex items-center justify-center text-gray-600 hover:bg-white transition"
+            >
+              <ChevronRight size={18} />
+            </button>
+            <div className="absolute bottom-2 right-2 bg-black/50 text-white text-xs tabular-nums px-2 py-0.5 rounded-full select-none">
+              {currentIdx + 1} de {total}
+            </div>
+          </>
+        )}
+      </div>
+      {total > 1 && (
+        <Splide
+          ref={thumbsRef}
+          options={{
+            type: "slide",
+            rewind: true,
+            gap: 6,
+            pagination: false,
+            fixedWidth: 72,
+            fixedHeight: 52,
+            cover: true,
+            isNavigation: true,
+            arrows: false,
+            focus: "center",
+          }}
+        >
+          {imagenes.map((img, i) => (
+            <SplideSlide key={i}>
+              <img
+                src={img.url}
+                alt=""
+                className={`w-full h-full object-cover rounded-lg cursor-pointer transition-opacity ${
+                  i === currentIdx ? "ring-2 ring-slate-700 opacity-100" : "opacity-50 hover:opacity-80"
+                }`}
+                draggable={false}
+              />
+            </SplideSlide>
+          ))}
+        </Splide>
       )}
     </div>
   );
