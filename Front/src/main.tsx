@@ -15,6 +15,14 @@ if (import.meta.env.PROD && import.meta.env.VITE_SENTRY_DSN) {
   });
 }
 
+// Captura promesas rechazadas sin manejar — solo en desarrollo
+// En producción Sentry las captura automáticamente
+if (import.meta.env.DEV) {
+  window.addEventListener("unhandledrejection", (event) => {
+    console.error("[UnhandledRejection]", event.reason);
+  });
+}
+
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("/sw.js").catch(() => {});
