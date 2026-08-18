@@ -35,7 +35,7 @@ namespace AppointVaAPI.Data
                             Id = Guid.NewGuid(),
                             Nombre = "Basico",
                             PrecioMensual = 249.00m,
-                            MaxEmpleados = 3,
+                            MaxEmpleados = 2,
                             MaxCitasMes = 200,
                             Activo = 1,
                             FechaCreacion = DateTime.UtcNow
@@ -44,8 +44,8 @@ namespace AppointVaAPI.Data
                         {
                             Id = Guid.NewGuid(),
                             Nombre = "Pro",
-                            PrecioMensual = 399.00m,
-                            MaxEmpleados = 6,
+                            PrecioMensual = 449.00m,
+                            MaxEmpleados = 4,
                             MaxCitasMes = 1000,
                             Activo = 1,
                             FechaCreacion = DateTime.UtcNow

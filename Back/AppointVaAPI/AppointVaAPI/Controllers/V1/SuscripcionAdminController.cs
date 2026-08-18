@@ -96,7 +96,7 @@ namespace AppointVaAPI.Controllers.V1
                     PrecioBase       = n.PrecioBase,
                     MaxEmpleadosBase = n.MaxEmpleadosBase,
                     EmpleadosExtra   = n.EmpleadosExtra,
-                    TotalMensual     = n.PrecioBase + (n.EmpleadosExtra * 49m),
+                    TotalMensual     = n.PrecioBase + (n.EmpleadosExtra * 50m),
                     Sector           = n.Sector
                 };
             }).ToList();
