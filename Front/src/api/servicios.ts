@@ -2,8 +2,22 @@ import { api } from "./axios";
 import type { ServicioDto, CategoriaDto, CrearServicioDto } from "../types";
 
 export const serviciosApi = {
-  obtenerTodos: async (): Promise<ServicioDto[]> => {
-    const { data } = await api.get("/servicios");
+  obtenerTodos: async (incluirInactivos = false): Promise<ServicioDto[]> => {
+    const { data } = await api.get("/servicios", { params: { incluirInactivos } });
+    return data;
+  },
+
+  toggleActivo: async (s: ServicioDto): Promise<ServicioDto> => {
+    const { data } = await api.put(`/servicios/${s.id}`, {
+      categoriaId: s.categoriaId || undefined,
+      nombre: s.nombre,
+      descripcion: s.descripcion || undefined,
+      duracionMinutos: s.duracionMinutos,
+      bufferMinutos: s.bufferMinutos,
+      precio: s.precio,
+      orden: s.orden,
+      activo: !s.activo,
+    });
     return data;
   },
 

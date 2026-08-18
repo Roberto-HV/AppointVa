@@ -52,7 +52,7 @@ export default function ServiciosPage() {
   // ── Queries ───────────────────────────────────────────────────────────────
   const { data: servicios = [], isLoading } = useQuery({
     queryKey: ["servicios"],
-    queryFn: () => serviciosApi.obtenerTodos(),
+    queryFn: () => serviciosApi.obtenerTodos(true),
   });
 
   const { data: categorias = [], isLoading: cargandoCategorias } = useQuery({
@@ -118,6 +118,12 @@ export default function ServiciosPage() {
     mutationFn: (id: string) => serviciosApi.eliminar(id),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["servicios"] }); toast(`${terms.servicio} eliminado`); },
     onError: () => toast(`No se pudo eliminar el ${terms.servicio.toLowerCase()}. Intenta de nuevo.`, "error"),
+  });
+
+  const { mutate: mutToggleActivo, isPending: togglendoActivo } = useMutation({
+    mutationFn: (s: ServicioDto) => serviciosApi.toggleActivo(s),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["servicios"] }); },
+    onError: () => toast("No se pudo cambiar el estado del servicio. Intenta de nuevo.", "error"),
   });
 
   const { mutate: subirImagen } = useMutation({
@@ -279,6 +285,18 @@ export default function ServiciosPage() {
                       <div className="flex items-center gap-3 sm:gap-5 shrink-0">
                         <span className="hidden sm:inline font-semibold text-gray-800 text-sm dark:text-gray-200">{formatPrecio(s.precio)}</span>
                         <div className="flex gap-2">
+                          <button
+                            onClick={() => mutToggleActivo(s)}
+                            disabled={togglendoActivo}
+                            title={s.activo ? "Desactivar servicio" : "Activar servicio"}
+                            className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg transition disabled:opacity-50 ${
+                              s.activo
+                                ? "bg-green-50 text-green-600 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50"
+                                : "bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-slate-700 dark:text-gray-400 dark:hover:bg-slate-600"
+                            }`}
+                          >
+                            {s.activo ? "Activo" : "Inactivo"}
+                          </button>
                           <button
                             onClick={() => abrirEditarServicio(s)}
                             className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50 transition"

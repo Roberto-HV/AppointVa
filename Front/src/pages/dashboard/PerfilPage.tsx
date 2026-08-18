@@ -68,7 +68,7 @@ const schema = z.object({
   requiereAnticipo: z.boolean().optional(),
   montoAnticipo: z.coerce.number().min(0).optional(),
   instruccionesAnticipo: z.string().max(500).optional(),
-  porcentajeAnticipo: z.number().int().min(0).max(80).default(10),
+  porcentajeAnticipo: z.number().int().min(1).max(100).default(10),
   horasCancelacionConReembolso: z.number().int().min(0).default(24),
   politicaCancelacionAnticipo: z.string().max(500).default(''),
   instagramUrl: z.string().max(200).optional(),
@@ -86,13 +86,12 @@ export default function PerfilPage() {
   const { refreshToken, cerrarSesion } = useAuthStore();
   const logoRef = useRef<HTMLInputElement>(null);
   const portadaRef = useRef<HTMLInputElement>(null);
-  const [searchParams] = useSearchParams();
-  const tabParam = searchParams.get("tab") as Tab | null;
-  const [tab, setTab] = useState<Tab>(
-    tabParam && ["perfil", "citas", "anticipos", "horarios", "cuenta"].includes(tabParam)
-      ? tabParam as Tab
-      : "perfil"
-  );
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabRaw = searchParams.get("tab");
+  const tab: Tab = (["perfil", "citas", "anticipos", "horarios", "cuenta"] as Tab[]).includes(tabRaw as Tab)
+    ? (tabRaw as Tab)
+    : "perfil";
+  const setTab = (t: Tab) => setSearchParams({ tab: t }, { replace: true });
   const [modalEliminar, setModalEliminar] = useState(false);
   const [contrasenaEliminar, setContrasenaEliminar] = useState("");
 
@@ -158,6 +157,10 @@ export default function PerfilPage() {
   });
 
   const onSubmit = (data: PerfilForm) => {
+    if (data.requiereAnticipo && (data.porcentajeAnticipo < 1 || data.porcentajeAnticipo > 100)) {
+      toast("El porcentaje de anticipo debe estar entre 1% y 100%.", "error");
+      return;
+    }
     guardar({ ...data, email: data.email || undefined, telefono: data.telefono || undefined });
   };
 
@@ -197,6 +200,15 @@ export default function PerfilPage() {
   useEffect(() => {
     if (horariosData) { setHorarios(horariosData); setHorariosDirty(false); }
   }, [horariosData]);
+
+  useEffect(() => {
+    if (horariosDirty) {
+      window.onbeforeunload = () => "Tienes cambios sin guardar en el horario.";
+    } else {
+      window.onbeforeunload = null;
+    }
+    return () => { window.onbeforeunload = null; };
+  }, [horariosDirty]);
 
   const { mutate: guardarHorarios, isPending: guardandoHorarios } = useMutation({
     mutationFn: () => negociosApi.actualizarHorarios(horarios),
