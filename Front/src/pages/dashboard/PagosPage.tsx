@@ -156,6 +156,13 @@ export default function PagosPage() {
     enabled: tab === 'corte',
   });
 
+  // Reset fields when date changes (must run before populate to avoid stale data)
+  useEffect(() => {
+    setCierreInicio('');
+    setCierreContado('');
+    setRetiros([]);
+  }, [corteDate]);
+
   // Pre-populate from existing cierre when data loads
   useEffect(() => {
     if (cierreData) {
@@ -164,13 +171,6 @@ export default function PagosPage() {
       setRetiros(cierreData.retiros ?? []);
     }
   }, [cierreData]);
-
-  // Reset fields when date changes
-  useEffect(() => {
-    setCierreInicio('');
-    setCierreContado('');
-    setRetiros([]);
-  }, [corteDate]);
 
   // ── Cobro derived data ────────────────────────────────────────────────────
   const todas = pagina?.datos ?? [];
@@ -216,15 +216,14 @@ export default function PagosPage() {
   const histTotalPropinas = histFiltrado.reduce((s, c) => s + (c.propina ?? 0), 0);
 
   const histDesglose = METODOS_PAGO.reduce<Record<string, number>>((acc, m) => {
-    acc[m] = histFiltrado.filter(c => c.metodoPago === m)
-      .reduce((s, c) => s + (c.montoCobrado ?? c.precio), 0);
+    acc[m] = histFiltrado.reduce((s, c) => s + montoParaMetodo(c, m), 0);
     return acc;
   }, {});
 
   const histDesgloseArr = METODOS_PAGO
     .map(m => ({
       metodo: m,
-      cantidad: histFiltrado.filter(c => c.metodoPago === m).length,
+      cantidad: histFiltrado.filter(c => montoParaMetodo(c, m) > 0).length,
       monto: histDesglose[m] ?? 0,
     }))
     .filter(d => d.cantidad > 0);
@@ -428,7 +427,7 @@ export default function PagosPage() {
     if (histFiltrado.length === 0) { toast("No hay pagos en el período seleccionado", "error"); return; }
     exportarExcel(
       ["Fecha pago", "Cliente", "Servicio", "Empleado", "Método", "Total", "Propina"],
-      histFiltrado.map(c => [[
+      histFiltrado.map(c => [
         c.fechaPago ? new Date(c.fechaPago).toLocaleDateString("es-MX") : "",
         c.nombreCliente,
         c.nombreServicio,
@@ -436,7 +435,7 @@ export default function PagosPage() {
         c.metodoPago ?? "",
         (c.montoCobrado ?? c.precio),
         c.propina ?? 0,
-      ]]),
+      ]),
       `historial-pagos-${histDesde}-${histHasta}`,
       `Historial de pagos`,
       {

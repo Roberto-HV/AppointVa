@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Pencil, Trash2, GripVertical, ClipboardList, X, Check } from "lucide-react";
+import { Plus, Pencil, Trash2, ClipboardList, X, Check } from "lucide-react";
 import { intakeApi, type CampoIntake } from "../../api/intake";
 import { serviciosApi } from "../../api/servicios";
 import { useToastStore } from "../../store/toastStore";
@@ -111,6 +111,10 @@ export default function IntakePage() {
 
   function guardar() {
     if (!form.etiqueta.trim()) return;
+    if (form.tipo === "Seleccion" && !form.opciones.trim()) {
+      toast("Debes agregar al menos una opción para el campo de selección", "error");
+      return;
+    }
     if (editando) {
       mutActualizar.mutate({ id: editando.id, data: form });
     } else {
@@ -287,9 +291,6 @@ function CampoRow({
 
   return (
     <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl px-4 py-3 flex items-center gap-3">
-      <div className="text-gray-300 dark:text-gray-600 cursor-grab shrink-0">
-        <GripVertical size={16} />
-      </div>
       <span className="text-xs text-gray-400 dark:text-gray-500 w-5 shrink-0">{orden}</span>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">

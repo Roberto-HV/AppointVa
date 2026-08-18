@@ -73,6 +73,9 @@ export default function ListaEsperaPage() {
           <div key={k.label} className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4">
             <p className="text-xs text-gray-500 dark:text-gray-400">{k.label}</p>
             <p className={`text-3xl font-bold mt-1 ${k.color}`}>{k.value}</p>
+            {filtroEstado && (
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">(filtrado)</p>
+            )}
           </div>
         ))}
       </div>

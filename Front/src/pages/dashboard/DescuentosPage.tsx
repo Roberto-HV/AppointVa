@@ -63,7 +63,7 @@ export default function DescuentosPage() {
     onError: (err: unknown) => {
       const msg = (err as { response?: { data?: { mensaje?: string } } })
         ?.response?.data?.mensaje ?? "Error al crear el cupón";
-      toast(msg);
+      toast(msg, "error");
     },
   });
 
@@ -231,7 +231,10 @@ export default function DescuentosPage() {
                   descuento={d}
                   copiado={false}
                   onCopiar={() => copiarCodigo(d.codigo)}
-                  onEliminar={() => mutEliminar.mutate(d.id)}
+                  onEliminar={() => {
+                    if (confirm(`¿Eliminar el cupón ${d.codigo}?`))
+                      mutEliminar.mutate(d.id);
+                  }}
                 />
               ))}
             </div>

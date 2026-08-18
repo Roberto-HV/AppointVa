@@ -89,7 +89,7 @@ export default function GaleriaPage() {
           accept="image/*"
           multiple
           className="hidden"
-          onChange={(e) => handleArchivos(e.target.files)}
+          onChange={(e) => { handleArchivos(e.target.files); e.target.value = ""; }}
         />
       </div>
 
