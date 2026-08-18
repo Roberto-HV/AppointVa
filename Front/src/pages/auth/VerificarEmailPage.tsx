@@ -74,10 +74,10 @@ export default function VerificarEmailPage() {
               <h2 className="text-xl font-semibold text-gray-800 mb-2">Enlace inválido</h2>
               <p className="text-gray-500 text-sm mb-6">{mensaje}</p>
               <Link
-                to="/registro"
+                to="/login"
                 className="inline-block w-full bg-slate-700 hover:bg-slate-800 text-white font-semibold py-2.5 rounded-lg transition text-sm"
               >
-                Volver al registro
+                Ir a iniciar sesión
               </Link>
             </>
           )}

@@ -69,6 +69,8 @@ export default function LoginPage() {
     try {
       await api.post("/publico/reenviar-verificacion", { email: emailNoVerificado });
       setReenvioEnviado(true);
+    } catch {
+      setErrorGeneral("No se pudo reenviar el correo. Intenta de nuevo.");
     } finally {
       setReenvioEnviando(false);
     }

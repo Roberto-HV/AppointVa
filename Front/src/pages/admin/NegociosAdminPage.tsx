@@ -238,6 +238,7 @@ function ModalSuscripcion({
       await qc.invalidateQueries({ queryKey: ['admin-suscripciones'] });
     } catch (err) {
       console.error('Error al cambiar sector:', err);
+      toast("No se pudo actualizar el sector. Intenta de nuevo.", "error");
     }
   };
 
@@ -248,6 +249,7 @@ function ModalSuscripcion({
       await qc.invalidateQueries({ queryKey: ['admin-negocios-metricas'] });
     } catch (err) {
       console.error('Error al cambiar plan:', err);
+      toast("No se pudo actualizar el plan. Intenta de nuevo.", "error");
     }
   };
 
@@ -352,7 +354,9 @@ function ModalSuscripcion({
                 onChange={e => {
                   const val = Math.max(0, Number(e.target.value));
                   setEmpleadosExtra(val);
-                  setMonto(String(precioBase + val * PRECIO_EXTRA_EMP));
+                  if (meses !== LIFETIME_SENTINEL) {
+                    setMonto(String((precioBase + val * PRECIO_EXTRA_EMP) * meses));
+                  }
                 }}
                 onBlur={e => mutarEmpleadosExtra.mutate(Math.max(0, Number(e.target.value)))}
                 className="w-16 text-right rounded-lg border border-gray-300 dark:border-gray-600 px-2 py-0.5 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"
@@ -830,16 +834,19 @@ export default function NegociosAdminPage() {
       formNegocio.reset();
       toast("Negocio creado correctamente");
     },
+    onError: () => toast("Error al crear el negocio. Intenta de nuevo.", "error"),
   });
 
   const { mutate: activar } = useMutation({
     mutationFn: (id: string) => adminApi.activar(id),
     onSuccess: invalidar,
+    onError: () => toast("Error al activar el negocio. Intenta de nuevo.", "error"),
   });
 
   const { mutate: desactivar } = useMutation({
     mutationFn: (id: string) => adminApi.desactivar(id),
     onSuccess: invalidar,
+    onError: () => toast("Error al desactivar el negocio. Intenta de nuevo.", "error"),
   });
 
   const { mutate: actualizarColores, isPending: guardandoColores } = useMutation({
@@ -852,6 +859,7 @@ export default function NegociosAdminPage() {
       setModalColores(false);
       toast("Colores actualizados");
     },
+    onError: () => toast("Error al guardar los colores. Intenta de nuevo.", "error"),
   });
 
   const { mutate: crearPropietario, isPending: creandoPropietario } = useMutation({
@@ -1060,7 +1068,7 @@ export default function NegociosAdminPage() {
                   {sortedSuscripciones.map(s => {
                     const badge = ESTADO_BADGE[s.estado] ?? ESTADO_BADGE.SinSuscripcion;
                     return (
-                      <tr key={`${s.negocioId}-${s.empleadosExtra}`} className="bg-white dark:bg-slate-900 hover:bg-gray-50 dark:hover:bg-slate-800/60 transition">
+                      <tr key={s.negocioId} className="bg-white dark:bg-slate-900 hover:bg-gray-50 dark:hover:bg-slate-800/60 transition">
                         <td className="px-4 py-3 font-medium text-gray-800 dark:text-gray-200">{s.negocioNombre}</td>
                         <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{s.planNombre ?? '—'}</td>
                         <td className="px-4 py-3 text-center text-gray-600 dark:text-gray-400">{s.maxEmpleadosBase}</td>

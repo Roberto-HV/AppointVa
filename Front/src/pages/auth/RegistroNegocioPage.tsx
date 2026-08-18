@@ -111,6 +111,8 @@ export default function RegistroNegocioPage() {
     try {
       await api.post("/publico/reenviar-verificacion", { email: emailRegistrado });
       setReenvioEnviado(true);
+    } catch {
+      setErrorGeneral("No se pudo reenviar el correo. Intenta de nuevo.");
     } finally {
       setReenvioEnviando(false);
     }

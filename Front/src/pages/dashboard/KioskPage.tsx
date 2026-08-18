@@ -5,6 +5,7 @@ import { citasApi } from "../../api/citas";
 import { empleadosApi } from "../../api/empleados";
 import { negociosApi } from "../../api/negocios";
 import { useSectorTerms } from "../../hooks/useSectorTerms";
+import { useAuthStore } from "../../store/authStore";
 import type { CitaDto } from "../../types";
 
 const EMP_COLORS = [
@@ -34,6 +35,8 @@ export default function KioskPage() {
   const [ahora, setAhora] = useState(new Date());
   const today = fechaLocalStr(ahora);
   const terms = useSectorTerms();
+  const usuario = useAuthStore((s) => s.usuario);
+  const esEmpleado = usuario?.rol === "Empleado";
 
   useEffect(() => {
     const id = setInterval(() => setAhora(new Date()), 1000);
@@ -231,7 +234,7 @@ export default function KioskPage() {
         <div className="flex items-center gap-6 text-xs text-white/30">
           <span>{`${citasValidas.length} ${terms.citas.toLowerCase()} hoy`}</span>
           <span>{completadas} completadas</span>
-          {revenue > 0 && (
+          {revenue > 0 && !esEmpleado && (
             <span className="text-emerald-400/80">
               ${revenue.toLocaleString("es-MX")} generado
             </span>

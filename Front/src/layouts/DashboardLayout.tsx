@@ -249,11 +249,15 @@ export default function DashboardLayout() {
   const iniciales = (usuario?.nombreCompleto ?? "?")
     .split(" ").slice(0, 2).map((n: string) => n[0]).join("").toUpperCase();
 
-  const copiarEnlace = () => {
+  const copiarEnlace = async () => {
     if (!bookingUrl) return;
-    navigator.clipboard.writeText(bookingUrl);
-    setCopiado(true);
-    setTimeout(() => setCopiado(false), 2000);
+    try {
+      await navigator.clipboard.writeText(bookingUrl);
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 2000);
+    } catch {
+      // clipboard failed silently
+    }
   };
 
   const handleLogout = async () => {
