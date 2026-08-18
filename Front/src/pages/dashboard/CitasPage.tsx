@@ -44,6 +44,7 @@ import type { CitaDto, SlotDisponible } from "../../types";
 import { SkeletonTableRows } from "../../components/ui/Skeleton";
 import { Tooltip } from "../../components/ui/Tooltip";
 import { exportarExcel } from "../../utils/exportarExcel";
+import { reportesApi } from "../../api/reportes";
 import { intakeApi } from "../../api/intake";
 import { formatPrecio, formatFechaHoraCorta as formatFechaHora } from "../../utils/formatters";
 import Pagination from "../../components/ui/Pagination";
@@ -389,20 +390,12 @@ export default function CitasPage() {
 
   // ── Excel export ─────────────────────────────────────────────────────────────
   const exportarCSV = () => {
-    const encabezados = ["Fecha", "Cliente", "Teléfono", "Servicio", "Profesional", "Precio", "Estado", "Pagada", "Método de pago", "Notas"];
-    const filas = citas.map((c) => [
-      new Date(c.inicioEn).toLocaleString("es-MX", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true }),
-      c.nombreCliente,
-      c.telefonoCliente ?? "",
-      c.nombreServicio,
-      c.nombreEmpleado,
-      `$${c.precio.toFixed(2)}`,
-      c.estadoTexto,
-      c.pagada ? "Sí" : "No",
-      c.metodoPago ?? "",
-      c.notas ?? "",
-    ]);
-    exportarExcel(encabezados, [filas], "citas", `Reporte de ${terms.citas}`);
+    reportesApi.exportarCitasCsv({
+      desde: desde || undefined,
+      hasta: hasta || undefined,
+      empleadoId: empleadoId || undefined,
+      estado: estadoNum,
+    }).catch(() => toast("No se pudo exportar el reporte. Intenta de nuevo.", "error"));
   };
 
   // ── Render ───────────────────────────────────────────────────────────────────

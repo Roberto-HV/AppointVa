@@ -136,12 +136,16 @@ export default function ClientesPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{terms.clientes}</h1>
         {tab === "todos" && clientes.length > 0 && (
-          <button
-            onClick={exportarClientes}
-            className="text-xs text-gray-500 hover:text-gray-700 border border-gray-200 hover:border-gray-300 px-3 py-1.5 rounded-lg transition dark:text-gray-400 dark:border-slate-600"
-          >
-            Exportar Excel
-          </button>
+          <div className="flex flex-col items-end gap-0.5">
+            <button
+              onClick={exportarClientes}
+              className="text-xs text-gray-500 hover:text-gray-700 border border-gray-200 hover:border-gray-300 px-3 py-1.5 rounded-lg transition dark:text-gray-400 dark:border-slate-600"
+              title={`Exporta solo los ${TAMANO} clientes de esta página`}
+            >
+              Exportar Excel
+            </button>
+            <span className="text-[10px] text-amber-500 dark:text-amber-400">Solo página actual ({TAMANO} clientes)</span>
+          </div>
         )}
       </div>
 

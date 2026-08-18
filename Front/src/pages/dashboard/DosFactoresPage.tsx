@@ -190,7 +190,7 @@ export default function DosFactoresPage() {
       )}
 
       {/* ── Si 2FA está activado, opción de desactivar ── */}
-      {estado?.habilitado && (
+      {estado?.habilitado && paso !== 'activado' && (
         <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5 space-y-4">
           <div className="flex items-center gap-2 text-red-600">
             <ShieldOff size={18} />

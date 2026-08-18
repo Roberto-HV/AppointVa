@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Select from "../../components/ui/Select";
 import {
@@ -17,6 +17,8 @@ import { SkeletonTableRows } from "../../components/ui/Skeleton";
 import { formatPrecio, formatFechaHora as formatFecha } from "../../utils/formatters";
 
 type Tab = "citas" | "ingresos" | "empleados" | "heatmap" | "retencion";
+
+const REPORTE_PAGE_SIZE = 100;
 
 const ESTADOS_OPCIONES = [
   { valor: 1, texto: "Pendiente" },
@@ -68,6 +70,7 @@ function Tarjeta({ label, valor, subvalor, icono }: TarjetaProps) {
 export default function ReportesPage() {
   const terms = useSectorTerms();
   const [tab, setTab] = useState<Tab>("citas");
+  const [reportePagina, setReportePagina] = useState(1);
   const [desde, setDesde] = useState(inicioMes());
   const [hasta, setHasta] = useState(hoy());
   const [empleadoId, setEmpleadoId] = useState("");
@@ -117,6 +120,8 @@ export default function ReportesPage() {
     queryFn: () => reportesApi.obtenerRetencion(desde, hasta),
     enabled: tab === "retencion",
   });
+
+  useEffect(() => { setReportePagina(1); }, [reporteCitas]);
 
   const handleExportar = () => {
     if (!reporteCitas?.citas.length) return;
@@ -359,6 +364,32 @@ export default function ReportesPage() {
 
           {/* Tabla */}
           <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 overflow-x-auto">
+            {reporteCitas && reporteCitas.citas.length > 0 && (
+              <div className="px-4 py-2 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                <span>
+                  Mostrando {Math.min((reportePagina - 1) * REPORTE_PAGE_SIZE + 1, reporteCitas.citas.length)}–{Math.min(reportePagina * REPORTE_PAGE_SIZE, reporteCitas.citas.length)} de {reporteCitas.citas.length} citas
+                </span>
+                {reporteCitas.citas.length > REPORTE_PAGE_SIZE && (
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setReportePagina((p) => Math.max(1, p - 1))}
+                      disabled={reportePagina === 1}
+                      className="px-2 py-1 rounded border border-gray-200 dark:border-slate-600 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-slate-700 transition"
+                    >
+                      ← Anterior
+                    </button>
+                    <span>{reportePagina} / {Math.ceil(reporteCitas.citas.length / REPORTE_PAGE_SIZE)}</span>
+                    <button
+                      onClick={() => setReportePagina((p) => Math.min(Math.ceil(reporteCitas.citas.length / REPORTE_PAGE_SIZE), p + 1))}
+                      disabled={reportePagina >= Math.ceil(reporteCitas.citas.length / REPORTE_PAGE_SIZE)}
+                      className="px-2 py-1 rounded border border-gray-200 dark:border-slate-600 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-slate-700 transition"
+                    >
+                      Siguiente →
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-100 dark:border-slate-700">
@@ -385,24 +416,26 @@ export default function ReportesPage() {
                     </td>
                   </tr>
                 ) : (
-                  reporteCitas.citas.map((c) => (
-                    <tr key={c.id} className="border-b border-gray-50 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 transition">
-                      <td className="px-4 py-3 font-mono text-xs text-gray-400 dark:text-gray-500">{c.codigoConfirmacion}</td>
-                      <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100 whitespace-nowrap">{c.nombreCliente}</td>
-                      <td className="px-4 py-3 text-gray-600 dark:text-gray-400 whitespace-nowrap">{c.nombreServicio}</td>
-                      <td className="px-4 py-3 text-gray-600 dark:text-gray-400 whitespace-nowrap">{c.nombreEmpleado}</td>
-                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap">{formatFecha(c.inicioEn)}</td>
-                      <td className="px-4 py-3 font-semibold text-gray-900 dark:text-gray-100 whitespace-nowrap">{formatPrecio(c.precio)}</td>
-                      <td className="px-4 py-3 text-center">
-                        {c.pagada
-                          ? <span className="text-green-600 font-semibold text-xs">{c.metodoPago ?? "Sí"}</span>
-                          : <span className="text-gray-300 dark:text-gray-600 text-xs">—</span>}
-                      </td>
-                      <td className="px-4 py-3">
-                        <EstadoBadge estado={c.estadoTexto} />
-                      </td>
-                    </tr>
-                  ))
+                  reporteCitas.citas
+                    .slice((reportePagina - 1) * REPORTE_PAGE_SIZE, reportePagina * REPORTE_PAGE_SIZE)
+                    .map((c) => (
+                      <tr key={c.id} className="border-b border-gray-50 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 transition">
+                        <td className="px-4 py-3 font-mono text-xs text-gray-400 dark:text-gray-500">{c.codigoConfirmacion}</td>
+                        <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100 whitespace-nowrap">{c.nombreCliente}</td>
+                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400 whitespace-nowrap">{c.nombreServicio}</td>
+                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400 whitespace-nowrap">{c.nombreEmpleado}</td>
+                        <td className="px-4 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap">{formatFecha(c.inicioEn)}</td>
+                        <td className="px-4 py-3 font-semibold text-gray-900 dark:text-gray-100 whitespace-nowrap">{formatPrecio(c.precio)}</td>
+                        <td className="px-4 py-3 text-center">
+                          {c.pagada
+                            ? <span className="text-green-600 font-semibold text-xs">{c.metodoPago ?? "Sí"}</span>
+                            : <span className="text-gray-300 dark:text-gray-600 text-xs">—</span>}
+                        </td>
+                        <td className="px-4 py-3">
+                          <EstadoBadge estado={c.estadoTexto} />
+                        </td>
+                      </tr>
+                    ))
                 )}
               </tbody>
             </table>

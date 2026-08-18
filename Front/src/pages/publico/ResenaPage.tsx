@@ -11,6 +11,7 @@ export default function ResenaPage() {
   const [hover, setHover] = useState(0);
   const [comentario, setComentario] = useState("");
   const [enviado, setEnviado] = useState(false);
+  const [errorEnvio, setErrorEnvio] = useState<string | null>(null);
 
   const { data: info, isLoading, isError, error } = useQuery({
     queryKey: ["resena-token", token],
@@ -22,6 +23,7 @@ export default function ResenaPage() {
   const { mutate: enviar, isPending } = useMutation({
     mutationFn: () => publicoApi.enviarResena(token!, { rating, comentario: comentario.trim() || undefined }),
     onSuccess: () => setEnviado(true),
+    onError: () => setErrorEnvio("No se pudo enviar tu reseña. Intenta de nuevo."),
   });
 
   const errorMsg = (error as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje;
@@ -126,8 +128,11 @@ export default function ResenaPage() {
           className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:border-slate-700 resize-none mb-4"
         />
 
+        {errorEnvio && (
+          <p className="text-red-500 text-sm text-center mb-2">{errorEnvio}</p>
+        )}
         <button
-          onClick={() => enviar()}
+          onClick={() => { setErrorEnvio(null); enviar(); }}
           disabled={rating === 0 || isPending}
           className="w-full py-3 rounded-xl bg-gray-900 hover:bg-gray-700 disabled:opacity-40 text-white font-semibold text-sm transition"
         >

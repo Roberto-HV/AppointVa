@@ -179,6 +179,7 @@ function ModalSuscripcion({
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["pagos-negocio", negocio.id] });
       qc.invalidateQueries({ queryKey: ["admin-suscripciones"] });
+      setMonto("");
       setNotas("");
       toast("Pago registrado correctamente");
     },
@@ -427,7 +428,7 @@ function ModalSuscripcion({
 
         <button
           onClick={() => registrar()}
-          disabled={registrando || !monto}
+          disabled={registrando || !monto || parseFloat(monto) <= 0}
           className="w-full bg-gray-900 hover:bg-gray-700 disabled:opacity-50 text-white text-sm font-semibold py-2.5 rounded-xl transition"
         >
           {registrando

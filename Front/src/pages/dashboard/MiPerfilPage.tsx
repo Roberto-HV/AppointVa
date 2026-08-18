@@ -159,8 +159,8 @@ export default function MiPerfilPage() {
   const { mutate: crearBloqueo, isPending: creando } = useMutation({
     mutationFn: (d: BloqueoForm) =>
       empleadosApi.crearBloqueo(empleadoId!, {
-        inicioEn: `${d.fechaInicio}T${d.horaInicio}:00`,
-        finEn:    `${d.fechaFin}T${d.horaFin}:00`,
+        inicioEn: new Date(`${d.fechaInicio}T${d.horaInicio}:00`).toISOString(),
+        finEn:    new Date(`${d.fechaFin}T${d.horaFin}:00`).toISOString(),
         motivo:   d.motivo || undefined,
       }),
     onSuccess: () => {

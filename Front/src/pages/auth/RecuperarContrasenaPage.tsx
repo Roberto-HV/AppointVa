@@ -12,6 +12,7 @@ type FormData = z.infer<typeof schema>;
 
 export default function RecuperarContrasenaPage() {
   const [enviado, setEnviado] = useState(false);
+  const [errorGeneral, setErrorGeneral] = useState<string | null>(null);
 
   const {
     register,
@@ -20,8 +21,13 @@ export default function RecuperarContrasenaPage() {
   } = useForm<FormData>({ resolver: zodResolver(schema) });
 
   const onSubmit = async (data: FormData) => {
-    await authApi.recuperarContrasena(data.email);
-    setEnviado(true);
+    setErrorGeneral(null);
+    try {
+      await authApi.recuperarContrasena(data.email);
+      setEnviado(true);
+    } catch {
+      setErrorGeneral("No se pudo procesar tu solicitud. Intenta de nuevo.");
+    }
   };
 
   return (
@@ -74,6 +80,9 @@ export default function RecuperarContrasenaPage() {
                   )}
                 </div>
 
+                {errorGeneral && (
+                  <p className="text-red-500 text-sm text-center -mt-2">{errorGeneral}</p>
+                )}
                 <button
                   type="submit"
                   disabled={isSubmitting}
