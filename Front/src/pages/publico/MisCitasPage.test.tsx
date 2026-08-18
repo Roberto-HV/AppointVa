@@ -146,7 +146,7 @@ describe("MisCitasPage", () => {
     expect(screen.getAllByText("iCal / Apple")).toHaveLength(1);
   });
 
-  it("muestra el botón Reseña → solo en citas Completadas", async () => {
+  it("muestra texto Reseña por correo solo en citas Completadas", async () => {
     localStorage.setItem(SESSION_KEY, JSON.stringify(mockSession));
     vi.mocked(api.get).mockResolvedValue({
       data: [futureCita, pastCita],
@@ -154,9 +154,9 @@ describe("MisCitasPage", () => {
     });
     renderConQuery();
     await waitFor(() =>
-      expect(screen.getByText(/Reseña →/)).toBeInTheDocument()
+      expect(screen.getByText("Reseña por correo")).toBeInTheDocument()
     );
-    expect(screen.getAllByText(/Reseña →/)).toHaveLength(1);
+    expect(screen.getAllByText("Reseña por correo")).toHaveLength(1);
   });
 
   it("muestra el estado vacío cuando no hay citas", async () => {

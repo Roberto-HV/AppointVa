@@ -165,8 +165,8 @@ describe('Facturación tab', () => {
     fireEvent.click(screen.getByText('Facturación'));
 
     await waitFor(() => {
-      // 449 + 249 = 698
-      expect(screen.getByText(/\$698/)).toBeInTheDocument();
+      // 449 + 249 = 698 (may appear in metrics strip and table footer)
+      expect(screen.getAllByText(/\$698/).length).toBeGreaterThan(0);
     });
   });
 });

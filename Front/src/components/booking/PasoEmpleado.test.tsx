@@ -94,7 +94,7 @@ describe("PasoEmpleado", () => {
       />
     );
     expect(
-      screen.getByText(/No hay profesionales asignados a este servicio/i)
+      screen.getByText(/No hay empleados asignados a este servicio/i)
     ).toBeInTheDocument();
   });
 });
