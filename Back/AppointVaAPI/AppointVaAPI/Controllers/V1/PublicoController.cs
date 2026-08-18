@@ -213,6 +213,24 @@ namespace AppointVaAPI.Controllers.V1
             return Ok(slots);
         }
 
+        // GET api/publico/verificar-slug?slug=...
+        [HttpGet("verificar-slug")]
+        [EnableRateLimiting("PublicoGeneral")]
+        public async Task<IActionResult> VerificarSlug([FromQuery] string slug)
+        {
+            if (string.IsNullOrWhiteSpace(slug))
+                return BadRequest(new { disponible = false, mensaje = "Slug requerido." });
+
+            var normalizado = slug.Trim().ToLowerInvariant();
+
+            // Same regex the frontend uses: only lowercase letters, digits, and hyphens
+            if (!System.Text.RegularExpressions.Regex.IsMatch(normalizado, @"^[a-z0-9-]+$"))
+                return BadRequest(new { disponible = false, mensaje = "Formato inválido." });
+
+            var existe = await _db.Negocios.AnyAsync(n => n.Slug == normalizado);
+            return Ok(new { disponible = !existe });
+        }
+
         // POST api/publico/citas
         [HttpPost("citas")]
         [EnableRateLimiting("PublicoEstricto")]
