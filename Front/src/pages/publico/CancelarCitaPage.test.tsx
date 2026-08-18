@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import CancelarCitaPage from "./CancelarCitaPage";
 
@@ -39,9 +40,11 @@ function renderConQuery() {
     defaultOptions: { queries: { retryDelay: 0 } },
   });
   return render(
-    <QueryClientProvider client={qc}>
-      <CancelarCitaPage />
-    </QueryClientProvider>
+    <MemoryRouter initialEntries={["/cancelar/ABC123"]}>
+      <QueryClientProvider client={qc}>
+        <CancelarCitaPage />
+      </QueryClientProvider>
+    </MemoryRouter>
   );
 }
 
