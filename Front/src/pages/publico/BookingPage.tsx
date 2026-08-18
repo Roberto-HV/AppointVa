@@ -1,7 +1,7 @@
 ﻿import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { publicoApi } from "../../api/publico";
 import { intakePublicoApi, type CampoIntake } from "../../api/intake";
@@ -343,7 +343,6 @@ function ResenasSection({ resenas, promedio, total }: { resenas: ResenaPublica[]
   );
 }
 
-const PASOS = ["Servicio", "Profesional", "Fecha y hora", "Tus datos"];
 
 function IntakeCampoInput({
   campo,
@@ -670,6 +669,7 @@ export default function BookingPage() {
       const msg = (err as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje;
       if (status === 409 || msg?.toLowerCase().includes("disponible") || msg?.toLowerCase().includes("ocupado")) {
         setErrorSlotTomado("Ese horario ya no está disponible, elige otro.");
+        setDirection(-1);
         setPaso(3);
         setSlot(null);
         setMostrarIntake(false);
@@ -750,6 +750,7 @@ export default function BookingPage() {
 
   const color = negocio.colorPrimario ?? DEFAULT_COLOR;
   const terms = getSectorTerms(negocio.sector);
+  const pasos = ["Servicio", terms.empleado, "Fecha y hora", "Tus datos"];
 
   const textos = negocio.sector === 'salud'
     ? { cta: 'Agenda tu consulta', cita: 'consulta' }
@@ -874,7 +875,7 @@ export default function BookingPage() {
       </div>
 
       {/* Tira de pasos — full width, fondo oscuro */}
-      <IndicadorPasos pasoActual={paso} pasos={PASOS} color={color} slug={negocio.slug} />
+      <IndicadorPasos pasoActual={paso} pasos={pasos} color={color} slug={negocio.slug} />
 
       {/* Contenido */}
       <div className="lg:max-w-5xl lg:mx-auto lg:px-8 lg:flex lg:gap-8 lg:items-start lg:pt-8 lg:pb-12">
@@ -1058,12 +1059,12 @@ export default function BookingPage() {
             )}
             {negocio.listaEsperaActiva === true && (
               <div className="mt-4 text-center">
-                <a
-                  href={`/b/${negocio.slug}/espera?servicioId=${servicio.id}`}
+                <Link
+                  to={`/b/${negocio.slug}/espera?servicioId=${servicio.id}`}
                   className="text-xs text-slate-400 hover:text-slate-600 underline underline-offset-2 transition"
                 >
                   ¿Sin disponibilidad? Únete a la lista de espera
-                </a>
+                </Link>
               </div>
             )}
           </>
@@ -1137,7 +1138,7 @@ export default function BookingPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-slate-800 text-sm">Soy cliente recurrente</p>
-                  <p className="text-xs text-slate-400 mt-0.5">Busca tus datos con tu correo</p>
+                  <p className="text-xs text-slate-400 mt-0.5">Busca con tu correo o teléfono</p>
                 </div>
                 <ChevronRight size={16} className="text-slate-300 group-hover:text-slate-400 transition shrink-0" />
               </button>

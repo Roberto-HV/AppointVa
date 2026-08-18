@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { api } from "../../api/axios";
 import PublicFooter from "../../components/PublicFooter";
@@ -7,6 +7,7 @@ import PublicFooter from "../../components/PublicFooter";
 interface CitaResumen {
   codigoConfirmacion: string;
   nombreNegocio: string;
+  negocioSlug?: string;
   nombreServicio: string;
   nombreEmpleado: string;
   nombreCliente: string;
@@ -98,7 +99,15 @@ export default function CancelarCitaPage() {
             </svg>
           </div>
           <p className="font-semibold text-gray-800 mb-1">Cita cancelada</p>
-          <p className="text-sm text-gray-500">Tu cita ha sido cancelada exitosamente. Recibirás un correo de confirmación.</p>
+          <p className="text-sm text-gray-500 mb-4">Tu cita ha sido cancelada exitosamente. Recibirás un correo de confirmación.</p>
+          {cita?.negocioSlug && (
+            <Link
+              to={`/b/${cita.negocioSlug}`}
+              className="inline-flex items-center gap-1.5 text-sm font-semibold text-white bg-slate-700 hover:bg-slate-800 px-5 py-2.5 rounded-xl transition"
+            >
+              Reservar una nueva cita
+            </Link>
+          )}
         </div>
       </div>
     );

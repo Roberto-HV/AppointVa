@@ -97,8 +97,8 @@ export default function ResenaPage() {
             <button
               key={star}
               onClick={() => setRating(star)}
-              onMouseEnter={() => setHover(star)}
-              onMouseLeave={() => setHover(0)}
+              onPointerEnter={() => setHover(star)}
+              onPointerLeave={() => setHover(0)}
               className="transition-transform hover:scale-110"
             >
               <Star

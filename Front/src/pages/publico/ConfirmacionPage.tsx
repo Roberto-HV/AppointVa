@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { publicoApi } from "../../api/publico";
 import { comprobantesApi } from "../../api/comprobantes";
-import { Copy, Check, Calendar, ChevronDown, CalendarClock, Download, CheckCircle2, XCircle, Star, Bell, Scissors, Upload, Info } from "lucide-react";
+import { Copy, Check, Calendar, ChevronDown, CalendarClock, Printer, CheckCircle2, XCircle, Star, Bell, Scissors, Upload, Info } from "lucide-react";
 import { SiWhatsapp, SiApple, SiGooglecalendar } from "react-icons/si";
 import PublicFooter from "../../components/PublicFooter";
 import { formatPrecio, formatFechaHoraCompleta as formatFechaHora } from "../../utils/formatters";
@@ -169,8 +169,11 @@ export default function ConfirmacionPage() {
             <Star size={32} className="text-emerald-500" fill="currentColor" />
           </div>
           <h1 className="text-2xl font-bold text-slate-900 mb-2">¡Servicio completado!</h1>
-          <p className="text-slate-500 text-sm mb-8">
+          <p className="text-slate-500 text-sm mb-3">
             Gracias por tu visita a <strong className="text-slate-700">{cita.nombreNegocio}</strong>. ¡Esperamos verte pronto!
+          </p>
+          <p className="text-slate-400 text-xs mb-8">
+            ¿Cómo fue tu experiencia? Revisa tu correo para dejar una reseña.
           </p>
           <button
             onClick={irAlNegocio}
@@ -464,14 +467,14 @@ export default function ConfirmacionPage() {
             Compartir por WhatsApp
           </a>
 
-          {/* Guardar comprobante */}
+          {/* Imprimir comprobante */}
           <button
             onClick={() => window.print()}
             className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-white text-sm font-semibold transition hover:opacity-90"
             style={{ background: "#0C0C0F" }}
           >
-            <Download size={15} />
-            Guardar comprobante
+            <Printer size={15} />
+            Imprimir comprobante
           </button>
 
           {/* Agregar al calendario */}

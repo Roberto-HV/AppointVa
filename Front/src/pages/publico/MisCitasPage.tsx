@@ -99,6 +99,13 @@ export default function MisCitasPage() {
     if (session && !buscado) setBuscado(session);
   }, []);
 
+  useEffect(() => {
+    if (reagendando) {
+      document.body.style.overflow = "hidden";
+      return () => { document.body.style.overflow = ""; };
+    }
+  }, [reagendando]);
+
   const { data: queryData, isLoading, error } = useQuery<{ citas: MiCita[]; total: number }>({
     queryKey: ["mis-citas", slug, buscado?.email, buscado?.telefono, pagina],
     queryFn: async () => {
