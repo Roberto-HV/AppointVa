@@ -142,12 +142,10 @@ function ModalSuscripcion({
   negocio,
   suscripcion,
   planes,
-  onCerrar,
 }: {
   negocio: NegocioMetricasDto;
   suscripcion: SuscripcionResumenDto | undefined;
   planes: PlanDto[];
-  onCerrar: () => void;
 }) {
   const qc = useQueryClient();
   const { toast } = useToastStore();
@@ -1162,7 +1160,6 @@ export default function NegociosAdminPage() {
             negocio={negocioSel}
             suscripcion={suscripcionMap[negocioSel.id]}
             planes={planes}
-            onCerrar={() => setModalSuscripcion(false)}
           />
         )}
       </Modal>

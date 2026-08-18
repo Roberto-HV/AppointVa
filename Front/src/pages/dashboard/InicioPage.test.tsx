@@ -9,7 +9,8 @@ const mockToast = vi.hoisted(() => vi.fn());
 
 // ── Module mocks ──────────────────────────────────────────────────────────────
 vi.mock("../../store/toastStore", () => ({
-  useToastStore: vi.fn((selector: (s: unknown) => unknown) =>
+  useToastStore: vi.fn(// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(selector: (s: any) => unknown) =>
     selector({ toasts: [], toast: mockToast, quitar: vi.fn() })
   ),
 }));
@@ -178,7 +179,8 @@ beforeEach(() => {
   vi.clearAllMocks();
 
   // Default role: Propietario
-  vi.mocked(useAuthStore).mockImplementation((selector: (s: unknown) => unknown) =>
+  vi.mocked(useAuthStore).mockImplementation(// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(selector: (s: any) => unknown) =>
     selector({ usuario: propietarioUser })
   );
 
@@ -281,7 +283,8 @@ describe("InicioPage — accesos rápidos", () => {
 // ── 6. Employee view renders ──────────────────────────────────────────────────
 describe("InicioPage — vista empleado", () => {
   it("renders employee name as heading and shows stat section labels", async () => {
-    vi.mocked(useAuthStore).mockImplementation((selector: (s: unknown) => unknown) =>
+    vi.mocked(useAuthStore).mockImplementation(// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(selector: (s: any) => unknown) =>
       selector({ usuario: empleadoUser })
     );
 
