@@ -142,12 +142,14 @@ function GaleriaSection({ imagenes }: { imagenes: ImagenGaleria[] }) {
         {total > 1 && (
           <>
             <button
+              aria-label="Imagen anterior"
               onClick={() => scrollTo((activeIndex - 1 + total) % total)}
               className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-white/90 shadow-md flex items-center justify-center text-gray-600 transition hover:bg-white"
             >
               <ChevronLeft size={18} />
             </button>
             <button
+              aria-label="Imagen siguiente"
               onClick={() => scrollTo((activeIndex + 1) % total)}
               className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-white/90 shadow-md flex items-center justify-center text-gray-600 transition hover:bg-white"
             >
@@ -209,12 +211,14 @@ function GaleriaDesktop({ imagenes, onOpen }: { imagenes: ImagenGaleria[]; onOpe
         {total > 1 && (
           <>
             <button
+              aria-label="Imagen anterior"
               onClick={goPrev}
               className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-white/90 shadow-md flex items-center justify-center text-gray-600 hover:bg-white transition"
             >
               <ChevronLeft size={18} />
             </button>
             <button
+              aria-label="Imagen siguiente"
               onClick={goNext}
               className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-white/90 shadow-md flex items-center justify-center text-gray-600 hover:bg-white transition"
             >
@@ -287,12 +291,14 @@ function GaleriaViewer({ imagenes, idx, onChange, onClose }: {
       {total > 1 && (
         <>
           <button
+            aria-label="Imagen anterior"
             className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center text-white transition"
             onClick={e => { e.stopPropagation(); goPrev(); }}
           >
             <ChevronLeft size={20} />
           </button>
           <button
+            aria-label="Imagen siguiente"
             className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center text-white transition"
             onClick={e => { e.stopPropagation(); goNext(); }}
           >
@@ -360,18 +366,21 @@ function IntakeCampoInput({
   if (campo.tipo === "Checkbox") {
     return (
       <div>
-        <label className="flex items-center gap-2 cursor-pointer">
+        <label className={`flex items-center gap-2 cursor-pointer ${mostrarError ? "text-red-600" : ""}`}>
           <input
             type="checkbox"
             checked={valor === "true"}
             onChange={(e) => onChange(e.target.checked ? "true" : "")}
-            className="accent-slate-700 w-4 h-4"
+            className={`w-4 h-4 accent-slate-700 ${mostrarError ? "outline outline-1 outline-red-500 rounded" : ""}`}
           />
-          <span className="text-sm text-gray-700">
+          <span className={`text-sm ${mostrarError ? "text-red-600" : "text-gray-700"}`}>
             {campo.etiqueta}
             {campo.requerido && <span className="text-red-500 ml-1">*</span>}
           </span>
         </label>
+        {mostrarError && (
+          <p className="text-xs text-red-500 mt-1">Este campo es obligatorio</p>
+        )}
       </div>
     );
   }
@@ -477,6 +486,13 @@ export default function BookingPage() {
     return () => { mountedRef.current = false; };
   }, []);
 
+  useEffect(() => {
+    if (!lightboxUrl) return;
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") setLightboxUrl(null); };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [lightboxUrl]);
+
   const { data: negocio, isLoading, isError, error } = useQuery({
     queryKey: ["negocio", slug],
     queryFn: () => publicoApi.obtenerNegocio(slug!),
@@ -489,7 +505,7 @@ export default function BookingPage() {
     },
   });
 
-  const { data: camposIntake = [], isLoading: cargandoIntake, isError: intakeError } = useQuery<CampoIntake[]>({
+  const { data: camposIntake = [], isLoading: cargandoIntake, isError: intakeError, refetch: refetchIntake } = useQuery<CampoIntake[]>({
     queryKey: ["intake-publico", slug, servicio?.id],
     queryFn: () => intakePublicoApi.getCampos(slug!, servicio?.id),
     enabled: !!slug && !!servicio,
@@ -572,6 +588,7 @@ export default function BookingPage() {
     }
     if (paso === 4 && modoCliente !== "elegir") {
       if (modoCliente === "listo") { setDatosPreRellenos(null); setEmailBusqueda(""); setTelefonoBusqueda(""); }
+      setDirection(-1);
       setModoCliente("elegir");
       setErrorBusqueda("");
       return;
@@ -864,14 +881,14 @@ export default function BookingPage() {
 
         {/* Left column — galería + reseñas, solo desktop */}
         {negocio.galeria?.length > 0 && (
-          <div className="hidden lg:block w-[400px] shrink-0 sticky top-0 h-screen flex flex-col justify-center py-8 overflow-y-auto">
+          <div className="hidden lg:flex w-[400px] shrink-0 sticky top-0 h-screen flex-col justify-center py-8 overflow-y-auto">
             <GaleriaDesktop imagenes={negocio.galeria} onOpen={setGaleriaViewerIdx} />
             {negocio.resenas?.length > 0 && (
               <div className="mt-6">
                 <ResenasSection
                   resenas={negocio.resenas}
-                  promedio={negocio.promedioResenas}
-                  total={negocio.totalResenas}
+                  promedio={negocio.promedioResenas ?? 0}
+                  total={negocio.totalResenas ?? 0}
                 />
               </div>
             )}
@@ -945,8 +962,8 @@ export default function BookingPage() {
               <div className="lg:hidden">
                 <ResenasSection
                   resenas={negocio.resenas}
-                  promedio={negocio.promedioResenas}
-                  total={negocio.totalResenas}
+                  promedio={negocio.promedioResenas ?? 0}
+                  total={negocio.totalResenas ?? 0}
                 />
               </div>
             )}
@@ -1019,7 +1036,7 @@ export default function BookingPage() {
               </button>
               <button
                 onClick={irSiguiente}
-                disabled={!slot || cargandoIntake || intakeError}
+                disabled={!slot || cargandoIntake}
                 className="flex-1 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-3 rounded-2xl transition text-sm hover:opacity-90"
                 style={{ background: color }}
               >
@@ -1027,9 +1044,17 @@ export default function BookingPage() {
               </button>
             </div>
             {intakeError && (
-              <p className="text-xs text-red-500 text-center mt-2">
-                No se pudo cargar el formulario adicional. Recarga la página e intenta de nuevo.
-              </p>
+              <div className="flex items-center justify-center gap-3 mt-2">
+                <p className="text-xs text-red-500">
+                  No se pudo cargar el formulario adicional.
+                </p>
+                <button
+                  onClick={() => refetchIntake()}
+                  className="text-xs text-slate-600 font-semibold underline hover:text-slate-800 transition"
+                >
+                  Reintentar
+                </button>
+              </div>
             )}
             {negocio.listaEsperaActiva === true && (
               <div className="mt-4 text-center">
