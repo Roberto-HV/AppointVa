@@ -146,8 +146,13 @@ export default function App() {
                   </Route>
                 </Route>
 
-                {/* Landing */}
-                <Route path="/" element={<LandingPage />} />
+                {/* Root — smart redirect based on auth state */}
+                <Route element={<RutaPublica />}>
+                  <Route path="/" element={<Navigate to="/login" replace />} />
+                </Route>
+
+                {/* Landing pages — accessible but not the default entry point */}
+                <Route path="/landing" element={<LandingPage />} />
                 <Route path="/salud" element={<LandingPageSalud />} />
                 <Route path="*" element={<NotFoundPage />} />
               </Routes>
