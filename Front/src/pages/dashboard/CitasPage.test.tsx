@@ -68,6 +68,12 @@ vi.mock("../../utils/exportarExcel", () => ({
   exportarExcel: vi.fn(),
 }));
 
+vi.mock("../../components/ui/DateTimePicker", () => ({
+  DatePicker: ({ value, onChange }: { value: string; onChange: (v: string) => void }) => (
+    <input type="date" value={value} onChange={(e) => onChange(e.target.value)} />
+  ),
+}));
+
 vi.mock("../../components/dashboard/CalendarioCitas", () => ({
   default: () => <div data-testid="calendario-citas" />,
 }));
@@ -87,7 +93,9 @@ vi.mock("../../components/ui/EstadoBadge", () => ({
 }));
 
 vi.mock("../../components/ui/Tooltip", () => ({
-  Tooltip: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  Tooltip: ({ children, text }: { children: React.ReactNode; text?: string }) => (
+    <span title={text}>{children}</span>
+  ),
 }));
 
 vi.mock("../../components/ui/Pagination", () => ({
@@ -289,7 +297,7 @@ describe("CitasPage — botones de acción en filas", () => {
     });
     renderConQuery();
     await waitFor(() =>
-      expect(screen.getByRole("button", { name: /Confirmar/i })).toBeInTheDocument()
+      expect(screen.getByTitle("Confirmar cita")).toBeInTheDocument()
     );
   });
 
@@ -302,7 +310,7 @@ describe("CitasPage — botones de acción en filas", () => {
     });
     renderConQuery();
     await waitFor(() =>
-      expect(screen.getByRole("button", { name: /Reagendar/i })).toBeInTheDocument()
+      expect(screen.getByTitle("Reagendar")).toBeInTheDocument()
     );
   });
 });
@@ -503,6 +511,6 @@ describe("anticipo badge y botón", () => {
       montoAnticipo: 50,
     }]);
     await waitFor(() => screen.getByText("Luis Pérez"));
-    expect(screen.getByText("$ Anticipo")).toBeInTheDocument();
+    expect(screen.getByTitle(/Registrar anticipo/)).toBeInTheDocument();
   });
 });

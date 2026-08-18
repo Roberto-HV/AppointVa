@@ -1,5 +1,6 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MemoryRouter } from 'react-router-dom';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { NotificacionesBell } from './NotificacionesBell';
 import * as notifModule from '../../api/notificaciones';
@@ -15,9 +16,11 @@ vi.mock('../../api/notificaciones', () => ({
 function renderBell() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <QueryClientProvider client={qc}>
-      <NotificacionesBell />
-    </QueryClientProvider>
+    <MemoryRouter>
+      <QueryClientProvider client={qc}>
+        <NotificacionesBell />
+      </QueryClientProvider>
+    </MemoryRouter>
   );
 }
 
@@ -57,7 +60,8 @@ describe('NotificacionesBell', () => {
 
   it('calls marcarLeidas when dropdown opens with unread notifications', async () => {
     renderBell();
-    await waitFor(() => screen.getByLabelText('Notificaciones'));
+    // Wait for the query to resolve so noLeidas > 0 before clicking
+    await waitFor(() => screen.getByText('1'));
     fireEvent.click(screen.getByLabelText('Notificaciones'));
     await waitFor(() => {
       expect(notifModule.notificacionesApi.marcarLeidas).toHaveBeenCalled();
