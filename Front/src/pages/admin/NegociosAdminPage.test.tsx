@@ -104,6 +104,10 @@ describe('ModalSuscripcion billing header', () => {
     const btn = screen.getAllByRole('button').find(b => /suscripci/i.test(b.textContent ?? ''));
     fireEvent.click(btn!);
 
+    // Navigate to Pagos tab where the month buttons live
+    await waitFor(() => screen.getByText('Pagos'));
+    fireEvent.click(screen.getByText('Pagos'));
+
     await waitFor(() => screen.getByText(/1 mes/i));
 
     fireEvent.click(screen.getByText(/1 mes/i));

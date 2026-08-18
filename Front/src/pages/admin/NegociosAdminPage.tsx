@@ -163,6 +163,7 @@ function ModalSuscripcion({
   const [meses, setMeses] = useState(1);
   const [monto, setMonto] = useState("");
   const [notas, setNotas] = useState("");
+  const [tab, setTab] = useState<'cuenta' | 'pagos'>('cuenta');
 
   const { data: historial = [], isLoading: cargandoHistorial } = useQuery({
     queryKey: ["pagos-negocio", negocio.id],
@@ -266,8 +267,9 @@ function ModalSuscripcion({
   const vencimiento = suscripcion?.fechaVencimiento;
 
   return (
-    <div className="space-y-5">
-      {/* ── Estado actual ── */}
+    <div className="space-y-4">
+
+      {/* ── Status header — always visible ── */}
       <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 flex items-center justify-between gap-3">
         <div>
           <p className="text-xs text-gray-400 mb-1">Estado de suscripción</p>
@@ -281,333 +283,348 @@ function ModalSuscripcion({
         )}
       </div>
 
-      {/* ── Configuración ── */}
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-3">Configuración</p>
+      {/* ── Tab bar ── */}
+      <div className="flex border-b border-gray-200 dark:border-gray-700">
+        {(['cuenta', 'pagos'] as const).map(t => (
+          <button
+            key={t}
+            type="button"
+            onClick={() => setTab(t)}
+            className={`flex-1 pb-2.5 text-xs font-semibold transition-colors border-b-2 -mb-px ${
+              tab === t
+                ? 'border-gray-900 dark:border-gray-100 text-gray-900 dark:text-gray-100'
+                : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
+            }`}
+          >
+            {t === 'cuenta' ? 'Cuenta' : 'Pagos'}
+          </button>
+        ))}
+      </div>
 
-        {/* Plan selector */}
-        <div className="mb-4">
-          <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Plan</p>
-          <div className="flex gap-2 flex-wrap">
-            {planes.map(p => (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => handleSetPlan(p.id)}
-                className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
-                  negocio.planId === p.id
-                    ? 'bg-gray-900 text-white border-gray-900 dark:bg-gray-100 dark:text-gray-900 dark:border-gray-100'
-                    : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-gray-500'
-                }`}
-              >
-                {p.nombre}
-              </button>
-            ))}
-            {planes.length === 0 && (
-              <span className="text-xs text-gray-400">Cargando planes…</span>
-            )}
-          </div>
-        </div>
-
-        {/* Sector selector */}
-        <div className="mb-4">
-          <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Sector</p>
-          <div className="flex gap-2">
-            {(['belleza', 'salud'] as const).map(s => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => handleSetSector(s)}
-                className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
-                  suscripcion?.sector === s
-                    ? 'bg-gray-900 text-white border-gray-900 dark:bg-gray-100 dark:text-gray-900 dark:border-gray-100'
-                    : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-indigo-400'
-                }`}
-              >
-                {s === 'salud' ? 'Salud' : 'Belleza'}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Billing summary: empleados + precio */}
-        <div data-testid="billing-summary" className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span className="text-gray-500 dark:text-gray-400">Plan</span>
-            <span className="font-medium text-gray-800 dark:text-gray-200">
-              {suscripcion?.planNombre ?? '—'} · {formatPrecio(precioBase)}/mes
-            </span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-500 dark:text-gray-400">Emp. base</span>
-            <span className="font-medium text-gray-800 dark:text-gray-200">
-              {suscripcion?.maxEmpleadosBase ?? 0}
-            </span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-gray-500 dark:text-gray-400">Emp. extra</span>
-            <div className="flex items-center gap-2">
-              <input
-                type="number"
-                min={0}
-                value={empleadosExtra}
-                onChange={e => {
-                  const val = Math.max(0, Number(e.target.value));
-                  setEmpleadosExtra(val);
-                  if (meses !== LIFETIME_SENTINEL) {
-                    setMonto(String((precioBase + val * PRECIO_EXTRA_EMP) * meses));
-                  }
-                }}
-                onBlur={e => mutarEmpleadosExtra.mutate(Math.max(0, Number(e.target.value)))}
-                className="w-16 text-right rounded-lg border border-gray-300 dark:border-gray-600 px-2 py-0.5 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"
-              />
-              {empleadosExtra > 0 && (
-                <span className="text-xs text-gray-400">+{formatPrecio(empleadosExtra * PRECIO_EXTRA_EMP)}/mes</span>
+      {/* ── Tab: Cuenta ── */}
+      {tab === 'cuenta' && (
+        <div className="space-y-4">
+          {/* Plan selector */}
+          <div>
+            <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Plan</p>
+            <div className="flex gap-2 flex-wrap">
+              {planes.map(p => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => handleSetPlan(p.id)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                    negocio.planId === p.id
+                      ? 'bg-gray-900 text-white border-gray-900 dark:bg-gray-100 dark:text-gray-900 dark:border-gray-100'
+                      : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-gray-500'
+                  }`}
+                >
+                  {p.nombre}
+                </button>
+              ))}
+              {planes.length === 0 && (
+                <span className="text-xs text-gray-400">Cargando planes…</span>
               )}
             </div>
           </div>
-          <div className="border-t border-gray-200 dark:border-gray-700 pt-2 flex justify-between font-semibold">
-            <span className="text-gray-700 dark:text-gray-300">Total mensual</span>
-            <span className="text-[#C8A961]">{formatPrecio(totalMensual)}/mes</span>
+
+          {/* Sector selector */}
+          <div>
+            <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Sector</p>
+            <div className="flex gap-2">
+              {(['belleza', 'salud'] as const).map(s => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => handleSetSector(s)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                    suscripcion?.sector === s
+                      ? 'bg-gray-900 text-white border-gray-900 dark:bg-gray-100 dark:text-gray-900 dark:border-gray-100'
+                      : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-indigo-400'
+                  }`}
+                >
+                  {s === 'salud' ? 'Salud' : 'Belleza'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Billing summary */}
+          <div data-testid="billing-summary" className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-gray-500 dark:text-gray-400">Plan</span>
+              <span className="font-medium text-gray-800 dark:text-gray-200">
+                {suscripcion?.planNombre ?? '—'} · {formatPrecio(precioBase)}/mes
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500 dark:text-gray-400">Emp. base</span>
+              <span className="font-medium text-gray-800 dark:text-gray-200">
+                {suscripcion?.maxEmpleadosBase ?? 0}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-gray-500 dark:text-gray-400">Emp. extra</span>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min={0}
+                  value={empleadosExtra}
+                  onChange={e => {
+                    const val = Math.max(0, Number(e.target.value));
+                    setEmpleadosExtra(val);
+                    if (meses !== LIFETIME_SENTINEL) {
+                      setMonto(String((precioBase + val * PRECIO_EXTRA_EMP) * meses));
+                    }
+                  }}
+                  onBlur={e => mutarEmpleadosExtra.mutate(Math.max(0, Number(e.target.value)))}
+                  className="w-16 text-right rounded-lg border border-gray-300 dark:border-gray-600 px-2 py-0.5 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                />
+                {empleadosExtra > 0 && (
+                  <span className="text-xs text-gray-400">+{formatPrecio(empleadosExtra * PRECIO_EXTRA_EMP)}/mes</span>
+                )}
+              </div>
+            </div>
+            <div className="border-t border-gray-200 dark:border-gray-700 pt-2 flex justify-between font-semibold">
+              <span className="text-gray-700 dark:text-gray-300">Total mensual</span>
+              <span className="text-[#C8A961]">{formatPrecio(totalMensual)}/mes</span>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* ── Registrar pago ── */}
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-3">Registrar pago</p>
-
-        {/* Meses selector */}
-        <div className="flex gap-2 mb-2">
-          {[1, 3, 6, 12].map((m) => (
+      {/* ── Tab: Pagos ── */}
+      {tab === 'pagos' && (
+        <div className="space-y-5">
+          {/* Meses selector */}
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-3">Registrar pago</p>
+            <div className="flex gap-2 mb-2">
+              {[1, 3, 6, 12].map((m) => (
+                <button
+                  key={m}
+                  onClick={() => handleMesesChange(m)}
+                  className={`flex-1 py-2 rounded-lg text-xs font-bold border transition ${
+                    meses === m
+                      ? "bg-gray-900 text-white border-gray-900"
+                      : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:border-gray-400"
+                  }`}
+                >
+                  {m === 12 ? "1 año" : `${m} mes${m > 1 ? "es" : ""}`}
+                </button>
+              ))}
+            </div>
             <button
-              key={m}
-              onClick={() => handleMesesChange(m)}
-              className={`flex-1 py-2 rounded-lg text-xs font-bold border transition ${
-                meses === m
-                  ? "bg-gray-900 text-white border-gray-900"
-                  : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:border-gray-400"
+              onClick={() => handleMesesChange(LIFETIME_SENTINEL)}
+              className={`w-full py-2 rounded-lg text-xs font-bold border transition mb-3 ${
+                meses === LIFETIME_SENTINEL
+                  ? "bg-amber-600 text-white border-amber-600"
+                  : "bg-white dark:bg-gray-800 text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/20"
               }`}
             >
-              {m === 12 ? "1 año" : `${m} mes${m > 1 ? "es" : ""}`}
+              De por vida
             </button>
-          ))}
-        </div>
-        <button
-          onClick={() => handleMesesChange(LIFETIME_SENTINEL)}
-          className={`w-full py-2 rounded-lg text-xs font-bold border transition mb-3 ${
-            meses === LIFETIME_SENTINEL
-              ? "bg-amber-600 text-white border-amber-600"
-              : "bg-white dark:bg-gray-800 text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/20"
-          }`}
-        >
-          ♾ De por vida
-        </button>
 
-        <div className="grid grid-cols-2 gap-3 mb-3">
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Monto (MXN)</label>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={monto}
+                  onChange={(e) => setMonto(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-sm outline-none focus:border-gray-400 font-variant-numeric"
+                />
+                {meses === LIFETIME_SENTINEL && (
+                  <p className="text-[10px] text-amber-600 mt-1 font-medium">Acceso permanente — sin vencimiento</p>
+                )}
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Método / Notas</label>
+                <input
+                  type="text"
+                  value={notas}
+                  onChange={(e) => setNotas(e.target.value)}
+                  placeholder="Efectivo, transferencia…"
+                  className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-sm outline-none focus:border-gray-400"
+                />
+              </div>
+            </div>
+
+            <button
+              onClick={() => registrar()}
+              disabled={registrando || !monto || parseFloat(monto) <= 0}
+              className="w-full bg-gray-900 hover:bg-gray-700 disabled:opacity-50 text-white text-sm font-semibold py-2.5 rounded-xl transition"
+            >
+              {registrando
+                ? "Registrando..."
+                : meses === LIFETIME_SENTINEL
+                ? "Registrar acceso de por vida"
+                : `Registrar pago · $${parseFloat(monto || "0").toLocaleString("es-MX", { minimumFractionDigits: 2 })} MXN`}
+            </button>
+          </div>
+
+          {/* Historial */}
           <div>
-            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Monto (MXN)</label>
-            <input
-              type="text"
-              inputMode="decimal"
-              value={monto}
-              onChange={(e) => setMonto(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-sm outline-none focus:border-gray-400 font-variant-numeric"
-            />
-            {meses === LIFETIME_SENTINEL && (
-              <p className="text-[10px] text-amber-600 mt-1 font-medium">Acceso permanente — sin vencimiento</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Historial de pagos</p>
+            {cargandoHistorial ? (
+              <p className="text-xs text-gray-400 py-4 text-center">Cargando historial…</p>
+            ) : historial.length === 0 ? (
+              <p className="text-xs text-gray-400 py-4 text-center">Sin pagos registrados</p>
+            ) : (
+              <div className="divide-y divide-gray-100 dark:divide-gray-700 border border-gray-100 dark:border-gray-700 rounded-xl overflow-hidden">
+                {historial.map((pago) => {
+                  const enEdicion = editandoId === pago.id;
+                  const enConfirmar = confirmandoEliminarId === pago.id;
+
+                  if (enEdicion) {
+                    return (
+                      <div key={pago.id} className="px-4 py-3 bg-gray-50 dark:bg-gray-800/60 space-y-2">
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="block text-[10px] font-medium text-gray-500 dark:text-gray-400 mb-0.5">Monto (MXN)</label>
+                            <input
+                              type="text"
+                              inputMode="decimal"
+                              value={editForm.monto}
+                              onChange={e => setEditForm(f => ({ ...f, monto: e.target.value }))}
+                              className="w-full px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs outline-none focus:border-gray-400"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-medium text-gray-500 dark:text-gray-400 mb-0.5">Notas</label>
+                            <input
+                              type="text"
+                              value={editForm.notas}
+                              onChange={e => setEditForm(f => ({ ...f, notas: e.target.value }))}
+                              placeholder="Efectivo, transferencia…"
+                              className="w-full px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs outline-none focus:border-gray-400"
+                            />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="block text-[10px] font-medium text-gray-500 dark:text-gray-400 mb-0.5">Período desde</label>
+                            <input
+                              type="date"
+                              value={editForm.desde}
+                              onChange={e => setEditForm(f => ({ ...f, desde: e.target.value }))}
+                              className="w-full px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs outline-none focus:border-gray-400"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-medium text-gray-500 dark:text-gray-400 mb-0.5">Período hasta</label>
+                            <input
+                              type="date"
+                              value={editForm.hasta}
+                              onChange={e => setEditForm(f => ({ ...f, hasta: e.target.value }))}
+                              className="w-full px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs outline-none focus:border-gray-400"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex gap-2 pt-1">
+                          <button
+                            onClick={() => mutarEditar.mutate({
+                              pagoId: pago.id,
+                              dto: {
+                                monto: parseFloat(editForm.monto) || 0,
+                                notas: editForm.notas.trim() || undefined,
+                                periodoDesde: editForm.desde,
+                                periodoHasta: editForm.hasta,
+                              },
+                            })}
+                            disabled={mutarEditar.isPending}
+                            className="flex-1 py-1.5 rounded-lg bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-xs font-semibold hover:bg-gray-700 dark:hover:bg-gray-200 disabled:opacity-50 transition"
+                          >
+                            {mutarEditar.isPending ? "Guardando…" : "Guardar cambios"}
+                          </button>
+                          <button
+                            onClick={() => setEditandoId(null)}
+                            className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 text-xs hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div key={pago.id} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-bold font-mono bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 px-1.5 py-0.5 rounded">
+                            #{String(pago.numeroPago).padStart(3, "0")}
+                          </span>
+                          <span className="text-xs font-semibold text-gray-800 dark:text-gray-200">
+                            ${pago.monto.toLocaleString("es-MX", { minimumFractionDigits: 2 })} MXN
+                          </span>
+                          <span className="text-[10px] text-gray-400">
+                            · {pago.mesesPagados >= 600 ? "De por vida" : pago.mesesPagados === 1 ? "1 mes" : `${pago.mesesPagados} meses`}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-gray-400 mt-0.5">
+                          {formatFechaMx(pago.periodoDesde)} – {formatFechaMx(pago.periodoHasta)}
+                          {pago.notas && <span className="ml-2 text-gray-400">· {pago.notas}</span>}
+                        </p>
+                        {enConfirmar && (
+                          <div className="flex items-center gap-2 mt-2">
+                            <span className="text-[11px] text-red-600 dark:text-red-400 font-medium">¿Eliminar este pago?</span>
+                            <button
+                              onClick={() => mutarEliminar.mutate(pago.id)}
+                              disabled={mutarEliminar.isPending}
+                              className="text-[11px] font-semibold text-red-600 dark:text-red-400 hover:underline disabled:opacity-50"
+                            >
+                              {mutarEliminar.isPending ? "Eliminando…" : "Confirmar"}
+                            </button>
+                            <button
+                              onClick={() => setConfirmandoEliminarId(null)}
+                              className="text-[11px] text-gray-400 hover:underline"
+                            >
+                              Cancelar
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          onClick={() => imprimirComprobante(pago)}
+                          title="Imprimir comprobante"
+                          className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+                        >
+                          <Printer size={14} />
+                        </button>
+                        <button
+                          onClick={() => iniciarEdicion(pago)}
+                          title="Editar pago"
+                          className="text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+                        >
+                          <Pencil size={14} />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setConfirmandoEliminarId(enConfirmar ? null : pago.id);
+                            setEditandoId(null);
+                          }}
+                          title="Eliminar pago"
+                          className={`transition p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 ${
+                            enConfirmar
+                              ? "text-red-500 dark:text-red-400"
+                              : "text-gray-400 hover:text-red-500 dark:hover:text-red-400"
+                          }`}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Método / Notas</label>
-            <input
-              type="text"
-              value={notas}
-              onChange={(e) => setNotas(e.target.value)}
-              placeholder="Efectivo, transferencia…"
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-sm outline-none focus:border-gray-400"
-            />
-          </div>
         </div>
+      )}
 
-        <button
-          onClick={() => registrar()}
-          disabled={registrando || !monto || parseFloat(monto) <= 0}
-          className="w-full bg-gray-900 hover:bg-gray-700 disabled:opacity-50 text-white text-sm font-semibold py-2.5 rounded-xl transition"
-        >
-          {registrando
-            ? "Registrando..."
-            : meses === LIFETIME_SENTINEL
-            ? "Registrar acceso de por vida"
-            : `Registrar pago · $${parseFloat(monto || "0").toLocaleString("es-MX", { minimumFractionDigits: 2 })} MXN`}
-        </button>
-      </div>
-
-      {/* ── Historial ── */}
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Historial de pagos</p>
-        {cargandoHistorial ? (
-          <p className="text-xs text-gray-400 py-4 text-center">Cargando historial…</p>
-        ) : historial.length === 0 ? (
-          <p className="text-xs text-gray-400 py-4 text-center">Sin pagos registrados</p>
-        ) : (
-          <div className="divide-y divide-gray-100 dark:divide-gray-700 border border-gray-100 dark:border-gray-700 rounded-xl overflow-hidden">
-            {historial.map((pago) => {
-              const enEdicion = editandoId === pago.id;
-              const enConfirmar = confirmandoEliminarId === pago.id;
-
-              if (enEdicion) {
-                return (
-                  <div key={pago.id} className="px-4 py-3 bg-gray-50 dark:bg-gray-800/60 space-y-2">
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="block text-[10px] font-medium text-gray-500 dark:text-gray-400 mb-0.5">Monto (MXN)</label>
-                        <input
-                          type="text"
-                          inputMode="decimal"
-                          value={editForm.monto}
-                          onChange={e => setEditForm(f => ({ ...f, monto: e.target.value }))}
-                          className="w-full px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs outline-none focus:border-gray-400"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-medium text-gray-500 dark:text-gray-400 mb-0.5">Notas</label>
-                        <input
-                          type="text"
-                          value={editForm.notas}
-                          onChange={e => setEditForm(f => ({ ...f, notas: e.target.value }))}
-                          placeholder="Efectivo, transferencia…"
-                          className="w-full px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs outline-none focus:border-gray-400"
-                        />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="block text-[10px] font-medium text-gray-500 dark:text-gray-400 mb-0.5">Período desde</label>
-                        <input
-                          type="date"
-                          value={editForm.desde}
-                          onChange={e => setEditForm(f => ({ ...f, desde: e.target.value }))}
-                          className="w-full px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs outline-none focus:border-gray-400"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-medium text-gray-500 dark:text-gray-400 mb-0.5">Período hasta</label>
-                        <input
-                          type="date"
-                          value={editForm.hasta}
-                          onChange={e => setEditForm(f => ({ ...f, hasta: e.target.value }))}
-                          className="w-full px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs outline-none focus:border-gray-400"
-                        />
-                      </div>
-                    </div>
-                    <div className="flex gap-2 pt-1">
-                      <button
-                        onClick={() => mutarEditar.mutate({
-                          pagoId: pago.id,
-                          dto: {
-                            monto: parseFloat(editForm.monto) || 0,
-                            notas: editForm.notas.trim() || undefined,
-                            periodoDesde: editForm.desde,
-                            periodoHasta: editForm.hasta,
-                          },
-                        })}
-                        disabled={mutarEditar.isPending}
-                        className="flex-1 py-1.5 rounded-lg bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-xs font-semibold hover:bg-gray-700 dark:hover:bg-gray-200 disabled:opacity-50 transition"
-                      >
-                        {mutarEditar.isPending ? "Guardando…" : "Guardar cambios"}
-                      </button>
-                      <button
-                        onClick={() => setEditandoId(null)}
-                        className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 text-xs hover:bg-gray-50 dark:hover:bg-gray-700 transition"
-                      >
-                        Cancelar
-                      </button>
-                    </div>
-                  </div>
-                );
-              }
-
-              return (
-                <div key={pago.id} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-bold font-mono bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 px-1.5 py-0.5 rounded">
-                        #{String(pago.numeroPago).padStart(3, "0")}
-                      </span>
-                      <span className="text-xs font-semibold text-gray-800 dark:text-gray-200">
-                        ${pago.monto.toLocaleString("es-MX", { minimumFractionDigits: 2 })} MXN
-                      </span>
-                      <span className="text-[10px] text-gray-400">
-                        · {pago.mesesPagados >= 600 ? "♾ De por vida" : pago.mesesPagados === 1 ? "1 mes" : `${pago.mesesPagados} meses`}
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-gray-400 mt-0.5">
-                      {formatFechaMx(pago.periodoDesde)} – {formatFechaMx(pago.periodoHasta)}
-                      {pago.notas && <span className="ml-2 text-gray-400">· {pago.notas}</span>}
-                    </p>
-                    {enConfirmar && (
-                      <div className="flex items-center gap-2 mt-2">
-                        <span className="text-[11px] text-red-600 dark:text-red-400 font-medium">¿Eliminar este pago?</span>
-                        <button
-                          onClick={() => mutarEliminar.mutate(pago.id)}
-                          disabled={mutarEliminar.isPending}
-                          className="text-[11px] font-semibold text-red-600 dark:text-red-400 hover:underline disabled:opacity-50"
-                        >
-                          {mutarEliminar.isPending ? "Eliminando…" : "Confirmar"}
-                        </button>
-                        <button
-                          onClick={() => setConfirmandoEliminarId(null)}
-                          className="text-[11px] text-gray-400 hover:underline"
-                        >
-                          Cancelar
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <button
-                      onClick={() => imprimirComprobante(pago)}
-                      title="Imprimir comprobante"
-                      className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-                    >
-                      <Printer size={14} />
-                    </button>
-                    <button
-                      onClick={() => iniciarEdicion(pago)}
-                      title="Editar pago"
-                      className="text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-                    >
-                      <Pencil size={14} />
-                    </button>
-                    <button
-                      onClick={() => {
-                        setConfirmandoEliminarId(enConfirmar ? null : pago.id);
-                        setEditandoId(null);
-                      }}
-                      title="Eliminar pago"
-                      className={`transition p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 ${
-                        enConfirmar
-                          ? "text-red-500 dark:text-red-400"
-                          : "text-gray-400 hover:text-red-500 dark:hover:text-red-400"
-                      }`}
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      <button
-        onClick={onCerrar}
-        className="w-full py-2 rounded-xl border border-gray-200 dark:border-gray-600 text-sm text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800 transition"
-      >
-        Cerrar
-      </button>
     </div>
   );
 }
