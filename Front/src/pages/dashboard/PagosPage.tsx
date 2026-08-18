@@ -430,7 +430,7 @@ export default function PagosPage() {
     if (histFiltrado.length === 0) { toast("No hay pagos en el período seleccionado", "error"); return; }
     exportarExcel(
       ["Fecha pago", "Cliente", "Servicio", "Empleado", "Método", "Total", "Propina"],
-      histFiltrado.map(c => [
+      histFiltrado.map(c => [[
         c.fechaPago ? new Date(c.fechaPago).toLocaleDateString("es-MX") : "",
         c.nombreCliente,
         c.nombreServicio,
@@ -438,7 +438,7 @@ export default function PagosPage() {
         c.metodoPago ?? "",
         (c.montoCobrado ?? c.precio),
         c.propina ?? 0,
-      ]),
+      ]]),
       `historial-pagos-${histDesde}-${histHasta}`,
       `Historial de pagos`,
       {

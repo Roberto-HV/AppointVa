@@ -99,7 +99,7 @@ export default function ReportesPage() {
 
   const { data: servicios = [] } = useQuery({
     queryKey: ["servicios-reporte"],
-    queryFn: serviciosApi.obtenerTodos,
+    queryFn: () => serviciosApi.obtenerTodos(),
     staleTime: 1000 * 60 * 5,
   });
 

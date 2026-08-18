@@ -43,7 +43,6 @@ import { useToastStore } from "../../store/toastStore";
 import type { CitaDto, SlotDisponible } from "../../types";
 import { SkeletonTableRows } from "../../components/ui/Skeleton";
 import { Tooltip } from "../../components/ui/Tooltip";
-import { exportarExcel } from "../../utils/exportarExcel";
 import { reportesApi } from "../../api/reportes";
 import { intakeApi } from "../../api/intake";
 import { formatPrecio, formatFechaHoraCorta as formatFechaHora } from "../../utils/formatters";
@@ -166,7 +165,7 @@ export default function CitasPage() {
 
   const { data: servicios = [] } = useQuery({
     queryKey: ["servicios"],
-    queryFn: serviciosApi.obtenerTodos,
+    queryFn: () => serviciosApi.obtenerTodos(),
   });
 
   const empleadosFiltrados = svcSel
