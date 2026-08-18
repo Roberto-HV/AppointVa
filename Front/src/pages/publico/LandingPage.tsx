@@ -599,9 +599,9 @@ export default function LandingPage() {
 
             <div className="grid md:grid-cols-3 gap-5 items-stretch">
               <PricingCard
-                delay={0} name="Básico" price={249} annualPrice={199} employees={3}
+                delay={0} name="Básico" price={249} annualPrice={199} employees={2}
                 billedAnnually={billedAnnually}
-                features={["Portal de reservas público", "3 empleados", "Notificaciones por email", "Dashboard y calendario", "Campana de notificaciones", "Gestión de clientes"]}
+                features={["Portal de reservas público", "2 empleados", "Notificaciones por email", "Dashboard y calendario", "Campana de notificaciones", "Gestión de clientes"]}
               />
               <PricingCard
                 delay={100} name="Pro" price={449} employees={4}

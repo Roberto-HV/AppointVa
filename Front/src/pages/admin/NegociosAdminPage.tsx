@@ -30,7 +30,7 @@ const ESTADO_BADGE: Record<string, { label: string; className: string }> = {
   SinSuscripcion: { label: 'Sin suscripción', className: 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400' },
 };
 
-const PRECIO_EXTRA_EMP = 49;
+const PRECIO_EXTRA_EMP = 50;
 const LIFETIME_SENTINEL = 1200;
 
 // ── Schemas ────────────────────────────────────────────────────────────────
