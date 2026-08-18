@@ -62,20 +62,15 @@ interface OnboardingProps {
   tieneDescripcion: boolean;
   tieneGaleria: boolean;
   cargando: boolean;
+  visible: boolean;
+  onClose: () => void;
 }
 
-function WizardOnboarding({ negocioId, slug, tieneServicios, tieneHorarios, tieneEmpleados, tieneDescripcion, tieneGaleria, cargando }: OnboardingProps) {
-  const keyStorage = `onboarding-ok-${negocioId}`;
+function WizardOnboarding({ negocioId, slug, tieneServicios, tieneHorarios, tieneEmpleados, tieneDescripcion, tieneGaleria, cargando, visible, onClose }: OnboardingProps) {
   const keyEnlace = `enlace-visto-${negocioId}`;
-  const [cerrado, setCerrado] = useState(() => !!localStorage.getItem(keyStorage));
   const [enlaceVisto, setEnlaceVisto] = useState(() => !!localStorage.getItem(keyEnlace));
 
-  if (cerrado || cargando) return null;
-
-  const cerrar = () => {
-    localStorage.setItem(keyStorage, "1");
-    setCerrado(true);
-  };
+  if (!visible || cargando) return null;
 
   const pasos = [
     { hecho: true,             icono: CheckCircle2,  label: "Cuenta creada",              desc: "Tu negocio está registrado en AppointVa",                    accion: null },
@@ -92,7 +87,7 @@ function WizardOnboarding({ negocioId, slug, tieneServicios, tieneHorarios, tien
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-700/20 p-5 mb-6 relative">
-      <button onClick={cerrar} className="absolute top-4 right-4 text-gray-400 dark:text-gray-500 hover:text-gray-600 transition">
+      <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 dark:text-gray-500 hover:text-gray-600 transition">
         <X size={16} />
       </button>
 
@@ -142,6 +137,8 @@ function WizardOnboarding({ negocioId, slug, tieneServicios, tieneHorarios, tien
 function VistaPropietario({ nombre }: { nombre: string }) {
   const [dias, setDias] = useState(14);
   const usuario = useAuthStore((s) => s.usuario);
+  const keyOnboarding = usuario?.negocioId ? `onboarding-ok-${usuario.negocioId}` : "";
+  const [mostrarWizard, setMostrarWizard] = useState(() => keyOnboarding ? !localStorage.getItem(keyOnboarding) : false);
   const hoy = new Date().toISOString().slice(0, 10);
 
   const { data, isLoading, isError } = useQuery({
@@ -215,7 +212,17 @@ function VistaPropietario({ nombre }: { nombre: string }) {
       {/* Encabezado — Apple Store style */}
       <div className="mb-6">
         <h1 className="text-3xl font-black text-slate-900 dark:text-gray-100 leading-none mb-1">Hola, {nombre}</h1>
-        <p className="text-sm text-slate-400">{negocio?.nombre ?? "Tu negocio"}</p>
+        <div className="flex items-center gap-3">
+          <p className="text-sm text-slate-400">{negocio?.nombre ?? "Tu negocio"}</p>
+          {!mostrarWizard && keyOnboarding && (
+            <button
+              onClick={() => { localStorage.removeItem(keyOnboarding); setMostrarWizard(true); }}
+              className="text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:underline transition"
+            >
+              Ver guía de inicio
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Quick actions — ElevenReader 4-col grid */}
@@ -259,13 +266,14 @@ function VistaPropietario({ nombre }: { nombre: string }) {
         <WizardOnboarding
           negocioId={usuario.negocioId}
           slug={negocio.slug ?? ""}
-
           tieneServicios={servicios.length > 0}
           tieneHorarios={horarios.some(h => h.activo)}
           tieneEmpleados={empleados.length > 0}
           tieneDescripcion={!!negocio.descripcion}
           tieneGaleria={galeria.length > 0}
           cargando={isLoading}
+          visible={mostrarWizard}
+          onClose={() => { localStorage.setItem(keyOnboarding, "1"); setMostrarWizard(false); }}
         />
       )}
 

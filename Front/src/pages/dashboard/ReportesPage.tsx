@@ -4,7 +4,7 @@ import Select from "../../components/ui/Select";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
 } from "recharts";
-import { Download, TrendingUp, Calendar, DollarSign, CheckCircle } from "lucide-react";
+import { Download, TrendingUp, TrendingDown, Calendar, DollarSign, CheckCircle } from "lucide-react";
 import { reportesApi, type FiltrosReporteCitas } from "../../api/reportes";
 import { useSectorTerms } from "../../hooks/useSectorTerms";
 import { Users, RefreshCw } from "lucide-react";
@@ -329,7 +329,7 @@ export default function ReportesPage() {
             <Tarjeta label="Ingresos totales" valor={reporteCitas ? formatPrecio(reporteCitas.totalIngresos) : "—"} icono={<DollarSign size={18} />} />
             <Tarjeta label="Inasistencias" valor={String(reporteCitas?.totalInasistencias ?? "—")}
               subvalor={reporteCitas ? `${reporteCitas.totalPendientes} pendientes` : undefined}
-              icono={<TrendingUp size={18} />} />
+              icono={<TrendingDown size={18} />} />
           </div>
 
           {/* Métodos de pago */}

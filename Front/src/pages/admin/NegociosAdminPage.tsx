@@ -295,7 +295,7 @@ function ModalSuscripcion({
                 type="button"
                 onClick={() => handleSetPlan(p.id)}
                 className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
-                  suscripcion?.planNombre === p.nombre
+                  negocio.planId === p.id
                     ? 'bg-gray-900 text-white border-gray-900 dark:bg-gray-100 dark:text-gray-900 dark:border-gray-100'
                     : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-gray-500'
                 }`}

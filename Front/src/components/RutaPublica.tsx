@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
+import { PageLoader } from "./ui/Skeleton";
 
 export default function RutaPublica() {
   const token = useAuthStore((s) => s.token);
@@ -14,8 +15,7 @@ export default function RutaPublica() {
     return unsub;
   }, [hydrated]);
 
-  // Mientras hidrata: mostrar null (rutas públicas son rápidas, no necesitan spinner)
-  if (!hydrated) return null;
+  if (!hydrated) return <PageLoader />;
 
   if (!token) return <Outlet />;
 

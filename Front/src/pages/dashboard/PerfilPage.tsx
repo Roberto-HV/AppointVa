@@ -241,7 +241,10 @@ export default function PerfilPage() {
       qc.invalidateQueries({ queryKey: ["dias-bloqueados"] });
       setNuevaFecha(""); setNuevoMotivo(""); toast("Día bloqueado");
     },
-    onError: () => toast("Ese día ya está bloqueado"),
+    onError: (err: any) => {
+      const msg = err?.response?.data?.mensaje ?? "No se pudo bloquear el día. Intenta de nuevo.";
+      toast(msg, "error");
+    },
   });
 
   const { mutate: desbloquear } = useMutation({

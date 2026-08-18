@@ -84,7 +84,6 @@ export default function DosFactoresPage() {
         onChange={(e) => { setCodigo(e.target.value.replace(/\D/g, "")); setErrorCodigo(""); }}
         placeholder="000000"
         className="w-full px-4 py-2.5 text-center text-xl font-mono tracking-[0.5em] rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 outline-none focus:border-slate-700"
-        autoFocus
       />
       {errorCodigo && <p className="text-red-500 text-xs mt-1 text-center">{errorCodigo}</p>}
     </div>

@@ -117,6 +117,9 @@ export default function CitasPage() {
 
   // Modal completar
   const [citaACompletar, setCitaACompletar] = useState<CitaDto | null>(null);
+
+  // Track which row is being processed so only that button is disabled
+  const [citaEnProceso, setCitaEnProceso] = useState<string | null>(null);
   const validarEmailCliente = (v: string) =>
     v.trim() && !EMAIL_RE.test(v.trim()) ? "Correo no válido (ej: nombre@dominio.com)" : "";
 
@@ -689,8 +692,8 @@ export default function CitasPage() {
                         {c.estadoTexto === "Pendiente" && (
                           <Tooltip text="Confirmar cita">
                             <button
-                              onClick={() => cambiarEstado({ id: c.id, estado: ESTADOS.Confirmada, mot: "" })}
-                              disabled={isPending}
+                              onClick={() => { setCitaEnProceso(c.id); cambiarEstado({ id: c.id, estado: ESTADOS.Confirmada, mot: "" }, { onSettled: () => setCitaEnProceso(null) }); }}
+                              disabled={citaEnProceso === c.id}
                               className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 disabled:opacity-40 transition"
                             >
                               <CheckCircle2 size={16} />
@@ -702,7 +705,7 @@ export default function CitasPage() {
                           <Tooltip text="Marcar como completada">
                             <button
                               onClick={() => setCitaACompletar(c)}
-                              disabled={isPending}
+                              disabled={citaEnProceso === c.id}
                               className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 disabled:opacity-40 transition"
                             >
                               <CheckCheck size={16} />

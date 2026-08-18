@@ -313,7 +313,10 @@ export default function PagosPage() {
     </body></html>`;
 
     const w = window.open("", "_blank", "width=340,height=600");
-    if (!w) return;
+    if (!w) {
+      toast("El navegador bloqueó la ventana de impresión. Permite popups para este sitio.", "error");
+      return;
+    }
     w.document.write(html);
     w.document.close();
     w.focus();
@@ -1107,7 +1110,7 @@ export default function PagosPage() {
                   onChange={(e) => setMontoRecibido(e.target.value)}
                   className="mt-1 w-full border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-700/30"
                 />
-                {montoRecibido && cambio >= 0 && (
+                {montoRecibido && cambio > 0 && (
                   <p className="mt-2 text-sm text-emerald-600 dark:text-emerald-400 font-medium">
                     Cambio: <span className="font-bold">${cambio.toFixed(2)}</span>
                   </p>

@@ -70,7 +70,7 @@ export default function RestablecerContrasenaPage() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <img src="/MasterLogo.png" alt="AppointVa" className="h-20 object-contain mx-auto mb-2" />
-          <p className="text-gray-500 text-sm">Panel de administración</p>
+          <p className="text-gray-500 text-sm">AppointVa</p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8">
