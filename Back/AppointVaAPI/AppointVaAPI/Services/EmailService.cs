@@ -202,7 +202,8 @@ namespace AppointVaAPI.Services
             var servicio = cita.Servicio?.Nombre ?? "el servicio";
             var empleado = cita.Empleado?.Nombre ?? string.Empty;
             var inicio   = cita.InicioEn.ToString("dddd dd 'de' MMMM 'de' yyyy", new System.Globalization.CultureInfo("es-MX"));
-            var hora     = $"{cita.InicioEn:HH:mm} – {cita.FinEn:HH:mm} h";
+            var horaInicio  = cita.InicioEn.ToString("HH:mm");
+            var duracionMin = (int)(cita.FinEn - cita.InicioEn).TotalMinutes;
             var precio   = cita.Precio.ToString("C", new System.Globalization.CultureInfo("es-MX"));
             var stripeColor  = esPendiente ? "#f59e0b" : "#10b981";
             var iconEmoji    = esPendiente ? "⏳" : "✅";
@@ -284,7 +285,11 @@ namespace AppointVaAPI.Services
                         </tr>
                         <tr>
                           <td style="padding:10px 12px;background:#f8fafc;color:#6b7280;font-size:14px;">Hora</td>
-                          <td style="padding:10px 12px;color:#111827;font-weight:600;font-size:14px;">{hora}</td>
+                          <td style="padding:10px 12px;color:#111827;font-weight:600;font-size:14px;">{horaInicio}</td>
+                        </tr>
+                        <tr>
+                          <td style="padding:10px 12px;background:#f8fafc;color:#6b7280;font-size:14px;">Duración</td>
+                          <td style="padding:10px 12px;color:#111827;font-weight:600;font-size:14px;">{duracionMin} min</td>
                         </tr>
                         <tr>
                           <td style="padding:10px 12px;background:#f8fafc;color:#6b7280;font-size:14px;">Precio</td>
@@ -385,7 +390,8 @@ namespace AppointVaAPI.Services
             var servicio = cita.Servicio?.Nombre ?? "el servicio";
             var empleado = cita.Empleado?.Nombre ?? string.Empty;
             var inicio   = cita.InicioEn.ToString("dddd dd 'de' MMMM 'de' yyyy", new System.Globalization.CultureInfo("es-MX"));
-            var hora     = $"{cita.InicioEn:HH:mm} – {cita.FinEn:HH:mm} h";
+            var horaInicio  = cita.InicioEn.ToString("HH:mm");
+            var duracionMin = (int)(cita.FinEn - cita.InicioEn).TotalMinutes;
 
             var filaEmpleado = string.IsNullOrEmpty(empleado) ? "" : $"""
                         <tr>
@@ -448,7 +454,11 @@ namespace AppointVaAPI.Services
                         </tr>
                         <tr>
                           <td style="padding:10px 12px;background:#f8fafc;color:#6b7280;font-size:14px;">Hora</td>
-                          <td style="padding:10px 12px;color:#111827;font-weight:600;font-size:14px;">{hora}</td>
+                          <td style="padding:10px 12px;color:#111827;font-weight:600;font-size:14px;">{horaInicio}</td>
+                        </tr>
+                        <tr>
+                          <td style="padding:10px 12px;background:#f8fafc;color:#6b7280;font-size:14px;">Duración</td>
+                          <td style="padding:10px 12px;color:#111827;font-weight:600;font-size:14px;">{duracionMin} min</td>
                         </tr>
                       </table>
                       <div style="background:#fffbeb;border:1.5px solid #fde68a;border-radius:10px;padding:16px 20px;text-align:center;margin-bottom:24px;">
