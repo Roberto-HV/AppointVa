@@ -352,14 +352,15 @@ export default function CitasPage() {
 
   const accionesCita = citaSel ? TRANSICIONES[citaSel.estadoTexto] ?? [] : [];
 
-  const conteoEstados = citas.reduce<Record<string, number>>((acc, c) => {
-    acc[c.estadoTexto] = (acc[c.estadoTexto] ?? 0) + 1;
-    return acc;
-  }, {});
-
   // ── WhatsApp ─────────────────────────────────────────────────────────────────
+  const formatWaPhone = (telefono: string) => {
+    const digits = telefono.replace(/\D/g, "");
+    if (digits.startsWith("52") && digits.length >= 12) return digits;
+    return `52${digits}`;
+  };
+
   const resenaUrl = (c: CitaDto) => {
-    const tel = c.telefonoCliente.replace(/\D/g, "");
+    const tel = formatWaPhone(c.telefonoCliente);
     const negocioTxt = nombreNegocio ? `*${nombreNegocio}*` : "nuestro negocio";
     const link = perfil?.slug ? `${window.location.origin}/b/${perfil.slug}` : window.location.origin;
     const nombre = c.nombreCliente.split(" ")[0];
@@ -373,7 +374,7 @@ export default function CitasPage() {
   };
 
   const whatsappUrl = (c: CitaDto) => {
-    const tel = c.telefonoCliente.replace(/\D/g, "");
+    const tel = formatWaPhone(c.telefonoCliente);
     const negocio = nombreNegocio ? ` en *${nombreNegocio}*` : "";
     const baseUrl = window.location.origin;
     const msg =
@@ -487,29 +488,19 @@ export default function CitasPage() {
           <div className="col-span-2">
             <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1.5">Estado</label>
             <div className="flex flex-wrap gap-1.5">
-              {(["", "Pendiente", "Confirmada", "Completada", "Cancelada", "Inasistencia"] as const).map((e) => {
-                const count = e ? conteoEstados[e] : citas.length;
-                return (
-                  <button
-                    key={e || "todos"}
-                    onClick={() => { setEstadoFiltro(e); setPagina(1); }}
-                    className={`px-3 py-1 text-xs font-medium rounded-full border transition ${
-                      estadoFiltro === e
-                        ? "bg-slate-700 text-white border-slate-700"
-                        : "bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-slate-600 hover:border-slate-400"
-                    }`}
-                  >
-                    {e || "Todos"}
-                    {count > 0 && (
-                      <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
-                        estadoFiltro === e ? "bg-white/20" : "bg-gray-100 dark:bg-slate-700"
-                      }`}>
-                        {count}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
+              {(["", "Pendiente", "Confirmada", "Completada", "Cancelada", "Inasistencia"] as const).map((e) => (
+                <button
+                  key={e || "todos"}
+                  onClick={() => { setEstadoFiltro(e); setPagina(1); }}
+                  className={`px-3 py-1 text-xs font-medium rounded-full border transition ${
+                    estadoFiltro === e
+                      ? "bg-slate-700 text-white border-slate-700"
+                      : "bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-slate-600 hover:border-slate-400"
+                  }`}
+                >
+                  {e || "Todos"}
+                </button>
+              ))}
             </div>
           </div>
           {/* Atajos rápidos de fecha */}
@@ -605,7 +596,7 @@ export default function CitasPage() {
               </p>
               {(estadoFiltro || busqueda) && (
                 <button
-                  onClick={() => { setEstadoFiltro(""); setBusqueda(""); }}
+                  onClick={() => { setEstadoFiltro(""); setBusqueda(""); setDesde(""); setHasta(""); setPagina(1); }}
                   className="mt-2 text-sm text-slate-700 hover:underline"
                 >
                   Limpiar filtros

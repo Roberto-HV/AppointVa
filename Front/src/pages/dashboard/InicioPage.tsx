@@ -46,6 +46,12 @@ function formatPrecioCorto(n: number) {
   return `$${Math.round(n).toLocaleString("es-MX")}`;
 }
 
+function formatWaPhone(telefono: string) {
+  const digits = telefono.replace(/\D/g, "");
+  if (digits.startsWith("52") && digits.length >= 12) return digits;
+  return `52${digits}`;
+}
+
 // ── Wizard de onboarding ──────────────────────────────────────────────────────
 interface OnboardingProps {
   negocioId: string;
@@ -189,7 +195,7 @@ function VistaPropietario({ nombre }: { nombre: string }) {
   });
 
   const whatsappHoy = (c: CitaDto) => {
-    const tel = c.telefonoCliente.replace(/\D/g, "");
+    const tel = formatWaPhone(c.telefonoCliente);
     const negocioText = negocio?.nombre ? ` en *${negocio.nombre}*` : "";
     const msg =
       `Hola ${c.nombreCliente} 👋, te recordamos tu cita${negocioText}:\n\n` +
