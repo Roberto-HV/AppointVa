@@ -51,6 +51,11 @@ function inicioAnio() {
   return `${new Date().getFullYear()}-01-01`;
 }
 
+function finMes() {
+  const d = new Date();
+  return new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().split("T")[0];
+}
+
 interface TarjetaProps { label: string; valor: string; subvalor?: string; icono: React.ReactNode }
 function Tarjeta({ label, valor, subvalor, icono }: TarjetaProps) {
   return (
@@ -76,6 +81,7 @@ export default function ReportesPage() {
   const [empleadoId, setEmpleadoId] = useState("");
   const [servicioId, setServicioId] = useState("");
   const [estado, setEstado] = useState("");
+  const [errorFecha, setErrorFecha] = useState<string | null>(null);
 
   const filtros: FiltrosReporteCitas = {
     desde,
@@ -100,25 +106,25 @@ export default function ReportesPage() {
   const { data: reporteCitas, isLoading: cargandoCitas, isError: errorCitas } = useQuery({
     queryKey: ["reporte-citas", filtros],
     queryFn: () => reportesApi.obtenerCitas(filtros),
-    enabled: tab === "citas",
+    enabled: tab === "citas" && !errorFecha,
   });
 
   const { data: reporteIngresos, isLoading: cargandoIngresos, isError: errorIngresos } = useQuery({
     queryKey: ["reporte-ingresos", desde, hasta],
     queryFn: () => reportesApi.obtenerIngresos(desde, hasta),
-    enabled: tab === "ingresos" || tab === "empleados",
+    enabled: (tab === "ingresos" || tab === "empleados") && !errorFecha,
   });
 
   const { data: heatmap, isLoading: cargandoHeatmap } = useQuery({
     queryKey: ["reporte-heatmap", desde, hasta],
     queryFn: () => reportesApi.obtenerHeatmap(desde, hasta),
-    enabled: tab === "heatmap",
+    enabled: tab === "heatmap" && !errorFecha,
   });
 
   const { data: retencion, isLoading: cargandoRetencion } = useQuery({
     queryKey: ["reporte-retencion", desde, hasta],
     queryFn: () => reportesApi.obtenerRetencion(desde, hasta),
-    enabled: tab === "retencion",
+    enabled: tab === "retencion" && !errorFecha,
   });
 
   useEffect(() => { setReportePagina(1); }, [reporteCitas]);
@@ -228,12 +234,12 @@ export default function ReportesPage() {
           {([
             { label: "Hoy", d: hoy(), h: hoy() },
             { label: "Esta semana", d: inicioSemana(), h: hoy() },
-            { label: "Este mes", d: inicioMes(), h: hoy() },
+            { label: "Este mes", d: inicioMes(), h: finMes() },
             { label: "Este año", d: inicioAnio(), h: hoy() },
           ] as const).map((p) => (
             <button
               key={p.label}
-              onClick={() => { setDesde(p.d); setHasta(p.h); }}
+              onClick={() => { setDesde(p.d); setHasta(p.h); setErrorFecha(null); }}
               className={`px-2.5 py-1 text-xs font-medium rounded-md border transition ${
                 desde === p.d && hasta === p.h
                   ? "bg-slate-700 text-white border-slate-700"
@@ -247,12 +253,15 @@ export default function ReportesPage() {
         <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-3 items-end">
           <div className="flex flex-col gap-1 min-w-0 w-full sm:w-48">
             <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Desde</label>
-            <DatePicker value={desde} onChange={(v) => setDesde(v)} />
+            <DatePicker value={desde} onChange={(v) => { setDesde(v); setErrorFecha(v > hasta ? "La fecha de inicio debe ser anterior a la de fin." : null); }} />
           </div>
           <div className="flex flex-col gap-1 min-w-0 w-full sm:w-48">
             <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Hasta</label>
-            <DatePicker value={hasta} onChange={(v) => setHasta(v)} />
+            <DatePicker value={hasta} onChange={(v) => { setHasta(v); setErrorFecha(desde > v ? "La fecha de fin debe ser posterior a la de inicio." : null); }} />
           </div>
+          {errorFecha && (
+            <p className="col-span-2 sm:col-span-1 text-xs text-red-500 dark:text-red-400 self-end pb-1">{errorFecha}</p>
+          )}
           {tab === "citas" && (
             <>
               <div className="flex flex-col gap-1">
@@ -484,7 +493,7 @@ export default function ReportesPage() {
                     margin={{ left: 8, right: 32 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                    <XAxis type="number" tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 11 }} />
+                    <XAxis type="number" tickFormatter={(v) => `$${Number(v).toLocaleString("es-MX")}`} tick={{ fontSize: 11 }} />
                     <YAxis type="category" dataKey="nombreEmpleado" width={120} tick={{ fontSize: 11 }} />
                     <Tooltip formatter={(v) => formatPrecio(Number(v))} labelFormatter={(l) => `Empleado: ${l}`} />
                     <Bar dataKey="totalIngresos" radius={[0, 6, 6, 0]} maxBarSize={36}>
@@ -604,7 +613,7 @@ export default function ReportesPage() {
                   <ResponsiveContainer width="100%" height={220}>
                     <BarChart data={reporteIngresos.porServicio} layout="vertical" margin={{ left: 8, right: 24 }}>
                       <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                      <XAxis type="number" tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 11 }} />
+                      <XAxis type="number" tickFormatter={(v) => `$${Number(v).toLocaleString("es-MX")}`} tick={{ fontSize: 11 }} />
                       <YAxis type="category" dataKey="nombreServicio" width={110} tick={{ fontSize: 11 }} />
                       <Tooltip formatter={(v) => formatPrecio(Number(v))} />
                       <Bar dataKey="totalIngresos" radius={[0, 4, 4, 0]}>
@@ -627,7 +636,7 @@ export default function ReportesPage() {
                     <BarChart data={reporteIngresos.porDia} margin={{ right: 8 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} />
                       <XAxis dataKey="fecha" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
-                      <YAxis tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 11 }} />
+                      <YAxis tickFormatter={(v) => `$${Number(v).toLocaleString("es-MX")}`} tick={{ fontSize: 11 }} />
                       <Tooltip formatter={(v) => formatPrecio(Number(v))} />
                       <Bar dataKey="totalIngresos" fill="#C8A961" radius={[4, 4, 0, 0]} />
                     </BarChart>

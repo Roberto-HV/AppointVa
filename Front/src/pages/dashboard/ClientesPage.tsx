@@ -60,8 +60,13 @@ export default function ClientesPage() {
       .sort((a, b) => new Date(a.ultimaCitaEn!).getTime() - new Date(b.ultimaCitaEn!).getTime());
   }, [todosParaInactivos, diasInactivo, ahora]);
 
+  const formatWaPhone = (tel: string) => {
+    const digits = tel.replace(/\D/g, "");
+    if (digits.startsWith("52") && digits.length >= 12) return digits;
+    return `52${digits}`;
+  };
+
   const whatsappReactivacion = (c: ClienteDto) => {
-    const tel = c.telefono.replace(/\D/g, "");
     const negocioNombre = negocio?.nombre ?? "nosotros";
     const link = negocio?.slug ? `${window.location.origin}/b/${negocio.slug}` : "";
     const dias = Math.floor((ahora.getTime() - new Date(c.ultimaCitaEn!).getTime()) / (1000 * 60 * 60 * 24));
@@ -70,7 +75,7 @@ export default function ClientesPage() {
       `Hola ${nombre} 👋, hace ${dias} días que no te vemos en *${negocioNombre}*.\n\n` +
       `¡Nos encantaría verte de nuevo! Reserva tu próxima cita fácilmente aquí:\n${link}\n\n` +
       `¡Te esperamos! 😊`;
-    return `https://wa.me/${tel}?text=${encodeURIComponent(msg)}`;
+    return `https://wa.me/${formatWaPhone(c.telefono)}?text=${encodeURIComponent(msg)}`;
   };
 
   // Auto-abrir detalle si viene clienteId en la URL (e.g. desde CitasPage)
@@ -86,7 +91,7 @@ export default function ClientesPage() {
       setNotas(clienteDirecto.notas ?? "");
       setSearchParams({}, { replace: true });
     }
-  }, [clienteDirecto]);
+  }, [clienteDirecto, clienteSel, setSearchParams]);
 
   const clientes = paginaClientes?.datos ?? [];
   const totalClientes = paginaClientes?.total ?? 0;
@@ -207,9 +212,14 @@ export default function ClientesPage() {
             </div>
           ) : (
             <>
-              <p className="text-xs text-gray-400 dark:text-gray-500">
-                {clientesInactivos.length} cliente{clientesInactivos.length !== 1 ? "s" : ""} sin visitar en más de {diasInactivo} días
-              </p>
+              <div className="flex items-baseline gap-3 flex-wrap">
+                <p className="text-xs text-gray-400 dark:text-gray-500">
+                  {clientesInactivos.length} cliente{clientesInactivos.length !== 1 ? "s" : ""} sin visitar en más de {diasInactivo} días
+                </p>
+                <span className="text-[10px] text-amber-500 dark:text-amber-400">
+                  El análisis se realiza sobre los últimos 500 clientes. Si tienes más, algunos inactivos pueden no aparecer.
+                </span>
+              </div>
               <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 divide-y divide-gray-50 dark:divide-slate-700">
                 {clientesInactivos.map((c) => {
                   const dias = Math.floor(
