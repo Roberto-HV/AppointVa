@@ -31,7 +31,10 @@ export default function ConfirmacionPage() {
   const { mutate: subirComprobante, isPending: subiendoComprobante, isSuccess: comprobanteSubido } = useMutation({
     mutationFn: (archivo: File) => comprobantesApi.subirComprobante(codigo!, archivo),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["cita", codigo] }),
-    onError: () => setErrorComprobante("No se pudo subir el comprobante. Verifica que el archivo sea una imagen menor a 5 MB."),
+    onError: () => {
+      setErrorComprobante("No se pudo subir el comprobante. Verifica que el archivo sea una imagen menor a 5 MB.");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    },
   });
 
   const { data: cita, isLoading, isError } = useQuery({
@@ -83,16 +86,20 @@ export default function ConfirmacionPage() {
     return () => { document.title = "AppointVa — Tu agenda online. Sin llamadas."; };
   }, [cita, linkCita]);
 
-  const copiarLink = () => {
-    navigator.clipboard.writeText(linkCita);
-    setLinkCopiado(true);
-    setTimeout(() => setLinkCopiado(false), 2000);
+  const copiarLink = async () => {
+    try {
+      await navigator.clipboard.writeText(linkCita);
+      setLinkCopiado(true);
+      setTimeout(() => setLinkCopiado(false), 2000);
+    } catch {}
   };
 
-  const copiarLinkBanner = () => {
-    navigator.clipboard.writeText(window.location.href);
-    setBannerCopiado(true);
-    setTimeout(() => setBannerCopiado(false), 2000);
+  const copiarLinkBanner = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setBannerCopiado(true);
+      setTimeout(() => setBannerCopiado(false), 2000);
+    } catch {}
   };
 
   const irAlNegocio = () => navigate(negocioSlug ? `/b/${negocioSlug}` : "/");
@@ -126,7 +133,7 @@ export default function ConfirmacionPage() {
   const cancelable = cita.estadoTexto === "Pendiente" || cita.estadoTexto === "Confirmada";
   const horasCancelacion = cita.horasCancelacion ?? 0;
   const minutosRestantes = (new Date(cita.inicioEn).getTime() - Date.now()) / 60000;
-  const puedeCancel = cancelable && (horasCancelacion === 0 || minutosRestantes > horasCancelacion * 60);
+  const puedeCancel = cancelable && minutosRestantes > 0 && (horasCancelacion === 0 || minutosRestantes > horasCancelacion * 60);
 
   // ── Cita cancelada ──────────────────────────────────────────────────────────
   if (cancelada) {
@@ -220,7 +227,7 @@ export default function ConfirmacionPage() {
               <Info size={16} className="text-amber-500 shrink-0 mt-0.5" />
               <p className="text-sm text-amber-800 leading-snug">
                 Sin correo registrado — guarda el enlace de tu cita o búscate en{" "}
-                <strong>Mis Citas</strong> con tu teléfono.
+                <strong>Mis Citas</strong> con tu correo y teléfono.
               </p>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
@@ -336,7 +343,7 @@ export default function ConfirmacionPage() {
             {/* Paso 1: Confirmado ✓ */}
             <div className="flex gap-3 items-start">
               <div className="flex flex-col items-center shrink-0">
-                <div className="w-7 h-7 rounded-full bg-emerald-500 flex items-center justify-center">
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center ${cita.estadoTexto === "Confirmada" ? "bg-emerald-500" : "bg-amber-400"}`}>
                   <Check size={13} className="text-white" strokeWidth={2.5} />
                 </div>
                 <div className="w-px h-6 bg-slate-200 mt-1" />
@@ -415,6 +422,7 @@ export default function ConfirmacionPage() {
                     if (archivo) {
                       if (archivo.size > 5 * 1024 * 1024) {
                         setErrorComprobante("No se pudo subir el comprobante. Verifica que el archivo sea una imagen menor a 5 MB.");
+                        if (fileInputRef.current) fileInputRef.current.value = "";
                         return;
                       }
                       subirComprobante(archivo);

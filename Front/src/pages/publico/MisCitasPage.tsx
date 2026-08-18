@@ -27,6 +27,7 @@ interface MiCita {
   precio: number;
   estado: number;
   estadoTexto: string;
+  horasCancelacion?: number;
 }
 
 interface Session {
@@ -308,7 +309,10 @@ export default function MisCitasPage() {
                       <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Próximas</span>
                       <span className="text-xs bg-emerald-100 text-emerald-700 font-bold px-2 py-0.5 rounded-full">{proximas.length}</span>
                     </div>
-                    {proximas.map((c) => (
+                    {proximas.map((c) => {
+                      const minRestantes = (new Date(c.inicioEn).getTime() - Date.now()) / 60000;
+                      const puedeModificar = minRestantes > 0 && (!c.horasCancelacion || minRestantes > c.horasCancelacion * 60);
+                      return (
                       <div key={c.id} className="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm hover:shadow-md transition-shadow">
                         <div className="flex items-start justify-between gap-3 mb-3">
                           <div className="flex-1 min-w-0">
@@ -328,7 +332,7 @@ export default function MisCitasPage() {
                             {c.codigoConfirmacion}
                           </span>
                           <div className="flex items-center gap-3">
-                            {(c.estadoTexto === "Pendiente" || c.estadoTexto === "Confirmada") && (
+                            {(c.estadoTexto === "Pendiente" || c.estadoTexto === "Confirmada") && puedeModificar && (
                               <>
                                 <button
                                   onClick={() => { setReagendando(c); setSlotNuevo(null); setErrorReagenda(""); }}
@@ -344,6 +348,9 @@ export default function MisCitasPage() {
                                   {cancelando === c.codigoConfirmacion ? "Cancelando…" : "Cancelar"}
                                 </button>
                               </>
+                            )}
+                            {(c.estadoTexto === "Pendiente" || c.estadoTexto === "Confirmada") && !puedeModificar && (
+                              <span className="text-xs text-slate-400">Sin cambios permitidos</span>
                             )}
                             <button
                               onClick={() =>
@@ -396,7 +403,8 @@ export default function MisCitasPage() {
                           </div>
                         )}
                       </div>
-                    ))}
+                      );
+                    })}
                   </>
                 )}
 
@@ -458,12 +466,9 @@ export default function MisCitasPage() {
                               Repetir
                             </button>
                             {c.estadoTexto === "Completada" && (
-                              <button
-                                onClick={() => navigate(`/cita/${c.codigoConfirmacion}`)}
-                                className="text-xs font-semibold text-amber-500 hover:text-amber-700 transition"
-                              >
-                                Reseña →
-                              </button>
+                              <span className="text-xs text-slate-400 italic">
+                                Reseña por correo
+                              </span>
                             )}
                             <button
                               onClick={() => navigate(`/cita/${c.codigoConfirmacion}`)}

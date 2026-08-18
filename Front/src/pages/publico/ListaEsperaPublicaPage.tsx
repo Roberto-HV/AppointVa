@@ -89,8 +89,9 @@ export default function ListaEsperaPublicaPage() {
         servicioId,
       });
       setFormState("success");
-    } catch {
-      setError("No se pudo unirte a la lista de espera. Intenta de nuevo.");
+    } catch (err) {
+      const msg = (err as any)?.response?.data?.mensaje || "No se pudo unirte a la lista de espera. Intenta de nuevo.";
+      setError(msg);
       setFormState("idle");
     }
   };
@@ -129,7 +130,7 @@ export default function ListaEsperaPublicaPage() {
 
   const color = negocio.colorPrimario ?? DEFAULT_COLOR;
 
-  if (negocio.listaEsperaActiva === false) {
+  if (!negocio.listaEsperaActiva) {
     return (
       <div className="min-h-screen bg-slate-50">
         <NegocioHeader negocio={negocio} color={color} />
@@ -195,7 +196,7 @@ export default function ListaEsperaPublicaPage() {
                 Teléfono <span className="text-red-500">*</span>
               </label>
               <input
-                type="text"
+                type="tel"
                 value={telefono}
                 onChange={(e) => setTelefono(e.target.value)}
                 required

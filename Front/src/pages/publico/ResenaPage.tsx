@@ -77,7 +77,7 @@ export default function ResenaPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-6">
       <div className="bg-white rounded-2xl border border-slate-100 p-8 max-w-sm w-full shadow-sm">
         {/* Header */}
         <div className="text-center mb-6">

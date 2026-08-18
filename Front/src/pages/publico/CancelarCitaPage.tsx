@@ -115,8 +115,11 @@ export default function CancelarCitaPage() {
     );
   }
 
+  const minutosRestantes = (new Date(cita.inicioEn).getTime() - Date.now()) / 60000;
+  const ventanaCancelacionVencida = cita.horasCancelacion > 0 && minutosRestantes <= cita.horasCancelacion * 60;
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4 py-12">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 px-4 py-12">
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm w-full max-w-sm overflow-hidden">
         {/* Header */}
         <div className="bg-slate-700 px-6 py-5 text-center">
@@ -157,10 +160,11 @@ export default function CancelarCitaPage() {
           {!confirmado ? (
             <>
               <div>
-                <label className="block text-xs text-gray-500 mb-1.5">
+                <label htmlFor="cancel-email" className="block text-xs text-gray-500 mb-1.5">
                   Confirma tu correo electrónico para cancelar
                 </label>
                 <input
+                  id="cancel-email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -168,12 +172,22 @@ export default function CancelarCitaPage() {
                   className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm outline-none focus:border-slate-700"
                 />
               </div>
+              {ventanaCancelacionVencida && (
+                <p className="text-xs text-red-500 text-center">
+                  El período de cancelación ha vencido ({cita.horasCancelacion} hora{cita.horasCancelacion === 1 ? "" : "s"} mínimo de anticipación).
+                </p>
+              )}
               {errorMsg && (
                 <p className="text-xs text-red-500">{errorMsg}</p>
               )}
               <button
-                onClick={() => { setErrorMsg(null); setConfirmado(true); }}
-                disabled={!email.trim()}
+                onClick={() => {
+                  const emailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+                  if (!emailValido) { setErrorMsg("Ingresa un correo electrónico válido."); return; }
+                  setErrorMsg(null);
+                  setConfirmado(true);
+                }}
+                disabled={!email.trim() || ventanaCancelacionVencida}
                 className="w-full py-2.5 rounded-xl bg-red-500 hover:bg-red-600 disabled:opacity-40 text-white text-sm font-semibold transition"
               >
                 Cancelar mi cita
