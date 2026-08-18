@@ -92,9 +92,9 @@ describe('ModalSuscripcion billing header', () => {
     const input = screen.getByRole('spinbutton');
     fireEvent.change(input, { target: { value: '2' } });
 
-    // 449 + 2*49 = 547
+    // 449 + 2*50 = 549
     const billingSummary = screen.getByTestId('billing-summary');
-    expect(billingSummary.textContent).toMatch(/\$547/);
+    expect(billingSummary.textContent).toMatch(/\$549/);
   });
 
   it('pre-fills monto with totalMensual when 1-month button clicked', async () => {
