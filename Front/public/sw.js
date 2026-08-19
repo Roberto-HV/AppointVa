@@ -1,4 +1,4 @@
-const CACHE = "appointva-v5";
+const CACHE = "appointva-v6";
 const STATIC = [
   "/",
   "/index.html",
@@ -27,24 +27,19 @@ self.addEventListener("push", (e) => {
   let data = { title: "AppointVa", body: "Tienes una nueva notificación.", url: "/", icalUrl: null, googleCalUrl: null };
   try { data = { ...data, ...e.data.json() }; } catch (_) {}
 
-  const maxActions = (self.Notification && self.Notification.maxActions) || 0;
-  const actions = [];
-  if (maxActions > 0) {
-    if (data.icalUrl)      actions.push({ action: "ical",   title: "📅 Al calendario" });
-    if (data.googleCalUrl) actions.push({ action: "gcal",   title: "📆 Google Calendar" });
-    actions.push(            { action: "ver",    title: "Ver cita" });
+  // DIAGNOSTIC: badge 99 confirms push event fired on the device
+  if (self.navigator && self.navigator.setAppBadge) {
+    self.navigator.setAppBadge(99).catch(() => {});
   }
 
   const options = {
     body: data.body,
-    icon: "/icons/icon-192.png",
     data: { url: data.url, icalUrl: data.icalUrl, googleCalUrl: data.googleCalUrl },
   };
-  if (actions.length > 0) options.actions = actions;
 
   e.waitUntil(
     self.registration.showNotification(data.title, options).catch(() =>
-      self.registration.showNotification(data.title, { body: data.body })
+      self.registration.showNotification("AppointVa", { body: data.body })
     )
   );
 });
