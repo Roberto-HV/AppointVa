@@ -1224,7 +1224,7 @@ function CitaCard({
   revertiendoId: string | null;
 }) {
   const hora = cita.inicioEn
-    ? new Date(cita.inicioEn).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })
+    ? new Date(cita.inicioEn).toLocaleTimeString("es-MX", { hour: "numeric", minute: "2-digit", hour12: true })
     : "—";
 
   return (

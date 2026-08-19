@@ -477,7 +477,7 @@ namespace AppointVaAPI.Services
             var cliente  = cita.Cliente?.NombreCompleto ?? "Un cliente";
             var servicio = cita.Servicio?.Nombre ?? "Servicio";
             var negocio  = cita.Negocio?.Nombre ?? "AppointVa";
-            var hora     = cita.InicioEn.ToString("HH:mm");
+            var hora     = cita.InicioEn.ToString("h:mm tt", System.Globalization.CultureInfo.InvariantCulture);
             var fecha    = cita.InicioEn.ToString("dd/MM/yyyy");
 
             return JsonSerializer.Serialize(new
@@ -495,7 +495,7 @@ namespace AppointVaAPI.Services
             var cliente  = cita.Cliente?.NombreCompleto ?? "Un cliente";
             var servicio = cita.Servicio?.Nombre ?? "Servicio";
             var negocio  = cita.Negocio?.Nombre ?? "AppointVa";
-            var hora     = cita.InicioEn.ToString("HH:mm");
+            var hora     = cita.InicioEn.ToString("h:mm tt", System.Globalization.CultureInfo.InvariantCulture);
             var fecha    = cita.InicioEn.ToString("dd/MM/yyyy");
 
             return JsonSerializer.Serialize(new

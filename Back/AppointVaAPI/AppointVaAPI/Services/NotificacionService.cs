@@ -82,12 +82,12 @@ namespace AppointVaAPI.Services
             try
             {
                 // InicioEn is already local time (Unspecified) — no conversion needed.
-                return fechaLocal.ToString("dddd dd 'de' MMMM 'a las' HH:mm",
+                return fechaLocal.ToString("dddd dd 'de' MMMM 'a las' h:mm tt",
                     new System.Globalization.CultureInfo("es-MX"));
             }
             catch
             {
-                return fechaLocal.ToString("dd/MM/yyyy HH:mm");
+                return fechaLocal.ToString("h:mm tt dd/MM/yyyy", System.Globalization.CultureInfo.InvariantCulture);
             }
         }
 

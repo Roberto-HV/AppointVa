@@ -29,9 +29,9 @@ function FechaHoraActual() {
     month: 'long',
   });
   const hora = ahora.toLocaleTimeString('es-MX', {
-    hour: '2-digit',
+    hour: 'numeric',
     minute: '2-digit',
-    hour12: false,
+    hour12: true,
   });
   return (
     <span className="hidden sm:block select-none text-sm capitalize text-slate-500 dark:text-slate-400">

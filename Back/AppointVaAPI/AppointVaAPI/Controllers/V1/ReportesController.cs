@@ -155,7 +155,7 @@ namespace AppointVaAPI.Controllers.V1
                     Escapar(c.Cliente?.Email ?? ""),
                     Escapar(c.Servicio?.Nombre ?? ""),
                     Escapar(c.Empleado?.Nombre ?? ""),
-                    c.InicioEn.ToString("dd/MM/yyyy HH:mm", cultura),
+                    c.InicioEn.ToString("dd/MM/yyyy h:mm tt", System.Globalization.CultureInfo.InvariantCulture),
                     (c.Servicio?.DuracionMinutos ?? 0).ToString(),
                     c.Precio.ToString("F2", cultura),
                     c.Pagada ? "Sí" : "No",

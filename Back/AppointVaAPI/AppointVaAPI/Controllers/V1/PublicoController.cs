@@ -506,7 +506,7 @@ namespace AppointVaAPI.Controllers.V1
                 NegocioId = negocio.Id,
                 Tipo = "NuevaCita",
                 Titulo = $"Nueva cita de {cliente.NombreCompleto}",
-                Descripcion = $"{servicio.Nombre} con {empleado?.Nombre ?? "Empleado"} · {cita.InicioEn.ToString("ddd d 'de' MMM, HH:mm", new System.Globalization.CultureInfo("es-MX"))}",
+                Descripcion = $"{servicio.Nombre} con {empleado?.Nombre ?? "Empleado"} · {cita.InicioEn.ToString("ddd d 'de' MMM, h:mm tt", new System.Globalization.CultureInfo("es-MX"))}",
                 CitaId = cita.Id
             });
             await _db.SaveChangesAsync();
@@ -658,7 +658,7 @@ namespace AppointVaAPI.Controllers.V1
                 NegocioId = cita.NegocioId,
                 Tipo = "Cancelacion",
                 Titulo = $"Cita cancelada — {cita.Cliente?.NombreCompleto ?? ""}",
-                Descripcion = $"{cita.Servicio?.Nombre ?? "Servicio"} con {cita.Empleado?.Nombre ?? "Empleado"} · {cita.InicioEn.ToString("ddd d 'de' MMM, HH:mm", new System.Globalization.CultureInfo("es-MX"))}",
+                Descripcion = $"{cita.Servicio?.Nombre ?? "Servicio"} con {cita.Empleado?.Nombre ?? "Empleado"} · {cita.InicioEn.ToString("ddd d 'de' MMM, h:mm tt", new System.Globalization.CultureInfo("es-MX"))}",
                 CitaId = cita.Id
             });
             await _db.SaveChangesAsync();
