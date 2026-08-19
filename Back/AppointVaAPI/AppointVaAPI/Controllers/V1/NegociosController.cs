@@ -205,6 +205,26 @@ namespace AppointVaAPI.Controllers.V1
             return Ok(MapearDto(negocio));
         }
 
+        // PATCH api/negocios/{id}/confirmar-email — super-admin confirma el email del propietario
+        [HttpPatch("{id:guid}/confirmar-email")]
+        [Authorize(Roles = Roles.SuperAdmin)]
+        public async Task<IActionResult> ConfirmarEmail(Guid id)
+        {
+            var propietario = await _db.Users
+                .FirstOrDefaultAsync(u => u.NegocioId == id);
+
+            if (propietario is null)
+                return NotFound(new { mensaje = "No se encontró el propietario del negocio." });
+
+            if (!propietario.EmailConfirmed)
+            {
+                propietario.EmailConfirmed = true;
+                await _userManager.UpdateAsync(propietario);
+            }
+
+            return Ok(new { mensaje = "Email confirmado correctamente." });
+        }
+
         // PATCH api/negocios/{id}/desactivar — super-admin desactiva un negocio
         [HttpPatch("{id:guid}/desactivar")]
         [Authorize(Roles = Roles.SuperAdmin)]

@@ -117,6 +117,10 @@ export const adminApi = {
     return data;
   },
 
+  confirmarEmail: async (id: string): Promise<void> => {
+    await api.patch(`/negocios/${id}/confirmar-email`);
+  },
+
   desactivar: async (id: string): Promise<NegocioDto> => {
     const { data } = await api.patch(`/negocios/${id}/desactivar`);
     return data;

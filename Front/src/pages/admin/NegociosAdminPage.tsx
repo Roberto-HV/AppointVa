@@ -633,6 +633,7 @@ function TarjetaNegocio({
   suscripcion,
   onActivar,
   onDesactivar,
+  onConfirmarEmail,
   onCrearPropietario,
   onColores,
   onSuscripcion,
@@ -642,6 +643,7 @@ function TarjetaNegocio({
   suscripcion: SuscripcionResumenDto | undefined;
   onActivar: () => void;
   onDesactivar: () => void;
+  onConfirmarEmail: () => void;
   onCrearPropietario: () => void;
   onColores: () => void;
   onSuscripcion: () => void;
@@ -726,6 +728,13 @@ function TarjetaNegocio({
           }`}
         >
           {esActivo ? "Desactivar" : "Activar"}
+        </button>
+        <button
+          onClick={onConfirmarEmail}
+          className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 transition"
+          title="Confirmar email del propietario manualmente"
+        >
+          Confirmar email
         </button>
         <button
           onClick={onSuscripcion}
@@ -862,6 +871,12 @@ export default function NegociosAdminPage() {
     mutationFn: (id: string) => adminApi.desactivar(id),
     onSuccess: invalidar,
     onError: () => toast("Error al desactivar el negocio. Intenta de nuevo.", "error"),
+  });
+
+  const { mutate: confirmarEmail } = useMutation({
+    mutationFn: (id: string) => adminApi.confirmarEmail(id),
+    onSuccess: () => toast("Email del propietario confirmado"),
+    onError: () => toast("Error al confirmar el email. Intenta de nuevo.", "error"),
   });
 
   const { mutate: actualizarColores, isPending: guardandoColores } = useMutation({
@@ -1047,6 +1062,7 @@ export default function NegociosAdminPage() {
                   suscripcion={suscripcionMap[neg.id]}
                   onActivar={() => activar(neg.id)}
                   onDesactivar={() => desactivar(neg.id)}
+                  onConfirmarEmail={() => confirmarEmail(neg.id)}
                   onCrearPropietario={() => abrirPropietario(neg)}
                   onColores={() => abrirColores(neg)}
                   onSuscripcion={() => abrirSuscripcion(neg)}
