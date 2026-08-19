@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell } from 'lucide-react';
+import { Bell, X } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { notificacionesApi, type NotificacionDto } from '../../api/notificaciones';
 
@@ -31,9 +31,15 @@ export function NotificacionesBell() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['notificaciones'] }),
   });
 
+  const [eliminando, setEliminando] = useState<string | null>(null);
+
   const eliminar = useMutation({
     mutationFn: notificacionesApi.eliminar,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['notificaciones'] }),
+    onSuccess: () => {
+      setEliminando(null);
+      qc.invalidateQueries({ queryKey: ['notificaciones'] });
+    },
+    onError: () => setEliminando(null),
   });
 
   const noLeidas = notificaciones.filter(n => !n.leida).length;
@@ -111,11 +117,17 @@ export function NotificacionesBell() {
                     </p>
                   </div>
                   <button
-                    onClick={(e) => { e.stopPropagation(); eliminar.mutate(n.id); }}
-                    className="shrink-0 text-lg leading-none text-slate-300 hover:text-slate-500 dark:text-slate-600 dark:hover:text-slate-400"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (eliminando === n.id) return;
+                      setEliminando(n.id);
+                      eliminar.mutate(n.id);
+                    }}
+                    disabled={eliminando === n.id}
+                    className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full text-slate-300 hover:text-slate-600 hover:bg-slate-100 dark:text-slate-600 dark:hover:text-slate-300 dark:hover:bg-slate-700 disabled:opacity-40 transition"
                     aria-label="Eliminar notificación"
                   >
-                    ×
+                    <X size={15} />
                   </button>
                 </li>
               ))}
