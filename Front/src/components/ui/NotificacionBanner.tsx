@@ -68,6 +68,13 @@ export function NotificacionPerfilSection() {
   const [probando, setProbando] = useState(false);
   const [resultadoPrueba, setResultadoPrueba] = useState<string | null>(null);
 
+  const isIOS = typeof navigator !== "undefined" && /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const isStandalone =
+    typeof window !== "undefined" &&
+    ((window.navigator as { standalone?: boolean }).standalone === true ||
+      window.matchMedia("(display-mode: standalone)").matches);
+  const needsPWA = isIOS && !isStandalone && !suscrito;
+
   const probar = async () => {
     setProbando(true);
     setResultadoPrueba(null);
@@ -88,6 +95,29 @@ export function NotificacionPerfilSection() {
     return (
       <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-500">
         Tu navegador no soporta notificaciones push.
+      </div>
+    );
+  }
+
+  if (needsPWA) {
+    return (
+      <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+        <div className="flex items-start gap-3">
+          <BellOff className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+          <div>
+            <p className="text-sm font-semibold text-amber-900">
+              Abre la app desde la pantalla de inicio
+            </p>
+            <p className="mt-1 text-xs text-amber-800">
+              Las notificaciones push solo funcionan cuando usas AppointVa desde el ícono instalado en tu pantalla de inicio, no desde Safari.
+            </p>
+            <ol className="mt-2 list-decimal pl-4 text-xs text-amber-800 space-y-0.5">
+              <li>Cierra esta pestaña de Safari</li>
+              <li>Busca el ícono de AppointVa en tu pantalla de inicio</li>
+              <li>Ábrelo desde ahí y regresa aquí</li>
+            </ol>
+          </div>
+        </div>
       </div>
     );
   }
