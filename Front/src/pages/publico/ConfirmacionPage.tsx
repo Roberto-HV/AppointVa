@@ -453,11 +453,11 @@ export default function ConfirmacionPage() {
           {/* WhatsApp — acción principal */}
           <a
             href={`https://wa.me/?text=${encodeURIComponent(
-              `✅ Cita confirmada en ${cita.nombreNegocio}\n` +
-              `📌 Servicio: ${cita.nombreServicio}\n` +
-              `👤 Con: ${cita.nombreEmpleado}\n` +
-              `📅 ${formatFechaHora(cita.inicioEn)}\n` +
-              `🔗 Ver o cancelar: ${linkCita}`
+              `*Cita confirmada en ${cita.nombreNegocio}*\n\n` +
+              `Servicio: ${cita.nombreServicio}\n` +
+              `Con: ${cita.nombreEmpleado}\n` +
+              `Fecha: ${formatFechaHora(cita.inicioEn)}\n\n` +
+              `Ver o cancelar: ${linkCita}`
             )}`}
             target="_blank"
             rel="noreferrer"
