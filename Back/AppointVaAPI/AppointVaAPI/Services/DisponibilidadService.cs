@@ -120,7 +120,7 @@ namespace AppointVaAPI.Services
                         {
                             Inicio = slotInicio,
                             Fin = slotFin,
-                            HoraTexto = slotInicio.ToString("HH:mm"),
+                            HoraTexto = Hora12(slotInicio),
                             EmpleadoId = emp.Id,
                             EmpleadoNombre = emp.Nombre
                         });
@@ -181,7 +181,7 @@ namespace AppointVaAPI.Services
                     {
                         Inicio = slotInicio,
                         Fin = slotFin,
-                        HoraTexto = slotInicio.ToString("HH:mm")
+                        HoraTexto = Hora12(slotInicio)
                     });
                 }
                 slotInicio = slotInicio.Add(duracion);
@@ -189,5 +189,8 @@ namespace AppointVaAPI.Services
 
             return slots;
         }
+
+        private static string Hora12(DateTime dt) =>
+            dt.ToString("h:mm tt", System.Globalization.CultureInfo.InvariantCulture);
     }
 }

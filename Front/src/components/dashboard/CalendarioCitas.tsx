@@ -105,7 +105,7 @@ export default function CalendarioCitas({ empleadoId, onCitaClick, onReagendar }
     const top = calcTop(c);
     const height = calcAltura(c);
     const color = COLORES[c.estadoTexto] ?? COLORES.Confirmada;
-    const hora = new Date(c.inicioEn).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", hour12: false });
+    const hora = new Date(c.inicioEn).toLocaleTimeString("es-MX", { hour: "numeric", minute: "2-digit", hour12: true });
     const puedeMover = onReagendar && (c.estadoTexto === "Pendiente" || c.estadoTexto === "Confirmada");
     return (
       <button
@@ -239,7 +239,7 @@ export default function CalendarioCitas({ empleadoId, onCitaClick, onReagendar }
           <div className="w-12 shrink-0 relative bg-white" style={{ height: GRID_HEIGHT }}>
             {horas.map((h) => (
               <div key={h} className="absolute w-full pr-1.5" style={{ top: (h - HORA_INICIO) * PX_POR_HORA - 8 }}>
-                <span className="text-xs text-gray-400 float-right">{String(h).padStart(2, "0")}:00</span>
+                <span className="text-xs text-gray-400 float-right">{h === 12 ? "12 PM" : h > 12 ? `${h - 12} PM` : `${h} AM`}</span>
               </div>
             ))}
           </div>
@@ -319,7 +319,7 @@ export default function CalendarioCitas({ empleadoId, onCitaClick, onReagendar }
             <div className="w-12 shrink-0 relative bg-white" style={{ height: GRID_HEIGHT }}>
               {horas.map((h) => (
                 <div key={h} className="absolute w-full pr-1.5" style={{ top: (h - HORA_INICIO) * PX_POR_HORA - 8 }}>
-                  <span className="text-xs text-gray-400 float-right">{String(h).padStart(2, "0")}:00</span>
+                  <span className="text-xs text-gray-400 float-right">{h === 12 ? "12 PM" : h > 12 ? `${h - 12} PM` : `${h} AM`}</span>
                 </div>
               ))}
             </div>

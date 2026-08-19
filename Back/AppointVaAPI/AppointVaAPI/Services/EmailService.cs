@@ -202,7 +202,7 @@ namespace AppointVaAPI.Services
             var servicio = cita.Servicio?.Nombre ?? "el servicio";
             var empleado = cita.Empleado?.Nombre ?? string.Empty;
             var inicio   = cita.InicioEn.ToString("dddd dd 'de' MMMM 'de' yyyy", new System.Globalization.CultureInfo("es-MX"));
-            var horaInicio  = cita.InicioEn.ToString("HH:mm");
+            var horaInicio  = Hora12(cita.InicioEn);
             var duracionMin = (int)(cita.FinEn - cita.InicioEn).TotalMinutes;
             var precio   = cita.Precio.ToString("C", new System.Globalization.CultureInfo("es-MX"));
             var stripeColor  = esPendiente ? "#f59e0b" : "#10b981";
@@ -317,13 +317,16 @@ namespace AppointVaAPI.Services
                 """;
         }
 
+        private static string Hora12(DateTime dt) =>
+            dt.ToString("h:mm tt", System.Globalization.CultureInfo.InvariantCulture);
+
         private static string PlantillaCancelacion(Cita cita, string nombreCliente)
         {
             nombreCliente = nombreCliente.Trim();
             var negocio  = cita.Negocio?.Nombre ?? "el negocio";
             var servicio = cita.Servicio?.Nombre ?? "el servicio";
             var inicio   = cita.InicioEn.ToString("dddd dd 'de' MMMM 'de' yyyy", new System.Globalization.CultureInfo("es-MX"));
-            var hora     = $"{cita.InicioEn:HH:mm}";
+            var hora     = Hora12(cita.InicioEn);
 
             var bloqueMotivo = string.IsNullOrEmpty(cita.MotivoCancelacion) ? "" : $"""
                       <div style="background:#fef2f2;border:1.5px solid #fecaca;border-radius:9px;padding:16px 18px;margin-bottom:24px;">
@@ -390,7 +393,7 @@ namespace AppointVaAPI.Services
             var servicio = cita.Servicio?.Nombre ?? "el servicio";
             var empleado = cita.Empleado?.Nombre ?? string.Empty;
             var inicio   = cita.InicioEn.ToString("dddd dd 'de' MMMM 'de' yyyy", new System.Globalization.CultureInfo("es-MX"));
-            var horaInicio  = cita.InicioEn.ToString("HH:mm");
+            var horaInicio  = Hora12(cita.InicioEn);
             var duracionMin = (int)(cita.FinEn - cita.InicioEn).TotalMinutes;
 
             var filaEmpleado = string.IsNullOrEmpty(empleado) ? "" : $"""
@@ -484,8 +487,8 @@ namespace AppointVaAPI.Services
             var servicio     = cita.Servicio?.Nombre ?? "el servicio";
             var empleado     = cita.Empleado?.Nombre ?? string.Empty;
             var nuevaFecha   = cita.InicioEn.ToString("dddd dd 'de' MMMM 'de' yyyy", new System.Globalization.CultureInfo("es-MX"));
-            var nuevaHora    = $"{cita.InicioEn:HH:mm} – {cita.FinEn:HH:mm} h";
-            var fechaOriginalStr = fechaOriginal.ToString("dddd dd 'de' MMMM 'de' yyyy", new System.Globalization.CultureInfo("es-MX")) + " " + fechaOriginal.ToString("HH:mm");
+            var nuevaHora    = $"{Hora12(cita.InicioEn)} – {Hora12(cita.FinEn)}";
+            var fechaOriginalStr = fechaOriginal.ToString("dddd dd 'de' MMMM 'de' yyyy", new System.Globalization.CultureInfo("es-MX")) + " " + Hora12(fechaOriginal);
 
             var filaEmpleado = string.IsNullOrEmpty(empleado) ? "" : $"""
                         <tr>
@@ -857,8 +860,7 @@ namespace AppointVaAPI.Services
             string clienteNombre, string negocioNombre, string servicio,
             DateTime fechaCita, decimal montoCobrado, string metodoPago, decimal? cambio)
         {
-            var fecha = fechaCita.ToString("dd 'de' MMMM yyyy, HH:mm",
-                            new System.Globalization.CultureInfo("es-MX"));
+            var fecha = fechaCita.ToString("dd 'de' MMMM yyyy", new System.Globalization.CultureInfo("es-MX")) + ", " + Hora12(fechaCita);
             var cambioHtml = cambio.HasValue && cambio > 0
                 ? $"<tr><td style=\"padding:8px 12px;\">Cambio</td><td style=\"padding:8px 12px;\"><strong>${cambio:F2}</strong></td></tr>"
                 : "";

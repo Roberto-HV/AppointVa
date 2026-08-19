@@ -25,7 +25,7 @@ function formatFechaHora(iso: string) {
     year: "numeric",
     month: "long",
     day: "numeric",
-  }) + " · " + d.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
+  }) + " · " + d.toLocaleTimeString("es-MX", { hour: "numeric", minute: "2-digit", hour12: true });
 }
 
 function formatPrecio(n: number) {

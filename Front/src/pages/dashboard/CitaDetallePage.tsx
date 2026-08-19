@@ -67,7 +67,7 @@ export default function CitaDetallePage() {
   const fechaStr = inicio.toLocaleDateString("es-MX", {
     weekday: "long", day: "numeric", month: "long", year: "numeric",
   });
-  const horaStr = `${inicio.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })} – ${fin.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })}`;
+  const horaStr = `${inicio.toLocaleTimeString("es-MX", { hour: "numeric", minute: "2-digit", hour12: true })} – ${fin.toLocaleTimeString("es-MX", { hour: "numeric", minute: "2-digit", hour12: true })}`;
 
   const estado = ESTADO_ESTILOS[cita.estado] ?? { label: cita.estadoTexto, clase: "bg-gray-100 text-gray-600" };
 
