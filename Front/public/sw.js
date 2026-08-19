@@ -1,4 +1,5 @@
-const CACHE = "appointva-v6";
+const CACHE = "appointva-v7";
+const BACKEND = "https://appointva.onrender.com";
 const STATIC = [
   "/",
   "/index.html",
@@ -27,10 +28,10 @@ self.addEventListener("push", (e) => {
   let data = { title: "AppointVa", body: "Tienes una nueva notificación.", url: "/", icalUrl: null, googleCalUrl: null };
   try { data = { ...data, ...e.data.json() }; } catch (_) {}
 
-  // DIAGNOSTIC: badge 99 confirms push event fired on the device
-  if (self.navigator && self.navigator.setAppBadge) {
-    self.navigator.setAppBadge(99).catch(() => {});
-  }
+  // Beacon: confirms push event fired (visible in backend logs as SW-PUSH-EVENT)
+  const ping = fetch(BACKEND + "/api/me/sw-ping", {
+    method: "POST", mode: "no-cors", keepalive: true,
+  }).catch(() => {});
 
   const options = {
     body: data.body,
@@ -38,9 +39,12 @@ self.addEventListener("push", (e) => {
   };
 
   e.waitUntil(
-    self.registration.showNotification(data.title, options).catch(() =>
-      self.registration.showNotification("AppointVa", { body: data.body })
-    )
+    Promise.all([
+      ping,
+      self.registration.showNotification(data.title, options).catch(() =>
+        self.registration.showNotification("AppointVa", { body: data.body })
+      ),
+    ])
   );
 });
 
