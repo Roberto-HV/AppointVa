@@ -1,10 +1,11 @@
-﻿import { useState } from "react";
+﻿import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Link, useSearchParams } from "react-router-dom";
-import { Eye, EyeOff, Scissors, HeartPulse } from "lucide-react";
+import { Eye, EyeOff, Scissors, HeartPulse, CheckCircle, XCircle } from "lucide-react";
 import { api } from "../../api/axios";
+import { verificarSlug } from "../../api/auth";
 import PasswordStrengthBar from "../../components/PasswordStrengthBar";
 
 const schema = z
@@ -47,6 +48,7 @@ function derivarSlug(nombre: string) {
 export default function RegistroNegocioPage() {
   const [errorGeneral, setErrorGeneral] = useState("");
   const [slugEditado, setSlugEditado] = useState(false);
+  const [slugEstado, setSlugEstado] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
   const [registroExitoso, setRegistroExitoso] = useState(false);
   const [emailRegistrado, setEmailRegistrado] = useState("");
   const [reenvioEnviado, setReenvioEnviado] = useState(false);
@@ -70,12 +72,36 @@ export default function RegistroNegocioPage() {
   } = useForm<FormData>({ resolver: zodResolver(schema) });
 
   const contrasenaValor = watch("contrasena", "");
+  const slugValue = watch("slug");
+
+  useEffect(() => {
+    const slug = slugValue?.trim();
+    if (!slug || slug.length < 2) {
+      setSlugEstado('idle');
+      return;
+    }
+    if (!/^[a-z0-9-]+$/.test(slug)) {
+      setSlugEstado('idle');
+      return;
+    }
+    setSlugEstado('checking');
+    const timer = setTimeout(async () => {
+      try {
+        const { disponible } = await verificarSlug(slug);
+        setSlugEstado(disponible ? 'available' : 'taken');
+      } catch {
+        setSlugEstado('idle');
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [slugValue]);
 
   const onNombreChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const valor = e.target.value;
     setValue("nombreNegocio", valor);
     if (!slugEditado) {
       setValue("slug", derivarSlug(valor), { shouldValidate: true });
+      setSlugEstado('idle');
     }
   };
 
@@ -198,12 +224,30 @@ export default function RegistroNegocioPage() {
                 <input
                   type="text"
                   {...register("slug")}
-                  onChange={(e) => { setSlugEditado(true); setValue("slug", e.target.value, { shouldValidate: true }); }}
+                  onChange={(e) => { setSlugEditado(true); setValue("slug", e.target.value, { shouldValidate: true }); setSlugEstado('idle'); }}
                   className={`flex-1 px-3 py-2.5 text-sm outline-none bg-white ${errors.slug ? "bg-red-50" : ""}`}
                   placeholder="salon-belleza-luna"
                 />
               </div>
               {errors.slug && <p className="text-red-500 text-xs mt-1">{errors.slug.message}</p>}
+              {slugEstado === 'checking' && (
+                <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
+                  <span className="inline-block w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                  Verificando…
+                </p>
+              )}
+              {slugEstado === 'available' && (
+                <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+                  <CheckCircle size={12} />
+                  Disponible
+                </p>
+              )}
+              {slugEstado === 'taken' && (
+                <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                  <XCircle size={12} />
+                  Ya está en uso — elige otro
+                </p>
+              )}
             </div>
 
             {/* Giro del negocio */}
@@ -335,7 +379,7 @@ export default function RegistroNegocioPage() {
 
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || slugEstado === 'taken' || slugEstado === 'checking'}
               className="w-full bg-slate-700 hover:bg-slate-800 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition text-sm"
             >
               {isSubmitting ? "Creando cuenta..." : "Crear cuenta"}

@@ -70,3 +70,10 @@ export const authApi = {
     await api.delete("/auth/cuenta", { data: { contrasena } });
   },
 };
+
+export async function verificarSlug(slug: string): Promise<{ disponible: boolean }> {
+  const res = await api.get<{ disponible: boolean }>("/publico/verificar-slug", {
+    params: { slug },
+  });
+  return res.data;
+}
