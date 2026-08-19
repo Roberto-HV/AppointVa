@@ -87,9 +87,9 @@ export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, on
 
   const franjas = fechaSel && !isFetching && !isError && slots.length > 0
     ? [
-        { label: "Mañana",  Icon: Sunrise, slots: slots.filter(s => parseInt(s.horaTexto, 10) < 12) },
-        { label: "Tarde",   Icon: Sun,     slots: slots.filter(s => { const h = parseInt(s.horaTexto, 10); return h >= 12 && h < 18; }) },
-        { label: "Noche",   Icon: Moon,    slots: slots.filter(s => parseInt(s.horaTexto, 10) >= 18) },
+        { label: "Mañana",  Icon: Sunrise, slots: slots.filter(s => parseInt(s.inicio.slice(11, 13), 10) < 12) },
+        { label: "Tarde",   Icon: Sun,     slots: slots.filter(s => { const h = parseInt(s.inicio.slice(11, 13), 10); return h >= 12 && h < 18; }) },
+        { label: "Noche",   Icon: Moon,    slots: slots.filter(s => parseInt(s.inicio.slice(11, 13), 10) >= 18) },
       ].filter(f => f.slots.length > 0)
     : [];
 
