@@ -1,3 +1,6 @@
 {
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "rewrites": [
+    { "source": "/cita/:codigo", "destination": "/api/cita/:codigo" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
 }
