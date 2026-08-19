@@ -212,6 +212,7 @@ function GaleriaDesktop({ imagenes, onOpen }: { imagenes: ImagenGaleria[]; onOpe
           <>
             <button
               aria-label="Imagen anterior"
+              onPointerDown={e => e.stopPropagation()}
               onClick={goPrev}
               className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-white/90 shadow-md flex items-center justify-center text-gray-600 hover:bg-white transition"
             >
@@ -219,6 +220,7 @@ function GaleriaDesktop({ imagenes, onOpen }: { imagenes: ImagenGaleria[]; onOpe
             </button>
             <button
               aria-label="Imagen siguiente"
+              onPointerDown={e => e.stopPropagation()}
               onClick={goNext}
               className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-white/90 shadow-md flex items-center justify-center text-gray-600 hover:bg-white transition"
             >
