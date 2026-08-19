@@ -210,7 +210,13 @@ export default function KioskPage() {
                               {cita.nombreServicio} · {cita.duracionMinutos} min
                             </div>
                             {enProgreso && (
-                              <div className="mt-2.5 h-1 bg-white/10 rounded-full overflow-hidden">
+                              <div
+                                role="progressbar"
+                                aria-valuenow={Math.round(progresoPct)}
+                                aria-valuemin={0}
+                                aria-valuemax={100}
+                                className="mt-2.5 h-1 bg-white/10 rounded-full overflow-hidden"
+                              >
                                 <div
                                   className="h-full bg-indigo-400 rounded-full transition-all duration-1000"
                                   style={{ width: `${progresoPct}%` }}

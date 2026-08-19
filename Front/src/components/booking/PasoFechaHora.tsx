@@ -3,7 +3,6 @@ import { useQuery } from "@tanstack/react-query";
 import { publicoApi } from "../../api/publico";
 import type { SlotDisponible } from "../../types";
 import { ChevronLeft, ChevronRight, Sun, Sunrise, Moon } from "lucide-react";
-import { toUtcDate } from "../../utils/formatters";
 
 interface Props {
   servicioId: string;
@@ -88,9 +87,9 @@ export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, on
 
   const franjas = fechaSel && !isFetching && !isError && slots.length > 0
     ? [
-        { label: "Mañana",  Icon: Sunrise, slots: slots.filter(s => toUtcDate(s.inicio).getHours() < 12) },
-        { label: "Tarde",   Icon: Sun,     slots: slots.filter(s => { const h = toUtcDate(s.inicio).getHours(); return h >= 12 && h < 18; }) },
-        { label: "Noche",   Icon: Moon,    slots: slots.filter(s => toUtcDate(s.inicio).getHours() >= 18) },
+        { label: "Mañana",  Icon: Sunrise, slots: slots.filter(s => parseInt(s.horaTexto, 10) < 12) },
+        { label: "Tarde",   Icon: Sun,     slots: slots.filter(s => { const h = parseInt(s.horaTexto, 10); return h >= 12 && h < 18; }) },
+        { label: "Noche",   Icon: Moon,    slots: slots.filter(s => parseInt(s.horaTexto, 10) >= 18) },
       ].filter(f => f.slots.length > 0)
     : [];
 
