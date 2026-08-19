@@ -75,12 +75,12 @@ export function NotificacionPerfilSection() {
       window.matchMedia("(display-mode: standalone)").matches);
   const needsPWA = isIOS && !isStandalone && !suscrito;
 
-  const probar = async () => {
+  const probar = async (vacio = false) => {
     setProbando(true);
     setResultadoPrueba(null);
     try {
-      await meApi.probarPushNotificacion();
-      setResultadoPrueba("Notificación enviada — revisa tu dispositivo.");
+      await (vacio ? meApi.probarPushVacio() : meApi.probarPushNotificacion());
+      setResultadoPrueba(vacio ? "Push vacío enviado — revisa tu dispositivo." : "Notificación enviada — revisa tu dispositivo.");
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { mensaje?: string } } })?.response?.data
@@ -165,13 +165,23 @@ export function NotificacionPerfilSection() {
         </div>
         <div className="flex items-center gap-2">
           {suscrito && (
-            <button
-              onClick={probar}
-              disabled={probando}
-              className="rounded-md border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-600 hover:bg-gray-50 disabled:opacity-60 transition-colors"
-            >
-              {probando ? "Enviando…" : "Probar"}
-            </button>
+            <>
+              <button
+                onClick={() => probar(false)}
+                disabled={probando}
+                className="rounded-md border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-600 hover:bg-gray-50 disabled:opacity-60 transition-colors"
+              >
+                {probando ? "Enviando…" : "Probar"}
+              </button>
+              <button
+                onClick={() => probar(true)}
+                disabled={probando}
+                className="rounded-md border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-500 hover:bg-gray-50 disabled:opacity-60 transition-colors"
+                title="Envía un push sin payload para diagnóstico"
+              >
+                Probar vacío
+              </button>
+            </>
           )}
           <button
             onClick={suscrito ? desactivar : activar}

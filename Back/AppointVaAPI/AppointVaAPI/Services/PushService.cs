@@ -219,6 +219,35 @@ namespace AppointVaAPI.Services
             return "enviada";
         }
 
+        public async Task<string> EnviarPruebaVaciaAsync(Guid usuarioId)
+        {
+            var suscripcion = await _db.PushSuscripciones
+                .FirstOrDefaultAsync(s => s.UsuarioId == usuarioId);
+            if (suscripcion is null) return "sin_suscripcion";
+
+            var publicKey  = _config["Push:VapidPublicKey"];
+            var privateKey = _config["Push:VapidPrivateKey"];
+            if (string.IsNullOrWhiteSpace(publicKey) || string.IsNullOrWhiteSpace(privateKey))
+                throw new InvalidOperationException("VAPID keys no configuradas.");
+
+            var token = GenerarVapidJwt(suscripcion.Endpoint, publicKey, privateKey, "mailto:hola@appointva.com");
+
+            using var request = new HttpRequestMessage(HttpMethod.Post, suscripcion.Endpoint);
+            request.Headers.Authorization = new AuthenticationHeaderValue("vapid", $"t={token},k={publicKey}");
+            request.Headers.TryAddWithoutValidation("TTL", "86400");
+            request.Headers.TryAddWithoutValidation("Urgency", "high");
+            // Sin body, sin Content-Type, sin Content-Encoding — push vacío
+
+            var response = await _http.SendAsync(request);
+            var body = await response.Content.ReadAsStringAsync();
+            _logger.LogWarning("PUSH-EMPTY → HTTP {Status} body={Body} endpoint={Endpoint}",
+                (int)response.StatusCode,
+                string.IsNullOrWhiteSpace(body) ? "(vacío)" : body,
+                suscripcion.Endpoint[..Math.Min(80, suscripcion.Endpoint.Length)]);
+
+            return "enviada";
+        }
+
         // ── Internos ──────────────────────────────────────────────────────────────
 
         private async Task EnviarAsync(PushSuscripcion suscripcion, string payload)

@@ -108,6 +108,20 @@ namespace AppointVaAPI.Controllers.V1
             return Ok();
         }
 
+        // POST api/me/push-test-empty  — push sin payload para aislar si es problema de cifrado
+        [HttpPost("push-test-empty")]
+        public async Task<IActionResult> ProbarPushVacio()
+        {
+            _logger.LogWarning("PUSH-TEST-EMPTY recibido para usuario {UserId}", UserId);
+            var resultado = await _push.EnviarPruebaVaciaAsync(UserId);
+            return resultado switch
+            {
+                "sin_suscripcion" => NotFound(new { mensaje = "No hay suscripción." }),
+                "enviada" => Ok(new { mensaje = "Push vacío enviado." }),
+                _ => StatusCode(500, new { mensaje = "Error." })
+            };
+        }
+
         // POST api/me/push-test
         [HttpPost("push-test")]
         public async Task<IActionResult> ProbarPush()

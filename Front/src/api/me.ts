@@ -17,6 +17,10 @@ export const meApi = {
     const res = await api.post<{ mensaje: string }>("/me/push-test");
     return res.data;
   },
+  probarPushVacio: async (): Promise<{ mensaje: string }> => {
+    const res = await api.post<{ mensaje: string }>("/me/push-test-empty");
+    return res.data;
+  },
   obtenerPushStatus: async (): Promise<{
     suscriptoEnBd: boolean;
     endpoint: string | null;
