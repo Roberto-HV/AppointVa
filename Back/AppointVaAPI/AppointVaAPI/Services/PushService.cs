@@ -276,9 +276,10 @@ namespace AppointVaAPI.Services
             var response = await _http.SendAsync(request);
             var responseBody = await response.Content.ReadAsStringAsync();
 
-            _logger.LogInformation("Push → HTTP {Status} {Endpoint}",
+            _logger.LogWarning("Push → HTTP {Status} body={Body} endpoint={Endpoint}",
                 (int)response.StatusCode,
-                suscripcion.Endpoint[..Math.Min(60, suscripcion.Endpoint.Length)]);
+                string.IsNullOrWhiteSpace(responseBody) ? "(vacío)" : responseBody,
+                suscripcion.Endpoint[..Math.Min(80, suscripcion.Endpoint.Length)]);
 
             if (response.StatusCode is System.Net.HttpStatusCode.Gone
                                     or System.Net.HttpStatusCode.NotFound)

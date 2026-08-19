@@ -1,4 +1,4 @@
-const CACHE = "appointva-v4";
+const CACHE = "appointva-v5";
 const STATIC = [
   "/",
   "/index.html",
@@ -37,8 +37,7 @@ self.addEventListener("push", (e) => {
 
   const options = {
     body: data.body,
-    icon: "/icon-192.png",
-    badge: "/icon-96.png",
+    icon: "/icons/icon-192.png",
     data: { url: data.url, icalUrl: data.icalUrl, googleCalUrl: data.googleCalUrl },
   };
   if (actions.length > 0) options.actions = actions;

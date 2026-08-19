@@ -14,11 +14,13 @@ namespace AppointVaAPI.Controllers.V1
     {
         private readonly IPushService _push;
         private readonly IConfiguration _config;
+        private readonly ILogger<MeController> _logger;
 
-        public MeController(IPushService push, IConfiguration config)
+        public MeController(IPushService push, IConfiguration config, ILogger<MeController> logger)
         {
             _push = push;
             _config = config;
+            _logger = logger;
         }
 
         // GET api/me/push-vapid-key  — sin autenticación (la public key no es secreta)
@@ -101,6 +103,7 @@ namespace AppointVaAPI.Controllers.V1
         [HttpPost("push-test")]
         public async Task<IActionResult> ProbarPush()
         {
+            _logger.LogWarning("PUSH-TEST recibido para usuario {UserId}", UserId);
             try
             {
                 var resultado = await _push.EnviarPruebaAsync(UserId);

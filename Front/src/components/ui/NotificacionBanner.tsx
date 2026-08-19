@@ -9,13 +9,15 @@ interface Props {
 }
 
 export function NotificacionBanner({ visible = true }: Props) {
-  const { permiso, suscrito, soportado, cargando, activar } = usePushNotifications();
+  const { permiso, suscrito, soportado, cargando, error, activar } = usePushNotifications();
   const [descartado, setDescartado] = useState(false);
 
-  // No mostrar si: no soporta push, ya aceptó, ya está suscrito, descartó o no es visible
+  // No mostrar si: no soporta push, ya está suscrito, descartó o no es visible
   if (!visible || !soportado || suscrito || descartado) return null;
   // Si ya bloqueó, no mostrar el banner suave (se muestra en perfil)
-  if (permiso === "denied" || permiso === "granted") return null;
+  if (permiso === "denied") return null;
+  // Si ya tiene permiso y NO está en medio de la activación, no mostrar el banner
+  if (permiso === "granted" && !cargando && !error) return null;
 
   return (
     <div className="mb-4 flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 p-4">
@@ -27,6 +29,9 @@ export function NotificacionBanner({ visible = true }: Props) {
         <p className="mt-0.5 text-xs text-blue-700">
           Recibe alertas al instante cuando te asignen una nueva cita, sin tener que revisar el panel.
         </p>
+        {error && (
+          <p className="mt-2 text-xs text-red-600">{error}</p>
+        )}
         <div className="mt-3 flex gap-2">
           <button
             onClick={activar}
@@ -35,12 +40,14 @@ export function NotificacionBanner({ visible = true }: Props) {
           >
             {cargando ? "Activando…" : "Activar notificaciones"}
           </button>
-          <button
-            onClick={() => setDescartado(true)}
-            className="rounded-md px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100"
-          >
-            Ahora no
-          </button>
+          {!cargando && (
+            <button
+              onClick={() => setDescartado(true)}
+              className="rounded-md px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100"
+            >
+              Ahora no
+            </button>
+          )}
         </div>
       </div>
       <button
