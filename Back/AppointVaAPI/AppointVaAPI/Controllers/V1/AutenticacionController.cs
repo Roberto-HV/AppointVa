@@ -1,4 +1,4 @@
-﻿using AppointVaAPI.Data;
+using AppointVaAPI.Data;
 using AppointVaAPI.Models;
 using AppointVaAPI.Models.Dtos.Autenticacion;
 using AppointVaAPI.Services.IServices;
@@ -48,7 +48,7 @@ namespace AppointVaAPI.Controllers.V1
         {
             var usuario = await _userManager.FindByEmailAsync(dto.Email);
             if (usuario is null || !usuario.Activo)
-                return Unauthorized(new { mensaje = "Credenciales invÃ¡lidas" });
+                return Unauthorized(new { mensaje = "Credenciales inválidas" });
 
             if (await _userManager.IsLockedOutAsync(usuario))
                 return StatusCode(429, new { mensaje = "Cuenta bloqueada temporalmente. Intenta en 15 minutos." });
@@ -56,14 +56,14 @@ namespace AppointVaAPI.Controllers.V1
             if (!await _userManager.CheckPasswordAsync(usuario, dto.Contrasena))
             {
                 await _userManager.AccessFailedAsync(usuario);
-                await _audit.RegistrarAsync("LoginFallido", detalles: "ContraseÃ±a incorrecta", usuarioId: usuario.Id);
-                return Unauthorized(new { mensaje = "Credenciales invÃ¡lidas" });
+                await _audit.RegistrarAsync("LoginFallido", detalles: "Contraseña incorrecta", usuarioId: usuario.Id);
+                return Unauthorized(new { mensaje = "Credenciales inválidas" });
             }
 
             await _userManager.ResetAccessFailedCountAsync(usuario);
 
             if (!usuario.EmailConfirmed)
-                return StatusCode(403, new { mensaje = "Debes verificar tu correo antes de iniciar sesiÃ³n.", codigoError = "EMAIL_NO_VERIFICADO" });
+                return StatusCode(403, new { mensaje = "Debes verificar tu correo antes de iniciar sesión.", codigoError = "EMAIL_NO_VERIFICADO" });
 
             var roles = await _userManager.GetRolesAsync(usuario);
             var rol = roles.FirstOrDefault() ?? string.Empty;
@@ -108,7 +108,7 @@ namespace AppointVaAPI.Controllers.V1
         {
             var refreshToken = await _jwtService.ValidarRefreshTokenAsync(dto.RefreshToken);
             if (refreshToken is null)
-                return Unauthorized(new { mensaje = "Refresh token invÃ¡lido o expirado" });
+                return Unauthorized(new { mensaje = "Refresh token inválido o expirado" });
 
             var usuario = refreshToken.Usuario!;
             if (!usuario.Activo)
@@ -214,7 +214,7 @@ namespace AppointVaAPI.Controllers.V1
                     await _email.EnviarRecuperacionContrasenaAsync(dto.Email, usuario.Nombre ?? "Usuario", urlReset));
             }
 
-            return Ok(new { mensaje = "Si el correo estÃ¡ registrado, recibirÃ¡s un enlace para restablecer tu contraseÃ±a." });
+            return Ok(new { mensaje = "Si el correo está registrado, recibirás un enlace para restablecer tu contraseña." });
         }
 
         // POST api/auth/restablecer-contrasena
@@ -224,15 +224,15 @@ namespace AppointVaAPI.Controllers.V1
         {
             var usuario = await _userManager.FindByEmailAsync(dto.Email);
             if (usuario is null)
-                return BadRequest(new { mensaje = "El enlace de recuperaciÃ³n no es vÃ¡lido o ha expirado." });
+                return BadRequest(new { mensaje = "El enlace de recuperación no es válido o ha expirado." });
 
             var resultado = await _userManager.ResetPasswordAsync(usuario, dto.Token, dto.NuevaContrasena);
             if (!resultado.Succeeded)
-                return BadRequest(new { mensaje = "El enlace de recuperaciÃ³n no es vÃ¡lido o ha expirado." });
+                return BadRequest(new { mensaje = "El enlace de recuperación no es válido o ha expirado." });
 
             await _jwtService.RevocarTodosRefreshTokensAsync(usuario.Id);
 
-            return Ok(new { mensaje = "ContraseÃ±a restablecida correctamente. Ya puedes iniciar sesiÃ³n." });
+            return Ok(new { mensaje = "Contraseña restablecida correctamente. Ya puedes iniciar sesión." });
         }
 
         // POST api/auth/cambiar-password
@@ -259,10 +259,10 @@ namespace AppointVaAPI.Controllers.V1
 
             await _audit.RegistrarAsync("CambiarPassword");
 
-            return Ok(new { mensaje = "ContraseÃ±a actualizada correctamente. Inicia sesiÃ³n nuevamente." });
+            return Ok(new { mensaje = "Contraseña actualizada correctamente. Inicia sesión nuevamente." });
         }
 
-        // â”€â”€ 2FA â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── 2FA ───────────────────────────────────────────────────────────────────
 
         // GET api/auth/2fa/estado
         [Authorize]
@@ -284,7 +284,7 @@ namespace AppointVaAPI.Controllers.V1
             });
         }
 
-        // POST api/auth/2fa/configurar â€” genera/renueva la clave TOTP y devuelve el URI
+        // POST api/auth/2fa/configurar — genera/renueva la clave TOTP y devuelve el URI
         [Authorize]
         [HttpPost("2fa/configurar")]
         public async Task<IActionResult> Configurar2FA()
@@ -313,7 +313,7 @@ namespace AppointVaAPI.Controllers.V1
             });
         }
 
-        // POST api/auth/2fa/activar â€” verifica el cÃ³digo y habilita 2FA
+        // POST api/auth/2fa/activar — verifica el código y habilita 2FA
         [Authorize]
         [HttpPost("2fa/activar")]
         public async Task<IActionResult> Activar2FA([FromBody] ActivarDosFactoresDto dto)
@@ -329,14 +329,14 @@ namespace AppointVaAPI.Controllers.V1
                 usuario, _userManager.Options.Tokens.AuthenticatorTokenProvider, codigoLimpio);
 
             if (!valido)
-                return BadRequest(new { mensaje = "CÃ³digo incorrecto. Verifica que la hora de tu dispositivo estÃ© sincronizada." });
+                return BadRequest(new { mensaje = "Código incorrecto. Verifica que la hora de tu dispositivo esté sincronizada." });
 
             await _userManager.SetTwoFactorEnabledAsync(usuario, true);
 
-            return Ok(new { mensaje = "AutenticaciÃ³n de dos factores activada correctamente." });
+            return Ok(new { mensaje = "Autenticación de dos factores activada correctamente." });
         }
 
-        // POST api/auth/2fa/desactivar â€” deshabilita 2FA
+        // POST api/auth/2fa/desactivar — deshabilita 2FA
         [Authorize]
         [HttpPost("2fa/desactivar")]
         public async Task<IActionResult> Desactivar2FA([FromBody] ActivarDosFactoresDto dto)
@@ -352,15 +352,15 @@ namespace AppointVaAPI.Controllers.V1
                 usuario, _userManager.Options.Tokens.AuthenticatorTokenProvider, codigoLimpio);
 
             if (!valido)
-                return BadRequest(new { mensaje = "CÃ³digo incorrecto." });
+                return BadRequest(new { mensaje = "Código incorrecto." });
 
             await _userManager.SetTwoFactorEnabledAsync(usuario, false);
             await _userManager.ResetAuthenticatorKeyAsync(usuario);
 
-            return Ok(new { mensaje = "AutenticaciÃ³n de dos factores desactivada." });
+            return Ok(new { mensaje = "Autenticación de dos factores desactivada." });
         }
 
-        // DELETE api/auth/cuenta â€” eliminar cuenta (anonimizaciÃ³n LFPDPPP)
+        // DELETE api/auth/cuenta — eliminar cuenta (anonimización LFPDPPP)
         [Authorize]
         [HttpDelete("cuenta")]
         public async Task<IActionResult> EliminarCuenta([FromBody] EliminarCuentaDto dto)
@@ -372,7 +372,7 @@ namespace AppointVaAPI.Controllers.V1
             if (usuario is null) return NotFound();
 
             if (!await _userManager.CheckPasswordAsync(usuario, dto.Contrasena))
-                return BadRequest(new { mensaje = "ContraseÃ±a incorrecta." });
+                return BadRequest(new { mensaje = "Contraseña incorrecta." });
 
             var roles = await _userManager.GetRolesAsync(usuario);
 
@@ -399,7 +399,7 @@ namespace AppointVaAPI.Controllers.V1
             // Revocar todos los tokens
             await _jwtService.RevocarTodosRefreshTokensAsync(usuario.Id);
 
-            // Anonimizar datos personales (los registros histÃ³ricos se conservan sin PII)
+            // Anonimizar datos personales (los registros históricos se conservan sin PII)
             var anonEmail = $"{Guid.NewGuid():N}@eliminado.local";
             usuario.Nombre = "Usuario";
             usuario.Apellido = "Eliminado";
@@ -420,14 +420,14 @@ namespace AppointVaAPI.Controllers.V1
             return NoContent();
         }
 
-        // POST api/auth/2fa/verificar â€” segundo factor durante el login
+        // POST api/auth/2fa/verificar — segundo factor durante el login
         [HttpPost("2fa/verificar")]
         [EnableRateLimiting("TwoFA")]
         public async Task<IActionResult> Verificar2FA([FromBody] VerificarDosFactoresDto dto)
         {
             var usuarioId = _jwtService.ValidarChallengeToken2FA(dto.ChallengeToken);
             if (usuarioId is null)
-                return Unauthorized(new { mensaje = "Token de verificaciÃ³n invÃ¡lido o expirado. Inicia sesiÃ³n de nuevo." });
+                return Unauthorized(new { mensaje = "Token de verificación inválido o expirado. Inicia sesión de nuevo." });
 
             var usuario = await _userManager.FindByIdAsync(usuarioId.Value.ToString());
             if (usuario is null || !usuario.Activo)
@@ -438,7 +438,7 @@ namespace AppointVaAPI.Controllers.V1
                 usuario, _userManager.Options.Tokens.AuthenticatorTokenProvider, codigoLimpio);
 
             if (!valido)
-                return Unauthorized(new { mensaje = "CÃ³digo incorrecto o expirado." });
+                return Unauthorized(new { mensaje = "Código incorrecto o expirado." });
 
             var roles = await _userManager.GetRolesAsync(usuario);
             var rol = roles.FirstOrDefault() ?? string.Empty;
@@ -464,4 +464,3 @@ namespace AppointVaAPI.Controllers.V1
         }
     }
 }
-
