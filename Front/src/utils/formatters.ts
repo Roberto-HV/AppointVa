@@ -3,15 +3,11 @@ export function formatPrecio(n: number): string {
   return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(n);
 }
 
-// ── UTC normalization ──────────────────────────────────────────────────────────
-// Npgsql.EnableLegacyTimestampBehavior omits the 'Z' suffix on UTC datetimes.
-// Without it, JS parses bare ISO datetimes as local time, shifting all times by
-// the user's UTC offset. Append 'Z' when the string has a time component but no
-// timezone qualifier already present.
+// ── Date parsing ───────────────────────────────────────────────────────────────
+// The backend sends naive local datetimes without timezone suffix.
+// JS parses strings without a timezone qualifier as local time (ES2015+),
+// which is exactly what we want — do NOT append 'Z'.
 export function toUtcDate(iso: string): Date {
-  if (iso.includes('T') && !iso.endsWith('Z') && !/[+-]\d{2}:\d{2}$/.test(iso)) {
-    return new Date(iso + 'Z');
-  }
   return new Date(iso);
 }
 
