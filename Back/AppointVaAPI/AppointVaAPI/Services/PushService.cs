@@ -73,7 +73,14 @@ namespace AppointVaAPI.Services
                 .Include(c => c.Empleado)
                 .FirstOrDefaultAsync(c => c.Id == citaId);
 
-            if (cita is null) return;
+            if (cita is null)
+            {
+                _logger.LogWarning("Push NuevaCita: cita {CitaId} no encontrada", citaId);
+                return;
+            }
+
+            _logger.LogInformation("Push NuevaCita: procesando cita {CitaId} negocio {NegocioId}",
+                citaId, cita.NegocioId);
 
             var backendUrl = _config["BackendUrl"] ?? string.Empty;
             var icalUrl = string.IsNullOrWhiteSpace(backendUrl) ? null
@@ -90,6 +97,8 @@ namespace AppointVaAPI.Services
                         .FirstOrDefaultAsync(s => s.UsuarioId == empleado.UsuarioId.Value);
                     if (subEmpleado is not null)
                         await EnviarAsync(subEmpleado, payload);
+                    else
+                        _logger.LogInformation("Push NuevaCita: empleado {EmpleadoId} sin suscripción", cita.EmpleadoId);
                 }
             }
 
@@ -98,7 +107,11 @@ namespace AppointVaAPI.Services
                 .Select(r => r.Id)
                 .FirstOrDefaultAsync();
 
-            if (roleId == Guid.Empty) return;
+            if (roleId == Guid.Empty)
+            {
+                _logger.LogWarning("Push NuevaCita: rol Propietario no encontrado");
+                return;
+            }
 
             var propietarioIds = await _db.UserRoles
                 .Where(ur => ur.RoleId == roleId)
@@ -109,12 +122,18 @@ namespace AppointVaAPI.Services
                 .Where(u => u.NegocioId == cita.NegocioId && propietarioIds.Contains(u.Id) && u.Activo)
                 .ToListAsync();
 
+            _logger.LogInformation("Push NuevaCita: {Count} propietario(s) encontrado(s) para negocio {NegocioId}",
+                propietarios.Count, cita.NegocioId);
+
             foreach (var propietario in propietarios)
             {
                 var subProp = await _db.PushSuscripciones
                     .FirstOrDefaultAsync(s => s.UsuarioId == propietario.Id);
                 if (subProp is not null)
                     await EnviarAsync(subProp, payload);
+                else
+                    _logger.LogInformation("Push NuevaCita: propietario {UserId} ({Email}) sin suscripción push",
+                        propietario.Id, propietario.Email);
             }
         }
 
@@ -225,6 +244,7 @@ namespace AppointVaAPI.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error enviando push a {Endpoint}", suscripcion.Endpoint);
+                throw; // re-throw so Hangfire marks the job as failed and retries
             }
         }
 
