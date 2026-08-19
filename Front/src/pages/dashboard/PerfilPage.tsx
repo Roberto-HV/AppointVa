@@ -83,7 +83,7 @@ export default function PerfilPage() {
   const qc = useQueryClient();
   const { toast } = useToastStore();
   const navigate = useNavigate();
-  const { refreshToken, cerrarSesion } = useAuthStore();
+  const { refreshToken, cerrarSesion, usuario } = useAuthStore();
   const logoRef = useRef<HTMLInputElement>(null);
   const portadaRef = useRef<HTMLInputElement>(null);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -110,7 +110,7 @@ export default function PerfilPage() {
     if (negocio) {
       reset({
         nombre: negocio.nombre, telefono: negocio.telefono ?? "",
-        email: negocio.email ?? "", direccion: negocio.direccion ?? "",
+        email: negocio.email || usuario?.email || "", direccion: negocio.direccion ?? "",
         descripcion: negocio.descripcion ?? "", zonaHoraria: negocio.zonaHoraria ?? "",
         horasRecordatorio: negocio.horasRecordatorio ?? 24,
         horasCancelacion: negocio.horasCancelacion ?? 0,

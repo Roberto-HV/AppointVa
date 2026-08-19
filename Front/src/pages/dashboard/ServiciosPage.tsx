@@ -277,7 +277,7 @@ export default function ServiciosPage() {
                       </div>
 
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-gray-800 dark:text-gray-200">{s.nombre}</p>
+                        <p className="font-medium text-gray-800 dark:text-gray-200 line-clamp-2">{s.nombre}</p>
                         {s.descripcion && <p className="text-xs text-gray-400 mt-0.5 line-clamp-1 dark:text-gray-500">{s.descripcion}</p>}
                         <p className="text-xs text-gray-400 mt-0.5 dark:text-gray-500">{s.duracionMinutos} min</p>
                         <p className="sm:hidden font-semibold text-gray-800 text-sm mt-1 dark:text-gray-200">{formatPrecio(s.precio)}</p>
@@ -302,14 +302,14 @@ export default function ServiciosPage() {
                             className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50 transition"
                           >
                             <Pencil size={12} />
-                            Editar
+                            <span className="hidden sm:inline">Editar</span>
                           </button>
                           <button
                             onClick={() => setServicioEliminar(s)}
                             className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 dark:bg-red-900/40 dark:text-red-400 dark:hover:bg-red-900/60 dark:border dark:border-red-500/60 transition"
                           >
                             <Trash2 size={12} />
-                            Eliminar
+                            <span className="hidden sm:inline">Eliminar</span>
                           </button>
                         </div>
                       </div>
