@@ -82,8 +82,9 @@ namespace AppointVaAPI.Services
             try
             {
                 // InicioEn is already local time (Unspecified) — no conversion needed.
-                return fechaLocal.ToString("dddd dd 'de' MMMM 'a las' h:mm tt",
-                    new System.Globalization.CultureInfo("es-MX"));
+                var fecha = fechaLocal.ToString("dddd dd 'de' MMMM", new System.Globalization.CultureInfo("es-MX"));
+                var hora  = fechaLocal.ToString("h:mm tt", System.Globalization.CultureInfo.InvariantCulture);
+                return $"{fecha} a las {hora}";
             }
             catch
             {
