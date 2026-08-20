@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Pencil, Trash2, ClipboardList, X, Check } from "lucide-react";
+import { Plus, Pencil, Trash2, ClipboardList, Check } from "lucide-react";
 import { intakeApi, type CampoIntake } from "../../api/intake";
 import { serviciosApi } from "../../api/servicios";
 import { useToastStore } from "../../store/toastStore";
+import Modal from "../../components/ui/Modal";
 
 const TIPOS = [
   { value: "Texto", label: "Texto corto" },
@@ -140,20 +141,12 @@ export default function IntakePage() {
       </div>
 
       {/* Form modal */}
-      {showForm && (
-        <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-gray-800 dark:text-gray-100">
-              {editando ? "Editar pregunta" : "Nueva pregunta"}
-            </h2>
-            <button
-              onClick={() => { setShowForm(false); setEditando(null); }}
-              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-            >
-              <X size={18} />
-            </button>
-          </div>
-
+      <Modal
+        abierto={showForm}
+        onCerrar={() => { setShowForm(false); setEditando(null); }}
+        titulo={editando ? "Editar pregunta" : "Nueva pregunta"}
+      >
+        <div className="space-y-4">
           <div className="space-y-3">
             <div>
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Pregunta / etiqueta</label>
@@ -237,7 +230,7 @@ export default function IntakePage() {
             </button>
           </div>
         </div>
-      )}
+      </Modal>
 
       {/* Lista de campos */}
       {isLoading ? (
