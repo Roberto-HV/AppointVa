@@ -157,6 +157,7 @@ export default function CitasPage() {
     staleTime: 1000 * 60 * 5,
   });
   const nombreNegocio = perfil?.nombre ?? "";
+  const tienePagos = perfil?.moduloPagosHabilitado ?? false;
 
   const { data: empleados = [] } = useQuery({
     queryKey: ["empleados"],
@@ -616,7 +617,7 @@ export default function CitasPage() {
                   <th className="text-left px-4 py-3 font-medium hidden sm:table-cell">Profesional</th>
                   <th className="text-left px-4 py-3 font-medium">Fecha y hora</th>
                   <th className="text-right px-4 py-3 font-medium hidden sm:table-cell">Precio</th>
-                  <th className="text-center px-4 py-3 font-medium hidden sm:table-cell">Pago</th>
+                  {tienePagos && <th className="text-center px-4 py-3 font-medium hidden sm:table-cell">Pago</th>}
                   <th className="text-center px-4 py-3 font-medium">Estado</th>
                   <th className="text-right px-4 py-3 font-medium hidden sm:table-cell">Acciones</th>
                 </tr>
@@ -634,15 +635,17 @@ export default function CitasPage() {
                     <td className="px-4 py-3 text-right font-medium text-gray-800 dark:text-gray-200 hidden sm:table-cell">{formatPrecio(c.precio)}</td>
 
                     {/* Columna de pago — solo lectura */}
-                    <td className="px-4 py-3 text-center hidden sm:table-cell">
-                      {c.pagada ? (
-                        <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full bg-green-100 text-green-700">
-                          ✓ {c.metodoPago ?? "Pagado"}
-                        </span>
-                      ) : (
-                        <span className="text-xs text-gray-400 dark:text-gray-500">Por pagar</span>
-                      )}
-                    </td>
+                    {tienePagos && (
+                      <td className="px-4 py-3 text-center hidden sm:table-cell">
+                        {c.pagada ? (
+                          <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full bg-green-100 text-green-700">
+                            ✓ {c.metodoPago ?? "Pagado"}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-gray-400 dark:text-gray-500">Por pagar</span>
+                        )}
+                      </td>
+                    )}
 
                     <td className="px-4 py-3 text-center">
                       <div className="flex items-center justify-center gap-1.5 flex-wrap">
