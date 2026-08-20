@@ -1,6 +1,5 @@
 import { Bell, BellOff, X } from "lucide-react";
 import { useState } from "react";
-import { meApi } from "../../api/me";
 import { usePushNotifications } from "../../hooks/usePushNotifications";
 
 interface Props {
@@ -65,8 +64,6 @@ export function NotificacionBanner({ visible = true }: Props) {
 export function NotificacionPerfilSection() {
   const { permiso, suscrito, soportado, cargando, error, setError, activar, desactivar } =
     usePushNotifications();
-  const [probando, setProbando] = useState(false);
-  const [resultadoPrueba, setResultadoPrueba] = useState<string | null>(null);
 
   const isIOS = typeof navigator !== "undefined" && /iPad|iPhone|iPod/.test(navigator.userAgent);
   const isStandalone =
@@ -74,22 +71,6 @@ export function NotificacionPerfilSection() {
     ((window.navigator as { standalone?: boolean }).standalone === true ||
       window.matchMedia("(display-mode: standalone)").matches);
   const needsPWA = isIOS && !isStandalone && !suscrito;
-
-  const probar = async (vacio = false) => {
-    setProbando(true);
-    setResultadoPrueba(null);
-    try {
-      await (vacio ? meApi.probarPushVacio() : meApi.probarPushNotificacion());
-      setResultadoPrueba(vacio ? "Push vacío enviado — revisa tu dispositivo." : "Notificación enviada — revisa tu dispositivo.");
-    } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { mensaje?: string } } })?.response?.data
-          ?.mensaje ?? "Error al enviar la prueba.";
-      setResultadoPrueba(msg);
-    } finally {
-      setProbando(false);
-    }
-  };
 
   if (!soportado) {
     return (
@@ -164,25 +145,6 @@ export function NotificacionPerfilSection() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {suscrito && (
-            <>
-              <button
-                onClick={() => probar(false)}
-                disabled={probando}
-                className="rounded-md border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-600 hover:bg-gray-50 disabled:opacity-60 transition-colors"
-              >
-                {probando ? "Enviando…" : "Probar"}
-              </button>
-              <button
-                onClick={() => probar(true)}
-                disabled={probando}
-                className="rounded-md border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-500 hover:bg-gray-50 disabled:opacity-60 transition-colors"
-                title="Envía un push sin payload para diagnóstico"
-              >
-                Probar vacío
-              </button>
-            </>
-          )}
           <button
             onClick={suscrito ? desactivar : activar}
             disabled={cargando}
@@ -201,9 +163,6 @@ export function NotificacionPerfilSection() {
           <span className="text-xs text-red-700 flex-1">{error}</span>
           <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600 text-xs leading-none mt-0.5">✕</button>
         </div>
-      )}
-      {resultadoPrueba && (
-        <p className="mt-2 text-xs text-gray-500">{resultadoPrueba}</p>
       )}
     </div>
   );
