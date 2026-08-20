@@ -40,16 +40,20 @@ namespace AppointVaAPI.Controllers.V1
                 query = query.Where(c => c.ServicioId == servicioId || c.ServicioId == null);
 
             var campos = await query
+                .Include(c => c.Servicios).ThenInclude(s => s.Servicio)
                 .OrderBy(c => c.Orden)
-                .Select(c => new {
-                    c.Id, c.Etiqueta, c.Tipo, c.Opciones,
-                    c.Requerido, c.Orden, c.Activo,
-                    c.ServicioId,
-                    servicioNombre = c.Servicio != null ? c.Servicio.Nombre : null,
-                })
                 .ToListAsync();
 
-            return Ok(campos);
+            var resultado = campos.Select(c => new {
+                c.Id, c.Etiqueta, c.Tipo, c.Opciones,
+                c.Requerido, c.Orden, c.Activo,
+                c.ServicioId,
+                servicioNombre = c.Servicio != null ? c.Servicio.Nombre : null,
+                servicioIds = c.Servicios.Select(s => s.ServicioId).ToList(),
+                servicioNombres = c.Servicios.Select(s => s.Servicio.Nombre).ToList(),
+            });
+
+            return Ok(resultado);
         }
 
         // POST /api/intake/campos
@@ -69,7 +73,7 @@ namespace AppointVaAPI.Controllers.V1
             {
                 Id = Guid.NewGuid(),
                 NegocioId = negocioId.Value,
-                ServicioId = dto.ServicioId,
+                ServicioId = dto.ServicioIds != null && dto.ServicioIds.Count == 1 ? dto.ServicioIds[0] : null,
                 Etiqueta = dto.Etiqueta.Trim(),
                 Tipo = dto.Tipo,
                 Opciones = dto.Opciones,
@@ -80,6 +84,18 @@ namespace AppointVaAPI.Controllers.V1
 
             _db.CamposIntake.Add(campo);
             await _db.SaveChangesAsync();
+
+            if (dto.ServicioIds != null && dto.ServicioIds.Count > 0)
+            {
+                var joins = dto.ServicioIds.Select(sid => new CampoIntakeServicio
+                {
+                    CampoIntakeId = campo.Id,
+                    ServicioId = sid,
+                });
+                _db.CampoIntakeServicios.AddRange(joins);
+                await _db.SaveChangesAsync();
+            }
+
             return Ok(new { campo.Id, campo.Etiqueta, campo.Tipo, campo.Orden });
         }
 
@@ -93,11 +109,27 @@ namespace AppointVaAPI.Controllers.V1
             var campo = await _db.CamposIntake.FirstOrDefaultAsync(c => c.Id == id && c.NegocioId == negocioId);
             if (campo == null) return NotFound();
 
-            campo.ServicioId = dto.ServicioId;
+            campo.ServicioId = dto.ServicioIds != null && dto.ServicioIds.Count == 1 ? dto.ServicioIds[0] : null;
             campo.Etiqueta = dto.Etiqueta.Trim();
             campo.Tipo = dto.Tipo;
             campo.Opciones = dto.Opciones;
             campo.Requerido = dto.Requerido;
+
+            // Reemplazar relaciones many-to-many
+            var anteriores = await _db.CampoIntakeServicios
+                .Where(x => x.CampoIntakeId == id)
+                .ToListAsync();
+            _db.CampoIntakeServicios.RemoveRange(anteriores);
+
+            if (dto.ServicioIds != null && dto.ServicioIds.Count > 0)
+            {
+                var nuevos = dto.ServicioIds.Select(sid => new CampoIntakeServicio
+                {
+                    CampoIntakeId = campo.Id,
+                    ServicioId = sid,
+                });
+                _db.CampoIntakeServicios.AddRange(nuevos);
+            }
 
             await _db.SaveChangesAsync();
             return Ok(new { campo.Id, campo.Etiqueta });
@@ -151,13 +183,14 @@ namespace AppointVaAPI.Controllers.V1
             if (negocio is null) return NotFound();
 
             var query = _db.CamposIntake
+                .Include(c => c.Servicios)
                 .Where(c => c.NegocioId == negocio.Id && c.Activo)
                 .AsQueryable();
 
             if (servicioId.HasValue)
-                query = query.Where(c => c.ServicioId == null || c.ServicioId == servicioId);
+                query = query.Where(c => !c.Servicios.Any() || c.Servicios.Any(s => s.ServicioId == servicioId));
             else
-                query = query.Where(c => c.ServicioId == null);
+                query = query.Where(c => !c.Servicios.Any());
 
             var campos = await query
                 .OrderBy(c => c.Orden)
@@ -235,7 +268,10 @@ namespace AppointVaAPI.Controllers.V1
         [Required]
         public bool Requerido { get; set; }
 
+        // Legacy — kept for backward compat during migration
         public Guid? ServicioId { get; set; }
+
+        public List<Guid>? ServicioIds { get; set; }
     }
 
     public record ReordenarCampoDto(Guid Id, int Orden);

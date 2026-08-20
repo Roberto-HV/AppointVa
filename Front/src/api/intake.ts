@@ -10,6 +10,8 @@ export interface CampoIntake {
   activo?: boolean;
   servicioId?: string;
   servicioNombre?: string;
+  servicioIds?: string[];
+  servicioNombres?: string[];
 }
 
 export interface RespuestaIntakeInput {
@@ -26,7 +28,7 @@ export const intakeApi = {
     tipo: string;
     opciones?: string;
     requerido: boolean;
-    servicioId?: string;
+    servicioIds?: string[];
   }) => api.post<CampoIntake>("/intake/campos", data).then((r) => r.data),
 
   actualizarCampo: (id: string, data: {
@@ -34,7 +36,7 @@ export const intakeApi = {
     tipo: string;
     opciones?: string;
     requerido: boolean;
-    servicioId?: string;
+    servicioIds?: string[];
   }) => api.put<CampoIntake>(`/intake/campos/${id}`, data).then((r) => r.data),
 
   eliminarCampo: (id: string) => api.delete(`/intake/campos/${id}`),

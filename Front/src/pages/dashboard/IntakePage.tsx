@@ -18,7 +18,7 @@ interface FormState {
   tipo: string;
   opciones: string;
   requerido: boolean;
-  servicioId: string;
+  servicioIds: string[];
 }
 
 const EMPTY: FormState = {
@@ -26,7 +26,7 @@ const EMPTY: FormState = {
   tipo: "Texto",
   opciones: "",
   requerido: false,
-  servicioId: "",
+  servicioIds: [],
 };
 
 export default function IntakePage() {
@@ -53,7 +53,7 @@ export default function IntakePage() {
         tipo: data.tipo,
         opciones: data.tipo === "Seleccion" ? data.opciones || undefined : undefined,
         requerido: data.requerido,
-        servicioId: data.servicioId || undefined,
+        servicioIds: data.servicioIds.length > 0 ? data.servicioIds : undefined,
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["intake-campos"] });
@@ -71,7 +71,7 @@ export default function IntakePage() {
         tipo: data.tipo,
         opciones: data.tipo === "Seleccion" ? data.opciones || undefined : undefined,
         requerido: data.requerido,
-        servicioId: data.servicioId || undefined,
+        servicioIds: data.servicioIds.length > 0 ? data.servicioIds : undefined,
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["intake-campos"] });
@@ -105,7 +105,7 @@ export default function IntakePage() {
       tipo: campo.tipo,
       opciones: campo.opciones ?? "",
       requerido: campo.requerido,
-      servicioId: campo.servicioId ?? "",
+      servicioIds: campo.servicioIds ?? [],
     });
     setShowForm(true);
   }
@@ -189,17 +189,31 @@ export default function IntakePage() {
             )}
 
             <div>
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Servicio (opcional)</label>
-              <select
-                value={form.servicioId}
-                onChange={(e) => setForm({ ...form, servicioId: e.target.value })}
-                className="mt-1 w-full border border-gray-200 dark:bg-slate-800 dark:text-gray-100 dark:border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-700/30 dark:focus:ring-slate-500/30"
-              >
-                <option value="">Todos los servicios</option>
-                {servicios.map((s) => (
-                  <option key={s.id} value={s.id}>{s.nombre}</option>
-                ))}
-              </select>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Servicios (opcional — deja vacío para todos)
+              </label>
+              {servicios.length === 0 ? (
+                <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">No hay servicios configurados</p>
+              ) : (
+                <div className="mt-1 space-y-1 max-h-36 overflow-y-auto border border-gray-200 dark:border-slate-600 rounded-lg p-2">
+                  {servicios.map((s) => (
+                    <label key={s.id} className="flex items-center gap-2 cursor-pointer px-1 py-0.5 rounded hover:bg-gray-50 dark:hover:bg-slate-700/40">
+                      <input
+                        type="checkbox"
+                        className="accent-slate-700 w-4 h-4"
+                        checked={form.servicioIds.includes(s.id)}
+                        onChange={(e) => {
+                          const next = e.target.checked
+                            ? [...form.servicioIds, s.id]
+                            : form.servicioIds.filter((id) => id !== s.id);
+                          setForm({ ...form, servicioIds: next });
+                        }}
+                      />
+                      <span className="text-sm text-gray-700 dark:text-gray-300">{s.nombre}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
             </div>
 
             <label className="flex items-center gap-2 cursor-pointer">
@@ -296,8 +310,8 @@ function CampoRow({
         </div>
         <div className="flex items-center gap-3 text-xs text-gray-400 dark:text-gray-500 mt-0.5">
           <span>{tipoLabel}</span>
-          {campo.servicioNombre ? (
-            <span>Solo para: {campo.servicioNombre}</span>
+          {campo.servicioNombres && campo.servicioNombres.length > 0 ? (
+            <span>Solo para: {campo.servicioNombres.join(", ")}</span>
           ) : (
             <span>Todos los servicios</span>
           )}

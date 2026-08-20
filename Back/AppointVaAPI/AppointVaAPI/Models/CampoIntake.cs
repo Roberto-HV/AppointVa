@@ -36,5 +36,7 @@ namespace AppointVaAPI.Models
 
         [Required]
         public bool Activo { get; set; } = true;
+
+        public ICollection<CampoIntakeServicio> Servicios { get; set; } = new List<CampoIntakeServicio>();
     }
 }

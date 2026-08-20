@@ -27,6 +27,7 @@ namespace AppointVaAPI.Data
         public DbSet<ListaEspera> ListaEspera { get; set; }
         public DbSet<EncuestaNegocio> EncuestasNegocio { get; set; }
         public DbSet<CampoIntake> CamposIntake { get; set; }
+        public DbSet<CampoIntakeServicio> CampoIntakeServicios { get; set; }
         public DbSet<RespuestaIntake> RespuestasIntake { get; set; }
         public DbSet<Descuento> Descuentos { get; set; }
         public DbSet<EmailLog> EmailLogs { get; set; }
@@ -247,6 +248,20 @@ namespace AppointVaAPI.Data
                 .WithMany()
                 .HasForeignKey(ci => ci.ServicioId)
                 .OnDelete(DeleteBehavior.NoAction);
+
+            // CampoIntakeServicio (many-to-many)
+            modelBuilder.Entity<CampoIntakeServicio>(e =>
+            {
+                e.HasKey(x => new { x.CampoIntakeId, x.ServicioId });
+                e.HasOne(x => x.CampoIntake)
+                 .WithMany(c => c.Servicios)
+                 .HasForeignKey(x => x.CampoIntakeId)
+                 .OnDelete(DeleteBehavior.Cascade);
+                e.HasOne(x => x.Servicio)
+                 .WithMany()
+                 .HasForeignKey(x => x.ServicioId)
+                 .OnDelete(DeleteBehavior.Cascade);
+            });
 
             // RespuestaIntake
             modelBuilder.Entity<RespuestaIntake>()
