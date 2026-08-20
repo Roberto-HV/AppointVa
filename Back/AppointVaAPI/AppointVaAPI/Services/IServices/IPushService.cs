@@ -6,6 +6,7 @@ namespace AppointVaAPI.Services.IServices
         Task EliminarSuscripcionAsync(Guid usuarioId);
         Task EnviarNuevaCitaEmpleadoAsync(Guid citaId);
         Task EnviarReagendarEmpleadoAsync(Guid citaId);
+        Task EnviarCancelacionAsync(Guid citaId);
         Task EnviarRecordatorio15MinAsync(Guid citaId);
         Task<string> EnviarPruebaAsync(Guid usuarioId);
         Task<string> EnviarPruebaVaciaAsync(Guid usuarioId);

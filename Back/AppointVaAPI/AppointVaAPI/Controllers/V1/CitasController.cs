@@ -394,6 +394,9 @@ namespace AppointVaAPI.Controllers.V1
             if (notificarListaEspera)
                 _jobClient.Enqueue<NotificacionJob>(j => j.NotificarListaEsperaAsync(cita.NegocioId, cita.ServicioId));
 
+            if (dto.NuevoEstado == EstadosCitas.Cancelada)
+                _jobClient.Enqueue<IPushService>(s => s.EnviarCancelacionAsync(cita.Id));
+
             return Ok(MapearDto(cita));
         }
 

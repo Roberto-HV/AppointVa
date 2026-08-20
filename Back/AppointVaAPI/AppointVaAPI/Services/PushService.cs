@@ -191,6 +191,77 @@ namespace AppointVaAPI.Services
             }
         }
 
+        // ── Notificación de cancelación ───────────────────────────────────────────
+
+        public async Task EnviarCancelacionAsync(Guid citaId)
+        {
+            var cita = await _db.Citas
+                .Include(c => c.Cliente)
+                .Include(c => c.Servicio)
+                .Include(c => c.Negocio)
+                .Include(c => c.Empleado)
+                .FirstOrDefaultAsync(c => c.Id == citaId);
+
+            if (cita is null)
+            {
+                _logger.LogWarning("Push Cancelacion: cita {CitaId} no encontrada", citaId);
+                return;
+            }
+
+            _logger.LogInformation("Push Cancelacion: procesando cita {CitaId} negocio {NegocioId}",
+                citaId, cita.NegocioId);
+
+            var payload = BuildPayloadCancelacion(cita);
+
+            if (cita.EmpleadoId != Guid.Empty)
+            {
+                var empleado = await _db.Empleados.FirstOrDefaultAsync(e => e.Id == cita.EmpleadoId);
+                if (empleado?.UsuarioId is not null)
+                {
+                    var subEmpleado = await _db.PushSuscripciones
+                        .FirstOrDefaultAsync(s => s.UsuarioId == empleado.UsuarioId.Value);
+                    if (subEmpleado is not null)
+                        await EnviarAsync(subEmpleado, payload);
+                    else
+                        _logger.LogInformation("Push Cancelacion: empleado {EmpleadoId} sin suscripción", cita.EmpleadoId);
+                }
+            }
+
+            var roleId = await _db.Roles
+                .Where(r => r.Name == Roles.Propietario)
+                .Select(r => r.Id)
+                .FirstOrDefaultAsync();
+
+            if (roleId == Guid.Empty)
+            {
+                _logger.LogWarning("Push Cancelacion: rol Propietario no encontrado");
+                return;
+            }
+
+            var propietarioIds = await _db.UserRoles
+                .Where(ur => ur.RoleId == roleId)
+                .Select(ur => ur.UserId)
+                .ToListAsync();
+
+            var propietarios = await _db.Users
+                .Where(u => u.NegocioId == cita.NegocioId && propietarioIds.Contains(u.Id) && u.Activo)
+                .ToListAsync();
+
+            _logger.LogInformation("Push Cancelacion: {Count} propietario(s) encontrado(s) para negocio {NegocioId}",
+                propietarios.Count, cita.NegocioId);
+
+            foreach (var propietario in propietarios)
+            {
+                var subProp = await _db.PushSuscripciones
+                    .FirstOrDefaultAsync(s => s.UsuarioId == propietario.Id);
+                if (subProp is not null)
+                    await EnviarAsync(subProp, payload);
+                else
+                    _logger.LogInformation("Push Cancelacion: propietario {UserId} ({Email}) sin suscripción push",
+                        propietario.Id, propietario.Email);
+            }
+        }
+
         // ── Recordatorio 15 minutos antes ─────────────────────────────────────────
 
         public async Task EnviarRecordatorio15MinAsync(Guid citaId)
@@ -685,6 +756,27 @@ namespace AppointVaAPI.Services
                 url   = $"/dashboard/citas/{cita.Id}",
                 icalUrl,
                 googleCalUrl
+            });
+        }
+
+        private static string BuildPayloadCancelacion(Cita cita)
+        {
+            var cliente  = cita.Cliente?.NombreCompleto ?? "Un cliente";
+            var servicio = cita.Servicio?.Nombre ?? "Servicio";
+
+            TimeZoneInfo tz;
+            try { tz = TimeZoneInfo.FindSystemTimeZoneById("America/Mexico_City"); }
+            catch { tz = TimeZoneInfo.FindSystemTimeZoneById("Central Standard Time"); }
+
+            var local = TimeZoneInfo.ConvertTimeFromUtc(cita.InicioEn, tz);
+            var hora  = local.ToString("h:mm tt", System.Globalization.CultureInfo.InvariantCulture);
+            var fecha = local.ToString("dd/MM/yyyy");
+
+            return JsonSerializer.Serialize(new
+            {
+                title = "Cita cancelada",
+                body  = $"{cliente} · {servicio} · {fecha} {hora}",
+                url   = "/dashboard/citas"
             });
         }
 
