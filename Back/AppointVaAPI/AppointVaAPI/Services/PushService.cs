@@ -294,27 +294,22 @@ namespace AppointVaAPI.Services
             request.Headers.TryAddWithoutValidation("TTL", "86400");
             request.Headers.TryAddWithoutValidation("Urgency", "high");
 
-            if (esApple)
-            {
-                // Declarative Web Push (iOS 18.4+/Safari 18.4+)
-                // El OS muestra la notificación directamente sin despertar el service worker
-                var frontendUrl = _config["FrontendUrl"] ?? "https://appointva.com";
-                var declarativeJson = BuildDeclarativePayload(payload, frontendUrl);
-                request.Content = new StringContent(declarativeJson, Encoding.UTF8, "application/json");
-            }
-            else
-            {
-                // Standard Web Push cifrado RFC 8291 (Chrome, Firefox, Android)
-                byte[] contenidoCifrado;
-                try { contenidoCifrado = CifrarPayloadRfc8291(payload, suscripcion.P256dh, suscripcion.Auth); }
-                catch (InvalidOperationException) { throw; }
-                catch (Exception ex) { throw new InvalidOperationException($"PASO-2-CIFRADO [{ex.GetType().Name}]: {ex.Message}"); }
+            // Para Apple: JSON declarativo (iOS 18.4+); para el resto: JSON estándar.
+            // En ambos casos el transporte es cifrado RFC 8291 — Apple descifra y, al ver
+            // "web_push":8030, muestra la notificación sin despertar el service worker.
+            var jsonPayload = esApple
+                ? BuildDeclarativePayload(payload, _config["FrontendUrl"] ?? "https://appointva.com")
+                : payload;
 
-                var content = new ByteArrayContent(contenidoCifrado);
-                content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
-                content.Headers.TryAddWithoutValidation("Content-Encoding", "aes128gcm");
-                request.Content = content;
-            }
+            byte[] contenidoCifrado;
+            try { contenidoCifrado = CifrarPayloadRfc8291(jsonPayload, suscripcion.P256dh, suscripcion.Auth); }
+            catch (InvalidOperationException) { throw; }
+            catch (Exception ex) { throw new InvalidOperationException($"PASO-2-CIFRADO [{ex.GetType().Name}]: {ex.Message}"); }
+
+            var content = new ByteArrayContent(contenidoCifrado);
+            content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+            content.Headers.TryAddWithoutValidation("Content-Encoding", "aes128gcm");
+            request.Content = content;
 
             var response = await _http.SendAsync(request);
             var responseBody = await response.Content.ReadAsStringAsync();
