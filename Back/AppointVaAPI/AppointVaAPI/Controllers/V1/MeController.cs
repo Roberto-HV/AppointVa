@@ -161,7 +161,7 @@ namespace AppointVaAPI.Controllers.V1
             page = Math.Max(page, 1);
 
             var query = db.Resenas
-                .Where(r => r.NegocioId == negocioId && r.Aprobada)
+                .Where(r => r.NegocioId == negocioId && r.Aprobada && r.Respondida)
                 .OrderByDescending(r => r.FechaCreacion);
 
             var total = await query.CountAsync();

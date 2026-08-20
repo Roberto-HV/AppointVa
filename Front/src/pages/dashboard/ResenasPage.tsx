@@ -7,6 +7,12 @@ import { Star } from "lucide-react";
 
 const PAGE_SIZE = 20;
 
+function formatearNombre(nombre: string): string {
+  const partes = nombre.trim().split(/\s+/);
+  if (partes.length === 1) return partes[0];
+  return `${partes[0]} ${partes[1][0].toUpperCase()}.`;
+}
+
 function Estrellas({ rating }: { rating: number }) {
   return (
     <div className="flex items-center gap-0.5">
@@ -33,10 +39,13 @@ export default function ResenasPage() {
   const total = data?.total ?? 0;
   const totalPaginas = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
-  const promedioRating =
+  const promedioNumerico =
     resenas.length > 0
-      ? (resenas.reduce((acc, r) => acc + r.rating, 0) / resenas.length).toFixed(1)
+      ? resenas.reduce((acc, r) => acc + r.rating, 0) / resenas.length
       : null;
+  const promedioRating = promedioNumerico !== null && promedioNumerico > 0
+    ? promedioNumerico.toFixed(1)
+    : null;
 
   return (
     <div className="p-4 sm:p-8">
@@ -94,14 +103,14 @@ export default function ResenasPage() {
                       <Estrellas rating={r.rating} />
                     </td>
                     <td className="px-5 py-3">
-                      <p className="font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap">{r.nombreCliente}</p>
+                      <p className="font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap">{formatearNombre(r.nombreCliente)}</p>
                     </td>
                     <td className="px-5 py-3 text-gray-600 dark:text-gray-400 max-w-xs">
                       {r.comentario
                         ? r.comentario.length > 100
                           ? `${r.comentario.slice(0, 100)}…`
                           : r.comentario
-                        : <span className="text-gray-300 dark:text-slate-600">—</span>}
+                        : <span className="text-gray-300 dark:text-slate-600 italic text-xs">Sin comentario</span>}
                     </td>
                     <td className="px-5 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap">
                       {formatFecha(r.fechaCreacion)}
