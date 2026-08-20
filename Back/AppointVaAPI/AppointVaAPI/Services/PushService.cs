@@ -281,15 +281,12 @@ namespace AppointVaAPI.Services
                                                string publicKey, string privateKey)
         {
             const string subject = "mailto:hola@appointva.com";
+            var esApple = suscripcion.Endpoint.StartsWith("https://web.push.apple.com",
+                              StringComparison.OrdinalIgnoreCase);
 
             string token;
             try { token = GenerarVapidJwt(suscripcion.Endpoint, publicKey, privateKey, subject); }
             catch (Exception ex) { throw new InvalidOperationException($"PASO-1-JWT [{ex.GetType().Name}]: {ex.Message}"); }
-
-            byte[] contenidoCifrado;
-            try { contenidoCifrado = CifrarPayloadRfc8291(payload, suscripcion.P256dh, suscripcion.Auth); }
-            catch (InvalidOperationException) { throw; }
-            catch (Exception ex) { throw new InvalidOperationException($"PASO-2-CIFRADO [{ex.GetType().Name}]: {ex.Message}"); }
 
             using var request = new HttpRequestMessage(HttpMethod.Post, suscripcion.Endpoint);
             request.Headers.Authorization = new AuthenticationHeaderValue("vapid",
@@ -297,15 +294,33 @@ namespace AppointVaAPI.Services
             request.Headers.TryAddWithoutValidation("TTL", "86400");
             request.Headers.TryAddWithoutValidation("Urgency", "high");
 
-            var content = new ByteArrayContent(contenidoCifrado);
-            content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
-            content.Headers.TryAddWithoutValidation("Content-Encoding", "aes128gcm");
-            request.Content = content;
+            if (esApple)
+            {
+                // Declarative Web Push (iOS 18.4+/Safari 18.4+)
+                // El OS muestra la notificación directamente sin despertar el service worker
+                var frontendUrl = _config["FrontendUrl"] ?? "https://appointva.com";
+                var declarativeJson = BuildDeclarativePayload(payload, frontendUrl);
+                request.Content = new StringContent(declarativeJson, Encoding.UTF8, "application/json");
+            }
+            else
+            {
+                // Standard Web Push cifrado RFC 8291 (Chrome, Firefox, Android)
+                byte[] contenidoCifrado;
+                try { contenidoCifrado = CifrarPayloadRfc8291(payload, suscripcion.P256dh, suscripcion.Auth); }
+                catch (InvalidOperationException) { throw; }
+                catch (Exception ex) { throw new InvalidOperationException($"PASO-2-CIFRADO [{ex.GetType().Name}]: {ex.Message}"); }
+
+                var content = new ByteArrayContent(contenidoCifrado);
+                content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+                content.Headers.TryAddWithoutValidation("Content-Encoding", "aes128gcm");
+                request.Content = content;
+            }
 
             var response = await _http.SendAsync(request);
             var responseBody = await response.Content.ReadAsStringAsync();
 
-            _logger.LogWarning("Push → HTTP {Status} body={Body} endpoint={Endpoint}",
+            _logger.LogWarning("Push ({Tipo}) → HTTP {Status} body={Body} endpoint={Endpoint}",
+                esApple ? "declarative" : "encrypted",
                 (int)response.StatusCode,
                 string.IsNullOrWhiteSpace(responseBody) ? "(vacío)" : responseBody,
                 suscripcion.Endpoint[..Math.Min(80, suscripcion.Endpoint.Length)]);
@@ -317,6 +332,26 @@ namespace AppointVaAPI.Services
             if (!response.IsSuccessStatusCode)
                 throw new InvalidOperationException(
                     $"Push service {(int)response.StatusCode}: {responseBody}");
+        }
+
+        // Convierte el payload estándar al formato Declarative Web Push (iOS 18.4+)
+        private static string BuildDeclarativePayload(string standardPayload, string frontendUrl)
+        {
+            using var doc = JsonDocument.Parse(standardPayload);
+            var root = doc.RootElement;
+
+            var title = root.TryGetProperty("title", out var t) ? t.GetString() ?? "AppointVa" : "AppointVa";
+            var body  = root.TryGetProperty("body",  out var b) ? b.GetString() ?? "" : "";
+            var path  = root.TryGetProperty("url",   out var u) ? u.GetString() ?? "/" : "/";
+            var navigate = path.StartsWith("http", StringComparison.OrdinalIgnoreCase)
+                ? path
+                : $"{frontendUrl.TrimEnd('/')}{path}";
+
+            return JsonSerializer.Serialize(new
+            {
+                web_push = "8030",
+                notification = new { title, body, navigate }
+            });
         }
 
         // ── VAPID JWT (ES256) usando ECDsa nativo de .NET ─────────────────────────
