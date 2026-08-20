@@ -51,6 +51,7 @@ const IntakePage = lazy(() => import("./pages/dashboard/IntakePage"));
 const DescuentosPage = lazy(() => import("./pages/dashboard/DescuentosPage"));
 const KioskPage = lazy(() => import("./pages/dashboard/KioskPage"));
 const PagosPage = lazy(() => import("./pages/dashboard/PagosPage"));
+const ResenasPage = lazy(() => import("./pages/dashboard/ResenasPage"));
 
 // ── Admin ─────────────────────────────────────────────────────────────────
 const NegociosAdminPage = lazy(() => import("./pages/admin/NegociosAdminPage"));
@@ -131,6 +132,7 @@ export default function App() {
                         <RutaConFeature feature="descuentos"><DescuentosPage /></RutaConFeature>
                       } />
                       <Route path="/dashboard/reportes" element={<ReportesPage />} />
+                      <Route path="/dashboard/resenas" element={<ResenasPage />} />
                     </Route>
                   </Route>
 

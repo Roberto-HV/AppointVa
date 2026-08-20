@@ -46,4 +46,21 @@ export const meApi = {
       return null;
     }
   },
+  obtenerResenas: async (page = 1, pageSize = 20): Promise<{
+    items: {
+      id: string;
+      rating: number;
+      comentario: string | null;
+      nombreCliente: string;
+      fechaCreacion: string;
+      respondida: boolean;
+      aprobada: boolean;
+    }[];
+    total: number;
+    page: number;
+    pageSize: number;
+  }> => {
+    const res = await api.get("/me/resenas", { params: { page, pageSize } });
+    return res.data;
+  },
 };

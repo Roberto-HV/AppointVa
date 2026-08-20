@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using AppointVaAPI.Data;
 
 namespace AppointVaAPI.Controllers.V1
 {
@@ -142,6 +143,44 @@ namespace AppointVaAPI.Controllers.V1
                 var inner = ex.InnerException is not null ? $" | inner: {ex.InnerException.GetType().Name}: {ex.InnerException.Message}" : "";
                 return StatusCode(500, new { mensaje = $"Error [{ex.GetType().Name}]: {ex.Message}{inner}" });
             }
+        }
+
+        // GET api/me/resenas
+        [HttpGet("resenas")]
+        [Authorize(Roles = Roles.Propietario)]
+        public async Task<IActionResult> ObtenerResenas(
+            [FromServices] ApplicationDbContext db,
+            [FromServices] IContextoNegocio contexto,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 20)
+        {
+            if (contexto.NegocioId is null) return Unauthorized();
+            var negocioId = contexto.NegocioId.Value;
+
+            pageSize = Math.Min(pageSize, 50);
+            page = Math.Max(page, 1);
+
+            var query = db.Resenas
+                .Where(r => r.NegocioId == negocioId && r.Aprobada)
+                .OrderByDescending(r => r.FechaCreacion);
+
+            var total = await query.CountAsync();
+            var items = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(r => new
+                {
+                    r.Id,
+                    r.Rating,
+                    r.Comentario,
+                    r.NombreCliente,
+                    r.FechaCreacion,
+                    r.Respondida,
+                    r.Aprobada
+                })
+                .ToListAsync();
+
+            return Ok(new { items, total, page, pageSize });
         }
 
     }

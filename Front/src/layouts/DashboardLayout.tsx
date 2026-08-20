@@ -1,6 +1,6 @@
 ﻿import { useState, useRef, useEffect } from "react";
 import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
-import { Menu, X, LayoutDashboard, CalendarDays, Users, Scissors, UserCheck, Building2, Link, Copy, Check, BarChart2, ShieldCheck, UserCircle, Images, ClipboardList, Tag, LogOut, ChevronUp, Mail, BookOpen, Moon, Sun, CreditCard } from "lucide-react";
+import { Menu, X, LayoutDashboard, CalendarDays, Users, Scissors, UserCheck, Building2, Link, Copy, Check, BarChart2, ShieldCheck, UserCircle, Images, ClipboardList, Tag, LogOut, ChevronUp, Mail, BookOpen, Moon, Sun, CreditCard, Star } from "lucide-react";
 import { useTheme } from "../hooks/useTheme";
 import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "../store/authStore";
@@ -147,6 +147,7 @@ export function getNav(sector: string): NavItem[] {
     { to: "/dashboard/empleados",  label: terms.empleados,              icon: Users },
     { to: "/dashboard/servicios",  label: terms.servicios,              icon: Scissors },
     { to: "/dashboard/descuentos", label: "Descuentos",                 icon: Tag },
+    { to: "/dashboard/resenas",    label: "Reseñas",                    icon: Star },
     { to: "/dashboard/reportes",   label: "Reportes",                   icon: BarChart2 },
     { to: "/dashboard/perfil",     label: "Mi negocio",                 icon: Building2 },
     { to: "/dashboard/galeria",    label: "Galería",                    icon: Images },
@@ -186,6 +187,7 @@ export default function DashboardLayout() {
     { to: "/dashboard/empleados",  label: terms.empleados,              icon: Users },
     { to: "/dashboard/servicios",  label: terms.servicios,              icon: Scissors },
     ...(features.descuentos ? [{ to: "/dashboard/descuentos", label: "Descuentos", icon: Tag }]      : []),
+    { to: "/dashboard/resenas",    label: "Reseñas",                    icon: Star },
     { to: "/dashboard/reportes",   label: "Reportes",                   icon: BarChart2 },
     { to: "/dashboard/perfil",     label: "Mi negocio",                 icon: Building2 },
     ...(features.galeria    ? [{ to: "/dashboard/galeria",    label: "Galería",    icon: Images }]   : []),
