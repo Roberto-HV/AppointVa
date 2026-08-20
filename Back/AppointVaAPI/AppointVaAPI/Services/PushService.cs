@@ -191,6 +191,90 @@ namespace AppointVaAPI.Services
             }
         }
 
+        // ── Recordatorio 15 minutos antes ─────────────────────────────────────────
+
+        public async Task EnviarRecordatorio15MinAsync(Guid citaId)
+        {
+            var cita = await _db.Citas
+                .Include(c => c.Cliente)
+                .Include(c => c.Servicio)
+                .Include(c => c.Negocio)
+                .Include(c => c.Empleado)
+                .FirstOrDefaultAsync(c => c.Id == citaId);
+
+            if (cita is null)
+            {
+                _logger.LogWarning("Push Recordatorio15Min: cita {CitaId} no encontrada", citaId);
+                return;
+            }
+
+            if (cita.Estado == EstadosCitas.Cancelada
+                || cita.Estado == EstadosCitas.Inasistencia
+                || cita.Estado == EstadosCitas.Completada)
+            {
+                _logger.LogInformation("Push Recordatorio15Min: cita {CitaId} en estado {Estado}, omitiendo",
+                    citaId, cita.Estado);
+                return;
+            }
+
+            _logger.LogInformation("Push Recordatorio15Min: procesando cita {CitaId} negocio {NegocioId}",
+                citaId, cita.NegocioId);
+
+            var backendUrl = _config["BackendUrl"] ?? string.Empty;
+            var icalUrl = string.IsNullOrWhiteSpace(backendUrl) ? null
+                : $"{backendUrl}/api/publico/citas/{cita.CodigoConfirmacion}/ical";
+            var googleCalUrl = BuildGoogleCalendarUrl(cita);
+            var payload = BuildPayloadRecordatorio(cita, icalUrl, googleCalUrl);
+
+            if (cita.EmpleadoId != Guid.Empty)
+            {
+                var empleado = await _db.Empleados.FirstOrDefaultAsync(e => e.Id == cita.EmpleadoId);
+                if (empleado?.UsuarioId is not null)
+                {
+                    var subEmpleado = await _db.PushSuscripciones
+                        .FirstOrDefaultAsync(s => s.UsuarioId == empleado.UsuarioId.Value);
+                    if (subEmpleado is not null)
+                        await EnviarAsync(subEmpleado, payload);
+                    else
+                        _logger.LogInformation("Push Recordatorio15Min: empleado {EmpleadoId} sin suscripción", cita.EmpleadoId);
+                }
+            }
+
+            var roleId = await _db.Roles
+                .Where(r => r.Name == Roles.Propietario)
+                .Select(r => r.Id)
+                .FirstOrDefaultAsync();
+
+            if (roleId == Guid.Empty)
+            {
+                _logger.LogWarning("Push Recordatorio15Min: rol Propietario no encontrado");
+                return;
+            }
+
+            var propietarioIds = await _db.UserRoles
+                .Where(ur => ur.RoleId == roleId)
+                .Select(ur => ur.UserId)
+                .ToListAsync();
+
+            var propietarios = await _db.Users
+                .Where(u => u.NegocioId == cita.NegocioId && propietarioIds.Contains(u.Id) && u.Activo)
+                .ToListAsync();
+
+            _logger.LogInformation("Push Recordatorio15Min: {Count} propietario(s) encontrado(s) para negocio {NegocioId}",
+                propietarios.Count, cita.NegocioId);
+
+            foreach (var propietario in propietarios)
+            {
+                var subProp = await _db.PushSuscripciones
+                    .FirstOrDefaultAsync(s => s.UsuarioId == propietario.Id);
+                if (subProp is not null)
+                    await EnviarAsync(subProp, payload);
+                else
+                    _logger.LogInformation("Push Recordatorio15Min: propietario {UserId} ({Email}) sin suscripción push",
+                        propietario.Id, propietario.Email);
+            }
+        }
+
         // ── Prueba manual desde perfil ────────────────────────────────────────────
 
         public async Task<string> EnviarPruebaAsync(Guid usuarioId)
@@ -585,6 +669,22 @@ namespace AppointVaAPI.Services
                 url   = $"/dashboard/citas/{cita.Id}",
                 icalUrl,
                 googleCalUrl,
+            });
+        }
+
+        private static string BuildPayloadRecordatorio(Cita cita, string? icalUrl, string? googleCalUrl)
+        {
+            var cliente  = cita.Cliente?.NombreCompleto ?? "Un cliente";
+            var servicio = cita.Servicio?.Nombre ?? "Servicio";
+            var negocio  = cita.Negocio?.Nombre ?? "AppointVa";
+
+            return JsonSerializer.Serialize(new
+            {
+                title = $"Recordatorio de cita — {negocio}",
+                body  = $"{cliente} · {servicio} · en 15 minutos",
+                url   = $"/dashboard/citas/{cita.Id}",
+                icalUrl,
+                googleCalUrl
             });
         }
 

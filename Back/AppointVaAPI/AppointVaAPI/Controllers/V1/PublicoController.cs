@@ -501,6 +501,11 @@ namespace AppointVaAPI.Controllers.V1
                     cita.HangfireJobId = _jobClient.Schedule<IRecordatorioService>(s => s.EnviarRecordatorioCitaAsync(cita.Id), horaRecordatorio);
             }
 
+            if (cita.InicioEn.AddMinutes(-15) > DateTime.UtcNow)
+                _jobClient.Schedule<IPushService>(
+                    s => s.EnviarRecordatorio15MinAsync(cita.Id),
+                    cita.InicioEn.AddMinutes(-15));
+
             _db.NotificacionesDashboard.Add(new NotificacionDashboard
             {
                 NegocioId = negocio.Id,

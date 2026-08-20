@@ -243,6 +243,11 @@ namespace AppointVaAPI.Controllers.V1
                         horaRecordatorio);
             }
 
+            if (cita.InicioEn.AddMinutes(-15) > DateTime.UtcNow)
+                _jobClient.Schedule<IPushService>(
+                    s => s.EnviarRecordatorio15MinAsync(cita.Id),
+                    cita.InicioEn.AddMinutes(-15));
+
             var creada = await _citaRepo.ObtenerPorIdAsync(cita.Id, negocioId);
 
             _db.NotificacionesDashboard.Add(new NotificacionDashboard
@@ -611,6 +616,11 @@ namespace AppointVaAPI.Controllers.V1
 
             _jobClient.Enqueue<NotificacionJob>(j => j.EnviarReagendaAsync(cita.Id, emailCliente, nombreCliente, fechaOriginal));
             _jobClient.Enqueue<IPushService>(s => s.EnviarReagendarEmpleadoAsync(cita.Id));
+
+            if (cita.InicioEn.AddMinutes(-15) > DateTime.UtcNow)
+                _jobClient.Schedule<IPushService>(
+                    s => s.EnviarRecordatorio15MinAsync(cita.Id),
+                    cita.InicioEn.AddMinutes(-15));
 
             return Ok(MapearDto(cita));
         }
