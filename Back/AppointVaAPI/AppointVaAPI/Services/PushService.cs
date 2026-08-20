@@ -262,6 +262,97 @@ namespace AppointVaAPI.Services
             }
         }
 
+        // ── Notificación de confirmación de cita (al empleado) ────────────────────
+
+        public async Task EnviarConfirmacionCitaAsync(Guid citaId)
+        {
+            var cita = await _db.Citas
+                .Include(c => c.Cliente)
+                .Include(c => c.Servicio)
+                .Include(c => c.Negocio)
+                .Include(c => c.Empleado)
+                .FirstOrDefaultAsync(c => c.Id == citaId);
+
+            if (cita is null)
+            {
+                _logger.LogWarning("Push ConfirmacionCita: cita {CitaId} no encontrada", citaId);
+                return;
+            }
+
+            _logger.LogInformation("Push ConfirmacionCita: procesando cita {CitaId} empleado {EmpleadoId}",
+                citaId, cita.EmpleadoId);
+
+            var payload = BuildPayloadConfirmacionCita(cita);
+
+            if (cita.EmpleadoId != Guid.Empty)
+            {
+                var empleado = await _db.Empleados.FirstOrDefaultAsync(e => e.Id == cita.EmpleadoId);
+                if (empleado?.UsuarioId is not null)
+                {
+                    var subEmpleado = await _db.PushSuscripciones
+                        .FirstOrDefaultAsync(s => s.UsuarioId == empleado.UsuarioId.Value);
+                    if (subEmpleado is not null)
+                        await EnviarAsync(subEmpleado, payload);
+                    else
+                        _logger.LogInformation("Push ConfirmacionCita: empleado {EmpleadoId} sin suscripción", cita.EmpleadoId);
+                }
+            }
+        }
+
+        // ── Notificación de nueva reseña (a propietarios) ─────────────────────────
+
+        public async Task EnviarNuevaResenaAsync(Guid resenaId)
+        {
+            var resena = await _db.Resenas
+                .Include(r => r.Negocio)
+                .FirstOrDefaultAsync(r => r.Id == resenaId);
+
+            if (resena is null)
+            {
+                _logger.LogWarning("Push NuevaResena: reseña {ResenaId} no encontrada", resenaId);
+                return;
+            }
+
+            _logger.LogInformation("Push NuevaResena: procesando reseña {ResenaId} negocio {NegocioId}",
+                resenaId, resena.NegocioId);
+
+            var payload = BuildPayloadNuevaResena(resena);
+
+            var roleId = await _db.Roles
+                .Where(r => r.Name == Roles.Propietario)
+                .Select(r => r.Id)
+                .FirstOrDefaultAsync();
+
+            if (roleId == Guid.Empty)
+            {
+                _logger.LogWarning("Push NuevaResena: rol Propietario no encontrado");
+                return;
+            }
+
+            var propietarioIds = await _db.UserRoles
+                .Where(ur => ur.RoleId == roleId)
+                .Select(ur => ur.UserId)
+                .ToListAsync();
+
+            var propietarios = await _db.Users
+                .Where(u => u.NegocioId == resena.NegocioId && propietarioIds.Contains(u.Id) && u.Activo)
+                .ToListAsync();
+
+            _logger.LogInformation("Push NuevaResena: {Count} propietario(s) encontrado(s) para negocio {NegocioId}",
+                propietarios.Count, resena.NegocioId);
+
+            foreach (var propietario in propietarios)
+            {
+                var subProp = await _db.PushSuscripciones
+                    .FirstOrDefaultAsync(s => s.UsuarioId == propietario.Id);
+                if (subProp is not null)
+                    await EnviarAsync(subProp, payload);
+                else
+                    _logger.LogInformation("Push NuevaResena: propietario {UserId} ({Email}) sin suscripción push",
+                        propietario.Id, propietario.Email);
+            }
+        }
+
         // ── Recordatorio 15 minutos antes ─────────────────────────────────────────
 
         public async Task EnviarRecordatorio15MinAsync(Guid citaId)
@@ -777,6 +868,50 @@ namespace AppointVaAPI.Services
                 title = "Cita cancelada",
                 body  = $"{cliente} · {servicio} · {fecha} {hora}",
                 url   = "/dashboard/citas"
+            });
+        }
+
+        private static string BuildPayloadConfirmacionCita(Cita cita)
+        {
+            var cliente  = cita.Cliente?.NombreCompleto ?? "Un cliente";
+            var servicio = cita.Servicio?.Nombre ?? "Servicio";
+
+            TimeZoneInfo tz;
+            try { tz = TimeZoneInfo.FindSystemTimeZoneById("America/Mexico_City"); }
+            catch { tz = TimeZoneInfo.FindSystemTimeZoneById("Central Standard Time"); }
+
+            var local = TimeZoneInfo.ConvertTimeFromUtc(cita.InicioEn, tz);
+            var hora  = local.ToString("h:mm tt", System.Globalization.CultureInfo.InvariantCulture);
+            var fecha = local.ToString("dd/MM/yyyy");
+
+            return JsonSerializer.Serialize(new
+            {
+                title = "Cita confirmada",
+                body  = $"{cliente} · {servicio} · {fecha} {hora}",
+                url   = "/dashboard/citas"
+            });
+        }
+
+        private static string BuildPayloadNuevaResena(Resena resena)
+        {
+            var rating    = resena.Rating;
+            var comentario = resena.Comentario;
+            string body;
+            if (!string.IsNullOrWhiteSpace(comentario))
+            {
+                var truncado = comentario.Length > 80 ? comentario[..80] + "…" : comentario;
+                body = $"⭐ {rating}/5 — {truncado}";
+            }
+            else
+            {
+                body = $"⭐ {rating}/5";
+            }
+
+            return JsonSerializer.Serialize(new
+            {
+                title = "Nueva reseña recibida",
+                body,
+                url   = "/dashboard/resenas"
             });
         }
 

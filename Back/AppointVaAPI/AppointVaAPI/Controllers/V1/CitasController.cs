@@ -396,6 +396,8 @@ namespace AppointVaAPI.Controllers.V1
 
             if (dto.NuevoEstado == EstadosCitas.Cancelada)
                 _jobClient.Enqueue<IPushService>(s => s.EnviarCancelacionAsync(cita.Id));
+            else if (dto.NuevoEstado == EstadosCitas.Confirmada && cita.EmpleadoId != Guid.Empty)
+                _jobClient.Enqueue<IPushService>(s => s.EnviarConfirmacionCitaAsync(cita.Id));
 
             return Ok(MapearDto(cita));
         }

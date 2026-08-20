@@ -1023,6 +1023,8 @@ namespace AppointVaAPI.Controllers.V1
             resena.Respondida = true;
             await _db.SaveChangesAsync();
 
+            _jobClient.Enqueue<IPushService>(s => s.EnviarNuevaResenaAsync(resena.Id));
+
             return Ok(new { mensaje = "¡Gracias por tu reseña!" });
         }
 
