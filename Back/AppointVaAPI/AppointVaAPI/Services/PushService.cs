@@ -349,7 +349,7 @@ namespace AppointVaAPI.Services
 
             return JsonSerializer.Serialize(new
             {
-                web_push = "8030",
+                web_push = 8030,
                 notification = new { title, body, navigate }
             });
         }
