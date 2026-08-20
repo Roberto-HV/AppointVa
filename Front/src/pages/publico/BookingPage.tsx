@@ -884,7 +884,7 @@ export default function BookingPage() {
 
         {/* Left column — galería + reseñas, solo desktop */}
         {negocio.galeria?.length > 0 && (
-          <div className="hidden lg:flex w-[400px] shrink-0 sticky top-0 h-screen flex-col justify-center py-8 overflow-y-auto">
+          <div className="hidden lg:flex w-[400px] shrink-0 sticky top-0 h-screen flex-col justify-start py-8 overflow-y-auto">
             <GaleriaDesktop imagenes={negocio.galeria} onOpen={setGaleriaViewerIdx} />
             {negocio.resenas?.length > 0 && (
               <div className="mt-6">
