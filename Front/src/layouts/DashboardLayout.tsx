@@ -349,7 +349,7 @@ export default function DashboardLayout() {
       >
         {/* Logo + cerrar móvil */}
         <div
-          className="relative px-5 py-3 border-b border-slate-100 dark:border-slate-700/50 flex items-center justify-center"
+          className="relative px-5 py-3 flex items-center justify-center"
         >
           <div className="flex flex-col items-center gap-1">
             <NavLink to="/dashboard" end onClick={cerrarSidebar}>
@@ -380,8 +380,8 @@ export default function DashboardLayout() {
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                     isActive
-                      ? "bg-slate-900 dark:bg-slate-700 text-white shadow-sm"
-                      : "text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white"
+                      ? "bg-slate-900 dark:bg-slate-600 text-white font-semibold shadow-md"
+                      : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white"
                   }`
                 }
                 style={({ isActive }) =>
@@ -393,7 +393,7 @@ export default function DashboardLayout() {
                 {({ isActive }) => (
                   <>
                     <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
-                      isActive ? "bg-white/15" : "bg-transparent"
+                      isActive ? "bg-white/20" : "bg-transparent"
                     }`}>
                       <Icon size={15} className={isActive ? "text-white" : "text-slate-500 dark:text-slate-400"} />
                     </div>

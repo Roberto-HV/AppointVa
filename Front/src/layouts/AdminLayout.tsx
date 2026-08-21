@@ -1,14 +1,16 @@
 import { useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { Menu, X, ExternalLink } from "lucide-react";
+import { Menu, X, ExternalLink, Sun, Moon } from "lucide-react";
 import { useAuthStore } from "../store/authStore";
 import { authApi } from "../api/auth";
 import { useInactividadTimeout } from "../hooks/useInactividadTimeout";
+import { useTheme } from "../hooks/useTheme";
 
 export default function AdminLayout() {
   const { usuario, token, refreshToken, cerrarSesion } = useAuthStore();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { theme, toggle } = useTheme();
 
   const handleLogout = async () => {
     try {
@@ -60,15 +62,8 @@ export default function AdminLayout() {
         `}
       >
         {/* Logo + cerrar */}
-        <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-xl font-bold text-gray-900 dark:text-white">
-              Appoint<span className="text-[#C8A961]">Va</span>
-            </span>
-            <span className="hidden md:inline text-xs bg-yellow-400 text-gray-900 font-bold px-2 py-0.5 rounded-full">
-              Admin
-            </span>
-          </div>
+        <div className="px-5 py-5 flex items-center justify-between">
+          <img src="/MasterLogo.png" alt="AppointVa" className="h-10 object-contain rounded-xl mx-auto" />
           <button
             onClick={cerrarSidebar}
             className="md:hidden text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
@@ -131,8 +126,27 @@ export default function AdminLayout() {
       </aside>
 
       {/* ── Contenido principal ── */}
-      <main className="flex-1 overflow-y-auto min-h-0">
-        <Outlet />
+      <main className="flex-1 overflow-y-auto min-h-0 flex flex-col">
+        <div className="hidden md:flex px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 items-center justify-between shrink-0">
+          <div className="flex items-center gap-2">
+            <span className="text-xl font-bold text-gray-900 dark:text-white">
+              Appoint<span className="text-[#C8A961]">Va</span>
+            </span>
+            <span className="text-xs bg-yellow-400 text-gray-900 font-bold px-2 py-0.5 rounded-full">
+              Admin
+            </span>
+          </div>
+          <button
+            onClick={toggle}
+            className="p-2 rounded-lg text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+            title={theme === "dark" ? "Modo claro" : "Modo oscuro"}
+          >
+            {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
+        </div>
+        <div className="flex-1">
+          <Outlet />
+        </div>
       </main>
     </div>
   );
