@@ -1,7 +1,9 @@
 ﻿using AppointVaAPI.Constants;
 using AppointVaAPI.Models;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
 
 namespace AppointVaAPI.Data
 {
@@ -65,6 +67,34 @@ namespace AppointVaAPI.Data
                     await context.Planes.AddRangeAsync(planes);
                     await context.SaveChangesAsync();
                     Console.WriteLine("✓ 3 planes insertados.");
+                }
+
+                // ============ SUPER ADMIN ============
+                if (await userManager.FindByEmailAsync("admin@appointva.com") is null)
+                {
+                    var superAdmin = new ApplicationUser
+                    {
+                        Id = Guid.NewGuid(),
+                        UserName = "admin@appointva.com",
+                        Email = "admin@appointva.com",
+                        Nombre = "Super",
+                        Apellido = "Admin",
+                        Activo = true,
+                        EmailConfirmed = true,
+                        FechaCreacion = DateTime.UtcNow,
+                        FechaActualizacion = DateTime.UtcNow
+                    };
+                    await userManager.CreateAsync(superAdmin, "Admin123!");
+                    await userManager.AddToRoleAsync(superAdmin, Roles.SuperAdmin);
+                    Console.WriteLine("✓ Usuario SuperAdmin creado: admin@appointva.com / Admin123!");
+                }
+
+                // Demo data runs only in Development
+                var hostEnv = serviceProvider.GetService<IWebHostEnvironment>();
+                if (hostEnv?.IsProduction() == true)
+                {
+                    Console.WriteLine("Producción detectada — datos demo omitidos.");
+                    return;
                 }
 
                 // ============ NEGOCIO DEMO ============
