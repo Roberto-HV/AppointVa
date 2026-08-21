@@ -638,6 +638,7 @@ function TarjetaNegocio({
   onColores,
   onSuscripcion,
   onTogglePagos,
+  isToggling,
 }: {
   negocio: NegocioMetricasDto;
   suscripcion: SuscripcionResumenDto | undefined;
@@ -648,23 +649,24 @@ function TarjetaNegocio({
   onColores: () => void;
   onSuscripcion: () => void;
   onTogglePagos: (habilitado: boolean) => void;
+  isToggling?: boolean;
 }) {
   const esActivo = negocio.activo === 1;
   const iniciales = negocio.nombre.split(" ").slice(0, 2).map((p) => p[0]).join("").toUpperCase();
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col">
+    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden flex flex-col">
       {/* Header */}
       <div className="p-4 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center overflow-hidden shrink-0">
+        <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center overflow-hidden shrink-0">
           {negocio.logoUrl ? (
             <img src={negocio.logoUrl} alt={negocio.nombre} className="w-full h-full object-cover" />
           ) : (
-            <span className="text-sm font-bold text-slate-600">{iniciales}</span>
+            <span className="text-sm font-bold text-slate-600 dark:text-slate-300">{iniciales}</span>
           )}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-gray-900 text-sm truncate">{negocio.nombre}</p>
+          <p className="font-semibold text-gray-900 dark:text-white text-sm truncate">{negocio.nombre}</p>
           <p className="text-xs text-gray-400 truncate">{negocio.slug}</p>
         </div>
         <span
@@ -718,16 +720,17 @@ function TarjetaNegocio({
       </div>
 
       {/* Acciones */}
-      <div className="border-t border-gray-100 px-4 py-3 flex flex-wrap gap-2 items-center">
+      <div className="border-t border-gray-100 dark:border-gray-700 px-4 py-3 flex flex-wrap gap-2 items-center">
         <button
           onClick={esActivo ? onDesactivar : onActivar}
-          className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition ${
+          disabled={isToggling}
+          className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition disabled:opacity-50 ${
             esActivo
               ? "bg-red-50 text-red-600 hover:bg-red-100"
               : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
           }`}
         >
-          {esActivo ? "Desactivar" : "Activar"}
+          {isToggling ? "Guardando…" : esActivo ? "Desactivar" : "Activar"}
         </button>
         <button
           onClick={onConfirmarEmail}
@@ -861,13 +864,13 @@ export default function NegociosAdminPage() {
     onError: () => toast("Error al crear el negocio. Intenta de nuevo.", "error"),
   });
 
-  const { mutate: activar } = useMutation({
+  const { mutate: activar, isPending: activando } = useMutation({
     mutationFn: (id: string) => adminApi.activar(id),
     onSuccess: invalidar,
     onError: () => toast("Error al activar el negocio. Intenta de nuevo.", "error"),
   });
 
-  const { mutate: desactivar } = useMutation({
+  const { mutate: desactivar, isPending: desactivando } = useMutation({
     mutationFn: (id: string) => adminApi.desactivar(id),
     onSuccess: invalidar,
     onError: () => toast("Error al desactivar el negocio. Intenta de nuevo.", "error"),
@@ -1067,6 +1070,7 @@ export default function NegociosAdminPage() {
                   onColores={() => abrirColores(neg)}
                   onSuscripcion={() => abrirSuscripcion(neg)}
                   onTogglePagos={(habilitado) => togglePagos({ id: neg.id, habilitado })}
+                  isToggling={activando || desactivando}
                 />
               ))}
             </div>
