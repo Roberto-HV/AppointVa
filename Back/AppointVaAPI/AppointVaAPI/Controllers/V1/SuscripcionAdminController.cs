@@ -3,6 +3,7 @@ using AppointVaAPI.Data;
 using AppointVaAPI.Models;
 using AppointVaAPI.Models.Dtos.Admin;
 using AppointVaAPI.Services.IServices;
+using Hangfire;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -347,7 +348,8 @@ namespace AppointVaAPI.Controllers.V1
         }
 
         // DELETE /api/admin/negocios/{id}
-        // Hard delete — elimina imágenes en Cloudinary, luego el negocio (CASCADE en BD).
+        // Hard delete — elimina imágenes en Cloudinary, luego el negocio con sus dependencias
+        // en el orden correcto para evitar violaciones de FK (NoAction en varias relaciones).
         [HttpDelete("negocios/{id:guid}")]
         public async Task<IActionResult> EliminarNegocio(Guid id)
         {
@@ -399,6 +401,67 @@ namespace AppointVaAPI.Controllers.V1
                 "Negocio {NegocioId}: {Eliminadas}/{Total} imágenes eliminadas de Cloudinary antes del delete.",
                 id, eliminadas, urlsValidas.Count);
 
+            // ── Cancelar Hangfire jobs pendientes de citas ───────────────────────────
+            var jobIds = await _db.Citas
+                .Where(c => c.NegocioId == id && c.HangfireJobId != null)
+                .Select(c => c.HangfireJobId!)
+                .ToListAsync();
+            foreach (var jobId in jobIds)
+                BackgroundJob.Delete(jobId);
+
+            // ── Eliminaciones explícitas en orden (hijos antes que padres) ───────────
+            // Las relaciones con OnDelete(NoAction) bloquean el DELETE del negocio;
+            // las Cascade las deja el motor de BD, pero algunas deben ir antes
+            // porque tienen NoAction hacia otras entidades que eliminamos explícitamente.
+
+            // 1. RespuestasIntake → Cita (Cascade en BD, pero Cita aún no se ha eliminado)
+            await _db.RespuestasIntake
+                .Where(ri => _db.Citas.Where(c => c.NegocioId == id).Select(c => c.Id).Contains(ri.CitaId))
+                .ExecuteDeleteAsync();
+
+            // 2. Resenas → Cita (NoAction) — eliminar antes que Citas para evitar FK violation
+            await _db.Resenas.Where(r => r.NegocioId == id).ExecuteDeleteAsync();
+
+            // 3. Citas → Negocio (Cascade), pero → Cliente/Empleado/Servicio (NoAction)
+            //    Las eliminamos explícitamente para poder borrar esas entidades después
+            await _db.Citas.Where(c => c.NegocioId == id).ExecuteDeleteAsync();
+
+            // 4. ListaEspera → Servicio y Empleado (NoAction) — antes que esas entidades
+            await _db.ListaEspera.Where(le => le.NegocioId == id).ExecuteDeleteAsync();
+
+            // 5. CampoIntakeServicio → CampoIntake (Cascade) — antes que CamposIntake
+            await _db.CampoIntakeServicios
+                .Where(cis => _db.CamposIntake.Where(ci => ci.NegocioId == id).Select(ci => ci.Id).Contains(cis.CampoIntakeId))
+                .ExecuteDeleteAsync();
+
+            // 6. CamposIntake → Servicio (NoAction) — antes que Servicios
+            await _db.CamposIntake.Where(ci => ci.NegocioId == id).ExecuteDeleteAsync();
+
+            // 7. EmpleadoServicio → Empleado y Servicio (Cascade) — antes que ambos
+            await _db.EmpleadosServicios
+                .Where(es => _db.Servicios.Where(s => s.NegocioId == id).Select(s => s.Id).Contains(es.ServicioId))
+                .ExecuteDeleteAsync();
+
+            // 8. Clientes → Negocio (NoAction); IgnoreQueryFilters para incluir soft-deleted
+            await _db.Clientes.IgnoreQueryFilters().Where(c => c.NegocioId == id).ExecuteDeleteAsync();
+
+            // 9. Empleados → Negocio (NoAction); BD cascade elimina HorarioEmpleado y BloqueoHorario
+            await _db.Empleados.Where(e => e.NegocioId == id).ExecuteDeleteAsync();
+
+            // 10. Servicios → Negocio (NoAction)
+            await _db.Servicios.Where(s => s.NegocioId == id).ExecuteDeleteAsync();
+
+            // 11. CategoriasServicios → Negocio (NoAction)
+            await _db.CategoriasServicios.Where(cs => cs.NegocioId == id).ExecuteDeleteAsync();
+
+            // 12. Desvincula usuarios — NegocioId = null; no se eliminan para conservar historial
+            await _db.Users
+                .Where(u => u.NegocioId == id)
+                .ExecuteUpdateAsync(s => s.SetProperty(u => u.NegocioId, (Guid?)null));
+
+            // 13. Eliminar el negocio — BD CASCADE elimina automáticamente:
+            //     HorarioNegocio, BloqueoNegocio, ImagenesNegocios, Descuentos, EmailLogs,
+            //     PagosSuscripcion, CierresCaja, NotificacionesDashboard, EncuestasNegocio
             _db.Negocios.Remove(negocio);
             await _db.SaveChangesAsync();
 
