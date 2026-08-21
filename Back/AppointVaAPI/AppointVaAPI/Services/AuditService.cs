@@ -1,4 +1,5 @@
 using AppointVaAPI.Data;
+using AppointVaAPI.Helpers;
 using AppointVaAPI.Models;
 using AppointVaAPI.Services.IServices;
 
@@ -44,7 +45,7 @@ namespace AppointVaAPI.Services
                     EntidadId = entidadId,
                     Detalles  = detalles,
                     IpAddress = ip?[..Math.Min(ip.Length, 50)],
-                    FechaEn   = DateTime.UtcNow
+                    FechaEn   = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, ZonaHorariaHelper.Resolver("America/Mexico_City"))
                 });
 
                 await _db.SaveChangesAsync();
