@@ -379,6 +379,16 @@ namespace AppointVaAPI.Services
                 return;
             }
 
+            // Guard: if the appointment was rescheduled the job is stale — InicioEn should be ~15 min from now
+            var tzGuard = AppointVaAPI.Helpers.ZonaHorariaHelper.Resolver(cita.Negocio?.ZonaHoraria);
+            var inicioUtc = AppointVaAPI.Helpers.ZonaHorariaHelper.ToDateTimeOffset(cita.InicioEn, tzGuard).UtcDateTime;
+            if (Math.Abs((inicioUtc - DateTime.UtcNow).TotalMinutes) > 20)
+            {
+                _logger.LogInformation("Push Recordatorio15Min: cita {CitaId} reagendada (InicioEn={InicioEn}), job obsoleto, omitiendo",
+                    citaId, cita.InicioEn);
+                return;
+            }
+
             _logger.LogInformation("Push Recordatorio15Min: procesando cita {CitaId} negocio {NegocioId}",
                 citaId, cita.NegocioId);
 
