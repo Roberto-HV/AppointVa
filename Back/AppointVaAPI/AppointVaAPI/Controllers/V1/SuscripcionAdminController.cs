@@ -323,6 +323,21 @@ namespace AppointVaAPI.Controllers.V1
             return Ok();
         }
 
+        // POST /api/admin/negocios/{id}/tester
+        // Toggle EsTester para un negocio
+        [HttpPost("negocios/{id:guid}/tester")]
+        public async Task<IActionResult> ToggleTester(Guid id)
+        {
+            var negocio = await _db.Negocios.FindAsync(id);
+            if (negocio is null) return NotFound(new { mensaje = "Negocio no encontrado" });
+
+            negocio.EsTester = !negocio.EsTester;
+            negocio.FechaActualizacion = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+
+            return Ok(new { esTester = negocio.EsTester });
+        }
+
         private static PagoSuscripcionDto MapPago(PagoSuscripcion p) => new()
         {
             Id                 = p.Id,

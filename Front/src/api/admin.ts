@@ -52,6 +52,7 @@ export interface NegocioMetricasDto {
   empleadosActivos: number;
   emailsMes: number;
   moduloPagosHabilitado?: boolean;
+  esTester?: boolean;
   propietarioEmail?: string;
   propietarioNombre?: string;
 }
@@ -207,5 +208,10 @@ export const adminApi = {
 
   setPlan: async (negocioId: string, planId: string | null): Promise<void> => {
     await api.patch(`/admin/negocios/${negocioId}/plan`, { planId });
+  },
+
+  toggleTester: async (id: string): Promise<{ esTester: boolean }> => {
+    const { data } = await api.post(`/admin/negocios/${id}/tester`);
+    return data;
   },
 };

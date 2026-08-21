@@ -649,6 +649,7 @@ function TarjetaNegocio({
   onColores: () => void;
   onSuscripcion: () => void;
   onTogglePagos: (habilitado: boolean) => void;
+  onToggleTester: () => void;
   isToggling?: boolean;
 }) {
   const esActivo = negocio.activo === 1;
@@ -695,6 +696,11 @@ function TarjetaNegocio({
             }`}
           >
             {suscripcion.sector === 'salud' ? 'Salud' : 'Belleza'}
+          </span>
+        )}
+        {negocio.esTester && (
+          <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300">
+            Tester
           </span>
         )}
       </div>
@@ -785,6 +791,25 @@ function TarjetaNegocio({
           />
         </button>
       </div>
+      <div className="flex items-center gap-2 px-4 py-2 border-t border-gray-100 dark:border-gray-700">
+        <span className="text-xs text-gray-400 flex-1">🧪 Tester</span>
+        <button
+          onClick={onToggleTester}
+          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-1 ${
+            negocio.esTester ? "bg-purple-500" : "bg-gray-200 dark:bg-gray-700"
+          }`}
+          title={negocio.esTester ? "Quitar modo tester" : "Activar modo tester"}
+          aria-label={negocio.esTester ? "Quitar modo tester" : "Activar modo tester"}
+          role="switch"
+          aria-checked={!!negocio.esTester}
+        >
+          <span
+            className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${
+              negocio.esTester ? "translate-x-4" : "translate-x-1"
+            }`}
+          />
+        </button>
+      </div>
     </div>
   );
 }
@@ -825,15 +850,17 @@ export default function NegociosAdminPage() {
 
   const suscripcionMap = Object.fromEntries(suscripciones.map((s) => [s.negocioId, s]));
 
-  const sortedSuscripciones = [...suscripciones].sort(
-    (a, b) => (ESTADO_ORDER[a.estado] ?? 4) - (ESTADO_ORDER[b.estado] ?? 4)
-  );
+  const testerIds = new Set(metricas.filter(m => m.esTester).map(m => m.id));
+
+  const sortedSuscripciones = [...suscripciones]
+    .filter(s => !testerIds.has(s.negocioId))
+    .sort((a, b) => (ESTADO_ORDER[a.estado] ?? 4) - (ESTADO_ORDER[b.estado] ?? 4));
 
   const totalEstimado = suscripciones
-    .filter(s => s.estado !== 'SinSuscripcion')
+    .filter(s => s.estado !== 'SinSuscripcion' && !testerIds.has(s.negocioId))
     .reduce((sum, s) => sum + s.totalMensual, 0);
 
-  const negociosConPlan = suscripciones.filter(s => s.estado !== 'SinSuscripcion').length;
+  const negociosConPlan = suscripciones.filter(s => s.estado !== 'SinSuscripcion' && !testerIds.has(s.negocioId)).length;
 
   const { data: planes = [] } = useQuery({
     queryKey: ["planes"],
@@ -927,6 +954,19 @@ export default function NegociosAdminPage() {
     onError: () => toast("Error al actualizar el módulo de pagos", "error"),
   });
 
+  const { mutate: toggleTester } = useMutation({
+    mutationFn: (id: string) => adminApi.toggleTester(id),
+    onSuccess: (data, id) => {
+      qc.setQueryData(
+        ["admin-negocios-metricas"],
+        (old: NegocioMetricasDto[] | undefined) =>
+          (old ?? []).map((n) => (n.id === id ? { ...n, esTester: data.esTester } : n))
+      );
+      toast(data.esTester ? "Modo tester activado" : "Modo tester desactivado");
+    },
+    onError: () => toast("Error al actualizar el modo tester", "error"),
+  });
+
   const abrirColores = (neg: NegocioMetricasDto) => {
     setNegocioSel(neg);
     setColorPrimario(neg.colorPrimario ?? "#334155");
@@ -984,8 +1024,8 @@ export default function NegociosAdminPage() {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Panel de negocios</h1>
-          <p className="text-sm text-gray-400 mt-0.5">{metricas.length} registrados en total</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Panel de negocios</h1>
+          <p className="text-sm text-gray-400 dark:text-gray-400 mt-0.5">{metricas.length} registrados en total</p>
         </div>
         <button
           onClick={() => { formNegocio.reset(); setModalNegocio(true); }}
@@ -1005,7 +1045,7 @@ export default function NegociosAdminPage() {
             { label: "Ingresos est.", value: formatPrecio(totalEstimado) + "/mes", color: "text-[#C8A961]" },
           ].map(({ label, value, color }) => (
             <div key={label} className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 px-4 py-3">
-              <p className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">{label}</p>
+              <p className="text-xs text-gray-400 dark:text-gray-400 mb-0.5">{label}</p>
               <p className={`text-lg font-bold ${color}`}>{value}</p>
             </div>
           ))}
@@ -1070,6 +1110,7 @@ export default function NegociosAdminPage() {
                   onColores={() => abrirColores(neg)}
                   onSuscripcion={() => abrirSuscripcion(neg)}
                   onTogglePagos={(habilitado) => togglePagos({ id: neg.id, habilitado })}
+                  onToggleTester={() => toggleTester(neg.id)}
                   isToggling={activando || desactivando}
                 />
               ))}

@@ -107,6 +107,7 @@ namespace AppointVaAPI.Controllers.V1
                     EmpleadosActivos = empleadosPorNegocio.GetValueOrDefault(n.Id, 0),
                     EmailsMes = emailsPorNegocio.GetValueOrDefault(n.Id, 0),
                     ModuloPagosHabilitado = n.ModuloPagosHabilitado,
+                    EsTester = n.EsTester,
                     PropietarioEmail = prop.Email,
                     PropietarioNombre = prop.Nombre,
                 };
