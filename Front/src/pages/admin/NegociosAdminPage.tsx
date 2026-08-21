@@ -638,6 +638,7 @@ function TarjetaNegocio({
   onColores,
   onSuscripcion,
   onTogglePagos,
+  onToggleTester,
   isToggling,
 }: {
   negocio: NegocioMetricasDto;
