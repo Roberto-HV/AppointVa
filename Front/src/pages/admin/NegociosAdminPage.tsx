@@ -639,6 +639,7 @@ function TarjetaNegocio({
   onSuscripcion,
   onTogglePagos,
   onToggleTester,
+  onEliminar,
   isToggling,
 }: {
   negocio: NegocioMetricasDto;
@@ -651,6 +652,7 @@ function TarjetaNegocio({
   onSuscripcion: () => void;
   onTogglePagos: (habilitado: boolean) => void;
   onToggleTester: () => void;
+  onEliminar: () => void;
   isToggling?: boolean;
 }) {
   const esActivo = negocio.activo === 1;
@@ -731,36 +733,36 @@ function TarjetaNegocio({
         <button
           onClick={esActivo ? onDesactivar : onActivar}
           disabled={isToggling}
-          className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition disabled:opacity-50 ${
+          className={`text-xs font-medium px-3 py-1.5 rounded-lg border transition disabled:opacity-50 ${
             esActivo
-              ? "bg-red-50 text-red-600 hover:bg-red-100"
-              : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+              ? "bg-red-50 text-red-600 hover:bg-red-100 border-red-100"
+              : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-100"
           }`}
         >
           {isToggling ? "Guardando…" : esActivo ? "Desactivar" : "Activar"}
         </button>
         <button
           onClick={onConfirmarEmail}
-          className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 transition"
+          className="text-xs font-medium px-3 py-1.5 rounded-lg border border-blue-100 bg-blue-50 text-blue-700 hover:bg-blue-100 transition"
           title="Confirmar email del propietario manualmente"
         >
           Confirmar email
         </button>
         <button
           onClick={onSuscripcion}
-          className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 transition inline-flex items-center gap-1"
+          className="text-xs font-medium px-3 py-1.5 rounded-lg border border-amber-100 bg-amber-50 text-amber-700 hover:bg-amber-100 transition inline-flex items-center gap-1"
         >
           <CreditCard size={11} /> Suscripción
         </button>
         <button
           onClick={onColores}
-          className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-50 text-slate-600 hover:bg-slate-100 transition"
+          className="text-xs font-medium px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 transition"
         >
           Colores
         </button>
         <button
           onClick={onCrearPropietario}
-          className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-50 text-slate-600 hover:bg-slate-100 transition"
+          className="text-xs font-medium px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 transition"
         >
           + Propietario
         </button>
@@ -768,10 +770,17 @@ function TarjetaNegocio({
           href={`/b/${negocio.slug}`}
           target="_blank"
           rel="noreferrer"
-          className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-50 text-slate-600 hover:bg-slate-100 transition"
+          className="text-xs font-medium px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 transition"
         >
           Ver booking
         </a>
+        <button
+          onClick={onEliminar}
+          className="text-xs font-medium px-3 py-1.5 rounded-lg border border-red-100 bg-red-50 text-red-500 hover:bg-red-100 transition inline-flex items-center gap-1"
+          title="Eliminar negocio"
+        >
+          <Trash2 size={11} /> Eliminar
+        </button>
       </div>
       <div className="flex items-center gap-2 px-4 py-2 border-t border-gray-100 dark:border-gray-700">
         <span className="text-xs text-gray-400 flex-1">Módulo pagos</span>
@@ -833,6 +842,9 @@ export default function NegociosAdminPage() {
   const [resetandoPassword, setResetandoPassword] = useState(false);
   const [busqueda, setBusqueda] = useState("");
   const [colorPrimario, setColorPrimario] = useState("#334155");
+  const [modalEliminar, setModalEliminar] = useState(false);
+  const [pasoEliminar, setPasoEliminar] = useState<1 | 2>(1);
+  const [nombreConfirmacion, setNombreConfirmacion] = useState("");
 
   const queryClient = qc;
   const [tab, setTab] = useState<'negocios' | 'facturacion'>('negocios');
@@ -968,6 +980,19 @@ export default function NegociosAdminPage() {
     onError: () => toast("Error al actualizar el modo tester", "error"),
   });
 
+  const { mutate: eliminarNegocio, isPending: eliminandoNegocio } = useMutation({
+    mutationFn: (id: string) => adminApi.eliminarNegocio(id),
+    onSuccess: () => {
+      invalidar();
+      qc.invalidateQueries({ queryKey: ["admin-suscripciones"] });
+      setModalEliminar(false);
+      setPasoEliminar(1);
+      setNombreConfirmacion("");
+      toast("Negocio eliminado correctamente");
+    },
+    onError: () => toast("Error al eliminar el negocio.", "error"),
+  });
+
   const abrirColores = (neg: NegocioMetricasDto) => {
     setNegocioSel(neg);
     setColorPrimario(neg.colorPrimario ?? "#334155");
@@ -1010,6 +1035,13 @@ export default function NegociosAdminPage() {
   const abrirSuscripcion = (neg: NegocioMetricasDto) => {
     setNegocioSel(neg);
     setModalSuscripcion(true);
+  };
+
+  const abrirEliminar = (neg: NegocioMetricasDto) => {
+    setNegocioSel(neg);
+    setPasoEliminar(1);
+    setNombreConfirmacion("");
+    setModalEliminar(true);
   };
 
   const metricasFiltradas = metricas
@@ -1112,6 +1144,7 @@ export default function NegociosAdminPage() {
                   onSuscripcion={() => abrirSuscripcion(neg)}
                   onTogglePagos={(habilitado) => togglePagos({ id: neg.id, habilitado })}
                   onToggleTester={() => toggleTester(neg.id)}
+                  onEliminar={() => abrirEliminar(neg)}
                   isToggling={activando || desactivando}
                 />
               ))}
@@ -1474,6 +1507,77 @@ export default function NegociosAdminPage() {
                 </form>
               </>
             )}
+          </div>
+        )}
+      </Modal>
+
+      {/* Modal: eliminar negocio */}
+      <Modal
+        abierto={modalEliminar}
+        onCerrar={() => { setModalEliminar(false); setPasoEliminar(1); setNombreConfirmacion(""); }}
+        titulo="Eliminar negocio"
+        ancho="sm"
+      >
+        {negocioSel && pasoEliminar === 1 && (
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Esta acción es permanente y eliminará todos los datos del negocio.
+            </p>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Escribe el nombre del negocio para confirmar:
+              </label>
+              <input
+                type="text"
+                value={nombreConfirmacion}
+                onChange={e => setNombreConfirmacion(e.target.value)}
+                placeholder={negocioSel.nombre}
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-sm outline-none focus:border-gray-400"
+              />
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setModalEliminar(false); setPasoEliminar(1); setNombreConfirmacion(""); }}
+                className="flex-1 py-2.5 rounded-xl border-2 border-gray-200 text-sm font-medium text-gray-600 hover:border-gray-300 transition"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => setPasoEliminar(2)}
+                disabled={nombreConfirmacion !== negocioSel.nombre}
+                className="flex-1 py-2.5 rounded-xl bg-gray-900 hover:bg-gray-700 disabled:opacity-50 text-white text-sm font-semibold transition"
+              >
+                Continuar →
+              </button>
+            </div>
+          </div>
+        )}
+        {negocioSel && pasoEliminar === 2 && (
+          <div className="space-y-4">
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 rounded-xl p-4 text-center">
+              <p className="text-2xl mb-2">⚠️</p>
+              <p className="text-sm font-semibold text-red-700 dark:text-red-400">Última oportunidad</p>
+            </div>
+            <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
+              Estás a punto de eliminar permanentemente{" "}
+              <strong className="text-gray-900 dark:text-white">"{negocioSel.nombre}"</strong>.{" "}
+              Esta acción <strong>NO se puede deshacer</strong>.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setPasoEliminar(1)}
+                className="flex-1 py-2.5 rounded-xl border-2 border-gray-200 text-sm font-medium text-gray-600 hover:border-gray-300 transition"
+              >
+                ← Volver
+              </button>
+              <button
+                onClick={() => eliminarNegocio(negocioSel.id)}
+                disabled={eliminandoNegocio}
+                className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-sm font-semibold transition"
+              >
+                {eliminandoNegocio ? "Eliminando…" : "Eliminar definitivamente"}
+              </button>
+            </div>
           </div>
         )}
       </Modal>

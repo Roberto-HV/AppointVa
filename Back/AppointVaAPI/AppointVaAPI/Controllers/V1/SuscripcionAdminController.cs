@@ -338,6 +338,20 @@ namespace AppointVaAPI.Controllers.V1
             return Ok(new { esTester = negocio.EsTester });
         }
 
+        // DELETE /api/admin/negocios/{id}
+        // Hard delete — elimina el negocio y sus datos relacionados (CASCADE en BD)
+        [HttpDelete("negocios/{id:guid}")]
+        public async Task<IActionResult> EliminarNegocio(Guid id)
+        {
+            var negocio = await _db.Negocios.FindAsync(id);
+            if (negocio is null) return NotFound(new { mensaje = "Negocio no encontrado" });
+
+            _db.Negocios.Remove(negocio);
+            await _db.SaveChangesAsync();
+
+            return NoContent();
+        }
+
         private static PagoSuscripcionDto MapPago(PagoSuscripcion p) => new()
         {
             Id                 = p.Id,

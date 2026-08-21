@@ -214,4 +214,8 @@ export const adminApi = {
     const { data } = await api.post(`/admin/negocios/${id}/tester`);
     return data;
   },
+
+  eliminarNegocio: async (id: string): Promise<void> => {
+    await api.delete(`/admin/negocios/${id}`);
+  },
 };
