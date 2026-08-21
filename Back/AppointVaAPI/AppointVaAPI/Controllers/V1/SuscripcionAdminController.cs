@@ -2,6 +2,7 @@ using AppointVaAPI.Constants;
 using AppointVaAPI.Data;
 using AppointVaAPI.Models;
 using AppointVaAPI.Models.Dtos.Admin;
+using AppointVaAPI.Services.IServices;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -15,10 +16,17 @@ namespace AppointVaAPI.Controllers.V1
     public class SuscripcionAdminController : ControllerBase
     {
         private readonly ApplicationDbContext _db;
+        private readonly IBlobStorageService _blob;
+        private readonly ILogger<SuscripcionAdminController> _logger;
 
-        public SuscripcionAdminController(ApplicationDbContext db)
+        public SuscripcionAdminController(
+            ApplicationDbContext db,
+            IBlobStorageService blob,
+            ILogger<SuscripcionAdminController> logger)
         {
             _db = db;
+            _blob = blob;
+            _logger = logger;
         }
 
         // GET /api/admin/suscripciones
@@ -339,12 +347,57 @@ namespace AppointVaAPI.Controllers.V1
         }
 
         // DELETE /api/admin/negocios/{id}
-        // Hard delete — elimina el negocio y sus datos relacionados (CASCADE en BD)
+        // Hard delete — elimina imágenes en Cloudinary, luego el negocio (CASCADE en BD).
         [HttpDelete("negocios/{id:guid}")]
         public async Task<IActionResult> EliminarNegocio(Guid id)
         {
             var negocio = await _db.Negocios.FindAsync(id);
             if (negocio is null) return NotFound(new { mensaje = "Negocio no encontrado" });
+
+            // Recopilar todas las URLs de imágenes del negocio y sus entidades hijo
+            var urls = new List<string?>();
+
+            urls.Add(negocio.LogoUrl);
+            urls.Add(negocio.PortadaUrl);
+
+            var imagenesGaleria = await _db.ImagenesNegocios
+                .Where(i => i.NegocioId == id)
+                .Select(i => i.Url)
+                .ToListAsync();
+            urls.AddRange(imagenesGaleria);
+
+            var fotosEmpleados = await _db.Empleados
+                .Where(e => e.NegocioId == id)
+                .Select(e => e.FotoUrl)
+                .ToListAsync();
+            urls.AddRange(fotosEmpleados);
+
+            var imagenesServicios = await _db.Servicios
+                .Where(s => s.NegocioId == id)
+                .Select(s => s.ImagenUrl)
+                .ToListAsync();
+            urls.AddRange(imagenesServicios);
+
+            // Eliminar imágenes de Cloudinary (o local) — errores individuales no bloquean el delete
+            var urlsValidas = urls.Where(u => !string.IsNullOrWhiteSpace(u)).Select(u => u!).ToList();
+            int eliminadas = 0;
+
+            foreach (var url in urlsValidas)
+            {
+                try
+                {
+                    var ok = await _blob.EliminarImagenAsync(url);
+                    if (ok) eliminadas++;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "No se pudo eliminar imagen de Cloudinary: {Url}", url);
+                }
+            }
+
+            _logger.LogInformation(
+                "Negocio {NegocioId}: {Eliminadas}/{Total} imágenes eliminadas de Cloudinary antes del delete.",
+                id, eliminadas, urlsValidas.Count);
 
             _db.Negocios.Remove(negocio);
             await _db.SaveChangesAsync();

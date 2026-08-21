@@ -1,4 +1,5 @@
-﻿using AppointVaAPI.Services.IServices;
+﻿using System.Text.RegularExpressions;
+using AppointVaAPI.Services.IServices;
 using CloudinaryDotNet;
 using CloudinaryDotNet.Actions;
 
@@ -128,6 +129,58 @@ namespace AppointVaAPI.Services
             }
 
             return resultado.SecureUrl.ToString();
+        }
+
+        public async Task<bool> EliminarImagenAsync(string url)
+        {
+            if (string.IsNullOrWhiteSpace(url)) return false;
+
+            try
+            {
+                if (_cloudinaryConfigurado && url.Contains("res.cloudinary.com"))
+                    return await EliminarDeCloudinaryAsync(url);
+
+                return EliminarLocal(url);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al eliminar imagen: {Url}", url);
+                return false;
+            }
+        }
+
+        private async Task<bool> EliminarDeCloudinaryAsync(string url)
+        {
+            // URL ejemplo: https://res.cloudinary.com/{cloud}/image/upload/v1234567890/appointva/logos/abc123.webp
+            // PublicId = todo lo que hay después de /upload/[v{digits}/] sin la extensión
+            var match = Regex.Match(url, @"/upload/(?:v\d+/)?(.+?)(?:\.\w+)?$");
+            if (!match.Success)
+            {
+                _logger.LogWarning("No se pudo extraer publicId de la URL de Cloudinary: {Url}", url);
+                return false;
+            }
+
+            var publicId = match.Groups[1].Value;
+            var resultado = await _cloudinary!.DestroyAsync(new DeletionParams(publicId));
+
+            if (resultado.Result == "ok" || resultado.Result == "not found")
+                return true;
+
+            _logger.LogWarning("Cloudinary no pudo eliminar {PublicId}: {Result}", publicId, resultado.Result);
+            return false;
+        }
+
+        private bool EliminarLocal(string url)
+        {
+            // URL local: http://host/uploads/carpeta/archivo.ext
+            var uri = new Uri(url);
+            var rutaRelativa = uri.AbsolutePath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar);
+            var rutaAbsoluta = Path.Combine(_env.WebRootPath, rutaRelativa);
+
+            if (!File.Exists(rutaAbsoluta)) return true; // ya no existe, OK
+
+            File.Delete(rutaAbsoluta);
+            return true;
         }
 
         private async Task<string> GuardarLocalAsync(IFormFile archivo, string carpeta)
