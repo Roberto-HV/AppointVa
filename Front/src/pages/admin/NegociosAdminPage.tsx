@@ -1188,7 +1188,7 @@ export default function NegociosAdminPage() {
       <Modal abierto={modalNegocio} onCerrar={() => setModalNegocio(false)} titulo="Nuevo negocio">
         <form onSubmit={formNegocio.handleSubmit((d) => crearNegocio(d))} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre *</label>
             <input
               {...formNegocio.register("nombre")}
               placeholder="Barbería Luis"
@@ -1201,7 +1201,7 @@ export default function NegociosAdminPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Slug *{" "}
               <span className="font-normal text-gray-400">
                 (aparece en la URL: /b/<strong>slug</strong>)
@@ -1220,14 +1220,14 @@ export default function NegociosAdminPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Teléfono</label>
               <input
                 {...formNegocio.register("telefono")}
                 className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Correo</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Correo</label>
               <input
                 type="email"
                 {...formNegocio.register("email")}
@@ -1237,7 +1237,7 @@ export default function NegociosAdminPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Plan</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Plan</label>
             <Select {...formNegocio.register("planId")} className="w-full">
               <option value="">Sin plan asignado</option>
               {planes.map((p: PlanDto) => (
@@ -1249,7 +1249,7 @@ export default function NegociosAdminPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Descripción</label>
             <textarea
               rows={2}
               {...formNegocio.register("descripcion")}
