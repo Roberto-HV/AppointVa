@@ -14,15 +14,14 @@ import { DatePicker, TimePicker, citasABusySlots } from "../../components/ui/Dat
 import { SkeletonCards } from "../../components/ui/Skeleton";
 import { useToastStore } from "../../store/toastStore";
 import { useSectorTerms } from "../../hooks/useSectorTerms";
-import type { EmpleadoDto, HorarioDto } from "../../types";
+import type { EmpleadoDto, HorarioDiaDto } from "../../types";
 
 const DIAS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 
-const HORARIO_BASE: HorarioDto[] = Array.from({ length: 7 }, (_, i) => ({
+const HORARIO_BASE: HorarioDiaDto[] = Array.from({ length: 7 }, (_, i) => ({
   diaSemana: i,
-  horaInicio: "09:00",
-  horaFin: "19:00",
   activo: i >= 1 && i <= 6,
+  intervalos: i >= 1 && i <= 6 ? [{ horaInicio: "09:00", horaFin: "19:00" }] : [],
 }));
 
 const schemaEmpleado = z.object({
@@ -67,7 +66,7 @@ export default function EmpleadosPage() {
   const [empleadoInvitar, setEmpleadoInvitar] = useState<EmpleadoDto | null>(null);
   const [empleadoHorario, setEmpleadoHorario] = useState<EmpleadoDto | null>(null);
   const [empleadoBloqueo, setEmpleadoBloqueo] = useState<EmpleadoDto | null>(null);
-  const [horarioLocal, setHorarioLocal] = useState<HorarioDto[]>([]);
+  const [horarioLocal, setHorarioLocal] = useState<HorarioDiaDto[]>([]);
   const [errorInvitar, setErrorInvitar] = useState("");
   const [mostrarPasswordInvitar, setMostrarPasswordInvitar] = useState(false);
   const [empleadoEliminar, setEmpleadoEliminar] = useState<EmpleadoDto | null>(null);
@@ -139,8 +138,9 @@ export default function EmpleadosPage() {
     const dia = new Date(fecha + "T12:00").getDay();
     const h = horariosNegocio.find((x) => x.diaSemana === dia);
     const hoy = new Date().toISOString().slice(0, 10);
-    const minNegocio = (h?.activo ? h.horaInicio : null) ?? "00:00";
-    const maxNegocio = (h?.activo ? h.horaFin    : null) ?? "23:30";
+    const activeIntervals = h?.activo ? h.intervalos : [];
+    const minNegocio = activeIntervals[0]?.horaInicio ?? "00:00";
+    const maxNegocio = activeIntervals[activeIntervals.length - 1]?.horaFin ?? "23:30";
     const minEfectivo = fecha === hoy
       ? (ahoraMin() > minNegocio ? ahoraMin() : minNegocio)
       : minNegocio;
@@ -271,6 +271,49 @@ export default function EmpleadosPage() {
       "servicioIds",
       actuales.includes(id) ? actuales.filter((s) => s !== id) : [...actuales, id]
     );
+  };
+
+  const toggleDiaEmpleado = (idx: number) => {
+    setHorarioLocal(prev => prev.map((h, i) =>
+      i !== idx ? h : {
+        ...h,
+        activo: !h.activo,
+        intervalos: !h.activo && h.intervalos.length === 0
+          ? [{ horaInicio: "09:00", horaFin: "19:00" }]
+          : h.intervalos
+      }
+    ));
+  };
+
+  const actualizarIntervaloEmpleado = (
+    dayIdx: number,
+    ivIdx: number,
+    campo: "horaInicio" | "horaFin",
+    valor: string
+  ) => {
+    setHorarioLocal(prev => prev.map((h, i) =>
+      i !== dayIdx ? h : {
+        ...h,
+        intervalos: h.intervalos.map((iv, j) =>
+          j === ivIdx ? { ...iv, [campo]: valor } : iv
+        )
+      }
+    ));
+  };
+
+  const agregarIntervaloEmpleado = (dayIdx: number) => {
+    setHorarioLocal(prev => prev.map((h, i) => {
+      if (i !== dayIdx) return h;
+      const ultimo = h.intervalos[h.intervalos.length - 1];
+      const nuevaHora = ultimo?.horaFin ?? "09:00";
+      return { ...h, intervalos: [...h.intervalos, { horaInicio: nuevaHora, horaFin: nuevaHora }] };
+    }));
+  };
+
+  const eliminarIntervaloEmpleado = (dayIdx: number, ivIdx: number) => {
+    setHorarioLocal(prev => prev.map((h, i) =>
+      i !== dayIdx ? h : { ...h, intervalos: h.intervalos.filter((_, j) => j !== ivIdx) }
+    ));
   };
 
   function formatBloqueo(iso: string) {
@@ -462,51 +505,78 @@ export default function EmpleadosPage() {
       >
         <div className="space-y-3">
           {horarioLocal.map((h, i) => (
-            <div key={h.diaSemana} className={`rounded-lg border p-3 transition ${h.activo ? "bg-white border-gray-200 dark:bg-slate-800 dark:border-slate-600" : "bg-gray-50 border-gray-100 dark:bg-slate-700 dark:border-slate-700"}`}>
+            <div
+              key={h.diaSemana}
+              className={`rounded-lg border p-3 transition ${
+                h.activo
+                  ? "bg-white border-gray-200 dark:bg-slate-800 dark:border-slate-600"
+                  : "bg-gray-50 border-gray-100 dark:bg-slate-700 dark:border-slate-700"
+              }`}
+            >
               <div className="flex items-center justify-between mb-2">
                 <label className="flex items-center gap-2 cursor-pointer select-none">
                   <div
-                    onClick={() => {
-                      const updated = [...horarioLocal];
-                      updated[i] = { ...h, activo: !h.activo };
-                      setHorarioLocal(updated);
-                    }}
-                    className={`w-9 h-5 rounded-full transition relative cursor-pointer shrink-0 ${h.activo ? "bg-slate-700" : "bg-gray-300"}`}
+                    onClick={() => toggleDiaEmpleado(i)}
+                    className={`w-9 h-5 rounded-full transition relative cursor-pointer shrink-0 ${
+                      h.activo ? "bg-slate-700" : "bg-gray-300"
+                    }`}
                   >
-                    <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${h.activo ? "left-4" : "left-0.5"}`} />
+                    <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${
+                      h.activo ? "left-4" : "left-0.5"
+                    }`} />
                   </div>
-                  <span className={`text-sm font-medium ${h.activo ? "text-gray-800 dark:text-gray-200" : "text-gray-400 dark:text-gray-500"}`}>
+                  <span className={`text-sm font-medium ${
+                    h.activo ? "text-gray-800 dark:text-gray-200" : "text-gray-400 dark:text-gray-500"
+                  }`}>
                     {DIAS[h.diaSemana]}
                   </span>
                 </label>
-                {!h.activo && <span className="text-xs text-gray-400 dark:text-gray-500">Descanso</span>}
+                {!h.activo && (
+                  <span className="text-xs text-gray-400 dark:text-gray-500">Descanso</span>
+                )}
               </div>
+
               {h.activo && (
-                <div className="flex items-center gap-3 ml-6">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs text-gray-500 dark:text-gray-400">De</span>
-                    <input
-                      type="time" value={h.horaInicio}
-                      onChange={(e) => {
-                        const updated = [...horarioLocal];
-                        updated[i] = { ...h, horaInicio: e.target.value };
-                        setHorarioLocal(updated);
-                      }}
-                      className="px-2 py-1 rounded border border-gray-200 text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100 dark:border-slate-600"
-                    />
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs text-gray-500 dark:text-gray-400">a</span>
-                    <input
-                      type="time" value={h.horaFin}
-                      onChange={(e) => {
-                        const updated = [...horarioLocal];
-                        updated[i] = { ...h, horaFin: e.target.value };
-                        setHorarioLocal(updated);
-                      }}
-                      className="px-2 py-1 rounded border border-gray-200 text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100 dark:border-slate-600"
-                    />
-                  </div>
+                <div className="ml-6 space-y-1.5">
+                  {h.intervalos.map((iv, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs text-gray-500 dark:text-gray-400">De</span>
+                        <input
+                          type="time"
+                          value={iv.horaInicio}
+                          onChange={(e) => actualizarIntervaloEmpleado(i, idx, "horaInicio", e.target.value)}
+                          className="px-2 py-1 rounded border border-gray-200 text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100 dark:border-slate-600"
+                        />
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs text-gray-500 dark:text-gray-400">a</span>
+                        <input
+                          type="time"
+                          value={iv.horaFin}
+                          onChange={(e) => actualizarIntervaloEmpleado(i, idx, "horaFin", e.target.value)}
+                          className="px-2 py-1 rounded border border-gray-200 text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100 dark:border-slate-600"
+                        />
+                      </div>
+                      {h.intervalos.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => eliminarIntervaloEmpleado(i, idx)}
+                          className="text-gray-400 hover:text-red-500 transition text-sm px-1"
+                          aria-label="Eliminar intervalo"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => agregarIntervaloEmpleado(i)}
+                    className="text-xs text-slate-600 dark:text-slate-400 hover:underline mt-0.5"
+                  >
+                    + Agregar intervalo
+                  </button>
                 </div>
               )}
             </div>

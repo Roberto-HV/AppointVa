@@ -264,8 +264,6 @@ export interface HorarioDiaDto {
   intervalos: IntervaloDto[];
 }
 
-/** @deprecated Use HorarioDiaDto — alias kept for downstream files pending Tasks 7/8 */
-export type HorarioDto = HorarioDiaDto;
 
 export interface EmpleadoDto {
   id: string;
