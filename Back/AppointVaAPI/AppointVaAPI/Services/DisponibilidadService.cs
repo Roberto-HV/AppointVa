@@ -49,7 +49,7 @@ namespace AppointVaAPI.Services
                     .AsNoTracking()
                     .FirstOrDefaultAsync();
                 if (empleadoInfo is null) return new();
-                var slots = await ObtenerSlotsEmpleadoAsync(servicio, empleadoId.Value, fecha, fechaDt, finDia, diaSemana, tz);
+                var slots = await ObtenerSlotsEmpleadoAsync(servicio, empleadoId.Value, negocioId, fecha, fechaDt, finDia, diaSemana, tz);
                 foreach (var s in slots) { s.EmpleadoId = empleadoId; s.EmpleadoNombre = empleadoInfo.Nombre; }
                 return slots;
             }
@@ -71,9 +71,18 @@ namespace AppointVaAPI.Services
 
             var empIds = empleadosActivos.Select(e => e.Id).ToList();
 
-            // Cargar horarios, citas y bloqueos de todos los empleados de una sola vez
-            var horarios = await _db.HorariosEmpleados
+            // Cargar todos los intervalos de empleados para este día (puede haber varios por empleado)
+            var horariosEmpleados = await _db.HorariosEmpleados
                 .Where(h => empIds.Contains(h.EmpleadoId) && h.DiaSemana == diaSemana && h.Activo == 1)
+                .OrderBy(h => h.HoraInicio)
+                .AsNoTracking()
+                .ToListAsync();
+
+            // Intervalos del negocio para este día (0=Domingo … 6=Sábado)
+            var diaSemanaFecha = (byte)(int)fechaDt.DayOfWeek;
+            var intervalosNegocio = await _db.HorariosNegocios
+                .Where(h => h.NegocioId == negocioId && h.DiaSemana == diaSemanaFecha && h.Activo == 1)
+                .OrderBy(h => h.HoraInicio)
                 .AsNoTracking()
                 .ToListAsync();
 
@@ -96,36 +105,52 @@ namespace AppointVaAPI.Services
             var ahoraUtc = DateTimeOffset.UtcNow;
             var todos = new List<SlotDisponibleDto>();
 
+            // Si el negocio no tiene intervalos abiertos hoy, no hay slots posibles
+            if (!intervalosNegocio.Any()) return todos;
+
             foreach (var emp in empleadosActivos)
             {
-                var horario = horarios.FirstOrDefault(h => h.EmpleadoId == emp.Id);
-                if (horario is null) continue;
+                var intervalosEmp = horariosEmpleados.Where(h => h.EmpleadoId == emp.Id).ToList();
+                if (!intervalosEmp.Any()) continue;
 
                 var citasEmp = citasDelDia.Where(c => c.EmpleadoId == emp.Id).ToList();
                 var bloqueosEmp = bloqueosDelDia.Where(b => b.EmpleadoId == emp.Id).ToList();
 
-                var slotInicio = fechaDt.Add(horario.HoraInicio);
-                var horarioFin = fechaDt.Add(horario.HoraFin);
-
-                while (slotInicio + duracion <= horarioFin)
+                foreach (var intervalo in intervalosEmp)
                 {
-                    var slotFin = slotInicio + duracion;
-                    // La cita "ocupa" desde InicioEn hasta FinEn + buffer
-                    var solapaCita = citasEmp.Any(c => c.InicioEn < slotFin && c.FinEn.Add(buffer) > slotInicio);
-                    var solapaBloqueo = bloqueosEmp.Any(b => b.InicioEn < slotFin && b.FinEn > slotInicio);
+                    var slotInicio = fechaDt.Add(intervalo.HoraInicio);
+                    var slotMax    = fechaDt.Add(intervalo.HoraFin);
 
-                    if (!solapaCita && !solapaBloqueo && ZonaHorariaHelper.ToDateTimeOffset(slotInicio, tz) > ahoraUtc)
+                    while (slotInicio + duracion <= slotMax)
                     {
-                        todos.Add(new SlotDisponibleDto
+                        var slotFin = slotInicio + duracion;
+
+                        // El slot debe caer completamente dentro de al menos un intervalo del negocio
+                        var dentroNegocio = intervalosNegocio.Any(n =>
+                            slotInicio >= fechaDt.Add(n.HoraInicio) &&
+                            slotFin    <= fechaDt.Add(n.HoraFin));
+
+                        if (dentroNegocio)
                         {
-                            Inicio = slotInicio,
-                            Fin = slotFin,
-                            HoraTexto = Hora12(slotInicio),
-                            EmpleadoId = emp.Id,
-                            EmpleadoNombre = emp.Nombre
-                        });
+                            // La cita "ocupa" desde InicioEn hasta FinEn + buffer
+                            var solapaCita    = citasEmp.Any(c => c.InicioEn < slotFin && c.FinEn.Add(buffer) > slotInicio);
+                            var solapaBloqueo = bloqueosEmp.Any(b => b.InicioEn < slotFin && b.FinEn > slotInicio);
+
+                            if (!solapaCita && !solapaBloqueo && ZonaHorariaHelper.ToDateTimeOffset(slotInicio, tz) > ahoraUtc)
+                            {
+                                todos.Add(new SlotDisponibleDto
+                                {
+                                    Inicio = slotInicio,
+                                    Fin = slotFin,
+                                    HoraTexto = Hora12(slotInicio),
+                                    EmpleadoId = emp.Id,
+                                    EmpleadoNombre = emp.Nombre
+                                });
+                            }
+                        }
+
+                        slotInicio = slotInicio.Add(duracion);
                     }
-                    slotInicio = slotInicio.Add(duracion);
                 }
             }
 
@@ -133,7 +158,7 @@ namespace AppointVaAPI.Services
         }
 
         private async Task<List<SlotDisponibleDto>> ObtenerSlotsEmpleadoAsync(
-            AppointVaAPI.Models.Servicio servicio, Guid empleadoId,
+            AppointVaAPI.Models.Servicio servicio, Guid empleadoId, Guid negocioId,
             DateOnly fecha, DateTime fechaDt, DateTime finDia, byte diaSemana,
             TimeZoneInfo tz)
         {
@@ -141,10 +166,23 @@ namespace AppointVaAPI.Services
                 .AnyAsync(es => es.EmpleadoId == empleadoId && es.ServicioId == servicio.Id);
             if (!empleadoOfreceServicio) return new();
 
-            var horario = await _db.HorariosEmpleados
+            var intervalosEmp = await _db.HorariosEmpleados
+                .Where(h => h.EmpleadoId == empleadoId && h.DiaSemana == diaSemana && h.Activo == 1)
+                .OrderBy(h => h.HoraInicio)
                 .AsNoTracking()
-                .FirstOrDefaultAsync(h => h.EmpleadoId == empleadoId && h.DiaSemana == diaSemana && h.Activo == 1);
-            if (horario is null) return new();
+                .ToListAsync();
+
+            if (!intervalosEmp.Any()) return new();
+
+            // Intervalos del negocio para este día (0=Domingo … 6=Sábado)
+            var diaSemanaFecha = (byte)(int)fechaDt.DayOfWeek;
+            var intervalosNegocio = await _db.HorariosNegocios
+                .Where(h => h.NegocioId == negocioId && h.DiaSemana == diaSemanaFecha && h.Activo == 1)
+                .OrderBy(h => h.HoraInicio)
+                .AsNoTracking()
+                .ToListAsync();
+
+            if (!intervalosNegocio.Any()) return new();
 
             var citasExistentes = await _db.Citas
                 .Where(c =>
@@ -166,25 +204,38 @@ namespace AppointVaAPI.Services
             var ahoraUtc = DateTimeOffset.UtcNow;
             var slots = new List<SlotDisponibleDto>();
 
-            var slotInicio = fechaDt.Add(horario.HoraInicio);
-            var horarioFin = fechaDt.Add(horario.HoraFin);
-
-            while (slotInicio + duracion <= horarioFin)
+            foreach (var intervalo in intervalosEmp)
             {
-                var slotFin = slotInicio + duracion;
-                var solapaCita = citasExistentes.Any(c => c.InicioEn < slotFin && c.FinEn.Add(buffer) > slotInicio);
-                var solapaBloqueo = bloqueosExistentes.Any(b => b.InicioEn < slotFin && b.FinEn > slotInicio);
+                var slotInicio = fechaDt.Add(intervalo.HoraInicio);
+                var slotMax    = fechaDt.Add(intervalo.HoraFin);
 
-                if (!solapaCita && !solapaBloqueo && ZonaHorariaHelper.ToDateTimeOffset(slotInicio, tz) > ahoraUtc)
+                while (slotInicio + duracion <= slotMax)
                 {
-                    slots.Add(new SlotDisponibleDto
+                    var slotFin = slotInicio + duracion;
+
+                    // El slot debe caer completamente dentro de al menos un intervalo del negocio
+                    var dentroNegocio = intervalosNegocio.Any(n =>
+                        slotInicio >= fechaDt.Add(n.HoraInicio) &&
+                        slotFin    <= fechaDt.Add(n.HoraFin));
+
+                    if (dentroNegocio)
                     {
-                        Inicio = slotInicio,
-                        Fin = slotFin,
-                        HoraTexto = Hora12(slotInicio)
-                    });
+                        var solapaCita    = citasExistentes.Any(c => c.InicioEn < slotFin && c.FinEn.Add(buffer) > slotInicio);
+                        var solapaBloqueo = bloqueosExistentes.Any(b => b.InicioEn < slotFin && b.FinEn > slotInicio);
+
+                        if (!solapaCita && !solapaBloqueo && ZonaHorariaHelper.ToDateTimeOffset(slotInicio, tz) > ahoraUtc)
+                        {
+                            slots.Add(new SlotDisponibleDto
+                            {
+                                Inicio = slotInicio,
+                                Fin = slotFin,
+                                HoraTexto = Hora12(slotInicio)
+                            });
+                        }
+                    }
+
+                    slotInicio = slotInicio.Add(duracion);
                 }
-                slotInicio = slotInicio.Add(duracion);
             }
 
             return slots;
