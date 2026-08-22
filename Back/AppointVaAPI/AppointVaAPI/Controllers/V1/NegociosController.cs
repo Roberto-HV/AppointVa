@@ -1,6 +1,7 @@
 ﻿using AppointVaAPI.Constants;
 using AppointVaAPI.Data;
 using AppointVaAPI.Models;
+using AppointVaAPI.Models.Dtos.Horarios;
 using AppointVaAPI.Models.Dtos.Negocios;
 using AppointVaAPI.Repository.IRepository;
 using AppointVaAPI.Services.IServices;
@@ -303,22 +304,23 @@ namespace AppointVaAPI.Controllers.V1
         {
             if (_contexto.NegocioId is null) return Unauthorized();
 
-            var horarios = await _db.HorariosNegocios
+            var filas = await _db.HorariosNegocios
                 .Where(h => h.NegocioId == _contexto.NegocioId.Value)
-                .OrderBy(h => h.DiaSemana)
+                .OrderBy(h => h.DiaSemana).ThenBy(h => h.HoraInicio)
                 .ToListAsync();
 
-            // Devuelve los 7 días; si no existe un día, lo crea con valores por defecto
             var resultado = Enumerable.Range(0, 7).Select(dia =>
             {
-                var h = horarios.FirstOrDefault(x => x.DiaSemana == dia);
-                return new
+                var intervalos = filas.Where(h => h.DiaSemana == dia).ToList();
+                return new HorarioDiaDto
                 {
-                    id = h?.Id,
-                    diaSemana = dia,
-                    horaInicio = h != null ? h.HoraInicio.ToString(@"hh\:mm") : "09:00",
-                    horaFin = h != null ? h.HoraFin.ToString(@"hh\:mm") : "18:00",
-                    activo = h?.Activo == 1
+                    DiaSemana = (byte)dia,
+                    Activo    = intervalos.Any(),
+                    Intervalos = intervalos.Select(h => new HorarioIntervaloDto
+                    {
+                        HoraInicio = h.HoraInicio.ToString(@"HH\:mm"),
+                        HoraFin    = h.HoraFin.ToString(@"HH\:mm")
+                    }).ToList()
                 };
             });
 
@@ -328,38 +330,60 @@ namespace AppointVaAPI.Controllers.V1
         // PUT api/negocios/perfil/horarios
         [HttpPut("perfil/horarios")]
         [Authorize(Roles = Roles.Propietario)]
-        public async Task<IActionResult> ActualizarHorarios([FromBody] List<ActualizarHorarioNegocioDto> horarios)
+        public async Task<IActionResult> ActualizarHorarios([FromBody] List<HorarioDiaDto> dias)
         {
             if (_contexto.NegocioId is null) return Unauthorized();
 
-            var existentes = await _db.HorariosNegocios
-                .Where(h => h.NegocioId == _contexto.NegocioId.Value)
-                .ToListAsync();
-
-            if (horarios.Any(h => !TimeSpan.TryParse(h.HoraInicio, out _) || !TimeSpan.TryParse(h.HoraFin, out _)))
-                return BadRequest(new { mensaje = "Formato de hora inválido." });
-
-            foreach (var dto in horarios)
+            // Validate
+            foreach (var dia in dias.Where(d => d.Activo))
             {
-                var existente = existentes.FirstOrDefault(h => h.DiaSemana == dto.DiaSemana);
-                if (existente is null)
+                if (!dia.Intervalos.Any())
+                    return BadRequest(new { mensaje = $"El día {dia.DiaSemana} debe tener al menos un intervalo activo." });
+
+                foreach (var iv in dia.Intervalos)
+                {
+                    if (!TimeSpan.TryParse(iv.HoraInicio, out var ini) ||
+                        !TimeSpan.TryParse(iv.HoraFin,    out var fin))
+                        return BadRequest(new { mensaje = "Formato de hora inválido." });
+                    if (fin <= ini)
+                        return BadRequest(new { mensaje = "La hora de fin debe ser posterior a la de inicio." });
+                }
+
+                // Check overlap between intervals of the same day
+                var sorted = dia.Intervalos
+                    .OrderBy(i => TimeSpan.Parse(i.HoraInicio))
+                    .ToList();
+                for (int k = 0; k < sorted.Count - 1; k++)
+                {
+                    if (TimeSpan.Parse(sorted[k].HoraFin) > TimeSpan.Parse(sorted[k + 1].HoraInicio))
+                        return BadRequest(new { mensaje = $"Los intervalos del día {dia.DiaSemana} se solapan." });
+                }
+            }
+
+            // Full replace per day: delete existing rows for each day in the payload
+            var diasEnviados = dias.Select(d => (byte)d.DiaSemana).Distinct().ToList();
+            var existentes = await _db.HorariosNegocios
+                .Where(h => h.NegocioId == _contexto.NegocioId.Value && diasEnviados.Contains(h.DiaSemana))
+                .ToListAsync();
+            _db.HorariosNegocios.RemoveRange(existentes);
+
+            // Insert new intervals for active days (sorted by start time)
+            foreach (var dia in dias.Where(d => d.Activo))
+            {
+                var sorted = dia.Intervalos
+                    .OrderBy(i => TimeSpan.Parse(i.HoraInicio))
+                    .ToList();
+                foreach (var iv in sorted)
                 {
                     _db.HorariosNegocios.Add(new HorarioNegocio
                     {
-                        Id = Guid.NewGuid(),
+                        Id        = Guid.NewGuid(),
                         NegocioId = _contexto.NegocioId.Value,
-                        DiaSemana = dto.DiaSemana,
-                        HoraInicio = TimeSpan.Parse(dto.HoraInicio),
-                        HoraFin = TimeSpan.Parse(dto.HoraFin),
-                        Activo = dto.Activo ? 1 : 0
+                        DiaSemana = dia.DiaSemana,
+                        HoraInicio = TimeSpan.Parse(iv.HoraInicio),
+                        HoraFin    = TimeSpan.Parse(iv.HoraFin),
+                        Activo     = 1
                     });
-                }
-                else
-                {
-                    existente.HoraInicio = TimeSpan.Parse(dto.HoraInicio);
-                    existente.HoraFin = TimeSpan.Parse(dto.HoraFin);
-                    existente.Activo = dto.Activo ? 1 : 0;
-                    _db.HorariosNegocios.Update(existente);
                 }
             }
 
