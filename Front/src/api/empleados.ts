@@ -1,5 +1,5 @@
 import { api } from "./axios";
-import type { EmpleadoDto, CrearEmpleadoDto, HorarioDto, BloqueoDto } from "../types";
+import type { EmpleadoDto, CrearEmpleadoDto, HorarioDiaDto, BloqueoDto } from "../types";
 
 export const empleadosApi = {
   obtenerTodos: async (incluirInactivos = false): Promise<EmpleadoDto[]> => {
@@ -29,12 +29,12 @@ export const empleadosApi = {
     await api.delete(`/empleados/${id}/invitar`);
   },
 
-  obtenerHorario: async (id: string): Promise<HorarioDto[]> => {
+  obtenerHorario: async (id: string): Promise<HorarioDiaDto[]> => {
     const { data } = await api.get(`/empleados/${id}/horario`);
     return data;
   },
 
-  actualizarHorario: async (id: string, horarios: HorarioDto[]): Promise<void> => {
+  actualizarHorario: async (id: string, horarios: HorarioDiaDto[]): Promise<void> => {
     await api.put(`/empleados/${id}/horario`, horarios);
   },
 

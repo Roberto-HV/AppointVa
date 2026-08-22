@@ -253,13 +253,19 @@ export interface BloqueoDto {
   motivo?: string;
 }
 
-export interface HorarioDto {
-  id?: string;
-  diaSemana: number; // 0=Dom 1=Lun 2=Mar 3=Mié 4=Jue 5=Vie 6=Sáb
-  horaInicio: string; // "09:00"
-  horaFin: string;    // "19:00"
-  activo: boolean;
+export interface IntervaloDto {
+  horaInicio: string; // "HH:mm"
+  horaFin: string;    // "HH:mm"
 }
+
+export interface HorarioDiaDto {
+  diaSemana: number; // 0=Dom 1=Lun 2=Mar 3=Mié 4=Jue 5=Vie 6=Sáb
+  activo: boolean;
+  intervalos: IntervaloDto[];
+}
+
+/** @deprecated Use HorarioDiaDto — alias kept for downstream files pending Tasks 7/8 */
+export type HorarioDto = HorarioDiaDto;
 
 export interface EmpleadoDto {
   id: string;
