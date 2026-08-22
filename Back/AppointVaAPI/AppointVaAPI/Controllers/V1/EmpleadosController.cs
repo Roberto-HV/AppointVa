@@ -2,6 +2,7 @@
 using AppointVaAPI.Data;
 using AppointVaAPI.Models;
 using AppointVaAPI.Models.Dtos.Empleados;
+using AppointVaAPI.Models.Dtos.Horarios;
 using AppointVaAPI.Repository.IRepository;
 using AppointVaAPI.Services.IServices;
 using Microsoft.AspNetCore.Authorization;
@@ -20,17 +21,20 @@ namespace AppointVaAPI.Controllers.V1
         private readonly IContextoNegocio _contexto;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IBlobStorageService _storage;
+        private readonly ApplicationDbContext _db;
 
         public EmpleadosController(
             IEmpleadoRepository repo,
             IContextoNegocio contexto,
             UserManager<ApplicationUser> userManager,
-            IBlobStorageService storage)
+            IBlobStorageService storage,
+            ApplicationDbContext db)
         {
             _repo = repo;
             _contexto = contexto;
             _userManager = userManager;
             _storage = storage;
+            _db = db;
         }
 
         // GET api/empleados
@@ -153,49 +157,87 @@ namespace AppointVaAPI.Controllers.V1
         {
             if (_contexto.NegocioId is null) return Unauthorized();
 
-            var horarios = await _repo.ObtenerHorariosAsync(id, _contexto.NegocioId.Value);
-            return Ok(horarios.Select(h => new HorarioDto
+            var filas = await _db.HorariosEmpleados
+                .Where(h => h.EmpleadoId == id)
+                .OrderBy(h => h.DiaSemana).ThenBy(h => h.HoraInicio)
+                .ToListAsync();
+
+            var resultado = Enumerable.Range(0, 7).Select(dia =>
             {
-                Id = h.Id,
-                DiaSemana = h.DiaSemana,
-                HoraInicio = h.HoraInicio.ToString(@"hh\:mm"),
-                HoraFin = h.HoraFin.ToString(@"hh\:mm"),
-                Activo = h.Activo == 1
-            }));
+                var intervalos = filas.Where(h => h.DiaSemana == dia).ToList();
+                return new HorarioDiaDto
+                {
+                    DiaSemana  = (byte)dia,
+                    Activo     = intervalos.Any(),
+                    Intervalos = intervalos.Select(h => new HorarioIntervaloDto
+                    {
+                        HoraInicio = h.HoraInicio.ToString(@"HH\:mm"),
+                        HoraFin    = h.HoraFin.ToString(@"HH\:mm")
+                    }).ToList()
+                };
+            });
+
+            return Ok(resultado);
         }
 
         // PUT api/empleados/{id}/horario
         [HttpPut("{id:guid}/horario")]
         [Authorize(Roles = $"{Roles.Propietario},{Roles.SuperAdmin}")]
-        public async Task<IActionResult> ActualizarHorario(Guid id, [FromBody] List<HorarioDto> dtos)
+        public async Task<IActionResult> ActualizarHorario(Guid id, [FromBody] List<HorarioDiaDto> dias)
         {
             if (_contexto.NegocioId is null) return Unauthorized();
 
             var empleado = await _repo.ObtenerPorIdAsync(id, _contexto.NegocioId.Value);
             if (empleado is null) return NotFound(new { mensaje = "Empleado no encontrado" });
 
-            if (dtos.Any(d => !TimeSpan.TryParse(d.HoraInicio, out _) || !TimeSpan.TryParse(d.HoraFin, out _)))
-                return BadRequest(new { mensaje = "Formato de hora inválido." });
-
-            foreach (var dto in dtos.Where(d => d.Activo))
+            // Validate
+            foreach (var dia in dias.Where(d => d.Activo))
             {
-                TimeSpan.TryParse(dto.HoraInicio, out var ini);
-                TimeSpan.TryParse(dto.HoraFin, out var fin);
-                if (fin <= ini)
-                    return BadRequest(new { mensaje = $"La hora de fin del {(DayOfWeek)(byte)dto.DiaSemana} debe ser posterior a la de inicio" });
+                if (!dia.Intervalos.Any())
+                    return BadRequest(new { mensaje = $"El día {dia.DiaSemana} debe tener al menos un intervalo activo." });
+
+                foreach (var iv in dia.Intervalos)
+                {
+                    if (!TimeSpan.TryParse(iv.HoraInicio, out var ini) ||
+                        !TimeSpan.TryParse(iv.HoraFin,    out var fin))
+                        return BadRequest(new { mensaje = "Formato de hora inválido." });
+                    if (fin <= ini)
+                        return BadRequest(new { mensaje = "La hora de fin debe ser posterior a la de inicio." });
+                }
+
+                var sorted = dia.Intervalos.OrderBy(i => TimeSpan.Parse(i.HoraInicio)).ToList();
+                for (int k = 0; k < sorted.Count - 1; k++)
+                {
+                    if (TimeSpan.Parse(sorted[k].HoraFin) > TimeSpan.Parse(sorted[k + 1].HoraInicio))
+                        return BadRequest(new { mensaje = $"Los intervalos del día {dia.DiaSemana} se solapan." });
+                }
             }
 
-            var horarios = dtos.Select(dto => new HorarioEmpleado
-            {
-                Id = dto.Id ?? Guid.NewGuid(),
-                EmpleadoId = id,
-                DiaSemana = dto.DiaSemana,
-                HoraInicio = TimeSpan.Parse(dto.HoraInicio),
-                HoraFin = TimeSpan.Parse(dto.HoraFin),
-                Activo = dto.Activo ? 1 : 0
-            }).ToList();
+            // Full replace per day
+            var diasEnviados = dias.Select(d => (byte)d.DiaSemana).Distinct().ToList();
+            var existentes = await _db.HorariosEmpleados
+                .Where(h => h.EmpleadoId == id && diasEnviados.Contains(h.DiaSemana))
+                .ToListAsync();
+            _db.HorariosEmpleados.RemoveRange(existentes);
 
-            await _repo.ActualizarHorariosAsync(id, _contexto.NegocioId.Value, horarios);
+            foreach (var dia in dias.Where(d => d.Activo))
+            {
+                var sorted = dia.Intervalos.OrderBy(i => TimeSpan.Parse(i.HoraInicio)).ToList();
+                foreach (var iv in sorted)
+                {
+                    _db.HorariosEmpleados.Add(new HorarioEmpleado
+                    {
+                        Id         = Guid.NewGuid(),
+                        EmpleadoId = id,
+                        DiaSemana  = dia.DiaSemana,
+                        HoraInicio = TimeSpan.Parse(iv.HoraInicio),
+                        HoraFin    = TimeSpan.Parse(iv.HoraFin),
+                        Activo     = 1
+                    });
+                }
+            }
+
+            await _db.SaveChangesAsync();
             return Ok(new { mensaje = "Horario actualizado correctamente" });
         }
 
