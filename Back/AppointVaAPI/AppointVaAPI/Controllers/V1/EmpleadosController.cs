@@ -199,7 +199,7 @@ namespace AppointVaAPI.Controllers.V1
                 dia.Intervalos ??= new List<HorarioIntervaloDto>();
             if (dias.GroupBy(d => d.DiaSemana).Any(g => g.Count() > 1))
                 return BadRequest(new { mensaje = "No se pueden enviar dos entradas para el mismo día." });
-            if (dias.Any(d => d.DiaSemana == 0 || d.DiaSemana > 7))
+            if (dias.Any(d => d.DiaSemana > 7))
                 return BadRequest(new { mensaje = "DiaSemana inválido. Debe ser 1 (lunes) a 7 (domingo)." });
 
             // Validate
