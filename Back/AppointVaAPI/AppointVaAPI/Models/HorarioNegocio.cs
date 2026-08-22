@@ -1,8 +1,10 @@
+using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace AppointVaAPI.Models
 {
+    [Index(nameof(NegocioId), nameof(DiaSemana))]
     public class HorarioNegocio
     {
         [Key]
