@@ -157,14 +157,29 @@ namespace AppointVaAPI.Controllers.V1
 
             // Verificar que el empleado tenga horario activo para ese día y que el slot caiga dentro
             var diaSemana = (byte)(dto.InicioEn.DayOfWeek == DayOfWeek.Sunday ? 7 : (int)dto.InicioEn.DayOfWeek);
-            var horarioEmpleado = await _db.HorariosEmpleados
-                .FirstOrDefaultAsync(h => h.EmpleadoId == dto.EmpleadoId && h.DiaSemana == diaSemana && h.Activo == 1);
-            if (horarioEmpleado is null)
-                return BadRequest(new { mensaje = "El empleado no trabaja ese día" });
+            var diaSemanaFecha = (byte)(int)dto.InicioEn.DayOfWeek; // 0=Sunday…6=Saturday for business
             var slotInicio = dto.InicioEn.TimeOfDay;
             var slotFin = finEn.TimeOfDay;
-            if (slotInicio < horarioEmpleado.HoraInicio || slotFin > horarioEmpleado.HoraFin)
-                return BadRequest(new { mensaje = "El horario seleccionado está fuera del horario laboral del empleado" });
+
+            // Employee check (multi-interval)
+            var intervalosFitEmpleado = await _db.HorariosEmpleados
+                .Where(h => h.EmpleadoId == dto.EmpleadoId && h.DiaSemana == diaSemana && h.Activo == 1)
+                .ToListAsync();
+            if (!intervalosFitEmpleado.Any())
+                return BadRequest(new { mensaje = "El empleado no trabaja ese día" });
+            bool fitsEmpleado = intervalosFitEmpleado.Any(h =>
+                slotInicio >= h.HoraInicio && slotFin <= h.HoraFin);
+            if (!fitsEmpleado)
+                return BadRequest(new { mensaje = "El horario seleccionado está fuera del horario laboral del empleado." });
+
+            // Business check (multi-interval)
+            var intervalosFitNegocio = await _db.HorariosNegocios
+                .Where(h => h.NegocioId == negocioId && h.DiaSemana == diaSemanaFecha && h.Activo == 1)
+                .ToListAsync();
+            bool fitsNegocio = intervalosFitNegocio.Any(h =>
+                slotInicio >= h.HoraInicio && slotFin <= h.HoraFin);
+            if (!fitsNegocio)
+                return BadRequest(new { mensaje = "El horario seleccionado está fuera del horario del negocio." });
 
             // Transacción serializable: previene que dos reservas simultáneas ocupen el mismo slot
             Cita cita;

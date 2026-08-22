@@ -242,6 +242,6 @@ namespace AppointVaAPI.Services
         }
 
         private static string Hora12(DateTime dt) =>
-            dt.ToString("h:mm tt", System.Globalization.CultureInfo.InvariantCulture);
+            dt.ToString("HH:mm");
     }
 }

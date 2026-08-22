@@ -157,8 +157,12 @@ namespace AppointVaAPI.Controllers.V1
         {
             if (_contexto.NegocioId is null) return Unauthorized();
 
+            var negocioId = _contexto.NegocioId!.Value;
+            var empleadoExiste = await _db.Empleados.AnyAsync(e => e.Id == id && e.NegocioId == negocioId);
+            if (!empleadoExiste) return NotFound();
+
             var filas = await _db.HorariosEmpleados
-                .Where(h => h.EmpleadoId == id)
+                .Where(h => h.EmpleadoId == id && h.Activo == 1)
                 .OrderBy(h => h.DiaSemana).ThenBy(h => h.HoraInicio)
                 .ToListAsync();
 
@@ -189,6 +193,14 @@ namespace AppointVaAPI.Controllers.V1
 
             var empleado = await _repo.ObtenerPorIdAsync(id, _contexto.NegocioId.Value);
             if (empleado is null) return NotFound(new { mensaje = "Empleado no encontrado" });
+
+            if (dias == null) return BadRequest(new { mensaje = "El cuerpo de la petición es requerido." });
+            foreach (var dia in dias)
+                dia.Intervalos ??= new List<HorarioIntervaloDto>();
+            if (dias.GroupBy(d => d.DiaSemana).Any(g => g.Count() > 1))
+                return BadRequest(new { mensaje = "No se pueden enviar dos entradas para el mismo día." });
+            if (dias.Any(d => d.DiaSemana == 0 || d.DiaSemana > 7))
+                return BadRequest(new { mensaje = "DiaSemana inválido. Debe ser 1 (lunes) a 7 (domingo)." });
 
             // Validate
             foreach (var dia in dias.Where(d => d.Activo))

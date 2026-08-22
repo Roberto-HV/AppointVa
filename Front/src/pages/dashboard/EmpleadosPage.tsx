@@ -301,12 +301,25 @@ export default function EmpleadosPage() {
     ));
   };
 
+  const intervaloInvalidoEmpleado = (h: HorarioDiaDto): boolean => {
+    if (!h.activo) return false;
+    for (const iv of h.intervalos) {
+      if (!iv.horaInicio || !iv.horaFin || iv.horaInicio >= iv.horaFin) return true;
+    }
+    for (let i = 0; i < h.intervalos.length - 1; i++) {
+      if (h.intervalos[i].horaFin > h.intervalos[i + 1].horaInicio) return true;
+    }
+    return false;
+  };
+
   const agregarIntervaloEmpleado = (dayIdx: number) => {
     setHorarioLocal(prev => prev.map((h, i) => {
       if (i !== dayIdx) return h;
       const ultimo = h.intervalos[h.intervalos.length - 1];
       const nuevaHora = ultimo?.horaFin ?? "09:00";
-      return { ...h, intervalos: [...h.intervalos, { horaInicio: nuevaHora, horaFin: nuevaHora }] };
+      const [hh, mm] = nuevaHora.split(":").map(Number);
+      const horaFin = `${String((hh + 1) % 24).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
+      return { ...h, intervalos: [...h.intervalos, { horaInicio: nuevaHora, horaFin }] };
     }));
   };
 
@@ -570,6 +583,9 @@ export default function EmpleadosPage() {
                       )}
                     </div>
                   ))}
+                  {intervaloInvalidoEmpleado(h) && (
+                    <p className="text-xs text-red-500">Verifica que los horarios no se solapan y que la hora de fin sea posterior a la de inicio.</p>
+                  )}
                   <button
                     type="button"
                     onClick={() => agregarIntervaloEmpleado(i)}
@@ -584,8 +600,8 @@ export default function EmpleadosPage() {
 
           <button
             onClick={() => guardarHorario()}
-            disabled={guardandoHorario}
-            className="w-full bg-slate-700 hover:bg-slate-800 disabled:opacity-50 text-white font-semibold py-2.5 rounded-xl transition mt-2"
+            disabled={guardandoHorario || horarioLocal.some(intervaloInvalidoEmpleado)}
+            className="w-full bg-slate-700 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-xl transition mt-2"
           >
             {guardandoHorario ? "Guardando..." : "Guardar horario"}
           </button>

@@ -156,6 +156,29 @@ public class DisponibilidadServiceTests
         });
     }
 
+    /// <summary>
+    /// Seeds a business hours interval for the given negocio.
+    /// diaSemana follows .NET DayOfWeek int convention: Sunday=0 … Saturday=6
+    /// (same as DisponibilidadService's diaSemanaFecha computation).
+    /// </summary>
+    private static void SeedHorarioNegocio(
+        ApplicationDbContext db,
+        Guid negocioId,
+        byte diaSemana,
+        TimeSpan inicio,
+        TimeSpan fin)
+    {
+        db.HorariosNegocios.Add(new HorarioNegocio
+        {
+            Id = Guid.NewGuid(),
+            NegocioId = negocioId,
+            DiaSemana = diaSemana,
+            HoraInicio = inicio,
+            HoraFin = fin,
+            Activo = 1,
+        });
+    }
+
     // ── Tests — guard conditions ───────────────────────────────────────────────
 
     [Fact]
@@ -269,6 +292,8 @@ public class DisponibilidadServiceTests
         var fecha = NextWeekday(DayOfWeek.Monday);
         SeedHorario(db, empleado.Id, ToDiaSemana(DayOfWeek.Monday),
             new TimeSpan(9, 0, 0), new TimeSpan(11, 0, 0));
+        SeedHorarioNegocio(db, negocioId, (byte)(int)DayOfWeek.Monday,
+            new TimeSpan(9, 0, 0), new TimeSpan(11, 0, 0));
         await db.SaveChangesAsync();
 
         var result = await svc.ObtenerSlotsDisponiblesAsync(negocioId, servicio.Id, empleado.Id, fecha);
@@ -288,6 +313,8 @@ public class DisponibilidadServiceTests
         SeedEmpleadoServicio(db, empleado.Id, servicio.Id);
         var fecha = NextWeekday(DayOfWeek.Monday);
         SeedHorario(db, empleado.Id, ToDiaSemana(DayOfWeek.Monday),
+            new TimeSpan(9, 0, 0), new TimeSpan(11, 0, 0));
+        SeedHorarioNegocio(db, negocioId, (byte)(int)DayOfWeek.Monday,
             new TimeSpan(9, 0, 0), new TimeSpan(11, 0, 0));
         var fechaDt = fecha.ToDateTime(TimeOnly.MinValue);
         SeedCita(db, negocioId, empleado.Id, servicio.Id,
@@ -311,6 +338,8 @@ public class DisponibilidadServiceTests
         var fecha = NextWeekday(DayOfWeek.Monday);
         SeedHorario(db, empleado.Id, ToDiaSemana(DayOfWeek.Monday),
             new TimeSpan(9, 0, 0), new TimeSpan(11, 0, 0));
+        SeedHorarioNegocio(db, negocioId, (byte)(int)DayOfWeek.Monday,
+            new TimeSpan(9, 0, 0), new TimeSpan(11, 0, 0));
         var fechaDt = fecha.ToDateTime(TimeOnly.MinValue);
         SeedCita(db, negocioId, empleado.Id, servicio.Id,
             fechaDt.AddHours(9), fechaDt.AddHours(10), EstadosCitas.Confirmada);
@@ -332,6 +361,8 @@ public class DisponibilidadServiceTests
         SeedEmpleadoServicio(db, empleado.Id, servicio.Id);
         var fecha = NextWeekday(DayOfWeek.Monday);
         SeedHorario(db, empleado.Id, ToDiaSemana(DayOfWeek.Monday),
+            new TimeSpan(9, 0, 0), new TimeSpan(11, 0, 0));
+        SeedHorarioNegocio(db, negocioId, (byte)(int)DayOfWeek.Monday,
             new TimeSpan(9, 0, 0), new TimeSpan(11, 0, 0));
         var fechaDt = fecha.ToDateTime(TimeOnly.MinValue);
         SeedCita(db, negocioId, empleado.Id, servicio.Id,
@@ -356,6 +387,8 @@ public class DisponibilidadServiceTests
         var fecha = NextWeekday(DayOfWeek.Monday);
         SeedHorario(db, empleado.Id, ToDiaSemana(DayOfWeek.Monday),
             new TimeSpan(9, 0, 0), new TimeSpan(11, 0, 0));
+        SeedHorarioNegocio(db, negocioId, (byte)(int)DayOfWeek.Monday,
+            new TimeSpan(9, 0, 0), new TimeSpan(11, 0, 0));
         var fechaDt = fecha.ToDateTime(TimeOnly.MinValue);
         // Cita termina a las 09:00; con buffer de 15 min bloquea hasta 09:15
         SeedCita(db, negocioId, empleado.Id, servicio.Id,
@@ -378,6 +411,8 @@ public class DisponibilidadServiceTests
         SeedEmpleadoServicio(db, empleado.Id, servicio.Id);
         var fecha = NextWeekday(DayOfWeek.Monday);
         SeedHorario(db, empleado.Id, ToDiaSemana(DayOfWeek.Monday),
+            new TimeSpan(9, 0, 0), new TimeSpan(11, 0, 0));
+        SeedHorarioNegocio(db, negocioId, (byte)(int)DayOfWeek.Monday,
             new TimeSpan(9, 0, 0), new TimeSpan(11, 0, 0));
         var fechaDt = fecha.ToDateTime(TimeOnly.MinValue);
         // Bloqueo manual de 09:00 a 10:00
@@ -420,6 +455,9 @@ public class DisponibilidadServiceTests
         SeedEmpleadoServicio(db, empleado.Id, servicio.Id);
         var domingo = NextWeekday(DayOfWeek.Sunday);
         SeedHorario(db, empleado.Id, diaSemana: 7,
+            new TimeSpan(10, 0, 0), new TimeSpan(12, 0, 0));
+        // Business convention: Sunday = (int)DayOfWeek.Sunday = 0
+        SeedHorarioNegocio(db, negocioId, (byte)(int)DayOfWeek.Sunday,
             new TimeSpan(10, 0, 0), new TimeSpan(12, 0, 0));
         await db.SaveChangesAsync();
 
@@ -466,6 +504,8 @@ public class DisponibilidadServiceTests
         var dia = ToDiaSemana(DayOfWeek.Monday);
         SeedHorario(db, emp1.Id, dia, new TimeSpan(9, 0, 0), new TimeSpan(10, 0, 0));
         SeedHorario(db, emp2.Id, dia, new TimeSpan(9, 0, 0), new TimeSpan(10, 0, 0));
+        SeedHorarioNegocio(db, negocioId, (byte)(int)DayOfWeek.Monday,
+            new TimeSpan(9, 0, 0), new TimeSpan(10, 0, 0));
         await db.SaveChangesAsync();
 
         var result = await svc.ObtenerSlotsDisponiblesAsync(negocioId, servicio.Id, null, fecha);
@@ -489,6 +529,8 @@ public class DisponibilidadServiceTests
         var dia = ToDiaSemana(DayOfWeek.Monday);
         SeedHorario(db, emp1.Id, dia, new TimeSpan(9, 0, 0), new TimeSpan(10, 0, 0));
         SeedHorario(db, emp2.Id, dia, new TimeSpan(9, 0, 0), new TimeSpan(10, 0, 0));
+        SeedHorarioNegocio(db, negocioId, (byte)(int)DayOfWeek.Monday,
+            new TimeSpan(9, 0, 0), new TimeSpan(10, 0, 0));
         var fechaDt = fecha.ToDateTime(TimeOnly.MinValue);
         // Sólo emp1 tiene cita en ese slot
         SeedCita(db, negocioId, emp1.Id, servicio.Id,
@@ -512,6 +554,8 @@ public class DisponibilidadServiceTests
         var fecha = NextWeekday(DayOfWeek.Monday);
         SeedHorario(db, empleado.Id, ToDiaSemana(DayOfWeek.Monday),
             new TimeSpan(9, 0, 0), new TimeSpan(11, 0, 0));
+        SeedHorarioNegocio(db, negocioId, (byte)(int)DayOfWeek.Monday,
+            new TimeSpan(9, 0, 0), new TimeSpan(11, 0, 0));
         await db.SaveChangesAsync();
 
         var result = await svc.ObtenerSlotsDisponiblesAsync(negocioId, servicio.Id, empleado.Id, fecha);
@@ -530,6 +574,8 @@ public class DisponibilidadServiceTests
         SeedEmpleadoServicio(db, empleado.Id, servicio.Id);
         var fecha = NextWeekday(DayOfWeek.Monday);
         SeedHorario(db, empleado.Id, ToDiaSemana(DayOfWeek.Monday),
+            new TimeSpan(9, 0, 0), new TimeSpan(11, 0, 0));
+        SeedHorarioNegocio(db, negocioId, (byte)(int)DayOfWeek.Monday,
             new TimeSpan(9, 0, 0), new TimeSpan(11, 0, 0));
         var fechaDt = fecha.ToDateTime(TimeOnly.MinValue);
         SeedBloqueoHorario(db, empleado.Id, fechaDt.AddHours(8), fechaDt.AddHours(9));
@@ -551,6 +597,8 @@ public class DisponibilidadServiceTests
         SeedEmpleadoServicio(db, empleado.Id, servicio.Id);
         var fecha = NextWeekday(DayOfWeek.Monday);
         SeedHorario(db, empleado.Id, ToDiaSemana(DayOfWeek.Monday),
+            new TimeSpan(9, 0, 0), new TimeSpan(11, 0, 0));
+        SeedHorarioNegocio(db, negocioId, (byte)(int)DayOfWeek.Monday,
             new TimeSpan(9, 0, 0), new TimeSpan(11, 0, 0));
         var fechaDt = fecha.ToDateTime(TimeOnly.MinValue);
         SeedCita(db, negocioId, empleado.Id, servicio.Id,

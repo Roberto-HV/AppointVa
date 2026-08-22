@@ -305,7 +305,7 @@ namespace AppointVaAPI.Controllers.V1
             if (_contexto.NegocioId is null) return Unauthorized();
 
             var filas = await _db.HorariosNegocios
-                .Where(h => h.NegocioId == _contexto.NegocioId.Value)
+                .Where(h => h.NegocioId == _contexto.NegocioId.Value && h.Activo == 1)
                 .OrderBy(h => h.DiaSemana).ThenBy(h => h.HoraInicio)
                 .ToListAsync();
 
@@ -333,6 +333,14 @@ namespace AppointVaAPI.Controllers.V1
         public async Task<IActionResult> ActualizarHorarios([FromBody] List<HorarioDiaDto> dias)
         {
             if (_contexto.NegocioId is null) return Unauthorized();
+
+            if (dias == null) return BadRequest(new { mensaje = "El cuerpo de la petición es requerido." });
+            foreach (var dia in dias)
+                dia.Intervalos ??= new List<HorarioIntervaloDto>();
+            if (dias.GroupBy(d => d.DiaSemana).Any(g => g.Count() > 1))
+                return BadRequest(new { mensaje = "No se pueden enviar dos entradas para el mismo día." });
+            if (dias.Any(d => d.DiaSemana > 6))
+                return BadRequest(new { mensaje = "DiaSemana inválido. Debe ser 0 (domingo) a 6 (sábado)." });
 
             // Validate
             foreach (var dia in dias.Where(d => d.Activo))
