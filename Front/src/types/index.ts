@@ -39,6 +39,7 @@ export interface NegocioPublico {
   descripcion?: string;
   logoUrl?: string;
   portadaUrl?: string;
+  portadaObjectPosition?: string;
   colorPrimario?: string;
   colorSecundario?: string;
   telefono?: string;
@@ -322,6 +323,7 @@ export interface NegocioDto {
   descripcion?: string;
   logoUrl?: string;
   portadaUrl?: string;
+  portadaObjectPosition?: string;
   colorPrimario?: string;
   colorSecundario?: string;
   zonaHoraria?: string;
@@ -369,6 +371,7 @@ export interface ActualizarNegocioDto {
   instagramUrl?: string;
   facebookUrl?: string;
   tiktokUrl?: string;
+  portadaObjectPosition?: string;
 }
 
 export interface ActualizarColoresNegocioDto {

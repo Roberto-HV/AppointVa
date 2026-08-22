@@ -56,5 +56,7 @@ namespace AppointVaAPI.Models.Dtos.Negocios
         public string? FacebookUrl { get; set; }
         [MaxLength(200)]
         public string? TiktokUrl { get; set; }
+        [MaxLength(20)]
+        public string? PortadaObjectPosition { get; set; }
     }
 }

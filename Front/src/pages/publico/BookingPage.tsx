@@ -14,11 +14,9 @@ import PasoEmpleado, { SIN_PREFERENCIA_ID } from "../../components/booking/PasoE
 import PasoFechaHora from "../../components/booking/PasoFechaHora";
 import PasoDatosCliente, { type DatosClienteForm } from "../../components/booking/PasoDatosCliente";
 import { Star, X, UserCircle, UserCheck, Tag, AlertCircle, ChevronLeft, ChevronRight, Lock } from "lucide-react";
-import { SiWhatsapp } from "react-icons/si";
 import PublicFooter from "../../components/PublicFooter";
 
 import { hexToChannels, DEFAULT_COLOR } from "../../lib/colorUtils";
-import SocialLinks from "../../components/icons/SocialLinks";
 
 function GaleriaSection({ imagenes }: { imagenes: ImagenGaleria[] }) {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -771,7 +769,7 @@ export default function BookingPage() {
             src={negocio.portadaUrl}
             alt=""
             className="absolute inset-0 w-full h-full object-cover pointer-events-none"
-            style={{ opacity: 0.5 }}
+            style={{ opacity: 0.5, objectPosition: negocio.portadaObjectPosition ?? "center" }}
             loading="lazy"
           />
         )}
@@ -790,7 +788,7 @@ export default function BookingPage() {
           }}
         />
         {/* Contenido con padding-top para dejar ver la foto arriba */}
-        <div className={`relative z-10 px-5 pb-4 ${negocio.portadaUrl ? "pt-28 sm:pt-44" : "pt-8"}`}>
+        <div className={`relative z-10 px-5 pb-4 ${negocio.portadaUrl ? "pt-12 sm:pt-20" : "pt-8"}`}>
           {/* Fila: logo + nombre alineados arriba */}
           <div className="flex items-start gap-3.5">
             {/* Logo */}
@@ -852,25 +850,6 @@ export default function BookingPage() {
                   📍 {negocio.direccion}
                 </p>
               )}
-              <div className="mt-1.5 flex items-center gap-3 flex-wrap">
-                <SocialLinks
-                  instagramUrl={negocio.instagramUrl}
-                  facebookUrl={negocio.facebookUrl}
-                  tiktokUrl={negocio.tiktokUrl}
-                  variant="header"
-                />
-                {negocio.telefonoWhatsApp && (
-                  <a
-                    href={`https://wa.me/${negocio.telefonoWhatsApp.replace(/\D/g, "").replace(/^(\d{10})$/, "52$1")}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 text-xs font-medium text-[#25D366] hover:opacity-80 transition"
-                  >
-                    <SiWhatsapp size={12} className="shrink-0" />
-                    {negocio.telefonoWhatsApp}
-                  </a>
-                )}
-              </div>
             </div>
           </div>
         </div>

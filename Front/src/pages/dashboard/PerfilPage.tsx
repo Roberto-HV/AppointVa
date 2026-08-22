@@ -131,6 +131,7 @@ export default function PerfilPage() {
       const c = negocio.colorPrimario ?? "#334155";
       setColorPrimario(c);
       setColorGuardado(c);
+      setPortadaObjectPosition(negocio.portadaObjectPosition ?? "center");
     }
   }, [negocio, reset]);
 
@@ -161,7 +162,7 @@ export default function PerfilPage() {
       toast("El porcentaje de anticipo debe estar entre 1% y 100%.", "error");
       return;
     }
-    guardar({ ...data, email: data.email || undefined, telefono: data.telefono || undefined });
+    guardar({ ...data, email: data.email || undefined, telefono: data.telefono || undefined, portadaObjectPosition });
   };
 
   const { mutate: eliminarCuenta, isPending: eliminando } = useMutation({
@@ -175,6 +176,7 @@ export default function PerfilPage() {
   });
 
   // ── Horarios ─────────────────────────────────────────────────────────────
+  const [portadaObjectPosition, setPortadaObjectPosition] = useState<string>("center");
   const [colorPrimario, setColorPrimario] = useState("#334155");
   const [colorGuardado, setColorGuardado] = useState("#334155");
 
@@ -387,6 +389,27 @@ export default function PerfilPage() {
                   className="text-xs text-slate-700 hover:underline disabled:opacity-50">
                   {subiendoPortada ? "Subiendo..." : "Cambiar portada"}
                 </button>
+                {negocio?.portadaUrl && (
+                  <div className="mt-2">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1.5 text-center">Posición</p>
+                    <div className="flex gap-1 justify-center">
+                      {(["top", "center", "bottom"] as const).map((pos) => (
+                        <button
+                          key={pos}
+                          type="button"
+                          onClick={() => setPortadaObjectPosition(pos)}
+                          className={`px-2.5 py-1 rounded-lg text-xs font-medium transition ${
+                            portadaObjectPosition === pos
+                              ? "bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900"
+                              : "bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-600"
+                          }`}
+                        >
+                          {pos === "top" ? "Arriba" : pos === "center" ? "Centro" : "Abajo"}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>

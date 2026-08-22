@@ -98,6 +98,8 @@ namespace AppointVaAPI.Controllers.V1
             negocio.InstagramUrl = string.IsNullOrWhiteSpace(dto.InstagramUrl) ? null : dto.InstagramUrl.Trim();
             negocio.FacebookUrl = string.IsNullOrWhiteSpace(dto.FacebookUrl) ? null : dto.FacebookUrl.Trim();
             negocio.TiktokUrl = string.IsNullOrWhiteSpace(dto.TiktokUrl) ? null : dto.TiktokUrl.Trim();
+            if (!string.IsNullOrWhiteSpace(dto.PortadaObjectPosition))
+                negocio.PortadaObjectPosition = dto.PortadaObjectPosition.Trim();
             negocio.FechaActualizacion = DateTime.UtcNow;
 
             await _repo.ActualizarAsync(negocio);
