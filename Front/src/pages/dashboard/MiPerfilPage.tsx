@@ -10,7 +10,7 @@ import { empleadosApi } from "../../api/empleados";
 import { negociosApi } from "../../api/negocios";
 import { citasApi } from "../../api/citas";
 import { DatePicker, TimePicker, citasABusySlots } from "../../components/ui/DateTimePicker";
-import type { HorarioDto } from "../../types";
+import type { HorarioDiaDto } from "../../types";
 import PasswordStrengthBar from "../../components/PasswordStrengthBar";
 import { useAuthStore } from "../../store/authStore";
 import { useToastStore } from "../../store/toastStore";
@@ -107,7 +107,7 @@ export default function MiPerfilPage() {
     enabled:  !!empleadoId,
   });
 
-  const { data: horariosNegocio = [] } = useQuery<HorarioDto[]>({
+  const { data: horariosNegocio = [] } = useQuery<HorarioDiaDto[]>({
     queryKey: ["horarios-negocio"],
     queryFn:  negociosApi.obtenerHorarios,
     enabled:  esEmpleado,
@@ -150,8 +150,10 @@ export default function MiPerfilPage() {
     const dia = new Date(fecha + "T12:00").getDay();
     const h   = horariosNegocio.find((x) => x.diaSemana === dia);
     const hoy = new Date().toISOString().slice(0, 10);
-    const minNeg = (h?.activo ? h.horaInicio : null) ?? "00:00";
-    const maxNeg = (h?.activo ? h.horaFin    : null) ?? "23:30";
+    const firstIv = h?.activo && h.intervalos.length > 0 ? h.intervalos[0] : null;
+    const lastIv  = h?.activo && h.intervalos.length > 0 ? h.intervalos[h.intervalos.length - 1] : null;
+    const minNeg = firstIv?.horaInicio ?? "00:00";
+    const maxNeg = lastIv?.horaFin    ?? "23:30";
     const minEfe = fecha === hoy ? (ahoraMin() > minNeg ? ahoraMin() : minNeg) : minNeg;
     return { min: minEfe, max: maxNeg };
   };

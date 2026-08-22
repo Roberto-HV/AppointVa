@@ -15,7 +15,7 @@ import { useAuthStore } from "../../store/authStore";
 import { useToastStore } from "../../store/toastStore";
 import { Skeleton } from "../../components/ui/Skeleton";
 import { TimePicker, DatePicker } from "../../components/ui/DateTimePicker";
-import type { ActualizarNegocioDto, HorarioDto } from "../../types";
+import type { ActualizarNegocioDto, HorarioDiaDto } from "../../types";
 
 const ZONAS_HORARIAS = [
   { valor: "America/Mexico_City",     texto: "Ciudad de México (CST/CDT)" },
@@ -190,7 +190,7 @@ export default function PerfilPage() {
     onError: () => toast("No se pudo guardar el color. Intenta de nuevo.", "error"),
   });
 
-  const [horarios, setHorarios] = useState<HorarioDto[]>([]);
+  const [horarios, setHorarios] = useState<HorarioDiaDto[]>([]);
   const [horariosDirty, setHorariosDirty] = useState(false);
 
   const { data: horariosData } = useQuery({
@@ -222,9 +222,71 @@ export default function PerfilPage() {
     onError: () => toast("No se pudieron guardar los horarios. Intenta de nuevo.", "error"),
   });
 
-  const actualizarHorario = (dia: number, campo: keyof HorarioDto, valor: string | boolean) => {
-    setHorarios(prev => prev.map(h => h.diaSemana === dia ? { ...h, [campo]: valor } : h));
+  const toggleDia = (diaSemana: number) => {
+    setHorarios(prev => prev.map(h =>
+      h.diaSemana === diaSemana
+        ? {
+            ...h,
+            activo: !h.activo,
+            intervalos: !h.activo && h.intervalos.length === 0
+              ? [{ horaInicio: "09:00", horaFin: "18:00" }]
+              : h.intervalos
+          }
+        : h
+    ));
     setHorariosDirty(true);
+  };
+
+  const actualizarIntervalo = (
+    diaSemana: number,
+    idx: number,
+    campo: "horaInicio" | "horaFin",
+    valor: string
+  ) => {
+    setHorarios(prev => prev.map(h =>
+      h.diaSemana === diaSemana
+        ? {
+            ...h,
+            intervalos: h.intervalos.map((iv, i) =>
+              i === idx ? { ...iv, [campo]: valor } : iv
+            )
+          }
+        : h
+    ));
+    setHorariosDirty(true);
+  };
+
+  const agregarIntervalo = (diaSemana: number) => {
+    setHorarios(prev => prev.map(h => {
+      if (h.diaSemana !== diaSemana) return h;
+      const ultimo = h.intervalos[h.intervalos.length - 1];
+      const nuevaHora = ultimo?.horaFin ?? "09:00";
+      return {
+        ...h,
+        intervalos: [...h.intervalos, { horaInicio: nuevaHora, horaFin: nuevaHora }]
+      };
+    }));
+    setHorariosDirty(true);
+  };
+
+  const eliminarIntervalo = (diaSemana: number, idx: number) => {
+    setHorarios(prev => prev.map(h =>
+      h.diaSemana === diaSemana
+        ? { ...h, intervalos: h.intervalos.filter((_, i) => i !== idx) }
+        : h
+    ));
+    setHorariosDirty(true);
+  };
+
+  const intervaloInvalido = (h: HorarioDiaDto): boolean => {
+    if (!h.activo) return false;
+    for (const iv of h.intervalos) {
+      if (!iv.horaInicio || !iv.horaFin || iv.horaInicio >= iv.horaFin) return true;
+    }
+    for (let i = 0; i < h.intervalos.length - 1; i++) {
+      if (h.intervalos[i].horaFin > h.intervalos[i + 1].horaInicio) return true;
+    }
+    return false;
   };
 
   // ── Días bloqueados ───────────────────────────────────────────────────────
@@ -809,33 +871,71 @@ export default function PerfilPage() {
         <div className="space-y-6">
           <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
             <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Horarios de atención</h2>
-            <div className="space-y-3">
+            <div className="space-y-1">
               {horarios.map((h) => (
-                <div key={h.diaSemana} className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3 py-2 border-b border-gray-50 dark:border-slate-700 last:border-0">
-                  <label className="flex items-center gap-2 cursor-pointer select-none sm:w-28 sm:shrink-0">
-                    <div onClick={() => actualizarHorario(h.diaSemana!, "activo", !h.activo)}
-                      className={`w-9 h-5 rounded-full transition relative cursor-pointer shrink-0 ${h.activo ? "bg-slate-700" : "bg-gray-300"}`}>
-                      <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${h.activo ? "left-4" : "left-0.5"}`} />
+                <div key={h.diaSemana} className="py-2 border-b border-gray-50 dark:border-slate-700 last:border-0">
+                  {/* Day toggle + name */}
+                  <label className="flex items-center gap-2 cursor-pointer select-none mb-2">
+                    <div
+                      onClick={() => toggleDia(h.diaSemana)}
+                      className={`w-9 h-5 rounded-full transition relative cursor-pointer shrink-0 ${
+                        h.activo ? "bg-slate-700" : "bg-gray-300"
+                      }`}
+                    >
+                      <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${
+                        h.activo ? "left-4" : "left-0.5"
+                      }`} />
                     </div>
-                    <span className="text-sm text-gray-700 dark:text-gray-300">{DIAS[h.diaSemana ?? 0]}</span>
+                    <span className="text-sm text-gray-700 dark:text-gray-300">{DIAS[h.diaSemana]}</span>
                   </label>
+
                   {h.activo ? (
-                    <div className="flex items-center gap-2 pl-11 sm:pl-0">
-                      <div className="w-32">
-                        <TimePicker value={h.horaInicio} onChange={(v) => actualizarHorario(h.diaSemana!, "horaInicio", v)} />
-                      </div>
-                      <span className="text-gray-400 dark:text-gray-500 text-sm shrink-0">—</span>
-                      <div className="w-32">
-                        <TimePicker value={h.horaFin} onChange={(v) => actualizarHorario(h.diaSemana!, "horaFin", v)} />
-                      </div>
+                    <div className="pl-11 space-y-1.5">
+                      {h.intervalos.map((iv, idx) => (
+                        <div key={idx} className="flex items-center gap-2">
+                          <div className="w-28">
+                            <TimePicker
+                              value={iv.horaInicio}
+                              onChange={(v) => actualizarIntervalo(h.diaSemana, idx, "horaInicio", v)}
+                            />
+                          </div>
+                          <span className="text-gray-400 dark:text-gray-500 text-sm shrink-0">—</span>
+                          <div className="w-28">
+                            <TimePicker
+                              value={iv.horaFin}
+                              onChange={(v) => actualizarIntervalo(h.diaSemana, idx, "horaFin", v)}
+                            />
+                          </div>
+                          {h.intervalos.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => eliminarIntervalo(h.diaSemana, idx)}
+                              className="text-gray-400 hover:text-red-500 transition text-sm px-1"
+                              aria-label="Eliminar intervalo"
+                            >
+                              ✕
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                      {intervaloInvalido(h) && (
+                        <p className="text-xs text-red-500">Verifica que los horarios no se solapan y que la hora de fin sea posterior a la de inicio.</p>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => agregarIntervalo(h.diaSemana)}
+                        className="text-xs text-slate-600 dark:text-slate-400 hover:underline mt-0.5"
+                      >
+                        + Agregar intervalo
+                      </button>
                     </div>
                   ) : (
-                    <span className="text-sm text-gray-400 dark:text-gray-500 pl-11 sm:pl-0">Cerrado</span>
+                    <span className="text-sm text-gray-400 dark:text-gray-500 pl-11">Cerrado</span>
                   )}
                 </div>
               ))}
             </div>
-            <button onClick={() => guardarHorarios()} disabled={guardandoHorarios || !horariosDirty}
+            <button onClick={() => guardarHorarios()} disabled={guardandoHorarios || !horariosDirty || horarios.some(intervaloInvalido)}
               className="mt-4 bg-slate-700 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-xl transition text-sm">
               {guardandoHorarios ? "Guardando..." : "Guardar horarios"}
             </button>
