@@ -132,7 +132,11 @@ export default function PerfilPage() {
       const c = negocio.colorPrimario ?? "#334155";
       setColorPrimario(c);
       setColorGuardado(c);
-      setPortadaObjectPosition(negocio.portadaObjectPosition ?? "center");
+      const raw = negocio.portadaObjectPosition ?? "center";
+      if (raw === "top") setPortadaObjectPosition("50% 0%");
+      else if (raw === "bottom") setPortadaObjectPosition("50% 100%");
+      else if (raw === "center") setPortadaObjectPosition("50% 50%");
+      else setPortadaObjectPosition(raw);
     }
   }, [negocio, reset]);
 
@@ -189,7 +193,8 @@ export default function PerfilPage() {
   });
 
   // ── Horarios ─────────────────────────────────────────────────────────────
-  const [portadaObjectPosition, setPortadaObjectPosition] = useState<string>("center");
+  const [portadaObjectPosition, setPortadaObjectPosition] = useState<string>("50% 50%");
+  const portadaDragRef = useRef<{ startX: number; startY: number; posX: number; posY: number } | null>(null);
   const [colorPrimario, setColorPrimario] = useState("#334155");
   const [colorGuardado, setColorGuardado] = useState("#334155");
 
@@ -438,9 +443,10 @@ export default function PerfilPage() {
           {/* Imágenes */}
           <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
             <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Imágenes</h2>
-            <div className="flex gap-6 flex-wrap">
+            <div className="grid grid-cols-3 gap-3">
+              {/* Logo */}
               <div className="text-center">
-                <div className="w-20 h-20 rounded-xl bg-gray-100 dark:bg-slate-700 overflow-hidden mb-2 mx-auto flex items-center justify-center">
+                <div className="w-full aspect-square rounded-xl bg-gray-100 dark:bg-slate-700 overflow-hidden mb-2 flex items-center justify-center">
                   {negocio?.logoUrl
                     ? <img src={negocio.logoUrl} alt="Logo" className="w-full h-full object-cover" />
                     : <span className="text-2xl font-bold text-gray-300 dark:text-gray-600">{negocio?.nombre?.charAt(0)}</span>}
@@ -452,10 +458,32 @@ export default function PerfilPage() {
                   {subiendoLogo ? "Subiendo..." : "Cambiar logo"}
                 </button>
               </div>
+              {/* Portada */}
               <div className="text-center">
-                <div className="w-40 h-20 rounded-xl bg-gray-100 dark:bg-slate-700 overflow-hidden mb-2 mx-auto flex items-center justify-center">
+                <div
+                  className={`w-full aspect-square rounded-xl bg-gray-100 dark:bg-slate-700 overflow-hidden mb-2 flex items-center justify-center select-none ${negocio?.portadaUrl ? "cursor-grab active:cursor-grabbing" : ""}`}
+                  onPointerDown={negocio?.portadaUrl ? (e) => {
+                    e.preventDefault();
+                    const parts = portadaObjectPosition.replace(/%/g, "").split(" ");
+                    const posX = parseFloat(parts[0]) || 50;
+                    const posY = parseFloat(parts[1]) || 50;
+                    portadaDragRef.current = { startX: e.clientX, startY: e.clientY, posX, posY };
+                    e.currentTarget.setPointerCapture(e.pointerId);
+                  } : undefined}
+                  onPointerMove={negocio?.portadaUrl ? (e) => {
+                    if (!portadaDragRef.current) return;
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const { startX, startY, posX, posY } = portadaDragRef.current;
+                    const dx = ((e.clientX - startX) / rect.width) * 150;
+                    const dy = ((e.clientY - startY) / rect.height) * 150;
+                    const newX = Math.max(0, Math.min(100, posX + dx));
+                    const newY = Math.max(0, Math.min(100, posY + dy));
+                    setPortadaObjectPosition(`${newX.toFixed(1)}% ${newY.toFixed(1)}%`);
+                  } : undefined}
+                  onPointerUp={() => { portadaDragRef.current = null; }}
+                >
                   {negocio?.portadaUrl
-                    ? <img src={negocio.portadaUrl} alt="Portada" className="w-full h-full object-cover" />
+                    ? <img src={negocio.portadaUrl} alt="Portada" className="w-full h-full object-cover pointer-events-none" style={{ objectPosition: portadaObjectPosition }} />
                     : <span className="text-xs text-gray-400 dark:text-gray-500">Sin portada</span>}
                 </div>
                 <input ref={portadaRef} type="file" accept="image/*" className="hidden"
@@ -465,31 +493,14 @@ export default function PerfilPage() {
                   {subiendoPortada ? "Subiendo..." : "Cambiar portada"}
                 </button>
                 {negocio?.portadaUrl && (
-                  <div className="mt-2">
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1.5 text-center">Posición</p>
-                    <div className="flex gap-1 justify-center">
-                      {(["top", "center", "bottom"] as const).map((pos) => (
-                        <button
-                          key={pos}
-                          type="button"
-                          onClick={() => setPortadaObjectPosition(pos)}
-                          className={`px-2.5 py-1 rounded-lg text-xs font-medium transition ${
-                            portadaObjectPosition === pos
-                              ? "bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900"
-                              : "bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-600"
-                          }`}
-                        >
-                          {pos === "top" ? "Arriba" : pos === "center" ? "Centro" : "Abajo"}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                  <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">Arrastra para posicionar</p>
                 )}
               </div>
+              {/* Políticas */}
               <div className="text-center">
-                <div className="w-40 h-20 rounded-xl bg-gray-100 dark:bg-slate-700 overflow-hidden mb-2 mx-auto flex items-center justify-center">
+                <div className="w-full aspect-square rounded-xl bg-gray-100 dark:bg-slate-700 overflow-hidden mb-2 flex items-center justify-center">
                   {negocio?.politicasUrl
-                    ? <img src={negocio.politicasUrl} alt="Políticas" className="w-full h-full object-cover" />
+                    ? <img src={negocio.politicasUrl} alt="Políticas" className="w-full h-full object-contain" />
                     : <span className="text-xs text-gray-400 dark:text-gray-500">Sin políticas</span>}
                 </div>
                 <input ref={politicasRef} type="file" accept="image/*" className="hidden"
@@ -506,7 +517,6 @@ export default function PerfilPage() {
                     </button>
                   </div>
                 )}
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Imagen de políticas</p>
               </div>
             </div>
           </div>
@@ -928,14 +938,14 @@ export default function PerfilPage() {
                     <div className="pl-11 space-y-1.5">
                       {h.intervalos.map((iv, idx) => (
                         <div key={idx} className="flex items-center gap-2">
-                          <div className="w-28">
+                          <div className="w-32">
                             <TimePicker
                               value={iv.horaInicio}
                               onChange={(v) => actualizarIntervalo(h.diaSemana, idx, "horaInicio", v)}
                             />
                           </div>
                           <span className="text-gray-400 dark:text-gray-500 text-sm shrink-0">—</span>
-                          <div className="w-28">
+                          <div className="w-32">
                             <TimePicker
                               value={iv.horaFin}
                               onChange={(v) => actualizarIntervalo(h.diaSemana, idx, "horaFin", v)}
