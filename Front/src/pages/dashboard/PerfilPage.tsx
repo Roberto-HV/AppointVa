@@ -86,6 +86,7 @@ export default function PerfilPage() {
   const { refreshToken, cerrarSesion, usuario } = useAuthStore();
   const logoRef = useRef<HTMLInputElement>(null);
   const portadaRef = useRef<HTMLInputElement>(null);
+  const politicasRef = useRef<HTMLInputElement>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const tabRaw = searchParams.get("tab");
   const tab: Tab = (["perfil", "citas", "anticipos", "horarios", "cuenta"] as Tab[]).includes(tabRaw as Tab)
@@ -155,6 +156,18 @@ export default function PerfilPage() {
     mutationFn: (file: File) => negociosApi.subirPortada(file),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["negocio-perfil"] }); toast("Portada actualizada"); },
     onError: () => toast("No se pudo subir la portada. Intenta de nuevo.", "error"),
+  });
+
+  const { mutate: subirPoliticas, isPending: subiendoPoliticas } = useMutation({
+    mutationFn: (file: File) => negociosApi.subirPoliticas(file),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["negocio-perfil"] }); toast("Imagen de políticas actualizada"); },
+    onError: () => toast("No se pudo subir la imagen. Intenta de nuevo.", "error"),
+  });
+
+  const { mutate: eliminarPoliticas, isPending: eliminandoPoliticas } = useMutation({
+    mutationFn: () => negociosApi.eliminarPoliticas(),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["negocio-perfil"] }); toast("Imagen de políticas eliminada"); },
+    onError: () => toast("No se pudo eliminar la imagen. Intenta de nuevo.", "error"),
   });
 
   const onSubmit = (data: PerfilForm) => {
@@ -472,6 +485,28 @@ export default function PerfilPage() {
                     </div>
                   </div>
                 )}
+              </div>
+              <div className="text-center">
+                <div className="w-40 h-20 rounded-xl bg-gray-100 dark:bg-slate-700 overflow-hidden mb-2 mx-auto flex items-center justify-center">
+                  {negocio?.politicasUrl
+                    ? <img src={negocio.politicasUrl} alt="Políticas" className="w-full h-full object-cover" />
+                    : <span className="text-xs text-gray-400 dark:text-gray-500">Sin políticas</span>}
+                </div>
+                <input ref={politicasRef} type="file" accept="image/*" className="hidden"
+                  onChange={(e) => { const f = e.target.files?.[0]; if (f) subirPoliticas(f); }} />
+                <button type="button" onClick={() => politicasRef.current?.click()} disabled={subiendoPoliticas}
+                  className="text-xs text-slate-700 hover:underline disabled:opacity-50">
+                  {subiendoPoliticas ? "Subiendo..." : "Cambiar políticas"}
+                </button>
+                {negocio?.politicasUrl && (
+                  <div className="mt-1.5">
+                    <button type="button" onClick={() => eliminarPoliticas()} disabled={eliminandoPoliticas}
+                      className="text-xs text-red-500 hover:underline disabled:opacity-50">
+                      {eliminandoPoliticas ? "Eliminando..." : "Eliminar"}
+                    </button>
+                  </div>
+                )}
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Imagen de políticas</p>
               </div>
             </div>
           </div>

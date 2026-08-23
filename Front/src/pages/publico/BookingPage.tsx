@@ -13,7 +13,7 @@ import PasoServicio from "../../components/booking/PasoServicio";
 import PasoEmpleado, { SIN_PREFERENCIA_ID } from "../../components/booking/PasoEmpleado";
 import PasoFechaHora from "../../components/booking/PasoFechaHora";
 import PasoDatosCliente, { type DatosClienteForm } from "../../components/booking/PasoDatosCliente";
-import { Star, X, UserCircle, UserCheck, Tag, AlertCircle, ChevronLeft, ChevronRight, Lock } from "lucide-react";
+import { Star, X, UserCircle, UserCheck, Tag, AlertCircle, ChevronLeft, ChevronRight, Lock, ChevronDown, ChevronUp } from "lucide-react";
 import PublicFooter from "../../components/PublicFooter";
 
 import { hexToChannels, DEFAULT_COLOR } from "../../lib/colorUtils";
@@ -473,6 +473,8 @@ export default function BookingPage() {
 
   // Slot taken (409) error shown in paso 3
   const [errorSlotTomado, setErrorSlotTomado] = useState("");
+  // Collapsible policies section
+  const [politicasAbiertas, setPoliticasAbiertas] = useState(false);
   // Intake validation attempt tracker
   const [intentoContinuar, setIntentoContinuar] = useState(false);
 
@@ -1333,6 +1335,29 @@ export default function BookingPage() {
                 </button>
               )}
             </div>
+
+            {/* Políticas del negocio — collapsible */}
+            {negocio?.politicasUrl && (
+              <div className="mt-4 rounded-2xl border border-slate-200 overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setPoliticasAbiertas((v) => !v)}
+                  className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
+                >
+                  <span>Políticas del negocio</span>
+                  {politicasAbiertas ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                </button>
+                {politicasAbiertas && (
+                  <div className="px-4 pb-4">
+                    <img
+                      src={negocio.politicasUrl}
+                      alt="Políticas del negocio"
+                      className="w-full max-h-[500px] object-contain rounded-xl"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
 
             <button onClick={irAtras} className="mt-4 w-full py-3 rounded-2xl border-2 border-slate-200 text-sm font-medium text-slate-600 hover:border-slate-300 transition inline-flex items-center justify-center gap-1.5">
               <ChevronLeft size={15} />

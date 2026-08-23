@@ -419,6 +419,30 @@ namespace AppointVaAPI.Controllers.V1
             return await SubirImagenNegocioAsync(_contexto.NegocioId.Value, archivo, "portada");
         }
 
+        // POST api/negocios/perfil/politicas
+        [HttpPost("perfil/politicas")]
+        [Authorize(Roles = Roles.Propietario)]
+        public async Task<IActionResult> SubirPoliticas(IFormFile archivo)
+        {
+            if (_contexto.NegocioId is null) return Unauthorized();
+            return await SubirImagenNegocioAsync(_contexto.NegocioId.Value, archivo, "politicas");
+        }
+
+        // DELETE api/negocios/perfil/politicas
+        [HttpDelete("perfil/politicas")]
+        [Authorize(Roles = Roles.Propietario)]
+        public async Task<IActionResult> EliminarPoliticas()
+        {
+            if (_contexto.NegocioId is null) return Unauthorized();
+            var negocio = await _repo.ObtenerPorIdAsync(_contexto.NegocioId.Value);
+            if (negocio is null) return NotFound(new { mensaje = "Negocio no encontrado" });
+            negocio.PoliticasUrl = null;
+            negocio.FechaActualizacion = DateTime.UtcNow;
+            await _repo.ActualizarAsync(negocio);
+            await _cacheStore.EvictByTagAsync($"negocio-{negocio.Slug}", CancellationToken.None);
+            return NoContent();
+        }
+
         private async Task<IActionResult> SubirImagenNegocioAsync(Guid negocioId, IFormFile archivo, string tipo)
         {
             if (archivo is null || archivo.Length == 0)
@@ -433,6 +457,8 @@ namespace AppointVaAPI.Controllers.V1
 
                 if (tipo == "logo")
                     negocio.LogoUrl = url;
+                else if (tipo == "politicas")
+                    negocio.PoliticasUrl = url;
                 else
                     negocio.PortadaUrl = url;
 
@@ -645,6 +671,7 @@ namespace AppointVaAPI.Controllers.V1
             Descripcion = n.Descripcion,
             LogoUrl = n.LogoUrl,
             PortadaUrl = n.PortadaUrl,
+            PoliticasUrl = n.PoliticasUrl,
             ColorPrimario = n.ColorPrimario,
             ColorSecundario = n.ColorSecundario,
             ZonaHoraria = n.ZonaHoraria,

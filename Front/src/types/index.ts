@@ -39,6 +39,7 @@ export interface NegocioPublico {
   descripcion?: string;
   logoUrl?: string;
   portadaUrl?: string;
+  politicasUrl?: string;
   portadaObjectPosition?: string;
   colorPrimario?: string;
   colorSecundario?: string;
@@ -327,6 +328,7 @@ export interface NegocioDto {
   descripcion?: string;
   logoUrl?: string;
   portadaUrl?: string;
+  politicasUrl?: string;
   portadaObjectPosition?: string;
   colorPrimario?: string;
   colorSecundario?: string;

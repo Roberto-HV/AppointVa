@@ -30,6 +30,19 @@ export const negociosApi = {
     return data;
   },
 
+  subirPoliticas: async (archivo: File): Promise<{ url: string }> => {
+    const form = new FormData();
+    form.append("archivo", archivo);
+    const { data } = await api.post("/negocios/perfil/politicas", form, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return data;
+  },
+
+  eliminarPoliticas: async (): Promise<void> => {
+    await api.delete("/negocios/perfil/politicas");
+  },
+
   obtenerHorarios: async (): Promise<HorarioDiaDto[]> => {
     const { data } = await api.get("/negocios/perfil/horarios");
     return data;

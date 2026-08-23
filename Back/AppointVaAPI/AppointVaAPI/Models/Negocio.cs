@@ -20,6 +20,7 @@ namespace AppointVaAPI.Models
         public string? PortadaUrl { get; set; }
         [MaxLength(20)]
         public string? PortadaObjectPosition { get; set; }
+        public string? PoliticasUrl { get; set; }
         public string? ColorPrimario { get; set; }
         public string? ColorSecundario { get; set; }
         [Required]
