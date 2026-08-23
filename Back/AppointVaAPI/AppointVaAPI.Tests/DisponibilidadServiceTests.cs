@@ -610,4 +610,110 @@ public class DisponibilidadServiceTests
         result.Should().Contain(s => s.HoraTexto == "09:00",
             "con buffer 0, FinEn == slotInicio no debe bloquear el slot");
     }
+
+    // ── Tests — multi-interval scenarios ─────────────────────────────────────
+
+    [Fact]
+    public async Task ObtenerSlots_DosIntervalosEmpleado_SlotsSoloEnCadaIntervalo()
+    {
+        // A1 — Two employee intervals produce slots in both; gap between them is empty.
+        // Employee Tuesday: 09:00–12:00 AND 14:00–17:00. Business Tuesday: 08:00–18:00. 60 min.
+        var db = CreateDb();
+        var svc = CreateService(db);
+        var (negocioId, servicio) = SeedServicio(db, duracionMinutos: 60);
+        var empleado = SeedEmpleado(db, negocioId);
+        SeedEmpleadoServicio(db, empleado.Id, servicio.Id);
+        var fecha = NextWeekday(DayOfWeek.Tuesday);
+        SeedHorario(db, empleado.Id, ToDiaSemana(DayOfWeek.Tuesday),
+            new TimeSpan(9, 0, 0), new TimeSpan(12, 0, 0));
+        SeedHorario(db, empleado.Id, ToDiaSemana(DayOfWeek.Tuesday),
+            new TimeSpan(14, 0, 0), new TimeSpan(17, 0, 0));
+        SeedHorarioNegocio(db, negocioId, (byte)(int)DayOfWeek.Tuesday,
+            new TimeSpan(8, 0, 0), new TimeSpan(18, 0, 0));
+        await db.SaveChangesAsync();
+
+        var result = await svc.ObtenerSlotsDisponiblesAsync(negocioId, servicio.Id, empleado.Id, fecha);
+
+        result.Should().Contain(s => s.HoraTexto == "09:00", "primer intervalo inicio");
+        result.Should().Contain(s => s.HoraTexto == "10:00", "primer intervalo medio");
+        result.Should().Contain(s => s.HoraTexto == "11:00", "último slot del primer intervalo");
+        result.Should().NotContain(s => s.HoraTexto == "12:00", "slot 12:00–13:00 supera el fin del primer intervalo");
+        result.Should().NotContain(s => s.HoraTexto == "13:00", "13:00 cae en el hueco entre intervalos");
+        result.Should().Contain(s => s.HoraTexto == "14:00", "segundo intervalo inicio");
+        result.Should().Contain(s => s.HoraTexto == "15:00", "segundo intervalo medio");
+        result.Should().Contain(s => s.HoraTexto == "16:00", "último slot del segundo intervalo");
+    }
+
+    [Fact]
+    public async Task ObtenerSlots_IntervalosEmpleadoParcialmenteAfueraNegocio_SoloInterseccionEmitida()
+    {
+        // A2 — Employee interval partially outside business hours: only intersection emitted.
+        // Employee Wednesday: 07:00–18:00. Business Wednesday: 09:00–17:00. 60 min.
+        var db = CreateDb();
+        var svc = CreateService(db);
+        var (negocioId, servicio) = SeedServicio(db, duracionMinutos: 60);
+        var empleado = SeedEmpleado(db, negocioId);
+        SeedEmpleadoServicio(db, empleado.Id, servicio.Id);
+        var fecha = NextWeekday(DayOfWeek.Wednesday);
+        SeedHorario(db, empleado.Id, ToDiaSemana(DayOfWeek.Wednesday),
+            new TimeSpan(7, 0, 0), new TimeSpan(18, 0, 0));
+        SeedHorarioNegocio(db, negocioId, (byte)(int)DayOfWeek.Wednesday,
+            new TimeSpan(9, 0, 0), new TimeSpan(17, 0, 0));
+        await db.SaveChangesAsync();
+
+        var result = await svc.ObtenerSlotsDisponiblesAsync(negocioId, servicio.Id, empleado.Id, fecha);
+
+        result.Should().NotContain(s => s.HoraTexto == "07:00", "07:00 está antes de la apertura del negocio");
+        result.Should().Contain(s => s.HoraTexto == "09:00", "09:00 está dentro del horario del negocio");
+        result.Should().Contain(s => s.HoraTexto == "16:00", "16:00–17:00 cabe justo dentro del cierre");
+        result.Should().NotContain(s => s.HoraTexto == "17:00", "slot 17:00–18:00 supera el cierre del negocio (17:00)");
+    }
+
+    [Fact]
+    public async Task ObtenerSlots_NegocioSinHorarioParaEseDia_CeroSlots()
+    {
+        // A3 — Business closed (no active rows for that day) → zero slots.
+        // Employee Thursday: 09:00–17:00. No business rows for Thursday.
+        var db = CreateDb();
+        var svc = CreateService(db);
+        var (negocioId, servicio) = SeedServicio(db, duracionMinutos: 60);
+        var empleado = SeedEmpleado(db, negocioId);
+        SeedEmpleadoServicio(db, empleado.Id, servicio.Id);
+        var fecha = NextWeekday(DayOfWeek.Thursday);
+        SeedHorario(db, empleado.Id, ToDiaSemana(DayOfWeek.Thursday),
+            new TimeSpan(9, 0, 0), new TimeSpan(17, 0, 0));
+        // Deliberately NO SeedHorarioNegocio for Thursday
+        await db.SaveChangesAsync();
+
+        var result = await svc.ObtenerSlotsDisponiblesAsync(negocioId, servicio.Id, empleado.Id, fecha);
+
+        result.Should().BeEmpty("sin horario del negocio para ese día no se emiten slots");
+    }
+
+    [Fact]
+    public async Task ObtenerSlots_NegocioConGap_SlotEnGapNoEmitido()
+    {
+        // A4 — Business has a gap: slot straddling the gap is not emitted.
+        // Employee Friday: 08:00–18:00. Business Friday: 08:00–12:00 AND 14:00–18:00. 60 min.
+        var db = CreateDb();
+        var svc = CreateService(db);
+        var (negocioId, servicio) = SeedServicio(db, duracionMinutos: 60);
+        var empleado = SeedEmpleado(db, negocioId);
+        SeedEmpleadoServicio(db, empleado.Id, servicio.Id);
+        var fecha = NextWeekday(DayOfWeek.Friday);
+        SeedHorario(db, empleado.Id, ToDiaSemana(DayOfWeek.Friday),
+            new TimeSpan(8, 0, 0), new TimeSpan(18, 0, 0));
+        SeedHorarioNegocio(db, negocioId, (byte)(int)DayOfWeek.Friday,
+            new TimeSpan(8, 0, 0), new TimeSpan(12, 0, 0));
+        SeedHorarioNegocio(db, negocioId, (byte)(int)DayOfWeek.Friday,
+            new TimeSpan(14, 0, 0), new TimeSpan(18, 0, 0));
+        await db.SaveChangesAsync();
+
+        var result = await svc.ObtenerSlotsDisponiblesAsync(negocioId, servicio.Id, empleado.Id, fecha);
+
+        result.Should().Contain(s => s.HoraTexto == "11:00", "11:00–12:00 cabe dentro del primer intervalo del negocio");
+        result.Should().NotContain(s => s.HoraTexto == "12:00", "slot 12:00–13:00 supera el primer intervalo (cierra 12:00)");
+        result.Should().NotContain(s => s.HoraTexto == "13:00", "13:00 cae en el hueco del negocio (12:00–14:00)");
+        result.Should().Contain(s => s.HoraTexto == "14:00", "14:00–15:00 cabe dentro del segundo intervalo del negocio");
+    }
 }

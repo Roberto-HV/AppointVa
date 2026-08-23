@@ -318,8 +318,8 @@ namespace AppointVaAPI.Controllers.V1
                     Activo    = intervalos.Any(),
                     Intervalos = intervalos.Select(h => new HorarioIntervaloDto
                     {
-                        HoraInicio = h.HoraInicio.ToString(@"HH\:mm"),
-                        HoraFin    = h.HoraFin.ToString(@"HH\:mm")
+                        HoraInicio = h.HoraInicio.ToString(@"hh\:mm"),
+                        HoraFin    = h.HoraFin.ToString(@"hh\:mm")
                     }).ToList()
                 };
             });
