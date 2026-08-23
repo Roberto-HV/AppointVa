@@ -939,6 +939,7 @@ export default function PerfilPage() {
                             <TimePicker
                               value={iv.horaFin}
                               onChange={(v) => actualizarIntervalo(h.diaSemana, idx, "horaFin", v)}
+                              minTime={iv.horaInicio}
                             />
                           </div>
                           {h.intervalos.length > 1 && (

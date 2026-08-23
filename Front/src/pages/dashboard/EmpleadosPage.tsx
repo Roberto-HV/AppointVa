@@ -567,6 +567,7 @@ export default function EmpleadosPage() {
                         <input
                           type="time"
                           value={iv.horaFin}
+                          min={iv.horaInicio}
                           onChange={(e) => actualizarIntervaloEmpleado(i, idx, "horaFin", e.target.value)}
                           className="px-2 py-1 rounded border border-gray-200 text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100 dark:border-slate-600"
                         />
