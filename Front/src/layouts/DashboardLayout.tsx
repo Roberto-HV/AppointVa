@@ -338,7 +338,7 @@ export default function DashboardLayout() {
         className={`
           fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-slate-900 border-r border-slate-100 dark:border-slate-700/50 flex flex-col
           transition-all duration-200 ease-in-out
-          xl:static xl:translate-x-0 xl:h-full xl:shrink-0
+          xl:static xl:z-auto xl:translate-x-0 xl:h-full xl:shrink-0
           ${sidebarCollapsed ? "xl:w-16" : "xl:w-60"}
           ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
         `}
