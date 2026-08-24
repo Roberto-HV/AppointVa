@@ -1,6 +1,6 @@
 ﻿import { useState, useRef, useEffect } from "react";
 import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
-import { Menu, X, LayoutDashboard, CalendarDays, Users, Scissors, UserCheck, Building2, BarChart2, ShieldCheck, UserCircle, Images, ClipboardList, Tag, LogOut, ChevronUp, ChevronLeft, ChevronRight, Mail, BookOpen, Moon, Sun, CreditCard, Star } from "lucide-react";
+import { Menu, X, LayoutDashboard, CalendarDays, Users, Scissors, UserCheck, Building2, Link, Copy, Check, BarChart2, ShieldCheck, UserCircle, Images, ClipboardList, Tag, LogOut, ChevronUp, ChevronLeft, ChevronRight, Mail, BookOpen, Moon, Sun, CreditCard, Star } from "lucide-react";
 import { useTheme } from "../hooks/useTheme";
 import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "../store/authStore";
@@ -173,10 +173,9 @@ export default function DashboardLayout() {
     try { localStorage.setItem("sidebar-collapsed", next ? "1" : "0"); } catch {}
     return next;
   });
-  const [sidebarMenuOpen, setSidebarMenuOpen] = useState(false);
+  const [copiado, setCopiado] = useState(false);
   const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
   const prevPendientesRef = useRef<number | null>(null);
-  const sidebarUserRef = useRef<HTMLDivElement>(null);
   const headerUserRef = useRef<HTMLDivElement>(null);
   const desktopUserRef = useRef<HTMLDivElement>(null);
 
@@ -257,6 +256,17 @@ export default function DashboardLayout() {
   const iniciales = (usuario?.nombreCompleto ?? "?")
     .split(" ").slice(0, 2).map((n: string) => n[0]).join("").toUpperCase();
 
+  const bookingUrl = perfil ? `${window.location.origin}/b/${perfil.slug}` : "";
+
+  const copiarEnlace = async () => {
+    if (!bookingUrl) return;
+    try {
+      await navigator.clipboard.writeText(bookingUrl);
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 2000);
+    } catch { /* clipboard failed silently */ }
+  };
+
   const handleLogout = async () => {
     try {
       if (refreshToken) await authApi.logout(refreshToken);
@@ -272,15 +282,6 @@ export default function DashboardLayout() {
     (document.activeElement as HTMLElement)?.blur();
     setSidebarOpen(false);
   };
-
-  useEffect(() => {
-    if (!sidebarMenuOpen) return;
-    const handler = (e: MouseEvent) => {
-      if (!sidebarUserRef.current?.contains(e.target as Node)) setSidebarMenuOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [sidebarMenuOpen]);
 
   useEffect(() => {
     if (!headerMenuOpen) return;
@@ -306,8 +307,8 @@ export default function DashboardLayout() {
     iniciales,
     rolChip,
     rol: usuario?.rol ?? "",
-    onProfile: () => { navigate("/dashboard/mi-perfil"); setSidebarMenuOpen(false); setHeaderMenuOpen(false); cerrarSidebar(); },
-    onLogout: () => { setSidebarMenuOpen(false); setHeaderMenuOpen(false); handleLogout(); },
+    onProfile: () => { navigate("/dashboard/mi-perfil"); setHeaderMenuOpen(false); cerrarSidebar(); },
+    onLogout: () => { setHeaderMenuOpen(false); handleLogout(); },
     theme,
     onToggleTheme: toggleTheme,
   };
@@ -436,37 +437,36 @@ export default function DashboardLayout() {
           })}
         </nav>
 
-        {/* Usuario — popover hacia arriba */}
-        <div ref={sidebarUserRef} className="relative p-3 border-t border-slate-100 dark:border-slate-700/50 shrink-0">
-          {sidebarMenuOpen && (
-            <div className="absolute bottom-full left-2 right-2 mb-2 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-2xl overflow-hidden z-50">
-              <UserMenuContent {...menuProps} />
-            </div>
-          )}
-          <button
-            onClick={() => setSidebarMenuOpen((o) => !o)}
-            className={`w-full flex items-center py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition group ${sidebarCollapsed ? "justify-center px-0" : "gap-3 px-2"}`}
-          >
-            <div className="w-8 h-8 rounded-full bg-slate-900 flex items-center justify-center shrink-0 overflow-hidden">
-              {usuario?.fotoUrl
-                ? <img src={usuario.fotoUrl} alt="Avatar" className="w-full h-full object-cover" />
-                : <span className="text-[11px] font-bold text-white">{iniciales}</span>
-              }
-            </div>
-            {!sidebarCollapsed && (
-              <>
-                <div className="flex-1 min-w-0 text-left">
-                  <p className="text-xs font-semibold text-slate-800 dark:text-slate-100 truncate">{usuario?.nombreCompleto}</p>
-                  <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate">{usuario?.email}</p>
+        {/* Enlace de reservas */}
+        {!esEmpleado && bookingUrl && (
+          <div className={`p-3 border-t border-slate-100 dark:border-slate-700/50 shrink-0 ${sidebarCollapsed ? "flex justify-center" : ""}`}>
+            {sidebarCollapsed ? (
+              <Tooltip text="Enlace de reservas" side="right">
+                <span className="block">
+                  <button
+                    onClick={copiarEnlace}
+                    className="w-11 h-11 flex items-center justify-center rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white transition"
+                  >
+                    {copiado ? <Check size={20} className="text-emerald-500" /> : <Link size={20} />}
+                  </button>
+                </span>
+              </Tooltip>
+            ) : (
+              <button
+                onClick={copiarEnlace}
+                className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-medium bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-100 dark:border-slate-700 transition group"
+              >
+                <div className="w-6 h-6 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 flex items-center justify-center shrink-0">
+                  {copiado ? <Check size={12} className="text-emerald-500" /> : <Link size={12} className="text-slate-500" />}
                 </div>
-                <ChevronUp
-                  size={13}
-                  className={`text-slate-300 group-hover:text-slate-400 transition-transform shrink-0 ${sidebarMenuOpen ? "" : "rotate-180"}`}
-                />
-              </>
+                <span className="flex-1 text-left text-slate-600 dark:text-slate-300 truncate">
+                  {copiado ? "¡Copiado!" : "Enlace de reservas"}
+                </span>
+                {!copiado && <Copy size={11} className="text-slate-300 group-hover:text-slate-400 transition shrink-0" />}
+              </button>
             )}
-          </button>
-        </div>
+          </div>
+        )}
       </aside>
 
       {/* ── Columna derecha ── */}
