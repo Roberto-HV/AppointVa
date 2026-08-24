@@ -760,7 +760,7 @@ export default function BookingPage() {
     <div className="min-h-screen bg-slate-50">
       {/* Header oscuro del negocio */}
       <div
-        className="relative overflow-hidden"
+        className="relative overflow-hidden min-h-[180px] sm:min-h-[240px]"
         style={{ background: "#0C0C0F" }}
       >
         {/* Portada visible */}
