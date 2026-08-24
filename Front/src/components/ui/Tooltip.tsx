@@ -22,12 +22,12 @@ const TooltipContent = React.forwardRef<
 ));
 TooltipContent.displayName = TooltipPrimitive.Content.displayName;
 
-// Simple backward-compatible wrapper: <Tooltip text="..."><child /></Tooltip>
-function Tooltip({ text, children }: { text: string; children: React.ReactNode }) {
+// Simple backward-compatible wrapper: <Tooltip text="..." side="right"><child /></Tooltip>
+function Tooltip({ text, children, side }: { text: string; children: React.ReactNode; side?: "top" | "right" | "bottom" | "left" }) {
   return (
     <TooltipRoot>
       <TooltipTrigger asChild>{children}</TooltipTrigger>
-      <TooltipContent>{text}</TooltipContent>
+      <TooltipContent side={side}>{text}</TooltipContent>
     </TooltipRoot>
   );
 }

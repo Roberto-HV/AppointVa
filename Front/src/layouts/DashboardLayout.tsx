@@ -1,6 +1,6 @@
 ﻿import { useState, useRef, useEffect } from "react";
 import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
-import { Menu, X, LayoutDashboard, CalendarDays, Users, Scissors, UserCheck, Building2, Link, Copy, Check, BarChart2, ShieldCheck, UserCircle, Images, ClipboardList, Tag, LogOut, ChevronUp, Mail, BookOpen, Moon, Sun, CreditCard, Star } from "lucide-react";
+import { Menu, X, LayoutDashboard, CalendarDays, Users, Scissors, UserCheck, Building2, BarChart2, ShieldCheck, UserCircle, Images, ClipboardList, Tag, LogOut, ChevronUp, ChevronLeft, ChevronRight, Mail, BookOpen, Moon, Sun, CreditCard, Star } from "lucide-react";
 import { useTheme } from "../hooks/useTheme";
 import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "../store/authStore";
@@ -165,7 +165,14 @@ export default function DashboardLayout() {
   const { toast } = useToastStore();
   const { theme, toggle: toggleTheme } = useTheme();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [copiado, setCopiado] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
+    try { return localStorage.getItem("sidebar-collapsed") === "1"; } catch { return false; }
+  });
+  const toggleCollapsed = () => setSidebarCollapsed(o => {
+    const next = !o;
+    try { localStorage.setItem("sidebar-collapsed", next ? "1" : "0"); } catch {}
+    return next;
+  });
   const [sidebarMenuOpen, setSidebarMenuOpen] = useState(false);
   const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
   const prevPendientesRef = useRef<number | null>(null);
@@ -247,20 +254,8 @@ export default function DashboardLayout() {
     prevPendientesRef.current = pendientesCnt;
   }, [pendientesCnt, toast]);
 
-  const bookingUrl = perfil ? `${window.location.origin}/b/${perfil.slug}` : "";
   const iniciales = (usuario?.nombreCompleto ?? "?")
     .split(" ").slice(0, 2).map((n: string) => n[0]).join("").toUpperCase();
-
-  const copiarEnlace = async () => {
-    if (!bookingUrl) return;
-    try {
-      await navigator.clipboard.writeText(bookingUrl);
-      setCopiado(true);
-      setTimeout(() => setCopiado(false), 2000);
-    } catch {
-      // clipboard failed silently
-    }
-  };
 
   const handleLogout = async () => {
     try {
@@ -341,44 +336,58 @@ export default function DashboardLayout() {
       <aside
         className={`
           fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-slate-900 border-r border-slate-100 dark:border-slate-700/50 flex flex-col
-          transition-transform duration-200 ease-in-out
-          xl:static xl:w-60 xl:translate-x-0 xl:h-full xl:shrink-0
+          transition-all duration-200 ease-in-out
+          xl:static xl:translate-x-0 xl:h-full xl:shrink-0
+          ${sidebarCollapsed ? "xl:w-16" : "xl:w-60"}
           ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
         `}
         style={perfil?.sector === "salud" ? { backgroundColor: "#0F4C75" } : undefined}
       >
         {/* Logo + cerrar móvil */}
-        <div
-          className="relative px-5 py-3 flex items-center justify-center"
-        >
+        <div className="relative px-5 py-3 flex items-center justify-center shrink-0">
           <div className="flex flex-col items-center gap-1">
             <NavLink to="/dashboard" end onClick={cerrarSidebar}>
-              <img src="/MasterLogo.png" alt="AppointVa" className="h-9 object-contain rounded-lg" />
+              <img
+                src="/MasterLogo.png"
+                alt="AppointVa"
+                className={`object-contain rounded-lg transition-all duration-200 ${sidebarCollapsed ? "h-7" : "h-9"}`}
+              />
             </NavLink>
-            {esEmpleado && (
+            {!sidebarCollapsed && esEmpleado && (
               <span className="text-[10px] font-bold bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full uppercase tracking-wide">
                 Empleado
               </span>
             )}
           </div>
+          {/* Cerrar — solo móvil */}
           <button onClick={cerrarSidebar} className="absolute right-3 xl:hidden text-slate-400 hover:text-slate-600">
             <X size={20} />
+          </button>
+          {/* Colapsar — solo desktop */}
+          <button
+            onClick={toggleCollapsed}
+            className="absolute right-2 hidden xl:flex w-6 h-6 items-center justify-center rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition"
+            title={sidebarCollapsed ? "Expandir menú" : "Colapsar menú"}
+          >
+            {sidebarCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
           </button>
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 py-3 px-3 space-y-0.5 overflow-y-auto">
+        <nav className={`flex-1 py-3 space-y-0.5 overflow-y-auto ${sidebarCollapsed ? "px-2" : "px-3"}`}>
           {navItems.map((item) => {
             const Icon = item.icon;
             const esCitas = item.to === "/dashboard/citas";
-            return (
+            const link = (
               <NavLink
                 key={item.to}
                 to={item.to}
                 end={item.end}
                 onClick={cerrarSidebar}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                  `flex items-center py-2.5 rounded-xl text-sm font-medium transition-all overflow-hidden ${
+                    sidebarCollapsed ? "justify-center px-0" : "gap-3 px-3"
+                  } ${
                     isActive
                       ? "bg-slate-900 dark:bg-slate-600 text-white font-semibold shadow-md"
                       : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white"
@@ -397,40 +406,29 @@ export default function DashboardLayout() {
                     }`}>
                       <Icon size={15} className={isActive ? "text-white" : "text-slate-500 dark:text-slate-400"} />
                     </div>
-                    <span className="flex-1">{item.label}</span>
-                    {esCitas && hoyCnt > 0 && (
-                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center leading-none ${
-                        pendientesCnt > 0
-                          ? "bg-amber-100 text-amber-700 border border-amber-200"
-                          : "bg-slate-100 text-slate-500"
-                      }`}>
-                        {hoyCnt > 9 ? "9+" : hoyCnt}
-                      </span>
+                    {!sidebarCollapsed && (
+                      <>
+                        <span className="flex-1 whitespace-nowrap">{item.label}</span>
+                        {esCitas && hoyCnt > 0 && (
+                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center leading-none ${
+                            pendientesCnt > 0
+                              ? "bg-amber-100 text-amber-700 border border-amber-200"
+                              : "bg-slate-100 text-slate-500"
+                          }`}>
+                            {hoyCnt > 9 ? "9+" : hoyCnt}
+                          </span>
+                        )}
+                      </>
                     )}
                   </>
                 )}
               </NavLink>
             );
+            return sidebarCollapsed ? (
+              <Tooltip key={item.to} text={item.label} side="right">{link}</Tooltip>
+            ) : link;
           })}
         </nav>
-
-        {/* Enlace de reservas — Klarna style */}
-        {!esEmpleado && bookingUrl && (
-          <div className="px-3 pb-3">
-            <button
-              onClick={copiarEnlace}
-              className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-medium bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-100 dark:border-slate-700 transition group"
-            >
-              <div className="w-6 h-6 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 flex items-center justify-center shrink-0">
-                {copiado ? <Check size={12} className="text-emerald-500" /> : <Link size={12} className="text-slate-500" />}
-              </div>
-              <span className="flex-1 text-left text-slate-600 dark:text-slate-300 truncate">
-                {copiado ? "¡Copiado!" : "Enlace de reservas"}
-              </span>
-              {!copiado && <Copy size={11} className="text-slate-300 group-hover:text-slate-400 transition shrink-0" />}
-            </button>
-          </div>
-        )}
 
         {/* Usuario — popover hacia arriba */}
         <div ref={sidebarUserRef} className="relative p-3 border-t border-slate-100 dark:border-slate-700/50 shrink-0">
@@ -441,7 +439,7 @@ export default function DashboardLayout() {
           )}
           <button
             onClick={() => setSidebarMenuOpen((o) => !o)}
-            className="w-full flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition group"
+            className={`w-full flex items-center py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition group ${sidebarCollapsed ? "justify-center px-0" : "gap-3 px-2"}`}
           >
             <div className="w-8 h-8 rounded-full bg-slate-900 flex items-center justify-center shrink-0 overflow-hidden">
               {usuario?.fotoUrl
@@ -449,14 +447,18 @@ export default function DashboardLayout() {
                 : <span className="text-[11px] font-bold text-white">{iniciales}</span>
               }
             </div>
-            <div className="flex-1 min-w-0 text-left">
-              <p className="text-xs font-semibold text-slate-800 dark:text-slate-100 truncate">{usuario?.nombreCompleto}</p>
-              <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate">{usuario?.email}</p>
-            </div>
-            <ChevronUp
-              size={13}
-              className={`text-slate-300 group-hover:text-slate-400 transition-transform shrink-0 ${sidebarMenuOpen ? "" : "rotate-180"}`}
-            />
+            {!sidebarCollapsed && (
+              <>
+                <div className="flex-1 min-w-0 text-left">
+                  <p className="text-xs font-semibold text-slate-800 dark:text-slate-100 truncate">{usuario?.nombreCompleto}</p>
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate">{usuario?.email}</p>
+                </div>
+                <ChevronUp
+                  size={13}
+                  className={`text-slate-300 group-hover:text-slate-400 transition-transform shrink-0 ${sidebarMenuOpen ? "" : "rotate-180"}`}
+                />
+              </>
+            )}
           </button>
         </div>
       </aside>
