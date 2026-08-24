@@ -943,14 +943,14 @@ export default function PerfilPage() {
                     <div className="pl-11 space-y-1.5">
                       {h.intervalos.map((iv, idx) => (
                         <div key={idx} className="flex items-center gap-2">
-                          <div className="w-32">
+                          <div className="flex-1 min-w-0">
                             <TimePicker
                               value={iv.horaInicio}
                               onChange={(v) => actualizarIntervalo(h.diaSemana, idx, "horaInicio", v)}
                             />
                           </div>
                           <span className="text-gray-400 dark:text-gray-500 text-sm shrink-0">—</span>
-                          <div className="w-32">
+                          <div className="flex-1 min-w-0">
                             <TimePicker
                               value={iv.horaFin}
                               onChange={(v) => actualizarIntervalo(h.diaSemana, idx, "horaFin", v)}
