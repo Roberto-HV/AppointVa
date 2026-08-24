@@ -31,8 +31,8 @@ interface MiCita {
 }
 
 interface Session {
-  email: string;
-  telefono: string;
+  email?: string;
+  telefono?: string;
 }
 
 const ESTADO_CONFIG: Record<string, { bg: string; text: string; dot: string }> = {
@@ -124,8 +124,10 @@ export default function MisCitasPage() {
 
   const buscar = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim() || !telefono.trim()) return;
-    const s = { email: email.trim(), telefono: telefono.trim() };
+    if (!email.trim() && !telefono.trim()) return;
+    const s: Session = {};
+    if (email.trim()) s.email = email.trim();
+    if (telefono.trim()) s.telefono = telefono.trim();
     setPagina(1);
     setBuscado(s);
     setSession(s);
@@ -215,9 +217,9 @@ export default function MisCitasPage() {
             )}
           </div>
           {buscado ? (
-            <p className="text-sm text-slate-500 ml-[52px]">{buscado.email}</p>
+            <p className="text-sm text-slate-500 ml-[52px]">{buscado.email ?? buscado.telefono}</p>
           ) : (
-            <p className="text-sm text-slate-500 ml-[52px]">Ingresa tu correo y teléfono para ver tus reservas</p>
+            <p className="text-sm text-slate-500 ml-[52px]">Ingresa tu correo o teléfono para ver tus reservas</p>
           )}
         </div>
 
@@ -233,7 +235,6 @@ export default function MisCitasPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="tu@correo.com"
-                required
                 className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-slate-700/20 focus:border-slate-700 transition bg-white"
               />
             </div>
@@ -246,13 +247,12 @@ export default function MisCitasPage() {
                 value={telefono}
                 onChange={(e) => setTelefono(e.target.value)}
                 placeholder="10 dígitos"
-                required
                 className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-slate-700/20 focus:border-slate-700 transition bg-white"
               />
             </div>
             <button
               type="submit"
-              disabled={!email.trim() || !telefono.trim() || isLoading}
+              disabled={(!email.trim() && !telefono.trim()) || isLoading}
               className="w-full py-3.5 bg-slate-700 hover:bg-slate-800 disabled:opacity-40 text-white text-sm font-bold rounded-2xl transition"
             >
               {isLoading ? "Buscando…" : "Ver mis citas"}
@@ -287,7 +287,7 @@ export default function MisCitasPage() {
                   <CalendarDays size={20} className="text-slate-400" />
                 </div>
                 <p className="text-slate-700 font-semibold text-sm mb-1">Sin citas registradas</p>
-                <p className="text-slate-400 text-xs mb-5">No encontramos reservas asociadas a este correo.</p>
+                <p className="text-slate-400 text-xs mb-5">No encontramos reservas con los datos proporcionados.</p>
                 <Link
                   to={`/b/${slug}`}
                   className="inline-flex items-center gap-1.5 text-sm font-semibold text-white bg-slate-700 hover:bg-slate-800 px-5 py-2.5 rounded-xl transition"
@@ -319,6 +319,7 @@ export default function MisCitasPage() {
                     {proximas.map((c) => {
                       const minRestantes = (new Date(c.inicioEn).getTime() - Date.now()) / 60000;
                       const puedeModificar = minRestantes > 0 && (!c.horasCancelacion || minRestantes > c.horasCancelacion * 60);
+                      const tieneEmail = !!buscado?.email;
                       return (
                       <div key={c.id} className="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm hover:shadow-md transition-shadow">
                         <div className="flex items-start justify-between gap-3 mb-3">
@@ -339,7 +340,7 @@ export default function MisCitasPage() {
                             {c.codigoConfirmacion}
                           </span>
                           <div className="flex items-center gap-3">
-                            {(c.estadoTexto === "Pendiente" || c.estadoTexto === "Confirmada") && puedeModificar && (
+                            {(c.estadoTexto === "Pendiente" || c.estadoTexto === "Confirmada") && puedeModificar && tieneEmail && (
                               <>
                                 <button
                                   onClick={() => { setReagendando(c); setSlotNuevo(null); setErrorReagenda(""); }}

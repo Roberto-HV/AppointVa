@@ -807,13 +807,13 @@ namespace AppointVaAPI.Controllers.V1
         [EnableRateLimiting("PublicoEstricto")]
         public async Task<IActionResult> ObtenerMisCitas(
             [FromQuery] string slug,
-            [FromQuery] string email,
-            [FromQuery] string telefono,
+            [FromQuery] string? email = null,
+            [FromQuery] string? telefono = null,
             [FromQuery] int pagina = 1,
             [FromQuery] int tamano = 10)
         {
-            if (string.IsNullOrWhiteSpace(slug) || string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(telefono))
-                return BadRequest(new { mensaje = "Slug, email y teléfono son requeridos" });
+            if (string.IsNullOrWhiteSpace(slug) || (string.IsNullOrWhiteSpace(email) && string.IsNullOrWhiteSpace(telefono)))
+                return BadRequest(new { mensaje = "Se requiere al menos correo o teléfono" });
 
             tamano = Math.Clamp(tamano, 1, 50);
             pagina = Math.Max(1, pagina);
@@ -822,17 +822,17 @@ namespace AppointVaAPI.Controllers.V1
             if (negocio is null || negocio.Activo != 1)
                 return NotFound(new { mensaje = "Negocio no encontrado" });
 
-            var emailNorm = email.ToLower().Trim();
-            var telefonoNorm = telefono.Trim();
+            var emailNorm = email?.ToLower().Trim();
+            var telefonoNorm = telefono?.Trim();
 
             var baseQuery = _db.Citas
-                .Where(c =>
-                    c.NegocioId == negocio.Id &&
-                    c.Cliente != null &&
-                    c.Cliente.Email != null &&
-                    c.Cliente.Email.ToLower() == emailNorm &&
-                    c.Cliente.Telefono == telefonoNorm)
+                .Where(c => c.NegocioId == negocio.Id && c.Cliente != null)
                 .AsNoTracking();
+
+            if (!string.IsNullOrWhiteSpace(emailNorm))
+                baseQuery = baseQuery.Where(c => c.Cliente!.Email != null && c.Cliente.Email.ToLower() == emailNorm);
+            if (!string.IsNullOrWhiteSpace(telefonoNorm))
+                baseQuery = baseQuery.Where(c => c.Cliente!.Telefono == telefonoNorm);
 
             var total = await baseQuery.CountAsync();
 
