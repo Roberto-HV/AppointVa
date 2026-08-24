@@ -127,7 +127,7 @@ export function DatePicker({ value, onChange, label, minDate, error }: DatePicke
       <button
         type="button"
         onClick={() => setOpen(o => !o)}
-        className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg border text-sm text-left transition ${
+        className={`w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border text-sm text-left transition ${
           error ? "border-red-400 bg-red-50 text-red-700"
                 : value ? "border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-800 dark:text-gray-100"
                         : "border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-400 dark:text-gray-500"
@@ -266,7 +266,7 @@ export function TimePicker({ value, onChange, label, minTime, maxTime, busySlots
       <button
         type="button"
         onClick={() => setOpen(o => !o)}
-        className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg border text-sm text-left transition ${
+        className={`w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border text-sm text-left transition ${
           error ? "border-red-400 bg-red-50 text-red-700"
                 : value ? "border-slate-300 bg-white text-gray-800"
                         : "border-gray-200 bg-white text-gray-400"
