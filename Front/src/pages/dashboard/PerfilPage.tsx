@@ -1051,9 +1051,9 @@ export default function PerfilPage() {
             className="text-indigo-400 text-sm font-semibold hover:text-indigo-300 transition">Confirmar</button>
         </div>
 
-        {/* Simulación del header del booking — draggable */}
+        {/* Simulación del header del booking — draggable, mismas clases que el booking real */}
         <div
-          className="relative overflow-hidden shrink-0 cursor-grab active:cursor-grabbing select-none"
+          className="relative overflow-hidden flex flex-col justify-end min-h-[180px] sm:min-h-[260px] cursor-grab active:cursor-grabbing select-none"
           style={{ background: "#0C0C0F" }}
           onPointerDown={(e) => {
             e.preventDefault();
@@ -1082,27 +1082,27 @@ export default function PerfilPage() {
           {/* Gradiente igual que el booking */}
           <div className="absolute inset-0 pointer-events-none"
             style={{ background: "linear-gradient(to bottom, rgba(12,12,15,0.15) 0%, rgba(12,12,15,0.92) 100%)" }} />
-          {/* Contenido simulado */}
-          <div className="relative z-10 px-5 pt-12 pb-5">
-            <div className="flex items-start gap-3.5">
-              <div className="w-12 h-12 rounded-full overflow-hidden shrink-0 bg-slate-700 border-2 border-white/20">
+          {/* Contenido simulado — mismas clases responsive que el booking real */}
+          <div className="relative z-10 px-5 sm:px-8 pt-4 pb-4 sm:pb-6">
+            <div className="flex items-start gap-3.5 sm:gap-5">
+              <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl overflow-hidden shrink-0 bg-slate-700 border-2 border-white/20">
                 {negocio?.logoUrl
                   ? <img src={negocio.logoUrl} alt="" className="w-full h-full object-cover pointer-events-none" />
-                  : <span className="w-full h-full flex items-center justify-center text-lg font-bold text-white/40">
+                  : <span className="w-full h-full flex items-center justify-center text-2xl sm:text-4xl font-bold text-white/40">
                       {negocio?.nombre?.charAt(0)}
                     </span>}
               </div>
               <div>
-                <p className="text-white font-bold text-lg leading-tight pointer-events-none">{negocio?.nombre}</p>
+                <p className="text-white font-black text-[1.05rem] sm:text-2xl leading-tight pointer-events-none">{negocio?.nombre}</p>
               </div>
             </div>
           </div>
         </div>
 
         {/* Instrucción */}
-        <div className="px-5 pt-6 shrink-0 text-center">
-          <p className="text-white/50 text-xs">Arrastra para ajustar la posición</p>
-          <p className="text-white/30 text-[11px] mt-1">Así se verá en tu página de reservas</p>
+        <div className="px-5 pt-5 shrink-0 text-center">
+          <p className="text-white/50 text-xs sm:text-sm">Arrastra para ajustar la posición</p>
+          <p className="text-white/30 text-[11px] sm:text-xs mt-1">Así se verá en tu página de reservas</p>
         </div>
 
         <div className="flex-1" />
