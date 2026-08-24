@@ -5,7 +5,7 @@ import { z } from "zod";
 import type { ServicioPublico, EmpleadoPublico, SlotDisponible } from "../../types";
 import { SIN_PREFERENCIA_ID } from "./PasoEmpleado";
 import { formatPrecio, formatFechaLarga as formatFecha } from "../../utils/formatters";
-import { CalendarDays, User, Clock, Tag, Info } from "lucide-react";
+import { CalendarDays, User, Clock, Tag, Info, ChevronDown, ChevronUp } from "lucide-react";
 
 const schema = z.object({
   nombreCliente: z.string().min(2, "Ingresa tu nombre completo"),
@@ -26,9 +26,12 @@ interface Props {
   color?: string;
   notasLabel?: string;
   error?: string;
+  politicasUrl?: string;
 }
 
-export default function PasoDatosCliente({ servicio, empleado, slot, enviando, datosIniciales, onEnviar, color = "#334155", notasLabel = 'Notas (opcional)', error }: Props) {
+export default function PasoDatosCliente({ servicio, empleado, slot, enviando, datosIniciales, onEnviar, color = "#334155", notasLabel = 'Notas (opcional)', error, politicasUrl }: Props) {
+  const [politicasAbiertas, setPoliticasAbiertas] = useState(false);
+  const [politicasAceptadas, setPoliticasAceptadas] = useState(false);
   const { register, handleSubmit, watch, formState: { errors } } = useForm<DatosClienteForm>({
     resolver: zodResolver(schema),
     defaultValues: datosIniciales,
@@ -167,9 +170,43 @@ export default function PasoDatosCliente({ servicio, empleado, slot, enviando, d
             </div>
           </div>
         )}
+        {/* Políticas del negocio — collapsible + checkbox */}
+        {politicasUrl && (
+          <div className="rounded-2xl border border-slate-200 overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setPoliticasAbiertas((v) => !v)}
+              className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
+            >
+              <span>Políticas del negocio</span>
+              {politicasAbiertas ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </button>
+            {politicasAbiertas && (
+              <div className="px-4 pb-4">
+                <img
+                  src={politicasUrl}
+                  alt="Políticas del negocio"
+                  className="w-full max-h-[500px] object-contain rounded-xl"
+                />
+              </div>
+            )}
+            <label className="flex items-start gap-3 px-4 py-3 border-t border-slate-100 cursor-pointer hover:bg-slate-50 transition">
+              <input
+                type="checkbox"
+                checked={politicasAceptadas}
+                onChange={(e) => setPoliticasAceptadas(e.target.checked)}
+                className="mt-0.5 accent-slate-700 w-4 h-4 shrink-0"
+              />
+              <span className="text-xs text-slate-600 leading-relaxed">
+                He leído y acepto las políticas del negocio
+              </span>
+            </label>
+          </div>
+        )}
+
         <button
           type="submit"
-          disabled={enviando}
+          disabled={enviando || (!!politicasUrl && !politicasAceptadas)}
           className="w-full disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-2xl transition-all text-sm tracking-wide hover:opacity-90"
           style={{ background: color }}
         >
