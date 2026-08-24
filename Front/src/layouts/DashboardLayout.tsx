@@ -388,8 +388,8 @@ export default function DashboardLayout() {
                 end={item.end}
                 onClick={cerrarSidebar}
                 className={({ isActive }) =>
-                  `flex items-center py-2.5 rounded-xl text-sm font-medium transition-all overflow-hidden ${
-                    sidebarCollapsed ? "justify-center px-0" : "gap-3 px-3"
+                  `flex items-center rounded-xl text-sm font-medium transition-all ${
+                    sidebarCollapsed ? "justify-center px-0 py-1" : "gap-3 px-3 py-2.5"
                   } ${
                     isActive
                       ? "bg-slate-900 dark:bg-slate-600 text-white font-semibold shadow-md"
@@ -404,10 +404,10 @@ export default function DashboardLayout() {
               >
                 {({ isActive }) => (
                   <>
-                    <div className={`rounded-lg flex items-center justify-center shrink-0 transition-colors ${
-                      sidebarCollapsed ? "w-10 h-10" : "w-7 h-7"
+                    <div className={`rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                      sidebarCollapsed ? "w-11 h-11" : "w-7 h-7"
                     } ${isActive ? "bg-white/20" : "bg-transparent"}`}>
-                      <Icon size={sidebarCollapsed ? 20 : 15} className={isActive ? "text-white" : "text-slate-500 dark:text-slate-400"} />
+                      <Icon size={sidebarCollapsed ? 22 : 15} className={isActive ? "text-white" : "text-slate-500 dark:text-slate-400"} />
                     </div>
                     {!sidebarCollapsed && (
                       <>
@@ -428,7 +428,10 @@ export default function DashboardLayout() {
               </NavLink>
             );
             return sidebarCollapsed ? (
-              <Tooltip key={item.to} text={item.label} side="right">{link}</Tooltip>
+              <Tooltip key={item.to} text={item.label} side="right">
+                {/* span wrapper evita que asChild rompa el className-function de NavLink */}
+                <span className="block">{link}</span>
+              </Tooltip>
             ) : link;
           })}
         </nav>
