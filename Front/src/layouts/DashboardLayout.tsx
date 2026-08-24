@@ -366,17 +366,6 @@ export default function DashboardLayout() {
           </button>
         </div>
 
-        {/* Botón colapsar — solo desktop, fila propia para no solapar el logo */}
-        <div className={`hidden xl:flex shrink-0 px-3 pb-2 ${sidebarCollapsed ? "justify-center" : "justify-end"}`}>
-          <button
-            onClick={toggleCollapsed}
-            className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition"
-            title={sidebarCollapsed ? "Expandir menú" : "Colapsar menú"}
-          >
-            {sidebarCollapsed ? <ChevronRight size={15} /> : <ChevronLeft size={15} />}
-          </button>
-        </div>
-
         {/* Nav */}
         <nav className={`flex-1 py-3 space-y-0.5 overflow-y-auto ${sidebarCollapsed ? "px-2" : "px-3"}`}>
           {navItems.map((item) => {
@@ -468,6 +457,17 @@ export default function DashboardLayout() {
           </div>
         )}
       </aside>
+
+      {/* Pestaña de colapsar — div de ancho 0 anclado en el borde del sidebar */}
+      <div className="hidden xl:block w-0 relative z-20 shrink-0">
+        <button
+          onClick={toggleCollapsed}
+          title={sidebarCollapsed ? "Expandir menú" : "Colapsar menú"}
+          className="absolute left-0 top-20 -translate-x-1/2 flex w-5 h-9 items-center justify-center rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 shadow-sm transition-colors"
+        >
+          {sidebarCollapsed ? <ChevronRight size={12} /> : <ChevronLeft size={12} />}
+        </button>
+      </div>
 
       {/* ── Columna derecha ── */}
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
