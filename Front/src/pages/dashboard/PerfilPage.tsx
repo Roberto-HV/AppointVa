@@ -475,7 +475,7 @@ export default function PerfilPage() {
             <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Imágenes</h2>
             <div className="grid grid-cols-4 gap-3">
               {/* Logo */}
-              <div className="text-center">
+              <div className="flex flex-col items-center">
                 <div className="w-full aspect-square rounded-xl bg-gray-100 dark:bg-slate-700 overflow-hidden mb-2 flex items-center justify-center">
                   {negocio?.logoUrl
                     ? <img src={negocio.logoUrl} alt="Logo" className="w-full h-full object-cover" />
@@ -487,17 +487,17 @@ export default function PerfilPage() {
                   className="text-xs text-slate-700 dark:text-slate-300 hover:underline disabled:opacity-50">
                   {subiendoLogo ? "Subiendo..." : "Cambiar logo"}
                 </button>
-                {negocio?.logoUrl && (
-                  <div className="mt-1">
+                <div className="mt-auto pt-1 min-h-[1.25rem]">
+                  {negocio?.logoUrl && (
                     <button type="button" onClick={() => eliminarLogo()} disabled={eliminandoLogo}
                       className="text-xs text-red-500 hover:underline disabled:opacity-50">
                       {eliminandoLogo ? "Eliminando..." : "Eliminar"}
                     </button>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
               {/* Portada */}
-              <div className="text-center col-span-2">
+              <div className="flex flex-col items-center col-span-2">
                 <div className="w-full aspect-[2/1] rounded-xl bg-gray-100 dark:bg-slate-700 overflow-hidden mb-2 flex items-center justify-center">
                   {negocio?.portadaUrl
                     ? <img src={negocio.portadaUrl} alt="Portada" className="w-full h-full object-cover" style={{ objectPosition: portadaObjectPosition }} />
@@ -514,21 +514,23 @@ export default function PerfilPage() {
                   className="text-xs text-slate-700 dark:text-slate-300 hover:underline disabled:opacity-50">
                   {subiendoPortada ? "Subiendo..." : "Cambiar portada"}
                 </button>
-                {negocio?.portadaUrl && (
-                  <div className="mt-1 flex items-center justify-center gap-3">
-                    <button type="button" onClick={() => abrirPortadaModal(negocio.portadaUrl!)}
-                      className="text-xs text-indigo-500 hover:underline">
-                      Posicionar
-                    </button>
-                    <button type="button" onClick={() => eliminarPortada()} disabled={eliminandoPortada}
-                      className="text-xs text-red-500 hover:underline disabled:opacity-50">
-                      {eliminandoPortada ? "Eliminando..." : "Eliminar"}
-                    </button>
-                  </div>
-                )}
+                <div className="mt-auto pt-1 min-h-[1.25rem] flex items-center gap-3">
+                  {negocio?.portadaUrl && (
+                    <>
+                      <button type="button" onClick={() => abrirPortadaModal(negocio.portadaUrl!)}
+                        className="text-xs text-indigo-500 hover:underline">
+                        Posicionar
+                      </button>
+                      <button type="button" onClick={() => eliminarPortada()} disabled={eliminandoPortada}
+                        className="text-xs text-red-500 hover:underline disabled:opacity-50">
+                        {eliminandoPortada ? "Eliminando..." : "Eliminar"}
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
               {/* Políticas */}
-              <div className="text-center">
+              <div className="flex flex-col items-center">
                 <div className="w-full aspect-square rounded-xl bg-gray-100 dark:bg-slate-700 overflow-hidden mb-2 flex items-center justify-center">
                   {negocio?.politicasUrl
                     ? <img src={negocio.politicasUrl} alt="Políticas" className="w-full h-full object-contain" />
@@ -540,14 +542,14 @@ export default function PerfilPage() {
                   className="text-xs text-slate-700 dark:text-slate-300 hover:underline disabled:opacity-50">
                   {subiendoPoliticas ? "Subiendo..." : "Cambiar políticas"}
                 </button>
-                {negocio?.politicasUrl && (
-                  <div className="mt-1">
+                <div className="mt-auto pt-1 min-h-[1.25rem]">
+                  {negocio?.politicasUrl && (
                     <button type="button" onClick={() => eliminarPoliticas()} disabled={eliminandoPoliticas}
                       className="text-xs text-red-500 hover:underline disabled:opacity-50">
                       {eliminandoPoliticas ? "Eliminando..." : "Eliminar"}
                     </button>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
           </div>
