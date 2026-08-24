@@ -552,31 +552,27 @@ export default function EmpleadosPage() {
               {h.activo && (
                 <div className="ml-6 space-y-1.5">
                   {h.intervalos.map((iv, idx) => (
-                    <div key={idx} className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs text-gray-500 dark:text-gray-400">De</span>
-                        <input
-                          type="time"
-                          value={iv.horaInicio}
-                          onChange={(e) => actualizarIntervaloEmpleado(i, idx, "horaInicio", e.target.value)}
-                          className="px-2 py-1 rounded border border-gray-200 text-sm outline-none focus:border-slate-700 dark:bg-slate-700 dark:text-gray-100 dark:border-slate-600 dark:[color-scheme:dark]"
-                        />
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs text-gray-500 dark:text-gray-400">a</span>
-                        <input
-                          type="time"
-                          value={iv.horaFin}
-                          min={iv.horaInicio}
-                          onChange={(e) => actualizarIntervaloEmpleado(i, idx, "horaFin", e.target.value)}
-                          className="px-2 py-1 rounded border border-gray-200 text-sm outline-none focus:border-slate-700 dark:bg-slate-700 dark:text-gray-100 dark:border-slate-600 dark:[color-scheme:dark]"
-                        />
-                      </div>
+                    <div key={idx} className="flex items-center gap-1.5">
+                      <span className="text-[11px] text-gray-500 dark:text-gray-400">De</span>
+                      <input
+                        type="time"
+                        value={iv.horaInicio}
+                        onChange={(e) => actualizarIntervaloEmpleado(i, idx, "horaInicio", e.target.value)}
+                        className="w-[5.5rem] px-1 py-0.5 rounded border border-gray-200 text-xs outline-none focus:border-slate-700 dark:bg-slate-700 dark:text-gray-100 dark:border-slate-600 dark:[color-scheme:dark]"
+                      />
+                      <span className="text-[11px] text-gray-500 dark:text-gray-400">a</span>
+                      <input
+                        type="time"
+                        value={iv.horaFin}
+                        min={iv.horaInicio}
+                        onChange={(e) => actualizarIntervaloEmpleado(i, idx, "horaFin", e.target.value)}
+                        className="w-[5.5rem] px-1 py-0.5 rounded border border-gray-200 text-xs outline-none focus:border-slate-700 dark:bg-slate-700 dark:text-gray-100 dark:border-slate-600 dark:[color-scheme:dark]"
+                      />
                       {h.intervalos.length > 1 && (
                         <button
                           type="button"
                           onClick={() => eliminarIntervaloEmpleado(i, idx)}
-                          className="w-6 h-6 flex items-center justify-center rounded-full text-gray-400 dark:text-gray-300 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/30 transition"
+                          className="w-5 h-5 flex items-center justify-center rounded-full text-gray-400 dark:text-gray-300 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/30 transition text-[11px]"
                           aria-label="Eliminar intervalo"
                         >
                           ✕
@@ -584,6 +580,15 @@ export default function EmpleadosPage() {
                       )}
                     </div>
                   ))}
+                  {(() => {
+                    const negDia = horariosNegocio.find(d => d.diaSemana === h.diaSemana);
+                    if (!negDia || !negDia.activo || negDia.intervalos.length === 0) return null;
+                    return (
+                      <p className="text-[10px] text-slate-400 dark:text-slate-500">
+                        Negocio: {negDia.intervalos.map(iv => `${iv.horaInicio}–${iv.horaFin}`).join(' · ')}
+                      </p>
+                    );
+                  })()}
                   {intervaloInvalidoEmpleado(h) && (
                     <p className="text-xs text-red-500">Verifica que los horarios no se solapan y que la hora de fin sea posterior a la de inicio.</p>
                   )}
