@@ -162,6 +162,21 @@ export default function PerfilPage() {
     onError: () => toast("No se pudo subir la portada. Intenta de nuevo.", "error"),
   });
 
+  function abrirPortadaModal(src: string, file?: File) {
+    setPortadaModalPos(portadaObjectPosition.includes('%') ? portadaObjectPosition : "50% 50%");
+    setPortadaModal({ src, file });
+  }
+  function confirmarPortadaModal() {
+    if (!portadaModal) return;
+    setPortadaObjectPosition(portadaModalPos);
+    if (portadaModal.file) { subirPortada(portadaModal.file); URL.revokeObjectURL(portadaModal.src); }
+    setPortadaModal(null);
+  }
+  function cancelarPortadaModal() {
+    if (portadaModal?.file) URL.revokeObjectURL(portadaModal.src);
+    setPortadaModal(null);
+  }
+
   const { mutate: subirPoliticas, isPending: subiendoPoliticas } = useMutation({
     mutationFn: (file: File) => negociosApi.subirPoliticas(file),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["negocio-perfil"] }); toast("Imagen de políticas actualizada"); },
@@ -194,7 +209,9 @@ export default function PerfilPage() {
 
   // ── Horarios ─────────────────────────────────────────────────────────────
   const [portadaObjectPosition, setPortadaObjectPosition] = useState<string>("50% 50%");
-  const portadaDragRef = useRef<{ startX: number; startY: number; posX: number; posY: number } | null>(null);
+  const [portadaModal, setPortadaModal] = useState<{ src: string; file?: File } | null>(null);
+  const [portadaModalPos, setPortadaModalPos] = useState("50% 50%");
+  const portadaModalDragRef = useRef<{ startX: number; startY: number; posX: number; posY: number } | null>(null);
   const [colorPrimario, setColorPrimario] = useState("#334155");
   const [colorGuardado, setColorGuardado] = useState("#334155");
 
@@ -460,40 +477,27 @@ export default function PerfilPage() {
               </div>
               {/* Portada */}
               <div className="text-center">
-                <div
-                  className={`w-full aspect-square rounded-xl bg-gray-100 dark:bg-slate-700 overflow-hidden mb-2 flex items-center justify-center select-none ${negocio?.portadaUrl ? "cursor-grab active:cursor-grabbing" : ""}`}
-                  onPointerDown={negocio?.portadaUrl ? (e) => {
-                    e.preventDefault();
-                    const parts = portadaObjectPosition.replace(/%/g, "").split(" ");
-                    const posX = parseFloat(parts[0]) || 50;
-                    const posY = parseFloat(parts[1]) || 50;
-                    portadaDragRef.current = { startX: e.clientX, startY: e.clientY, posX, posY };
-                    e.currentTarget.setPointerCapture(e.pointerId);
-                  } : undefined}
-                  onPointerMove={negocio?.portadaUrl ? (e) => {
-                    if (!portadaDragRef.current) return;
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    const { startX, startY, posX, posY } = portadaDragRef.current;
-                    const dx = ((e.clientX - startX) / rect.width) * 150;
-                    const dy = ((e.clientY - startY) / rect.height) * 150;
-                    const newX = Math.max(0, Math.min(100, posX + dx));
-                    const newY = Math.max(0, Math.min(100, posY + dy));
-                    setPortadaObjectPosition(`${newX.toFixed(1)}% ${newY.toFixed(1)}%`);
-                  } : undefined}
-                  onPointerUp={() => { portadaDragRef.current = null; }}
-                >
+                <div className="w-full aspect-square rounded-xl bg-gray-100 dark:bg-slate-700 overflow-hidden mb-2 flex items-center justify-center">
                   {negocio?.portadaUrl
-                    ? <img src={negocio.portadaUrl} alt="Portada" className="w-full h-full object-cover pointer-events-none" style={{ objectPosition: portadaObjectPosition }} />
+                    ? <img src={negocio.portadaUrl} alt="Portada" className="w-full h-full object-cover" style={{ objectPosition: portadaObjectPosition }} />
                     : <span className="text-xs text-gray-400 dark:text-gray-500">Sin portada</span>}
                 </div>
                 <input ref={portadaRef} type="file" accept="image/*" className="hidden"
-                  onChange={(e) => { const f = e.target.files?.[0]; if (f) subirPortada(f); }} />
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (!f) return;
+                    abrirPortadaModal(URL.createObjectURL(f), f);
+                    e.target.value = '';
+                  }} />
                 <button type="button" onClick={() => portadaRef.current?.click()} disabled={subiendoPortada}
                   className="text-xs text-slate-700 hover:underline disabled:opacity-50">
                   {subiendoPortada ? "Subiendo..." : "Cambiar portada"}
                 </button>
                 {negocio?.portadaUrl && (
-                  <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">Arrastra para posicionar</p>
+                  <button type="button" onClick={() => abrirPortadaModal(negocio.portadaUrl!)}
+                    className="block text-[10px] text-indigo-500 hover:underline mt-0.5 mx-auto">
+                    Posicionar
+                  </button>
                 )}
               </div>
               {/* Políticas */}
@@ -1033,5 +1037,75 @@ export default function PerfilPage() {
       )}
 
     </div>
+
+    {/* ── Modal de posicionamiento de portada ─────────────────────────────── */}
+    {portadaModal && (
+      <div className="fixed inset-0 z-50 bg-black flex flex-col">
+        {/* Barra superior */}
+        <div className="flex items-center justify-between px-5 py-4 shrink-0">
+          <button type="button" onClick={cancelarPortadaModal}
+            className="text-white/60 text-sm hover:text-white transition">Cancelar</button>
+          <span className="text-white font-medium text-sm">Vista previa de portada</span>
+          <button type="button" onClick={confirmarPortadaModal}
+            className="text-indigo-400 text-sm font-semibold hover:text-indigo-300 transition">Confirmar</button>
+        </div>
+
+        {/* Simulación del header del booking — draggable */}
+        <div
+          className="relative overflow-hidden shrink-0 cursor-grab active:cursor-grabbing select-none"
+          style={{ background: "#0C0C0F" }}
+          onPointerDown={(e) => {
+            e.preventDefault();
+            const parts = portadaModalPos.replace(/%/g, "").split(" ");
+            const posX = parseFloat(parts[0]) || 50;
+            const posY = parseFloat(parts[1]) || 50;
+            portadaModalDragRef.current = { startX: e.clientX, startY: e.clientY, posX, posY };
+            e.currentTarget.setPointerCapture(e.pointerId);
+          }}
+          onPointerMove={(e) => {
+            if (!portadaModalDragRef.current) return;
+            const rect = e.currentTarget.getBoundingClientRect();
+            const { startX, startY, posX, posY } = portadaModalDragRef.current;
+            const dx = ((e.clientX - startX) / rect.width) * 150;
+            const dy = ((e.clientY - startY) / rect.height) * 150;
+            const newX = Math.max(0, Math.min(100, posX + dx));
+            const newY = Math.max(0, Math.min(100, posY + dy));
+            setPortadaModalPos(`${newX.toFixed(1)}% ${newY.toFixed(1)}%`);
+          }}
+          onPointerUp={() => { portadaModalDragRef.current = null; }}
+        >
+          {/* Portada */}
+          <img src={portadaModal.src} alt="" draggable={false}
+            className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+            style={{ opacity: 0.5, objectPosition: portadaModalPos }} />
+          {/* Gradiente igual que el booking */}
+          <div className="absolute inset-0 pointer-events-none"
+            style={{ background: "linear-gradient(to bottom, rgba(12,12,15,0.15) 0%, rgba(12,12,15,0.92) 100%)" }} />
+          {/* Contenido simulado */}
+          <div className="relative z-10 px-5 pt-12 pb-5">
+            <div className="flex items-start gap-3.5">
+              <div className="w-12 h-12 rounded-full overflow-hidden shrink-0 bg-slate-700 border-2 border-white/20">
+                {negocio?.logoUrl
+                  ? <img src={negocio.logoUrl} alt="" className="w-full h-full object-cover pointer-events-none" />
+                  : <span className="w-full h-full flex items-center justify-center text-lg font-bold text-white/40">
+                      {negocio?.nombre?.charAt(0)}
+                    </span>}
+              </div>
+              <div>
+                <p className="text-white font-bold text-lg leading-tight pointer-events-none">{negocio?.nombre}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Instrucción */}
+        <div className="px-5 pt-6 shrink-0 text-center">
+          <p className="text-white/50 text-xs">Arrastra para ajustar la posición</p>
+          <p className="text-white/30 text-[11px] mt-1">Así se verá en tu página de reservas</p>
+        </div>
+
+        <div className="flex-1" />
+      </div>
+    )}
   );
 }
