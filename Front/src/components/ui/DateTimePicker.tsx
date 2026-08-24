@@ -273,7 +273,7 @@ export function TimePicker({ value, onChange, label, minTime, maxTime, busySlots
         } hover:border-slate-400`}
       >
         <Clock size={14} className="shrink-0 text-gray-400" />
-        <span>{value ? displayHora(value) : "Hora"}</span>
+        <span className="whitespace-nowrap">{value ? displayHora(value) : "Hora"}</span>
       </button>
 
       {error && <p className="text-red-500 text-xs mt-1">{error}</p>}

@@ -961,7 +961,7 @@ export default function PerfilPage() {
                             <button
                               type="button"
                               onClick={() => eliminarIntervalo(h.diaSemana, idx)}
-                              className="text-gray-400 hover:text-red-500 transition text-sm px-1"
+                              className="w-7 h-7 shrink-0 flex items-center justify-center rounded-full bg-gray-100 dark:bg-slate-700 text-gray-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/30 transition"
                               aria-label="Eliminar intervalo"
                             >
                               ✕
@@ -975,7 +975,7 @@ export default function PerfilPage() {
                       <button
                         type="button"
                         onClick={() => agregarIntervalo(h.diaSemana)}
-                        className="text-xs text-slate-600 dark:text-slate-400 hover:underline mt-0.5"
+                        className="text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 mt-1 transition"
                       >
                         + Agregar intervalo
                       </button>
