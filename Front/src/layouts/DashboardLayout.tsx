@@ -463,7 +463,8 @@ export default function DashboardLayout() {
         <button
           onClick={toggleCollapsed}
           title={sidebarCollapsed ? "Expandir menú" : "Colapsar menú"}
-          className="absolute left-0 top-20 -translate-x-1/2 flex w-5 h-9 items-center justify-center rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 shadow-sm transition-colors"
+          className="absolute left-0 top-20 -translate-x-1/2 flex w-6 h-10 items-center justify-center rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 shadow-sm transition-colors select-none"
+          style={{ touchAction: "manipulation" }}
         >
           {sidebarCollapsed ? <ChevronRight size={12} /> : <ChevronLeft size={12} />}
         </button>

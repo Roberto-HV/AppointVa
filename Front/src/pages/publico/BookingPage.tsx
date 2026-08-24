@@ -202,7 +202,6 @@ function GaleriaDesktop({ imagenes, onOpen }: { imagenes: ImagenGaleria[]; onOpe
         <div className="rounded-2xl overflow-hidden shadow-sm">
           <button onClick={() => onOpen(idx)} className="block w-full focus:outline-none">
             <img
-              key={idx}
               src={imagenes[idx].url}
               alt={imagenes[idx].descripcion ?? ""}
               className="w-full h-[380px] xl:h-[440px] object-cover"
@@ -216,7 +215,8 @@ function GaleriaDesktop({ imagenes, onOpen }: { imagenes: ImagenGaleria[]; onOpe
               aria-label="Imagen anterior"
               onPointerDown={e => e.stopPropagation()}
               onClick={goPrev}
-              className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-white/90 shadow-md flex items-center justify-center text-gray-600 hover:bg-white transition"
+              style={{ touchAction: "manipulation" }}
+              className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-white/90 shadow-md flex items-center justify-center text-gray-600 hover:bg-white transition select-none"
             >
               <ChevronLeft size={18} />
             </button>
@@ -224,7 +224,8 @@ function GaleriaDesktop({ imagenes, onOpen }: { imagenes: ImagenGaleria[]; onOpe
               aria-label="Imagen siguiente"
               onPointerDown={e => e.stopPropagation()}
               onClick={goNext}
-              className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-white/90 shadow-md flex items-center justify-center text-gray-600 hover:bg-white transition"
+              style={{ touchAction: "manipulation" }}
+              className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-white/90 shadow-md flex items-center justify-center text-gray-600 hover:bg-white transition select-none"
             >
               <ChevronRight size={18} />
             </button>
@@ -867,7 +868,7 @@ export default function BookingPage() {
 
         {/* Left column — galería + reseñas, solo desktop */}
         {negocio.galeria?.length > 0 && (
-          <div className="hidden lg:flex w-[440px] xl:w-[500px] shrink-0 sticky top-0 h-screen flex-col justify-start py-8 overflow-y-auto">
+          <div className="hidden lg:flex w-[440px] xl:w-[500px] shrink-0 sticky top-0 h-screen flex-col justify-start py-8 overflow-y-auto" style={{ overscrollBehavior: "contain" }}>
             <GaleriaDesktop imagenes={negocio.galeria} onOpen={setGaleriaViewerIdx} />
             {negocio.resenas?.length > 0 && (
               <div className="mt-6">
