@@ -13,7 +13,7 @@ import PasoServicio from "../../components/booking/PasoServicio";
 import PasoEmpleado, { SIN_PREFERENCIA_ID } from "../../components/booking/PasoEmpleado";
 import PasoFechaHora from "../../components/booking/PasoFechaHora";
 import PasoDatosCliente, { type DatosClienteForm } from "../../components/booking/PasoDatosCliente";
-import { Star, X, UserCircle, UserCheck, Tag, AlertCircle, ChevronLeft, ChevronRight, Lock, ChevronDown, ChevronUp } from "lucide-react";
+import { Star, X, UserCircle, UserCheck, Tag, AlertCircle, ChevronLeft, ChevronRight, Lock } from "lucide-react";
 import PublicFooter from "../../components/PublicFooter";
 
 import { hexToChannels, DEFAULT_COLOR } from "../../lib/colorUtils";
@@ -473,8 +473,6 @@ export default function BookingPage() {
 
   // Slot taken (409) error shown in paso 3
   const [errorSlotTomado, setErrorSlotTomado] = useState("");
-  // Collapsible policies section
-  const [politicasAbiertas, setPoliticasAbiertas] = useState(false);
   // Intake validation attempt tracker
   const [intentoContinuar, setIntentoContinuar] = useState(false);
 
