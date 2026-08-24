@@ -23,6 +23,7 @@ function GaleriaSection({ imagenes }: { imagenes: ImagenGaleria[] }) {
   const [lightbox, setLightbox] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const jumpingRef = useRef(false);
+  const navLockRef = useRef(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   if (!imagenes.length) return null;
@@ -57,10 +58,13 @@ function GaleriaSection({ imagenes }: { imagenes: ImagenGaleria[] }) {
     return best;
   };
 
-  // Scroll to a real image index
+  // Scroll to a real image index — lock prevents freeze from rapid clicks
   const scrollTo = (index: number) => {
+    if (navLockRef.current) return;
+    navLockRef.current = true;
     centerSlide(loop ? index + 1 : index, true);
     setActiveIndex(index);
+    setTimeout(() => { navLockRef.current = false; }, 350);
   };
 
   // On mount: jump to real first (clone is at position 0)
@@ -201,7 +205,7 @@ function GaleriaDesktop({ imagenes, onOpen }: { imagenes: ImagenGaleria[]; onOpe
               key={idx}
               src={imagenes[idx].url}
               alt={imagenes[idx].descripcion ?? ""}
-              className="w-full h-[350px] object-cover"
+              className="w-full h-[380px] xl:h-[440px] object-cover"
               draggable={false}
             />
           </button>
@@ -243,7 +247,7 @@ function GaleriaDesktop({ imagenes, onOpen }: { imagenes: ImagenGaleria[]; onOpe
               className={`shrink-0 rounded-lg overflow-hidden transition-opacity ${
                 i === idx ? "ring-2 ring-slate-700 opacity-100" : "opacity-50 hover:opacity-80"
               }`}
-              style={{ width: 80, height: 60 }}
+              style={{ width: 90, height: 68 }}
             >
               <img src={img.url} alt="" className="w-full h-full object-cover" draggable={false} />
             </button>
@@ -859,11 +863,11 @@ export default function BookingPage() {
       <IndicadorPasos pasoActual={paso} pasos={pasos} color={color} slug={negocio.slug} />
 
       {/* Contenido */}
-      <div className="lg:max-w-5xl lg:mx-auto lg:px-8 lg:flex lg:gap-8 lg:items-start lg:pt-8 lg:pb-12">
+      <div className="lg:max-w-6xl lg:mx-auto lg:px-8 lg:flex lg:gap-8 lg:items-start lg:pt-8 lg:pb-12">
 
         {/* Left column — galería + reseñas, solo desktop */}
         {negocio.galeria?.length > 0 && (
-          <div className="hidden lg:flex w-[400px] shrink-0 sticky top-0 h-screen flex-col justify-start py-8 overflow-y-auto">
+          <div className="hidden lg:flex w-[440px] xl:w-[500px] shrink-0 sticky top-0 h-screen flex-col justify-start py-8 overflow-y-auto">
             <GaleriaDesktop imagenes={negocio.galeria} onOpen={setGaleriaViewerIdx} />
             {negocio.resenas?.length > 0 && (
               <div className="mt-6">
