@@ -1,4 +1,4 @@
-﻿import { useState, useRef } from "react";
+﻿import { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, CalendarDays, List } from "lucide-react";
 import { citasApi } from "../../api/citas";
@@ -48,6 +48,10 @@ export default function CalendarioCitas({ empleadoId, onCitaClick, onReagendar }
   const [arrastrando, setArrastrando] = useState<CitaDto | null>(null);
   const [dropTarget, setDropTarget] = useState<{ colIdx: number; hora: number; minutos: number } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = 0;
+  }, []);
   const domingo = addDias(lunes, 6);
   const hastaApi = addDias(domingo, 1);
 
@@ -211,6 +215,8 @@ export default function CalendarioCitas({ empleadoId, onCitaClick, onReagendar }
       {/* ── Vista Semana ── */}
       {vista === "semana" && (
       <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+        {/* Scroll container: wraps header + grid so both share the same width */}
+        <div ref={scrollRef} className="overflow-y-auto" style={{ maxHeight: 620 }}>
         {/* Cabecera días */}
         <div className="flex border-b border-gray-100 sticky top-0 bg-white z-10">
           <div className="w-12 shrink-0" />
@@ -233,12 +239,12 @@ export default function CalendarioCitas({ empleadoId, onCitaClick, onReagendar }
           })}
         </div>
 
-        {/* Grid con scroll */}
-        <div ref={scrollRef} className="flex overflow-y-auto" style={{ maxHeight: 560 }}>
+        {/* Grid */}
+        <div className="flex">
           {/* Columna de horas */}
           <div className="w-12 shrink-0 relative bg-white" style={{ height: GRID_HEIGHT }}>
             {horas.map((h) => (
-              <div key={h} className="absolute w-full pr-1.5" style={{ top: (h - HORA_INICIO) * PX_POR_HORA - 8 }}>
+              <div key={h} className="absolute w-full pr-1.5" style={{ top: h === HORA_INICIO ? 2 : (h - HORA_INICIO) * PX_POR_HORA - 8 }}>
                 <span className="text-xs text-gray-400 float-right">{h === 12 ? "12 PM" : h > 12 ? `${h - 12} PM` : `${h} AM`}</span>
               </div>
             ))}
@@ -296,6 +302,7 @@ export default function CalendarioCitas({ empleadoId, onCitaClick, onReagendar }
             );
           })}
         </div>
+        </div> {/* fin scroll container */}
       </div>
       )} {/* fin vista semana */}
 
