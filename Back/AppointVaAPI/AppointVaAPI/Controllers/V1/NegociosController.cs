@@ -428,6 +428,37 @@ namespace AppointVaAPI.Controllers.V1
             return await SubirImagenNegocioAsync(_contexto.NegocioId.Value, archivo, "politicas");
         }
 
+        // DELETE api/negocios/perfil/logo
+        [HttpDelete("perfil/logo")]
+        [Authorize(Roles = Roles.Propietario)]
+        public async Task<IActionResult> EliminarLogo()
+        {
+            if (_contexto.NegocioId is null) return Unauthorized();
+            var negocio = await _repo.ObtenerPorIdAsync(_contexto.NegocioId.Value);
+            if (negocio is null) return NotFound(new { mensaje = "Negocio no encontrado" });
+            negocio.LogoUrl = null;
+            negocio.FechaActualizacion = DateTime.UtcNow;
+            await _repo.ActualizarAsync(negocio);
+            await _cacheStore.EvictByTagAsync($"negocio-{negocio.Slug}", CancellationToken.None);
+            return NoContent();
+        }
+
+        // DELETE api/negocios/perfil/portada
+        [HttpDelete("perfil/portada")]
+        [Authorize(Roles = Roles.Propietario)]
+        public async Task<IActionResult> EliminarPortada()
+        {
+            if (_contexto.NegocioId is null) return Unauthorized();
+            var negocio = await _repo.ObtenerPorIdAsync(_contexto.NegocioId.Value);
+            if (negocio is null) return NotFound(new { mensaje = "Negocio no encontrado" });
+            negocio.PortadaUrl = null;
+            negocio.PortadaObjectPosition = null;
+            negocio.FechaActualizacion = DateTime.UtcNow;
+            await _repo.ActualizarAsync(negocio);
+            await _cacheStore.EvictByTagAsync($"negocio-{negocio.Slug}", CancellationToken.None);
+            return NoContent();
+        }
+
         // DELETE api/negocios/perfil/politicas
         [HttpDelete("perfil/politicas")]
         [Authorize(Roles = Roles.Propietario)]

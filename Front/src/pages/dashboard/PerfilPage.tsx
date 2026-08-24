@@ -183,6 +183,18 @@ export default function PerfilPage() {
     onError: () => toast("No se pudo subir la imagen. Intenta de nuevo.", "error"),
   });
 
+  const { mutate: eliminarLogo, isPending: eliminandoLogo } = useMutation({
+    mutationFn: () => negociosApi.eliminarLogo(),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["negocio-perfil"] }); toast("Logo eliminado"); },
+    onError: () => toast("No se pudo eliminar el logo. Intenta de nuevo.", "error"),
+  });
+
+  const { mutate: eliminarPortada, isPending: eliminandoPortada } = useMutation({
+    mutationFn: () => negociosApi.eliminarPortada(),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["negocio-perfil"] }); setPortadaObjectPosition("50% 50%"); toast("Portada eliminada"); },
+    onError: () => toast("No se pudo eliminar la portada. Intenta de nuevo.", "error"),
+  });
+
   const { mutate: eliminarPoliticas, isPending: eliminandoPoliticas } = useMutation({
     mutationFn: () => negociosApi.eliminarPoliticas(),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["negocio-perfil"] }); toast("Imagen de políticas eliminada"); },
@@ -461,7 +473,7 @@ export default function PerfilPage() {
           {/* Imágenes */}
           <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
             <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Imágenes</h2>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-4 gap-3">
               {/* Logo */}
               <div className="text-center">
                 <div className="w-full aspect-square rounded-xl bg-gray-100 dark:bg-slate-700 overflow-hidden mb-2 flex items-center justify-center">
@@ -472,13 +484,21 @@ export default function PerfilPage() {
                 <input ref={logoRef} type="file" accept="image/*" className="hidden"
                   onChange={(e) => { const f = e.target.files?.[0]; if (f) subirLogo(f); }} />
                 <button type="button" onClick={() => logoRef.current?.click()} disabled={subiendoLogo}
-                  className="text-xs text-slate-700 hover:underline disabled:opacity-50">
+                  className="text-xs text-slate-700 dark:text-slate-300 hover:underline disabled:opacity-50">
                   {subiendoLogo ? "Subiendo..." : "Cambiar logo"}
                 </button>
+                {negocio?.logoUrl && (
+                  <div className="mt-1">
+                    <button type="button" onClick={() => eliminarLogo()} disabled={eliminandoLogo}
+                      className="text-xs text-red-500 hover:underline disabled:opacity-50">
+                      {eliminandoLogo ? "Eliminando..." : "Eliminar"}
+                    </button>
+                  </div>
+                )}
               </div>
               {/* Portada */}
-              <div className="text-center">
-                <div className="w-full aspect-square rounded-xl bg-gray-100 dark:bg-slate-700 overflow-hidden mb-2 flex items-center justify-center">
+              <div className="text-center col-span-2">
+                <div className="w-full aspect-[2/1] rounded-xl bg-gray-100 dark:bg-slate-700 overflow-hidden mb-2 flex items-center justify-center">
                   {negocio?.portadaUrl
                     ? <img src={negocio.portadaUrl} alt="Portada" className="w-full h-full object-cover" style={{ objectPosition: portadaObjectPosition }} />
                     : <span className="text-xs text-gray-400 dark:text-gray-500">Sin portada</span>}
@@ -491,14 +511,20 @@ export default function PerfilPage() {
                     e.target.value = '';
                   }} />
                 <button type="button" onClick={() => portadaRef.current?.click()} disabled={subiendoPortada}
-                  className="text-xs text-slate-700 hover:underline disabled:opacity-50">
+                  className="text-xs text-slate-700 dark:text-slate-300 hover:underline disabled:opacity-50">
                   {subiendoPortada ? "Subiendo..." : "Cambiar portada"}
                 </button>
                 {negocio?.portadaUrl && (
-                  <button type="button" onClick={() => abrirPortadaModal(negocio.portadaUrl!)}
-                    className="block text-[10px] text-indigo-500 hover:underline mt-0.5 mx-auto">
-                    Posicionar
-                  </button>
+                  <div className="mt-1 flex items-center justify-center gap-3">
+                    <button type="button" onClick={() => abrirPortadaModal(negocio.portadaUrl!)}
+                      className="text-xs text-indigo-500 hover:underline">
+                      Posicionar
+                    </button>
+                    <button type="button" onClick={() => eliminarPortada()} disabled={eliminandoPortada}
+                      className="text-xs text-red-500 hover:underline disabled:opacity-50">
+                      {eliminandoPortada ? "Eliminando..." : "Eliminar"}
+                    </button>
+                  </div>
                 )}
               </div>
               {/* Políticas */}
@@ -511,11 +537,11 @@ export default function PerfilPage() {
                 <input ref={politicasRef} type="file" accept="image/*" className="hidden"
                   onChange={(e) => { const f = e.target.files?.[0]; if (f) subirPoliticas(f); }} />
                 <button type="button" onClick={() => politicasRef.current?.click()} disabled={subiendoPoliticas}
-                  className="text-xs text-slate-700 hover:underline disabled:opacity-50">
+                  className="text-xs text-slate-700 dark:text-slate-300 hover:underline disabled:opacity-50">
                   {subiendoPoliticas ? "Subiendo..." : "Cambiar políticas"}
                 </button>
                 {negocio?.politicasUrl && (
-                  <div className="mt-1.5">
+                  <div className="mt-1">
                     <button type="button" onClick={() => eliminarPoliticas()} disabled={eliminandoPoliticas}
                       className="text-xs text-red-500 hover:underline disabled:opacity-50">
                       {eliminandoPoliticas ? "Eliminando..." : "Eliminar"}

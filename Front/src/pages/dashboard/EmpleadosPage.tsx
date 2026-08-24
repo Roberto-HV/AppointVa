@@ -552,14 +552,14 @@ export default function EmpleadosPage() {
               {h.activo && (
                 <div className="ml-6 space-y-1.5">
                   {h.intervalos.map((iv, idx) => (
-                    <div key={idx} className="flex items-center gap-2">
+                    <div key={idx} className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
                       <div className="flex items-center gap-1.5">
                         <span className="text-xs text-gray-500 dark:text-gray-400">De</span>
                         <input
                           type="time"
                           value={iv.horaInicio}
                           onChange={(e) => actualizarIntervaloEmpleado(i, idx, "horaInicio", e.target.value)}
-                          className="px-2 py-1 rounded border border-gray-200 text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100 dark:border-slate-600"
+                          className="px-2 py-1 rounded border border-gray-200 text-sm outline-none focus:border-slate-700 dark:bg-slate-700 dark:text-gray-100 dark:border-slate-600 dark:[color-scheme:dark]"
                         />
                       </div>
                       <div className="flex items-center gap-1.5">
@@ -569,14 +569,14 @@ export default function EmpleadosPage() {
                           value={iv.horaFin}
                           min={iv.horaInicio}
                           onChange={(e) => actualizarIntervaloEmpleado(i, idx, "horaFin", e.target.value)}
-                          className="px-2 py-1 rounded border border-gray-200 text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100 dark:border-slate-600"
+                          className="px-2 py-1 rounded border border-gray-200 text-sm outline-none focus:border-slate-700 dark:bg-slate-700 dark:text-gray-100 dark:border-slate-600 dark:[color-scheme:dark]"
                         />
                       </div>
                       {h.intervalos.length > 1 && (
                         <button
                           type="button"
                           onClick={() => eliminarIntervaloEmpleado(i, idx)}
-                          className="text-gray-400 hover:text-red-500 transition text-sm px-1"
+                          className="w-6 h-6 flex items-center justify-center rounded-full text-gray-400 dark:text-gray-300 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/30 transition"
                           aria-label="Eliminar intervalo"
                         >
                           ✕

@@ -39,6 +39,14 @@ export const negociosApi = {
     return data;
   },
 
+  eliminarLogo: async (): Promise<void> => {
+    await api.delete("/negocios/perfil/logo");
+  },
+
+  eliminarPortada: async (): Promise<void> => {
+    await api.delete("/negocios/perfil/portada");
+  },
+
   eliminarPoliticas: async (): Promise<void> => {
     await api.delete("/negocios/perfil/politicas");
   },
