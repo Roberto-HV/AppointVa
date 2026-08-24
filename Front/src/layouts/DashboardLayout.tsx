@@ -363,13 +363,16 @@ export default function DashboardLayout() {
           <button onClick={cerrarSidebar} className="absolute right-3 xl:hidden text-slate-400 hover:text-slate-600">
             <X size={20} />
           </button>
-          {/* Colapsar — solo desktop */}
+        </div>
+
+        {/* Botón colapsar — solo desktop, fila propia para no solapar el logo */}
+        <div className={`hidden xl:flex shrink-0 px-3 pb-2 ${sidebarCollapsed ? "justify-center" : "justify-end"}`}>
           <button
             onClick={toggleCollapsed}
-            className="absolute right-2 hidden xl:flex w-6 h-6 items-center justify-center rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition"
+            className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition"
             title={sidebarCollapsed ? "Expandir menú" : "Colapsar menú"}
           >
-            {sidebarCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+            {sidebarCollapsed ? <ChevronRight size={15} /> : <ChevronLeft size={15} />}
           </button>
         </div>
 
@@ -401,10 +404,10 @@ export default function DashboardLayout() {
               >
                 {({ isActive }) => (
                   <>
-                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
-                      isActive ? "bg-white/20" : "bg-transparent"
-                    }`}>
-                      <Icon size={15} className={isActive ? "text-white" : "text-slate-500 dark:text-slate-400"} />
+                    <div className={`rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+                      sidebarCollapsed ? "w-10 h-10" : "w-7 h-7"
+                    } ${isActive ? "bg-white/20" : "bg-transparent"}`}>
+                      <Icon size={sidebarCollapsed ? 20 : 15} className={isActive ? "text-white" : "text-slate-500 dark:text-slate-400"} />
                     </div>
                     {!sidebarCollapsed && (
                       <>
