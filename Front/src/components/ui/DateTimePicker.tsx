@@ -6,7 +6,7 @@ const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio",
                "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 
 // Slots de 30 en 30, de 00:00 a 23:30
-const HORAS: string[] = [];
+export const HORAS: string[] = [];
 for (let h = 0; h < 24; h++) {
   HORAS.push(`${String(h).padStart(2,"0")}:00`);
   HORAS.push(`${String(h).padStart(2,"0")}:30`);
@@ -245,9 +245,10 @@ interface TimePickerProps {
   maxTime?: string;        // "HH:MM"
   busySlots?: string[];    // slots que ya tienen cita — no aparecen
   error?: string;
+  compact?: boolean;       // botón pequeño para modales compactos
 }
 
-export function TimePicker({ value, onChange, label, minTime, maxTime, busySlots = [], error }: TimePickerProps) {
+export function TimePicker({ value, onChange, label, minTime, maxTime, busySlots = [], error, compact }: TimePickerProps) {
   const [open, setOpen] = useState(false);
   const ref  = useRef<HTMLDivElement>(null);
 
@@ -266,20 +267,27 @@ export function TimePicker({ value, onChange, label, minTime, maxTime, busySlots
       <button
         type="button"
         onClick={() => setOpen(o => !o)}
-        className={`w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border text-sm text-left transition ${
-          error ? "border-red-400 bg-red-50 text-red-700"
-                : value ? "border-slate-300 bg-white text-gray-800"
-                        : "border-gray-200 bg-white text-gray-400"
-        } hover:border-slate-400`}
+        className={compact
+          ? `flex items-center gap-1 px-2 py-1 rounded border text-xs transition ${
+              error ? "border-red-400 bg-red-50 text-red-700"
+                    : value ? "border-gray-200 bg-white text-gray-800 dark:bg-slate-700 dark:text-gray-100 dark:border-slate-600"
+                            : "border-gray-200 bg-white text-gray-400 dark:bg-slate-700 dark:border-slate-600"
+            } hover:border-slate-400`
+          : `w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border text-sm text-left transition ${
+              error ? "border-red-400 bg-red-50 text-red-700"
+                    : value ? "border-slate-300 bg-white text-gray-800"
+                            : "border-gray-200 bg-white text-gray-400"
+            } hover:border-slate-400`
+        }
       >
-        <Clock size={14} className="shrink-0 text-gray-400" />
+        <Clock size={compact ? 11 : 14} className="shrink-0 text-gray-400" />
         <span className="whitespace-nowrap">{value ? displayHora(value) : "Hora"}</span>
       </button>
 
       {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
 
       {open && (
-        <div className="absolute z-50 top-full mt-1 left-0 bg-white border border-gray-100 rounded-xl shadow-xl p-3 w-40 select-none">
+        <div className="absolute z-50 top-full mt-1 left-0 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl shadow-xl p-3 w-40 select-none">
           <div className="max-h-56 overflow-y-auto space-y-0.5 pr-0.5">
             {HORAS.filter(h =>
               (!minTime || h >= minTime) && (!maxTime || h <= maxTime) && !busySlots.includes(h)
@@ -289,7 +297,7 @@ export function TimePicker({ value, onChange, label, minTime, maxTime, busySlots
                 className={`w-full text-left text-xs px-3 py-1.5 rounded-lg transition ${
                   value === h
                     ? "bg-slate-700 text-white font-medium"
-                    : "text-gray-700 hover:bg-gray-100"
+                    : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700"
                 }`}>
                 {displayHora(h)}
               </button>

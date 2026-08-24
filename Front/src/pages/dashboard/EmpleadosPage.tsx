@@ -10,13 +10,24 @@ import { serviciosApi } from "../../api/servicios";
 import { negociosApi } from "../../api/negocios";
 import { citasApi } from "../../api/citas";
 import Modal from "../../components/ui/Modal";
-import { DatePicker, TimePicker, citasABusySlots } from "../../components/ui/DateTimePicker";
+import { DatePicker, TimePicker, citasABusySlots, HORAS } from "../../components/ui/DateTimePicker";
 import { SkeletonCards } from "../../components/ui/Skeleton";
 import { useToastStore } from "../../store/toastStore";
 import { useSectorTerms } from "../../hooks/useSectorTerms";
 import type { EmpleadoDto, HorarioDiaDto } from "../../types";
 
 const DIAS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+
+// Slots fuera del horario del negocio para ese día (se ocultan en el picker)
+function busySlotsNegocio(intervalos: { horaInicio: string; horaFin: string }[], forEnd = false): string[] {
+  if (intervalos.length === 0) return [];
+  return HORAS.filter(slot =>
+    !intervalos.some(iv =>
+      forEnd ? (slot > iv.horaInicio && slot <= iv.horaFin)
+             : (slot >= iv.horaInicio && slot < iv.horaFin)
+    )
+  );
+}
 
 const HORARIO_BASE: HorarioDiaDto[] = Array.from({ length: 7 }, (_, i) => ({
   diaSemana: i,
@@ -551,22 +562,25 @@ export default function EmpleadosPage() {
 
               {h.activo && (
                 <div className="ml-6 space-y-1.5">
-                  {h.intervalos.map((iv, idx) => (
+                  {h.intervalos.map((iv, idx) => {
+                    const negDia = horariosNegocio.find(d => d.diaSemana === h.diaSemana);
+                    const negIntervalos = (negDia?.activo ? negDia.intervalos : []) ?? [];
+                    return (
                     <div key={idx} className="flex items-center gap-1.5">
                       <span className="text-[11px] text-gray-500 dark:text-gray-400">De</span>
-                      <input
-                        type="time"
+                      <TimePicker
+                        compact
                         value={iv.horaInicio}
-                        onChange={(e) => actualizarIntervaloEmpleado(i, idx, "horaInicio", e.target.value)}
-                        className="w-[5.5rem] px-1 py-0.5 rounded border border-gray-200 text-xs outline-none focus:border-slate-700 dark:bg-slate-700 dark:text-gray-100 dark:border-slate-600 dark:[color-scheme:dark]"
+                        onChange={(v) => actualizarIntervaloEmpleado(i, idx, "horaInicio", v)}
+                        busySlots={busySlotsNegocio(negIntervalos, false)}
                       />
                       <span className="text-[11px] text-gray-500 dark:text-gray-400">a</span>
-                      <input
-                        type="time"
+                      <TimePicker
+                        compact
                         value={iv.horaFin}
-                        min={iv.horaInicio}
-                        onChange={(e) => actualizarIntervaloEmpleado(i, idx, "horaFin", e.target.value)}
-                        className="w-[5.5rem] px-1 py-0.5 rounded border border-gray-200 text-xs outline-none focus:border-slate-700 dark:bg-slate-700 dark:text-gray-100 dark:border-slate-600 dark:[color-scheme:dark]"
+                        onChange={(v) => actualizarIntervaloEmpleado(i, idx, "horaFin", v)}
+                        minTime={iv.horaInicio}
+                        busySlots={busySlotsNegocio(negIntervalos, true)}
                       />
                       {h.intervalos.length > 1 && (
                         <button
@@ -579,7 +593,8 @@ export default function EmpleadosPage() {
                         </button>
                       )}
                     </div>
-                  ))}
+                  );
+                  })}
                   {(() => {
                     const negDia = horariosNegocio.find(d => d.diaSemana === h.diaSemana);
                     if (!negDia || !negDia.activo || negDia.intervalos.length === 0) return null;
