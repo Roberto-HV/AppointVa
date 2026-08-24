@@ -1,4 +1,5 @@
-﻿import type { EmpleadoPublico } from "../../types";
+﻿import { useEffect } from "react";
+import type { EmpleadoPublico } from "../../types";
 import { getSectorTerms } from "../../hooks/useSectorTerms";
 
 export const SIN_PREFERENCIA_ID = "sin-preferencia";
@@ -24,6 +25,11 @@ export default function PasoEmpleado({ empleados, servicioId, seleccionado, onSe
   const terms = getSectorTerms(sector);
   const disponibles = empleados.filter((e) => e.servicioIds.includes(servicioId));
 
+  // Auto-select sin preferencia when no employees are assigned to this service
+  useEffect(() => {
+    if (disponibles.length === 0) onSeleccionar(SIN_PREFERENCIA);
+  }, [disponibles.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const activoSinPreferencia = seleccionado?.id === SIN_PREFERENCIA_ID;
 
   return (
@@ -31,8 +37,8 @@ export default function PasoEmpleado({ empleados, servicioId, seleccionado, onSe
       <h2 className="text-xl font-bold text-slate-900 mb-1">¿Con quién?</h2>
       <p className="text-sm text-slate-500 mb-5">{`Elige un ${terms.empleado.toLowerCase()} o deja que asignemos el más disponible`}</p>
 
-      {/* Opción sin preferencia */}
-      <button
+      {/* Opción sin preferencia — solo cuando hay empleados disponibles */}
+      {disponibles.length > 0 && <button
         onClick={() => onSeleccionar(SIN_PREFERENCIA)}
         className="w-full mb-3 p-4 rounded-2xl border-2 flex items-center gap-4 transition-all text-left bg-white"
         style={activoSinPreferencia ? { borderColor: color, background: `${color}0D` } : { borderColor: "#f1f5f9" }}
@@ -62,7 +68,7 @@ export default function PasoEmpleado({ empleados, servicioId, seleccionado, onSe
             </svg>
           </div>
         )}
-      </button>
+      </button>}
 
       <div className="grid grid-cols-2 gap-2.5">
         {disponibles.length === 0 && (
