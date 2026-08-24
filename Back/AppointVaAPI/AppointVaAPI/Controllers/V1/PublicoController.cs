@@ -124,6 +124,7 @@ namespace AppointVaAPI.Controllers.V1
                 Descripcion = negocio.Descripcion,
                 LogoUrl = negocio.LogoUrl,
                 PortadaUrl = negocio.PortadaUrl,
+                PortadaObjectPosition = negocio.PortadaObjectPosition,
                 PoliticasUrl = negocio.PoliticasUrl,
                 ColorPrimario = negocio.ColorPrimario,
                 ColorSecundario = negocio.ColorSecundario,
