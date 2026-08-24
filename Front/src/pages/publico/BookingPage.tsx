@@ -760,7 +760,7 @@ export default function BookingPage() {
     <div className="min-h-screen bg-slate-50">
       {/* Header oscuro del negocio */}
       <div
-        className="relative overflow-hidden min-h-[180px] sm:min-h-[240px]"
+        className="relative overflow-hidden min-h-[180px] sm:min-h-[260px] flex flex-col justify-end"
         style={{ background: "#0C0C0F" }}
       >
         {/* Portada visible */}
@@ -788,7 +788,7 @@ export default function BookingPage() {
           }}
         />
         {/* Contenido con padding-top para dejar ver la foto arriba */}
-        <div className={`relative z-10 px-5 pb-4 ${negocio.portadaUrl ? "pt-12 sm:pt-20" : "pt-8"}`}>
+        <div className="relative z-10 px-5 pt-4 pb-4">
           {/* Fila: logo + nombre alineados arriba */}
           <div className="flex items-start gap-3.5">
             {/* Logo */}
