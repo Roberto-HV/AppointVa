@@ -788,9 +788,9 @@ export default function BookingPage() {
           }}
         />
         {/* Contenido con padding-top para dejar ver la foto arriba */}
-        <div className="relative z-10 px-5 pt-4 pb-4">
+        <div className="relative z-10 px-5 sm:px-8 pt-4 pb-4 sm:pb-6">
           {/* Fila: logo + nombre alineados arriba */}
-          <div className="flex items-start gap-3.5">
+          <div className="flex items-start gap-3.5 sm:gap-5">
             {/* Logo */}
             <div className="shrink-0">
               {negocio.logoUrl ? (
@@ -802,7 +802,7 @@ export default function BookingPage() {
                   <img
                     src={negocio.logoUrl}
                     alt={negocio.nombre}
-                    className="w-14 h-14 rounded-2xl object-cover cursor-zoom-in"
+                    className="w-14 h-14 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl object-cover cursor-zoom-in"
                     style={{
                       border: `1.5px solid rgb(${hexToChannels(color)} / 0.45)`,
                       boxShadow: `0 2px 16px rgb(${hexToChannels(color)} / 0.28)`,
@@ -812,7 +812,7 @@ export default function BookingPage() {
                 </button>
               ) : (
                 <div
-                  className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl"
+                  className="w-14 h-14 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl flex items-center justify-center text-2xl sm:text-4xl"
                   style={{
                     background: `rgb(${hexToChannels(color)} / 0.18)`,
                     border: `1.5px solid rgb(${hexToChannels(color)} / 0.40)`,
@@ -825,7 +825,7 @@ export default function BookingPage() {
             {/* Nombre, descripción y redes en la misma columna */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-white font-black text-[1.05rem] leading-none tracking-tight">
+                <h1 className="text-white font-black text-[1.05rem] sm:text-2xl leading-none tracking-tight">
                   {negocio.nombre}
                 </h1>
                 <div
@@ -833,7 +833,7 @@ export default function BookingPage() {
                   style={{ background: "rgba(255,255,255,0.08)" }}
                 >
                   <Star size={9} fill="#F59E0B" stroke="#F59E0B" strokeWidth={0} />
-                  <span className="text-[10px]" style={{ color: "rgba(255,255,255,0.55)" }}>
+                  <span className="text-[10px] sm:text-xs" style={{ color: "rgba(255,255,255,0.55)" }}>
                     {(negocio.totalResenas ?? 0) > 0
                       ? (negocio.promedioResenas ?? 0).toFixed(1)
                       : "Sin reseñas"}
@@ -841,12 +841,12 @@ export default function BookingPage() {
                 </div>
               </div>
               {negocio.descripcion && (
-                <p className="text-xs mt-1 leading-snug" style={{ color: "rgba(255,255,255,0.62)" }}>
+                <p className="text-xs sm:text-sm mt-1 leading-snug" style={{ color: "rgba(255,255,255,0.62)" }}>
                   {negocio.descripcion}
                 </p>
               )}
               {negocio.direccion && (
-                <p className="text-xs mt-2 leading-snug" style={{ color: "rgba(255,255,255,0.45)" }}>
+                <p className="text-xs sm:text-sm mt-2 leading-snug" style={{ color: "rgba(255,255,255,0.45)" }}>
                   📍 {negocio.direccion}
                 </p>
               )}
