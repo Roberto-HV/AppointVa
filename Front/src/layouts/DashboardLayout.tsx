@@ -406,7 +406,7 @@ export default function DashboardLayout() {
                   <>
                     <div className={`rounded-xl flex items-center justify-center shrink-0 transition-colors ${
                       sidebarCollapsed ? "w-11 h-11" : "w-7 h-7"
-                    } ${isActive ? "bg-white/20" : "bg-transparent"}`}>
+                    } ${isActive && !sidebarCollapsed ? "bg-white/20" : "bg-transparent"}`}>
                       <Icon size={sidebarCollapsed ? 22 : 15} className={isActive ? "text-white" : "text-slate-500 dark:text-slate-400"} />
                     </div>
                     {!sidebarCollapsed && (
