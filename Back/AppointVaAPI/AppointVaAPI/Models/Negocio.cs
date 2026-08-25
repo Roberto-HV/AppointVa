@@ -29,6 +29,7 @@ namespace AppointVaAPI.Models
         public string Moneda { get; set; } = "MXN";
         public int HorasRecordatorio { get; set; } = 24;
         public int HorasCancelacion { get; set; } = 0;
+        public int DiasAnticipacionMinima { get; set; } = 0;
         public bool AutoConfirmar { get; set; } = false;
         public bool ListaEsperaActiva { get; set; } = false;
         public bool ModuloPagosHabilitado { get; set; } = false;

@@ -131,6 +131,7 @@ namespace AppointVaAPI.Controllers.V1
                 Telefono = negocio.Telefono,
                 TelefonoWhatsApp = negocio.TelefonoWhatsApp,
                 HorasCancelacion = negocio.HorasCancelacion,
+                DiasAnticipacionMinima = negocio.DiasAnticipacionMinima,
                 AutoConfirmar = negocio.AutoConfirmar,
                 ListaEsperaActiva = negocio.ListaEsperaActiva,
                 RequiereAnticipo = negocio.RequiereAnticipo,

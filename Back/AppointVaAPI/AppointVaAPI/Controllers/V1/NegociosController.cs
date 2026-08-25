@@ -78,6 +78,7 @@ namespace AppointVaAPI.Controllers.V1
                 negocio.HorasRecordatorio = dto.HorasRecordatorio.Value;
             if (dto.HorasCancelacion.HasValue)
                 negocio.HorasCancelacion = Math.Max(0, dto.HorasCancelacion.Value);
+            negocio.DiasAnticipacionMinima = dto.DiasAnticipacionMinima ?? negocio.DiasAnticipacionMinima;
             if (dto.AutoConfirmar.HasValue)
                 negocio.AutoConfirmar = dto.AutoConfirmar.Value;
             if (dto.ListaEsperaActiva.HasValue)
@@ -710,6 +711,7 @@ namespace AppointVaAPI.Controllers.V1
             Moneda = n.Moneda,
             HorasRecordatorio = n.HorasRecordatorio,
             HorasCancelacion = n.HorasCancelacion,
+            DiasAnticipacionMinima = n.DiasAnticipacionMinima,
             AutoConfirmar = n.AutoConfirmar,
             ListaEsperaActiva = n.ListaEsperaActiva,
             ModuloPagosHabilitado = n.ModuloPagosHabilitado,

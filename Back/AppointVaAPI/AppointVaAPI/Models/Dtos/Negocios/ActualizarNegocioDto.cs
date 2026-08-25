@@ -30,6 +30,9 @@ namespace AppointVaAPI.Models.Dtos.Negocios
         [Range(0, 168, ErrorMessage = "HorasCancelacion debe estar entre 0 y 168")]
         public int? HorasCancelacion { get; set; }
 
+        [Range(0, 30)]
+        public int? DiasAnticipacionMinima { get; set; }
+
         public bool? AutoConfirmar { get; set; }
         public bool? ListaEsperaActiva { get; set; }
 
