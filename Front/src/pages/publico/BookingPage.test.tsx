@@ -108,6 +108,7 @@ const mockNegocio: NegocioPublico = {
   colorPrimario: "#6366f1",
   colorSecundario: "#4f46e5",
   horasCancelacion: 0,
+  diasAnticipacionMinima: 0,
   autoConfirmar: true,
   requiereAnticipo: false,
   montoAnticipo: 0,

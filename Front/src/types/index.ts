@@ -338,6 +338,7 @@ export interface NegocioDto {
   moneda?: string;
   horasRecordatorio?: number;
   horasCancelacion?: number;
+  diasAnticipacionMinima?: number;
   autoConfirmar?: boolean;
   listaEsperaActiva?: boolean;
   metodoNotificacion?: string;
