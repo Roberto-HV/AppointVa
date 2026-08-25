@@ -600,7 +600,10 @@ export default function EmpleadosPage() {
                     if (!negDia || !negDia.activo || negDia.intervalos.length === 0) return null;
                     return (
                       <p className="text-[10px] text-slate-400 dark:text-slate-500">
-                        Negocio: {negDia.intervalos.map(iv => `${iv.horaInicio}–${iv.horaFin}`).join(' · ')}
+                        Negocio: {negDia.intervalos.map(iv => {
+                          const fmt = (t: string) => { const [h, m] = t.split(':').map(Number); const suffix = h < 12 ? 'a.m.' : 'p.m.'; const h12 = h % 12 || 12; return `${h12}:${String(m).padStart(2,'0')} ${suffix}`; };
+                          return `${fmt(iv.horaInicio)}–${fmt(iv.horaFin)}`;
+                        }).join(' · ')}
                       </p>
                     );
                   })()}

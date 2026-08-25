@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AppointVa — Manual del Cliente</title>
+  <title>AppointVa — Manual del Empleado</title>
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -209,10 +209,16 @@
     /* ── ANCHOR OFFSET ───────────────────────────────────────── */
     .anchor-target { scroll-margin-top: 24px; }
 
-    /* ── INTRO CARD (Como funciona) ──────────────────────────── */
+    /* ── INTRO CARD (3-col) ──────────────────────────────────── */
     .intro-grid {
       display: grid;
       grid-template-columns: 1fr 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    .intro-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
       gap: 14px;
       margin-bottom: 20px;
     }
@@ -238,14 +244,7 @@
       font-size: 13px; color: var(--gray); line-height: 1.55;
     }
 
-    /* ── STEP CARDS (la novedad visual) ─────────────────────── */
-    /*
-      Aesthetic risk: each booking step is a horizontal card
-      with a large gold step-number on the left, the description
-      in the center, and a compact inline phone mockup on the right
-      showing a simplified render of that exact screen state.
-      This gives people something to *recognise*, not just read.
-    */
+    /* ── STEP CARDS ─────────────────────────────────────────── */
     .booking-steps {
       display: flex;
       flex-direction: column;
@@ -266,7 +265,6 @@
     .booking-step:only-child  { border-radius: var(--radius-card); border-bottom: 1px solid var(--border); }
     .booking-step + .booking-step { border-top: 1px solid #f0ede6; }
 
-    /* connector line between steps */
     .booking-step::before {
       content: "";
       position: absolute;
@@ -357,7 +355,6 @@
       display: flex;
       flex-direction: column;
     }
-    /* screen header bar */
     .pscreen-bar {
       background: var(--dark);
       padding: 6px 8px;
@@ -378,7 +375,6 @@
       flex-direction: column;
       gap: 5px;
     }
-    /* generic micro UI elements */
     .pmock-label {
       font-size: 5px; font-weight: 700;
       text-transform: uppercase; letter-spacing: 0.5px;
@@ -402,6 +398,12 @@
       display: flex; align-items: center; justify-content: center;
     }
     .pmock-btn span { font-size: 5.5px; font-weight: 700; color: var(--white); }
+    .pmock-btn-green {
+      height: 13px; background: var(--green);
+      border-radius: 3px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .pmock-btn-green span { font-size: 5.5px; font-weight: 700; color: var(--white); }
     .pmock-service-row {
       display: flex; align-items: center; gap: 4px;
       padding: 4px 4px;
@@ -419,47 +421,6 @@
     }
     .pmock-svc-text { font-size: 5.5px; font-weight: 600; color: var(--dark); }
     .pmock-svc-price { font-size: 5px; color: var(--gray); margin-left: auto; }
-    .pmock-avatar-row {
-      display: flex; gap: 5px;
-    }
-    .pmock-avatar {
-      flex: 1;
-      display: flex; flex-direction: column; align-items: center;
-      gap: 2px;
-      padding: 5px 2px;
-      border: 1px solid var(--border);
-      border-radius: 4px;
-    }
-    .pmock-avatar.selected {
-      border-color: var(--gold); background: var(--gold-light);
-    }
-    .pmock-avatar-circle {
-      width: 18px; height: 18px;
-      background: var(--gray-light);
-      border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .pmock-avatar-circle svg { opacity: 0.6; }
-    .pmock-avatar-name { font-size: 5px; font-weight: 600; color: var(--dark); text-align: center; }
-    .pmock-cal-header {
-      display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 3px;
-    }
-    .pmock-cal-header span { font-size: 5.5px; font-weight: 700; color: var(--dark); }
-    .pmock-cal-grid {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 1.5px;
-    }
-    .pmock-cal-day {
-      height: 9px;
-      border-radius: 2px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 4.5px; color: var(--gray);
-    }
-    .pmock-cal-day.avail { background: var(--gold-light); color: var(--dark); font-weight: 600; }
-    .pmock-cal-day.selected { background: var(--gold); color: var(--white); font-weight: 700; }
-    .pmock-cal-day.empty { opacity: 0; }
     .pmock-slots {
       display: grid; grid-template-columns: 1fr 1fr 1fr;
       gap: 3px;
@@ -504,29 +465,129 @@
     .pmock-detail-row:last-child { border-bottom: none; }
     .pmock-detail-label { font-size: 5px; color: var(--gray-light); }
     .pmock-detail-val { font-size: 5px; font-weight: 700; color: var(--dark); }
-    .pmock-waitlist {
-      display: flex; flex-direction: column; gap: 4px;
-      align-items: center; padding: 6px 4px;
+
+    /* ── SIDEBAR MOCKUP (for employee dashboard) ─────────────── */
+    .dashboard-mock {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      overflow: hidden;
+      box-shadow: var(--shadow-card);
+      display: flex;
+      min-height: 260px;
     }
-    .pmock-waitlist-icon {
-      width: 22px; height: 22px;
-      background: #dbeafe; border-radius: 50%;
+    .dmock-sidebar {
+      width: 160px;
+      flex-shrink: 0;
+      background: var(--dark);
+      padding: 16px 0;
+      display: flex;
+      flex-direction: column;
+    }
+    .dmock-logo-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 0 14px 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      margin-bottom: 10px;
+    }
+    .dmock-logo-box {
+      width: 24px; height: 24px;
+      background: var(--gold);
+      border-radius: 6px;
       display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
     }
-    .pmock-waitlist-text {
-      font-size: 5.5px; font-weight: 700; color: var(--dark); text-align: center;
+    .dmock-logo-name {
+      font-size: 11px; font-weight: 800; color: var(--white);
     }
-    .pmock-waitlist-sub {
-      font-size: 5px; color: var(--gray); text-align: center;
+    .dmock-badge {
+      font-size: 8px; font-weight: 700;
+      background: rgba(200,169,97,0.25);
+      border: 1px solid rgba(200,169,97,0.4);
+      color: var(--gold);
+      border-radius: 4px;
+      padding: 1px 5px;
+      margin-left: auto;
+      flex-shrink: 0;
     }
-    .pmock-discount {
-      height: 11px; background: var(--gold-light);
-      border: 1px dashed var(--gold);
-      border-radius: 3px;
-      display: flex; align-items: center;
-      padding: 0 4px; gap: 3px;
+    .dmock-nav-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 7px 14px;
+      font-size: 11px; color: #9ca3af;
+      border-radius: 0;
     }
-    .pmock-discount span { font-size: 5.5px; color: #7a5c10; font-weight: 600; }
+    .dmock-nav-item.active {
+      background: rgba(200,169,97,0.12);
+      color: var(--gold);
+      font-weight: 700;
+      border-left: 3px solid var(--gold);
+    }
+    .dmock-nav-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: currentColor; flex-shrink: 0;
+    }
+    .dmock-content {
+      flex: 1;
+      padding: 18px;
+      background: var(--light);
+    }
+    .dmock-content-title {
+      font-size: 12px; font-weight: 800; color: var(--dark);
+      margin-bottom: 12px;
+    }
+
+    /* ── STAT CARDS (for dashboard home) ─────────────────────── */
+    .stat-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .dmock-stat {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 10px;
+    }
+    .dmock-stat-num {
+      font-size: 20px; font-weight: 800; color: var(--gold);
+      line-height: 1;
+    }
+    .dmock-stat-label {
+      font-size: 9px; color: var(--gray); margin-top: 3px;
+    }
+
+    /* ── CITA ROWS (appointment list) ────────────────────────── */
+    .cita-row {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .cita-row + .cita-row { margin-top: 6px; }
+    .cita-color-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .cita-info { flex: 1; min-width: 0; }
+    .cita-client { font-size: 12px; font-weight: 700; color: var(--dark); }
+    .cita-svc { font-size: 11px; color: var(--gray); }
+    .cita-time { font-size: 11px; color: var(--gray); white-space: nowrap; }
+    .status-pill {
+      display: inline-block;
+      font-size: 10px; font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 999px;
+    }
+    .status-pendiente  { background: var(--blue-light); color: var(--blue); }
+    .status-confirmada { background: var(--gold-light); color: #7a5c10; }
+    .status-completada { background: var(--green-light); color: var(--green); }
+    .status-cancelada  { background: var(--red-light); color: var(--red); }
+    .status-inasistencia { background: #f3f4f6; color: #374151; }
 
     /* ── TIP BOXES ────────────────────────────────────────────── */
     .tip {
@@ -554,6 +615,19 @@
     .info-icon { flex-shrink: 0; width: 22px; height: 22px; margin-top: 1px; }
     .info p { font-size: 13px; color: #1e3a5f; line-height: 1.6; }
     .info strong { color: #1e3a5f; }
+
+    .warn {
+      background: var(--red-light);
+      border: 1px solid #fecaca;
+      border-left: 4px solid var(--red);
+      border-radius: 10px;
+      padding: 16px 20px;
+      display: flex; align-items: flex-start; gap: 12px;
+      margin-top: 16px;
+    }
+    .warn-icon { flex-shrink: 0; width: 22px; height: 22px; margin-top: 1px; }
+    .warn p { font-size: 13px; color: #7f1d1d; line-height: 1.6; }
+    .warn strong { color: #7f1d1d; }
 
     .success-note {
       background: var(--green-light);
@@ -584,60 +658,6 @@
     .card p {
       font-size: 14px; color: var(--gray);
       line-height: 1.65;
-    }
-
-    /* ── EMAIL MOCKUP ─────────────────────────────────────────── */
-    .email-mock {
-      background: var(--white);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-card);
-      overflow: hidden;
-      box-shadow: var(--shadow-card);
-    }
-    .email-header {
-      background: var(--dark);
-      padding: 14px 20px;
-      display: flex; align-items: center; gap: 10px;
-    }
-    .email-header-logo {
-      width: 28px; height: 28px;
-      background: var(--gold);
-      border-radius: 7px;
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
-    }
-    .email-header-info { flex: 1; }
-    .email-from { font-size: 10px; color: var(--gray-light); }
-    .email-subject { font-size: 12px; font-weight: 700; color: var(--white); }
-    .email-body { padding: 20px; }
-    .email-greeting { font-size: 14px; font-weight: 700; color: var(--dark); margin-bottom: 8px; }
-    .email-body > p { font-size: 13px; color: var(--gray); line-height: 1.6; margin-bottom: 14px; }
-    .email-detail-box {
-      background: var(--light);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 14px 16px;
-      margin-bottom: 14px;
-    }
-    .email-detail-row {
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-      padding: 5px 0;
-      border-bottom: 1px solid var(--border);
-    }
-    .email-detail-row:last-child { border-bottom: none; }
-    .email-detail-key {
-      font-size: 11px; font-weight: 700;
-      text-transform: uppercase; letter-spacing: 0.5px;
-      color: var(--gray-light); width: 90px; flex-shrink: 0; padding-top: 1px;
-    }
-    .email-detail-val {
-      font-size: 13px; font-weight: 600; color: var(--dark);
-    }
-    .email-footer-note {
-      font-size: 11px; color: var(--gray-light); text-align: center;
-      padding-top: 4px;
     }
 
     /* ── FAQ ──────────────────────────────────────────────────── */
@@ -672,23 +692,65 @@
       padding-left: 30px;
     }
 
-    /* ── URL DEMO ─────────────────────────────────────────────── */
-    .url-demo {
-      background: var(--dark);
-      border-radius: 12px;
-      padding: 14px 20px;
-      display: flex; align-items: center; gap: 14px;
-      margin-top: 16px;
+    /* ── SCHEDULE TABLE ──────────────────────────────────────── */
+    .schedule-table {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      overflow: hidden;
+      box-shadow: var(--shadow-card);
     }
-    .url-label {
-      font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
-      text-transform: uppercase; color: var(--gold); flex-shrink: 0;
+    .schedule-row {
+      display: flex;
+      align-items: center;
+      padding: 12px 20px;
+      border-bottom: 1px solid #f0ede6;
+      gap: 14px;
     }
-    .url-text {
-      font-family: 'Courier New', monospace;
-      font-size: 13px; color: #e5e7eb; flex: 1;
+    .schedule-row:last-child { border-bottom: none; }
+    .schedule-day {
+      width: 80px; flex-shrink: 0;
+      font-size: 13px; font-weight: 700; color: var(--dark);
     }
-    .url-text em { color: var(--gold); font-style: normal; font-weight: 700; }
+    .schedule-toggle {
+      width: 32px; height: 18px;
+      border-radius: 999px;
+      flex-shrink: 0;
+      display: flex; align-items: center;
+      padding: 2px;
+    }
+    .schedule-toggle.on { background: var(--gold); justify-content: flex-end; }
+    .schedule-toggle.off { background: #d1d5db; justify-content: flex-start; }
+    .schedule-toggle-knob {
+      width: 14px; height: 14px;
+      background: var(--white);
+      border-radius: 50%;
+    }
+    .schedule-intervals {
+      flex: 1;
+      display: flex; flex-direction: column; gap: 4px;
+    }
+    .interval-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--gold-light);
+      border: 1px solid rgba(200,169,97,0.4);
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 12px; font-weight: 700;
+      color: #7a5c10;
+      width: fit-content;
+    }
+    .interval-pill-off {
+      background: #f3f4f6;
+      border: 1px solid var(--border);
+      color: var(--gray-light);
+    }
+    .schedule-add {
+      font-size: 11px; font-weight: 700;
+      color: var(--gold);
+      cursor: pointer;
+      white-space: nowrap;
+    }
 
     /* ── FOOTER ───────────────────────────────────────────────── */
     .footer {
@@ -704,9 +766,9 @@
       .hero h1 { font-size: 28px; }
       .page { padding: 0 16px 56px; }
       .intro-grid { grid-template-columns: 1fr; }
+      .intro-grid-2 { grid-template-columns: 1fr; }
       .toc-num { width: 44px; font-size: 11px; }
       .toc-arrow { padding: 0 12px; }
-      /* On mobile, phone mockups slide below the text */
       .booking-step { flex-wrap: wrap; }
       .step-phone-col {
         width: 100%;
@@ -722,6 +784,11 @@
         left: 43px;
         top: 0; bottom: 0;
       }
+      .dashboard-mock { flex-direction: column; }
+      .dmock-sidebar { width: 100%; flex-direction: row; flex-wrap: wrap; padding: 10px 14px; }
+      .dmock-logo-row { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+      .dmock-nav-item { padding: 5px 10px; font-size: 10px; }
+      .schedule-row { flex-wrap: wrap; }
     }
     @media (max-width: 440px) {
       .step-phone-col { padding-left: 20px; justify-content: center; }
@@ -762,15 +829,15 @@
       <span class="logo-name">AppointVa</span>
     </div>
 
-    <h1>Manual del <span>Cliente</span></h1>
-    <p class="hero-sub">Cómo reservar y gestionar tus citas en AppointVa — rápido, sin descargar nada, desde tu celular o computadora.</p>
-    <div class="hero-badge" aria-label="Versión 4.2, Julio 2026">
+    <h1>Manual del <span>Empleado</span></h1>
+    <p class="hero-sub">Todo lo que necesitas saber para gestionar tus citas, configurar tu perfil y trabajar con AppointVa desde el primer día.</p>
+    <div class="hero-badge" aria-label="Versión 1.0, Agosto 2026">
       <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
         <circle cx="6" cy="6" r="5" stroke="#C8A961" stroke-width="1.5"/>
         <line x1="6" y1="3.5" x2="6" y2="6" stroke="#C8A961" stroke-width="1.5" stroke-linecap="round"/>
         <line x1="6" y1="6" x2="8" y2="7.5" stroke="#C8A961" stroke-width="1.5" stroke-linecap="round"/>
       </svg>
-      Versión 4.2 &nbsp;·&nbsp; Julio 2026
+      v1.0 &nbsp;·&nbsp; Agosto 2026
     </div>
   </div>
 </header>
@@ -783,7 +850,7 @@
   <!-- ══════════════════════════════════════════════════════════════ -->
   <nav class="toc-section" aria-label="Tabla de contenidos">
     <div class="section-label">Contenido del manual</div>
-    <div class="section-title">¿Qué quieres saber hoy?</div>
+    <div class="section-title">¿Qué quieres revisar hoy?</div>
 
     <div class="toc-agenda" role="list">
       <div class="toc-header" aria-hidden="true">
@@ -794,58 +861,58 @@
           <rect x="4" y="8" width="3" height="3" rx="0.8" fill="#C8A961" fill-opacity="0.7"/>
           <rect x="9" y="8" width="3" height="3" rx="0.8" fill="#C8A961" fill-opacity="0.3"/>
         </svg>
-        <span class="toc-header-title">Manual del Cliente — 6 secciones</span>
+        <span class="toc-header-title">Manual del Empleado — 6 secciones</span>
         <span class="toc-header-label">Ir a sección</span>
       </div>
 
       <div class="toc-list">
 
-        <a class="toc-item" href="#como-funciona" role="listitem">
+        <a class="toc-item" href="#acceso" role="listitem">
           <div class="toc-rail" aria-hidden="true"></div>
           <div class="toc-num" aria-hidden="true">01</div>
           <div class="toc-content">
-            <div class="toc-name">¿Cómo funciona AppointVa?</div>
-            <div class="toc-desc">Sin apps, sin registros — solo un enlace</div>
+            <div class="toc-name">Tu acceso como empleado</div>
+            <div class="toc-desc">Cómo entrar al panel y qué pantallas ves</div>
           </div>
           <div class="toc-arrow" aria-hidden="true">→</div>
         </a>
 
-        <a class="toc-item" href="#reservar" role="listitem">
+        <a class="toc-item" href="#inicio" role="listitem">
           <div class="toc-rail" aria-hidden="true"></div>
           <div class="toc-num" aria-hidden="true">02</div>
           <div class="toc-content">
-            <div class="toc-name">Reservar una cita paso a paso</div>
-            <div class="toc-desc">Desde que entras al enlace hasta que recibes confirmación</div>
+            <div class="toc-name">Inicio — tu día de un vistazo</div>
+            <div class="toc-desc">Resumen de citas del día y accesos rápidos</div>
           </div>
           <div class="toc-arrow" aria-hidden="true">→</div>
         </a>
 
-        <a class="toc-item" href="#confirmacion" role="listitem">
+        <a class="toc-item" href="#mis-citas" role="listitem">
           <div class="toc-rail" aria-hidden="true"></div>
           <div class="toc-num" aria-hidden="true">03</div>
           <div class="toc-content">
-            <div class="toc-name">Confirmación de tu cita</div>
-            <div class="toc-desc">Qué dice el email y cómo usarlo</div>
+            <div class="toc-name">Mis citas — gestión de agenda</div>
+            <div class="toc-desc">Vista de lista, vista semanal, estados y acciones</div>
           </div>
           <div class="toc-arrow" aria-hidden="true">→</div>
         </a>
 
-        <a class="toc-item" href="#cancelar" role="listitem">
+        <a class="toc-item" href="#pagos" role="listitem">
           <div class="toc-rail" aria-hidden="true"></div>
           <div class="toc-num" aria-hidden="true">04</div>
           <div class="toc-content">
-            <div class="toc-name">Cancelar o modificar una cita</div>
-            <div class="toc-desc">Desde tu página de confirmación o contactando al negocio</div>
+            <div class="toc-name">Pagos</div>
+            <div class="toc-desc">Historial de pagos asociados a tus citas</div>
           </div>
           <div class="toc-arrow" aria-hidden="true">→</div>
         </a>
 
-        <a class="toc-item" href="#descuentos" role="listitem">
+        <a class="toc-item" href="#mi-perfil" role="listitem">
           <div class="toc-rail" aria-hidden="true"></div>
           <div class="toc-num" aria-hidden="true">05</div>
           <div class="toc-content">
-            <div class="toc-name">Descuentos</div>
-            <div class="toc-desc">Cómo ingresar tu código de descuento</div>
+            <div class="toc-name">Mi perfil — foto, bio y horarios</div>
+            <div class="toc-desc">Configura cómo te ven los clientes y tus horas de trabajo</div>
           </div>
           <div class="toc-arrow" aria-hidden="true">→</div>
         </a>
@@ -855,7 +922,7 @@
           <div class="toc-num" aria-hidden="true">06</div>
           <div class="toc-content">
             <div class="toc-name">Preguntas frecuentes</div>
-            <div class="toc-desc">Cuentas, seguridad, llegadas y más</div>
+            <div class="toc-desc">Situaciones del día a día resueltas</div>
           </div>
           <div class="toc-arrow" aria-hidden="true">→</div>
         </a>
@@ -865,71 +932,17 @@
   </nav>
 
   <!-- ══════════════════════════════════════════════════════════════ -->
-  <!--  01 — COMO FUNCIONA                                            -->
+  <!--  01 — ACCESO                                                    -->
   <!-- ══════════════════════════════════════════════════════════════ -->
-  <section class="section anchor-target" id="como-funciona" aria-labelledby="h-como-funciona">
+  <section class="section anchor-target" id="acceso" aria-labelledby="h-acceso">
     <div class="divider" aria-hidden="true"></div>
     <div style="padding-top: 52px;">
       <div class="section-label">Sección 01</div>
-      <h2 class="section-title" id="h-como-funciona">¿Cómo funciona AppointVa?</h2>
+      <h2 class="section-title" id="h-acceso">Tu acceso como empleado</h2>
 
-      <div class="intro-grid">
-        <div class="intro-card">
-          <div class="intro-icon" aria-hidden="true">
-            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-              <path d="M4 11C4 7.13 7.13 4 11 4s7 3.13 7 7-3.13 7-7 7-7-3.13-7-7z" stroke="#C8A961" stroke-width="1.6"/>
-              <path d="M11 8v3l2 2" stroke="#C8A961" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </div>
-          <h3>Sin descargar nada</h3>
-          <p>Todo funciona desde el navegador de tu celular o computadora. No necesitas instalar ninguna aplicación.</p>
-        </div>
-        <div class="intro-card">
-          <div class="intro-icon" aria-hidden="true">
-            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-              <rect x="3" y="5" width="16" height="12" rx="2.5" stroke="#C8A961" stroke-width="1.6"/>
-              <path d="M3 9h16" stroke="#C8A961" stroke-width="1.6"/>
-              <circle cx="11" cy="14" r="1.5" fill="#C8A961"/>
-            </svg>
-          </div>
-          <h3>Sin crear una cuenta</h3>
-          <p>No tienes que registrarte. Solo ingresas tu nombre, teléfono y email al momento de reservar.</p>
-        </div>
-        <div class="intro-card">
-          <div class="intro-icon" aria-hidden="true">
-            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-              <path d="M4 6h14M4 11h10M4 16h7" stroke="#C8A961" stroke-width="1.6" stroke-linecap="round"/>
-            </svg>
-          </div>
-          <h3>Desde un enlace</h3>
-          <p>El negocio te comparte su enlace (por WhatsApp, Instagram o Google). Tócalo y ya estás dentro.</p>
-        </div>
-      </div>
-
-      <div class="url-demo" aria-label="Ejemplo de enlace de reservas">
-        <span class="url-label">Ejemplo de enlace</span>
-        <span class="url-text">appointva.com/b/<em>salon-diana</em></span>
-      </div>
-
-      <div class="tip" role="note">
-        <svg class="tip-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-          <circle cx="11" cy="11" r="9" stroke="#C8A961" stroke-width="1.6"/>
-          <path d="M11 10v5" stroke="#C8A961" stroke-width="1.8" stroke-linecap="round"/>
-          <circle cx="11" cy="7.5" r="1" fill="#C8A961"/>
-        </svg>
-        <p><strong>Cada negocio tiene su propio enlace.</strong> Si reservas en el Salón Diana y en el Centro de Estética Lucía, cada uno tiene un enlace distinto. El negocio te dice cuál usar.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- ══════════════════════════════════════════════════════════════ -->
-  <!--  02 — RESERVAR UNA CITA                                        -->
-  <!-- ══════════════════════════════════════════════════════════════ -->
-  <section class="section anchor-target" id="reservar" aria-labelledby="h-reservar">
-    <div class="divider" aria-hidden="true"></div>
-    <div style="padding-top: 52px;">
-      <div class="section-label">Sección 02</div>
-      <h2 class="section-title" id="h-reservar">Reservar una cita paso a paso</h2>
+      <p style="font-size:14px;color:var(--gray);margin-bottom:24px;line-height:1.7;">
+        El propietario del negocio te da acceso al sistema enviándote una invitación por email. No necesitas crear una cuenta por tu cuenta — el correo llega solo y contiene todo lo que necesitas.
+      </p>
 
       <div class="booking-steps" role="list">
 
@@ -939,9 +952,9 @@
             <div class="step-circle">1</div>
           </div>
           <div class="step-body-col">
-            <h3>Entra al enlace del negocio</h3>
-            <p>El negocio comparte su enlace de reservas por Instagram, WhatsApp o Google. Toca el enlace y se abre la página del negocio directamente en tu navegador.</p>
-            <span class="step-tag">Desde WhatsApp, Instagram o Google</span>
+            <h3>Recibe la invitación por email</h3>
+            <p>El propietario te agrega desde la sección <strong>Empleados</strong> de su panel. En minutos recibirás un email de AppointVa con un enlace de acceso. Si no lo ves, revisa la carpeta de spam.</p>
+            <span class="step-tag">El propietario gestiona las invitaciones</span>
           </div>
           <div class="step-phone-col" aria-hidden="true">
             <div class="phone">
@@ -949,20 +962,398 @@
               <div class="phone-screen">
                 <div class="pscreen-bar">
                   <div class="pscreen-bar-dot"></div>
-                  <span class="pscreen-bar-title">AppointVa</span>
+                  <span class="pscreen-bar-title">Email de invitación</span>
                 </div>
                 <div class="pscreen-body">
-                  <!-- Business card -->
-                  <div style="background:var(--dark);border-radius:6px;padding:8px;margin-bottom:3px;">
-                    <div style="font-size:6.5px;font-weight:800;color:var(--white);margin-bottom:2px;">Salón Diana</div>
-                    <div style="font-size:5px;color:var(--gray-light);">Av. Reforma 240 · Ciudad de México</div>
-                    <div style="display:flex;gap:4px;margin-top:5px;">
-                      <div style="background:var(--gold);border-radius:3px;padding:2px 5px;font-size:5px;font-weight:700;color:var(--white);">Reservar cita</div>
-                      <div style="background:rgba(255,255,255,0.08);border-radius:3px;padding:2px 5px;font-size:5px;color:var(--gray-light);">Ver servicios</div>
+                  <div style="background:var(--dark);border-radius:4px;padding:5px 6px;margin-bottom:4px;">
+                    <div style="font-size:5px;color:var(--gray-light);">De: notificaciones@appointva.com</div>
+                    <div style="font-size:6px;font-weight:700;color:var(--white);margin-top:1px;">Fuiste añadido como empleado</div>
+                  </div>
+                  <div style="font-size:5.5px;color:var(--gray);line-height:1.5;">
+                    Hola Ana, el Salón Diana te ha agregado como profesional en AppointVa.
+                  </div>
+                  <div style="margin-top:4px;" class="pmock-btn"><span>Activar mi cuenta →</span></div>
+                  <div style="font-size:5px;color:var(--gray-light);text-align:center;margin-top:3px;">El enlace expira en 48 horas</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PASO 2 -->
+        <div class="booking-step" role="listitem">
+          <div class="step-num-col" aria-hidden="true">
+            <div class="step-circle">2</div>
+          </div>
+          <div class="step-body-col">
+            <h3>Crea tu contraseña</h3>
+            <p>Al tocar el enlace del email se abre el panel de AppointVa. La primera vez te pedirá crear una contraseña. Elige una que puedas recordar — la usarás cada vez que inicies sesión.</p>
+          </div>
+          <div class="step-phone-col" aria-hidden="true">
+            <div class="phone">
+              <div class="phone-notch"></div>
+              <div class="phone-screen">
+                <div class="pscreen-bar">
+                  <div class="pscreen-bar-dot"></div>
+                  <span class="pscreen-bar-title">Configura tu cuenta</span>
+                </div>
+                <div class="pscreen-body">
+                  <div class="pmock-form-row">
+                    <div class="pmock-label">Email</div>
+                    <div class="pmock-input"><span>ana@gmail.com</span></div>
+                  </div>
+                  <div class="pmock-form-row">
+                    <div class="pmock-label">Nueva contraseña</div>
+                    <div class="pmock-input"><span>••••••••</span></div>
+                  </div>
+                  <div class="pmock-form-row">
+                    <div class="pmock-label">Confirmar contraseña</div>
+                    <div class="pmock-input"><span>••••••••</span></div>
+                  </div>
+                  <div style="margin-top:4px;" class="pmock-btn"><span>Entrar al panel →</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PASO 3 -->
+        <div class="booking-step" role="listitem">
+          <div class="step-num-col" aria-hidden="true">
+            <div class="step-circle">3</div>
+          </div>
+          <div class="step-body-col">
+            <h3>Accede desde el mismo enlace que el propietario</h3>
+            <p>No hay una URL especial para empleados. Siempre entrarás desde el mismo panel del negocio. La diferencia es que el sistema detecta tu rol y te muestra solo las secciones que te corresponden.</p>
+            <span class="step-tag">Tu menú es simplificado por diseño</span>
+          </div>
+          <div class="step-phone-col" aria-hidden="true">
+            <div class="phone">
+              <div class="phone-notch"></div>
+              <div class="phone-screen" style="min-height:190px;">
+                <div class="pscreen-bar">
+                  <div class="pscreen-bar-dot"></div>
+                  <span class="pscreen-bar-title">Panel de empleado</span>
+                </div>
+                <div style="display:flex;flex:1;">
+                  <!-- mini sidebar -->
+                  <div style="width:46px;background:var(--dark);padding:6px 0;display:flex;flex-direction:column;gap:1px;">
+                    <div style="padding:3px 6px;display:flex;align-items:center;gap:3px;">
+                      <div style="width:10px;height:10px;background:var(--gold);border-radius:3px;flex-shrink:0;"></div>
+                      <div style="font-size:4px;font-weight:800;color:var(--white);">AV</div>
+                    </div>
+                    <div style="margin:2px 4px 4px;background:rgba(200,169,97,0.2);border:1px solid rgba(200,169,97,0.3);border-radius:2px;padding:1px 3px;font-size:4px;font-weight:700;color:var(--gold);text-align:center;">EMP</div>
+                    <div style="padding:4px 6px;background:rgba(200,169,97,0.1);border-left:2px solid var(--gold);">
+                      <div style="font-size:4.5px;color:var(--gold);font-weight:700;">Inicio</div>
+                    </div>
+                    <div style="padding:4px 6px;">
+                      <div style="font-size:4.5px;color:var(--gray-light);">Mis citas</div>
+                    </div>
+                    <div style="padding:4px 6px;">
+                      <div style="font-size:4.5px;color:var(--gray-light);">Pagos</div>
+                    </div>
+                    <div style="padding:4px 6px;">
+                      <div style="font-size:4.5px;color:var(--gray-light);">Mi perfil</div>
                     </div>
                   </div>
-                  <div style="background:var(--light);border-radius:4px;height:30px;display:flex;align-items:center;justify-content:center;">
-                    <div style="font-size:5px;color:var(--gray);">Galería de fotos ···</div>
+                  <!-- content -->
+                  <div style="flex:1;background:var(--light);padding:6px 5px;">
+                    <div style="font-size:5.5px;font-weight:800;color:var(--dark);margin-bottom:4px;">Buenos días, Ana</div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;">
+                      <div style="background:var(--white);border:1px solid var(--border);border-radius:3px;padding:4px;">
+                        <div style="font-size:12px;font-weight:800;color:var(--gold);line-height:1;">4</div>
+                        <div style="font-size:4px;color:var(--gray);margin-top:1px;">citas hoy</div>
+                      </div>
+                      <div style="background:var(--white);border:1px solid var(--border);border-radius:3px;padding:4px;">
+                        <div style="font-size:12px;font-weight:800;color:var(--dark);line-height:1;">2</div>
+                        <div style="font-size:4px;color:var(--gray);margin-top:1px;">pendientes</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /booking-steps -->
+
+      <div style="margin-top: 32px;">
+        <div class="section-label" style="margin-bottom:12px;">Lo que ves como empleado</div>
+        <div class="intro-grid-2">
+          <div class="intro-card" style="border-left: 4px solid var(--green);">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+                <circle cx="9" cy="9" r="7.5" stroke="#16a34a" stroke-width="1.5"/>
+                <path d="M5.5 9l2.5 2.5 4-4" stroke="#16a34a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <h3 style="margin-bottom:0;">Tu menú de empleado</h3>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--dark);font-weight:600;">
+                <div style="width:6px;height:6px;background:var(--gold);border-radius:50%;flex-shrink:0;"></div>Inicio
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--dark);font-weight:600;">
+                <div style="width:6px;height:6px;background:var(--gold);border-radius:50%;flex-shrink:0;"></div>Mis citas
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--dark);font-weight:600;">
+                <div style="width:6px;height:6px;background:var(--gold);border-radius:50%;flex-shrink:0;"></div>Pagos
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--dark);font-weight:600;">
+                <div style="width:6px;height:6px;background:var(--gold);border-radius:50%;flex-shrink:0;"></div>Mi perfil
+              </div>
+            </div>
+          </div>
+          <div class="intro-card" style="border-left: 4px solid var(--gray-light);">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+                <circle cx="9" cy="9" r="7.5" stroke="#9ca3af" stroke-width="1.5"/>
+                <path d="M6 12l6-6M6 6l6 6" stroke="#9ca3af" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+              <h3 style="margin-bottom:0;color:var(--gray);">Oculto para empleados</h3>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:5px;">
+              <div style="font-size:12px;color:var(--gray-light);">Clientes · Empleados · Servicios</div>
+              <div style="font-size:12px;color:var(--gray-light);">Descuentos · Reseñas · Reportes</div>
+              <div style="font-size:12px;color:var(--gray-light);">Mi negocio · Galería · Cuestionario</div>
+              <div style="font-size:12px;color:var(--gray-light);">Seguridad</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tip" role="note">
+        <svg class="tip-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+          <circle cx="11" cy="11" r="9" stroke="#C8A961" stroke-width="1.6"/>
+          <path d="M11 10v5" stroke="#C8A961" stroke-width="1.8" stroke-linecap="round"/>
+          <circle cx="11" cy="7.5" r="1" fill="#C8A961"/>
+        </svg>
+        <p><strong>El badge "Empleado" en el menú lateral es normal.</strong> Es la forma en que el sistema indica tu rol. Si algún día el propietario te otorga más permisos, ese badge cambiará.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <!--  02 — INICIO                                                    -->
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <section class="section anchor-target" id="inicio" aria-labelledby="h-inicio">
+    <div class="divider" aria-hidden="true"></div>
+    <div style="padding-top: 52px;">
+      <div class="section-label">Sección 02</div>
+      <h2 class="section-title" id="h-inicio">Inicio — tu día de un vistazo</h2>
+
+      <p style="font-size:14px;color:var(--gray);margin-bottom:24px;line-height:1.7;">
+        La pantalla de Inicio es lo primero que ves al entrar al panel. Te da un resumen rápido de lo que tienes programado sin necesidad de navegar a ningún otro lado.
+      </p>
+
+      <div class="dashboard-mock" role="img" aria-label="Vista del panel de Inicio del empleado">
+        <!-- Sidebar -->
+        <div class="dmock-sidebar">
+          <div class="dmock-logo-row">
+            <div class="dmock-logo-box" aria-hidden="true">
+              <svg viewBox="0 0 14 14" fill="none" width="12" height="12">
+                <rect x="1" y="2" width="12" height="10" rx="2" fill="white" fill-opacity="0.15" stroke="white" stroke-width="1"/>
+                <line x1="1" y1="6" x2="13" y2="6" stroke="white" stroke-width="1"/>
+              </svg>
+            </div>
+            <span class="dmock-logo-name">AppointVa</span>
+            <span class="dmock-badge">Empleado</span>
+          </div>
+          <div class="dmock-nav-item active">
+            <div class="dmock-nav-dot"></div>
+            Inicio
+          </div>
+          <div class="dmock-nav-item">
+            <div class="dmock-nav-dot"></div>
+            Mis citas
+          </div>
+          <div class="dmock-nav-item">
+            <div class="dmock-nav-dot"></div>
+            Pagos
+          </div>
+          <div class="dmock-nav-item">
+            <div class="dmock-nav-dot"></div>
+            Mi perfil
+          </div>
+        </div>
+        <!-- Contenido -->
+        <div class="dmock-content">
+          <div class="dmock-content-title">Buenos días, Ana — Lunes 25 ago 2026</div>
+          <div class="stat-grid">
+            <div class="dmock-stat">
+              <div class="dmock-stat-num">5</div>
+              <div class="dmock-stat-label">Citas hoy</div>
+            </div>
+            <div class="dmock-stat">
+              <div class="dmock-stat-num">2</div>
+              <div class="dmock-stat-label">Pendientes de confirmar</div>
+            </div>
+          </div>
+          <!-- Próximas citas -->
+          <div style="font-size:10px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Próximas citas hoy</div>
+          <div class="cita-row">
+            <div class="cita-color-dot" style="background:var(--gold);"></div>
+            <div class="cita-info">
+              <div class="cita-client">María López</div>
+              <div class="cita-svc">Corte de cabello</div>
+            </div>
+            <div class="cita-time">10:00 AM</div>
+          </div>
+          <div class="cita-row" style="margin-top:6px;">
+            <div class="cita-color-dot" style="background:var(--blue);"></div>
+            <div class="cita-info">
+              <div class="cita-client">Sofía Reyes</div>
+              <div class="cita-svc">Coloración completa</div>
+            </div>
+            <div class="cita-time">12:30 PM</div>
+          </div>
+          <div style="margin-top:10px;background:var(--gold);border-radius:6px;padding:6px 12px;display:inline-block;font-size:11px;font-weight:700;color:var(--white);cursor:pointer;">
+            Ver todas mis citas →
+          </div>
+        </div>
+      </div>
+
+      <div class="intro-grid" style="margin-top:20px;">
+        <div class="intro-card">
+          <div class="intro-icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+              <rect x="3" y="4" width="16" height="15" rx="2.5" stroke="#C8A961" stroke-width="1.6"/>
+              <line x1="3" y1="9" x2="19" y2="9" stroke="#C8A961" stroke-width="1.6"/>
+              <rect x="7" y="13" width="3" height="3" rx="0.8" fill="#C8A961"/>
+            </svg>
+          </div>
+          <h3>Solo tus citas</h3>
+          <p>Los números que ves en Inicio corresponden únicamente a <strong>tus</strong> citas. No ves las del negocio completo ni las de otros empleados.</p>
+        </div>
+        <div class="intro-card">
+          <div class="intro-icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+              <path d="M11 3v2M11 17v2M3 11h2M17 11h2" stroke="#C8A961" stroke-width="1.6" stroke-linecap="round"/>
+              <circle cx="11" cy="11" r="5" stroke="#C8A961" stroke-width="1.6"/>
+            </svg>
+          </div>
+          <h3>Se actualiza en tiempo real</h3>
+          <p>Cuando el propietario agenda una nueva cita contigo, aparece de inmediato. Solo recarga la página si no ves los cambios.</p>
+        </div>
+        <div class="intro-card">
+          <div class="intro-icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+              <path d="M4 6h14M4 11h10M4 16h7" stroke="#C8A961" stroke-width="1.6" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <h3>Acceso rápido</h3>
+          <p>El botón "Ver todas mis citas" te lleva directamente a la sección de Mis citas con el detalle completo de tu agenda.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <!--  03 — MIS CITAS                                                 -->
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <section class="section anchor-target" id="mis-citas" aria-labelledby="h-mis-citas">
+    <div class="divider" aria-hidden="true"></div>
+    <div style="padding-top: 52px;">
+      <div class="section-label">Sección 03</div>
+      <h2 class="section-title" id="h-mis-citas">Mis citas — gestión de agenda</h2>
+
+      <p style="font-size:14px;color:var(--gray);margin-bottom:24px;line-height:1.7;">
+        Esta es tu pantalla principal de trabajo. Aquí encuentras todas tus citas organizadas por fecha, con dos modos de visualización que puedes alternar con un toque.
+      </p>
+
+      <!-- Vistas -->
+      <div class="intro-grid-2" style="margin-bottom:24px;">
+        <div class="intro-card" style="border-top: 3px solid var(--gold);">
+          <div class="intro-icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+              <path d="M4 6h14M4 10h14M4 14h14M4 18h10" stroke="#C8A961" stroke-width="1.6" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <h3>Vista Lista</h3>
+          <p>Muestra todas tus citas en orden cronológico. Ves el nombre del cliente, el servicio, la fecha y hora, y el estado de cada cita. Ideal para revisar tu semana de un vistazo.</p>
+        </div>
+        <div class="intro-card" style="border-top: 3px solid var(--gold);">
+          <div class="intro-icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+              <rect x="2" y="4" width="18" height="15" rx="2" stroke="#C8A961" stroke-width="1.6"/>
+              <line x1="2" y1="9" x2="20" y2="9" stroke="#C8A961" stroke-width="1.2" stroke-dasharray="2 2"/>
+              <line x1="8" y1="4" x2="8" y2="19" stroke="#C8A961" stroke-width="1" stroke-dasharray="2 2"/>
+              <line x1="14" y1="4" x2="14" y2="19" stroke="#C8A961" stroke-width="1" stroke-dasharray="2 2"/>
+            </svg>
+          </div>
+          <h3>Vista Semana</h3>
+          <p>Muestra un calendario de lunes a domingo. Cada cita aparece como un bloque de color en el día y hora correspondiente. Útil para ver huecos y bloques ocupados.</p>
+        </div>
+      </div>
+
+      <!-- Estados de citas -->
+      <div class="section-label" style="margin-bottom: 12px;">Estados de las citas</div>
+      <div class="schedule-table" style="margin-bottom:24px;">
+        <div class="schedule-row" style="background:var(--dark);">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--gold);">Estado</div>
+          <div style="flex:1;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--gold);">Significado</div>
+        </div>
+        <div class="schedule-row">
+          <div class="schedule-day"><span class="status-pill status-pendiente">Pendiente</span></div>
+          <div style="flex:1;font-size:13px;color:var(--gray);">La cita fue creada pero el cliente o el negocio aún no la confirma formalmente.</div>
+        </div>
+        <div class="schedule-row">
+          <div class="schedule-day"><span class="status-pill status-confirmada">Confirmada</span></div>
+          <div style="flex:1;font-size:13px;color:var(--gray);">La cita está lista. El cliente asistirá en la fecha y hora acordada.</div>
+        </div>
+        <div class="schedule-row">
+          <div class="schedule-day"><span class="status-pill status-completada">Completada</span></div>
+          <div style="flex:1;font-size:13px;color:var(--gray);">El servicio ya se realizó. Tú marcas la cita como completada al terminar.</div>
+        </div>
+        <div class="schedule-row">
+          <div class="schedule-day"><span class="status-pill status-cancelada">Cancelada</span></div>
+          <div style="flex:1;font-size:13px;color:var(--gray);">La cita fue cancelada. Solo el propietario puede hacer esto desde su panel.</div>
+        </div>
+        <div class="schedule-row">
+          <div class="schedule-day"><span class="status-pill status-inasistencia">Inasistencia</span></div>
+          <div style="flex:1;font-size:13px;color:var(--gray);">El cliente no se presentó. Tú registras esta situación desde el detalle de la cita.</div>
+        </div>
+      </div>
+
+      <!-- Flujo: abrir detalle y marcar -->
+      <div class="section-label" style="margin-bottom: 12px;">Cómo trabajar con una cita</div>
+      <div class="booking-steps" role="list">
+
+        <!-- PASO 1 -->
+        <div class="booking-step" role="listitem">
+          <div class="step-num-col" aria-hidden="true">
+            <div class="step-circle">1</div>
+          </div>
+          <div class="step-body-col">
+            <h3>Localiza la cita en tu lista</h3>
+            <p>En la vista Lista, tus citas aparecen ordenadas por fecha. Verás el nombre del cliente, el servicio y la hora de forma clara. También puedes usar la vista Semana para ubicarla en el calendario.</p>
+          </div>
+          <div class="step-phone-col" aria-hidden="true">
+            <div class="phone">
+              <div class="phone-notch"></div>
+              <div class="phone-screen" style="min-height:190px;">
+                <div class="pscreen-bar">
+                  <div class="pscreen-bar-dot"></div>
+                  <span class="pscreen-bar-title">Mis citas — Lista</span>
+                </div>
+                <div class="pscreen-body" style="gap:3px;">
+                  <!-- Toggle tabs -->
+                  <div style="display:flex;gap:2px;background:var(--light);border-radius:4px;padding:2px;">
+                    <div style="flex:1;background:var(--white);border-radius:3px;padding:3px;text-align:center;font-size:5px;font-weight:700;color:var(--dark);box-shadow:0 1px 2px rgba(0,0,0,0.08);">Lista</div>
+                    <div style="flex:1;border-radius:3px;padding:3px;text-align:center;font-size:5px;color:var(--gray);">Semana</div>
+                  </div>
+                  <!-- Appointment rows -->
+                  <div style="background:var(--white);border:1px solid var(--gold);border-radius:4px;padding:4px 5px;">
+                    <div style="font-size:5px;color:var(--gray-light);margin-bottom:1px;">Hoy · 10:00 AM</div>
+                    <div style="font-size:6px;font-weight:700;color:var(--dark);">María López</div>
+                    <div style="font-size:5px;color:var(--gray);">Corte de cabello · 45 min</div>
+                    <div style="margin-top:2px;"><span style="font-size:4.5px;font-weight:700;background:var(--gold-light);color:#7a5c10;padding:1px 4px;border-radius:3px;">Confirmada</span></div>
+                  </div>
+                  <div style="background:var(--white);border:1px solid var(--border);border-radius:4px;padding:4px 5px;">
+                    <div style="font-size:5px;color:var(--gray-light);margin-bottom:1px;">Hoy · 12:30 PM</div>
+                    <div style="font-size:6px;font-weight:700;color:var(--dark);">Sofía Reyes</div>
+                    <div style="font-size:5px;color:var(--gray);">Coloración · 90 min</div>
+                    <div style="margin-top:2px;"><span style="font-size:4.5px;font-weight:700;background:var(--blue-light);color:var(--blue);padding:1px 4px;border-radius:3px;">Pendiente</span></div>
                   </div>
                 </div>
               </div>
@@ -976,38 +1367,36 @@
             <div class="step-circle">2</div>
           </div>
           <div class="step-body-col">
-            <h3>Elige el servicio</h3>
-            <p>Verás la lista de servicios que ofrece el negocio — cada uno con nombre, duración y precio. Toca el que deseas para seleccionarlo.</p>
-            <span class="step-tag">Corte, coloración, tratamiento, etc.</span>
+            <h3>Toca la cita para ver el detalle</h3>
+            <p>Al tocar cualquier cita se abre su vista de detalle. Ahí encuentras: datos del cliente, teléfono de contacto, servicio, fecha y hora, notas del propietario, y las respuestas al cuestionario si el cliente lo llenó.</p>
           </div>
           <div class="step-phone-col" aria-hidden="true">
             <div class="phone">
               <div class="phone-notch"></div>
-              <div class="phone-screen">
+              <div class="phone-screen" style="min-height:200px;">
                 <div class="pscreen-bar">
                   <div class="pscreen-bar-dot"></div>
-                  <span class="pscreen-bar-title">Selecciona un servicio</span>
+                  <span class="pscreen-bar-title">Detalle de cita</span>
                 </div>
-                <div class="pscreen-body">
-                  <div class="pmock-service-row selected">
-                    <div class="pmock-svc-dot"></div>
-                    <span class="pmock-svc-text">Corte de cabello</span>
-                    <span class="pmock-svc-price">$180</span>
+                <div class="pscreen-body" style="gap:3px;">
+                  <div style="display:flex;align-items:center;gap:5px;background:var(--light);border-radius:4px;padding:5px;">
+                    <div style="width:22px;height:22px;background:var(--gray-light);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="4" r="2.5" fill="white" fill-opacity="0.8"/><path d="M1.5 11c0-2.5 2-4.5 4.5-4.5S10.5 8.5 10.5 11" stroke="white" stroke-width="1.2" opacity="0.8"/></svg>
+                    </div>
+                    <div>
+                      <div style="font-size:6.5px;font-weight:800;color:var(--dark);">María López</div>
+                      <div style="font-size:5px;color:var(--blue);">+52 55 1234 5678</div>
+                    </div>
                   </div>
-                  <div class="pmock-service-row">
-                    <div class="pmock-svc-dot" style="background:var(--gray-light)"></div>
-                    <span class="pmock-svc-text">Coloración completa</span>
-                    <span class="pmock-svc-price">$650</span>
-                  </div>
-                  <div class="pmock-service-row">
-                    <div class="pmock-svc-dot" style="background:var(--gray-light)"></div>
-                    <span class="pmock-svc-text">Tratamiento capilar</span>
-                    <span class="pmock-svc-price">$320</span>
-                  </div>
-                  <div class="pmock-service-row">
-                    <div class="pmock-svc-dot" style="background:var(--gray-light)"></div>
-                    <span class="pmock-svc-text">Manicura</span>
-                    <span class="pmock-svc-price">$220</span>
+                  <div class="pmock-detail-row"><span class="pmock-detail-label">Servicio</span><span class="pmock-detail-val">Corte de cabello</span></div>
+                  <div class="pmock-detail-row"><span class="pmock-detail-label">Fecha</span><span class="pmock-detail-val">Lun 25 ago · 10:00</span></div>
+                  <div class="pmock-detail-row"><span class="pmock-detail-label">Estado</span><span class="pmock-detail-val" style="color:#7a5c10;">Confirmada</span></div>
+                  <div class="pmock-detail-row"><span class="pmock-detail-label">Notas</span><span class="pmock-detail-val">Sin notas</span></div>
+                  <div style="display:flex;gap:2px;margin-top:2px;">
+                    <div class="pmock-btn-green" style="flex:1;"><span>Completada ✓</span></div>
+                    <div style="flex:1;height:13px;background:#f3f4f6;border:1px solid var(--border);border-radius:3px;display:flex;align-items:center;justify-content:center;">
+                      <span style="font-size:5.5px;color:var(--gray);">Inasistencia</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1021,9 +1410,11 @@
             <div class="step-circle">3</div>
           </div>
           <div class="step-body-col">
-            <h3>Elige el profesional</h3>
-            <p>Puedes elegir a un profesional específico del negocio, o seleccionar "Sin preferencia" si no tienes una persona favorita. El sistema te asignará quien esté disponible.</p>
-            <span class="step-tag">O selecciona "Sin preferencia"</span>
+            <h3>Marca la cita según lo que ocurrió</h3>
+            <p>Desde el detalle tienes dos acciones disponibles:</p>
+            <p style="margin-top:6px;"><strong style="color:var(--dark);">Completada</strong> — el servicio se realizó con éxito. Tócalo al terminar la cita.</p>
+            <p style="margin-top:4px;"><strong style="color:var(--dark);">Inasistencia</strong> — el cliente no llegó. Regístralo para que el propietario tenga el historial correcto.</p>
+            <span class="step-tag">No puedes cancelar ni crear citas desde aquí</span>
           </div>
           <div class="step-phone-col" aria-hidden="true">
             <div class="phone">
@@ -1031,245 +1422,7 @@
               <div class="phone-screen">
                 <div class="pscreen-bar">
                   <div class="pscreen-bar-dot"></div>
-                  <span class="pscreen-bar-title">¿Con quién?</span>
-                </div>
-                <div class="pscreen-body">
-                  <div class="pmock-avatar-row">
-                    <div class="pmock-avatar" style="border-color:var(--gold);background:var(--gold-light);">
-                      <div class="pmock-avatar-circle">
-                        <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                          <circle cx="5" cy="3.5" r="2" fill="#9ca3af"/>
-                          <path d="M1.5 9c0-1.93 1.57-3.5 3.5-3.5S8.5 7.07 8.5 9" stroke="#9ca3af" stroke-width="1.2"/>
-                        </svg>
-                      </div>
-                      <span class="pmock-avatar-name">Sin pref.</span>
-                    </div>
-                    <div class="pmock-avatar">
-                      <div class="pmock-avatar-circle">
-                        <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                          <circle cx="5" cy="3.5" r="2" fill="#9ca3af"/>
-                          <path d="M1.5 9c0-1.93 1.57-3.5 3.5-3.5S8.5 7.07 8.5 9" stroke="#9ca3af" stroke-width="1.2"/>
-                        </svg>
-                      </div>
-                      <span class="pmock-avatar-name">Diana R.</span>
-                    </div>
-                    <div class="pmock-avatar">
-                      <div class="pmock-avatar-circle">
-                        <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                          <circle cx="5" cy="3.5" r="2" fill="#9ca3af"/>
-                          <path d="M1.5 9c0-1.93 1.57-3.5 3.5-3.5S8.5 7.07 8.5 9" stroke="#9ca3af" stroke-width="1.2"/>
-                        </svg>
-                      </div>
-                      <span class="pmock-avatar-name">Lucía M.</span>
-                    </div>
-                  </div>
-                  <div style="background:var(--gold-light);border:1px solid rgba(200,169,97,0.4);border-radius:4px;padding:4px 6px;margin-top:2px;">
-                    <div style="font-size:5.5px;color:#7a5c10;font-weight:600;">Seleccionado: Sin preferencia</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- PASO 4 -->
-        <div class="booking-step" role="listitem">
-          <div class="step-num-col" aria-hidden="true">
-            <div class="step-circle">4</div>
-          </div>
-          <div class="step-body-col">
-            <h3>Selecciona una fecha disponible</h3>
-            <p>Verás un calendario con los días disponibles resaltados. Los días grises ya están llenos o el negocio no trabaja ese día. Toca cualquier día dorado para elegirlo.</p>
-          </div>
-          <div class="step-phone-col" aria-hidden="true">
-            <div class="phone">
-              <div class="phone-notch"></div>
-              <div class="phone-screen">
-                <div class="pscreen-bar">
-                  <div class="pscreen-bar-dot"></div>
-                  <span class="pscreen-bar-title">Elige una fecha</span>
-                </div>
-                <div class="pscreen-body">
-                  <div class="pmock-cal-header">
-                    <span>Junio 2026</span>
-                    <div style="display:flex;gap:4px;">
-                      <div style="font-size:7px;color:var(--gold);cursor:pointer;">&lt;</div>
-                      <div style="font-size:7px;color:var(--gold);cursor:pointer;">&gt;</div>
-                    </div>
-                  </div>
-                  <div class="pmock-cal-grid">
-                    <!-- L M X J V S D -->
-                    <div class="pmock-cal-day" style="font-size:4px;color:var(--gray-light);">L</div>
-                    <div class="pmock-cal-day" style="font-size:4px;color:var(--gray-light);">M</div>
-                    <div class="pmock-cal-day" style="font-size:4px;color:var(--gray-light);">X</div>
-                    <div class="pmock-cal-day" style="font-size:4px;color:var(--gray-light);">J</div>
-                    <div class="pmock-cal-day" style="font-size:4px;color:var(--gray-light);">V</div>
-                    <div class="pmock-cal-day" style="font-size:4px;color:var(--gray-light);">S</div>
-                    <div class="pmock-cal-day" style="font-size:4px;color:var(--gray-light);">D</div>
-                    <!-- semana 1 -->
-                    <div class="pmock-cal-day empty"></div>
-                    <div class="pmock-cal-day">2</div>
-                    <div class="pmock-cal-day avail">3</div>
-                    <div class="pmock-cal-day avail">4</div>
-                    <div class="pmock-cal-day avail">5</div>
-                    <div class="pmock-cal-day avail">6</div>
-                    <div class="pmock-cal-day">7</div>
-                    <!-- semana 2 -->
-                    <div class="pmock-cal-day avail">8</div>
-                    <div class="pmock-cal-day avail">9</div>
-                    <div class="pmock-cal-day avail">10</div>
-                    <div class="pmock-cal-day">11</div>
-                    <div class="pmock-cal-day avail">12</div>
-                    <div class="pmock-cal-day selected">13</div>
-                    <div class="pmock-cal-day">14</div>
-                    <!-- semana 3 -->
-                    <div class="pmock-cal-day avail">15</div>
-                    <div class="pmock-cal-day">16</div>
-                    <div class="pmock-cal-day avail">17</div>
-                    <div class="pmock-cal-day avail">18</div>
-                    <div class="pmock-cal-day">19</div>
-                    <div class="pmock-cal-day avail">20</div>
-                    <div class="pmock-cal-day">21</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- PASO 5 -->
-        <div class="booking-step" role="listitem">
-          <div class="step-num-col" aria-hidden="true">
-            <div class="step-circle">5</div>
-          </div>
-          <div class="step-body-col">
-            <h3>Selecciona la hora</h3>
-            <p>Aparecen todos los horarios disponibles para ese día. Los bloques grises ya están ocupados. Toca la hora que más te convenga.</p>
-          </div>
-          <div class="step-phone-col" aria-hidden="true">
-            <div class="phone">
-              <div class="phone-notch"></div>
-              <div class="phone-screen">
-                <div class="pscreen-bar">
-                  <div class="pscreen-bar-dot"></div>
-                  <span class="pscreen-bar-title">Elige un horario</span>
-                </div>
-                <div class="pscreen-body">
-                  <div class="pmock-label">Sáb 13 Jun — disponibles</div>
-                  <div class="pmock-slots">
-                    <div class="pmock-slot taken">9:00</div>
-                    <div class="pmock-slot taken">9:30</div>
-                    <div class="pmock-slot">10:00</div>
-                    <div class="pmock-slot selected">10:30</div>
-                    <div class="pmock-slot">11:00</div>
-                    <div class="pmock-slot taken">11:30</div>
-                    <div class="pmock-slot taken">12:00</div>
-                    <div class="pmock-slot">14:00</div>
-                    <div class="pmock-slot">14:30</div>
-                    <div class="pmock-slot">15:00</div>
-                    <div class="pmock-slot taken">15:30</div>
-                    <div class="pmock-slot">16:00</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- PASO 6 -->
-        <div class="booking-step" role="listitem">
-          <div class="step-num-col" aria-hidden="true">
-            <div class="step-circle">6</div>
-          </div>
-          <div class="step-body-col">
-            <h3>Ingresa tus datos personales</h3>
-            <p>El negocio necesita saber quién eres para confirmar la cita. Ingresa tu nombre completo, número de teléfono y dirección de email. Con tu email, recibirás la confirmación.</p>
-          </div>
-          <div class="step-phone-col" aria-hidden="true">
-            <div class="phone">
-              <div class="phone-notch"></div>
-              <div class="phone-screen">
-                <div class="pscreen-bar">
-                  <div class="pscreen-bar-dot"></div>
-                  <span class="pscreen-bar-title">Tus datos</span>
-                </div>
-                <div class="pscreen-body">
-                  <div class="pmock-form-row">
-                    <div class="pmock-label">Nombre completo</div>
-                    <div class="pmock-input"><span>María López</span></div>
-                  </div>
-                  <div class="pmock-form-row">
-                    <div class="pmock-label">Teléfono</div>
-                    <div class="pmock-input"><span>+52 55 1234 5678</span></div>
-                  </div>
-                  <div class="pmock-form-row">
-                    <div class="pmock-label">Email</div>
-                    <div class="pmock-input"><span>maria@email.com</span></div>
-                  </div>
-                  <div class="pmock-btn" style="margin-top:4px;"><span>Continuar →</span></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- PASO 7 -->
-        <div class="booking-step" role="listitem">
-          <div class="step-num-col" aria-hidden="true">
-            <div class="step-circle">7</div>
-          </div>
-          <div class="step-body-col">
-            <h3>Formulario de preguntas (opcional)</h3>
-            <p>Algunos negocios tienen preguntas adicionales antes de tu cita — por ejemplo, alergias, preferencias de color o condición del cabello. Si aparece este formulario, respóndelo con la mayor información posible: ayuda al profesional a prepararse.</p>
-            <span class="step-tag">Solo si el negocio lo tiene configurado</span>
-          </div>
-          <div class="step-phone-col" aria-hidden="true">
-            <div class="phone">
-              <div class="phone-notch"></div>
-              <div class="phone-screen">
-                <div class="pscreen-bar">
-                  <div class="pscreen-bar-dot"></div>
-                  <span class="pscreen-bar-title">Información adicional</span>
-                </div>
-                <div class="pscreen-body">
-                  <div class="pmock-form-row">
-                    <div class="pmock-label">¿Tienes alergias a tintes?</div>
-                    <div class="pmock-input"><span>No, ninguna</span></div>
-                  </div>
-                  <div class="pmock-form-row">
-                    <div class="pmock-label">Color actual del cabello</div>
-                    <div class="pmock-input"><span>Castaño oscuro</span></div>
-                  </div>
-                  <div class="pmock-form-row">
-                    <div class="pmock-label">¿Has usado químicos antes?</div>
-                    <div style="display:flex;gap:3px;margin-top:1px;">
-                      <div style="flex:1;height:11px;border:1px solid var(--gold);border-radius:3px;background:var(--gold-light);display:flex;align-items:center;justify-content:center;"><span style="font-size:5.5px;font-weight:700;color:#7a5c10;">Sí</span></div>
-                      <div style="flex:1;height:11px;border:1px solid var(--border);border-radius:3px;display:flex;align-items:center;justify-content:center;"><span style="font-size:5.5px;color:var(--gray);">No</span></div>
-                    </div>
-                  </div>
-                  <div class="pmock-btn" style="margin-top:4px;"><span>Confirmar cita →</span></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- PASO 8 -->
-        <div class="booking-step" role="listitem">
-          <div class="step-num-col" aria-hidden="true">
-            <div class="step-circle">8</div>
-          </div>
-          <div class="step-body-col">
-            <h3>¡Cita confirmada!</h3>
-            <p>Verás una pantalla de confirmación con todos los detalles. Además, recibirás un email automático con la misma información. Guarda ese correo — lo necesitarás si tienes preguntas.</p>
-          </div>
-          <div class="step-phone-col" aria-hidden="true">
-            <div class="phone">
-              <div class="phone-notch"></div>
-              <div class="phone-screen">
-                <div class="pscreen-bar">
-                  <div class="pscreen-bar-dot"></div>
-                  <span class="pscreen-bar-title">Confirmación</span>
+                  <span class="pscreen-bar-title">Cita actualizada</span>
                 </div>
                 <div class="pscreen-body">
                   <div class="pmock-success">
@@ -1278,15 +1431,11 @@
                         <path d="M3 7l3 3 5-5" stroke="#16a34a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
                       </svg>
                     </div>
-                    <div class="pmock-success-title">¡Cita reservada!</div>
-                    <div class="pmock-success-sub">Revisa tu email para ver los detalles completos</div>
+                    <div class="pmock-success-title">¡Cita marcada como completada!</div>
+                    <div class="pmock-success-sub">El historial quedó registrado en el sistema</div>
                   </div>
-                  <div style="padding: 0 4px;">
-                    <div class="pmock-detail-row"><span class="pmock-detail-label">Servicio</span><span class="pmock-detail-val">Corte</span></div>
-                    <div class="pmock-detail-row"><span class="pmock-detail-label">Profesional</span><span class="pmock-detail-val">Diana R.</span></div>
-                    <div class="pmock-detail-row"><span class="pmock-detail-label">Fecha</span><span class="pmock-detail-val">Sáb 13 Jun</span></div>
-                    <div class="pmock-detail-row"><span class="pmock-detail-label">Hora</span><span class="pmock-detail-val">10:30 AM</span></div>
-                  </div>
+                  <div class="pmock-detail-row"><span class="pmock-detail-label">Cliente</span><span class="pmock-detail-val">María López</span></div>
+                  <div class="pmock-detail-row"><span class="pmock-detail-label">Estado</span><span class="pmock-detail-val" style="color:var(--green);">Completada</span></div>
                 </div>
               </div>
             </div>
@@ -1295,251 +1444,344 @@
 
       </div><!-- /booking-steps -->
 
-      <div class="tip" role="note" style="margin-top:20px;">
-        <svg class="tip-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-          <circle cx="11" cy="11" r="9" stroke="#C8A961" stroke-width="1.6"/>
-          <path d="M11 10v5" stroke="#C8A961" stroke-width="1.8" stroke-linecap="round"/>
-          <circle cx="11" cy="7.5" r="1" fill="#C8A961"/>
+      <div class="warn" role="note">
+        <svg class="warn-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+          <path d="M11 3L2 19h18L11 3z" stroke="#dc2626" stroke-width="1.6" stroke-linejoin="round"/>
+          <line x1="11" y1="10" x2="11" y2="14" stroke="#dc2626" stroke-width="1.8" stroke-linecap="round"/>
+          <circle cx="11" cy="16.5" r="1" fill="#dc2626"/>
         </svg>
-        <p><strong>Tarda menos de 2 minutos.</strong> El proceso completo — desde que entras al enlace hasta que confirmas tu cita — normalmente toma entre 60 y 90 segundos.</p>
+        <p><strong>Los empleados no pueden cancelar ni crear citas.</strong> Si un cliente te pide cancelar o si necesitas bloquear un horario, comunícalo al propietario — solo él puede hacer esos cambios desde su panel.</p>
       </div>
     </div>
   </section>
 
   <!-- ══════════════════════════════════════════════════════════════ -->
-  <!--  03 — CONFIRMACION                                             -->
+  <!--  04 — PAGOS                                                     -->
   <!-- ══════════════════════════════════════════════════════════════ -->
-  <section class="section anchor-target" id="confirmacion" aria-labelledby="h-confirmacion">
-    <div class="divider" aria-hidden="true"></div>
-    <div style="padding-top: 52px;">
-      <div class="section-label">Sección 03</div>
-      <h2 class="section-title" id="h-confirmacion">Confirmación de tu cita</h2>
-
-      <p style="font-size:14px;color:var(--gray);margin-bottom:20px;line-height:1.7;">
-        Unos segundos después de reservar, recibirás un email automático de AppointVa con todos los detalles de tu cita. Así se ve ese correo:
-      </p>
-
-      <div class="email-mock" role="img" aria-label="Vista previa del email de confirmación">
-        <div class="email-header">
-          <div class="email-header-logo" aria-hidden="true">
-            <svg viewBox="0 0 20 20" fill="none" width="16" height="16">
-              <rect x="2" y="3" width="16" height="14" rx="2.5" fill="white" fill-opacity="0.15" stroke="white" stroke-width="1.2"/>
-              <line x1="2" y1="8" x2="18" y2="8" stroke="white" stroke-width="1.2"/>
-              <rect x="5" y="11" width="3" height="3" rx="0.8" fill="white" fill-opacity="0.7"/>
-            </svg>
-          </div>
-          <div class="email-header-info">
-            <div class="email-from">De: notificaciones@appointva.com</div>
-            <div class="email-subject">Confirmación de cita — Salón Diana</div>
-          </div>
-        </div>
-        <div class="email-body">
-          <div class="email-greeting">Hola María,</div>
-          <p>Tu cita ha sido confirmada. A continuación encontrarás todos los detalles:</p>
-          <div class="email-detail-box" role="table" aria-label="Detalles de la cita">
-            <div class="email-detail-row" role="row">
-              <span class="email-detail-key" role="rowheader">Negocio</span>
-              <span class="email-detail-val" role="cell">Salón Diana</span>
-            </div>
-            <div class="email-detail-row" role="row">
-              <span class="email-detail-key" role="rowheader">Servicio</span>
-              <span class="email-detail-val" role="cell">Corte de cabello · 45 min</span>
-            </div>
-            <div class="email-detail-row" role="row">
-              <span class="email-detail-key" role="rowheader">Profesional</span>
-              <span class="email-detail-val" role="cell">Diana Ramírez</span>
-            </div>
-            <div class="email-detail-row" role="row">
-              <span class="email-detail-key" role="rowheader">Fecha</span>
-              <span class="email-detail-val" role="cell">Sábado 13 de junio de 2026</span>
-            </div>
-            <div class="email-detail-row" role="row">
-              <span class="email-detail-key" role="rowheader">Hora</span>
-              <span class="email-detail-val" role="cell">10:30 AM</span>
-            </div>
-            <div class="email-detail-row" role="row">
-              <span class="email-detail-key" role="rowheader">Precio</span>
-              <span class="email-detail-val" role="cell">$180 MXN</span>
-            </div>
-          </div>
-          <p>Si tienes alguna pregunta o necesitas modificar tu cita, contacta directamente al negocio.</p>
-          <div class="email-footer-note">AppointVa · Sistema de reservas en línea</div>
-        </div>
-      </div>
-
-      <div class="tip" role="note" style="margin-top:20px;">
-        <svg class="tip-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-          <circle cx="11" cy="11" r="9" stroke="#C8A961" stroke-width="1.6"/>
-          <path d="M11 10v5" stroke="#C8A961" stroke-width="1.8" stroke-linecap="round"/>
-          <circle cx="11" cy="7.5" r="1" fill="#C8A961"/>
-        </svg>
-        <p><strong>¿No llegó el email?</strong> Revisa la carpeta de <strong>spam o correo no deseado</strong>. Si tampoco está ahí, contacta al negocio directamente para confirmar que recibieron tu reserva.</p>
-      </div>
-
-      <div class="success-note" role="note">
-        <svg class="success-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-          <circle cx="11" cy="11" r="9" stroke="#16a34a" stroke-width="1.6"/>
-          <path d="M7 11l3 3 5-5" stroke="#16a34a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        <p><strong>Guarda ese correo.</strong> Contiene toda la información de tu cita en un solo lugar. Si el negocio te pide que confirmes o si tienes una pregunta, ese email es tu referencia.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- ══════════════════════════════════════════════════════════════ -->
-  <!--  04 — CANCELAR O MODIFICAR                                     -->
-  <!-- ══════════════════════════════════════════════════════════════ -->
-  <section class="section anchor-target" id="cancelar" aria-labelledby="h-cancelar">
+  <section class="section anchor-target" id="pagos" aria-labelledby="h-pagos">
     <div class="divider" aria-hidden="true"></div>
     <div style="padding-top: 52px;">
       <div class="section-label">Sección 04</div>
-      <h2 class="section-title" id="h-cancelar">Cancelar o modificar una cita</h2>
+      <h2 class="section-title" id="h-pagos">Pagos</h2>
 
-      <div class="card">
-        <div style="display:flex;align-items:flex-start;gap:14px;">
-          <div style="width:40px;height:40px;background:var(--gold-light);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;" aria-hidden="true">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <rect x="2" y="3" width="16" height="14" rx="2.5" stroke="#C8A961" stroke-width="1.5"/>
-              <line x1="2" y1="8" x2="18" y2="8" stroke="#C8A961" stroke-width="1.5"/>
-              <path d="M7 12l2 2 4-4" stroke="#C8A961" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
+      <p style="font-size:14px;color:var(--gray);margin-bottom:24px;line-height:1.7;">
+        La sección de Pagos te muestra un historial de los cobros asociados a <strong>tus</strong> citas. Es una vista de consulta — no puedes modificar montos ni emitir reembolsos desde aquí.
+      </p>
+
+      <!-- Mock de pantalla de pagos -->
+      <div class="dashboard-mock" style="min-height:auto;" role="img" aria-label="Vista de la sección Pagos">
+        <div class="dmock-sidebar" style="min-height:200px;">
+          <div class="dmock-logo-row">
+            <div class="dmock-logo-box" aria-hidden="true">
+              <svg viewBox="0 0 14 14" fill="none" width="12" height="12">
+                <rect x="1" y="2" width="12" height="10" rx="2" fill="white" fill-opacity="0.15" stroke="white" stroke-width="1"/>
+                <line x1="1" y1="6" x2="13" y2="6" stroke="white" stroke-width="1"/>
+              </svg>
+            </div>
+            <span class="dmock-logo-name">AppointVa</span>
+            <span class="dmock-badge">Empleado</span>
           </div>
-          <div>
-            <div class="card-title">Cancela directamente desde tu página de confirmación</div>
-            <p>Puedes cancelar tu cita desde el mismo enlace que recibes en el email de confirmación. Al abrirlo verás el botón <strong>"Cancelar cita"</strong> — si el negocio lo tiene habilitado, solo toca ese botón y tu cita quedará cancelada de inmediato, sin necesidad de llamar ni escribir.</p>
+          <div class="dmock-nav-item">
+            <div class="dmock-nav-dot"></div>
+            Inicio
+          </div>
+          <div class="dmock-nav-item">
+            <div class="dmock-nav-dot"></div>
+            Mis citas
+          </div>
+          <div class="dmock-nav-item active">
+            <div class="dmock-nav-dot"></div>
+            Pagos
+          </div>
+          <div class="dmock-nav-item">
+            <div class="dmock-nav-dot"></div>
+            Mi perfil
+          </div>
+        </div>
+        <div class="dmock-content">
+          <div class="dmock-content-title">Pagos — agosto 2026</div>
+          <!-- Payment rows -->
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <div style="background:var(--white);border:1px solid var(--border);border-radius:6px;padding:10px 12px;display:flex;align-items:center;gap:10px;">
+              <div style="width:32px;height:32px;background:var(--green-light);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="#16a34a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+              <div style="flex:1;">
+                <div style="font-size:12px;font-weight:700;color:var(--dark);">María López — Corte</div>
+                <div style="font-size:11px;color:var(--gray);">Lun 25 ago · Pagado en cita</div>
+              </div>
+              <div style="font-size:14px;font-weight:800;color:var(--green);">$180</div>
+            </div>
+            <div style="background:var(--white);border:1px solid var(--border);border-radius:6px;padding:10px 12px;display:flex;align-items:center;gap:10px;">
+              <div style="width:32px;height:32px;background:var(--gold-light);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="5" width="12" height="8" rx="1.5" stroke="#C8A961" stroke-width="1.3"/><path d="M5 5V4a3 3 0 016 0v1" stroke="#C8A961" stroke-width="1.3"/></svg>
+              </div>
+              <div style="flex:1;">
+                <div style="font-size:12px;font-weight:700;color:var(--dark);">Sofía Reyes — Coloración</div>
+                <div style="font-size:11px;color:var(--gray);">Lun 25 ago · Prepagado en línea</div>
+              </div>
+              <div style="font-size:14px;font-weight:800;color:var(--gold);">$650</div>
+            </div>
           </div>
         </div>
       </div>
 
-      <div class="card" style="margin-top:12px;">
-        <div style="display:flex;align-items:flex-start;gap:14px;">
-          <div style="width:40px;height:40px;background:var(--gold-light);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;" aria-hidden="true">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <path d="M10 2a8 8 0 100 16A8 8 0 0010 2z" stroke="#C8A961" stroke-width="1.5"/>
-              <path d="M10 6v4l3 3" stroke="#C8A961" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <div class="intro-grid" style="margin-top:20px;">
+        <div class="intro-card">
+          <div class="intro-icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+              <rect x="3" y="5" width="16" height="13" rx="2.5" stroke="#C8A961" stroke-width="1.6"/>
+              <path d="M3 9h16" stroke="#C8A961" stroke-width="1.6"/>
+              <circle cx="7" cy="14" r="1.5" fill="#C8A961"/>
             </svg>
           </div>
-          <div>
-            <div class="card-title">¿Quieres modificar la cita? Contacta al negocio</div>
-            <p>Si necesitas cambiar el día, la hora o el servicio (no solo cancelar), comunícate directamente con el negocio por WhatsApp o teléfono y ellos lo gestionan desde su sistema. También puedes contactarlos si el botón de cancelación no aparece en tu página de confirmación.</p>
+          <h3>Pagado en cita</h3>
+          <p>El cliente pagó directamente en el negocio al momento de recibir el servicio (efectivo, tarjeta, etc.).</p>
+        </div>
+        <div class="intro-card">
+          <div class="intro-icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+              <rect x="3" y="7" width="16" height="11" rx="2" stroke="#C8A961" stroke-width="1.6"/>
+              <path d="M7 7V6a4 4 0 018 0v1" stroke="#C8A961" stroke-width="1.6"/>
+              <circle cx="11" cy="13" r="2" fill="#C8A961" fill-opacity="0.5"/>
+            </svg>
           </div>
+          <h3>Prepagado en línea</h3>
+          <p>El cliente pagó al momento de reservar en la página pública del negocio. Ya está cubierto cuando llega.</p>
+        </div>
+        <div class="intro-card">
+          <div class="intro-icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+              <path d="M11 4v14M4 11h14" stroke="#C8A961" stroke-width="1.6" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <h3>Sin pago registrado</h3>
+          <p>Algunos registros pueden no tener pago asociado. Consulta al propietario si tienes dudas sobre el cobro.</p>
         </div>
       </div>
 
-      <div class="card" style="margin-top:12px;">
-        <div style="display:flex;align-items:flex-start;gap:14px;">
-          <div style="width:40px;height:40px;background:var(--gold-light);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;" aria-hidden="true">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <path d="M4 10h12M4 6h12M4 14h7" stroke="#C8A961" stroke-width="1.5" stroke-linecap="round"/>
-            </svg>
-          </div>
-          <div>
-            <div class="card-title">Hazlo con tiempo de anticipación</div>
-            <p>Cada negocio tiene su propia política de cancelación. Cancelar con pocas horas de anticipación puede significar perder el turno o pagar una penalización. Cuando reserves, pregunta cuánto tiempo antes puedes cancelar sin problema.</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="tip" role="note" style="margin-top:16px;">
-        <svg class="tip-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-          <circle cx="11" cy="11" r="9" stroke="#C8A961" stroke-width="1.6"/>
-          <path d="M11 10v5" stroke="#C8A961" stroke-width="1.8" stroke-linecap="round"/>
-          <circle cx="11" cy="7.5" r="1" fill="#C8A961"/>
+      <div class="info" role="note">
+        <svg class="info-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+          <circle cx="11" cy="11" r="9" stroke="#2563eb" stroke-width="1.6"/>
+          <path d="M11 10v5" stroke="#2563eb" stroke-width="1.8" stroke-linecap="round"/>
+          <circle cx="11" cy="7.5" r="1" fill="#2563eb"/>
         </svg>
-        <p><strong>Regla práctica:</strong> avisa con al menos 24 horas de anticipación. Si tu cita es a las 10 AM del martes, comunícate antes de las 10 AM del lunes.</p>
+        <p><strong>Esta sección es solo de consulta.</strong> Si detectas un pago incorrecto o necesitas emitir un reembolso, reporta la situación al propietario. Él tiene acceso a la gestión de pagos desde su panel.</p>
       </div>
     </div>
   </section>
 
   <!-- ══════════════════════════════════════════════════════════════ -->
-  <!--  05 — DESCUENTOS                                               -->
+  <!--  05 — MI PERFIL                                                 -->
   <!-- ══════════════════════════════════════════════════════════════ -->
-  <section class="section anchor-target" id="descuentos" aria-labelledby="h-descuentos">
+  <section class="section anchor-target" id="mi-perfil" aria-labelledby="h-mi-perfil">
     <div class="divider" aria-hidden="true"></div>
     <div style="padding-top: 52px;">
       <div class="section-label">Sección 05</div>
-      <h2 class="section-title" id="h-descuentos">Descuentos</h2>
+      <h2 class="section-title" id="h-mi-perfil">Mi perfil — foto, bio y horarios</h2>
 
-      <p style="font-size:14px;color:var(--gray);margin-bottom:20px;line-height:1.7;">
-        Algunos negocios ofrecen códigos de descuento a sus clientes — pueden ser un porcentaje del total (ej. 15% de descuento) o un monto fijo (ej. $50 de descuento). Si tienes uno, así lo usas:
+      <p style="font-size:14px;color:var(--gray);margin-bottom:24px;line-height:1.7;">
+        Mi perfil es la sección más importante que puedes configurar como empleado. Lo que pongas aquí afecta directamente cómo te ven los clientes cuando reservan. Un perfil completo genera confianza y más reservas contigo.
       </p>
 
-      <div class="card">
-        <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;">
-          <div style="flex:1;min-width:200px;">
-            <div style="display:flex;flex-direction:column;gap:14px;">
-              <div style="display:flex;align-items:flex-start;gap:12px;">
-                <div style="width:24px;height:24px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;" aria-hidden="true">
-                  <span style="font-size:11px;font-weight:800;color:var(--white);">1</span>
-                </div>
-                <p style="font-size:13px;color:var(--gray);line-height:1.6;">Completa los pasos de reserva normalmente: servicio, profesional, fecha, hora y tus datos.</p>
-              </div>
-              <div style="display:flex;align-items:flex-start;gap:12px;">
-                <div style="width:24px;height:24px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;" aria-hidden="true">
-                  <span style="font-size:11px;font-weight:800;color:var(--white);">2</span>
-                </div>
-                <p style="font-size:13px;color:var(--gray);line-height:1.6;">En la pantalla de <strong style="color:var(--dark);">resumen final</strong>, antes de confirmar, verás un campo que dice "¿Tienes un código de descuento?"</p>
-              </div>
-              <div style="display:flex;align-items:flex-start;gap:12px;">
-                <div style="width:24px;height:24px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;" aria-hidden="true">
-                  <span style="font-size:11px;font-weight:800;color:var(--white);">3</span>
-                </div>
-                <p style="font-size:13px;color:var(--gray);line-height:1.6;">Ingresa el código exactamente como te lo dieron (sin espacios extra) y toca <strong style="color:var(--dark);">"Aplicar"</strong>. El descuento se muestra de inmediato antes de confirmar.</p>
-              </div>
-            </div>
+      <!-- Foto y bio -->
+      <div class="card" style="margin-bottom:12px;">
+        <div style="display:flex;align-items:flex-start;gap:16px;">
+          <div style="width:40px;height:40px;background:var(--gold-light);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <circle cx="10" cy="7" r="4" stroke="#C8A961" stroke-width="1.5"/>
+              <path d="M2 18c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke="#C8A961" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
           </div>
-
-          <div style="flex-shrink:0;display:flex;align-items:center;justify-content:center;" aria-hidden="true">
-            <div class="phone" style="width:108px;">
-              <div class="phone-notch"></div>
-              <div class="phone-screen">
-                <div class="pscreen-bar">
-                  <div class="pscreen-bar-dot"></div>
-                  <span class="pscreen-bar-title">Resumen de tu cita</span>
-                </div>
-                <div class="pscreen-body">
-                  <div class="pmock-detail-row"><span class="pmock-detail-label">Servicio</span><span class="pmock-detail-val">Corte</span></div>
-                  <div class="pmock-detail-row"><span class="pmock-detail-label">Profesional</span><span class="pmock-detail-val">Diana R.</span></div>
-                  <div class="pmock-detail-row"><span class="pmock-detail-label">Fecha</span><span class="pmock-detail-val">Sáb 13 Jun</span></div>
-                  <div class="pmock-detail-row"><span class="pmock-detail-label">Hora</span><span class="pmock-detail-val">10:30 AM</span></div>
-                  <div style="height:1px;background:var(--border);margin:3px 0;"></div>
-                  <div class="pmock-label" style="margin-top:2px;">Código de descuento</div>
-                  <div style="display:flex;gap:2px;margin-top:1px;">
-                    <div class="pmock-discount" style="flex:1;">
-                      <svg width="6" height="6" viewBox="0 0 6 6" fill="none"><path d="M1 3h4M3 1v4" stroke="#C8A961" stroke-width="1" stroke-linecap="round"/></svg>
-                      <span>SALON15</span>
-                    </div>
-                    <div style="width:24px;height:11px;background:var(--gold);border-radius:3px;display:flex;align-items:center;justify-content:center;"><span style="font-size:5px;font-weight:700;color:var(--white);">OK</span></div>
-                  </div>
-                  <div style="background:var(--green-light);border:1px solid #bbf7d0;border-radius:3px;padding:3px 5px;margin-top:3px;display:flex;justify-content:space-between;">
-                    <span style="font-size:5px;color:#14532d;font-weight:600;">Descuento 15%</span>
-                    <span style="font-size:5px;color:#14532d;font-weight:700;">−$27</span>
-                  </div>
-                  <div style="display:flex;justify-content:space-between;padding:3px 0;">
-                    <span style="font-size:6px;font-weight:700;color:var(--dark);">Total</span>
-                    <span style="font-size:6px;font-weight:800;color:var(--gold);">$153</span>
-                  </div>
-                  <div class="pmock-btn"><span>Confirmar cita →</span></div>
-                </div>
-              </div>
+          <div style="flex:1;">
+            <div class="card-title">Foto de perfil</div>
+            <p>Sube una foto tuya de buena calidad, preferiblemente con fondo claro y tu rostro visible. Esta imagen aparece en la página de reservas cuando los clientes eligen con qué profesional quieren su cita. Un perfil con foto genera significativamente más selecciones que uno sin foto.</p>
+            <div class="tip" role="note" style="margin-top:12px;">
+              <svg class="tip-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+                <circle cx="11" cy="11" r="9" stroke="#C8A961" stroke-width="1.6"/>
+                <path d="M11 10v5" stroke="#C8A961" stroke-width="1.8" stroke-linecap="round"/>
+                <circle cx="11" cy="7.5" r="1" fill="#C8A961"/>
+              </svg>
+              <p><strong>Recomendación:</strong> usa una foto reciente, bien iluminada, en la que se te vea profesional. Evita selfies con fondos cargados o fotos de grupo recortadas.</p>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="tip" role="note" style="margin-top:16px;">
-        <svg class="tip-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-          <circle cx="11" cy="11" r="9" stroke="#C8A961" stroke-width="1.6"/>
-          <path d="M11 10v5" stroke="#C8A961" stroke-width="1.8" stroke-linecap="round"/>
-          <circle cx="11" cy="7.5" r="1" fill="#C8A961"/>
-        </svg>
-        <p><strong>El descuento solo se aplica en línea.</strong> Si llegas al negocio sin haberlo ingresado al reservar, dependerá de la política del negocio si pueden aplicarlo de forma manual.</p>
+      <div class="card" style="margin-bottom:12px;">
+        <div style="display:flex;align-items:flex-start;gap:16px;">
+          <div style="width:40px;height:40px;background:var(--gold-light);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M4 5h12M4 9h12M4 13h8" stroke="#C8A961" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div style="flex:1;">
+            <div class="card-title">Nombre y biografía</div>
+            <p>Tu nombre aparece tal como lo configuró el propietario. La biografía es un campo breve (2-3 oraciones) que también aparece visible para los clientes. Usa ese espacio para describir tu especialidad, experiencia o lo que te hace diferente. Por ejemplo: <em style="color:var(--dark);">"Especialista en coloración con 6 años de experiencia. Me apasiona el trabajo con cabello rizado y técnicas de balayage."</em></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:12px;">
+        <div style="display:flex;align-items:flex-start;gap:16px;">
+          <div style="width:40px;height:40px;background:var(--gold-light);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <rect x="2" y="3" width="16" height="14" rx="2.5" stroke="#C8A961" stroke-width="1.5"/>
+              <path d="M7 8l2 2 4-4" stroke="#C8A961" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div style="flex:1;">
+            <div class="card-title">Servicios que atiendo</div>
+            <p>Esta sección muestra los servicios que el propietario te asignó. Es de solo lectura para ti — no puedes agregar ni quitar servicios por tu cuenta. Si necesitas cambiar los servicios que atiendes, pídele al propietario que te actualice desde la sección <strong>Empleados</strong> de su panel.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Horarios — la parte más importante -->
+      <div style="margin-top:32px;">
+        <div class="section-label" style="margin-bottom:12px;">Mis horarios — configuración detallada</div>
+        <p style="font-size:14px;color:var(--gray);margin-bottom:20px;line-height:1.7;">
+          Aquí defines en qué días y horas trabajas. El sistema usa esta información para mostrar a los clientes los horarios disponibles cuando reservan contigo. Configúralo con cuidado — los horarios incorrectos generan citas en momentos en que no puedes atender.
+        </p>
+
+        <!-- Ejemplo de tabla de horarios -->
+        <div class="schedule-table" style="margin-bottom:20px;" role="img" aria-label="Ejemplo de configuración de horarios">
+          <div style="background:var(--dark);padding:12px 20px;">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--gold);">Mis horarios — Semana actual</div>
+          </div>
+          <div class="schedule-row">
+            <div class="schedule-day">Lunes</div>
+            <div class="schedule-toggle on" aria-label="Día activo">
+              <div class="schedule-toggle-knob"></div>
+            </div>
+            <div class="schedule-intervals">
+              <div class="interval-pill">9:00 – 14:00</div>
+              <div class="interval-pill">16:00 – 20:00</div>
+            </div>
+            <div class="schedule-add">+ Agregar intervalo</div>
+          </div>
+          <div class="schedule-row">
+            <div class="schedule-day">Martes</div>
+            <div class="schedule-toggle on" aria-label="Día activo">
+              <div class="schedule-toggle-knob"></div>
+            </div>
+            <div class="schedule-intervals">
+              <div class="interval-pill">9:00 – 18:00</div>
+            </div>
+            <div class="schedule-add">+ Agregar intervalo</div>
+          </div>
+          <div class="schedule-row">
+            <div class="schedule-day">Miércoles</div>
+            <div class="schedule-toggle on" aria-label="Día activo">
+              <div class="schedule-toggle-knob"></div>
+            </div>
+            <div class="schedule-intervals">
+              <div class="interval-pill">9:00 – 14:00</div>
+              <div class="interval-pill">16:00 – 20:00</div>
+            </div>
+            <div class="schedule-add">+ Agregar intervalo</div>
+          </div>
+          <div class="schedule-row">
+            <div class="schedule-day">Jueves</div>
+            <div class="schedule-toggle on" aria-label="Día activo">
+              <div class="schedule-toggle-knob"></div>
+            </div>
+            <div class="schedule-intervals">
+              <div class="interval-pill">9:00 – 18:00</div>
+            </div>
+            <div class="schedule-add">+ Agregar intervalo</div>
+          </div>
+          <div class="schedule-row">
+            <div class="schedule-day">Viernes</div>
+            <div class="schedule-toggle on" aria-label="Día activo">
+              <div class="schedule-toggle-knob"></div>
+            </div>
+            <div class="schedule-intervals">
+              <div class="interval-pill">9:00 – 14:00</div>
+            </div>
+            <div class="schedule-add">+ Agregar intervalo</div>
+          </div>
+          <div class="schedule-row">
+            <div class="schedule-day">Sábado</div>
+            <div class="schedule-toggle on" aria-label="Día activo">
+              <div class="schedule-toggle-knob"></div>
+            </div>
+            <div class="schedule-intervals">
+              <div class="interval-pill">10:00 – 15:00</div>
+            </div>
+            <div class="schedule-add">+ Agregar intervalo</div>
+          </div>
+          <div class="schedule-row">
+            <div class="schedule-day">Domingo</div>
+            <div class="schedule-toggle off" aria-label="Día inactivo">
+              <div class="schedule-toggle-knob"></div>
+            </div>
+            <div class="schedule-intervals">
+              <div class="interval-pill interval-pill-off">Día libre</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Como funciona en cards -->
+        <div class="intro-grid">
+          <div class="intro-card">
+            <div class="intro-icon" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+                <rect x="2" y="11" width="18" height="8" rx="2" stroke="#C8A961" stroke-width="1.6"/>
+                <path d="M6 11V8a5 5 0 0110 0v3" stroke="#C8A961" stroke-width="1.6" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <h3>Activa o desactiva días</h3>
+            <p>El interruptor de cada día habilita o inhabilita ese día en tu agenda. Un día desactivado no aparece disponible para los clientes.</p>
+          </div>
+          <div class="intro-card">
+            <div class="intro-icon" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+                <path d="M11 4v14M4 11h14" stroke="#C8A961" stroke-width="1.6" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <h3>Agregar intervalo</h3>
+            <p>Con "Agregar intervalo" puedes añadir un segundo bloque horario. Útil si tienes un descanso al mediodía: por ejemplo, 9:00–13:00 y 15:00–19:00.</p>
+          </div>
+          <div class="intro-card">
+            <div class="intro-icon" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+                <path d="M11 3v2M11 17v2M3 11h2M17 11h2M5.6 5.6l1.4 1.4M15 15l1.4 1.4M5.6 16.4L7 15M15 7l1.4-1.4" stroke="#C8A961" stroke-width="1.6" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <h3>Dentro del horario del negocio</h3>
+            <p>El selector solo muestra horas dentro del horario general del negocio. No puedes poner horarios fuera de ese rango — el sistema lo valida automáticamente.</p>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:16px;">
+          <div style="display:flex;align-items:flex-start;gap:14px;">
+            <div style="width:40px;height:40px;background:var(--gold-light);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M10 2a8 8 0 100 16A8 8 0 0010 2z" stroke="#C8A961" stroke-width="1.5"/>
+                <path d="M10 6v4l3 3" stroke="#C8A961" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div>
+              <div class="card-title">Guardar horario</div>
+              <p>Cuando termines de ajustar tus horarios, toca el botón <strong>"Guardar horario"</strong> al final de la sección. Los cambios se reflejan de inmediato en la página pública de reservas — los clientes verán tus nuevos horarios disponibles al instante.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="success-note" role="note" style="margin-top:16px;">
+          <svg class="success-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+            <circle cx="11" cy="11" r="9" stroke="#16a34a" stroke-width="1.6"/>
+            <path d="M7 11l3 3 5-5" stroke="#16a34a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <p><strong>Consejo de productividad:</strong> un perfil completo — con foto, biografía y horarios bien configurados — hace que los clientes te elijan con mayor frecuencia. Dedica 5 minutos a configurarlo bien la primera vez; después solo lo ajustas cuando cambia tu disponibilidad.</p>
+        </div>
       </div>
     </div>
   </section>
 
   <!-- ══════════════════════════════════════════════════════════════ -->
-  <!--  07 — PREGUNTAS FRECUENTES                                     -->
+  <!--  06 — PREGUNTAS FRECUENTES                                      -->
   <!-- ══════════════════════════════════════════════════════════════ -->
   <section class="section anchor-target" id="faq" aria-labelledby="h-faq">
     <div class="divider" aria-hidden="true"></div>
@@ -1552,57 +1794,65 @@
         <div class="faq-item" role="listitem">
           <div class="faq-q">
             <div class="faq-q-mark" aria-hidden="true">?</div>
-            <span>¿Necesito crear una cuenta para reservar?</span>
+            <span>¿Cómo sé cuándo tengo una nueva cita?</span>
           </div>
-          <p class="faq-a">No. No tienes que registrarte ni crear ningún usuario. Simplemente ingresas tu nombre, teléfono y email al momento de hacer la reserva, y listo.</p>
+          <p class="faq-a">Es el propietario quien gestiona y agenda las citas. Cuando te asignan una, aparece automáticamente en tu sección de <strong>Mis citas</strong>. Revisa tu panel al inicio de cada día — es tu mejor hábito de trabajo para no perder ninguna.</p>
         </div>
 
         <div class="faq-item" role="listitem">
           <div class="faq-q">
             <div class="faq-q-mark" aria-hidden="true">?</div>
-            <span>¿Puedo reservar desde WhatsApp?</span>
+            <span>¿Puedo cancelar una cita desde mi panel?</span>
           </div>
-          <p class="faq-a">Sí. Si el negocio comparte el enlace por WhatsApp, tócalo y se abre directamente la página de reservas en tu navegador. El proceso es el mismo desde cualquier lugar.</p>
+          <p class="faq-a">No. Los empleados no tienen acceso a cancelar citas. Si necesitas que se cancele una — porque el cliente te avisó o por una emergencia — comunícaselo directamente al propietario para que lo gestione desde su panel lo antes posible.</p>
         </div>
 
         <div class="faq-item" role="listitem">
           <div class="faq-q">
             <div class="faq-q-mark" aria-hidden="true">?</div>
-            <span>¿Cómo sé si mi cita fue confirmada?</span>
+            <span>¿Los clientes me pueden buscar por nombre en la página de reservas?</span>
           </div>
-          <p class="faq-a">Al terminar el proceso verás una pantalla de confirmación en verde. Además, recibirás un email automático con los detalles. Si el email no llegó en 5 minutos, revisa la carpeta de spam.</p>
+          <p class="faq-a">Sí. Si el propietario te asignó a uno o más servicios, los clientes pueden elegirte por nombre al reservar. Tu foto y tu biografía aparecen visibles en ese momento. Por eso es importante tener el perfil bien configurado.</p>
         </div>
 
         <div class="faq-item" role="listitem">
           <div class="faq-q">
             <div class="faq-q-mark" aria-hidden="true">?</div>
-            <span>¿Qué pasa si llego tarde?</span>
+            <span>¿Puedo modificar los servicios que ofrezco?</span>
           </div>
-          <p class="faq-a">Eso depende de la política del negocio. Algunos pueden atenderte con el tiempo restante; otros necesitarán reprogramar. La recomendación general es llegar 5 minutos antes de tu hora.</p>
+          <p class="faq-a">No directamente. Los servicios que atiendes los asigna el propietario desde la sección <strong>Empleados</strong> de su panel. Si crees que deberías atender un servicio adicional o que hay uno que ya no corresponde, coméntaselo al propietario.</p>
         </div>
 
         <div class="faq-item" role="listitem">
           <div class="faq-q">
             <div class="faq-q-mark" aria-hidden="true">?</div>
-            <span>¿Puedo reservar una cita para otra persona?</span>
+            <span>¿Cómo marco una cita como completada?</span>
           </div>
-          <p class="faq-a">Sí. Cuando el sistema te pida los datos personales, ingresa el nombre y teléfono de la persona que va a ir a la cita, no los tuyos. Así el negocio sabrá a quién esperar.</p>
+          <p class="faq-a">Ve a <strong>Mis citas</strong>, toca la cita que terminaste y se abre el detalle. Ahí verás el botón <strong>"Completada"</strong>. Tócalo y el sistema actualiza el estado de forma inmediata. Hazlo al terminar cada servicio — mantiene el historial limpio para todos.</p>
         </div>
 
         <div class="faq-item" role="listitem">
           <div class="faq-q">
             <div class="faq-q-mark" aria-hidden="true">?</div>
-            <span>¿Es seguro ingresar mis datos?</span>
+            <span>Si cambio mis horarios, ¿se actualiza en la página de reservas?</span>
           </div>
-          <p class="faq-a">Sí. AppointVa solo usa tu nombre, teléfono y email para gestionar tu cita con el negocio. Tus datos no se comparten con terceros ni se usan para publicidad.</p>
+          <p class="faq-a">Sí, de inmediato. En cuanto tocas <strong>"Guardar horario"</strong> en la sección Mi perfil, los cambios se publican al instante en la página pública. Los clientes que entren después verán tus nuevos horarios disponibles.</p>
         </div>
 
         <div class="faq-item" role="listitem">
           <div class="faq-q">
             <div class="faq-q-mark" aria-hidden="true">?</div>
-            <span>¿Funciona desde iPhone y Android?</span>
+            <span>¿Qué hago si un cliente no llegó a su cita?</span>
           </div>
-          <p class="faq-a">Sí, funciona desde cualquier celular moderno — iPhone, Android, o desde una computadora. No importa el navegador que uses: Safari, Chrome, Firefox, todos son compatibles.</p>
+          <p class="faq-a">Abre la cita desde <strong>Mis citas</strong> y toca el botón <strong>"Inasistencia"</strong>. Registrarlo es importante: le da al propietario un historial preciso del comportamiento del cliente y ayuda a gestionar las cancelaciones de forma justa.</p>
+        </div>
+
+        <div class="faq-item" role="listitem">
+          <div class="faq-q">
+            <div class="faq-q-mark" aria-hidden="true">?</div>
+            <span>¿Puedo ver las citas de mis compañeros?</span>
+          </div>
+          <p class="faq-a">No. Cada empleado solo tiene visibilidad sobre sus propias citas. Las de otros profesionales del negocio no aparecen en tu panel. Esta separación es intencional para proteger la privacidad de todos.</p>
         </div>
 
       </div>
@@ -1613,7 +1863,7 @@
           <path d="M11 10v5" stroke="#C8A961" stroke-width="1.8" stroke-linecap="round"/>
           <circle cx="11" cy="7.5" r="1" fill="#C8A961"/>
         </svg>
-        <p><strong>¿Tu pregunta no está aquí?</strong> Contacta directamente al negocio donde reservaste — ellos pueden ayudarte con cualquier situación específica de tu cita.</p>
+        <p><strong>¿Tienes una situación no contemplada aquí?</strong> Habla directamente con el propietario del negocio — tiene acceso completo al sistema y puede resolver cualquier caso que no esté cubierto en este manual.</p>
       </div>
     </div>
   </section>
@@ -1626,8 +1876,8 @@
 <!-- ══════════════════════════════════════════════════════════════ -->
 <footer class="footer">
   <div style="width:32px;height:1px;background:var(--border);margin:0 auto 18px;" aria-hidden="true"></div>
-  <p><strong>AppointVa</strong> &copy; 2026 &nbsp;·&nbsp; Manual del Cliente</p>
-  <p style="margin-top:4px;">Versión 4.2 &nbsp;·&nbsp; Julio 2026</p>
+  <p><strong>AppointVa</strong> &copy; 2026 &nbsp;·&nbsp; Manual del Empleado</p>
+  <p style="margin-top:4px;">v1.0 &nbsp;·&nbsp; Agosto 2026</p>
 </footer>
 
 </body>
