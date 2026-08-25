@@ -46,6 +46,7 @@ export interface NegocioPublico {
   telefono?: string;
   telefonoWhatsApp?: string;
   horasCancelacion: number;
+  diasAnticipacionMinima: number;
   autoConfirmar: boolean;
   listaEsperaActiva?: boolean;
   requiereAnticipo: boolean;
@@ -117,6 +118,7 @@ export interface ConfirmacionCita {
   webcalUrl?: string;
   googleCalUrl?: string;
   horasCancelacion: number;
+  diasAnticipacionMinima: number;
   requiereAnticipo: boolean;
   montoAnticipo: number;
   instruccionesAnticipo?: string;
