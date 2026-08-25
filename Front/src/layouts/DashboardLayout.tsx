@@ -536,9 +536,9 @@ export default function DashboardLayout() {
         )}
 
         {/* ── Contenido principal ── */}
-        <main className="flex-1 overflow-y-auto bg-white dark:bg-slate-950" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+        <main className="flex-1 overflow-y-auto bg-slate-50 dark:bg-slate-950" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
           {/* Desktop topbar — hidden on mobile (mobile has its own header) */}
-          <header className="hidden xl:flex items-center justify-end gap-3 border-b border-slate-200 bg-white px-6 py-3 dark:border-slate-700 dark:bg-slate-900">
+          <header className="hidden xl:flex items-center justify-end gap-3 border-b border-slate-200 bg-slate-50 px-6 py-3 dark:border-slate-700 dark:bg-slate-900">
             <FechaHoraActual />
             {!esEmpleado && <NotificacionesBell />}
             <div ref={desktopUserRef} className="relative flex items-center">
