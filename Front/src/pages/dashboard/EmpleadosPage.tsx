@@ -312,15 +312,15 @@ export default function EmpleadosPage() {
     ));
   };
 
-  const intervaloInvalidoEmpleado = (h: HorarioDiaDto): boolean => {
-    if (!h.activo) return false;
+  const intervaloInvalidoEmpleado = (h: HorarioDiaDto): string | null => {
+    if (!h.activo) return null;
     for (const iv of h.intervalos) {
-      if (!iv.horaInicio || !iv.horaFin || iv.horaInicio >= iv.horaFin) return true;
+      if (!iv.horaInicio || !iv.horaFin || iv.horaInicio >= iv.horaFin) return "La hora de fin debe ser mayor a la de inicio.";
     }
     for (let i = 0; i < h.intervalos.length - 1; i++) {
-      if (h.intervalos[i].horaFin > h.intervalos[i + 1].horaInicio) return true;
+      if (h.intervalos[i].horaFin > h.intervalos[i + 1].horaInicio) return "Un intervalo empieza antes de que termine el anterior.";
     }
-    return false;
+    return null;
   };
 
   const agregarIntervaloEmpleado = (dayIdx: number) => {
@@ -608,7 +608,7 @@ export default function EmpleadosPage() {
                     );
                   })()}
                   {intervaloInvalidoEmpleado(h) && (
-                    <p className="text-xs text-red-500">Verifica que los horarios no se solapan y que la hora de fin sea posterior a la de inicio.</p>
+                    <p className="text-xs text-red-500">{intervaloInvalidoEmpleado(h)}</p>
                   )}
                   <button
                     type="button"
@@ -624,7 +624,7 @@ export default function EmpleadosPage() {
 
           <button
             onClick={() => guardarHorario()}
-            disabled={guardandoHorario || horarioLocal.some(intervaloInvalidoEmpleado)}
+            disabled={guardandoHorario || horarioLocal.some(h => !!intervaloInvalidoEmpleado(h))}
             className="w-full bg-slate-700 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-xl transition mt-2"
           >
             {guardandoHorario ? "Guardando..." : "Guardar horario"}
