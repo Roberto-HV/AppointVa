@@ -4,6 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AppointVa — Manual del Propietario</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -474,6 +476,133 @@
       outline-offset: 2px;
       border-radius: 4px;
     }
+
+    /* ── MOCKUP ANNOTATION SYSTEM ───────────────────────────── */
+    .mockup-wrapper { margin: 1.5rem 0 2rem; font-family: Inter, system-ui, sans-serif; }
+    .app-screen { position: relative; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; background: #f8fafc; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
+    .callout { position: absolute; width: 24px; height: 24px; border-radius: 50%; background: #f97316; color: #fff; font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center; z-index: 10; box-shadow: 0 2px 8px rgba(249,115,22,0.5); pointer-events: none; }
+    .callout-legend { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+    .legend-item { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; color: #374151; }
+    .legend-item .n { min-width: 22px; height: 22px; border-radius: 50%; background: #f97316; color: #fff; font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+    .m-app { display: flex; height: 380px; font-family: Inter, system-ui, sans-serif; }
+    .m-sidebar { width: 220px; min-width: 220px; background: #fff; border-right: 1px solid #f1f5f9; display: flex; flex-direction: column; overflow: hidden; }
+    .m-logo-row { display: flex; align-items: center; gap: 10px; padding: 14px 14px 10px; }
+    .m-logo-circle { width: 38px; height: 38px; background: #0f172a; border-radius: 11px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .m-logo-text { font-size: 13px; font-weight: 800; color: #0f172a; }
+    .m-nav { display: flex; flex-direction: column; gap: 2px; padding: 0 8px; flex: 1; overflow: hidden; }
+    .m-nav-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 12px; font-size: 12px; font-weight: 500; color: #475569; }
+    .m-nav-item.active { background: #0f172a; color: #fff; }
+    .m-nav-sep { height: 1px; background: #f1f5f9; margin: 4px 8px; }
+    .m-sidebar-user { padding: 10px 14px; border-top: 1px solid #f1f5f9; display: flex; align-items: center; gap: 8px; }
+    .m-user-av { width: 28px; height: 28px; border-radius: 50%; background: #334155; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 10px; font-weight: 700; flex-shrink: 0; }
+    .m-user-name { font-size: 11px; font-weight: 700; color: #0f172a; }
+    .m-user-role { font-size: 10px; color: #94a3b8; }
+    .m-main { flex: 1; overflow: hidden; background: #f8fafc; display: flex; flex-direction: column; }
+    .m-topbar { padding: 14px 18px 0; }
+    .m-greeting { font-size: 17px; font-weight: 800; color: #0f172a; }
+    .m-sub { font-size: 11px; color: #475569; margin-top: 2px; }
+    .m-content { padding: 10px 18px; flex: 1; overflow: hidden; }
+    .m-stat-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 7px; margin-bottom: 8px; }
+    .m-stat-card { background: #fff; border: 1px solid #f1f5f9; border-radius: 14px; padding: 10px 12px; }
+    .m-stat-card.dark { background: #0f172a; border-color: #0f172a; }
+    .m-stat-label { font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #94a3b8; margin-bottom: 3px; }
+    .m-stat-card.dark .m-stat-label { color: #475569; }
+    .m-stat-val { font-size: 20px; font-weight: 900; color: #0f172a; line-height: 1; }
+    .m-stat-card.dark .m-stat-val { color: #fff; }
+    .m-qa-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; margin-bottom: 8px; }
+    .m-qa { background: #fff; border: 1px solid #f1f5f9; border-radius: 12px; padding: 8px 6px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .m-qa-icon { width: 30px; height: 30px; border-radius: 9px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; }
+    .m-qa-lbl { font-size: 9px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #94a3b8; text-align: center; }
+    .m-check { background: #fff; border: 1px solid #f1f5f9; border-radius: 12px; padding: 8px 10px; }
+    .m-check-ttl { font-size: 10px; font-weight: 700; color: #0f172a; margin-bottom: 5px; }
+    .m-progress { height: 4px; background: #f1f5f9; border-radius: 99px; overflow: hidden; margin-bottom: 5px; }
+    .m-progress-fill { height: 100%; width: 40%; background: #334155; border-radius: 99px; }
+    .m-check-items { display: flex; flex-direction: column; gap: 3px; }
+    .m-check-item { display: flex; align-items: center; gap: 5px; font-size: 10px; color: #475569; }
+    .m-cdot { width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid #cbd5e1; background: #fff; flex-shrink: 0; }
+    .m-cdot.done { background: #334155; border-color: #334155; }
+    .m-toggle { display: inline-block; width: 32px; height: 17px; border-radius: 99px; background: #d1d5db; position: relative; flex-shrink: 0; vertical-align: middle; }
+    .m-toggle.on { background: #334155; }
+    .m-toggle::after { content: ''; position: absolute; top: 2.5px; left: 2.5px; width: 12px; height: 12px; border-radius: 50%; background: #fff; }
+    .m-toggle.on::after { left: 17.5px; }
+    .m-btn { display: inline-flex; align-items: center; gap: 5px; background: #334155; color: #fff; border-radius: 10px; font-size: 11px; font-weight: 600; padding: 6px 12px; font-family: inherit; cursor: default; border: none; }
+    .m-tabs { display: flex; gap: 2px; padding: 3px; background: #f1f5f9; border-radius: 9px; margin-bottom: 12px; }
+    .m-tab { padding: 4px 10px; border-radius: 7px; font-size: 11px; font-weight: 500; color: #6b7280; cursor: default; }
+    .m-tab.active { background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.1); color: #0f172a; font-weight: 600; }
+    .m-lbl { font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #94a3b8; margin-bottom: 3px; display: block; }
+    .m-input { width: 100%; border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; padding: 6px 10px; font-size: 12px; color: #0f172a; font-family: inherit; box-sizing: border-box; }
+    .m-select { width: 100%; border: 1px solid #e2e8f0; border-radius: 10px; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 8px center; padding: 6px 24px 6px 10px; font-size: 12px; color: #0f172a; font-family: inherit; box-sizing: border-box; appearance: none; }
+    .m-row { margin-bottom: 8px; }
+    .m-svc-card { background: #fff; border: 1px solid #f1f5f9; border-radius: 14px; display: flex; align-items: center; gap: 10px; padding: 10px 12px; margin-bottom: 7px; }
+    .m-svc-img { width: 42px; height: 42px; border-radius: 9px; background: linear-gradient(135deg,#334155,#64748b); flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+    .m-svc-info { flex: 1; }
+    .m-svc-name { font-size: 12px; font-weight: 700; color: #0f172a; }
+    .m-svc-meta { font-size: 10px; color: #94a3b8; }
+    .m-emp-card { background: #fff; border: 1px solid #f1f5f9; border-radius: 14px; padding: 12px; display: flex; align-items: center; gap: 10px; margin-bottom: 7px; }
+    .m-emp-av { width: 38px; height: 38px; border-radius: 50%; background: #334155; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 14px; font-weight: 700; flex-shrink: 0; }
+    .m-emp-name { font-size: 12px; font-weight: 700; color: #0f172a; }
+    .m-badge { display: inline-block; background: #f1f5f9; color: #475569; font-size: 9px; font-weight: 700; border-radius: 99px; padding: 2px 7px; text-transform: uppercase; letter-spacing: 0.04em; }
+    .m-modal-bg { position: absolute; inset: 0; background: rgba(0,0,0,0.38); display: flex; align-items: center; justify-content: center; z-index: 20; }
+    .m-modal { background: #fff; border-radius: 14px; padding: 14px; width: 260px; max-height: 300px; overflow-y: auto; }
+    .m-modal-ttl { font-size: 13px; font-weight: 800; color: #0f172a; margin-bottom: 10px; }
+    .m-sch-row { display: flex; align-items: center; gap: 7px; margin-bottom: 5px; }
+    .m-sch-day { width: 68px; font-size: 11px; font-weight: 600; color: #0f172a; flex-shrink: 0; }
+    .m-sch-hint { font-size: 9px; color: #94a3b8; padding-left: 30px; margin-bottom: 4px; }
+    .m-sch-interval { display: flex; align-items: center; gap: 5px; padding-left: 30px; margin-bottom: 3px; }
+    .m-sch-sel { border: 1px solid #e2e8f0; border-radius: 7px; padding: 3px 5px; font-size: 10px; color: #0f172a; background: #fff; }
+    .m-sch-x { width: 16px; height: 16px; border-radius: 50%; background: #f1f5f9; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #475569; }
+    .m-add-int { display: flex; align-items: center; gap: 4px; font-size: 9px; font-weight: 700; color: #334155; padding-left: 30px; margin-top: 2px; }
+    .m-cal-hd { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: #fff; border-bottom: 1px solid #f1f5f9; }
+    .m-cal-toggle { display: flex; background: #f1f5f9; border-radius: 7px; padding: 2px; gap: 2px; }
+    .m-cal-tab { padding: 3px 9px; border-radius: 5px; font-size: 10px; font-weight: 600; color: #6b7280; cursor: default; }
+    .m-cal-tab.active { background: #fff; color: #0f172a; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .m-cal-body { display: flex; flex: 1; overflow: hidden; }
+    .m-cal-times { width: 36px; flex-shrink: 0; padding-top: 24px; }
+    .m-cal-time { height: 30px; font-size: 8px; color: #94a3b8; text-align: right; padding-right: 5px; line-height: 30px; }
+    .m-cal-days { flex: 1; display: grid; grid-template-columns: repeat(7,1fr); }
+    .m-cal-dhd { height: 24px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-bottom: 1px solid #f1f5f9; border-left: 1px solid #f1f5f9; }
+    .m-cal-dname { font-size: 8px; font-weight: 600; color: #94a3b8; text-transform: uppercase; }
+    .m-cal-dnum { font-size: 11px; font-weight: 700; color: #0f172a; }
+    .m-cal-dnum.today { background: #0f172a; color: #fff; border-radius: 50%; width: 17px; height: 17px; display: flex; align-items: center; justify-content: center; }
+    .m-cal-col { border-left: 1px solid #f1f5f9; position: relative; }
+    .m-cal-slot { height: 30px; border-bottom: 1px solid #f8fafc; }
+    .m-cal-event { position: absolute; left: 2px; right: 2px; background: #334155; border-radius: 4px; padding: 2px 3px; color: #fff; font-size: 8px; line-height: 1.3; overflow: hidden; }
+    .m-client-row { display: flex; align-items: center; gap: 9px; padding: 9px 14px; border-bottom: 1px solid #f1f5f9; }
+    .m-client-av { width: 30px; height: 30px; border-radius: 50%; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+    .m-client-name { font-size: 12px; font-weight: 600; color: #0f172a; }
+    .m-client-email { font-size: 10px; color: #94a3b8; }
+    .m-client-stat { font-size: 10px; font-weight: 700; color: #334155; background: #f1f5f9; border-radius: 7px; padding: 2px 7px; white-space: nowrap; }
+    .m-disc-card { background: #fff; border: 1px solid #f1f5f9; border-radius: 12px; padding: 10px 12px; display: flex; align-items: center; gap: 10px; margin-bottom: 7px; }
+    .m-disc-code { font-family: 'Courier New', monospace; font-size: 13px; font-weight: 800; color: #0f172a; }
+    .m-disc-type { font-size: 10px; color: #94a3b8; }
+    .m-q-row { background: #fff; border: 1px solid #f1f5f9; border-radius: 11px; padding: 10px; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+    .m-q-drag { color: #d1d5db; font-size: 14px; cursor: default; line-height: 1; }
+    .m-q-text { flex: 1; font-size: 11px; font-weight: 500; color: #0f172a; }
+    .m-q-type { font-size: 9px; font-weight: 700; color: #94a3b8; background: #f1f5f9; border-radius: 5px; padding: 2px 5px; white-space: nowrap; }
+    .m-q-req { font-size: 9px; color: #334155; font-weight: 700; background: #e2e8f0; border-radius: 5px; padding: 2px 5px; white-space: nowrap; }
+    .m-bar-chart { display: flex; align-items: flex-end; gap: 6px; height: 70px; }
+    .m-bar { background: #334155; border-radius: 3px 3px 0 0; flex: 1; }
+    .m-bar.dim { background: #e2e8f0; }
+    .m-sidebar-col { width: 62px; min-width: 62px; background: #fff; border-right: 1px solid #f1f5f9; display: flex; flex-direction: column; align-items: center; padding: 12px 0; gap: 3px; overflow: hidden; }
+    .m-icon-btn { width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; border-radius: 11px; color: #475569; }
+    .m-icon-btn.active { background: #0f172a; color: #fff; }
+    .m-cover-prev { width: 100%; height: 85px; background: linear-gradient(135deg,#1e293b,#475569); position: relative; overflow: hidden; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 8px; }
+    .m-cover-btn { background: rgba(255,255,255,0.9); border-radius: 7px; padding: 5px 10px; font-size: 10px; font-weight: 700; color: #0f172a; }
+    .m-pos-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 3px; width: 54px; }
+    .m-pos-dot { width: 14px; height: 14px; border-radius: 3px; background: #f1f5f9; border: 1.5px solid #e2e8f0; }
+    .m-pos-dot.sel { background: #334155; border-color: #334155; }
+    .m-search { width: 100%; border: 1px solid #e2e8f0; border-radius: 9px; padding: 7px 10px 7px 30px; font-size: 12px; color: #94a3b8; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E") no-repeat left 9px center; font-family: inherit; box-sizing: border-box; }
+    .highlight-new { outline: 2px solid #f97316; outline-offset: 2px; border-radius: 12px; }
+    .m-form-body { background: #fff; padding: 14px 16px; flex: 1; overflow: hidden; font-family: Inter, system-ui, sans-serif; }
+    .m-color-swatch { width: 32px; height: 32px; border-radius: 8px; background: #6366f1; border: 1.5px solid #e2e8f0; display: inline-block; vertical-align: middle; }
+    .m-color-field { display: flex; align-items: center; gap: 8px; border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; padding: 4px 10px; }
+    .m-color-hex { font-size: 12px; color: #0f172a; font-family: 'Courier New', monospace; }
+    .m-list-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: #fff; border-bottom: 1px solid #f1f5f9; }
+    .m-list-title { font-size: 13px; font-weight: 800; color: #0f172a; }
+    .m-period-sel { display: flex; gap: 4px; margin-bottom: 10px; }
+    .m-period-btn { padding: 4px 10px; border-radius: 7px; font-size: 10px; font-weight: 600; color: #475569; background: #fff; border: 1px solid #e2e8f0; cursor: default; }
+    .m-period-btn.active { background: #0f172a; color: #fff; border-color: #0f172a; }
+    .m-chart-lbl { font-size: 8px; color: #94a3b8; text-align: center; margin-top: 3px; }
   </style>
 </head>
 <body>
@@ -499,13 +628,13 @@
 
     <h1>Manual del <span>Propietario</span></h1>
     <p class="hero-sub">Guía completa para gestionar tu negocio en AppointVa — desde el registro hasta los reportes de ingresos.</p>
-    <div class="hero-badge" aria-label="v5.0 — Agosto 2026">
+    <div class="hero-badge" aria-label="v5.1 — Agosto 2026">
       <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
         <circle cx="6" cy="6" r="5" stroke="#C8A961" stroke-width="1.5"/>
         <line x1="6" y1="3.5" x2="6" y2="6" stroke="#C8A961" stroke-width="1.5" stroke-linecap="round"/>
         <line x1="6" y1="6" x2="8" y2="7.5" stroke="#C8A961" stroke-width="1.5" stroke-linecap="round"/>
       </svg>
-      v5.0 &nbsp;·&nbsp; Agosto 2026
+      v5.1 &nbsp;·&nbsp; Agosto 2026
     </div>
   </div>
 </header>
@@ -698,6 +827,119 @@
       <div class="section-label">Sección 01</div>
       <h2 class="section-title" id="h-primeros-pasos">Primeros pasos</h2>
 
+      <!-- MOCKUP 01 — Dashboard Inicio -->
+      <div class="mockup-wrapper">
+        <div class="app-screen">
+          <div class="m-app">
+            <!-- Sidebar -->
+            <div class="m-sidebar">
+              <div class="m-logo-row">
+                <div class="m-logo-circle">
+                  <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="1" y="2" width="16" height="14" rx="3" stroke="#fff" stroke-width="1.4"/><line x1="6" y1="1" x2="6" y2="4" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/><line x1="12" y1="1" x2="12" y2="4" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/><rect x="4" y="9" width="4" height="4" rx="1" fill="#fff" fill-opacity="0.7"/><rect x="10" y="9" width="4" height="4" rx="1" fill="#fff" fill-opacity="0.35"/></svg>
+                </div>
+                <span class="m-logo-text">AppointVa</span>
+              </div>
+              <div class="m-nav">
+                <div class="m-nav-item active">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+                  Inicio
+                </div>
+                <div class="m-nav-item">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                  Citas
+                </div>
+                <div class="m-nav-item">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                  Servicios
+                </div>
+                <div class="m-nav-item">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                  Empleados
+                </div>
+                <div class="m-nav-sep"></div>
+                <div class="m-nav-item">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  Clientes
+                </div>
+                <div class="m-nav-item">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                  Reportes
+                </div>
+              </div>
+              <div class="m-sidebar-user">
+                <div class="m-user-av">LC</div>
+                <div>
+                  <div class="m-user-name">Laura C.</div>
+                  <div class="m-user-role">Propietaria</div>
+                </div>
+              </div>
+            </div>
+            <!-- Main content -->
+            <div class="m-main">
+              <div class="m-topbar">
+                <div class="m-greeting">Hola, Laura 👋</div>
+                <div class="m-sub">Studio Laura Cortés &nbsp;·&nbsp; Hoy 25 ago 2026</div>
+              </div>
+              <div class="m-content">
+                <div class="m-stat-grid">
+                  <div class="m-stat-card">
+                    <div class="m-stat-label">Citas hoy</div>
+                    <div class="m-stat-val">5</div>
+                  </div>
+                  <div class="m-stat-card">
+                    <div class="m-stat-label">Pendientes</div>
+                    <div class="m-stat-val">2</div>
+                  </div>
+                  <div class="m-stat-card dark">
+                    <div class="m-stat-label">Ingresos hoy</div>
+                    <div class="m-stat-val">$1,200</div>
+                  </div>
+                </div>
+                <div class="m-qa-grid">
+                  <div class="m-qa">
+                    <div class="m-qa-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#334155" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+                    <div class="m-qa-lbl">Citas</div>
+                  </div>
+                  <div class="m-qa">
+                    <div class="m-qa-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#334155" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l7.78-7.78a5.5 5.5 0 0 0 0-7.78z"/></svg></div>
+                    <div class="m-qa-lbl">Servicios</div>
+                  </div>
+                  <div class="m-qa">
+                    <div class="m-qa-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#334155" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+                    <div class="m-qa-lbl">Clientes</div>
+                  </div>
+                  <div class="m-qa">
+                    <div class="m-qa-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#334155" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+                    <div class="m-qa-lbl">Reportes</div>
+                  </div>
+                </div>
+                <div class="m-check">
+                  <div class="m-check-ttl">Configura tu negocio — 2 de 5 listos</div>
+                  <div class="m-progress"><div class="m-progress-fill"></div></div>
+                  <div class="m-check-items">
+                    <div class="m-check-item"><div class="m-cdot done"></div> Perfil del negocio</div>
+                    <div class="m-check-item"><div class="m-cdot done"></div> Agrega un servicio</div>
+                    <div class="m-check-item"><div class="m-cdot"></div> Invita un empleado</div>
+                    <div class="m-check-item"><div class="m-cdot"></div> Configura horarios</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Callouts -->
+          <div class="callout" style="top:60px;left:6px">1</div>
+          <div class="callout" style="top:120px;left:232px">2</div>
+          <div class="callout" style="top:215px;left:232px">3</div>
+          <div class="callout" style="top:290px;left:232px">4</div>
+        </div>
+        <div class="callout-legend">
+          <div class="legend-item"><span class="n">1</span> Sidebar de navegación con ítems de menú. El ítem activo se resalta en negro.</div>
+          <div class="legend-item"><span class="n">2</span> Cards de resumen: citas de hoy, pendientes e ingresos (card oscura).</div>
+          <div class="legend-item"><span class="n">3</span> Accesos rápidos a las secciones principales.</div>
+          <div class="legend-item"><span class="n">4</span> Checklist de configuración inicial con barra de progreso.</div>
+        </div>
+      </div>
+
       <div class="steps">
         <div class="step-item">
           <div class="step-num" aria-hidden="true">1</div>
@@ -742,6 +984,68 @@
     <div style="padding-top: 52px;">
       <div class="section-label">Sección 02</div>
       <h2 class="section-title" id="h-sidebar">Sidebar colapsable</h2>
+
+      <!-- MOCKUP 02 — Sidebar expandido vs colapsado -->
+      <div class="mockup-wrapper">
+        <div class="app-screen">
+          <div style="display:flex;height:340px;font-family:Inter,system-ui,sans-serif;">
+            <!-- Expandido -->
+            <div style="flex:1;display:flex;flex-direction:column;border-right:2px dashed #e2e8f0;">
+              <div style="padding:8px 12px;font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#94a3b8;background:#f8fafc;border-bottom:1px solid #f1f5f9;">Expandido (224px)</div>
+              <div style="display:flex;flex:1;">
+                <div class="m-sidebar" style="width:200px;min-width:200px;">
+                  <div class="m-logo-row">
+                    <div class="m-logo-circle"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><rect x="1" y="2" width="16" height="14" rx="3" stroke="#fff" stroke-width="1.4"/><line x1="6" y1="1" x2="6" y2="4" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/><line x1="12" y1="1" x2="12" y2="4" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/><rect x="4" y="9" width="4" height="4" rx="1" fill="#fff" fill-opacity="0.7"/></svg></div>
+                    <span class="m-logo-text">AppointVa</span>
+                  </div>
+                  <div class="m-nav">
+                    <div class="m-nav-item active"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg> Inicio</div>
+                    <div class="m-nav-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Citas</div>
+                    <div class="m-nav-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l7.78-7.78a5.5 5.5 0 0 0 0-7.78z"/></svg> Servicios</div>
+                    <div class="m-nav-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Empleados</div>
+                    <div class="m-nav-sep"></div>
+                    <div class="m-nav-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Clientes</div>
+                    <div class="m-nav-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> Reportes</div>
+                  </div>
+                  <!-- collapse tab -->
+                  <div style="position:absolute;right:-10px;top:50%;transform:translateY(-50%);width:18px;height:36px;background:#fff;border:1px solid #e2e8f0;border-radius:0 8px 8px 0;display:flex;align-items:center;justify-content:center;font-size:10px;color:#94a3b8;z-index:5;">‹</div>
+                </div>
+                <div style="flex:1;background:#f8fafc;"></div>
+              </div>
+            </div>
+            <!-- Colapsado -->
+            <div style="flex:none;display:flex;flex-direction:column;">
+              <div style="padding:8px 12px;font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#94a3b8;background:#f8fafc;border-bottom:1px solid #f1f5f9;white-space:nowrap;">Colapsado (64px)</div>
+              <div style="display:flex;flex:1;">
+                <div class="m-sidebar-col" style="position:relative;">
+                  <div class="m-logo-circle" style="width:32px;height:32px;border-radius:9px;margin-bottom:8px;"><svg width="14" height="14" viewBox="0 0 18 18" fill="none"><rect x="1" y="2" width="16" height="14" rx="3" stroke="#fff" stroke-width="1.4"/><rect x="4" y="9" width="4" height="4" rx="1" fill="#fff" fill-opacity="0.7"/></svg></div>
+                  <div class="m-icon-btn active"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div>
+                  <div class="m-icon-btn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+                  <div class="m-icon-btn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l7.78-7.78a5.5 5.5 0 0 0 0-7.78z"/></svg></div>
+                  <div class="m-icon-btn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
+                  <div style="height:1px;background:#f1f5f9;width:40px;margin:4px 0;"></div>
+                  <div class="m-icon-btn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+                  <div class="m-icon-btn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+                  <!-- tooltip -->
+                  <div style="position:absolute;left:66px;top:118px;background:#0f172a;color:#fff;font-size:10px;font-weight:600;padding:3px 8px;border-radius:6px;white-space:nowrap;z-index:30;">Citas</div>
+                  <!-- expand tab -->
+                  <div style="position:absolute;right:-10px;top:50%;transform:translateY(-50%);width:18px;height:36px;background:#fff;border:1px solid #e2e8f0;border-radius:0 8px 8px 0;display:flex;align-items:center;justify-content:center;font-size:10px;color:#94a3b8;z-index:5;">›</div>
+                </div>
+                <div style="width:120px;background:#f8fafc;"></div>
+              </div>
+            </div>
+          </div>
+          <div class="callout" style="top:88px;right:182px">1</div>
+          <div class="callout" style="top:170px;right:152px">2</div>
+          <div class="callout" style="top:110px;right:8px">3</div>
+        </div>
+        <div class="callout-legend">
+          <div class="legend-item"><span class="n">1</span> Pestaña lateral de colapso — haz clic para comprimir o expandir la barra.</div>
+          <div class="legend-item"><span class="n">2</span> En modo colapsado, solo se muestran íconos sin texto.</div>
+          <div class="legend-item"><span class="n">3</span> Tooltip al pasar el cursor sobre un ícono — muestra el nombre de la sección.</div>
+        </div>
+      </div>
+
       <p style="font-size:14px; color:var(--gray); margin-bottom:24px;">En pantallas de escritorio (resolución <strong>xl+</strong>), la barra lateral puede comprimirse para ganar espacio de trabajo sin perder acceso a ninguna función.</p>
 
       <div class="steps">
@@ -789,6 +1093,83 @@
       <h2 class="section-title" id="h-configuracion">Configuración del negocio</h2>
       <p style="font-size:14px; color:var(--gray); margin-bottom:24px;">Ve a <strong>Mi negocio</strong> en la barra lateral. Desde aquí controlas todo lo que ven tus clientes.</p>
 
+      <!-- MOCKUP 03 — Perfil del negocio -->
+      <div class="mockup-wrapper">
+        <div class="app-screen">
+          <div style="display:flex;height:380px;font-family:Inter,system-ui,sans-serif;">
+            <!-- Sidebar -->
+            <div class="m-sidebar" style="width:190px;min-width:190px;">
+              <div class="m-logo-row">
+                <div class="m-logo-circle"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><rect x="1" y="2" width="16" height="14" rx="3" stroke="#fff" stroke-width="1.4"/><rect x="4" y="9" width="4" height="4" rx="1" fill="#fff" fill-opacity="0.7"/></svg></div>
+                <span class="m-logo-text">AppointVa</span>
+              </div>
+              <div class="m-nav">
+                <div class="m-nav-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg> Inicio</div>
+                <div class="m-nav-item active"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.58-7 8-7s8 3 8 7"/></svg> Mi negocio</div>
+                <div class="m-nav-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Citas</div>
+                <div class="m-nav-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg> Empleados</div>
+              </div>
+            </div>
+            <!-- Main -->
+            <div class="m-main">
+              <div class="m-topbar" style="padding-bottom:10px;border-bottom:1px solid #f1f5f9;background:#fff;">
+                <!-- Profile header -->
+                <div style="display:flex;align-items:center;gap:12px;">
+                  <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#334155,#64748b);display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;font-weight:800;">S</div>
+                  <div>
+                    <div style="font-size:15px;font-weight:800;color:#0f172a;">Studio Laura</div>
+                    <div style="font-size:11px;color:#94a3b8;">appointva.com/b/studio-laura</div>
+                  </div>
+                </div>
+              </div>
+              <div class="m-form-body" style="overflow-y:auto;">
+                <!-- Tabs -->
+                <div class="m-tabs">
+                  <div class="m-tab active">Perfil</div>
+                  <div class="m-tab">Citas</div>
+                  <div class="m-tab">Anticipos</div>
+                  <div class="m-tab">Horarios</div>
+                  <div class="m-tab">Cuenta</div>
+                </div>
+                <!-- Form fields -->
+                <div class="m-row">
+                  <span class="m-lbl">Nombre del negocio</span>
+                  <div class="m-input">Studio Laura Cortés</div>
+                </div>
+                <div class="m-row">
+                  <span class="m-lbl">Teléfono WhatsApp</span>
+                  <div class="m-input">+52 55 1234 5678</div>
+                </div>
+                <div class="m-row">
+                  <span class="m-lbl">Descripción</span>
+                  <div class="m-input" style="height:38px;">Estudio de belleza especializado en...</div>
+                </div>
+                <div class="m-row">
+                  <span class="m-lbl">Color primario</span>
+                  <div class="m-color-field">
+                    <div class="m-color-swatch"></div>
+                    <span class="m-color-hex">#6366f1</span>
+                  </div>
+                </div>
+                <button class="m-btn" style="margin-top:6px;">Guardar cambios</button>
+              </div>
+            </div>
+          </div>
+          <div class="callout" style="top:76px;left:196px">1</div>
+          <div class="callout" style="top:136px;left:196px">2</div>
+          <div class="callout" style="top:230px;left:196px">3</div>
+          <div class="callout" style="top:298px;left:196px">4</div>
+          <div class="callout" style="top:336px;left:196px">5</div>
+        </div>
+        <div class="callout-legend">
+          <div class="legend-item"><span class="n">1</span> Tabs de navegación: Perfil, Citas, Anticipos, Horarios y Cuenta.</div>
+          <div class="legend-item"><span class="n">2</span> Campo nombre del negocio — aparece en tu página pública.</div>
+          <div class="legend-item"><span class="n">3</span> Descripción — resumen de lo que ofreces, visible para clientes.</div>
+          <div class="legend-item"><span class="n">4</span> Color primario — selector con código hex; controla la paleta de tu página de booking.</div>
+          <div class="legend-item"><span class="n">5</span> Botón Guardar cambios — aplica todos los cambios del formulario.</div>
+        </div>
+      </div>
+
       <div class="grid-2">
         <div class="mini-card">
           <div class="mini-card-icon bg-gold">
@@ -829,6 +1210,50 @@
           </div>
           <h4>Color primario</h4>
           <p>Elige el color que identifica tu marca. Aparece en los botones y acentos de tu página pública de reservas.</p>
+        </div>
+      </div>
+
+      <!-- MOCKUP 13 — Portada e imagen -->
+      <div class="mockup-wrapper">
+        <div class="app-screen">
+          <div style="font-family:Inter,system-ui,sans-serif;padding:16px;background:#f8fafc;min-height:280px;">
+            <div style="font-size:12px;font-weight:800;color:#0f172a;margin-bottom:12px;">Portada del negocio</div>
+            <!-- Cover preview -->
+            <div class="m-cover-prev" style="height:120px;">
+              <div style="position:absolute;inset:0;background:rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;">
+                <div class="m-cover-btn">📷 Cambiar imagen</div>
+              </div>
+              <!-- Scenic gradient to simulate photo -->
+              <div style="position:absolute;inset:0;background:linear-gradient(180deg,#334155 0%,#64748b 50%,#94a3b8 100%);opacity:0.8;"></div>
+            </div>
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-top:12px;gap:16px;">
+              <!-- Left: instructions -->
+              <div style="flex:1;">
+                <div style="font-size:11px;font-weight:700;color:#0f172a;margin-bottom:4px;">Posición del encuadre</div>
+                <div style="font-size:10px;color:#94a3b8;margin-bottom:10px;">Arrastra la imagen para elegir qué zona queda visible en el banner.</div>
+                <button class="m-btn" style="font-size:10px;padding:5px 12px;">Posicionar</button>
+              </div>
+              <!-- Right: position grid -->
+              <div>
+                <div style="font-size:9px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#94a3b8;margin-bottom:6px;">Punto focal</div>
+                <div class="m-pos-grid">
+                  <div class="m-pos-dot"></div><div class="m-pos-dot"></div><div class="m-pos-dot"></div>
+                  <div class="m-pos-dot"></div><div class="m-pos-dot sel"></div><div class="m-pos-dot"></div>
+                  <div class="m-pos-dot"></div><div class="m-pos-dot"></div><div class="m-pos-dot"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="callout" style="top:30px;left:6px">1</div>
+          <div class="callout" style="top:88px;right:6px">2</div>
+          <div class="callout" style="top:175px;left:6px">3</div>
+          <div class="callout" style="top:175px;right:6px">4</div>
+        </div>
+        <div class="callout-legend">
+          <div class="legend-item"><span class="n">1</span> Vista previa de la imagen de portada actual.</div>
+          <div class="legend-item"><span class="n">2</span> Botón Cambiar imagen — abre el selector de archivo.</div>
+          <div class="legend-item"><span class="n">3</span> Botón Posicionar — abre el encuadre interactivo para arrastrar la imagen.</div>
+          <div class="legend-item"><span class="n">4</span> Selector de punto focal (grilla de 9 puntos) — indica qué zona se centra en el banner.</div>
         </div>
       </div>
 
@@ -904,6 +1329,71 @@
         </div>
       </div>
 
+      <!-- MOCKUP 07 — Horarios del negocio -->
+      <div class="mockup-wrapper">
+        <div class="app-screen">
+          <div style="font-family:Inter,system-ui,sans-serif;background:#f8fafc;padding:0;">
+            <div class="m-list-header">
+              <span class="m-list-title">Horarios de atención</span>
+              <button class="m-btn" style="font-size:10px;padding:5px 12px;">Guardar</button>
+            </div>
+            <div style="padding:14px 16px;">
+              <!-- Lunes -->
+              <div class="m-sch-row">
+                <div class="m-sch-day">Lunes</div>
+                <div class="m-toggle on"></div>
+              </div>
+              <div class="m-sch-interval">
+                <span style="font-size:10px;color:#475569;">De</span>
+                <select class="m-sch-sel"><option>9:00 a.m.</option></select>
+                <span style="font-size:10px;color:#475569;">a</span>
+                <select class="m-sch-sel"><option>1:00 p.m.</option></select>
+                <div class="m-sch-x">×</div>
+              </div>
+              <div class="m-sch-interval">
+                <span style="font-size:10px;color:#475569;">De</span>
+                <select class="m-sch-sel"><option>3:00 p.m.</option></select>
+                <span style="font-size:10px;color:#475569;">a</span>
+                <select class="m-sch-sel"><option>7:00 p.m.</option></select>
+                <div class="m-sch-x">×</div>
+              </div>
+              <div class="m-add-int">＋ Agregar intervalo</div>
+              <!-- Martes -->
+              <div class="m-sch-row" style="margin-top:10px;">
+                <div class="m-sch-day">Martes</div>
+                <div class="m-toggle on"></div>
+              </div>
+              <div class="m-sch-interval">
+                <span style="font-size:10px;color:#475569;">De</span>
+                <select class="m-sch-sel"><option>9:00 a.m.</option></select>
+                <span style="font-size:10px;color:#475569;">a</span>
+                <select class="m-sch-sel"><option>6:00 p.m.</option></select>
+                <div class="m-sch-x">×</div>
+              </div>
+              <div class="m-add-int">＋ Agregar intervalo</div>
+              <!-- Domingo -->
+              <div class="m-sch-row" style="margin-top:10px;">
+                <div class="m-sch-day">Domingo</div>
+                <div class="m-toggle"></div>
+                <span style="font-size:10px;color:#94a3b8;margin-left:6px;">Cerrado</span>
+              </div>
+            </div>
+          </div>
+          <div class="callout" style="top:44px;left:6px">1</div>
+          <div class="callout" style="top:44px;left:126px">2</div>
+          <div class="callout" style="top:76px;right:6px">3</div>
+          <div class="callout" style="top:130px;left:6px">4</div>
+          <div class="callout" style="top:228px;left:6px">5</div>
+        </div>
+        <div class="callout-legend">
+          <div class="legend-item"><span class="n">1</span> Nombre del día de la semana.</div>
+          <div class="legend-item"><span class="n">2</span> Toggle — activa o desactiva el día. Días inactivos no aparecen en el calendario de reservas.</div>
+          <div class="legend-item"><span class="n">3</span> Botón × — elimina este intervalo horario.</div>
+          <div class="legend-item"><span class="n">4</span> Segundo intervalo — modela pausas (ej. comida). Cada día puede tener varios bloques.</div>
+          <div class="legend-item"><span class="n">5</span> Día cerrado — el toggle apagado bloquea reservas para ese día.</div>
+        </div>
+      </div>
+
       <div class="card" style="margin-top:12px;">
         <div class="card-title">Horarios de atención</div>
         <p style="margin-bottom:14px; font-size:14px; color:var(--gray);">Define qué días y en qué bloques horarios recibes clientes. Cada día puede tener <strong>uno o varios intervalos de tiempo</strong>, lo que te permite modelar horarios con descanso a mediodía u otras pausas.</p>
@@ -943,6 +1433,54 @@
               <span>Si un empleado trabaja en horario distinto al del negocio, ajústalo desde la sección Empleados. Su horario no puede rebasar el horario del negocio.</span>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- MOCKUP 04 — Tab Citas (configuración) -->
+      <div class="mockup-wrapper">
+        <div class="app-screen">
+          <div style="font-family:Inter,system-ui,sans-serif;background:#f8fafc;padding:0;">
+            <div class="m-list-header">
+              <span class="m-list-title">Configuración de citas</span>
+            </div>
+            <div style="padding:14px 16px;">
+              <!-- Tabs -->
+              <div class="m-tabs">
+                <div class="m-tab">Perfil</div>
+                <div class="m-tab active">Citas</div>
+                <div class="m-tab">Anticipos</div>
+                <div class="m-tab">Horarios</div>
+                <div class="m-tab">Cuenta</div>
+              </div>
+              <!-- Campos -->
+              <div class="m-row">
+                <span class="m-lbl">Confirmación automática</span>
+                <div class="m-select" style="display:block;">Sí — confirmar automáticamente</div>
+              </div>
+              <div class="m-row">
+                <span class="m-lbl">Anticipación mínima para cancelar</span>
+                <div class="m-select" style="display:block;">4 horas antes</div>
+              </div>
+              <!-- NEW field highlighted -->
+              <div class="m-row highlight-new">
+                <span class="m-lbl" style="color:#f97316;">Anticipación mínima para agendar <span style="background:#f97316;color:#fff;font-size:8px;font-weight:700;border-radius:4px;padding:1px 5px;margin-left:4px;vertical-align:middle;">NUEVO</span></span>
+                <div class="m-select" style="display:block;">1 día antes</div>
+              </div>
+              <button class="m-btn" style="margin-top:10px;">Guardar cambios</button>
+            </div>
+          </div>
+          <div class="callout" style="top:56px;left:6px">1</div>
+          <div class="callout" style="top:108px;left:6px">2</div>
+          <div class="callout" style="top:152px;left:6px">3</div>
+          <div class="callout" style="top:198px;left:6px">4</div>
+          <div class="callout" style="top:248px;left:6px">5</div>
+        </div>
+        <div class="callout-legend">
+          <div class="legend-item"><span class="n">1</span> Tabs — haz clic en "Citas" para acceder a esta configuración.</div>
+          <div class="legend-item"><span class="n">2</span> Confirmación automática — decide si las citas se aprueban solas o necesitas confirmarlas.</div>
+          <div class="legend-item"><span class="n">3</span> Anticipación mínima para cancelar — tiempo mínimo con el que el cliente puede cancelar.</div>
+          <div class="legend-item"><span class="n">4</span> Anticipación mínima para agendar (NUEVO) — días con los que el cliente debe reservar por adelantado.</div>
+          <div class="legend-item"><span class="n">5</span> Guardar cambios — aplica los ajustes de la sección Citas.</div>
         </div>
       </div>
 
@@ -1009,6 +1547,67 @@
       <div class="section-label">Sección 04</div>
       <h2 class="section-title" id="h-servicios">Gestión de servicios</h2>
       <p style="font-size:14px; color:var(--gray); margin-bottom:24px;">Ve a <strong>Servicios</strong> en el menú lateral. Aquí creas y administras todo lo que ofreces.</p>
+
+      <!-- MOCKUP 05 — Servicios -->
+      <div class="mockup-wrapper">
+        <div class="app-screen">
+          <div style="font-family:Inter,system-ui,sans-serif;background:#f8fafc;padding:0;height:360px;display:flex;flex-direction:column;">
+            <div class="m-list-header">
+              <span class="m-list-title">Servicios</span>
+              <button class="m-btn">＋ Nuevo servicio</button>
+            </div>
+            <div style="padding:12px 14px;flex:1;overflow:hidden;">
+              <!-- Servicio 1 -->
+              <div class="m-svc-card">
+                <div class="m-svc-img"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></div>
+                <div class="m-svc-info">
+                  <div class="m-svc-name">Corte caballero</div>
+                  <div class="m-svc-meta">30 min &nbsp;·&nbsp; $250</div>
+                </div>
+                <div class="m-toggle on"></div>
+              </div>
+              <!-- Servicio 2 -->
+              <div class="m-svc-card">
+                <div class="m-svc-img" style="background:linear-gradient(135deg,#475569,#94a3b8);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg></div>
+                <div class="m-svc-info">
+                  <div class="m-svc-name">Coloración completa</div>
+                  <div class="m-svc-meta">90 min &nbsp;·&nbsp; $850</div>
+                </div>
+                <div class="m-toggle on"></div>
+              </div>
+              <!-- Servicio 3 (inactivo) -->
+              <div class="m-svc-card" style="opacity:0.6;">
+                <div class="m-svc-img" style="background:linear-gradient(135deg,#94a3b8,#cbd5e1);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M20 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></div>
+                <div class="m-svc-info">
+                  <div class="m-svc-name">Tratamiento keratina</div>
+                  <div class="m-svc-meta">120 min &nbsp;·&nbsp; $1,200</div>
+                </div>
+                <div class="m-toggle"></div>
+              </div>
+              <!-- Modal overlay -->
+              <div class="m-modal-bg" style="background:rgba(0,0,0,0.25);">
+                <div class="m-modal">
+                  <div class="m-modal-ttl">Nuevo servicio</div>
+                  <div class="m-row"><span class="m-lbl">Nombre</span><div class="m-input">Ej: Corte dama</div></div>
+                  <div class="m-row"><span class="m-lbl">Duración</span><div class="m-select" style="display:block;">45 minutos</div></div>
+                  <div class="m-row"><span class="m-lbl">Precio</span><div class="m-input">$350</div></div>
+                  <button class="m-btn" style="width:100%;justify-content:center;margin-top:6px;">Guardar servicio</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="callout" style="top:44px;left:6px">1</div>
+          <div class="callout" style="top:44px;right:6px">2</div>
+          <div class="callout" style="top:96px;right:46px">3</div>
+          <div class="callout" style="top:200px;left:50%;transform:translateX(-30px)">4</div>
+        </div>
+        <div class="callout-legend">
+          <div class="legend-item"><span class="n">1</span> Tarjeta de servicio — muestra imagen, nombre, duración y precio.</div>
+          <div class="legend-item"><span class="n">2</span> Botón Nuevo servicio — abre el modal de creación.</div>
+          <div class="legend-item"><span class="n">3</span> Toggle activo/inactivo — un servicio inactivo no aparece en el booking público.</div>
+          <div class="legend-item"><span class="n">4</span> Modal de creación — campos nombre, duración (select), precio y botón Guardar.</div>
+        </div>
+      </div>
 
       <h3 style="font-size:16px; font-weight:700; margin-bottom:14px;">Crear un nuevo servicio</h3>
       <div class="steps">
@@ -1077,6 +1676,93 @@
       <div class="section-label">Sección 05</div>
       <h2 class="section-title" id="h-empleados">Gestión de empleados</h2>
       <p style="font-size:14px; color:var(--gray); margin-bottom:16px;">Ve a <strong>Empleados</strong> en el menú lateral. Desde aquí invitas y configuras a cada miembro de tu equipo.</p>
+
+      <!-- MOCKUP 06 — Empleados con modal de horarios -->
+      <div class="mockup-wrapper">
+        <div class="app-screen">
+          <div style="font-family:Inter,system-ui,sans-serif;background:#f8fafc;padding:0;height:370px;display:flex;flex-direction:column;position:relative;">
+            <div class="m-list-header">
+              <span class="m-list-title">Empleados</span>
+              <button class="m-btn">＋ Nuevo empleado</button>
+            </div>
+            <div style="padding:12px 14px;">
+              <!-- Empleado 1 -->
+              <div class="m-emp-card">
+                <div class="m-emp-av">SC</div>
+                <div style="flex:1;">
+                  <div class="m-emp-name">Sofia Castro</div>
+                  <div class="m-badge">Estilista</div>
+                </div>
+                <button class="m-btn" style="font-size:10px;padding:4px 10px;background:#f1f5f9;color:#334155;">Horarios</button>
+                <div class="m-toggle on" style="margin-left:8px;"></div>
+              </div>
+              <!-- Empleado 2 -->
+              <div class="m-emp-card">
+                <div class="m-emp-av" style="background:#475569;">MR</div>
+                <div style="flex:1;">
+                  <div class="m-emp-name">Marco Reyes</div>
+                  <div class="m-badge">Colorista</div>
+                </div>
+                <button class="m-btn" style="font-size:10px;padding:4px 10px;background:#f1f5f9;color:#334155;">Horarios</button>
+                <div class="m-toggle on" style="margin-left:8px;"></div>
+              </div>
+            </div>
+            <!-- Modal horarios -->
+            <div class="m-modal-bg">
+              <div class="m-modal">
+                <div class="m-modal-ttl">Horarios — Sofia Castro</div>
+                <div class="m-sch-hint" style="padding-left:0;margin-bottom:8px;font-size:9px;color:#94a3b8;">Negocio: 9:00 a.m.–7:00 p.m.</div>
+                <!-- Lunes -->
+                <div class="m-sch-row">
+                  <div class="m-sch-day">Lunes</div>
+                  <div class="m-toggle on"></div>
+                </div>
+                <div class="m-sch-interval">
+                  <span style="font-size:10px;color:#475569;">De</span>
+                  <select class="m-sch-sel"><option>9:00 a.m.</option></select>
+                  <span style="font-size:10px;color:#475569;">a</span>
+                  <select class="m-sch-sel"><option>5:00 p.m.</option></select>
+                  <div class="m-sch-x">×</div>
+                </div>
+                <div class="m-add-int">＋ Agregar intervalo</div>
+                <!-- Martes -->
+                <div class="m-sch-row" style="margin-top:8px;">
+                  <div class="m-sch-day">Martes</div>
+                  <div class="m-toggle on"></div>
+                </div>
+                <div class="m-sch-interval">
+                  <span style="font-size:10px;color:#475569;">De</span>
+                  <select class="m-sch-sel"><option>10:00 a.m.</option></select>
+                  <span style="font-size:10px;color:#475569;">a</span>
+                  <select class="m-sch-sel"><option>6:00 p.m.</option></select>
+                  <div class="m-sch-x">×</div>
+                </div>
+                <div class="m-add-int">＋ Agregar intervalo</div>
+                <!-- Domingo -->
+                <div class="m-sch-row" style="margin-top:8px;">
+                  <div class="m-sch-day">Domingo</div>
+                  <div class="m-toggle"></div>
+                </div>
+                <button class="m-btn" style="width:100%;justify-content:center;margin-top:10px;">Guardar horarios</button>
+              </div>
+            </div>
+          </div>
+          <div class="callout" style="top:44px;left:6px">1</div>
+          <div class="callout" style="top:86px;right:82px">2</div>
+          <div class="callout" style="top:185px;left:6px">3</div>
+          <div class="callout" style="top:218px;right:6px">4</div>
+          <div class="callout" style="top:158px;right:6px">5</div>
+          <div class="callout" style="top:286px;left:50%;transform:translateX(-12px)">6</div>
+        </div>
+        <div class="callout-legend">
+          <div class="legend-item"><span class="n">1</span> Tarjeta de empleado — foto/inicial, nombre y badge de rol.</div>
+          <div class="legend-item"><span class="n">2</span> Botón Horarios — abre el modal de configuración de horario individual.</div>
+          <div class="legend-item"><span class="n">3</span> Toggle día en el modal — activa o desactiva un día para este empleado.</div>
+          <div class="legend-item"><span class="n">4</span> Selector de hora — desplegable que solo muestra slots dentro del horario del negocio.</div>
+          <div class="legend-item"><span class="n">5</span> Hint "Negocio:" — referencia visual del horario operativo para ese día.</div>
+          <div class="legend-item"><span class="n">6</span> Agregar intervalo — añade un bloque horario adicional para el empleado.</div>
+        </div>
+      </div>
       <div class="warn-box" style="background:#fefce8; border:1px solid #fde047; border-radius:8px; padding:12px 16px; margin-bottom:24px; font-size:13px; color:#713f12;">
         <strong>Límite según tu plan:</strong> Plan Básico permite hasta <strong>2 empleados</strong> activos; Plan Pro hasta <strong>4 empleados</strong>. Si intentas agregar más, el sistema te avisará y deberás actualizar tu plan.
       </div>
@@ -1140,6 +1826,83 @@
     <div style="padding-top: 52px;">
       <div class="section-label">Sección 06</div>
       <h2 class="section-title" id="h-citas">Gestión de citas</h2>
+
+      <!-- MOCKUP 08 — Citas: lista y vista semana -->
+      <div class="mockup-wrapper">
+        <div class="app-screen">
+          <div style="font-family:Inter,system-ui,sans-serif;background:#f8fafc;height:370px;display:flex;flex-direction:column;">
+            <!-- Header -->
+            <div class="m-cal-hd">
+              <span style="font-size:13px;font-weight:800;color:#0f172a;">Citas</span>
+              <div class="m-cal-toggle">
+                <div class="m-cal-tab">Lista</div>
+                <div class="m-cal-tab active">Semana</div>
+              </div>
+              <button class="m-btn" style="font-size:10px;padding:5px 12px;">＋ Nueva cita</button>
+            </div>
+            <!-- Calendar week grid -->
+            <div class="m-cal-body">
+              <div class="m-cal-times">
+                <div class="m-cal-time">7 AM</div>
+                <div class="m-cal-time">8 AM</div>
+                <div class="m-cal-time">9 AM</div>
+                <div class="m-cal-time">10 AM</div>
+                <div class="m-cal-time">11 AM</div>
+                <div class="m-cal-time">12 PM</div>
+                <div class="m-cal-time">1 PM</div>
+                <div class="m-cal-time">2 PM</div>
+                <div class="m-cal-time">3 PM</div>
+                <div class="m-cal-time">4 PM</div>
+              </div>
+              <div class="m-cal-days">
+                <!-- Day headers -->
+                <div class="m-cal-dhd"><div class="m-cal-dname">LUN</div><div class="m-cal-dnum">25</div></div>
+                <div class="m-cal-dhd"><div class="m-cal-dname">MAR</div><div class="m-cal-dnum today">26</div></div>
+                <div class="m-cal-dhd"><div class="m-cal-dname">MIÉ</div><div class="m-cal-dnum">27</div></div>
+                <div class="m-cal-dhd"><div class="m-cal-dname">JUE</div><div class="m-cal-dnum">28</div></div>
+                <div class="m-cal-dhd"><div class="m-cal-dname">VIE</div><div class="m-cal-dnum">29</div></div>
+                <div class="m-cal-dhd"><div class="m-cal-dname">SÁB</div><div class="m-cal-dnum">30</div></div>
+                <div class="m-cal-dhd"><div class="m-cal-dname">DOM</div><div class="m-cal-dnum">31</div></div>
+                <!-- Col 1 - Lunes -->
+                <div class="m-cal-col">
+                  <div class="m-cal-slot"></div><div class="m-cal-slot"></div>
+                  <div class="m-cal-event" style="top:62px;height:55px;">Ana G.<br>Corte</div>
+                  <div class="m-cal-slot"></div><div class="m-cal-slot"></div><div class="m-cal-slot"></div><div class="m-cal-slot"></div><div class="m-cal-slot"></div><div class="m-cal-slot"></div><div class="m-cal-slot"></div><div class="m-cal-slot"></div>
+                </div>
+                <!-- Col 2 - Martes (today) -->
+                <div class="m-cal-col">
+                  <div class="m-cal-slot"></div>
+                  <div class="m-cal-event" style="top:32px;height:58px;background:#1e40af;">Luis M.<br>Coloración</div>
+                  <div class="m-cal-slot"></div><div class="m-cal-slot"></div><div class="m-cal-slot"></div>
+                  <div class="m-cal-event" style="top:152px;height:30px;">Carla P.<br>Corte</div>
+                  <div class="m-cal-slot"></div><div class="m-cal-slot"></div><div class="m-cal-slot"></div><div class="m-cal-slot"></div>
+                </div>
+                <!-- Col 3 -->
+                <div class="m-cal-col">
+                  <div class="m-cal-slot"></div><div class="m-cal-slot"></div><div class="m-cal-slot"></div>
+                  <div class="m-cal-event" style="top:92px;height:30px;">Rosa V.</div>
+                  <div class="m-cal-slot"></div><div class="m-cal-slot"></div><div class="m-cal-slot"></div><div class="m-cal-slot"></div><div class="m-cal-slot"></div><div class="m-cal-slot"></div>
+                </div>
+                <!-- Col 4-7 empty -->
+                <div class="m-cal-col"><div class="m-cal-slot"></div><div class="m-cal-slot"></div><div class="m-cal-slot"></div><div class="m-cal-slot"></div><div class="m-cal-slot"></div><div class="m-cal-slot"></div><div class="m-cal-slot"></div><div class="m-cal-slot"></div><div class="m-cal-slot"></div><div class="m-cal-slot"></div></div>
+                <div class="m-cal-col"><div class="m-cal-slot"></div><div class="m-cal-slot"></div>
+                  <div class="m-cal-event" style="top:62px;height:55px;">Mía B.<br>Keratina</div>
+                  <div class="m-cal-slot"></div><div class="m-cal-slot"></div><div class="m-cal-slot"></div><div class="m-cal-slot"></div><div class="m-cal-slot"></div><div class="m-cal-slot"></div></div>
+                <div class="m-cal-col"><div class="m-cal-slot"></div><div class="m-cal-slot"></div><div class="m-cal-slot"></div><div class="m-cal-slot"></div><div class="m-cal-slot"></div><div class="m-cal-slot"></div><div class="m-cal-slot"></div><div class="m-cal-slot"></div><div class="m-cal-slot"></div><div class="m-cal-slot"></div></div>
+                <div class="m-cal-col" style="opacity:0.3;"><div class="m-cal-slot"></div><div class="m-cal-slot"></div><div class="m-cal-slot"></div><div class="m-cal-slot"></div><div class="m-cal-slot"></div><div class="m-cal-slot"></div><div class="m-cal-slot"></div><div class="m-cal-slot"></div><div class="m-cal-slot"></div><div class="m-cal-slot"></div></div>
+              </div>
+            </div>
+          </div>
+          <div class="callout" style="top:8px;left:50%;transform:translateX(-40px)">1</div>
+          <div class="callout" style="top:88px;left:88px">2</div>
+          <div class="callout" style="top:8px;right:6px">3</div>
+        </div>
+        <div class="callout-legend">
+          <div class="legend-item"><span class="n">1</span> Toggle Vista Lista / Vista Semana — cambia entre los dos modos de visualización.</div>
+          <div class="legend-item"><span class="n">2</span> Bloque de cita en la vista semana — muestra nombre del cliente y servicio. El color distingue empleados.</div>
+          <div class="legend-item"><span class="n">3</span> Botón Nueva cita — crea una cita manual desde el panel.</div>
+        </div>
+      </div>
 
       <div class="card">
         <div class="card-title">Ver las citas del día — Dashboard</div>
@@ -1253,6 +2016,61 @@
       <h2 class="section-title" id="h-calendar">Calendar / Vista semana</h2>
       <p style="font-size:14px; color:var(--gray); margin-bottom:24px;">Desde <strong>Citas</strong> en el menú lateral, cambia a la pestaña <strong>Semana</strong> para ver todas tus citas distribuidas en un calendario visual de lunes a domingo.</p>
 
+      <!-- MOCKUP 08b — Vista Lista de citas -->
+      <div class="mockup-wrapper">
+        <div class="app-screen">
+          <div style="font-family:Inter,system-ui,sans-serif;background:#f8fafc;height:320px;display:flex;flex-direction:column;">
+            <div class="m-cal-hd">
+              <span style="font-size:13px;font-weight:800;color:#0f172a;">Citas — 25 ago 2026</span>
+              <div class="m-cal-toggle">
+                <div class="m-cal-tab active">Lista</div>
+                <div class="m-cal-tab">Semana</div>
+              </div>
+              <button class="m-btn" style="font-size:10px;padding:5px 12px;">＋ Nueva cita</button>
+            </div>
+            <div style="padding:10px 14px;flex:1;overflow:hidden;background:#fff;">
+              <!-- Cita 1 -->
+              <div style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:12px;border:1px solid #f1f5f9;margin-bottom:7px;background:#fff;">
+                <div style="text-align:center;min-width:40px;"><div style="font-size:16px;font-weight:900;color:#0f172a;">9:00</div><div style="font-size:9px;color:#94a3b8;">a.m.</div></div>
+                <div style="flex:1;">
+                  <div style="font-size:12px;font-weight:700;color:#0f172a;">Ana García</div>
+                  <div style="font-size:10px;color:#94a3b8;">Corte caballero &nbsp;·&nbsp; Sofia Castro</div>
+                </div>
+                <span style="font-size:10px;font-weight:700;background:#dbeafe;color:#1d4ed8;border-radius:99px;padding:2px 8px;">Confirmada</span>
+              </div>
+              <!-- Cita 2 -->
+              <div style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:12px;border:1px solid #f1f5f9;margin-bottom:7px;background:#fff;">
+                <div style="text-align:center;min-width:40px;"><div style="font-size:16px;font-weight:900;color:#0f172a;">10:30</div><div style="font-size:9px;color:#94a3b8;">a.m.</div></div>
+                <div style="flex:1;">
+                  <div style="font-size:12px;font-weight:700;color:#0f172a;">Luis Morales</div>
+                  <div style="font-size:10px;color:#94a3b8;">Coloración completa &nbsp;·&nbsp; Marco Reyes</div>
+                </div>
+                <span style="font-size:10px;font-weight:700;background:#fef3c7;color:#78350f;border-radius:99px;padding:2px 8px;">Pendiente</span>
+              </div>
+              <!-- Cita 3 -->
+              <div style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:12px;border:1px solid #f1f5f9;margin-bottom:7px;background:#fff;">
+                <div style="text-align:center;min-width:40px;"><div style="font-size:16px;font-weight:900;color:#0f172a;">12:00</div><div style="font-size:9px;color:#94a3b8;">p.m.</div></div>
+                <div style="flex:1;">
+                  <div style="font-size:12px;font-weight:700;color:#0f172a;">Carla Pérez</div>
+                  <div style="font-size:10px;color:#94a3b8;">Corte dama &nbsp;·&nbsp; Sofia Castro</div>
+                </div>
+                <span style="font-size:10px;font-weight:700;background:#dcfce7;color:#15803d;border-radius:99px;padding:2px 8px;">Completada</span>
+              </div>
+            </div>
+          </div>
+          <div class="callout" style="top:8px;left:160px">1</div>
+          <div class="callout" style="top:82px;left:6px">2</div>
+          <div class="callout" style="top:82px;right:6px">3</div>
+          <div class="callout" style="top:8px;right:6px">4</div>
+        </div>
+        <div class="callout-legend">
+          <div class="legend-item"><span class="n">1</span> Toggle Lista / Semana — activa la vista de calendario semanal o la lista cronológica.</div>
+          <div class="legend-item"><span class="n">2</span> Tarjeta de cita en vista lista — hora, cliente, servicio y empleado de un vistazo.</div>
+          <div class="legend-item"><span class="n">3</span> Chip de estado (Confirmada / Pendiente / Completada) — haz clic para cambiar el estado.</div>
+          <div class="legend-item"><span class="n">4</span> Nueva cita — crea una cita manual directamente desde esta pantalla.</div>
+        </div>
+      </div>
+
       <div class="card">
         <div class="card-title">Cambiar entre Lista y Semana</div>
         <p>En la parte superior de la sección Citas encontrarás dos pestañas: <strong>Lista</strong> y <strong>Semana</strong>. Haz clic en <em>Semana</em> para activar el calendario. Puedes regresar a <em>Lista</em> en cualquier momento sin perder los filtros de fecha.</p>
@@ -1310,6 +2128,64 @@
       <div class="section-label">Sección 08</div>
       <h2 class="section-title" id="h-clientes">Gestión de clientes</h2>
       <p style="font-size:14px; color:var(--gray); margin-bottom:24px;">Ve a <strong>Clientes</strong> en el menú lateral. Aquí encuentras el directorio completo de quienes han reservado en tu negocio.</p>
+
+      <!-- MOCKUP 09 — Clientes -->
+      <div class="mockup-wrapper">
+        <div class="app-screen">
+          <div style="font-family:Inter,system-ui,sans-serif;background:#f8fafc;height:320px;display:flex;flex-direction:column;">
+            <div class="m-list-header">
+              <span class="m-list-title">Clientes</span>
+              <span style="font-size:11px;color:#94a3b8;">247 registros</span>
+            </div>
+            <div style="padding:10px 14px;background:#fff;border-bottom:1px solid #f1f5f9;">
+              <div class="m-search" style="pointer-events:none;">Buscar por nombre o teléfono…</div>
+            </div>
+            <!-- Table -->
+            <div style="flex:1;overflow:hidden;background:#fff;">
+              <div class="m-client-row">
+                <div class="m-client-av" style="background:#334155;">AG</div>
+                <div style="flex:1;">
+                  <div class="m-client-name">Ana García</div>
+                  <div class="m-client-email">ana@gmail.com &nbsp;·&nbsp; +52 55 1111 2222</div>
+                </div>
+                <div class="m-client-stat">12 citas</div>
+              </div>
+              <div class="m-client-row">
+                <div class="m-client-av" style="background:#475569;">LM</div>
+                <div style="flex:1;">
+                  <div class="m-client-name">Luis Morales</div>
+                  <div class="m-client-email">lmorales@email.com &nbsp;·&nbsp; +52 55 3333 4444</div>
+                </div>
+                <div class="m-client-stat">8 citas</div>
+              </div>
+              <div class="m-client-row">
+                <div class="m-client-av" style="background:#64748b;">CP</div>
+                <div style="flex:1;">
+                  <div class="m-client-name">Carla Pérez</div>
+                  <div class="m-client-email">cperez@hotmail.com &nbsp;·&nbsp; +52 55 5555 6666</div>
+                </div>
+                <div class="m-client-stat">5 citas</div>
+              </div>
+              <div class="m-client-row">
+                <div class="m-client-av" style="background:#94a3b8;">RV</div>
+                <div style="flex:1;">
+                  <div class="m-client-name">Rosa Vega</div>
+                  <div class="m-client-email">rosavega@email.com &nbsp;·&nbsp; +52 55 7777 8888</div>
+                </div>
+                <div class="m-client-stat">3 citas</div>
+              </div>
+            </div>
+          </div>
+          <div class="callout" style="top:52px;left:6px">1</div>
+          <div class="callout" style="top:130px;left:6px">2</div>
+          <div class="callout" style="top:130px;right:6px">3</div>
+        </div>
+        <div class="callout-legend">
+          <div class="legend-item"><span class="n">1</span> Buscador — filtra por nombre, email o teléfono en tiempo real.</div>
+          <div class="legend-item"><span class="n">2</span> Fila de cliente — avatar con iniciales, nombre, email y teléfono. Haz clic para ver el historial completo.</div>
+          <div class="legend-item"><span class="n">3</span> Total de citas — cuántas citas ha tenido este cliente en tu negocio.</div>
+        </div>
+      </div>
 
       <div class="feat-list">
         <div class="feat-item">
@@ -1466,6 +2342,62 @@
       <h2 class="section-title" id="h-reportes">Reportes</h2>
       <p style="font-size:14px; color:var(--gray); margin-bottom:24px;">Ve a <strong>Reportes</strong> en el menú lateral. Aquí ves en números cómo va tu negocio, por período.</p>
 
+      <!-- MOCKUP 10 — Reportes -->
+      <div class="mockup-wrapper">
+        <div class="app-screen">
+          <div style="font-family:Inter,system-ui,sans-serif;background:#f8fafc;padding:0;height:370px;display:flex;flex-direction:column;">
+            <div class="m-list-header">
+              <span class="m-list-title">Reportes</span>
+            </div>
+            <div style="padding:12px 16px;flex:1;overflow:hidden;">
+              <!-- Period selector -->
+              <div class="m-period-sel">
+                <div class="m-period-btn">Hoy</div>
+                <div class="m-period-btn">Semana</div>
+                <div class="m-period-btn active">Mes</div>
+                <div class="m-period-btn">Rango</div>
+              </div>
+              <!-- Stat cards row -->
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">
+                <div style="background:#0f172a;border-radius:14px;padding:10px 12px;">
+                  <div class="m-stat-label" style="color:#475569;">Ingresos</div>
+                  <div class="m-stat-val" style="color:#fff;font-size:18px;">$18,450</div>
+                  <div style="font-size:9px;color:#22d3ee;margin-top:3px;">+12% vs mes anterior</div>
+                </div>
+                <div style="background:#fff;border:1px solid #f1f5f9;border-radius:14px;padding:10px 12px;">
+                  <div class="m-stat-label">Citas</div>
+                  <div class="m-stat-val">47</div>
+                  <div style="font-size:9px;color:#94a3b8;margin-top:3px;">completadas</div>
+                </div>
+                <div style="background:#fff;border:1px solid #f1f5f9;border-radius:14px;padding:10px 12px;">
+                  <div class="m-stat-label">Más popular</div>
+                  <div style="font-size:13px;font-weight:800;color:#0f172a;line-height:1.2;margin-top:2px;">Coloración</div>
+                  <div style="font-size:9px;color:#94a3b8;margin-top:3px;">18 veces</div>
+                </div>
+              </div>
+              <!-- Bar chart -->
+              <div style="background:#fff;border:1px solid #f1f5f9;border-radius:12px;padding:10px 12px;">
+                <div style="font-size:10px;font-weight:700;color:#0f172a;margin-bottom:8px;">Ingresos por semana</div>
+                <div class="m-bar-chart">
+                  <div style="display:flex;flex-direction:column;align-items:center;flex:1;"><div class="m-bar" style="height:40px;"></div><div class="m-chart-lbl">S1</div></div>
+                  <div style="display:flex;flex-direction:column;align-items:center;flex:1;"><div class="m-bar" style="height:55px;"></div><div class="m-chart-lbl">S2</div></div>
+                  <div style="display:flex;flex-direction:column;align-items:center;flex:1;"><div class="m-bar" style="height:35px;"></div><div class="m-chart-lbl">S3</div></div>
+                  <div style="display:flex;flex-direction:column;align-items:center;flex:1;"><div class="m-bar dim" style="height:20px;"></div><div class="m-chart-lbl">S4</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="callout" style="top:44px;left:6px">1</div>
+          <div class="callout" style="top:90px;left:6px">2</div>
+          <div class="callout" style="top:272px;left:6px">3</div>
+        </div>
+        <div class="callout-legend">
+          <div class="legend-item"><span class="n">1</span> Filtro de período — Hoy, Semana, Mes o Rango personalizado de fechas.</div>
+          <div class="legend-item"><span class="n">2</span> Cards de resumen — ingresos totales (card oscura), citas completadas y servicio más solicitado.</div>
+          <div class="legend-item"><span class="n">3</span> Gráfica de barras — evolución de ingresos semana a semana dentro del período seleccionado.</div>
+        </div>
+      </div>
+
       <div class="grid-2">
         <div class="mini-card">
           <div class="mini-card-icon bg-gold">
@@ -1530,6 +2462,60 @@
       <div class="section-label">Sección 12</div>
       <h2 class="section-title" id="h-descuentos">Descuentos</h2>
       <p style="font-size:14px; color:var(--gray); margin-bottom:24px;">Ve a <strong>Descuentos</strong> en el menú lateral. Desde aquí creas y administras códigos de descuento que tus clientes pueden ingresar al momento de reservar.</p>
+
+      <!-- MOCKUP 11 — Descuentos -->
+      <div class="mockup-wrapper">
+        <div class="app-screen">
+          <div style="font-family:Inter,system-ui,sans-serif;background:#f8fafc;padding:0;height:330px;display:flex;flex-direction:column;position:relative;">
+            <div class="m-list-header">
+              <span class="m-list-title">Códigos de descuento</span>
+              <button class="m-btn">＋ Nuevo código</button>
+            </div>
+            <div style="padding:12px 14px;">
+              <div class="m-disc-card">
+                <div style="flex:1;">
+                  <div class="m-disc-code">VERANO25</div>
+                  <div class="m-disc-type">25% de descuento &nbsp;·&nbsp; 8 usos / 20 máx &nbsp;·&nbsp; vence 31 ago</div>
+                </div>
+                <div class="m-toggle on"></div>
+              </div>
+              <div class="m-disc-card">
+                <div style="flex:1;">
+                  <div class="m-disc-code">BIENVENIDA</div>
+                  <div class="m-disc-type">$100 de descuento &nbsp;·&nbsp; 3 usos / sin límite &nbsp;·&nbsp; sin vencimiento</div>
+                </div>
+                <div class="m-toggle on"></div>
+              </div>
+              <div class="m-disc-card" style="opacity:0.55;">
+                <div style="flex:1;">
+                  <div class="m-disc-code">PROMO2025</div>
+                  <div class="m-disc-type">15% de descuento &nbsp;·&nbsp; 10 usos / 10 máx &nbsp;·&nbsp; vencido</div>
+                </div>
+                <div class="m-toggle"></div>
+              </div>
+            </div>
+            <!-- Modal -->
+            <div class="m-modal-bg" style="background:rgba(0,0,0,0.2);">
+              <div class="m-modal">
+                <div class="m-modal-ttl">Nuevo código</div>
+                <div class="m-row"><span class="m-lbl">Código</span><div class="m-input" style="font-family:'Courier New',monospace;font-weight:800;">DESCUENTO50</div></div>
+                <div class="m-row"><span class="m-lbl">Tipo</span><div class="m-select" style="display:block;">Porcentaje (%)</div></div>
+                <div class="m-row"><span class="m-lbl">Valor</span><div class="m-input">50</div></div>
+                <div class="m-row"><span class="m-lbl">Fecha expiración</span><div class="m-input">2026-12-31</div></div>
+                <button class="m-btn" style="width:100%;justify-content:center;margin-top:6px;">Guardar código</button>
+              </div>
+            </div>
+          </div>
+          <div class="callout" style="top:44px;left:6px">1</div>
+          <div class="callout" style="top:82px;right:46px">2</div>
+          <div class="callout" style="top:44px;right:6px">3</div>
+        </div>
+        <div class="callout-legend">
+          <div class="legend-item"><span class="n">1</span> Código (monoespaciado en negrita) — lo que el cliente escribe al reservar.</div>
+          <div class="legend-item"><span class="n">2</span> Toggle activo/inactivo — pausa el código sin eliminarlo.</div>
+          <div class="legend-item"><span class="n">3</span> Botón Nuevo código — abre el modal de creación con campos código, tipo, valor y expiración.</div>
+        </div>
+      </div>
 
       <h3 style="font-size:16px; font-weight:700; margin-bottom:14px;">Crear un código de descuento</h3>
       <div class="steps">
@@ -1606,6 +2592,66 @@
       <div class="section-label">Sección 13</div>
       <h2 class="section-title" id="h-cuestionario">Cuestionario de ingreso</h2>
       <p style="font-size:14px; color:var(--gray); margin-bottom:24px;">Ve a <strong>Cuestionario</strong> en el menú lateral. Desde aquí creas preguntas personalizadas que tus clientes responden al momento de reservar, antes de confirmar su cita.</p>
+
+      <!-- MOCKUP 12 — Cuestionario de ingreso -->
+      <div class="mockup-wrapper">
+        <div class="app-screen">
+          <div style="font-family:Inter,system-ui,sans-serif;background:#f8fafc;padding:0;height:330px;display:flex;flex-direction:column;">
+            <div class="m-list-header">
+              <span class="m-list-title">Preguntas de ingreso</span>
+              <button class="m-btn">＋ Agregar pregunta</button>
+            </div>
+            <div style="padding:12px 14px;flex:1;overflow:hidden;">
+              <!-- Pregunta 1 -->
+              <div class="m-q-row">
+                <div class="m-q-drag">⋮⋮</div>
+                <div style="flex:1;">
+                  <div class="m-q-text">¿Tienes alguna alergia a productos capilares?</div>
+                </div>
+                <div class="m-q-type">Texto libre</div>
+                <div class="m-q-req">Obligatorio</div>
+              </div>
+              <!-- Pregunta 2 -->
+              <div class="m-q-row">
+                <div class="m-q-drag">⋮⋮</div>
+                <div style="flex:1;">
+                  <div class="m-q-text">¿Cuál es tu tipo de cabello?</div>
+                </div>
+                <div class="m-q-type">Lista desplegable</div>
+                <div class="m-q-req" style="background:#f1f5f9;color:#94a3b8;">Opcional</div>
+              </div>
+              <!-- Pregunta 3 -->
+              <div class="m-q-row">
+                <div class="m-q-drag">⋮⋮</div>
+                <div style="flex:1;">
+                  <div class="m-q-text">¿Tienes alguna condición en el cuero cabelludo?</div>
+                </div>
+                <div class="m-q-type">Sí / No</div>
+                <div class="m-q-req">Obligatorio</div>
+              </div>
+              <!-- Pregunta 4 -->
+              <div class="m-q-row">
+                <div class="m-q-drag">⋮⋮</div>
+                <div style="flex:1;">
+                  <div class="m-q-text">¿Cuáles tratamientos te has aplicado antes?</div>
+                </div>
+                <div class="m-q-type">Casillas múltiples</div>
+                <div class="m-q-req" style="background:#f1f5f9;color:#94a3b8;">Opcional</div>
+              </div>
+            </div>
+          </div>
+          <div class="callout" style="top:82px;left:6px">1</div>
+          <div class="callout" style="top:82px;right:108px">2</div>
+          <div class="callout" style="top:82px;right:6px">3</div>
+          <div class="callout" style="top:44px;right:6px">4</div>
+        </div>
+        <div class="callout-legend">
+          <div class="legend-item"><span class="n">1</span> Drag handle (⋮⋮) — arrastra para reordenar las preguntas.</div>
+          <div class="legend-item"><span class="n">2</span> Tipo de respuesta — Texto libre, Lista desplegable, Sí/No o Casillas múltiples.</div>
+          <div class="legend-item"><span class="n">3</span> Toggle obligatorio — si está activo, el cliente no puede continuar sin responder.</div>
+          <div class="legend-item"><span class="n">4</span> Agregar pregunta — abre el formulario de nueva pregunta con selector de tipo.</div>
+        </div>
+      </div>
 
       <div class="card">
         <div class="card-title">¿Para qué sirve el cuestionario?</div>
