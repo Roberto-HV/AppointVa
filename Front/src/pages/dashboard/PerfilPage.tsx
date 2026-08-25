@@ -61,6 +61,7 @@ const schema = z.object({
   zonaHoraria: z.string().optional(),
   horasRecordatorio: z.coerce.number().optional(),
   horasCancelacion: z.coerce.number().optional(),
+  diasAnticipacionMinima: z.coerce.number().optional(),
   autoConfirmar: z.boolean().optional(),
   listaEsperaActiva: z.boolean().optional(),
   metodoNotificacion: z.enum(["Correo", "WhatsApp", "Ambos"]).optional(),
@@ -115,6 +116,7 @@ export default function PerfilPage() {
         descripcion: negocio.descripcion ?? "", zonaHoraria: negocio.zonaHoraria ?? "",
         horasRecordatorio: negocio.horasRecordatorio ?? 24,
         horasCancelacion: negocio.horasCancelacion ?? 0,
+        diasAnticipacionMinima: negocio.diasAnticipacionMinima ?? 0,
         autoConfirmar: negocio.autoConfirmar ?? true,
         listaEsperaActiva: negocio.listaEsperaActiva ?? false,
         metodoNotificacion: (negocio.metodoNotificacion as "Correo" | "WhatsApp" | "Ambos") ?? "Correo",
@@ -718,6 +720,19 @@ export default function PerfilPage() {
                     ))}
                   </Select>
                   <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Anticipación mínima para que el cliente cancele.</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Anticipación mínima para agendar</label>
+                  <select
+                    {...register("diasAnticipacionMinima")}
+                    className="w-full border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100"
+                  >
+                    <option value={0}>Mismo día</option>
+                    <option value={1}>1 día antes</option>
+                    <option value={2}>2 días antes</option>
+                    <option value={3}>3 días antes</option>
+                  </select>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Días mínimos de anticipación para que el cliente pueda reservar.</p>
                 </div>
                 {negocio?.planNombre && (
                   <div>

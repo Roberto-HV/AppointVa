@@ -1003,6 +1003,7 @@ export default function BookingPage() {
               onSeleccionar={setSlot}
               onLimpiarSlot={() => setSlot(null)}
               color={color}
+              diasAnticipacionMinima={negocio.diasAnticipacionMinima}
             />
             {slot && (negocio.horasCancelacion ?? 0) > 0 && (
               <div className="mt-4 flex items-center gap-2 text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5">

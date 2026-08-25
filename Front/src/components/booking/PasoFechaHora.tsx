@@ -11,6 +11,7 @@ interface Props {
   onSeleccionar: (slot: SlotDisponible) => void;
   onLimpiarSlot?: () => void;
   color?: string;
+  diasAnticipacionMinima?: number;
 }
 
 const DIAS_CORTOS = ["Do", "Lu", "Ma", "Mi", "Ju", "Vi", "Sá"];
@@ -43,9 +44,15 @@ function textoMesSemana(dias: Date[]): string {
   return `${MESES[mes0]} ${anio}`;
 }
 
-export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, onSeleccionar, onLimpiarSlot, color = "#334155" }: Props) {
+export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, onSeleccionar, onLimpiarSlot, color = "#334155", diasAnticipacionMinima = 0 }: Props) {
   const [semanaRef, setSemanaRef] = useState(() => lunesDeSemanaDe(new Date()));
   const [fechaSel, setFechaSel] = useState<string | null>(null);
+
+  const fechaMinima = (() => {
+    const f = hoy();
+    f.setDate(f.getDate() + diasAnticipacionMinima);
+    return f;
+  })();
 
   const diasSemana = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(semanaRef);
@@ -53,8 +60,8 @@ export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, on
     return d;
   });
 
-  const semanaHoy = lunesDeSemanaDe(new Date());
-  const puedeIrAtras = semanaRef > semanaHoy;
+  const semanaFechaMinima = lunesDeSemanaDe(fechaMinima);
+  const puedeIrAtras = semanaRef > semanaFechaMinima;
 
   const semanaAnterior = () => {
     if (!puedeIrAtras) return;
@@ -72,7 +79,7 @@ export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, on
   };
 
   const seleccionarFecha = (dia: Date) => {
-    if (dia < hoy()) return;
+    if (dia < fechaMinima) return;
     setFechaSel(fechaISO(dia));
     onLimpiarSlot?.();
   };
@@ -126,7 +133,7 @@ export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, on
       <div className="grid grid-cols-7 gap-1 mb-5">
         {diasSemana.map((dia) => {
           const iso = fechaISO(dia);
-          const pasado = dia < hoy();
+          const pasado = dia < fechaMinima;
           const esHoy = iso === fechaISO(new Date());
           const seleccionada = iso === fechaSel;
 
