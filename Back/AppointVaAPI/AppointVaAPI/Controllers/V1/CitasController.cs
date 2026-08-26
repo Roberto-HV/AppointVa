@@ -258,7 +258,9 @@ namespace AppointVaAPI.Controllers.V1
                         horaRecordatorio);
             }
 
-            var inicio15Utc = AppointVaAPI.Helpers.ZonaHorariaHelper.ToDateTimeOffset(cita.InicioEn, tz);
+            var tz15 = AppointVaAPI.Helpers.ZonaHorariaHelper.Resolver(
+                await _db.Negocios.Where(n => n.Id == negocioId).Select(n => n.ZonaHoraria).FirstOrDefaultAsync());
+            var inicio15Utc = AppointVaAPI.Helpers.ZonaHorariaHelper.ToDateTimeOffset(cita.InicioEn, tz15);
             if (inicio15Utc.AddMinutes(-15) > DateTimeOffset.UtcNow)
                 _jobClient.Schedule<IPushService>(
                     s => s.EnviarRecordatorio15MinAsync(cita.Id),
