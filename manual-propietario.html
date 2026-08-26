@@ -658,7 +658,7 @@
           <rect x="4" y="8" width="3" height="3" rx="0.8" fill="#C8A961" fill-opacity="0.6"/>
           <rect x="9" y="8" width="3" height="3" rx="0.8" fill="#C8A961" fill-opacity="0.3"/>
         </svg>
-        <span class="toc-header-title">Manual del Propietario — 15 secciones</span>
+        <span class="toc-header-title">Manual del Propietario — 22 secciones</span>
         <span class="toc-header-label">Ir a sección</span>
       </div>
 
@@ -810,6 +810,66 @@
           <div class="toc-content">
             <div class="toc-name">Seguridad</div>
             <div class="toc-desc">2FA y cambio de contraseña</div>
+          </div>
+          <div class="toc-arrow" aria-hidden="true">→</div>
+        </a>
+
+        <a class="toc-item" href="#pagos" role="listitem">
+          <div class="toc-rail" aria-hidden="true"></div>
+          <div class="toc-num" aria-hidden="true">16</div>
+          <div class="toc-content">
+            <div class="toc-name">Pagos</div>
+            <div class="toc-desc">Registro y seguimiento de pagos por cita</div>
+          </div>
+          <div class="toc-arrow" aria-hidden="true">→</div>
+        </a>
+
+        <a class="toc-item" href="#resenas" role="listitem">
+          <div class="toc-rail" aria-hidden="true"></div>
+          <div class="toc-num" aria-hidden="true">17</div>
+          <div class="toc-content">
+            <div class="toc-name">Reseñas</div>
+            <div class="toc-desc">Promedio de calificaciones y comentarios de clientes</div>
+          </div>
+          <div class="toc-arrow" aria-hidden="true">→</div>
+        </a>
+
+        <a class="toc-item" href="#espera" role="listitem">
+          <div class="toc-rail" aria-hidden="true"></div>
+          <div class="toc-num" aria-hidden="true">18</div>
+          <div class="toc-content">
+            <div class="toc-name">Lista de espera</div>
+            <div class="toc-desc">Clientes en espera cuando no hay disponibilidad</div>
+          </div>
+          <div class="toc-arrow" aria-hidden="true">→</div>
+        </a>
+
+        <a class="toc-item" href="#kiosk" role="listitem">
+          <div class="toc-rail" aria-hidden="true"></div>
+          <div class="toc-num" aria-hidden="true">19</div>
+          <div class="toc-content">
+            <div class="toc-name">Modo Kiosk</div>
+            <div class="toc-desc">Pantalla táctil para agendar desde tu local</div>
+          </div>
+          <div class="toc-arrow" aria-hidden="true">→</div>
+        </a>
+
+        <a class="toc-item" href="#seguridad-2fa" role="listitem">
+          <div class="toc-rail" aria-hidden="true"></div>
+          <div class="toc-num" aria-hidden="true">20</div>
+          <div class="toc-content">
+            <div class="toc-name">Seguridad / 2FA</div>
+            <div class="toc-desc">Autenticación de dos factores con código QR</div>
+          </div>
+          <div class="toc-arrow" aria-hidden="true">→</div>
+        </a>
+
+        <a class="toc-item" href="#mi-perfil" role="listitem">
+          <div class="toc-rail" aria-hidden="true"></div>
+          <div class="toc-num" aria-hidden="true">21</div>
+          <div class="toc-content">
+            <div class="toc-name">Mi Perfil personal</div>
+            <div class="toc-desc">Datos del propietario, foto y cambio de contraseña</div>
           </div>
           <div class="toc-arrow" aria-hidden="true">→</div>
         </a>
@@ -1484,6 +1544,241 @@
         </div>
       </div>
 
+      <!-- MOCKUP — Tab Anticipos -->
+      <div class="mockup-wrapper">
+        <div class="app-screen">
+          <div style="font-family:Inter,system-ui,sans-serif;background:#f8fafc;padding:0;">
+            <div class="m-list-header">
+              <span class="m-list-title">Anticipos</span>
+            </div>
+            <div style="padding:14px 16px;">
+              <div class="m-tabs">
+                <div class="m-tab">Perfil</div>
+                <div class="m-tab">Citas</div>
+                <div class="m-tab active">Anticipos</div>
+                <div class="m-tab">Horarios</div>
+                <div class="m-tab">Cuenta</div>
+              </div>
+              <div class="m-row" style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f1f5f9;margin-bottom:8px;">
+                <div>
+                  <div style="font-size:12px;font-weight:700;color:#0f172a;">Requerir anticipo</div>
+                  <div style="font-size:10px;color:#94a3b8;">El cliente paga un % al reservar</div>
+                </div>
+                <div class="m-toggle on"></div>
+              </div>
+              <div class="m-row">
+                <span class="m-lbl">Porcentaje del anticipo</span>
+                <div class="m-select" style="display:block;">30%</div>
+              </div>
+              <div class="m-row">
+                <span class="m-lbl">Horas mínimas para reembolso</span>
+                <div class="m-select" style="display:block;">24 horas</div>
+              </div>
+              <div class="m-row">
+                <span class="m-lbl">Política de cancelación con anticipo</span>
+                <div class="m-select" style="display:block;">Sin reembolso</div>
+              </div>
+              <div class="m-row">
+                <span class="m-lbl">Instrucciones de pago</span>
+                <div class="m-input" style="height:40px;color:#94a3b8;">CLABE: 012180012345678901 — también por OXXO Pay…</div>
+              </div>
+              <button class="m-btn" style="margin-top:8px;">Guardar cambios</button>
+            </div>
+          </div>
+          <div class="callout" style="top:54px;left:6px">1</div>
+          <div class="callout" style="top:108px;left:6px">2</div>
+          <div class="callout" style="top:178px;left:6px">3</div>
+          <div class="callout" style="top:222px;left:6px">4</div>
+        </div>
+        <div class="callout-legend">
+          <div class="legend-item"><span class="n">1</span> Toggle "Requerir anticipo" — actívalo para cobrar un porcentaje al momento de reservar.</div>
+          <div class="legend-item"><span class="n">2</span> Porcentaje del anticipo — qué fracción del precio total se cobra por adelantado.</div>
+          <div class="legend-item"><span class="n">3</span> Política de cancelación — sin reembolso, reembolso parcial o reembolso total.</div>
+          <div class="legend-item"><span class="n">4</span> Instrucciones de pago — texto que ve el cliente al reservar para saber cómo transferir el anticipo.</div>
+        </div>
+      </div>
+
+      <!-- MOCKUP — Tab Horarios -->
+      <div class="mockup-wrapper">
+        <div class="app-screen">
+          <div style="font-family:Inter,system-ui,sans-serif;background:#f8fafc;padding:0;">
+            <div class="m-list-header">
+              <span class="m-list-title">Horarios de atención</span>
+            </div>
+            <div style="padding:14px 16px;">
+              <div class="m-tabs">
+                <div class="m-tab">Perfil</div>
+                <div class="m-tab">Citas</div>
+                <div class="m-tab">Anticipos</div>
+                <div class="m-tab active">Horarios</div>
+                <div class="m-tab">Cuenta</div>
+              </div>
+              <!-- Domingo -->
+              <div class="m-sch-row">
+                <div class="m-sch-day">Domingo</div>
+                <div class="m-toggle"></div>
+                <span style="font-size:10px;color:#94a3b8;margin-left:6px;">Descanso</span>
+              </div>
+              <!-- Lunes -->
+              <div class="m-sch-row" style="margin-top:6px;">
+                <div class="m-sch-day">Lunes</div>
+                <div class="m-toggle on"></div>
+              </div>
+              <div class="m-sch-interval">
+                <span style="font-size:10px;color:#475569;">De</span>
+                <select class="m-sch-sel"><option>9:00 a.m.</option></select>
+                <span style="font-size:10px;color:#475569;">a</span>
+                <select class="m-sch-sel"><option>6:00 p.m.</option></select>
+                <div class="m-sch-x">×</div>
+              </div>
+              <!-- Martes -->
+              <div class="m-sch-row" style="margin-top:6px;">
+                <div class="m-sch-day">Martes</div>
+                <div class="m-toggle on"></div>
+              </div>
+              <div class="m-sch-interval">
+                <span style="font-size:10px;color:#475569;">De</span>
+                <select class="m-sch-sel"><option>9:00 a.m.</option></select>
+                <span style="font-size:10px;color:#475569;">a</span>
+                <select class="m-sch-sel"><option>1:00 p.m.</option></select>
+                <div class="m-sch-x">×</div>
+              </div>
+              <div class="m-sch-interval" style="margin-top:2px;">
+                <span style="font-size:10px;color:#475569;">De</span>
+                <select class="m-sch-sel"><option>3:00 p.m.</option></select>
+                <span style="font-size:10px;color:#475569;">a</span>
+                <select class="m-sch-sel"><option>7:00 p.m.</option></select>
+                <div class="m-sch-x">×</div>
+              </div>
+              <div class="m-add-int" style="margin-top:4px;">＋ Agregar intervalo</div>
+              <!-- Miércoles placeholder -->
+              <div class="m-sch-row" style="margin-top:6px;">
+                <div class="m-sch-day">Miércoles</div>
+                <div class="m-toggle on"></div>
+              </div>
+              <div class="m-sch-interval">
+                <span style="font-size:10px;color:#475569;">De</span>
+                <select class="m-sch-sel"><option>9:00 a.m.</option></select>
+                <span style="font-size:10px;color:#475569;">a</span>
+                <select class="m-sch-sel"><option>6:00 p.m.</option></select>
+                <div class="m-sch-x">×</div>
+              </div>
+              <button class="m-btn" style="margin-top:12px;">Guardar horarios</button>
+            </div>
+          </div>
+          <div class="callout" style="top:54px;left:6px">1</div>
+          <div class="callout" style="top:90px;left:6px">2</div>
+          <div class="callout" style="top:114px;right:6px">3</div>
+          <div class="callout" style="top:174px;left:6px">4</div>
+        </div>
+        <div class="callout-legend">
+          <div class="legend-item"><span class="n">1</span> Toggle por día — apagado bloquea reservas para ese día (ej. Domingo = Descanso).</div>
+          <div class="legend-item"><span class="n">2</span> Intervalo horario — selecciona hora de inicio y hora de fin para el bloque activo.</div>
+          <div class="legend-item"><span class="n">3</span> Botón × — elimina este intervalo horario del día.</div>
+          <div class="legend-item"><span class="n">4</span> Agregar intervalo — permite modelar pausas (ej. comida). Martes tiene dos bloques separados.</div>
+        </div>
+      </div>
+
+      <!-- MOCKUP — Tab Cuenta -->
+      <div class="mockup-wrapper">
+        <div class="app-screen">
+          <div style="font-family:Inter,system-ui,sans-serif;background:#f8fafc;padding:0;">
+            <div class="m-list-header">
+              <span class="m-list-title">Mi cuenta</span>
+            </div>
+            <div style="padding:14px 16px;">
+              <div class="m-tabs">
+                <div class="m-tab">Perfil</div>
+                <div class="m-tab">Citas</div>
+                <div class="m-tab">Anticipos</div>
+                <div class="m-tab">Horarios</div>
+                <div class="m-tab active">Cuenta</div>
+              </div>
+              <!-- Plan card -->
+              <div style="background:#fff;border:1px solid #f1f5f9;border-radius:12px;padding:12px;margin-bottom:10px;display:flex;align-items:center;gap:10px;">
+                <div style="flex:1;">
+                  <div style="font-size:11px;font-weight:800;color:#0f172a;">Tu plan actual</div>
+                  <div style="font-size:13px;font-weight:700;color:#0f172a;margin-top:2px;">Plan Básico</div>
+                  <div style="font-size:10px;color:#94a3b8;margin-top:2px;">Renueva el 1 sep 2026</div>
+                </div>
+                <div style="background:#dcfce7;color:#166534;font-size:10px;font-weight:700;border-radius:99px;padding:3px 10px;">Activo</div>
+              </div>
+              <button class="m-btn" style="width:100%;justify-content:center;margin-bottom:12px;">Actualizar plan</button>
+              <div style="height:1px;background:#f1f5f9;margin-bottom:12px;"></div>
+              <!-- Danger zone -->
+              <div style="background:#fff5f5;border:1px solid #fecaca;border-radius:12px;padding:12px;">
+                <div style="font-size:11px;font-weight:800;color:#991b1b;margin-bottom:4px;">Zona de peligro</div>
+                <div style="font-size:10px;color:#7f1d1d;margin-bottom:10px;">Esta acción es permanente e irreversible. Se eliminarán todos tus datos, citas y empleados.</div>
+                <button style="background:#fff;border:1.5px solid #dc2626;color:#dc2626;border-radius:9px;font-size:11px;font-weight:700;padding:6px 14px;cursor:default;">Eliminar mi cuenta</button>
+              </div>
+            </div>
+          </div>
+          <div class="callout" style="top:76px;left:6px">1</div>
+          <div class="callout" style="top:120px;left:6px">2</div>
+          <div class="callout" style="top:176px;left:6px">3</div>
+          <div class="callout" style="top:230px;left:6px">4</div>
+        </div>
+        <div class="callout-legend">
+          <div class="legend-item"><span class="n">1</span> Plan activo — muestra tu suscripción actual y la fecha de renovación.</div>
+          <div class="legend-item"><span class="n">2</span> Actualizar plan — accede a las opciones de suscripción disponibles.</div>
+          <div class="legend-item"><span class="n">3</span> Zona de peligro — acciones irreversibles sobre tu cuenta.</div>
+          <div class="legend-item"><span class="n">4</span> Eliminar cuenta — elimina permanentemente tu negocio y todos sus datos.</div>
+        </div>
+      </div>
+
+      <!-- MOCKUP — Modal posicionamiento de portada -->
+      <div class="mockup-wrapper">
+        <div class="app-screen" style="min-height:320px;">
+          <div style="font-family:Inter,system-ui,sans-serif;background:#f8fafc;padding:16px;min-height:320px;position:relative;">
+            <!-- Fondo oscurecido simulando la pantalla detrás -->
+            <div style="opacity:0.3;background:linear-gradient(135deg,#1e293b,#475569);border-radius:8px;height:60px;margin-bottom:8px;"></div>
+            <div style="font-size:10px;color:#94a3b8;margin-bottom:12px;">Perfil del negocio — portada</div>
+            <!-- Modal overlay -->
+            <div class="m-modal-bg" style="background:rgba(0,0,0,0.45);">
+              <div class="m-modal" style="width:280px;max-height:none;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                  <div class="m-modal-ttl">Posicionar portada</div>
+                  <div style="width:18px;height:18px;border-radius:50%;background:#f1f5f9;display:flex;align-items:center;justify-content:center;font-size:10px;color:#475569;cursor:default;">×</div>
+                </div>
+                <!-- Preview de imagen -->
+                <div style="width:100%;height:80px;background:linear-gradient(135deg,#334155,#64748b,#94a3b8);border-radius:8px;position:relative;overflow:hidden;margin-bottom:10px;">
+                  <div style="position:absolute;inset:0;background:rgba(0,0,0,0.2);display:flex;align-items:center;justify-content:center;">
+                    <div style="width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,0.2);border:2px solid rgba(255,255,255,0.5);"></div>
+                  </div>
+                </div>
+                <!-- Grid de posición 3x3 -->
+                <div style="font-size:9px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#94a3b8;margin-bottom:6px;">Punto focal</div>
+                <div style="display:flex;justify-content:center;margin-bottom:12px;">
+                  <div class="m-pos-grid" style="width:66px;">
+                    <div class="m-pos-dot"></div>
+                    <div class="m-pos-dot"></div>
+                    <div class="m-pos-dot"></div>
+                    <div class="m-pos-dot"></div>
+                    <div class="m-pos-dot sel"></div>
+                    <div class="m-pos-dot"></div>
+                    <div class="m-pos-dot"></div>
+                    <div class="m-pos-dot"></div>
+                    <div class="m-pos-dot"></div>
+                  </div>
+                </div>
+                <div style="display:flex;gap:6px;">
+                  <button class="m-btn" style="flex:1;justify-content:center;font-size:11px;">Confirmar posición</button>
+                  <button style="flex:0;background:#f1f5f9;border:none;border-radius:9px;font-size:11px;font-weight:600;color:#475569;padding:6px 10px;cursor:default;">Cancelar</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="callout" style="top:138px;left:50%">1</div>
+          <div class="callout" style="top:196px;left:50%">2</div>
+          <div class="callout" style="top:254px;left:50%">3</div>
+        </div>
+        <div class="callout-legend">
+          <div class="legend-item"><span class="n">1</span> Preview de la imagen de portada con overlay oscuro.</div>
+          <div class="legend-item"><span class="n">2</span> Grid 3×3 de punto focal — el cuadro naranja indica la zona que quedará centrada en el banner.</div>
+          <div class="legend-item"><span class="n">3</span> Confirmar posición — guarda el encuadre seleccionado.</div>
+        </div>
+      </div>
+
       <div class="card" style="margin-top:12px;">
         <div class="card-title">Anticipación mínima para agendar</div>
         <p style="margin-bottom:14px; font-size:14px; color:var(--gray);">Configura con cuántos días de anticipación deben reservar tus clientes. Accede desde <strong>Perfil → tab "Citas" → "Anticipación mínima para agendar"</strong>.</p>
@@ -1656,6 +1951,116 @@
         </div>
       </div>
 
+      <!-- MOCKUP — Modal Crear/Editar servicio -->
+      <div class="mockup-wrapper">
+        <div class="app-screen" style="min-height:380px;">
+          <div style="font-family:Inter,system-ui,sans-serif;background:#f8fafc;padding:14px;min-height:380px;position:relative;">
+            <div class="m-modal-bg">
+              <div class="m-modal" style="width:290px;max-height:none;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                  <div class="m-modal-ttl">Nuevo servicio</div>
+                  <div style="width:18px;height:18px;border-radius:50%;background:#f1f5f9;display:flex;align-items:center;justify-content:center;font-size:10px;color:#475569;cursor:default;">×</div>
+                </div>
+                <div class="m-row">
+                  <span class="m-lbl">Nombre del servicio</span>
+                  <div class="m-input">Corte caballero</div>
+                </div>
+                <div class="m-row">
+                  <span class="m-lbl">Categoría</span>
+                  <div class="m-select" style="display:block;">Cortes</div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+                  <div>
+                    <span class="m-lbl">Duración</span>
+                    <div class="m-select" style="display:block;">30 min</div>
+                  </div>
+                  <div>
+                    <span class="m-lbl">Precio</span>
+                    <div class="m-input">$250</div>
+                  </div>
+                </div>
+                <div class="m-row">
+                  <span class="m-lbl">Descripción</span>
+                  <div class="m-input" style="height:36px;color:#94a3b8;">Corte clásico con tijeras…</div>
+                </div>
+                <!-- Upload imagen -->
+                <div class="m-row" style="display:flex;align-items:center;gap:8px;">
+                  <div style="width:42px;height:42px;border-radius:9px;background:#f1f5f9;border:1.5px dashed #cbd5e1;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                  </div>
+                  <div>
+                    <div style="font-size:10px;font-weight:700;color:#0f172a;">Imagen del servicio</div>
+                    <div style="font-size:9px;color:#94a3b8;">JPG o PNG recomendado</div>
+                  </div>
+                </div>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                  <span style="font-size:11px;font-weight:600;color:#0f172a;">Servicio activo</span>
+                  <div class="m-toggle on"></div>
+                </div>
+                <button class="m-btn" style="width:100%;justify-content:center;">Guardar servicio</button>
+              </div>
+            </div>
+          </div>
+          <div class="callout" style="top:78px;left:50%">1</div>
+          <div class="callout" style="top:140px;left:50%">2</div>
+          <div class="callout" style="top:196px;left:50%">3</div>
+          <div class="callout" style="top:254px;left:50%">4</div>
+          <div class="callout" style="top:320px;left:50%">5</div>
+        </div>
+        <div class="callout-legend">
+          <div class="legend-item"><span class="n">1</span> Nombre del servicio — aparece en tu página pública de reservas.</div>
+          <div class="legend-item"><span class="n">2</span> Duración — determina el bloque de tiempo que se bloquea en el calendario.</div>
+          <div class="legend-item"><span class="n">3</span> Precio — se muestra al cliente antes de confirmar la reserva.</div>
+          <div class="legend-item"><span class="n">4</span> Imagen — foto que ilustra el servicio en tu página de booking.</div>
+          <div class="legend-item"><span class="n">5</span> Guardar servicio — crea o actualiza el servicio.</div>
+        </div>
+      </div>
+
+      <!-- MOCKUP — Modal Crear/Editar categoría -->
+      <div class="mockup-wrapper">
+        <div class="app-screen" style="min-height:300px;">
+          <div style="font-family:Inter,system-ui,sans-serif;background:#f8fafc;padding:14px;min-height:300px;position:relative;">
+            <div class="m-modal-bg">
+              <div class="m-modal" style="width:260px;max-height:none;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                  <div class="m-modal-ttl">Categorías</div>
+                  <div style="width:18px;height:18px;border-radius:50%;background:#f1f5f9;display:flex;align-items:center;justify-content:center;font-size:10px;color:#475569;cursor:default;">×</div>
+                </div>
+                <div class="m-row">
+                  <span class="m-lbl">Nombre de la categoría</span>
+                  <div class="m-input">Coloración</div>
+                </div>
+                <button class="m-btn" style="width:100%;justify-content:center;margin-bottom:12px;">Guardar</button>
+                <div style="height:1px;background:#f1f5f9;margin-bottom:10px;"></div>
+                <div style="font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.08em;">Categorías existentes</div>
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f1f5f9;">
+                  <span style="font-size:12px;color:#0f172a;">Cortes</span>
+                  <div style="display:flex;gap:4px;">
+                    <div style="font-size:10px;color:#334155;background:#f1f5f9;border-radius:5px;padding:2px 7px;cursor:default;">Editar</div>
+                    <div style="font-size:10px;color:#dc2626;background:#fee2e2;border-radius:5px;padding:2px 7px;cursor:default;">×</div>
+                  </div>
+                </div>
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;">
+                  <span style="font-size:12px;color:#0f172a;">Coloración</span>
+                  <div style="display:flex;gap:4px;">
+                    <div style="font-size:10px;color:#334155;background:#f1f5f9;border-radius:5px;padding:2px 7px;cursor:default;">Editar</div>
+                    <div style="font-size:10px;color:#dc2626;background:#fee2e2;border-radius:5px;padding:2px 7px;cursor:default;">×</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="callout" style="top:74px;left:50%">1</div>
+          <div class="callout" style="top:108px;left:50%">2</div>
+          <div class="callout" style="top:190px;left:50%">3</div>
+        </div>
+        <div class="callout-legend">
+          <div class="legend-item"><span class="n">1</span> Campo nombre — escribe el nombre de la nueva categoría.</div>
+          <div class="legend-item"><span class="n">2</span> Guardar — crea la categoría y la agrega a la lista.</div>
+          <div class="legend-item"><span class="n">3</span> Lista existente — edita o elimina categorías ya creadas.</div>
+        </div>
+      </div>
+
       <div class="warn">
         <svg class="warn-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
           <path d="M11 2L2 19h18L11 2z" stroke="#dc2626" stroke-width="1.5" stroke-linejoin="round"/>
@@ -1814,6 +2219,143 @@
           <circle cx="11" cy="14.5" r="1.2" fill="#16a34a"/>
         </svg>
         <p><strong>Notificaciones push para empleados:</strong> Cuando un cliente agenda una cita, el empleado asignado recibe una notificación push en tiempo real en su celular o PC — sin necesidad de tener el panel abierto. La notificación incluye botones para agregar la cita directamente al calendario (iCal o Google Calendar). Para activarlas, el empleado debe entrar al panel y hacer clic en <em>"Activar notificaciones"</em> cuando el navegador lo solicite. En iPhone, primero debe instalar la app: Safari → botón compartir → <em>Agregar a pantalla de inicio</em>.</p>
+      </div>
+
+      <!-- MOCKUP — Modal Crear/Editar empleado -->
+      <div class="mockup-wrapper">
+        <div class="app-screen" style="min-height:380px;">
+          <div style="font-family:Inter,system-ui,sans-serif;background:#f8fafc;padding:14px;min-height:380px;position:relative;">
+            <div class="m-modal-bg">
+              <div class="m-modal" style="width:280px;max-height:none;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                  <div class="m-modal-ttl">Nuevo empleado</div>
+                  <div style="width:18px;height:18px;border-radius:50%;background:#f1f5f9;display:flex;align-items:center;justify-content:center;font-size:10px;color:#475569;cursor:default;">×</div>
+                </div>
+                <!-- Avatar upload -->
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+                  <div style="width:46px;height:46px;border-radius:50%;background:#334155;display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:800;flex-shrink:0;">M</div>
+                  <div>
+                    <div style="font-size:10px;font-weight:700;color:#0f172a;margin-bottom:2px;">Foto de perfil</div>
+                    <div style="font-size:9px;color:#94a3b8;background:#f1f5f9;border-radius:6px;padding:3px 8px;display:inline-block;cursor:default;">Cambiar foto</div>
+                  </div>
+                </div>
+                <div class="m-row">
+                  <span class="m-lbl">Nombre completo</span>
+                  <div class="m-input">María López</div>
+                </div>
+                <div class="m-row">
+                  <span class="m-lbl">Email</span>
+                  <div class="m-input">maria@studio.com</div>
+                </div>
+                <div class="m-row">
+                  <span class="m-lbl">Teléfono</span>
+                  <div class="m-input">+52 55 9876 5432</div>
+                </div>
+                <div class="m-row">
+                  <span class="m-lbl">Rol</span>
+                  <div class="m-select" style="display:block;">Empleado</div>
+                </div>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                  <span style="font-size:11px;font-weight:600;color:#0f172a;">Activo</span>
+                  <div class="m-toggle on"></div>
+                </div>
+                <button class="m-btn" style="width:100%;justify-content:center;">Guardar empleado</button>
+              </div>
+            </div>
+          </div>
+          <div class="callout" style="top:100px;left:50%">1</div>
+          <div class="callout" style="top:148px;left:50%">2</div>
+          <div class="callout" style="top:196px;left:50%">3</div>
+          <div class="callout" style="top:72px;right:90px">4</div>
+          <div class="callout" style="top:340px;left:50%">5</div>
+        </div>
+        <div class="callout-legend">
+          <div class="legend-item"><span class="n">1</span> Nombre completo — aparece en el selector de empleados al reservar.</div>
+          <div class="legend-item"><span class="n">2</span> Email — se usa para el acceso al sistema y las notificaciones.</div>
+          <div class="legend-item"><span class="n">3</span> Rol — define los permisos del empleado dentro del panel.</div>
+          <div class="legend-item"><span class="n">4</span> Foto de perfil — sube una imagen o se usará la inicial del nombre.</div>
+          <div class="legend-item"><span class="n">5</span> Guardar empleado — crea o actualiza el registro.</div>
+        </div>
+      </div>
+
+      <!-- MOCKUP — Modal Invitar al sistema -->
+      <div class="mockup-wrapper">
+        <div class="app-screen" style="min-height:260px;">
+          <div style="font-family:Inter,system-ui,sans-serif;background:#f8fafc;padding:14px;min-height:260px;position:relative;">
+            <div class="m-modal-bg">
+              <div class="m-modal" style="width:270px;max-height:none;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                  <div class="m-modal-ttl">Invitar al sistema</div>
+                  <div style="width:18px;height:18px;border-radius:50%;background:#f1f5f9;display:flex;align-items:center;justify-content:center;font-size:10px;color:#475569;cursor:default;">×</div>
+                </div>
+                <div style="font-size:11px;color:#475569;margin-bottom:12px;line-height:1.5;">Envía un enlace de invitación para que el empleado acceda a su cuenta en AppointVa.</div>
+                <div class="m-row">
+                  <span class="m-lbl">Email del empleado</span>
+                  <div class="m-input">maria@studio.com</div>
+                </div>
+                <button class="m-btn" style="width:100%;justify-content:center;margin-bottom:10px;">Enviar invitación</button>
+                <div style="background:#dcfce7;border:1px solid #bbf7d0;border-radius:9px;padding:8px 12px;display:flex;align-items:center;gap:6px;">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span style="font-size:11px;color:#166534;font-weight:600;">Invitación enviada</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="callout" style="top:120px;left:50%">1</div>
+          <div class="callout" style="top:158px;left:50%">2</div>
+        </div>
+        <div class="callout-legend">
+          <div class="legend-item"><span class="n">1</span> Email — pre-llenado con el correo del empleado; el enlace de acceso se envía aquí.</div>
+          <div class="legend-item"><span class="n">2</span> Enviar invitación — genera y envía el correo de acceso al panel del empleado.</div>
+        </div>
+      </div>
+
+      <!-- MOCKUP — Modal Bloquear disponibilidad -->
+      <div class="mockup-wrapper">
+        <div class="app-screen" style="min-height:320px;">
+          <div style="font-family:Inter,system-ui,sans-serif;background:#f8fafc;padding:14px;min-height:320px;position:relative;">
+            <div class="m-modal-bg">
+              <div class="m-modal" style="width:270px;max-height:none;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                  <div class="m-modal-ttl">Bloquear disponibilidad</div>
+                  <div style="width:18px;height:18px;border-radius:50%;background:#f1f5f9;display:flex;align-items:center;justify-content:center;font-size:10px;color:#475569;cursor:default;">×</div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+                  <div>
+                    <span class="m-lbl">Fecha inicio</span>
+                    <div class="m-input">01 sep 2026</div>
+                  </div>
+                  <div>
+                    <span class="m-lbl">Fecha fin</span>
+                    <div class="m-input">05 sep 2026</div>
+                  </div>
+                </div>
+                <div class="m-row">
+                  <span class="m-lbl">Motivo (opcional)</span>
+                  <div class="m-input" style="color:#94a3b8;">Vacaciones</div>
+                </div>
+                <button class="m-btn" style="width:100%;justify-content:center;margin-bottom:12px;">Bloquear período</button>
+                <div style="height:1px;background:#f1f5f9;margin-bottom:8px;"></div>
+                <div style="font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.08em;">Bloqueos activos</div>
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f1f5f9;">
+                  <div>
+                    <div style="font-size:11px;font-weight:600;color:#0f172a;">01–05 sep 2026</div>
+                    <div style="font-size:10px;color:#94a3b8;">Vacaciones</div>
+                  </div>
+                  <div style="width:18px;height:18px;border-radius:50%;background:#fee2e2;display:flex;align-items:center;justify-content:center;font-size:9px;color:#dc2626;cursor:default;">×</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="callout" style="top:70px;left:50%">1</div>
+          <div class="callout" style="top:116px;left:50%">2</div>
+          <div class="callout" style="top:220px;left:50%">3</div>
+        </div>
+        <div class="callout-legend">
+          <div class="legend-item"><span class="n">1</span> Rango de fechas — define el inicio y fin del período bloqueado.</div>
+          <div class="legend-item"><span class="n">2</span> Motivo — nota interna opcional (vacaciones, capacitación, etc.).</div>
+          <div class="legend-item"><span class="n">3</span> Bloqueos activos — lista los períodos ya bloqueados; haz clic en × para eliminar uno.</div>
+        </div>
       </div>
     </div>
   </section>
@@ -2116,6 +2658,135 @@
         </svg>
         <p><strong>Consejo:</strong> La vista Semana es ideal para detectar horas con poca demanda y planear promociones o descuentos en esos horarios. De un vistazo puedes ver los días más cargados y los espacios libres de la semana.</p>
       </div>
+
+      <!-- MOCKUP — Modal Nueva cita -->
+      <div class="mockup-wrapper">
+        <div class="app-screen" style="min-height:400px;">
+          <div style="font-family:Inter,system-ui,sans-serif;background:#f8fafc;padding:14px;min-height:400px;position:relative;">
+            <div class="m-modal-bg">
+              <div class="m-modal" style="width:280px;max-height:none;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                  <div class="m-modal-ttl">Nueva cita</div>
+                  <div style="width:18px;height:18px;border-radius:50%;background:#f1f5f9;display:flex;align-items:center;justify-content:center;font-size:10px;color:#475569;cursor:default;">×</div>
+                </div>
+                <div class="m-row">
+                  <span class="m-lbl">Servicio</span>
+                  <div class="m-select" style="display:block;">Corte caballero — 30 min</div>
+                </div>
+                <div class="m-row">
+                  <span class="m-lbl">Empleado</span>
+                  <div class="m-select" style="display:block;">Sin preferencia</div>
+                </div>
+                <div class="m-row">
+                  <span class="m-lbl">Cliente</span>
+                  <div class="m-input" style="position:relative;color:#0f172a;">Carlos Mendoza</div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+                  <div>
+                    <span class="m-lbl">Fecha</span>
+                    <div class="m-input">28 ago 2026</div>
+                  </div>
+                  <div>
+                    <span class="m-lbl">Hora</span>
+                    <div class="m-select" style="display:block;">10:00 a.m.</div>
+                  </div>
+                </div>
+                <div class="m-row">
+                  <span class="m-lbl">Notas internas</span>
+                  <div class="m-input" style="height:36px;color:#94a3b8;">Cliente prefiere corte clásico…</div>
+                </div>
+                <button class="m-btn" style="width:100%;justify-content:center;">Crear cita</button>
+              </div>
+            </div>
+          </div>
+          <div class="callout" style="top:72px;left:50%">1</div>
+          <div class="callout" style="top:110px;left:50%">2</div>
+          <div class="callout" style="top:148px;left:50%">3</div>
+          <div class="callout" style="top:186px;left:50%">4</div>
+          <div class="callout" style="top:350px;left:50%">5</div>
+        </div>
+        <div class="callout-legend">
+          <div class="legend-item"><span class="n">1</span> Servicio — selecciona el servicio; la duración se ajusta automáticamente.</div>
+          <div class="legend-item"><span class="n">2</span> Empleado — elige quién atenderá la cita o deja "Sin preferencia".</div>
+          <div class="legend-item"><span class="n">3</span> Cliente — busca por nombre o teléfono; si no existe, se crea uno nuevo.</div>
+          <div class="legend-item"><span class="n">4</span> Fecha y hora — solo muestra slots disponibles según el horario del negocio.</div>
+          <div class="legend-item"><span class="n">5</span> Crear cita — registra la cita en el calendario y notifica al empleado.</div>
+        </div>
+      </div>
+
+      <!-- MOCKUP — CitaDetallePage -->
+      <div class="mockup-wrapper">
+        <div class="app-screen">
+          <div style="display:flex;height:400px;font-family:Inter,system-ui,sans-serif;">
+            <!-- Sidebar mini -->
+            <div class="m-sidebar" style="width:160px;min-width:160px;">
+              <div class="m-logo-row"><div class="m-logo-circle"><svg width="14" height="14" viewBox="0 0 18 18" fill="none"><rect x="1" y="2" width="16" height="14" rx="3" stroke="#fff" stroke-width="1.4"/><rect x="4" y="9" width="4" height="4" rx="1" fill="#fff" fill-opacity="0.7"/></svg></div><span class="m-logo-text">AppointVa</span></div>
+              <div class="m-nav">
+                <div class="m-nav-item"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg> Inicio</div>
+                <div class="m-nav-item active"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Citas</div>
+                <div class="m-nav-item"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg> Empleados</div>
+              </div>
+            </div>
+            <!-- Main -->
+            <div class="m-main" style="overflow-y:auto;">
+              <!-- Header cita -->
+              <div style="padding:12px 14px;background:#fff;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;gap:8px;">
+                <div style="font-size:13px;font-weight:800;color:#0f172a;">Carlos Mendoza</div>
+                <div style="background:#dcfce7;color:#166534;font-size:9px;font-weight:700;border-radius:99px;padding:3px 9px;">Confirmada</div>
+              </div>
+              <div style="padding:10px 14px;">
+                <!-- Servicio card -->
+                <div style="background:#fff;border:1px solid #f1f5f9;border-radius:12px;padding:10px 12px;margin-bottom:7px;">
+                  <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:5px;">Detalle del servicio</div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">
+                    <div><div style="font-size:9px;color:#94a3b8;">Servicio</div><div style="font-size:11px;font-weight:600;color:#0f172a;">Corte caballero</div></div>
+                    <div><div style="font-size:9px;color:#94a3b8;">Duración</div><div style="font-size:11px;font-weight:600;color:#0f172a;">30 min</div></div>
+                    <div><div style="font-size:9px;color:#94a3b8;">Precio</div><div style="font-size:11px;font-weight:600;color:#0f172a;">$250</div></div>
+                    <div><div style="font-size:9px;color:#94a3b8;">Empleado</div><div style="font-size:11px;font-weight:600;color:#0f172a;">María López</div></div>
+                    <div><div style="font-size:9px;color:#94a3b8;">Fecha</div><div style="font-size:11px;font-weight:600;color:#0f172a;">28 ago 2026</div></div>
+                    <div><div style="font-size:9px;color:#94a3b8;">Hora</div><div style="font-size:11px;font-weight:600;color:#0f172a;">10:00 a.m.</div></div>
+                  </div>
+                </div>
+                <!-- Notas -->
+                <div style="background:#fff;border:1px solid #f1f5f9;border-radius:12px;padding:10px 12px;margin-bottom:7px;">
+                  <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Notas internas</div>
+                  <div style="font-size:11px;color:#475569;">Cliente prefiere corte clásico con navaja.</div>
+                </div>
+                <!-- Botones acción -->
+                <div style="display:flex;gap:6px;margin-bottom:8px;">
+                  <button style="flex:1;background:#16a34a;color:#fff;border:none;border-radius:9px;font-size:10px;font-weight:700;padding:7px 4px;cursor:default;">✓ Completada</button>
+                  <button style="flex:1;background:#f1f5f9;border:none;border-radius:9px;font-size:10px;font-weight:700;color:#334155;padding:7px 4px;cursor:default;">Reagendar</button>
+                  <button style="flex:1;background:#fff;border:1.5px solid #dc2626;border-radius:9px;font-size:10px;font-weight:700;color:#dc2626;padding:7px 4px;cursor:default;">Cancelar</button>
+                </div>
+                <!-- Historial -->
+                <div style="background:#fff;border:1px solid #f1f5f9;border-radius:12px;padding:10px 12px;">
+                  <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:5px;">Historial del cliente</div>
+                  <div style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid #f1f5f9;">
+                    <div style="font-size:10px;color:#94a3b8;width:64px;flex-shrink:0;">15 jul 2026</div>
+                    <div style="font-size:11px;color:#0f172a;flex:1;">Corte caballero</div>
+                    <div style="background:#dcfce7;color:#166534;font-size:9px;font-weight:700;border-radius:99px;padding:2px 7px;">Completada</div>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:6px;padding:5px 0;">
+                    <div style="font-size:10px;color:#94a3b8;width:64px;flex-shrink:0;">02 jun 2026</div>
+                    <div style="font-size:11px;color:#0f172a;flex:1;">Corte caballero</div>
+                    <div style="background:#dcfce7;color:#166534;font-size:9px;font-weight:700;border-radius:99px;padding:2px 7px;">Completada</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="callout" style="top:14px;left:170px">1</div>
+          <div class="callout" style="top:76px;left:170px">2</div>
+          <div class="callout" style="top:210px;left:170px">3</div>
+          <div class="callout" style="top:308px;left:170px">4</div>
+        </div>
+        <div class="callout-legend">
+          <div class="legend-item"><span class="n">1</span> Chip de estado — muestra el estado actual de la cita (Confirmada, Pendiente, Completada, Cancelada).</div>
+          <div class="legend-item"><span class="n">2</span> Detalle del servicio — servicio, duración, precio, empleado asignado, fecha y hora.</div>
+          <div class="legend-item"><span class="n">3</span> Botones de acción — marca como completada, reagenda o cancela la cita.</div>
+          <div class="legend-item"><span class="n">4</span> Historial del cliente — citas anteriores de este cliente en tu negocio.</div>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -2284,6 +2955,77 @@
         </svg>
         <p><strong>Consejo:</strong> El cliente puede reservar a cualquier hora del día o de la noche. Tu agenda se llena sola mientras duermes — sin llamadas y sin errores de agenda doble.</p>
       </div>
+
+      <!-- MOCKUP — Modal Detalle del cliente -->
+      <div class="mockup-wrapper">
+        <div class="app-screen" style="min-height:420px;">
+          <div style="font-family:Inter,system-ui,sans-serif;background:#f8fafc;padding:14px;min-height:420px;position:relative;">
+            <div class="m-modal-bg">
+              <div class="m-modal" style="width:290px;max-height:none;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                  <div class="m-modal-ttl">Detalle del cliente</div>
+                  <div style="width:18px;height:18px;border-radius:50%;background:#f1f5f9;display:flex;align-items:center;justify-content:center;font-size:10px;color:#475569;cursor:default;">×</div>
+                </div>
+                <!-- Perfil del cliente -->
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #f1f5f9;">
+                  <div style="width:44px;height:44px;border-radius:50%;background:#334155;display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:800;flex-shrink:0;">A</div>
+                  <div>
+                    <div style="font-size:13px;font-weight:800;color:#0f172a;">Ana García</div>
+                    <div style="font-size:10px;color:#94a3b8;">ana@gmail.com</div>
+                    <div style="font-size:10px;color:#94a3b8;">+52 55 1111 2222</div>
+                  </div>
+                </div>
+                <!-- Stats -->
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px;">
+                  <div style="background:#f8fafc;border-radius:9px;padding:8px 10px;">
+                    <div style="font-size:9px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;">Total citas</div>
+                    <div style="font-size:18px;font-weight:900;color:#0f172a;">12</div>
+                  </div>
+                  <div style="background:#f8fafc;border-radius:9px;padding:8px 10px;">
+                    <div style="font-size:9px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;">Completadas</div>
+                    <div style="font-size:18px;font-weight:900;color:#16a34a;">10</div>
+                  </div>
+                  <div style="background:#f8fafc;border-radius:9px;padding:8px 10px;">
+                    <div style="font-size:9px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;">Última visita</div>
+                    <div style="font-size:12px;font-weight:700;color:#0f172a;">15 ago 2026</div>
+                  </div>
+                  <div style="background:#f8fafc;border-radius:9px;padding:8px 10px;">
+                    <div style="font-size:9px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;">Gasto total</div>
+                    <div style="font-size:14px;font-weight:900;color:#0f172a;">$2,800</div>
+                  </div>
+                </div>
+                <!-- Últimas citas -->
+                <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:5px;">Últimas citas</div>
+                <div style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid #f1f5f9;">
+                  <div style="font-size:10px;color:#94a3b8;width:60px;flex-shrink:0;">15 ago 2026</div>
+                  <div style="font-size:11px;color:#0f172a;flex:1;">Coloración completa</div>
+                  <div style="background:#dcfce7;color:#166534;font-size:9px;font-weight:700;border-radius:99px;padding:2px 6px;">Completada</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid #f1f5f9;">
+                  <div style="font-size:10px;color:#94a3b8;width:60px;flex-shrink:0;">01 ago 2026</div>
+                  <div style="font-size:11px;color:#0f172a;flex:1;">Corte dama</div>
+                  <div style="background:#dcfce7;color:#166534;font-size:9px;font-weight:700;border-radius:99px;padding:2px 6px;">Completada</div>
+                </div>
+                <!-- Notas -->
+                <div style="margin-top:8px;">
+                  <span class="m-lbl">Notas del cliente</span>
+                  <div class="m-input" style="height:36px;color:#94a3b8;">Alérgica al amoniaco — usar tinte sin…</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="callout" style="top:72px;left:50%">1</div>
+          <div class="callout" style="top:140px;left:50%">2</div>
+          <div class="callout" style="top:230px;left:50%">3</div>
+          <div class="callout" style="top:360px;left:50%">4</div>
+        </div>
+        <div class="callout-legend">
+          <div class="legend-item"><span class="n">1</span> Información de contacto — nombre, email y teléfono del cliente.</div>
+          <div class="legend-item"><span class="n">2</span> Estadísticas — total de citas, completadas, última visita y gasto acumulado.</div>
+          <div class="legend-item"><span class="n">3</span> Historial de citas — las últimas visitas con fecha, servicio y estado.</div>
+          <div class="legend-item"><span class="n">4</span> Notas — campo libre para información importante sobre el cliente (alergias, preferencias, etc.).</div>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -2318,6 +3060,59 @@
             <div class="step-title">Elimina las que ya no uses</div>
             <p class="step-desc">Pasa el cursor sobre cualquier foto y haz clic en el ícono de papelera para quitarla de la galería.</p>
           </div>
+        </div>
+      </div>
+
+      <!-- MOCKUP — Galería con grid -->
+      <div class="mockup-wrapper">
+        <div class="app-screen">
+          <div style="font-family:Inter,system-ui,sans-serif;background:#f8fafc;padding:0;height:340px;display:flex;flex-direction:column;">
+            <div class="m-list-header">
+              <span class="m-list-title">Galería</span>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:10px;color:#94a3b8;">4 / 10 imágenes</span>
+                <button class="m-btn" style="font-size:10px;padding:5px 10px;">＋ Agregar imagen</button>
+              </div>
+            </div>
+            <div style="padding:12px 14px;flex:1;overflow:hidden;">
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+                <!-- Thumbnail 1 -->
+                <div style="position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;background:linear-gradient(135deg,#334155,#64748b);">
+                  <div style="position:absolute;inset:0;background:rgba(0,0,0,0);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.2s;" class="gallery-overlay">
+                    <div style="width:22px;height:22px;border-radius:50%;background:#dc2626;display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;">×</div>
+                  </div>
+                  <div style="position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;background:rgba(220,38,38,0.85);display:flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:700;">×</div>
+                </div>
+                <!-- Thumbnail 2 -->
+                <div style="position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;background:linear-gradient(135deg,#475569,#94a3b8);">
+                  <div style="position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;background:rgba(220,38,38,0.85);display:flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:700;">×</div>
+                </div>
+                <!-- Thumbnail 3 -->
+                <div style="position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;background:linear-gradient(135deg,#0f172a,#334155);">
+                  <div style="position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;background:rgba(220,38,38,0.85);display:flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:700;">×</div>
+                </div>
+                <!-- Thumbnail 4 -->
+                <div style="position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;background:linear-gradient(135deg,#1e293b,#64748b);">
+                  <div style="position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;background:rgba(220,38,38,0.85);display:flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:700;">×</div>
+                </div>
+                <!-- Placeholder subir -->
+                <div style="aspect-ratio:1;border-radius:10px;border:2px dashed #cbd5e1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:#fff;cursor:default;">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  <span style="font-size:9px;color:#94a3b8;font-weight:600;">Subir</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="callout" style="top:55px;left:22px">1</div>
+          <div class="callout" style="top:92px;right:88px">2</div>
+          <div class="callout" style="top:34px;right:6px">3</div>
+          <div class="callout" style="top:34px;right:130px">4</div>
+        </div>
+        <div class="callout-legend">
+          <div class="legend-item"><span class="n">1</span> Thumbnails — previsualizaciones de las fotos subidas a la galería.</div>
+          <div class="legend-item"><span class="n">2</span> Botón × — elimina la imagen de la galería (solo visible en hover).</div>
+          <div class="legend-item"><span class="n">3</span> Agregar imagen — sube nuevas fotos en JPG o PNG.</div>
+          <div class="legend-item"><span class="n">4</span> Contador — muestra cuántas imágenes llevas del límite permitido.</div>
         </div>
       </div>
 
@@ -2857,6 +3652,483 @@
           <circle cx="11" cy="14.5" r="1.2" fill="#C8A961"/>
         </svg>
         <p><strong>Recomendación:</strong> Activa el 2FA en cuanto termines de configurar tu negocio. Es el paso más importante para proteger tu agenda y los datos de tus clientes.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!--  16 — PAGOS                                                -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <section class="section anchor-target" id="pagos" aria-labelledby="h-pagos">
+    <div class="divider" aria-hidden="true"></div>
+    <div style="padding-top: 52px;">
+      <div class="section-label">Sección 16</div>
+      <h2 class="section-title" id="h-pagos">Pagos</h2>
+      <p style="font-size:14px; color:var(--gray); margin-bottom:24px;">Ve a <strong>Pagos</strong> en el menú lateral. Aquí registras y das seguimiento a todos los cobros de tu negocio.</p>
+
+      <!-- MOCKUP — Lista de pagos -->
+      <div class="mockup-wrapper">
+        <div class="app-screen">
+          <div style="font-family:Inter,system-ui,sans-serif;background:#f8fafc;height:380px;display:flex;flex-direction:column;">
+            <div class="m-list-header">
+              <span class="m-list-title">Pagos</span>
+              <button class="m-btn" style="font-size:10px;padding:5px 12px;">＋ Nuevo pago</button>
+            </div>
+            <div style="padding:10px 14px;">
+              <div class="m-period-sel">
+                <div class="m-period-btn">Hoy</div>
+                <div class="m-period-btn active">Semana</div>
+                <div class="m-period-btn">Mes</div>
+                <div class="m-period-btn">Rango</div>
+              </div>
+            </div>
+            <!-- Tabla -->
+            <div style="flex:1;overflow:hidden;background:#fff;border-top:1px solid #f1f5f9;">
+              <div style="display:grid;grid-template-columns:1fr 1.2fr 60px 70px 70px;padding:8px 14px;background:#f8fafc;border-bottom:1px solid #f1f5f9;">
+                <span style="font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;">Cliente</span>
+                <span style="font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;">Servicio</span>
+                <span style="font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;">Monto</span>
+                <span style="font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;">Estado</span>
+                <span style="font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;">Método</span>
+              </div>
+              <!-- Fila 1 -->
+              <div style="display:grid;grid-template-columns:1fr 1.2fr 60px 70px 70px;padding:9px 14px;border-bottom:1px solid #f8fafc;align-items:center;">
+                <span style="font-size:11px;font-weight:600;color:#0f172a;">Ana García</span>
+                <span style="font-size:10px;color:#475569;">Coloración completa</span>
+                <span style="font-size:11px;font-weight:700;color:#0f172a;">$800</span>
+                <span style="font-size:9px;font-weight:700;background:#dcfce7;color:#166534;border-radius:99px;padding:2px 7px;display:inline-block;">Pagado</span>
+                <span style="font-size:10px;color:#475569;">Tarjeta</span>
+              </div>
+              <!-- Fila 2 -->
+              <div style="display:grid;grid-template-columns:1fr 1.2fr 60px 70px 70px;padding:9px 14px;border-bottom:1px solid #f8fafc;align-items:center;">
+                <span style="font-size:11px;font-weight:600;color:#0f172a;">Luis Morales</span>
+                <span style="font-size:10px;color:#475569;">Corte caballero</span>
+                <span style="font-size:11px;font-weight:700;color:#0f172a;">$250</span>
+                <span style="font-size:9px;font-weight:700;background:#fef3c7;color:#92400e;border-radius:99px;padding:2px 7px;display:inline-block;">Pendiente</span>
+                <span style="font-size:10px;color:#475569;">Efectivo</span>
+              </div>
+              <!-- Fila 3 -->
+              <div style="display:grid;grid-template-columns:1fr 1.2fr 60px 70px 70px;padding:9px 14px;border-bottom:1px solid #f8fafc;align-items:center;">
+                <span style="font-size:11px;font-weight:600;color:#0f172a;">Carla Pérez</span>
+                <span style="font-size:10px;color:#475569;">Corte dama</span>
+                <span style="font-size:11px;font-weight:700;color:#0f172a;">$350</span>
+                <span style="font-size:9px;font-weight:700;background:#dcfce7;color:#166534;border-radius:99px;padding:2px 7px;display:inline-block;">Pagado</span>
+                <span style="font-size:10px;color:#475569;">Transferencia</span>
+              </div>
+              <!-- Fila 4 -->
+              <div style="display:grid;grid-template-columns:1fr 1.2fr 60px 70px 70px;padding:9px 14px;align-items:center;">
+                <span style="font-size:11px;font-weight:600;color:#0f172a;">Mario Soto</span>
+                <span style="font-size:10px;color:#475569;">Manicure</span>
+                <span style="font-size:11px;font-weight:700;color:#0f172a;">$180</span>
+                <span style="font-size:9px;font-weight:700;background:#fef3c7;color:#92400e;border-radius:99px;padding:2px 7px;display:inline-block;">Pendiente</span>
+                <span style="font-size:10px;color:#475569;">Efectivo</span>
+              </div>
+            </div>
+          </div>
+          <div class="callout" style="top:52px;left:170px">1</div>
+          <div class="callout" style="top:88px;left:6px">2</div>
+          <div class="callout" style="top:172px;right:80px">3</div>
+          <div class="callout" style="top:34px;right:6px">4</div>
+        </div>
+        <div class="callout-legend">
+          <div class="legend-item"><span class="n">1</span> Filtro por período — filtra pagos por día, semana, mes o rango personalizado.</div>
+          <div class="legend-item"><span class="n">2</span> Tabla de pagos — cliente, servicio, monto, estado y método de cobro.</div>
+          <div class="legend-item"><span class="n">3</span> Estado — Pagado (verde) o Pendiente (amarillo).</div>
+          <div class="legend-item"><span class="n">4</span> Nuevo pago — abre el modal para registrar un pago manualmente.</div>
+        </div>
+      </div>
+
+      <!-- MOCKUP — Modal Registrar pago -->
+      <div class="mockup-wrapper">
+        <div class="app-screen" style="min-height:320px;">
+          <div style="font-family:Inter,system-ui,sans-serif;background:#f8fafc;padding:14px;min-height:320px;position:relative;">
+            <div class="m-modal-bg">
+              <div class="m-modal" style="width:270px;max-height:none;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                  <div class="m-modal-ttl">Registrar pago</div>
+                  <div style="width:18px;height:18px;border-radius:50%;background:#f1f5f9;display:flex;align-items:center;justify-content:center;font-size:10px;color:#475569;cursor:default;">×</div>
+                </div>
+                <div class="m-row">
+                  <span class="m-lbl">Cita</span>
+                  <div class="m-select" style="display:block;">Ana García — Coloración — 25 ago</div>
+                </div>
+                <div class="m-row">
+                  <span class="m-lbl">Monto</span>
+                  <div class="m-input">$800</div>
+                </div>
+                <div class="m-row">
+                  <span class="m-lbl">Método de pago</span>
+                  <div style="display:flex;gap:6px;margin-top:4px;">
+                    <div style="flex:1;text-align:center;background:#0f172a;color:#fff;border-radius:8px;padding:6px 4px;font-size:10px;font-weight:700;cursor:default;">Efectivo</div>
+                    <div style="flex:1;text-align:center;background:#f1f5f9;color:#475569;border-radius:8px;padding:6px 4px;font-size:10px;font-weight:600;cursor:default;">Tarjeta</div>
+                    <div style="flex:1;text-align:center;background:#f1f5f9;color:#475569;border-radius:8px;padding:6px 4px;font-size:10px;font-weight:600;cursor:default;">Transferencia</div>
+                  </div>
+                </div>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin:10px 0;">
+                  <span style="font-size:11px;font-weight:600;color:#0f172a;">Anticipo cobrado</span>
+                  <div class="m-toggle"></div>
+                </div>
+                <button class="m-btn" style="width:100%;justify-content:center;">Registrar pago</button>
+              </div>
+            </div>
+          </div>
+          <div class="callout" style="top:72px;left:50%">1</div>
+          <div class="callout" style="top:110px;left:50%">2</div>
+          <div class="callout" style="top:152px;left:50%">3</div>
+          <div class="callout" style="top:220px;left:50%">4</div>
+        </div>
+        <div class="callout-legend">
+          <div class="legend-item"><span class="n">1</span> Cita vinculada — selecciona la cita a la que corresponde el pago.</div>
+          <div class="legend-item"><span class="n">2</span> Monto — puedes ajustar el monto si difiere del precio del servicio.</div>
+          <div class="legend-item"><span class="n">3</span> Método de pago — Efectivo, Tarjeta o Transferencia.</div>
+          <div class="legend-item"><span class="n">4</span> Anticipo cobrado — marca si ya se cobró el anticipo previamente.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!--  17 — RESEÑAS                                              -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <section class="section anchor-target" id="resenas" aria-labelledby="h-resenas">
+    <div class="divider" aria-hidden="true"></div>
+    <div style="padding-top: 52px;">
+      <div class="section-label">Sección 17</div>
+      <h2 class="section-title" id="h-resenas">Reseñas</h2>
+      <p style="font-size:14px; color:var(--gray); margin-bottom:24px;">Ve a <strong>Reseñas</strong> en el menú lateral. Aquí ves las calificaciones y comentarios que tus clientes dejan tras su visita.</p>
+
+      <!-- MOCKUP — Reseñas -->
+      <div class="mockup-wrapper">
+        <div class="app-screen">
+          <div style="font-family:Inter,system-ui,sans-serif;background:#f8fafc;height:380px;display:flex;flex-direction:column;">
+            <div class="m-list-header">
+              <span class="m-list-title">Reseñas</span>
+            </div>
+            <div style="padding:14px 16px;flex:1;overflow:hidden;">
+              <!-- Promedio general -->
+              <div style="background:#fff;border:1px solid #f1f5f9;border-radius:14px;padding:14px;margin-bottom:12px;display:flex;align-items:center;gap:14px;">
+                <div style="text-align:center;">
+                  <div style="font-size:38px;font-weight:900;color:#0f172a;line-height:1;">4.8</div>
+                  <div style="display:flex;gap:2px;justify-content:center;margin-top:4px;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="#f59e0b"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="#f59e0b"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="#f59e0b"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="#f59e0b"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="#f59e0b" opacity="0.4"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                  </div>
+                  <div style="font-size:10px;color:#94a3b8;margin-top:3px;">48 reseñas</div>
+                </div>
+                <div style="flex:1;">
+                  <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;"><span style="font-size:10px;color:#94a3b8;width:10px;">5</span><div style="flex:1;height:5px;background:#f1f5f9;border-radius:99px;overflow:hidden;"><div style="width:72%;height:100%;background:#f59e0b;border-radius:99px;"></div></div><span style="font-size:9px;color:#94a3b8;">35</span></div>
+                  <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;"><span style="font-size:10px;color:#94a3b8;width:10px;">4</span><div style="flex:1;height:5px;background:#f1f5f9;border-radius:99px;overflow:hidden;"><div style="width:18%;height:100%;background:#f59e0b;border-radius:99px;"></div></div><span style="font-size:9px;color:#94a3b8;">9</span></div>
+                  <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;"><span style="font-size:10px;color:#94a3b8;width:10px;">3</span><div style="flex:1;height:5px;background:#f1f5f9;border-radius:99px;overflow:hidden;"><div style="width:6%;height:100%;background:#f59e0b;border-radius:99px;"></div></div><span style="font-size:9px;color:#94a3b8;">3</span></div>
+                  <div style="display:flex;align-items:center;gap:6px;"><span style="font-size:10px;color:#94a3b8;width:10px;">1</span><div style="flex:1;height:5px;background:#f1f5f9;border-radius:99px;overflow:hidden;"><div style="width:2%;height:100%;background:#f59e0b;border-radius:99px;"></div></div><span style="font-size:9px;color:#94a3b8;">1</span></div>
+                </div>
+              </div>
+              <!-- Reseña individual -->
+              <div style="background:#fff;border:1px solid #f1f5f9;border-radius:12px;padding:10px 12px;margin-bottom:7px;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                  <div style="width:28px;height:28px;border-radius:50%;background:#334155;display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:700;flex-shrink:0;">A</div>
+                  <div style="flex:1;">
+                    <div style="font-size:11px;font-weight:700;color:#0f172a;">Ana García</div>
+                    <div style="font-size:9px;color:#94a3b8;">20 ago 2026</div>
+                  </div>
+                  <div style="display:flex;gap:1px;">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="#f59e0b"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="#f59e0b"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="#f59e0b"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="#f59e0b"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="#f59e0b"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                  </div>
+                </div>
+                <div style="font-size:11px;color:#475569;line-height:1.5;">Excelente servicio, quedé muy satisfecha con el resultado. La cita fue puntual y el ambiente muy agradable. ¡Volveré pronto!</div>
+              </div>
+            </div>
+          </div>
+          <div class="callout" style="top:72px;left:6px">1</div>
+          <div class="callout" style="top:230px;left:6px">2</div>
+          <div class="callout" style="top:218px;right:6px">3</div>
+        </div>
+        <div class="callout-legend">
+          <div class="legend-item"><span class="n">1</span> Promedio general — calificación media con distribución por estrellas.</div>
+          <div class="legend-item"><span class="n">2</span> Reseña individual — avatar, nombre, fecha y texto del comentario.</div>
+          <div class="legend-item"><span class="n">3</span> Estrellas — calificación que el cliente dio al servicio (1 a 5 estrellas).</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!--  18 — LISTA DE ESPERA                                      -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <section class="section anchor-target" id="espera" aria-labelledby="h-espera">
+    <div class="divider" aria-hidden="true"></div>
+    <div style="padding-top: 52px;">
+      <div class="section-label">Sección 18</div>
+      <h2 class="section-title" id="h-espera">Lista de espera</h2>
+      <p style="font-size:14px; color:var(--gray); margin-bottom:24px;">Cuando no hay disponibilidad, los clientes pueden anotarse en la lista de espera. Te notifican cuando un slot se libera para que los contactes.</p>
+
+      <!-- MOCKUP — Lista de espera -->
+      <div class="mockup-wrapper">
+        <div class="app-screen">
+          <div style="font-family:Inter,system-ui,sans-serif;background:#f8fafc;height:340px;display:flex;flex-direction:column;">
+            <div class="m-list-header">
+              <span class="m-list-title">Lista de espera</span>
+              <span style="font-size:11px;color:#94a3b8;">3 en espera</span>
+            </div>
+            <div style="flex:1;overflow:hidden;background:#fff;">
+              <!-- Fila 1 -->
+              <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid #f1f5f9;">
+                <div style="width:32px;height:32px;border-radius:50%;background:#334155;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700;flex-shrink:0;">L</div>
+                <div style="flex:1;">
+                  <div style="font-size:12px;font-weight:700;color:#0f172a;">Laura Jiménez</div>
+                  <div style="font-size:10px;color:#94a3b8;">Coloración completa &nbsp;·&nbsp; Solicitado 22 ago</div>
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+                  <span style="font-size:9px;font-weight:700;background:#fef3c7;color:#92400e;border-radius:99px;padding:2px 8px;">En espera</span>
+                  <button style="background:#334155;color:#fff;border:none;border-radius:7px;font-size:9px;font-weight:700;padding:4px 8px;cursor:default;">Notificar</button>
+                </div>
+              </div>
+              <!-- Fila 2 -->
+              <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid #f1f5f9;">
+                <div style="width:32px;height:32px;border-radius:50%;background:#475569;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700;flex-shrink:0;">R</div>
+                <div style="flex:1;">
+                  <div style="font-size:12px;font-weight:700;color:#0f172a;">Roberto Castro</div>
+                  <div style="font-size:10px;color:#94a3b8;">Corte caballero &nbsp;·&nbsp; Solicitado 23 ago</div>
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+                  <span style="font-size:9px;font-weight:700;background:#fef3c7;color:#92400e;border-radius:99px;padding:2px 8px;">En espera</span>
+                  <button style="background:#334155;color:#fff;border:none;border-radius:7px;font-size:9px;font-weight:700;padding:4px 8px;cursor:default;">Notificar</button>
+                </div>
+              </div>
+              <!-- Fila 3 -->
+              <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;">
+                <div style="width:32px;height:32px;border-radius:50%;background:#0f172a;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700;flex-shrink:0;">P</div>
+                <div style="flex:1;">
+                  <div style="font-size:12px;font-weight:700;color:#0f172a;">Patricia Reyes</div>
+                  <div style="font-size:10px;color:#94a3b8;">Manicure &nbsp;·&nbsp; Solicitado 24 ago</div>
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+                  <span style="font-size:9px;font-weight:700;background:#fef3c7;color:#92400e;border-radius:99px;padding:2px 8px;">En espera</span>
+                  <button style="background:#334155;color:#fff;border:none;border-radius:7px;font-size:9px;font-weight:700;padding:4px 8px;cursor:default;">Notificar</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="callout" style="top:72px;left:6px">1</div>
+          <div class="callout" style="top:88px;left:160px">2</div>
+          <div class="callout" style="top:86px;right:6px">3</div>
+        </div>
+        <div class="callout-legend">
+          <div class="legend-item"><span class="n">1</span> Cliente en espera — nombre, servicio solicitado y fecha de la solicitud.</div>
+          <div class="legend-item"><span class="n">2</span> Servicio solicitado — el servicio que el cliente quería agendar cuando no había disponibilidad.</div>
+          <div class="legend-item"><span class="n">3</span> Notificar disponibilidad — envía un mensaje al cliente para que reserve ahora que hay un slot libre.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!--  19 — MODO KIOSK                                           -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <section class="section anchor-target" id="kiosk" aria-labelledby="h-kiosk">
+    <div class="divider" aria-hidden="true"></div>
+    <div style="padding-top: 52px;">
+      <div class="section-label">Sección 19</div>
+      <h2 class="section-title" id="h-kiosk">Modo Kiosk</h2>
+      <p style="font-size:14px; color:var(--gray); margin-bottom:24px;">El modo Kiosk convierte cualquier tablet o pantalla en un punto de autoservicio táctil para que tus clientes agenden directamente desde tu local.</p>
+
+      <!-- MOCKUP — Activar Kiosk y pantalla -->
+      <div class="mockup-wrapper">
+        <div class="app-screen">
+          <div style="font-family:Inter,system-ui,sans-serif;background:#f8fafc;height:380px;display:flex;flex-direction:column;">
+            <div class="m-list-header">
+              <span class="m-list-title">Modo Kiosk</span>
+            </div>
+            <div style="padding:14px 16px;flex:1;overflow:hidden;display:flex;gap:14px;">
+              <!-- Panel izquierdo: configuración -->
+              <div style="flex:1;">
+                <div style="background:#fff;border:1px solid #f1f5f9;border-radius:14px;padding:14px;margin-bottom:10px;">
+                  <div style="font-size:12px;font-weight:800;color:#0f172a;margin-bottom:4px;">Kiosk de reservas</div>
+                  <div style="font-size:10px;color:#94a3b8;margin-bottom:12px;line-height:1.5;">Pantalla táctil para que los clientes agenden desde el local. Activa el modo pantalla completa.</div>
+                  <button class="m-btn" style="width:100%;justify-content:center;font-size:11px;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+                    Activar Kiosk
+                  </button>
+                </div>
+                <div class="card" style="padding:12px;">
+                  <div class="card-title" style="font-size:12px;">¿Cómo funciona?</div>
+                  <p style="font-size:11px;">El cliente toca la pantalla, elige servicio, empleado y hora disponible. Al confirmar, recibe una notificación.</p>
+                </div>
+              </div>
+              <!-- Panel derecho: preview pantalla kiosk -->
+              <div style="width:160px;flex-shrink:0;background:#0f172a;border-radius:14px;padding:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;">
+                <div style="width:36px;height:36px;background:#C8A961;border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                  <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="1" y="2" width="16" height="14" rx="3" stroke="#fff" stroke-width="1.4"/><rect x="4" y="9" width="4" height="4" rx="1" fill="#fff" fill-opacity="0.7"/></svg>
+                </div>
+                <div style="font-size:11px;font-weight:800;color:#fff;text-align:center;">AppointVa</div>
+                <div style="width:60px;height:1px;background:rgba(255,255,255,0.15);"></div>
+                <div style="font-size:10px;color:rgba(255,255,255,0.7);text-align:center;line-height:1.5;">Toca para agendar<br>tu cita</div>
+                <div style="width:36px;height:36px;border-radius:50%;border:2px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="callout" style="top:86px;left:6px">1</div>
+          <div class="callout" style="top:182px;right:14px">2</div>
+          <div class="callout" style="top:290px;right:14px">3</div>
+        </div>
+        <div class="callout-legend">
+          <div class="legend-item"><span class="n">1</span> Botón Activar Kiosk — abre la pantalla en modo pantalla completa para uso táctil.</div>
+          <div class="legend-item"><span class="n">2</span> Pantalla táctil — la vista que ve el cliente: logo, mensaje de bienvenida y botón de inicio.</div>
+          <div class="legend-item"><span class="n">3</span> Logo del negocio — aparece centrado en la pantalla del kiosk para identificar tu marca.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!--  20 — SEGURIDAD / 2FA                                      -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <section class="section anchor-target" id="seguridad-2fa" aria-labelledby="h-seguridad-2fa">
+    <div class="divider" aria-hidden="true"></div>
+    <div style="padding-top: 52px;">
+      <div class="section-label">Sección 20</div>
+      <h2 class="section-title" id="h-seguridad-2fa">Seguridad / 2FA</h2>
+      <p style="font-size:14px; color:var(--gray); margin-bottom:24px;">Ve a <strong>Configuración → Seguridad</strong>. Activa la autenticación de dos factores para añadir una capa extra de protección a tu cuenta.</p>
+
+      <!-- MOCKUP — 2FA -->
+      <div class="mockup-wrapper">
+        <div class="app-screen">
+          <div style="font-family:Inter,system-ui,sans-serif;background:#f8fafc;height:380px;display:flex;flex-direction:column;">
+            <div class="m-list-header">
+              <span class="m-list-title">Seguridad</span>
+            </div>
+            <div style="padding:14px 16px;flex:1;overflow:hidden;">
+              <!-- Card 2FA -->
+              <div style="background:#fff;border:1px solid #f1f5f9;border-radius:14px;padding:14px;margin-bottom:10px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                  <div>
+                    <div style="font-size:12px;font-weight:800;color:#0f172a;">Autenticación de dos factores</div>
+                    <div style="font-size:10px;color:#16a34a;margin-top:2px;">Activa — protegida con app de autenticación</div>
+                  </div>
+                  <div class="m-toggle on"></div>
+                </div>
+              </div>
+              <!-- QR Code simulado -->
+              <div style="background:#fff;border:1px solid #f1f5f9;border-radius:14px;padding:14px;display:flex;gap:14px;align-items:flex-start;margin-bottom:10px;">
+                <!-- QR simulado con grid de cuadritos -->
+                <div style="flex-shrink:0;">
+                  <div style="display:grid;grid-template-columns:repeat(9,8px);gap:1px;padding:6px;background:#fff;border:1px solid #e2e8f0;border-radius:6px;">
+                    <!-- Fila 1 -->
+                    <div style="width:8px;height:8px;background:#0f172a;border-radius:1px;"></div><div style="width:8px;height:8px;background:#0f172a;border-radius:1px;"></div><div style="width:8px;height:8px;background:#0f172a;border-radius:1px;"></div><div style="width:8px;height:8px;background:#0f172a;border-radius:1px;"></div><div style="width:8px;height:8px;background:#fff;border-radius:1px;"></div><div style="width:8px;height:8px;background:#0f172a;border-radius:1px;"></div><div style="width:8px;height:8px;background:#0f172a;border-radius:1px;"></div><div style="width:8px;height:8px;background:#0f172a;border-radius:1px;"></div><div style="width:8px;height:8px;background:#0f172a;border-radius:1px;"></div>
+                    <!-- Fila 2 -->
+                    <div style="width:8px;height:8px;background:#0f172a;border-radius:1px;"></div><div style="width:8px;height:8px;background:#fff;border-radius:1px;"></div><div style="width:8px;height:8px;background:#fff;border-radius:1px;"></div><div style="width:8px;height:8px;background:#0f172a;border-radius:1px;"></div><div style="width:8px;height:8px;background:#fff;border-radius:1px;"></div><div style="width:8px;height:8px;background:#0f172a;border-radius:1px;"></div><div style="width:8px;height:8px;background:#fff;border-radius:1px;"></div><div style="width:8px;height:8px;background:#fff;border-radius:1px;"></div><div style="width:8px;height:8px;background:#0f172a;border-radius:1px;"></div>
+                    <!-- Fila 3 -->
+                    <div style="width:8px;height:8px;background:#0f172a;border-radius:1px;"></div><div style="width:8px;height:8px;background:#fff;border-radius:1px;"></div><div style="width:8px;height:8px;background:#0f172a;border-radius:1px;"></div><div style="width:8px;height:8px;background:#0f172a;border-radius:1px;"></div><div style="width:8px;height:8px;background:#0f172a;border-radius:1px;"></div><div style="width:8px;height:8px;background:#0f172a;border-radius:1px;"></div><div style="width:8px;height:8px;background:#fff;border-radius:1px;"></div><div style="width:8px;height:8px;background:#0f172a;border-radius:1px;"></div><div style="width:8px;height:8px;background:#0f172a;border-radius:1px;"></div>
+                    <!-- Fila 4 -->
+                    <div style="width:8px;height:8px;background:#fff;border-radius:1px;"></div><div style="width:8px;height:8px;background:#0f172a;border-radius:1px;"></div><div style="width:8px;height:8px;background:#fff;border-radius:1px;"></div><div style="width:8px;height:8px;background:#fff;border-radius:1px;"></div><div style="width:8px;height:8px;background:#0f172a;border-radius:1px;"></div><div style="width:8px;height:8px;background:#fff;border-radius:1px;"></div><div style="width:8px;height:8px;background:#0f172a;border-radius:1px;"></div><div style="width:8px;height:8px;background:#fff;border-radius:1px;"></div><div style="width:8px;height:8px;background:#0f172a;border-radius:1px;"></div>
+                    <!-- Fila 5 -->
+                    <div style="width:8px;height:8px;background:#0f172a;border-radius:1px;"></div><div style="width:8px;height:8px;background:#fff;border-radius:1px;"></div><div style="width:8px;height:8px;background:#0f172a;border-radius:1px;"></div><div style="width:8px;height:8px;background:#fff;border-radius:1px;"></div><div style="width:8px;height:8px;background:#fff;border-radius:1px;"></div><div style="width:8px;height:8px;background:#0f172a;border-radius:1px;"></div><div style="width:8px;height:8px;background:#fff;border-radius:1px;"></div><div style="width:8px;height:8px;background:#0f172a;border-radius:1px;"></div><div style="width:8px;height:8px;background:#fff;border-radius:1px;"></div>
+                    <!-- Fila 6 -->
+                    <div style="width:8px;height:8px;background:#0f172a;border-radius:1px;"></div><div style="width:8px;height:8px;background:#0f172a;border-radius:1px;"></div><div style="width:8px;height:8px;background:#fff;border-radius:1px;"></div><div style="width:8px;height:8px;background:#0f172a;border-radius:1px;"></div><div style="width:8px;height:8px;background:#fff;border-radius:1px;"></div><div style="width:8px;height:8px;background:#fff;border-radius:1px;"></div><div style="width:8px;height:8px;background:#0f172a;border-radius:1px;"></div><div style="width:8px;height:8px;background:#fff;border-radius:1px;"></div><div style="width:8px;height:8px;background:#0f172a;border-radius:1px;"></div>
+                    <!-- Fila 7 -->
+                    <div style="width:8px;height:8px;background:#0f172a;border-radius:1px;"></div><div style="width:8px;height:8px;background:#fff;border-radius:1px;"></div><div style="width:8px;height:8px;background:#0f172a;border-radius:1px;"></div><div style="width:8px;height:8px;background:#fff;border-radius:1px;"></div><div style="width:8px;height:8px;background:#0f172a;border-radius:1px;"></div><div style="width:8px;height:8px;background:#0f172a;border-radius:1px;"></div><div style="width:8px;height:8px;background:#fff;border-radius:1px;"></div><div style="width:8px;height:8px;background:#0f172a;border-radius:1px;"></div><div style="width:8px;height:8px;background:#0f172a;border-radius:1px;"></div>
+                    <!-- Fila 8 -->
+                    <div style="width:8px;height:8px;background:#0f172a;border-radius:1px;"></div><div style="width:8px;height:8px;background:#fff;border-radius:1px;"></div><div style="width:8px;height:8px;background:#fff;border-radius:1px;"></div><div style="width:8px;height:8px;background:#0f172a;border-radius:1px;"></div><div style="width:8px;height:8px;background:#fff;border-radius:1px;"></div><div style="width:8px;height:8px;background:#0f172a;border-radius:1px;"></div><div style="width:8px;height:8px;background:#fff;border-radius:1px;"></div><div style="width:8px;height:8px;background:#fff;border-radius:1px;"></div><div style="width:8px;height:8px;background:#0f172a;border-radius:1px;"></div>
+                    <!-- Fila 9 -->
+                    <div style="width:8px;height:8px;background:#0f172a;border-radius:1px;"></div><div style="width:8px;height:8px;background:#0f172a;border-radius:1px;"></div><div style="width:8px;height:8px;background:#0f172a;border-radius:1px;"></div><div style="width:8px;height:8px;background:#0f172a;border-radius:1px;"></div><div style="width:8px;height:8px;background:#fff;border-radius:1px;"></div><div style="width:8px;height:8px;background:#0f172a;border-radius:1px;"></div><div style="width:8px;height:8px;background:#0f172a;border-radius:1px;"></div><div style="width:8px;height:8px;background:#0f172a;border-radius:1px;"></div><div style="width:8px;height:8px;background:#0f172a;border-radius:1px;"></div>
+                  </div>
+                </div>
+                <div style="flex:1;">
+                  <div style="font-size:11px;font-weight:700;color:#0f172a;margin-bottom:4px;">Escanea con Google Authenticator o Authy</div>
+                  <div style="font-size:10px;color:#94a3b8;line-height:1.5;margin-bottom:10px;">Abre tu app de autenticación, escanea el código QR y luego ingresa el código de 6 dígitos para confirmar.</div>
+                  <span class="m-lbl">Código de verificación</span>
+                  <div style="display:flex;gap:4px;margin-top:3px;">
+                    <div style="width:28px;height:32px;border:1px solid #e2e8f0;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#0f172a;">1</div>
+                    <div style="width:28px;height:32px;border:1px solid #e2e8f0;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#0f172a;">2</div>
+                    <div style="width:28px;height:32px;border:1px solid #e2e8f0;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#0f172a;">3</div>
+                    <div style="width:28px;height:32px;border:2px solid #334155;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#0f172a;">_</div>
+                    <div style="width:28px;height:32px;border:1px solid #e2e8f0;border-radius:7px;background:#f8fafc;"></div>
+                    <div style="width:28px;height:32px;border:1px solid #e2e8f0;border-radius:7px;background:#f8fafc;"></div>
+                  </div>
+                  <button class="m-btn" style="margin-top:8px;width:100%;justify-content:center;font-size:10px;">Verificar y activar</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="callout" style="top:60px;left:6px">1</div>
+          <div class="callout" style="top:156px;left:6px">2</div>
+          <div class="callout" style="top:248px;right:6px">3</div>
+          <div class="callout" style="top:300px;right:6px">4</div>
+        </div>
+        <div class="callout-legend">
+          <div class="legend-item"><span class="n">1</span> Toggle 2FA — activa o desactiva la autenticación de dos factores.</div>
+          <div class="legend-item"><span class="n">2</span> Código QR — escanéalo con Google Authenticator, Authy u otra app compatible.</div>
+          <div class="legend-item"><span class="n">3</span> Campo de código — ingresa los 6 dígitos generados por la app.</div>
+          <div class="legend-item"><span class="n">4</span> Verificar y activar — confirma el código para habilitar el 2FA en tu cuenta.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!--  21 — MI PERFIL PERSONAL                                   -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <section class="section anchor-target" id="mi-perfil" aria-labelledby="h-mi-perfil">
+    <div class="divider" aria-hidden="true"></div>
+    <div style="padding-top: 52px;">
+      <div class="section-label">Sección 21</div>
+      <h2 class="section-title" id="h-mi-perfil">Mi Perfil personal</h2>
+      <p style="font-size:14px; color:var(--gray); margin-bottom:24px;">Diferente al perfil del negocio — aquí editas tus datos personales como propietario: nombre, teléfono, foto y contraseña.</p>
+
+      <!-- MOCKUP — Mi Perfil personal -->
+      <div class="mockup-wrapper">
+        <div class="app-screen">
+          <div style="font-family:Inter,system-ui,sans-serif;background:#f8fafc;height:360px;display:flex;flex-direction:column;">
+            <div class="m-list-header">
+              <span class="m-list-title">Mi perfil</span>
+            </div>
+            <div style="padding:14px 16px;flex:1;overflow:hidden;">
+              <!-- Foto de perfil -->
+              <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid #f1f5f9;">
+                <div style="position:relative;">
+                  <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#334155,#64748b);display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;font-weight:800;">L</div>
+                  <div style="position:absolute;bottom:0;right:0;width:18px;height:18px;background:#334155;border-radius:50%;border:2px solid #fff;display:flex;align-items:center;justify-content:center;">
+                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                  </div>
+                </div>
+                <div>
+                  <div style="font-size:14px;font-weight:800;color:#0f172a;">Laura Cortés</div>
+                  <div style="font-size:11px;color:#94a3b8;">laura@studio.com</div>
+                  <div style="font-size:9px;color:#334155;background:#f1f5f9;border-radius:5px;padding:2px 8px;display:inline-block;margin-top:3px;cursor:default;">Cambiar foto</div>
+                </div>
+              </div>
+              <!-- Campos -->
+              <div class="m-row">
+                <span class="m-lbl">Nombre completo</span>
+                <div class="m-input">Laura Cortés Ramírez</div>
+              </div>
+              <div class="m-row">
+                <span class="m-lbl">Teléfono personal</span>
+                <div class="m-input">+52 55 9999 0000</div>
+              </div>
+              <div style="display:flex;gap:8px;margin-top:10px;">
+                <button class="m-btn" style="flex:1;justify-content:center;">Guardar</button>
+                <button style="flex:1;background:#fff;border:1px solid #e2e8f0;border-radius:10px;font-size:11px;font-weight:600;color:#334155;padding:6px 12px;cursor:default;">Cambiar contraseña</button>
+              </div>
+            </div>
+          </div>
+          <div class="callout" style="top:68px;left:6px">1</div>
+          <div class="callout" style="top:178px;left:6px">2</div>
+          <div class="callout" style="top:290px;right:6px">3</div>
+        </div>
+        <div class="callout-legend">
+          <div class="legend-item"><span class="n">1</span> Foto de perfil — imagen personal del propietario (distinta al logo del negocio).</div>
+          <div class="legend-item"><span class="n">2</span> Datos personales — nombre completo y teléfono personal del propietario.</div>
+          <div class="legend-item"><span class="n">3</span> Cambiar contraseña — acceso rápido al formulario de cambio de contraseña.</div>
+        </div>
       </div>
     </div>
   </section>
