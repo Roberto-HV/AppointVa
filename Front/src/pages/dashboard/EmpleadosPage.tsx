@@ -430,36 +430,36 @@ export default function EmpleadosPage() {
                 <p className="text-xs text-gray-400 mt-1 dark:text-gray-500">{emp.servicioIds.length} {emp.servicioIds.length === 1 ? terms.servicio : terms.servicios} asignados</p>
 
                 <div className="mt-3 space-y-1.5">
-                  <div className="flex gap-1.5">
+                  <div className="grid grid-cols-2 gap-1.5">
                     <button
                       onClick={() => abrirEditar(emp)}
-                      className="flex-1 inline-flex items-center justify-center gap-1.5 text-xs font-medium py-1.5 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50 transition"
+                      className="border border-blue-300 text-blue-600 hover:border-blue-500 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-400 dark:hover:bg-blue-950 rounded-md py-2 text-sm font-medium flex items-center justify-center gap-1.5 transition-colors"
                     >
                       <Pencil size={12} /> Editar
                     </button>
                     <button
                       onClick={() => abrirHorario(emp)}
-                      className="flex-1 inline-flex items-center justify-center gap-1.5 text-xs font-medium py-1.5 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 dark:bg-indigo-900/40 dark:text-indigo-400 dark:hover:bg-indigo-900/60 dark:border dark:border-indigo-500/60 transition"
+                      className="border border-violet-300 text-violet-600 hover:border-violet-500 hover:bg-violet-50 dark:border-violet-800 dark:text-violet-400 dark:hover:bg-violet-950 rounded-md py-2 text-sm font-medium flex items-center justify-center gap-1.5 transition-colors"
                     >
                       <Clock size={12} /> Horarios
                     </button>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1.5">
                     <button
                       onClick={() => abrirBloqueo(emp)}
-                      className="flex-1 inline-flex items-center justify-center gap-1.5 text-xs font-medium py-1.5 rounded-lg bg-orange-50 text-orange-600 hover:bg-orange-100 dark:bg-orange-900/40 dark:text-orange-400 dark:hover:bg-orange-900/60 dark:border dark:border-orange-500/60 transition"
+                      className="border border-amber-300 text-amber-600 hover:border-amber-500 hover:bg-amber-50 dark:border-amber-800 dark:text-amber-400 dark:hover:bg-amber-950 rounded-md py-2 text-sm font-medium flex items-center justify-center gap-1.5 transition-colors"
                     >
                       <CalendarX size={12} /> Bloqueos
                     </button>
-                  </div>
-                  <div className="flex gap-1.5">
                     <button
                       onClick={() => abrirInvitar(emp)}
-                      className="flex-1 inline-flex items-center justify-center gap-1.5 text-xs font-medium py-1.5 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600 transition"
+                      className="border border-emerald-300 text-emerald-600 hover:border-emerald-500 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-400 dark:hover:bg-emerald-950 rounded-md py-2 text-sm font-medium flex items-center justify-center gap-1.5 transition-colors"
                     >
-                      <Mail size={12} /> Invitar acceso
+                      <Mail size={12} /> Invitar
                     </button>
                     <button
                       onClick={() => setEmpleadoEliminar(emp)}
-                      className="flex-1 inline-flex items-center justify-center gap-1.5 text-xs font-medium py-1.5 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 dark:bg-red-900/40 dark:text-red-400 dark:hover:bg-red-900/60 dark:border dark:border-red-500/60 transition"
+                      className="border border-destructive/40 text-destructive hover:bg-destructive hover:text-white rounded-md py-2 text-sm font-medium flex items-center justify-center gap-1.5 transition-colors"
                     >
                       <Trash2 size={12} /> Eliminar
                     </button>

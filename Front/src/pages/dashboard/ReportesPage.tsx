@@ -56,20 +56,16 @@ function finMes() {
   return new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().split("T")[0];
 }
 
-interface TarjetaProps { label: string; valor: string; subvalor?: string; icono: React.ReactNode }
-function Tarjeta({ label, valor, subvalor, icono }: TarjetaProps) {
+function Tarjeta({ label, valor, subvalor, icono }: { label: string; valor: React.ReactNode; subvalor?: string; icono: React.ReactNode }) {
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-3 sm:p-5 flex items-center gap-3">
-      <div className="w-9 h-9 sm:w-10 sm:h-10 bg-slate-700/10 rounded-lg flex items-center justify-center text-slate-700 shrink-0">
-        {icono}
-      </div>
-      <div className="min-w-0">
-        <p className="text-xs text-gray-500 dark:text-gray-400 font-medium truncate">{label}</p>
-        <p className="text-base sm:text-xl font-bold text-gray-900 dark:text-gray-100 truncate">{valor}</p>
-        {subvalor && <p className="text-xs text-gray-400 dark:text-gray-500">{subvalor}</p>}
-      </div>
+    <div className="relative bg-card border border-border rounded-xl p-4 min-w-[140px] overflow-hidden">
+      <div className="absolute top-0 left-0 right-0 h-0.5 bg-primary/50" />
+      <div className="absolute top-3.5 right-3.5 text-muted-foreground/70">{icono}</div>
+      <p className="text-xs font-medium text-muted-foreground mb-2 pr-7">{label}</p>
+      <p className="text-2xl font-semibold tracking-tight text-foreground leading-none mb-1">{valor}</p>
+      {subvalor && <p className="text-xs text-muted-foreground mt-1">{subvalor}</p>}
     </div>
-  );
+  )
 }
 
 export default function ReportesPage() {
@@ -309,7 +305,7 @@ export default function ReportesPage() {
             key={t.id}
             onClick={() => setTab(t.id)}
             className={`flex-1 whitespace-nowrap px-1.5 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition ${
-              tab === t.id ? "bg-white dark:bg-slate-800 shadow text-gray-900 dark:text-gray-100" : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+              tab === t.id ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
             }`}
           >
             {t.label}

@@ -209,6 +209,9 @@ export default function PerfilPage() {
       return;
     }
     guardar({ ...data, email: data.email || undefined, telefono: data.telefono || undefined, portadaObjectPosition });
+    if (colorPrimario !== colorGuardado && colorPrimario.length >= 4) {
+      guardarColores();
+    }
   };
 
   const { mutate: eliminarCuenta, isPending: eliminando } = useMutation({
@@ -615,14 +618,11 @@ export default function PerfilPage() {
                 </div>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={() => guardarColores()}
-              disabled={guardandoColores || colorPrimario === colorGuardado || colorPrimario.length < 4}
-              className="px-5 py-2 rounded-lg bg-slate-900 hover:bg-slate-700 disabled:opacity-40 text-white text-sm font-semibold transition"
-            >
-              {guardandoColores ? "Guardando..." : "Guardar color"}
-            </button>
+            {colorPrimario !== colorGuardado && (
+              <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                Color sin guardar — se guardará con "Guardar cambios"
+              </p>
+            )}
           </div>
 
           {/* Redes sociales */}
@@ -734,12 +734,6 @@ export default function PerfilPage() {
                   </select>
                   <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Días mínimos de anticipación para que el cliente pueda reservar.</p>
                 </div>
-                {negocio?.planNombre && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Plan activo</label>
-                    <p className="px-3 py-2 rounded-lg bg-gray-50 dark:bg-slate-700 text-sm text-gray-600 dark:text-gray-400">{negocio.planNombre}</p>
-                  </div>
-                )}
               </div>
 
               <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-slate-700 rounded-lg border border-gray-100 dark:border-slate-600">

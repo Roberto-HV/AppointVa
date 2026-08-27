@@ -481,24 +481,24 @@ export default function PagosPage() {
           {/* KPI cards */}
           {!cobroLoading && (
             <div className="grid grid-cols-3 gap-4">
-              <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl p-4">
-                <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-1">
-                  <TrendingUp size={14} /> Total cobrado
-                </div>
-                <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400">${totalCobrado.toFixed(2)}</p>
+              <div className="relative bg-card border border-border rounded-xl p-4 overflow-hidden">
+                <div className="absolute top-0 left-0 right-0 h-0.5 bg-primary/50" />
+                <div className="absolute top-3.5 right-3.5 text-muted-foreground/70"><TrendingUp size={14} /></div>
+                <p className="text-xs font-medium text-muted-foreground mb-2 pr-7">Total cobrado</p>
+                <p className="text-2xl font-semibold tracking-tight text-foreground leading-none mb-1">${totalCobrado.toFixed(2)}</p>
               </div>
-              <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl p-4">
-                <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-1">
-                  <AlertCircle size={14} /> Por cobrar
-                </div>
-                <p className="text-xl font-bold text-amber-500 dark:text-amber-400">${totalPendiente.toFixed(2)}</p>
+              <div className="relative bg-card border border-border rounded-xl p-4 overflow-hidden">
+                <div className="absolute top-0 left-0 right-0 h-0.5 bg-primary/50" />
+                <div className="absolute top-3.5 right-3.5 text-muted-foreground/70"><AlertCircle size={14} /></div>
+                <p className="text-xs font-medium text-muted-foreground mb-2 pr-7">Por cobrar</p>
+                <p className="text-2xl font-semibold tracking-tight text-foreground leading-none mb-1">${totalPendiente.toFixed(2)}</p>
               </div>
-              <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl p-4">
-                <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-1">
-                  <CheckCircle2 size={14} /> Citas pagadas
-                </div>
-                <p className="text-xl font-bold text-slate-700 dark:text-slate-200">
-                  {citasPagadas}<span className="text-sm font-medium text-gray-400 dark:text-gray-500"> / {totalCitas}</span>
+              <div className="relative bg-card border border-border rounded-xl p-4 overflow-hidden">
+                <div className="absolute top-0 left-0 right-0 h-0.5 bg-primary/50" />
+                <div className="absolute top-3.5 right-3.5 text-muted-foreground/70"><CheckCircle2 size={14} /></div>
+                <p className="text-xs font-medium text-muted-foreground mb-2 pr-7">Citas pagadas</p>
+                <p className="text-2xl font-semibold tracking-tight text-foreground leading-none mb-1">
+                  {citasPagadas}<span className="text-sm font-medium text-muted-foreground"> / {totalCitas}</span>
                 </p>
               </div>
             </div>

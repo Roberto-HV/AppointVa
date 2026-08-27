@@ -443,7 +443,7 @@ export default function CitasPage() {
           <button
             onClick={() => setVista("lista")}
             className={`flex-1 py-1.5 text-sm font-medium rounded-md transition whitespace-nowrap ${
-              vista === "lista" ? "bg-white dark:bg-slate-800 text-gray-800 dark:text-gray-200 shadow-sm" : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+              vista === "lista" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
             }`}
           >
             Lista
@@ -451,7 +451,7 @@ export default function CitasPage() {
           <button
             onClick={() => setVista("calendario")}
             className={`flex-1 py-1.5 text-sm font-medium rounded-md transition whitespace-nowrap ${
-              vista === "calendario" ? "bg-white dark:bg-slate-800 text-gray-800 dark:text-gray-200 shadow-sm" : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+              vista === "calendario" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
             }`}
           >
             Calendario
@@ -459,7 +459,7 @@ export default function CitasPage() {
           <button
             onClick={() => setVista("gantt")}
             className={`flex-1 py-1.5 text-sm font-medium rounded-md transition whitespace-nowrap ${
-              vista === "gantt" ? "bg-white dark:bg-slate-800 text-gray-800 dark:text-gray-200 shadow-sm" : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+              vista === "gantt" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
             }`}
           >
             Línea de tiempo
