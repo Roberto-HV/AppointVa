@@ -232,7 +232,7 @@ export default function PerfilPage() {
   const [colorPrimario, setColorPrimario] = useState("#334155");
   const [colorGuardado, setColorGuardado] = useState("#334155");
 
-  const { mutate: guardarColores, isPending: guardandoColores } = useMutation({
+  const { mutate: guardarColores } = useMutation({
     mutationFn: () => negociosApi.actualizarColores(colorPrimario),
     onSuccess: () => {
       setColorGuardado(colorPrimario);
