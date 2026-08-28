@@ -1,0 +1,366 @@
+/* ============================================================
+ * AppointVa Design System — Token Reference
+ * Source: src/index.css + tailwind.config.js
+ * Updated: 2026-08-28
+ *
+ * Usage for AI assistants:
+ *   - Light mode tokens are defined on :root
+ *   - Dark mode via Tailwind's `darkMode: "class"` → .dark on <html>
+ *   - Primary color is SLATE (not teal, not blue — slate)
+ *   - Brand gold (#C8A961) is reserved for logo/mark ONLY
+ *   - Semantic colors carry visual weight; no accent in the nav
+ * ============================================================ */
+
+/* === LIGHT MODE ============================================= */
+:root {
+  /* --- Backgrounds --- */
+  --bg:        #FFFFFF;   /* html, body, #root */
+  --bg-subtle: #F8FAFC;   /* slate-50  — main content area, pages */
+  --surface:   #FFFFFF;   /* card, popover, dialog background */
+  --surface-2: #F1F5F9;   /* slate-100 — muted surfaces, secondary bg */
+
+  /* --- Borders --- */
+  --border:   #E2E8F0;    /* slate-200 — default borders */
+  --border-2: #CBD5E1;    /* slate-300 — stronger borders */
+
+  /* --- Text --- */
+  --text:       #1E293B;  /* slate-800 — primary body text */
+  --text-muted: #64748B;  /* slate-500 — secondary/hint text */
+
+  /* --- Primary (slate-based, inverts in dark) --- */
+  --primary:    #334155;  /* slate-700 — buttons, active states */
+  --primary-h:  #1E293B;  /* slate-800 — hover state */
+  --primary-fg: #FFFFFF;  /* white — text on primary bg */
+
+  /* --- Brand (NEVER changes — logo/mark only) --- */
+  --brand:      #C8A961;  /* gold — AV loader mark, logo bg */
+
+  /* --- Sidebar --- */
+  --sidebar-bg:          #FFFFFF;
+  --sidebar-border:      #F1F5F9;   /* slate-100 */
+  --sidebar-active-bg:   #0F172A;   /* slate-900 */
+  --sidebar-active-fg:   #FFFFFF;
+  --sidebar-inactive-fg: #475569;   /* slate-600 */
+  --sidebar-hover-bg:    #F1F5F9;   /* slate-100 */
+
+  /* --- Topbar --- */
+  --topbar-bg:     #F8FAFC;         /* slate-50 */
+  --topbar-border: #E2E8F0;         /* slate-200 */
+
+  /* --- Appointment status badges --- */
+  --status-pending-bg:   #FEFCE8;   /* yellow-50 */
+  --status-pending-fg:   #A16207;   /* yellow-700 */
+  --status-pending-dot:  #CA8A04;   /* yellow-600 */
+
+  --status-confirmed-bg: #F0FDF4;   /* green-50 */
+  --status-confirmed-fg: #15803D;   /* green-700 */
+  --status-confirmed-dot:#16A34A;   /* green-600 */
+
+  --status-completed-bg: #EFF6FF;   /* blue-50 */
+  --status-completed-fg: #1D4ED8;   /* blue-700 */
+  --status-completed-dot:#2563EB;   /* blue-600 */
+
+  --status-cancelled-bg: #FEF2F2;   /* red-50 */
+  --status-cancelled-fg: #DC2626;   /* red-600 */
+  --status-cancelled-dot:#DC2626;
+
+  --status-absent-bg:    #F9FAFB;   /* gray-50 */
+  --status-absent-fg:    #6B7280;   /* gray-500 */
+  --status-absent-dot:   #9CA3AF;   /* gray-400 */
+
+  /* --- Role chips (user menu) --- */
+  --chip-employee-bg:    #DBEAFE;   /* blue-100 */
+  --chip-employee-fg:    #1D4ED8;   /* blue-700 */
+  --chip-superadmin-bg:  #EDE9FE;   /* purple-100 */
+  --chip-superadmin-fg:  #6D28D9;   /* purple-700 */
+  --chip-owner-bg:       #F1F5F9;   /* slate-100 */
+  --chip-owner-fg:       #475569;   /* slate-600 */
+  --chip-plan-bg:        #FFFBEB;   /* amber-50 */
+  --chip-plan-fg:        #B45309;   /* amber-700 */
+
+  /* --- Semantic feedback --- */
+  --success:    #16A34A;  /* green-600 */
+  --success-bg: #F0FDF4;  /* green-50 */
+  --warning:    #D97706;  /* amber-600 */
+  --warning-bg: #FFFBEB;  /* amber-50 */
+  --danger:     #DC2626;  /* red-600 */
+  --danger-bg:  #FEF2F2;  /* red-50 */
+  --info:       #2563EB;  /* blue-600 */
+  --info-bg:    #EFF6FF;  /* blue-50 */
+
+  /* --- Charts --- */
+  --chart-income:       #7C3AED;  /* purple-700 — ingresos line */
+  --chart-appointments: #0D9488;  /* teal-600   — citas line */
+
+  /* --- WhatsApp CTA --- */
+  --whatsapp: #25D366;
+
+  /* --- Misc --- */
+  --radius:    0.5rem;              /* base border-radius */
+  --radius-md: 0.375rem;
+  --radius-sm: 0.25rem;
+  --font:      'Inter', system-ui, sans-serif;
+}
+
+/* === DARK MODE (.dark on <html>) =========================== */
+.dark {
+  /* --- Backgrounds --- */
+  --bg:        #020617;   /* slate-950 */
+  --bg-subtle: #020617;   /* slate-950 */
+  --surface:   #0F172A;   /* slate-900 — cards, sidebar, topbar */
+  --surface-2: #1E293B;   /* slate-800 — muted, secondary, inputs */
+
+  /* --- Borders --- */
+  --border:   #1E293B;    /* slate-800 */
+  --border-2: #334155;    /* slate-700 */
+
+  /* --- Text --- */
+  --text:       #F1F5F9;  /* slate-100 */
+  --text-muted: #94A3B8;  /* slate-400 */
+
+  /* --- Primary (inverted) --- */
+  --primary:    #CBD5E1;  /* slate-300 */
+  --primary-h:  #E2E8F0;  /* slate-200 */
+  --primary-fg: #0F172A;  /* slate-900 — text on primary bg */
+
+  /* Brand: unchanged */
+  --brand: #C8A961;
+
+  /* --- Sidebar --- */
+  --sidebar-bg:          #0F172A;                  /* slate-900 */
+  --sidebar-border:      rgba(100, 116, 139, 0.3); /* slate-500/30 */
+  --sidebar-active-bg:   #475569;                  /* slate-600 */
+  --sidebar-active-fg:   #FFFFFF;
+  --sidebar-inactive-fg: #CBD5E1;                  /* slate-300 */
+  --sidebar-hover-bg:    #1E293B;                  /* slate-800 */
+
+  /* --- Topbar --- */
+  --topbar-bg:     #0F172A;  /* slate-900 */
+  --topbar-border: #334155;  /* slate-700 */
+
+  /* --- Appointment status badges (dark) --- */
+  --status-pending-bg:   rgba(161, 98, 7, 0.2);   /* yellow-900/30 */
+  --status-pending-fg:   #FACC15;                  /* yellow-400 */
+  --status-pending-dot:  #EAB308;                  /* yellow-500 */
+
+  --status-confirmed-bg: rgba(6, 78, 59, 0.4);    /* green-900/30 */
+  --status-confirmed-fg: #4ADE80;                  /* green-400 */
+  --status-confirmed-dot:#22C55E;                  /* green-500 */
+
+  --status-completed-bg: rgba(30, 64, 175, 0.2);  /* blue-900/30 */
+  --status-completed-fg: #60A5FA;                  /* blue-400 */
+  --status-completed-dot:#3B82F6;                  /* blue-500 */
+
+  --status-cancelled-bg: rgba(127, 29, 29, 0.2);  /* red-900/30 */
+  --status-cancelled-fg: #F87171;                  /* red-400 */
+  --status-cancelled-dot:#EF4444;                  /* red-500 */
+
+  --status-absent-bg:    #334155;                  /* slate-700 */
+  --status-absent-fg:    #9CA3AF;                  /* gray-400 */
+  --status-absent-dot:   #6B7280;                  /* gray-500 */
+
+  /* --- Role chips (dark) --- */
+  --chip-employee-bg:    rgba(37, 99, 235, 0.2);
+  --chip-employee-fg:    #93C5FD;   /* blue-300 */
+  --chip-superadmin-bg:  rgba(109, 40, 217, 0.2);
+  --chip-superadmin-fg:  #C4B5FD;   /* purple-300 */
+  --chip-owner-bg:       #1E293B;   /* slate-800 */
+  --chip-owner-fg:       #94A3B8;   /* slate-400 */
+  --chip-plan-bg:        rgba(180, 83, 9, 0.2);
+  --chip-plan-fg:        #FCD34D;   /* amber-300 */
+
+  /* --- Semantic feedback (dark) --- */
+  --success-bg: rgba(6, 78, 59, 0.3);
+  --warning-bg: rgba(120, 53, 15, 0.3);
+  --danger-bg:  rgba(127, 29, 29, 0.3);
+  --info-bg:    rgba(30, 64, 175, 0.2);
+  /* foreground colors (success, warning, danger, info) stay the same */
+}
+
+/* ============================================================
+ * KEY LAYOUT PATTERNS
+ * ============================================================ */
+
+/*
+ * App Shell (DashboardLayout):
+ *
+ *   <html class="h-full">
+ *     <body class="h-dvh flex overflow-hidden bg-white dark:bg-slate-950">
+ *       <!-- Sidebar (fixed) -->
+ *       <aside class="fixed inset-y-0 left-0 z-50 w-64
+ *                     bg-white dark:bg-slate-900
+ *                     border-r border-slate-100 dark:border-slate-700/50">
+ *       </aside>
+ *       <!-- Main -->
+ *       <main class="flex-1 ml-64 flex flex-col overflow-hidden
+ *                    bg-slate-50 dark:bg-slate-950">
+ *         <!-- Topbar -->
+ *         <header class="border-b border-slate-200 bg-slate-50 px-6 py-3
+ *                        dark:border-slate-700 dark:bg-slate-900">
+ *         </header>
+ *         <!-- Content -->
+ *         <div class="flex-1 overflow-y-auto p-6">
+ *         </div>
+ *       </main>
+ *     </body>
+ *   </html>
+ */
+
+/*
+ * Sidebar NavLink:
+ *   Active:   bg-slate-900 dark:bg-slate-600   text-white font-semibold shadow-md
+ *   Inactive: text-slate-600 dark:text-slate-300
+ *             hover:bg-slate-100 dark:hover:bg-slate-700
+ *   Base:     flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors
+ */
+
+/*
+ * EstadoBadge (appointment status) — Ghost style (transparent bg + colored border):
+ *   Base: inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold
+ *         bg-transparent border-[1.5px]
+ *   Icon: 12px stroke-only SVG, fill-none, color matches text
+ *
+ *   Pendiente:    border-amber-500/50   text-amber-600   dark:border-amber-400/40   dark:text-amber-300
+ *   Confirmada:   border-green-600/50   text-green-700   dark:border-green-400/40   dark:text-green-400
+ *                 [icon: CheckCircle2 + animate-pulse on the icon]
+ *   Completada:   border-blue-600/50    text-blue-700    dark:border-blue-400/40    dark:text-blue-400
+ *   Cancelada:    border-red-600/50     text-red-600     dark:border-red-400/40     dark:text-red-400
+ *   Inasistencia: border-gray-400/40    text-gray-500    dark:border-slate-400/30   dark:text-slate-400
+ */
+
+/*
+ * Stat card (income accent — dark even in light mode):
+ *   bg-slate-900 border-slate-800 text-white
+ *   KPI value: text-xl sm:text-2xl font-black leading-none
+ *   Label:     text-[10px] font-bold uppercase tracking-widest text-slate-400
+ *
+ * Standard card:
+ *   bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700
+ *   Standard shadcn Card component
+ */
+
+/*
+ * Animations:
+ *   .animate-step-in  → opacity 0→1 + translateX(14px→0) in 0.22s ease-out
+ *   .animate-fade-in  → opacity 0→1 + translateY(6px→0)  in 0.22s ease-out
+ *   All buttons/active states: transform scale(0.97) on :active, 80ms ease
+ */
+
+/*
+ * Typography in use:
+ *   text-3xl font-black          → page greeting headings
+ *   text-xl sm:text-2xl font-black leading-none → KPI values
+ *   text-sm font-bold / font-semibold            → section titles
+ *   text-xs font-semibold                        → badges, chips, labels
+ *   text-[10px] font-bold uppercase tracking-widest → micro-labels (Apple style)
+ *   text-xs font-mono font-bold                  → times in agenda
+ *
+ * Single font: Inter — no display or mono variants in the design system.
+ * Font loaded via system-ui fallback (no @font-face; Inter must be installed
+ * or loaded externally by the app shell).
+ */
+
+/*
+ * Specialty context (Health sector):
+ *   Sidebar bg override via inline style: backgroundColor: "#1B6CA8"
+ *   This is a per-tenant customization, not a design system token.
+ */
+
+/*
+ * Role Chips (user menu / employee list) — Ghost style:
+ *   Base: inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold
+ *         bg-transparent border-[1.5px]
+ *
+ *   Empleado:    border-blue-600/40    text-blue-700    dark:border-blue-300/40    dark:text-blue-300
+ *   SuperAdmin:  border-purple-700/40  text-purple-700  dark:border-purple-300/40  dark:text-purple-300
+ *   Propietario: border-slate-500/35   text-slate-600   dark:border-slate-400/30   dark:text-slate-400
+ *   Plan badge:  border-amber-700/40   text-amber-700   dark:border-amber-300/35   dark:text-amber-300
+ */
+
+/*
+ * Logos / Brand images (public/icons/):
+ *   LogoApp.png         — rounded square, light-bg variant  → sidebar collapsed (light), topbar mobile (light)
+ *   LogoAppOscuro.png   — rounded square, dark-bg variant   → sidebar collapsed (dark),  topbar mobile (dark)
+ *   Banner.png          — horizontal banner with icon+name  → sidebar expanded (both modes)
+ *   LogoSinFondo.png    — icon without background (transparent) → general purpose
+ *   LogoRedondoBlanco.png / LogoRedondoOscuro.png — circular variants
+ *   NombreAppSinFondo.png — wordmark only, transparent
+ *
+ *   Dark-mode logo swap in DashboardLayout:
+ *     <img src="/icons/LogoApp.png" className="block dark:hidden" />
+ *     <img src="/icons/LogoAppOscuro.png" className="hidden dark:block" />
+ *
+ *   Brand gold (#C8A961) is NEVER used in UI — reserved for logo/mark only.
+ */
+
+/*
+ * Checkbox (custom — no shadcn Checkbox component):
+ *   Unchecked: w-4 h-4 rounded border-2 border-input bg-background
+ *   Checked:   w-4 h-4 rounded border-2 border-slate-700 bg-slate-700
+ *              [check icon: 12px SVG stroke-white stroke-width-3]
+ *              dark: border-slate-300 bg-slate-300 [check: stroke-slate-900]
+ *   Disabled:  opacity-50 cursor-not-allowed
+ *   Used in BookingPage for dynamic form fields of type "Checkbox" (Sí/No)
+ */
+
+/*
+ * Tabs (custom — hand-rolled, no shadcn Tabs):
+ *   Container: flex gap-1 bg-gray-100 dark:bg-slate-800 rounded-xl p-1
+ *   Tab active:   bg-white dark:bg-slate-700 shadow-sm rounded-lg px-4 py-2
+ *                 text-sm font-semibold text-slate-900 dark:text-white
+ *   Tab inactive: rounded-lg px-4 py-2 text-sm font-medium
+ *                 text-slate-500 dark:text-slate-400
+ *                 hover:text-slate-700 dark:hover:text-slate-200
+ *   Pattern: useState<string> for active tab + conditional className
+ *   Used in: PerfilPage, CitasPage, ReportesPage, ServiciosPage, ClientesPage
+ */
+
+/*
+ * Pagination (src/components/ui/Pagination.tsx):
+ *   Props: pagina · totalPaginas · total · labelTotal · onCambiar(p: number) · cargando?
+ *   Auto-hidden when totalPaginas ≤ 1
+ *   Container: flex items-center justify-between px-5 py-3 border-t border-gray-100
+ *   Left label: "{total} {labelTotal} · página {pagina} de {totalPaginas}"
+ *   Nav buttons (← Anterior / Siguiente →):
+ *     px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50
+ *     text-xs font-medium disabled:opacity-40 disabled:cursor-not-allowed
+ *   Page number buttons (max 5, sliding window):
+ *     w-8 h-8 rounded-lg text-xs font-medium
+ *     Active:   bg-slate-700 text-white border-slate-700
+ *     Inactive: border border-gray-200 hover:bg-gray-50 text-gray-600
+ *   50 records per page in CitasPage and ClientesPage
+ */
+
+/*
+ * Dialog / Modal (shadcn Dialog):
+ *   Overlay:  fixed inset-0 z-50 bg-black/80
+ *   Content:  fixed left-[50%] top-[50%] translate-x-[-50%] translate-y-[-50%]
+ *             max-w-lg w-full border bg-background shadow-lg rounded-lg p-6
+ *   Header:   text-base font-bold text-foreground
+ *   Body:     text-sm text-muted-foreground
+ *   Detail panel (service/employee info):
+ *     bg-slate-50 dark:bg-slate-800 rounded-lg px-4 py-3 text-xs flex flex-col gap-1.5
+ *     Each row: flex items-center gap-1.5 [Lucide icon 14px text-muted-foreground] text
+ *   Footer:   flex justify-end gap-2
+ *             Cancel: btn ghost · Confirm: btn primary or success depending on action
+ */
+
+/*
+ * Empty State:
+ *   Container: flex flex-col items-center justify-center gap-4 py-16 text-center
+ *   Icon:      Lucide icon 48px text-slate-300 dark:text-slate-600
+ *   Title:     text-base font-semibold text-slate-600 dark:text-slate-300
+ *   Subtitle:  text-sm text-slate-400 dark:text-slate-500 max-w-xs
+ *   CTA:       optional btn btn-default mt-2
+ */
+
+/*
+ * Skeleton Loader:
+ *   Base class: bg-slate-100 dark:bg-slate-800 rounded animate-pulse
+ *   Row pattern: flex items-center gap-3 px-4 py-3 border-b border-slate-100 dark:border-slate-700/50
+ *     Avatar placeholder: w-9 h-9 rounded-full
+ *     Lines: flex-1 flex flex-col gap-1.5
+ *       wide:   h-3 w-3/4 rounded
+ *       narrow: h-2.5 w-1/2 rounded
+ *   Page loader: centered, logo mark (56px rounded-14px bg-brand) + animate-pulse
+ */

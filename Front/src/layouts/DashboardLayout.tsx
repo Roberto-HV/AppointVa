@@ -70,7 +70,7 @@ function UserMenuContent({ usuario, perfil, iniciales, rolChip, rol, onProfile, 
               {rolChip.label}
             </span>
             {perfil?.planNombre && (
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700">
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-transparent border-[1.5px] border-amber-600/40 text-amber-700 dark:border-amber-400/35 dark:text-amber-300">
                 {perfil.planNombre}
               </span>
             )}
@@ -296,10 +296,10 @@ export default function DashboardLayout() {
   }, [headerMenuOpen]);
 
   const rolChip = usuario?.rol === "Empleado"
-    ? { label: "Empleado", cls: "bg-blue-100 text-blue-700" }
+    ? { label: "Empleado",    cls: "bg-transparent border-[1.5px] border-blue-600/40 text-blue-700 dark:border-blue-300/40 dark:text-blue-300" }
     : usuario?.rol === "SuperAdmin"
-    ? { label: "Super Admin", cls: "bg-purple-100 text-purple-700" }
-    : { label: "Propietario", cls: "bg-slate-100 text-slate-600" };
+    ? { label: "Super Admin", cls: "bg-transparent border-[1.5px] border-purple-700/40 text-purple-700 dark:border-purple-300/40 dark:text-purple-300" }
+    : { label: "Propietario", cls: "bg-transparent border-[1.5px] border-slate-500/35 text-slate-600 dark:border-slate-400/30 dark:text-slate-400" };
 
   const menuProps = {
     usuario,
@@ -348,11 +348,14 @@ export default function DashboardLayout() {
         <div className="relative px-5 py-3 flex items-center justify-center shrink-0">
           <div className="flex flex-col items-center gap-1">
             <NavLink to="/dashboard" end onClick={cerrarSidebar}>
-              <img
-                src="/MasterLogo.png"
-                alt="AppointVa"
-                className={`object-contain rounded-lg transition-all duration-200 ${sidebarCollapsed ? "h-7" : "h-9"}`}
-              />
+              {sidebarCollapsed ? (
+                <>
+                  <img src="/icons/LogoApp.png" alt="AppointVa" className="h-7 object-contain transition-all duration-200 block dark:hidden" />
+                  <img src="/icons/LogoAppOscuro.png" alt="AppointVa" className="h-7 object-contain transition-all duration-200 hidden dark:block" />
+                </>
+              ) : (
+                <img src="/icons/Banner.png" alt="AppointVa" className="h-10 object-contain transition-all duration-200" />
+              )}
             </NavLink>
             {!sidebarCollapsed && esEmpleado && (
               <span className="text-[10px] font-bold bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full uppercase tracking-wide">
@@ -485,7 +488,8 @@ export default function DashboardLayout() {
             <Menu size={18} />
           </button>
           <NavLink to="/dashboard" end>
-            <img src="/MasterLogo.png" alt="AppointVa" className="h-7 object-contain rounded-lg" />
+            <img src="/icons/LogoApp.png" alt="AppointVa" className="h-7 object-contain rounded-lg block dark:hidden" />
+            <img src="/icons/LogoAppOscuro.png" alt="AppointVa" className="h-7 object-contain rounded-lg hidden dark:block" />
           </NavLink>
           {esEmpleado && (
             <span className="text-[10px] font-bold bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 px-2 py-0.5 rounded-full uppercase tracking-wide">
