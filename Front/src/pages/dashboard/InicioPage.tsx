@@ -133,6 +133,123 @@ function WizardOnboarding({ negocioId, slug, tieneServicios, tieneHorarios, tien
   );
 }
 
+// ── Pantalla de bienvenida ────────────────────────────────────────────────────
+function BienvenidaScreen({
+  tieneServicios,
+  tieneHorarios,
+  onSkip,
+}: {
+  tieneServicios: boolean;
+  tieneHorarios: boolean;
+  onSkip: () => void;
+}) {
+  const hechos = [tieneServicios, tieneHorarios].filter(Boolean).length;
+  const pasos = [
+    {
+      done: tieneServicios,
+      Icono: Scissors,
+      titulo: "Agrega tu primer servicio",
+      desc: "Define qué ofreces, su duración y precio. Sin servicios, nadie puede reservar.",
+      href: "/dashboard/servicios",
+      cta: "Agregar servicio",
+    },
+    {
+      done: tieneHorarios,
+      Icono: CalendarDays,
+      titulo: "Configura tus horarios",
+      desc: "Indica cuándo estás disponible. Elige días y horas de atención.",
+      href: "/dashboard/perfil?tab=horarios",
+      cta: "Configurar horarios",
+    },
+  ];
+
+  return (
+    <div className="max-w-lg mx-auto py-8 animate-fade-in">
+      <div className="text-center mb-8">
+        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-slate-900 dark:bg-slate-700 mb-4 shadow-lg">
+          <Store size={26} className="text-white" />
+        </div>
+        <h2 className="text-2xl font-black text-slate-900 dark:text-gray-100 mb-1.5">
+          Tu página está casi lista
+        </h2>
+        <p className="text-sm text-slate-500 dark:text-slate-400">
+          {2 - hechos === 1 ? "Falta 1 paso" : "Faltan 2 pasos"} para que tus clientes puedan reservar.
+        </p>
+      </div>
+
+      <div className="flex items-center justify-between mb-5 px-1">
+        <span className="text-xs font-bold text-slate-500 dark:text-slate-400">{hechos} de 2 completados</span>
+        <div className="flex gap-2">
+          {[0, 1].map((i) => (
+            <div
+              key={i}
+              className={`h-1.5 w-10 rounded-full transition-all duration-500 ${
+                i < hechos ? "bg-emerald-500" : "bg-gray-200 dark:bg-slate-700"
+              }`}
+            />
+          ))}
+        </div>
+      </div>
+
+      <div className="space-y-3 mb-8">
+        {pasos.map((paso, i) => (
+          <div
+            key={i}
+            className={`flex items-center gap-4 p-4 rounded-2xl border transition-all ${
+              paso.done
+                ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800"
+                : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm"
+            }`}
+          >
+            <div
+              className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                paso.done ? "bg-emerald-500" : "bg-slate-100 dark:bg-slate-700"
+              }`}
+            >
+              {paso.done ? (
+                <CheckCircle2 size={20} className="text-white" />
+              ) : (
+                <paso.Icono size={18} className="text-slate-600 dark:text-slate-300" />
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p
+                className={`text-sm font-bold mb-0.5 ${
+                  paso.done
+                    ? "text-emerald-700 dark:text-emerald-400 line-through"
+                    : "text-slate-800 dark:text-gray-200"
+                }`}
+              >
+                {paso.titulo}
+              </p>
+              {!paso.done && (
+                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{paso.desc}</p>
+              )}
+            </div>
+            {!paso.done && (
+              <Link
+                to={paso.href}
+                className="shrink-0 px-4 py-2 rounded-xl bg-slate-900 dark:bg-slate-600 text-white text-xs font-bold hover:bg-slate-700 dark:hover:bg-slate-500 transition whitespace-nowrap"
+              >
+                {paso.cta}
+              </Link>
+            )}
+          </div>
+        ))}
+      </div>
+
+      <div className="text-center">
+        <button
+          onClick={onSkip}
+          className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition"
+        >
+          Saltar por ahora
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── Vista del propietario ─────────────────────────────────────────────────────
 function VistaPropietario({ nombre }: { nombre: string }) {
   const [dias, setDias] = useState(14);
@@ -182,6 +299,10 @@ function VistaPropietario({ nombre }: { nombre: string }) {
     queryFn: negociosApi.obtenerGaleria,
     staleTime: 1000 * 60 * 10,
   });
+
+  const tieneServicios = servicios.length > 0;
+  const tieneHorarios = horarios.some(h => h.activo);
+  const enBienvenida = mostrarWizard && (!tieneServicios || !tieneHorarios);
 
   const { data: citasDeHoy = [], isLoading: cargandoAgenda } = useQuery({
     queryKey: ["citas-agenda-hoy", hoy],
@@ -262,22 +383,30 @@ function VistaPropietario({ nombre }: { nombre: string }) {
         </div>
       )}
 
-      {negocio && usuario?.negocioId && (
-        <WizardOnboarding
-          negocioId={usuario.negocioId}
-          slug={negocio.slug ?? ""}
-          tieneServicios={servicios.length > 0}
-          tieneHorarios={horarios.some(h => h.activo)}
-          tieneEmpleados={empleados.length > 0}
-          tieneDescripcion={!!negocio.descripcion}
-          tieneGaleria={galeria.length > 0}
-          cargando={isLoading}
-          visible={mostrarWizard}
-          onClose={() => { localStorage.setItem(keyOnboarding, "1"); setMostrarWizard(false); }}
+      {enBienvenida ? (
+        <BienvenidaScreen
+          tieneServicios={tieneServicios}
+          tieneHorarios={tieneHorarios}
+          onSkip={() => { localStorage.setItem(keyOnboarding, "1"); setMostrarWizard(false); }}
         />
-      )}
+      ) : (
+        <>
+          {negocio && usuario?.negocioId && (
+            <WizardOnboarding
+              negocioId={usuario.negocioId}
+              slug={negocio.slug ?? ""}
+              tieneServicios={tieneServicios}
+              tieneHorarios={tieneHorarios}
+              tieneEmpleados={empleados.length > 0}
+              tieneDescripcion={!!negocio.descripcion}
+              tieneGaleria={galeria.length > 0}
+              cargando={isLoading}
+              visible={mostrarWizard}
+              onClose={() => { localStorage.setItem(keyOnboarding, "1"); setMostrarWizard(false); }}
+            />
+          )}
 
-      {isLoading ? (
+          {isLoading ? (
         <>
           <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-6">
             {[0,1,2].map(i => <Skeleton key={i} className="h-20 sm:h-24 rounded-2xl" />)}
@@ -518,7 +647,9 @@ function VistaPropietario({ nombre }: { nombre: string }) {
             </div>
           </div>
         </>
-      ) : null}
+          ) : null}
+        </>
+      )}
     </div>
   );
 }
