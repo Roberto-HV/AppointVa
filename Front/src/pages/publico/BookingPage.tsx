@@ -16,7 +16,7 @@ import PasoDatosCliente, { type DatosClienteForm } from "../../components/bookin
 import { Star, X, UserCircle, UserCheck, Tag, AlertCircle, ChevronLeft, ChevronRight, Lock } from "lucide-react";
 import PublicFooter from "../../components/PublicFooter";
 
-import { hexToChannels, DEFAULT_COLOR } from "../../lib/colorUtils";
+import { hexToChannels, DEFAULT_COLOR, degradeGradient } from "../../lib/colorUtils";
 
 function GaleriaSection({ imagenes }: { imagenes: ImagenGaleria[] }) {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -766,7 +766,7 @@ export default function BookingPage() {
       {/* Header oscuro del negocio */}
       <div
         className="relative overflow-hidden min-h-[180px] sm:min-h-[260px] lg:min-h-[300px] xl:min-h-[340px] flex flex-col justify-end"
-        style={{ background: "#0C0C0F" }}
+        style={{ background: negocio.portadaUrl ? "#0C0C0F" : degradeGradient(color) }}
       >
         {/* Portada visible */}
         {negocio.portadaUrl && (
