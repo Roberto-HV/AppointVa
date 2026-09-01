@@ -133,7 +133,7 @@ function GaleriaSection({ imagenes }: { imagenes: ImagenGaleria[] }) {
             <button
               key={i}
               onClick={() => setLightbox(img.url)}
-              className="snap-center shrink-0 rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-shadow h-36 sm:h-72"
+              className="snap-center shrink-0 rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-shadow aspect-[4/5]"
               style={{ width: "calc(100% - 40px)" }}
             >
               <img src={img.url} alt={img.descripcion ?? ""} className="w-full h-full object-cover" draggable={false} />
