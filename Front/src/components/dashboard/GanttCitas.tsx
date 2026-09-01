@@ -16,17 +16,17 @@ const COL_MIN_W = 148;
 const ESTADO_BG: Record<string, string> = {
   Pendiente:    "bg-amber-400 hover:bg-amber-500",
   Confirmada:   "bg-emerald-500 hover:bg-emerald-600",
-  Completada:   "bg-slate-300 hover:bg-slate-400",
-  Cancelada:    "bg-red-100 hover:bg-red-200 border border-red-300",
-  Inasistencia: "bg-orange-100 hover:bg-orange-200 border border-orange-300",
+  Completada:   "bg-slate-300 dark:bg-slate-600 hover:bg-slate-400 dark:hover:bg-slate-500",
+  Cancelada:    "bg-red-100 dark:bg-red-900/40 hover:bg-red-200 dark:hover:bg-red-900/60 border border-red-300 dark:border-red-700",
+  Inasistencia: "bg-orange-100 dark:bg-orange-900/40 hover:bg-orange-200 dark:hover:bg-orange-900/60 border border-orange-300 dark:border-orange-700",
 };
 
 const ESTADO_TEXT: Record<string, string> = {
   Pendiente:    "text-white",
   Confirmada:   "text-white",
-  Completada:   "text-slate-500",
-  Cancelada:    "text-red-400 line-through",
-  Inasistencia: "text-orange-500",
+  Completada:   "text-slate-500 dark:text-slate-300",
+  Cancelada:    "text-red-400 dark:text-red-400 line-through",
+  Inasistencia: "text-orange-500 dark:text-orange-400",
 };
 
 const EMP_COLORS = [
@@ -36,8 +36,8 @@ const EMP_COLORS = [
 
 const LEYENDA = [
   { label: "Confirmada", cls: "bg-emerald-500" },
-  { label: "Completada", cls: "bg-slate-300" },
-  { label: "Cancelada",  cls: "bg-red-100 border border-red-300" },
+  { label: "Completada", cls: "bg-slate-300 dark:bg-slate-600" },
+  { label: "Cancelada",  cls: "bg-red-100 dark:bg-red-900/40 border border-red-300 dark:border-red-700" },
 ];
 
 function horaLabel(h: number): string {
@@ -123,13 +123,13 @@ export default function GanttCitas({ onCitaClick }: Props) {
   const citasActivas = citas.filter((c) => c.estadoTexto !== "Cancelada" && c.estadoTexto !== "Inasistencia");
 
   return (
-    <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+    <div className="bg-white dark:bg-slate-900 rounded-xl border border-gray-100 dark:border-slate-700 overflow-hidden">
       {/* Toolbar */}
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100 flex-wrap">
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100 dark:border-slate-700 flex-wrap">
         <div className="flex items-center gap-1">
           <button
             onClick={() => setFecha(navFecha(fecha, -1))}
-            className="p-2 rounded-lg hover:bg-gray-100 transition text-gray-500 text-sm leading-none"
+            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition text-gray-500 dark:text-slate-400 text-sm leading-none"
             aria-label="Día anterior"
           >
             ←
@@ -139,7 +139,7 @@ export default function GanttCitas({ onCitaClick }: Props) {
           </div>
           <button
             onClick={() => setFecha(navFecha(fecha, 1))}
-            className="p-2 rounded-lg hover:bg-gray-100 transition text-gray-500 text-sm leading-none"
+            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition text-gray-500 dark:text-slate-400 text-sm leading-none"
             aria-label="Día siguiente"
           >
             →
@@ -148,19 +148,19 @@ export default function GanttCitas({ onCitaClick }: Props) {
         <button
           onClick={() => setFecha(hoy)}
           disabled={fecha === hoy}
-          className="text-xs text-slate-700 border border-slate-200 hover:bg-slate-50 disabled:opacity-40 px-2.5 py-1.5 rounded-lg transition"
+          className="text-xs text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-40 px-2.5 py-1.5 rounded-lg transition"
         >
           Hoy
         </button>
         <div className="ml-auto flex items-center gap-4">
-          <span className="text-xs text-gray-400">
+          <span className="text-xs text-gray-400 dark:text-slate-500">
             {isLoading ? "Cargando..." : `${citasActivas.length} cita${citasActivas.length !== 1 ? "s" : ""}`}
           </span>
           <div className="hidden sm:flex items-center gap-3">
             {LEYENDA.map(({ label, cls }) => (
               <div key={label} className="flex items-center gap-1.5">
                 <div className={`w-2.5 h-2.5 rounded-sm ${cls}`} />
-                <span className="text-[11px] text-gray-400">{label}</span>
+                <span className="text-[11px] text-gray-400 dark:text-slate-500">{label}</span>
               </div>
             ))}
           </div>
@@ -168,11 +168,11 @@ export default function GanttCitas({ onCitaClick }: Props) {
       </div>
 
       {isLoading ? (
-        <div className="h-40 flex items-center justify-center text-sm text-gray-400">
+        <div className="h-40 flex items-center justify-center text-sm text-gray-400 dark:text-slate-500">
           Cargando jornada...
         </div>
       ) : emps.length === 0 ? (
-        <div className="h-40 flex items-center justify-center text-sm text-gray-400">
+        <div className="h-40 flex items-center justify-center text-sm text-gray-400 dark:text-slate-500">
           No hay empleados activos
         </div>
       ) : (
@@ -180,8 +180,8 @@ export default function GanttCitas({ onCitaClick }: Props) {
           <div style={{ minWidth: 56 + emps.length * COL_MIN_W }}>
 
             {/* Employee header row */}
-            <div className="flex border-b border-gray-100 bg-gray-50/50 sticky top-0 z-10">
-              <div className="w-14 flex-shrink-0 border-r border-gray-100" />
+            <div className="flex border-b border-gray-100 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-800/50 sticky top-0 z-10">
+              <div className="w-14 flex-shrink-0 border-r border-gray-100 dark:border-slate-700" />
               {emps.map((emp, i) => {
                 const empCitas = (porEmp.get(emp.id) ?? []).filter(
                   (c) => c.estadoTexto !== "Cancelada" && c.estadoTexto !== "Inasistencia"
@@ -189,7 +189,7 @@ export default function GanttCitas({ onCitaClick }: Props) {
                 return (
                   <div
                     key={emp.id}
-                    className="flex-1 flex flex-col items-center py-3 border-r border-gray-100 last:border-r-0"
+                    className="flex-1 flex flex-col items-center py-3 border-r border-gray-100 dark:border-slate-700 last:border-r-0"
                     style={{ minWidth: COL_MIN_W }}
                   >
                     <div
@@ -198,10 +198,10 @@ export default function GanttCitas({ onCitaClick }: Props) {
                     >
                       {emp.nombre.charAt(0).toUpperCase()}
                     </div>
-                    <span className="text-xs font-semibold text-gray-800 truncate max-w-[120px] px-1 leading-tight">
+                    <span className="text-xs font-semibold text-gray-800 dark:text-slate-200 truncate max-w-[120px] px-1 leading-tight">
                       {emp.nombre}
                     </span>
-                    <span className="text-[10px] text-gray-400 mt-0.5">
+                    <span className="text-[10px] text-gray-400 dark:text-slate-500 mt-0.5">
                       {empCitas.length > 0
                         ? `${empCitas.length} cita${empCitas.length !== 1 ? "s" : ""}`
                         : "Sin citas"}
@@ -215,14 +215,14 @@ export default function GanttCitas({ onCitaClick }: Props) {
             <div className="flex relative" style={{ height: GRID_H }}>
 
               {/* Time labels */}
-              <div className="w-14 flex-shrink-0 border-r border-gray-100 relative">
+              <div className="w-14 flex-shrink-0 border-r border-gray-100 dark:border-slate-700 relative">
                 {horas.map((h) => (
                   <div
                     key={h}
                     className="absolute left-0 right-0 flex justify-end pr-2"
                     style={{ top: (h - HORA_INICIO) * PX_POR_HORA - 7 }}
                   >
-                    <span className="text-[10px] text-gray-400 font-medium">{horaLabel(h)}</span>
+                    <span className="text-[10px] text-gray-400 dark:text-slate-600 font-medium">{horaLabel(h)}</span>
                   </div>
                 ))}
               </div>
@@ -232,14 +232,14 @@ export default function GanttCitas({ onCitaClick }: Props) {
                 {horas.map((h) => (
                   <div
                     key={h}
-                    className="absolute left-0 right-0 border-t border-gray-100"
+                    className="absolute left-0 right-0 border-t border-gray-100 dark:border-slate-700/50"
                     style={{ top: (h - HORA_INICIO) * PX_POR_HORA }}
                   />
                 ))}
                 {horas.map((h) => (
                   <div
                     key={h + 0.5}
-                    className="absolute left-0 right-0 border-t border-gray-50"
+                    className="absolute left-0 right-0 border-t border-gray-50 dark:border-slate-800"
                     style={{ top: (h - HORA_INICIO + 0.5) * PX_POR_HORA }}
                   />
                 ))}
@@ -249,14 +249,14 @@ export default function GanttCitas({ onCitaClick }: Props) {
               {emps.map((emp) => (
                 <div
                   key={emp.id}
-                  className="flex-1 relative border-r border-gray-100 last:border-r-0"
+                  className="flex-1 relative border-r border-gray-100 dark:border-slate-700 last:border-r-0"
                   style={{ minWidth: COL_MIN_W }}
                 >
                   {(porEmp.get(emp.id) ?? []).map((cita) => {
                     const top = calcTop(cita.inicioEn);
                     const height = calcAltura(cita.duracionMinutos);
-                    const bg = ESTADO_BG[cita.estadoTexto] ?? "bg-gray-100 hover:bg-gray-200";
-                    const textCls = ESTADO_TEXT[cita.estadoTexto] ?? "text-gray-400";
+                    const bg = ESTADO_BG[cita.estadoTexto] ?? "bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600";
+                    const textCls = ESTADO_TEXT[cita.estadoTexto] ?? "text-gray-400 dark:text-slate-400";
                     const esActiva =
                       cita.estadoTexto === "Pendiente" || cita.estadoTexto === "Confirmada";
 
