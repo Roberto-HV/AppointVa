@@ -1025,6 +1025,114 @@
         </div>
       </div>
 
+      <!-- PASO 4 — Pantalla de bienvenida (primera sesión) -->
+      <div class="steps" style="margin-top:32px;">
+        <div class="step-item">
+          <div class="step-num" aria-hidden="true">4</div>
+          <div class="step-body">
+            <div class="step-title">Primera sesión: pantalla de bienvenida</div>
+            <p class="step-desc">Si aún no has agregado servicios ni configurado horarios, el sistema muestra la <strong>pantalla de bienvenida</strong> en lugar del dashboard completo. Dos tarjetas te guían con los pasos mínimos para que tus clientes puedan reservar.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- MOCKUP — Bienvenida Setup -->
+      <div class="mockup-wrapper">
+        <div class="app-screen">
+          <div class="m-app">
+            <!-- Sidebar -->
+            <div class="m-sidebar">
+              <div class="m-logo-row">
+                <div class="m-logo-circle">
+                  <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="1" y="2" width="16" height="14" rx="3" stroke="#fff" stroke-width="1.4"/><line x1="6" y1="1" x2="6" y2="4" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/><line x1="12" y1="1" x2="12" y2="4" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/><rect x="4" y="9" width="4" height="4" rx="1" fill="#fff" fill-opacity="0.7"/></svg>
+                </div>
+                <span class="m-logo-text">AppointVa</span>
+              </div>
+              <div class="m-nav">
+                <div class="m-nav-item active">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+                  Inicio
+                </div>
+                <div class="m-nav-item">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                  Citas
+                </div>
+                <div class="m-nav-item">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                  Servicios
+                </div>
+                <div class="m-nav-item">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                  Empleados
+                </div>
+              </div>
+              <div class="m-sidebar-user">
+                <div class="m-user-av">LC</div>
+                <div>
+                  <div class="m-user-name">Laura C.</div>
+                  <div class="m-user-role">Propietaria</div>
+                </div>
+              </div>
+            </div>
+            <!-- Bienvenida content -->
+            <div class="m-main" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:18px 20px;gap:0;">
+              <!-- Ícono -->
+              <div style="width:36px;height:36px;background:#1e293b;border-radius:9px;display:flex;align-items:center;justify-content:center;margin-bottom:8px;flex-shrink:0;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+              </div>
+              <div style="font-size:9.5px;font-weight:800;color:#0f172a;margin-bottom:3px;text-align:center;">Tu página está casi lista</div>
+              <div style="font-size:6px;color:#64748b;margin-bottom:10px;text-align:center;">Faltan 2 pasos para que tus clientes puedan reservar.</div>
+              <!-- Progress -->
+              <div style="width:100%;display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;">
+                <span style="font-size:5px;font-weight:700;color:#64748b;">0 de 2 completados</span>
+                <div style="display:flex;gap:4px;">
+                  <div style="width:22px;height:3px;border-radius:99px;background:#e2e8f0;"></div>
+                  <div style="width:22px;height:3px;border-radius:99px;background:#e2e8f0;"></div>
+                </div>
+              </div>
+              <!-- Paso 1 — Servicios -->
+              <div style="width:100%;border:1px solid #e2e8f0;border-radius:7px;padding:5px 6px;display:flex;align-items:center;gap:5px;margin-bottom:4px;background:#fff;">
+                <div style="width:20px;height:20px;border-radius:5px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                </div>
+                <div style="flex:1;min-width:0;">
+                  <div style="font-size:6px;font-weight:700;color:#0f172a;line-height:1.3;">Agrega tu primer servicio</div>
+                  <div style="font-size:5px;color:#64748b;">Define qué ofreces, su duración y precio.</div>
+                </div>
+                <div style="background:#1e293b;color:#fff;border-radius:5px;padding:3px 6px;font-size:5px;font-weight:700;white-space:nowrap;flex-shrink:0;">Agregar servicio</div>
+              </div>
+              <!-- Paso 2 — Horarios -->
+              <div style="width:100%;border:1px solid #e2e8f0;border-radius:7px;padding:5px 6px;display:flex;align-items:center;gap:5px;background:#fff;">
+                <div style="width:20px;height:20px;border-radius:5px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                </div>
+                <div style="flex:1;min-width:0;">
+                  <div style="font-size:6px;font-weight:700;color:#0f172a;line-height:1.3;">Configura tus horarios</div>
+                  <div style="font-size:5px;color:#64748b;">Indica cuándo estás disponible.</div>
+                </div>
+                <div style="background:#1e293b;color:#fff;border-radius:5px;padding:3px 6px;font-size:5px;font-weight:700;white-space:nowrap;flex-shrink:0;">Configurar horarios</div>
+              </div>
+              <div style="font-size:5px;color:#94a3b8;margin-top:9px;">Saltar por ahora</div>
+            </div>
+          </div>
+          <!-- Callouts -->
+          <div class="callout" style="top:68px;left:232px">1</div>
+          <div class="callout" style="top:145px;left:232px">2</div>
+          <div class="callout" style="top:195px;left:232px">3</div>
+        </div>
+        <div class="callout-legend">
+          <div class="legend-item"><span class="n">1</span> Barra de progreso — muestra cuántos de los 2 pasos obligatorios has completado.</div>
+          <div class="legend-item"><span class="n">2</span> Tarjeta de paso pendiente — el botón te lleva directamente a la sección para completarlo.</div>
+          <div class="legend-item"><span class="n">3</span> <em>Saltar por ahora</em> — te lleva al dashboard completo sin completar la configuración (puedes retomarlo después).</div>
+        </div>
+      </div>
+
+      <div class="info" style="margin-top:0;">
+        <svg class="info-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="9" stroke="#2563eb" stroke-width="1.5"/><line x1="11" y1="7" x2="11" y2="11.5" stroke="#2563eb" stroke-width="2" stroke-linecap="round"/><circle cx="11" cy="14.5" r="1.2" fill="#2563eb"/></svg>
+        <p><strong>Dato clave:</strong> La pantalla de bienvenida desaparece <strong>automáticamente</strong> en cuanto tienes al menos un servicio y al menos un horario activo. No necesitas cerrarla manualmente.</p>
+      </div>
+
+      <!-- Paso 5 — Consejo original -->
       <div class="tip">
         <svg class="tip-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
           <circle cx="11" cy="11" r="9" stroke="#C8A961" stroke-width="1.5"/>
@@ -2555,8 +2663,8 @@
     <div class="divider" aria-hidden="true"></div>
     <div style="padding-top: 52px;">
       <div class="section-label">Sección 07</div>
-      <h2 class="section-title" id="h-calendar">Calendar / Vista semana</h2>
-      <p style="font-size:14px; color:var(--gray); margin-bottom:24px;">Desde <strong>Citas</strong> en el menú lateral, cambia a la pestaña <strong>Semana</strong> para ver todas tus citas distribuidas en un calendario visual de lunes a domingo.</p>
+      <h2 class="section-title" id="h-calendar">Citas: Lista, Calendario y Línea de tiempo</h2>
+      <p style="font-size:14px; color:var(--gray); margin-bottom:24px;">Desde <strong>Citas</strong> en el menú lateral encontrarás tres vistas. El <strong>toggle superior</strong> cambia entre <em>Lista</em> (cronológica), <em>Calendario</em> (semana visual) y <em>Línea de tiempo</em> (Gantt por empleado).</p>
 
       <!-- MOCKUP 08b — Vista Lista de citas -->
       <div class="mockup-wrapper">
@@ -2566,7 +2674,8 @@
               <span style="font-size:13px;font-weight:800;color:#0f172a;">Citas — 25 ago 2026</span>
               <div class="m-cal-toggle">
                 <div class="m-cal-tab active">Lista</div>
-                <div class="m-cal-tab">Semana</div>
+                <div class="m-cal-tab">Calendario</div>
+                <div class="m-cal-tab">Línea de tiempo</div>
               </div>
               <button class="m-btn" style="font-size:10px;padding:5px 12px;">＋ Nueva cita</button>
             </div>
@@ -2606,7 +2715,7 @@
           <div class="callout" style="top:8px;right:6px">4</div>
         </div>
         <div class="callout-legend">
-          <div class="legend-item"><span class="n">1</span> Toggle Lista / Semana — activa la vista de calendario semanal o la lista cronológica.</div>
+          <div class="legend-item"><span class="n">1</span> Toggle Lista / Calendario / Línea de tiempo — cambia entre las tres vistas de citas.</div>
           <div class="legend-item"><span class="n">2</span> Tarjeta de cita en vista lista — hora, cliente, servicio y empleado de un vistazo.</div>
           <div class="legend-item"><span class="n">3</span> Chip de estado (Confirmada / Pendiente / Completada) — haz clic para cambiar el estado.</div>
           <div class="legend-item"><span class="n">4</span> Nueva cita — crea una cita manual directamente desde esta pantalla.</div>
@@ -2614,8 +2723,8 @@
       </div>
 
       <div class="card">
-        <div class="card-title">Cambiar entre Lista y Semana</div>
-        <p>En la parte superior de la sección Citas encontrarás dos pestañas: <strong>Lista</strong> y <strong>Semana</strong>. Haz clic en <em>Semana</em> para activar el calendario. Puedes regresar a <em>Lista</em> en cualquier momento sin perder los filtros de fecha.</p>
+        <div class="card-title">Cambiar entre las tres vistas</div>
+        <p>En la parte superior de la sección Citas encontrarás tres pestañas: <strong>Lista</strong>, <strong>Calendario</strong> y <strong>Línea de tiempo</strong>. Puedes cambiar entre ellas en cualquier momento sin perder los filtros de fecha.</p>
       </div>
 
       <h3 style="font-size:16px; font-weight:700; margin:24px 0 14px;">¿Qué muestra el calendario?</h3>
@@ -2787,6 +2896,167 @@
           <div class="legend-item"><span class="n">4</span> Historial del cliente — citas anteriores de este cliente en tu negocio.</div>
         </div>
       </div>
+
+      <!-- ─────────────────────────────────────────── -->
+      <!-- Línea de tiempo (Gantt)                     -->
+      <!-- ─────────────────────────────────────────── -->
+      <h3 style="font-size:16px; font-weight:700; margin:32px 0 12px;">Vista: Línea de tiempo</h3>
+      <p style="font-size:14px; color:var(--gray); margin-bottom:20px;">Haz clic en la pestaña <strong>Línea de tiempo</strong> para ver todas las citas del día distribuidas por empleado. Cada columna es un empleado y cada bloque es una cita posicionada según su horario.</p>
+
+      <!-- MOCKUP — GanttCitas -->
+      <div class="mockup-wrapper">
+        <div class="app-screen" style="min-height:380px;">
+          <div style="font-family:Inter,system-ui,sans-serif;background:#f8fafc;height:380px;display:flex;flex-direction:column;overflow:hidden;">
+            <!-- Toolbar -->
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid #f1f5f9;background:#fff;flex-wrap:wrap;">
+              <div style="display:flex;align-items:center;gap:4px;">
+                <div style="width:22px;height:22px;border-radius:7px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;font-size:11px;color:#64748b;cursor:default;">←</div>
+                <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:3px 10px;font-size:11px;font-weight:600;color:#0f172a;white-space:nowrap;">25 ago 2026</div>
+                <div style="width:22px;height:22px;border-radius:7px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;font-size:11px;color:#64748b;cursor:default;">→</div>
+              </div>
+              <div style="background:#f1f5f9;border:1px solid #e2e8f0;border-radius:7px;padding:3px 9px;font-size:10px;font-weight:600;color:#334155;cursor:default;">Hoy</div>
+              <div style="margin-left:auto;display:flex;align-items:center;gap:10px;">
+                <span style="font-size:10px;color:#94a3b8;">5 citas</span>
+                <div style="display:flex;align-items:center;gap:5px;">
+                  <div style="width:8px;height:8px;border-radius:2px;background:#10b981;"></div><span style="font-size:9px;color:#64748b;">Confirmada</span>
+                  <div style="width:8px;height:8px;border-radius:2px;background:#94a3b8;margin-left:4px;"></div><span style="font-size:9px;color:#64748b;">Completada</span>
+                </div>
+              </div>
+            </div>
+            <!-- Gantt grid -->
+            <div style="flex:1;overflow:hidden;display:flex;">
+              <!-- Eje de horas -->
+              <div style="width:36px;min-width:36px;border-right:1px solid #f1f5f9;background:#fff;position:relative;overflow:hidden;">
+                <div style="height:28px;border-bottom:1px solid #f1f5f9;"></div><!-- header vacío -->
+                <div style="position:relative;height:252px;">
+                  <div style="position:absolute;top:0;left:0;right:0;font-size:8px;color:#94a3b8;text-align:right;padding-right:4px;">7 AM</div>
+                  <div style="position:absolute;top:36px;left:0;right:0;font-size:8px;color:#94a3b8;text-align:right;padding-right:4px;">9 AM</div>
+                  <div style="position:absolute;top:72px;left:0;right:0;font-size:8px;color:#94a3b8;text-align:right;padding-right:4px;">11 AM</div>
+                  <div style="position:absolute;top:108px;left:0;right:0;font-size:8px;color:#94a3b8;text-align:right;padding-right:4px;">1 PM</div>
+                  <div style="position:absolute;top:144px;left:0;right:0;font-size:8px;color:#94a3b8;text-align:right;padding-right:4px;">3 PM</div>
+                  <div style="position:absolute;top:180px;left:0;right:0;font-size:8px;color:#94a3b8;text-align:right;padding-right:4px;">5 PM</div>
+                  <div style="position:absolute;top:216px;left:0;right:0;font-size:8px;color:#94a3b8;text-align:right;padding-right:4px;">7 PM</div>
+                </div>
+              </div>
+              <!-- Columnas de empleados -->
+              <div style="flex:1;overflow-x:auto;display:flex;">
+                <!-- Empleado 1: Sofia Castro -->
+                <div style="min-width:120px;flex:1;border-right:1px solid #f1f5f9;display:flex;flex-direction:column;">
+                  <div style="height:28px;border-bottom:1px solid #f1f5f9;background:#f8fafc;display:flex;align-items:center;justify-content:center;padding:0 6px;">
+                    <div style="width:16px;height:16px;border-radius:50%;background:#4F46E5;display:flex;align-items:center;justify-content:center;font-size:8px;color:#fff;font-weight:700;margin-right:4px;">S</div>
+                    <span style="font-size:9px;font-weight:700;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Sofia C.</span>
+                  </div>
+                  <div style="flex:1;position:relative;background:#fff;">
+                    <!-- Líneas de hora -->
+                    <div style="position:absolute;top:0;left:0;right:0;bottom:0;">
+                      <div style="position:absolute;top:0;left:0;right:0;border-top:1px dashed #f1f5f9;"></div>
+                      <div style="position:absolute;top:36px;left:0;right:0;border-top:1px dashed #f1f5f9;"></div>
+                      <div style="position:absolute;top:72px;left:0;right:0;border-top:1px dashed #f1f5f9;"></div>
+                      <div style="position:absolute;top:108px;left:0;right:0;border-top:1px dashed #f1f5f9;"></div>
+                      <div style="position:absolute;top:144px;left:0;right:0;border-top:1px dashed #f1f5f9;"></div>
+                      <div style="position:absolute;top:180px;left:0;right:0;border-top:1px dashed #f1f5f9;"></div>
+                    </div>
+                    <!-- Cita 9:00 - 9:30 -->
+                    <div style="position:absolute;top:36px;left:3px;right:3px;height:19px;background:#10b981;border-radius:4px;padding:2px 4px;">
+                      <div style="font-size:8px;color:#fff;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Ana G. — Corte</div>
+                    </div>
+                    <!-- Cita 12:00 - 13:00 -->
+                    <div style="position:absolute;top:108px;left:3px;right:3px;height:37px;background:#10b981;border-radius:4px;padding:2px 4px;">
+                      <div style="font-size:8px;color:#fff;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Carla P.</div>
+                      <div style="font-size:7px;color:#d1fae5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Corte dama</div>
+                    </div>
+                    <!-- Línea "ahora" -->
+                    <div style="position:absolute;top:126px;left:0;right:0;border-top:1.5px solid #ef4444;z-index:2;">
+                      <div style="width:6px;height:6px;border-radius:50%;background:#ef4444;position:absolute;top:-3px;left:-3px;"></div>
+                    </div>
+                  </div>
+                </div>
+                <!-- Empleado 2: Marco Reyes -->
+                <div style="min-width:120px;flex:1;display:flex;flex-direction:column;">
+                  <div style="height:28px;border-bottom:1px solid #f1f5f9;background:#f8fafc;display:flex;align-items:center;justify-content:center;padding:0 6px;">
+                    <div style="width:16px;height:16px;border-radius:50%;background:#7C3AED;display:flex;align-items:center;justify-content:center;font-size:8px;color:#fff;font-weight:700;margin-right:4px;">M</div>
+                    <span style="font-size:9px;font-weight:700;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Marco R.</span>
+                  </div>
+                  <div style="flex:1;position:relative;background:#fff;">
+                    <div style="position:absolute;top:0;left:0;right:0;bottom:0;">
+                      <div style="position:absolute;top:0;left:0;right:0;border-top:1px dashed #f1f5f9;"></div>
+                      <div style="position:absolute;top:36px;left:0;right:0;border-top:1px dashed #f1f5f9;"></div>
+                      <div style="position:absolute;top:72px;left:0;right:0;border-top:1px dashed #f1f5f9;"></div>
+                      <div style="position:absolute;top:108px;left:0;right:0;border-top:1px dashed #f1f5f9;"></div>
+                      <div style="position:absolute;top:144px;left:0;right:0;border-top:1px dashed #f1f5f9;"></div>
+                      <div style="position:absolute;top:180px;left:0;right:0;border-top:1px dashed #f1f5f9;"></div>
+                    </div>
+                    <!-- Cita 10:30 pendiente -->
+                    <div style="position:absolute;top:63px;left:3px;right:3px;height:28px;background:#f59e0b;border-radius:4px;padding:2px 4px;">
+                      <div style="font-size:8px;color:#fff;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Luis M.</div>
+                      <div style="font-size:7px;color:#fef3c7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Coloración</div>
+                    </div>
+                    <!-- Cita 3:00 pm -->
+                    <div style="position:absolute;top:144px;left:3px;right:3px;height:19px;background:#94a3b8;border-radius:4px;padding:2px 4px;">
+                      <div style="font-size:8px;color:#fff;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Pedro L. — Barba</div>
+                    </div>
+                    <!-- Línea "ahora" -->
+                    <div style="position:absolute;top:126px;left:0;right:0;border-top:1.5px solid #ef4444;z-index:2;">
+                      <div style="width:6px;height:6px;border-radius:50%;background:#ef4444;position:absolute;top:-3px;left:-3px;"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="callout" style="top:10px;left:90px">1</div>
+          <div class="callout" style="top:10px;right:6px">2</div>
+          <div class="callout" style="top:48px;left:6px">3</div>
+          <div class="callout" style="top:175px;left:50%">4</div>
+        </div>
+        <div class="callout-legend">
+          <div class="legend-item"><span class="n">1</span> Toolbar de fecha — navega día a día con las flechas o usa el selector de fecha; <em>Hoy</em> regresa al día actual.</div>
+          <div class="legend-item"><span class="n">2</span> Contador de citas — muestra cuántas citas activas hay en el día seleccionado.</div>
+          <div class="legend-item"><span class="n">3</span> Columnas por empleado — cada columna corresponde a un empleado con citas ese día; el color del avatar identifica al empleado en todo el Gantt.</div>
+          <div class="legend-item"><span class="n">4</span> Línea roja "ahora" — marca la hora actual en tiempo real; se actualiza cada 30 segundos.</div>
+        </div>
+      </div>
+
+      <div class="feat-list">
+        <div class="feat-item">
+          <div class="feat-dot"></div>
+          <div class="feat-text">
+            <strong>Bloques por estado</strong>
+            <span>Los bloques son de color según el estado: <strong>verde</strong> = Confirmada, <strong>ámbar</strong> = Pendiente, <strong>gris</strong> = Completada. Las Canceladas e Inasistencias se muestran en rojo/naranja con borde.</span>
+          </div>
+        </div>
+        <div class="feat-item">
+          <div class="feat-dot"></div>
+          <div class="feat-text">
+            <strong>Altura proporcional a la duración</strong>
+            <span>Un servicio de 30 min ocupa la mitad del espacio de uno de 60 min. Sirve para detectar de un vistazo los cuellos de botella y los huecos disponibles.</span>
+          </div>
+        </div>
+        <div class="feat-item">
+          <div class="feat-dot"></div>
+          <div class="feat-text">
+            <strong>Clic para ver detalle</strong>
+            <span>Haz clic sobre cualquier bloque para abrir el panel de detalle de la cita: cliente, servicio, empleado, estado y notas.</span>
+          </div>
+        </div>
+        <div class="feat-item">
+          <div class="feat-dot"></div>
+          <div class="feat-text">
+            <strong>Solo empleados con citas</strong>
+            <span>Si un empleado no tiene citas ese día, su columna no aparece. Si ninguno tiene citas, se muestran todos los empleados activos como columnas vacías.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="tip">
+        <svg class="tip-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+          <circle cx="11" cy="11" r="9" stroke="#C8A961" stroke-width="1.5"/>
+          <line x1="11" y1="7" x2="11" y2="11.5" stroke="#C8A961" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="11" cy="14.5" r="1.2" fill="#C8A961"/>
+        </svg>
+        <p><strong>Consejo:</strong> La Línea de tiempo es ideal cuando tienes varios empleados trabajando al mismo tiempo. De un vistazo ves quién está ocupado, quién tiene hueco y cómo se distribuye la carga del día sin tener que revisar cita por cita.</p>
+      </div>
+
     </div>
   </section>
 
@@ -3664,7 +3934,10 @@
     <div style="padding-top: 52px;">
       <div class="section-label">Sección 16</div>
       <h2 class="section-title" id="h-pagos">Pagos</h2>
-      <p style="font-size:14px; color:var(--gray); margin-bottom:24px;">Ve a <strong>Pagos</strong> en el menú lateral. Aquí registras y das seguimiento a todos los cobros de tu negocio.</p>
+      <p style="font-size:14px; color:var(--gray); margin-bottom:24px;">Ve a <strong>Pagos</strong> en el menú lateral. Encontrarás tres pestañas: <em>Cobro</em> (registrar un pago manual), <em>Historial</em> (lista de pagos del período) y <em>Corte del día</em> (resumen y cierre formal de caja).</p>
+
+      <h3 style="font-size:16px; font-weight:700; margin:0 0 12px;">Pestaña: Historial de pagos</h3>
+      <p style="font-size:14px; color:var(--gray); margin-bottom:20px;">El Historial muestra todos los pagos registrados en el período seleccionado. Filtra por día, semana, mes o rango personalizado. Puedes exportar la lista como CSV.</p>
 
       <!-- MOCKUP — Lista de pagos -->
       <div class="mockup-wrapper">
@@ -3783,6 +4056,139 @@
           <div class="legend-item"><span class="n">3</span> Método de pago — Efectivo, Tarjeta o Transferencia.</div>
           <div class="legend-item"><span class="n">4</span> Anticipo cobrado — marca si ya se cobró el anticipo previamente.</div>
         </div>
+      </div>
+
+      <!-- ─────────────────────────────────────────── -->
+      <!-- Corte del día                               -->
+      <!-- ─────────────────────────────────────────── -->
+      <h3 style="font-size:16px; font-weight:700; margin:32px 0 12px;">Pestaña: Corte del día</h3>
+      <p style="font-size:14px; color:var(--gray); margin-bottom:20px;">Haz clic en la pestaña <strong>Corte del día</strong> dentro de Pagos para ver el resumen del día y hacer el cierre formal de caja. Elige la fecha del corte con el selector y opcionalmente imprime el reporte.</p>
+
+      <div class="card">
+        <div class="card-title">¿Qué muestra el Corte del día?</div>
+        <p>Primero muestra los <strong>indicadores del día</strong>: citas atendidas, total cobrado, propinas y ticket promedio. Debajo, el <strong>desglose por método de pago</strong> (Efectivo, Tarjeta, Transferencia) con cantidad de transacciones y montos. Por último, el <strong>cierre formal de caja</strong> con efectivo inicial, cobrado en efectivo, retiros y diferencia.</p>
+      </div>
+
+      <!-- MOCKUP — Corte del día -->
+      <div class="mockup-wrapper">
+        <div class="app-screen" style="min-height:420px;">
+          <div style="font-family:Inter,system-ui,sans-serif;background:#f8fafc;min-height:420px;display:flex;flex-direction:column;">
+            <!-- Tabs -->
+            <div style="padding:10px 14px 0;background:#fff;border-bottom:1px solid #f1f5f9;">
+              <div style="display:flex;gap:2px;background:#f8fafc;border-radius:9px;padding:3px;width:fit-content;">
+                <div style="padding:4px 12px;border-radius:7px;font-size:11px;font-weight:600;color:#64748b;">Cobro</div>
+                <div style="padding:4px 12px;border-radius:7px;font-size:11px;font-weight:600;color:#64748b;">Historial</div>
+                <div style="padding:4px 12px;border-radius:7px;font-size:11px;font-weight:700;background:#0f172a;color:#fff;">Corte del día</div>
+              </div>
+            </div>
+            <div style="padding:12px 14px;overflow:auto;">
+              <!-- Selector de fecha + botón imprimir -->
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+                <div>
+                  <div style="font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px;">Fecha del corte</div>
+                  <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:4px 10px;font-size:11px;font-weight:600;color:#0f172a;">25 ago 2026</div>
+                </div>
+                <div style="margin-left:auto;display:flex;align-items:center;gap:6px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;padding:4px 10px;font-size:10px;font-weight:600;color:#334155;cursor:default;">
+                  🖨 Imprimir corte
+                </div>
+              </div>
+              <!-- KPI cards -->
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+                <div style="background:#f8fafc;border:1px solid #f1f5f9;border-radius:12px;padding:10px 12px;">
+                  <div style="font-size:9px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:3px;">Citas atendidas</div>
+                  <div style="font-size:22px;font-weight:900;color:#0f172a;line-height:1;">12</div>
+                </div>
+                <div style="background:#0f172a;border-radius:12px;padding:10px 12px;">
+                  <div style="font-size:9px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:3px;">Total cobrado</div>
+                  <div style="font-size:22px;font-weight:900;color:#fff;line-height:1;">$3,450</div>
+                </div>
+                <div style="background:#f8fafc;border:1px solid #f1f5f9;border-radius:12px;padding:10px 12px;">
+                  <div style="font-size:9px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:3px;">Propinas</div>
+                  <div style="font-size:22px;font-weight:900;color:#0d9488;line-height:1;">$180</div>
+                </div>
+                <div style="background:#f8fafc;border:1px solid #f1f5f9;border-radius:12px;padding:10px 12px;">
+                  <div style="font-size:9px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:3px;">Ticket promedio</div>
+                  <div style="font-size:22px;font-weight:900;color:#334155;line-height:1;">$287</div>
+                </div>
+              </div>
+              <!-- Desglose por método de pago -->
+              <div style="background:#fff;border:1px solid #f1f5f9;border-radius:12px;padding:10px 12px;margin-bottom:12px;">
+                <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Desglose por método de pago</div>
+                <div style="display:grid;grid-template-columns:1fr 40px 60px;gap:4px;font-size:10px;color:#94a3b8;margin-bottom:5px;padding-bottom:4px;border-bottom:1px solid #f1f5f9;">
+                  <span>Método</span><span style="text-align:center;">#</span><span style="text-align:right;">Monto</span>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 40px 60px;gap:4px;font-size:11px;color:#0f172a;margin-bottom:4px;">
+                  <span>Efectivo</span><span style="text-align:center;color:#64748b;">6</span><span style="text-align:right;font-weight:700;">$1,620</span>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 40px 60px;gap:4px;font-size:11px;color:#0f172a;margin-bottom:4px;">
+                  <span>Tarjeta</span><span style="text-align:center;color:#64748b;">4</span><span style="text-align:right;font-weight:700;">$1,480</span>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 40px 60px;gap:4px;font-size:11px;color:#0f172a;">
+                  <span>Transferencia</span><span style="text-align:center;color:#64748b;">2</span><span style="text-align:right;font-weight:700;">$350</span>
+                </div>
+              </div>
+              <!-- Cierre formal de caja -->
+              <div style="background:#fff;border:1px solid #f1f5f9;border-radius:12px;padding:10px 12px;margin-bottom:10px;">
+                <div style="font-size:11px;font-weight:700;color:#0f172a;margin-bottom:8px;">Cierre formal de caja</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px;">
+                  <div>
+                    <div style="font-size:9px;color:#94a3b8;margin-bottom:2px;">Efectivo inicial</div>
+                    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:4px 8px;font-size:11px;color:#0f172a;">$500.00</div>
+                  </div>
+                  <div>
+                    <div style="font-size:9px;color:#94a3b8;margin-bottom:2px;">Cobrado ef.</div>
+                    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:4px 8px;font-size:11px;color:#64748b;">$1,620.00</div>
+                  </div>
+                  <div>
+                    <div style="font-size:9px;color:#94a3b8;margin-bottom:2px;">Efectivo contado</div>
+                    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:4px 8px;font-size:11px;color:#0f172a;">$2,070.00</div>
+                  </div>
+                </div>
+                <!-- Retiros -->
+                <div style="margin-bottom:8px;">
+                  <div style="font-size:9px;font-weight:600;color:#94a3b8;margin-bottom:4px;">Retiros de caja</div>
+                  <div style="display:flex;justify-content:space-between;font-size:10px;color:#475569;margin-bottom:2px;">
+                    <span>Pago proveedor</span><span style="font-family:monospace;">$50.00</span>
+                  </div>
+                </div>
+                <!-- Formula summary — cuadrado -->
+                <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:8px 10px;">
+                  <div style="display:flex;justify-content:space-between;font-size:10px;color:#4b7a5a;margin-bottom:3px;">
+                    <span>Inicio + Cobrado − Retiros</span><span style="font-family:monospace;">$2,070.00</span>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;font-size:10px;color:#4b7a5a;margin-bottom:3px;">
+                    <span>Contado</span><span style="font-family:monospace;">$2,070.00</span>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700;color:#15803d;border-top:1px solid #bbf7d0;padding-top:4px;margin-top:2px;">
+                    <span>Diferencia</span><span style="font-family:monospace;">+$0.00</span>
+                  </div>
+                </div>
+              </div>
+              <button style="width:100%;background:#2563eb;color:#fff;border:none;border-radius:10px;padding:8px;font-size:11px;font-weight:700;cursor:default;">Guardar cierre</button>
+            </div>
+          </div>
+          <div class="callout" style="top:52px;left:130px">1</div>
+          <div class="callout" style="top:108px;left:6px">2</div>
+          <div class="callout" style="top:184px;left:6px">3</div>
+          <div class="callout" style="top:280px;left:6px">4</div>
+          <div class="callout" style="top:366px;left:6px">5</div>
+        </div>
+        <div class="callout-legend">
+          <div class="legend-item"><span class="n">1</span> Pestaña Corte del día — tercera pestaña dentro de la sección Pagos.</div>
+          <div class="legend-item"><span class="n">2</span> KPIs del día — citas atendidas, total cobrado, propinas y ticket promedio.</div>
+          <div class="legend-item"><span class="n">3</span> Desglose por método — cuánto se cobró en efectivo, tarjeta y transferencia.</div>
+          <div class="legend-item"><span class="n">4</span> Cierre formal — efectivo inicial, cobrado en efectivo y efectivo contado; se registran manualmente los retiros de caja.</div>
+          <div class="legend-item"><span class="n">5</span> Resumen de diferencia — verde si la caja cuadra, amarillo si hay sobrante o faltante; pulsa Guardar cierre para persitir el corte.</div>
+        </div>
+      </div>
+
+      <div class="info">
+        <svg class="info-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+          <circle cx="11" cy="11" r="9" stroke="#1d4ed8" stroke-width="1.5"/>
+          <line x1="11" y1="10" x2="11" y2="15" stroke="#1d4ed8" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="11" cy="7.5" r="1.2" fill="#1d4ed8"/>
+        </svg>
+        <p>El corte se guarda por fecha. Puedes consultarlo más tarde cambiando la fecha del selector. Si vuelves a guardar el mismo día, el cierre anterior se actualiza.</p>
       </div>
     </div>
   </section>
