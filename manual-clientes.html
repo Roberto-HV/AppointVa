@@ -2217,6 +2217,672 @@
     </div>
   </section>
 
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!--  BLOQUE 2: PARA EL CLIENTE                                      -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+
+  <!-- Chapter header -->
+  <section class="section anchor-target" id="cliente-intro" aria-labelledby="h-cliente-intro">
+    <div class="divider" aria-hidden="true"></div>
+    <div style="padding-top: 52px;">
+      <div style="background:var(--dark);border-radius:var(--radius-card);padding:28px 32px;position:relative;overflow:hidden;">
+        <div style="position:absolute;top:-60px;right:-60px;width:200px;height:200px;background:radial-gradient(circle,rgba(200,169,97,0.15) 0%,transparent 70%);border-radius:50%;pointer-events:none;" aria-hidden="true"></div>
+        <div style="position:relative;z-index:1;">
+          <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(200,169,97,0.15);border:1px solid rgba(200,169,97,0.35);color:var(--gold);font-size:11px;font-weight:700;padding:4px 14px;border-radius:999px;letter-spacing:0.3px;margin-bottom:14px;">
+            Bloque 2
+          </div>
+          <h2 id="h-cliente-intro" style="font-size:28px;font-weight:800;color:#fff;letter-spacing:-0.5px;line-height:1.2;margin-bottom:10px;">Para quien reserva una cita</h2>
+          <p style="font-size:15px;color:#9ca3af;max-width:580px;line-height:1.7;">Esta sección es para los clientes del negocio: las personas que entran a la página pública para agendar, consultar o cancelar citas, unirse a la lista de espera o dejar una reseña. No se requiere cuenta ni contraseña.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <!--  C-01 — RESERVAR UNA CITA PASO A PASO                          -->
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <section class="section anchor-target" id="c-reservar" aria-labelledby="h-c-reservar">
+    <div class="divider" aria-hidden="true"></div>
+    <div style="padding-top: 52px;">
+      <div class="section-label">Sección C-01</div>
+      <h2 class="section-title" id="h-c-reservar">Reservar una cita paso a paso</h2>
+
+      <!-- Encabezado del negocio + barra de pasos -->
+      <div class="mockup-wrapper" role="img" aria-label="Encabezado público del negocio y barra de progreso del asistente">
+        <div class="app-screen" style="overflow:hidden;">
+          <!-- Header oscuro del negocio -->
+          <div style="background:#0C0C0F;padding:18px 20px;display:flex;align-items:flex-start;gap:14px;position:relative;">
+            <div style="width:44px;height:44px;border-radius:14px;background:rgba(200,169,97,0.18);border:1.5px solid rgba(200,169,97,0.4);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;" aria-hidden="true">💇</div>
+            <div style="flex:1;min-width:0;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px;">
+                <span style="font-size:15px;font-weight:800;color:#fff;">Estudio Kenji</span>
+                <span style="font-size:10px;color:rgba(255,255,255,0.45);background:rgba(255,255,255,0.08);border-radius:999px;padding:1px 8px;">⭐ 4.8</span>
+              </div>
+              <p style="font-size:11px;color:rgba(255,255,255,0.55);margin:0;">Estilista profesional · CDMX, Col. Roma</p>
+            </div>
+            <span class="callout" style="top:14px;left:14px;">1</span>
+            <span class="callout" style="top:14px;right:14px;">2</span>
+          </div>
+          <!-- Barra de pasos -->
+          <div style="background:#1a1a1a;padding:10px 20px;display:flex;gap:3px;align-items:center;">
+            <div style="flex:1;height:4px;border-radius:2px;background:var(--gold);"></div>
+            <div style="flex:1;height:4px;border-radius:2px;background:var(--gold);"></div>
+            <div style="flex:1;height:4px;border-radius:2px;background:rgba(200,169,97,0.3);"></div>
+            <div style="flex:1;height:4px;border-radius:2px;background:rgba(200,169,97,0.15);"></div>
+            <span class="callout" style="top:68px;right:14px;">3</span>
+          </div>
+          <!-- Breadcrumb -->
+          <div style="background:#f8fafc;padding:8px 20px;border-bottom:1px solid #e2e8f0;font-size:11px;color:#334155;display:flex;align-items:center;gap:5px;">
+            <strong>Corte de cabello</strong>
+            <span style="color:#94a3b8;">›</span>
+            <span style="color:#64748b;">Ana García</span>
+            <span class="callout" style="top:90px;left:20px;">4</span>
+          </div>
+          <!-- Contenido paso (servicio selección) -->
+          <div style="background:#f8fafc;padding:14px 20px 18px;">
+            <p style="font-size:11px;color:#64748b;margin-bottom:10px;">Reserva tu cita</p>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <div style="background:#fff;border:2px solid var(--gold);border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:10px;">
+                <div style="width:8px;height:8px;border-radius:50%;background:var(--gold);flex-shrink:0;" aria-hidden="true"></div>
+                <div style="flex:1;">
+                  <div style="font-size:13px;font-weight:700;color:#0f172a;">Corte de cabello</div>
+                  <div style="font-size:11px;color:#64748b;margin-top:1px;">45 min</div>
+                </div>
+                <div style="font-size:13px;font-weight:800;color:#0f172a;">$180</div>
+              </div>
+              <div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:10px;">
+                <div style="width:8px;height:8px;border-radius:50%;background:#cbd5e1;flex-shrink:0;" aria-hidden="true"></div>
+                <div style="flex:1;">
+                  <div style="font-size:13px;font-weight:600;color:#334155;">Coloración completa</div>
+                  <div style="font-size:11px;color:#94a3b8;margin-top:1px;">2 h</div>
+                </div>
+                <div style="font-size:13px;font-weight:700;color:#334155;">$650</div>
+              </div>
+            </div>
+            <div style="margin-top:12px;background:var(--gold);border-radius:12px;padding:10px;text-align:center;font-size:12px;font-weight:700;color:#1a1a1a;">Continuar</div>
+          </div>
+        </div>
+        <div class="callout-legend">
+          <div class="legend-item"><span class="n">1</span><span>Logo, nombre del negocio y calificación promedio — siempre visible en la parte superior</span></div>
+          <div class="legend-item"><span class="n">2</span><span>Descripción y dirección del negocio — debajo del nombre</span></div>
+          <div class="legend-item"><span class="n">3</span><span>Barra de progreso de 4 pasos — el color dorado indica el avance actual</span></div>
+          <div class="legend-item"><span class="n">4</span><span>Breadcrumb con las selecciones anteriores — aparece a partir del paso 2</span></div>
+        </div>
+      </div>
+
+      <p style="font-size:14px;color:var(--gray);margin-bottom:28px;line-height:1.7;">
+        El asistente de reserva guía al cliente en 4 pasos: <strong>Servicio → Profesional → Fecha y hora → Datos</strong>. No hay login ni registro. En dispositivos móviles todo el flujo ocupa la pantalla completa; en escritorio aparece una galería del negocio a la izquierda.
+      </p>
+
+      <div class="booking-steps" role="list">
+
+        <!-- Paso 1 -->
+        <div class="booking-step" role="listitem">
+          <div class="step-num-col" aria-hidden="true">
+            <div class="step-circle">1</div>
+          </div>
+          <div class="step-body-col">
+            <h3>Elige el servicio</h3>
+            <p>Aparece una lista de los servicios del negocio con nombre, duración y precio. Toca el que quieres y presiona <strong>Continuar</strong>.</p>
+            <span class="step-tag">Servicio</span>
+          </div>
+          <div class="step-phone-col" aria-hidden="true">
+            <div class="phone">
+              <div class="phone-notch"></div>
+              <div class="phone-screen">
+                <div class="pscreen-bar">
+                  <div class="pscreen-bar-dot"></div>
+                  <span class="pscreen-bar-title">Estudio Kenji</span>
+                </div>
+                <div class="pscreen-body">
+                  <div class="pmock-label">Reserva tu cita</div>
+                  <div class="pmock-service-row selected">
+                    <div class="pmock-svc-dot"></div>
+                    <span class="pmock-svc-text">Corte de cabello</span>
+                    <span class="pmock-svc-price">$180 · 45 min</span>
+                  </div>
+                  <div class="pmock-service-row">
+                    <div class="pmock-svc-dot" style="background:var(--gray-light);"></div>
+                    <span class="pmock-svc-text">Coloración</span>
+                    <span class="pmock-svc-price">$650 · 2h</span>
+                  </div>
+                  <div class="pmock-service-row">
+                    <div class="pmock-svc-dot" style="background:var(--gray-light);"></div>
+                    <span class="pmock-svc-text">Mechas</span>
+                    <span class="pmock-svc-price">$800 · 3h</span>
+                  </div>
+                  <div class="pmock-btn" style="margin-top:4px;"><span>Continuar</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Paso 2 -->
+        <div class="booking-step" role="listitem">
+          <div class="step-num-col" aria-hidden="true">
+            <div class="step-circle">2</div>
+          </div>
+          <div class="step-body-col">
+            <h3>Elige el profesional</h3>
+            <p>Selecciona con quién quieres tu cita. Si no tienes preferencia, toca <strong>Cualquier disponible</strong> para que el sistema te asigne automáticamente.</p>
+            <span class="step-tag">Profesional</span>
+          </div>
+          <div class="step-phone-col" aria-hidden="true">
+            <div class="phone">
+              <div class="phone-notch"></div>
+              <div class="phone-screen">
+                <div class="pscreen-bar">
+                  <div class="pscreen-bar-dot"></div>
+                  <span class="pscreen-bar-title">Estudio Kenji</span>
+                </div>
+                <div class="pscreen-body">
+                  <div class="pmock-label">Elige tu profesional</div>
+                  <div class="pmock-service-row selected">
+                    <div style="width:14px;height:14px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span style="font-size:5px;font-weight:700;color:#fff;">AG</span></div>
+                    <span class="pmock-svc-text">Ana García</span>
+                  </div>
+                  <div class="pmock-service-row">
+                    <div style="width:14px;height:14px;border-radius:50%;background:#e2e8f0;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span style="font-size:5px;font-weight:700;color:#475569;">LM</span></div>
+                    <span class="pmock-svc-text">Luis Martínez</span>
+                  </div>
+                  <div class="pmock-service-row">
+                    <div style="width:14px;height:14px;border-radius:50%;background:#f1f5f9;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span style="font-size:6px;color:#64748b;">⚡</span></div>
+                    <span class="pmock-svc-text">Cualquier disponible</span>
+                  </div>
+                  <div class="pmock-btn" style="margin-top:4px;"><span>Continuar</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Paso 3 -->
+        <div class="booking-step" role="listitem">
+          <div class="step-num-col" aria-hidden="true">
+            <div class="step-circle">3</div>
+          </div>
+          <div class="step-body-col">
+            <h3>Fecha y hora</h3>
+            <p>Un calendario interactivo muestra los días disponibles. Al tocar un día aparece la cuadrícula de horarios libres. Los horarios ocupados aparecen en gris y no se pueden seleccionar.</p>
+            <span class="step-tag">Fecha y hora</span>
+          </div>
+          <div class="step-phone-col" aria-hidden="true">
+            <div class="phone">
+              <div class="phone-notch"></div>
+              <div class="phone-screen">
+                <div class="pscreen-bar">
+                  <div class="pscreen-bar-dot"></div>
+                  <span class="pscreen-bar-title">Estudio Kenji</span>
+                </div>
+                <div class="pscreen-body">
+                  <div class="pmock-label">Sep 2026</div>
+                  <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:5px;">
+                    <span style="font-size:4px;color:var(--gray);text-align:center;">L</span><span style="font-size:4px;color:var(--gray);text-align:center;">M</span><span style="font-size:4px;color:var(--gray);text-align:center;">M</span><span style="font-size:4px;color:var(--gray);text-align:center;">J</span><span style="font-size:4px;color:var(--gray);text-align:center;">V</span><span style="font-size:4px;color:var(--gray);text-align:center;">S</span><span style="font-size:4px;color:var(--gray);text-align:center;">D</span>
+                    <span style="font-size:4.5px;text-align:center;color:var(--gray-light);">1</span><span style="font-size:4.5px;text-align:center;color:var(--gray-light);">2</span><span style="font-size:4.5px;text-align:center;color:var(--dark);font-weight:700;">3</span><span style="font-size:4.5px;text-align:center;color:var(--dark);">4</span><span style="font-size:4.5px;text-align:center;color:var(--dark);">5</span><span style="font-size:4.5px;text-align:center;background:var(--gold);border-radius:50%;width:8px;height:8px;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-weight:700;margin:auto;">6</span><span style="font-size:4.5px;text-align:center;color:var(--gray-light);">7</span>
+                    <span style="font-size:4.5px;text-align:center;color:var(--dark);">8</span><span style="font-size:4.5px;text-align:center;color:var(--dark);">9</span><span style="font-size:4.5px;text-align:center;color:var(--dark);">10</span><span style="font-size:4.5px;text-align:center;color:var(--dark);">11</span><span style="font-size:4.5px;text-align:center;color:var(--dark);">12</span><span style="font-size:4.5px;text-align:center;color:var(--dark);">13</span><span style="font-size:4.5px;text-align:center;color:var(--gray-light);">14</span>
+                  </div>
+                  <div class="pmock-label">Horarios disponibles</div>
+                  <div class="pmock-slots">
+                    <div class="pmock-slot">9:00</div>
+                    <div class="pmock-slot selected">10:00</div>
+                    <div class="pmock-slot taken">11:00</div>
+                    <div class="pmock-slot">12:00</div>
+                    <div class="pmock-slot">2:00</div>
+                    <div class="pmock-slot">3:00</div>
+                  </div>
+                  <div class="pmock-btn" style="margin-top:5px;"><span>Continuar</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Paso 4 -->
+        <div class="booking-step" role="listitem">
+          <div class="step-num-col" aria-hidden="true">
+            <div class="step-circle">4</div>
+          </div>
+          <div class="step-body-col">
+            <h3>Ingresa tus datos</h3>
+            <p>Escribe tu nombre, teléfono y correo. Si ya has reservado antes, elige <strong>Soy cliente recurrente</strong> para buscar y autocompletar tus datos. Opcionalmente aplica un código de descuento antes de confirmar.</p>
+            <span class="step-tag">Tus datos</span>
+          </div>
+          <div class="step-phone-col" aria-hidden="true">
+            <div class="phone">
+              <div class="phone-notch"></div>
+              <div class="phone-screen">
+                <div class="pscreen-bar">
+                  <div class="pscreen-bar-dot"></div>
+                  <span class="pscreen-bar-title">Estudio Kenji</span>
+                </div>
+                <div class="pscreen-body">
+                  <div class="pmock-form-row">
+                    <div class="pmock-label">Nombre</div>
+                    <div class="pmock-input"><span>María González</span></div>
+                  </div>
+                  <div class="pmock-form-row">
+                    <div class="pmock-label">Teléfono</div>
+                    <div class="pmock-input"><span>55 1234 5678</span></div>
+                  </div>
+                  <div class="pmock-form-row">
+                    <div class="pmock-label">Correo</div>
+                    <div class="pmock-input"><span>maria@ejemplo.com</span></div>
+                  </div>
+                  <div style="font-size:5px;color:var(--blue);margin-top:3px;">¿Tienes un código de descuento?</div>
+                  <div class="pmock-btn" style="margin-top:5px;"><span>Confirmar cita</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /booking-steps -->
+
+      <div class="tip" role="note" style="margin-top:24px;">
+        <svg class="tip-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+          <circle cx="11" cy="11" r="9" stroke="#C8A961" stroke-width="1.6"/>
+          <path d="M11 10v5" stroke="#C8A961" stroke-width="1.8" stroke-linecap="round"/>
+          <circle cx="11" cy="7.5" r="1" fill="#C8A961"/>
+        </svg>
+        <p><strong>Sin disponibilidad:</strong> si el calendario no muestra horarios libres, busca el enlace <em>"¿Sin disponibilidad? Únete a la lista de espera"</em> que aparece debajo del calendario. Esto te lleva directamente a la Sección C-05.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <!--  C-02 — CONFIRMACIÓN DE LA RESERVA                              -->
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <section class="section anchor-target" id="c-confirmacion" aria-labelledby="h-c-confirmacion">
+    <div class="divider" aria-hidden="true"></div>
+    <div style="padding-top: 52px;">
+      <div class="section-label">Sección C-02</div>
+      <h2 class="section-title" id="h-c-confirmacion">Confirmación de la reserva</h2>
+
+      <p style="font-size:14px;color:var(--gray);margin-bottom:24px;line-height:1.7;">
+        Después de confirmar los datos, la aplicación crea la cita y muestra esta pantalla. Guarda el código de confirmación o compártela por WhatsApp — es lo único que necesitas para gestionar tu cita más adelante.
+      </p>
+
+      <div class="mockup-wrapper" role="img" aria-label="Pantalla de confirmación de cita con código, detalles y acciones">
+        <div class="app-screen" style="max-width:400px;margin:0 auto;">
+          <!-- Header oscuro con check -->
+          <div style="background:#0C0C0F;padding:24px 20px;text-align:center;position:relative;">
+            <div style="width:48px;height:48px;border-radius:14px;background:rgba(200,169,97,0.18);border:1.5px solid rgba(200,169,97,0.35);display:flex;align-items:center;justify-content:center;margin:0 auto 10px;">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 13l4 4L19 7" stroke="#C8A961" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <div style="font-size:18px;font-weight:800;color:#fff;margin-bottom:4px;">¡Cita confirmada!</div>
+            <div style="font-size:11px;color:rgba(255,255,255,0.4);">Guarda tu código o comparte por WhatsApp</div>
+            <span class="callout" style="top:18px;right:14px;">1</span>
+          </div>
+          <!-- Código de confirmación -->
+          <div style="background:#0C0C0F;padding:12px 20px 16px;text-align:center;border-top:1px solid rgba(255,255,255,0.06);">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,0.3);margin-bottom:6px;">Código de confirmación</div>
+            <div style="font-family:monospace;font-size:22px;font-weight:900;color:#fff;letter-spacing:0.2em;">K8F2JM</div>
+            <span class="callout" style="top:92px;left:14px;">2</span>
+          </div>
+          <!-- Detalles de la cita -->
+          <div style="background:#fff;padding:16px 20px;">
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;">Estado</span>
+                <span style="font-size:11px;font-weight:700;background:#dcfce7;color:#166534;padding:3px 10px;border-radius:999px;">✓ Confirmada</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;">Negocio</span>
+                <span style="font-size:12px;font-weight:600;color:#0f172a;">Estudio Kenji</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;">Servicio</span>
+                <span style="font-size:12px;font-weight:600;color:#0f172a;">Corte de cabello</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;">Profesional</span>
+                <span style="font-size:12px;font-weight:600;color:#0f172a;">Ana García</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;">Fecha y hora</span>
+                <span style="font-size:12px;font-weight:600;color:#0f172a;text-align:right;">sáb. 6 sep 2026 · 10:00 a.m.</span>
+              </div>
+              <div style="border-top:1px dashed #e2e8f0;padding-top:10px;display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-size:13px;font-weight:700;color:#334155;">Total</span>
+                <span style="font-size:18px;font-weight:900;color:#0f172a;">$180.00</span>
+              </div>
+            </div>
+            <span class="callout" style="top:170px;right:14px;">3</span>
+          </div>
+          <!-- Acciones -->
+          <div style="background:#f8fafc;padding:14px 20px;display:flex;flex-direction:column;gap:8px;">
+            <div style="background:#25D366;border-radius:12px;padding:10px;text-align:center;font-size:12px;font-weight:700;color:#fff;">Compartir por WhatsApp</div>
+            <div style="background:#0C0C0F;border-radius:12px;padding:10px;text-align:center;font-size:12px;font-weight:700;color:#fff;">Imprimir comprobante</div>
+            <div style="border:1px solid #e2e8f0;background:#fff;border-radius:12px;padding:8px;text-align:center;font-size:11px;color:#475569;">Agregar al calendario ▾</div>
+            <div style="text-align:center;padding-top:4px;">
+              <span style="font-size:11px;color:#94a3b8;margin-right:16px;cursor:pointer;text-decoration:underline;">Reagendar</span>
+              <span style="font-size:11px;color:#ef4444;cursor:pointer;text-decoration:underline;">Cancelar cita</span>
+            </div>
+            <span class="callout" style="bottom:14px;right:14px;">4</span>
+          </div>
+        </div>
+        <div class="callout-legend">
+          <div class="legend-item"><span class="n">1</span><span>Cabecera oscura con ícono de confirmación — indica que la cita quedó registrada exitosamente</span></div>
+          <div class="legend-item"><span class="n">2</span><span>Código de confirmación en monoespaciado — guárdalo o comparte el enlace para acceder después</span></div>
+          <div class="legend-item"><span class="n">3</span><span>Resumen de la cita: negocio, servicio, profesional, fecha/hora y precio total</span></div>
+          <div class="legend-item"><span class="n">4</span><span>Acciones: compartir por WhatsApp, imprimir, agregar al calendario, reagendar o cancelar</span></div>
+        </div>
+      </div>
+
+      <div class="info" role="note">
+        <svg class="info-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+          <circle cx="11" cy="11" r="9" stroke="#2563eb" stroke-width="1.6"/>
+          <path d="M11 10v5" stroke="#2563eb" stroke-width="1.8" stroke-linecap="round"/>
+          <circle cx="11" cy="7.5" r="1" fill="#2563eb"/>
+        </svg>
+        <p><strong>Cita pendiente de confirmación:</strong> algunos negocios requieren aprobar manualmente cada reserva. Si el estado muestra <em>"⏳ Pendiente confirmación"</em>, recibirás un aviso por correo o WhatsApp cuando el negocio confirme tu cita.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <!--  C-03 — MIS CITAS (PORTAL DEL CLIENTE)                         -->
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <section class="section anchor-target" id="c-mis-citas" aria-labelledby="h-c-mis-citas">
+    <div class="divider" aria-hidden="true"></div>
+    <div style="padding-top: 52px;">
+      <div class="section-label">Sección C-03</div>
+      <h2 class="section-title" id="h-c-mis-citas">Mis citas — portal del cliente</h2>
+
+      <p style="font-size:14px;color:var(--gray);margin-bottom:24px;line-height:1.7;">
+        En la página del negocio hay un enlace <strong>"Mis citas"</strong> que abre el portal personal. Basta con ingresar el correo o el teléfono que usaste al reservar para ver todas tus citas pasadas y próximas.
+      </p>
+
+      <div class="mockup-wrapper" role="img" aria-label="Portal Mis Citas del cliente con formulario de acceso y lista de reservas">
+        <div class="app-screen" style="max-width:460px;margin:0 auto;">
+          <!-- Header -->
+          <div style="background:#f8fafc;padding:16px 20px 12px;border-bottom:1px solid #e2e8f0;">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:36px;height:36px;background:#0f172a;border-radius:12px;display:flex;align-items:center;justify-content:center;" aria-hidden="true">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="2" width="14" height="13" rx="2.5" stroke="white" stroke-width="1.2"/><line x1="1" y1="6.5" x2="15" y2="6.5" stroke="white" stroke-width="1.2"/><rect x="3" y="9" width="3" height="3" rx="0.8" fill="white" fill-opacity="0.7"/></svg>
+                </div>
+                <span style="font-size:16px;font-weight:800;color:#0f172a;">Mis citas</span>
+              </div>
+              <span style="font-size:11px;color:#94a3b8;cursor:pointer;">Cambiar cuenta</span>
+            </div>
+            <p style="font-size:12px;color:#64748b;margin-top:6px;margin-left:46px;">maria@ejemplo.com</p>
+            <span class="callout" style="top:14px;right:52px;">1</span>
+          </div>
+          <!-- Lista de citas -->
+          <div style="padding:14px 16px;background:#f8fafc;display:flex;flex-direction:column;gap:0;">
+            <!-- Label próximas -->
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+              <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#64748b;">Próximas</span>
+              <span style="font-size:10px;background:#dcfce7;color:#166534;font-weight:700;padding:1px 8px;border-radius:999px;">1</span>
+            </div>
+            <!-- Cita próxima -->
+            <div style="background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:14px;margin-bottom:10px;">
+              <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px;">
+                <div>
+                  <div style="font-size:13px;font-weight:800;color:#0f172a;">Corte de cabello</div>
+                  <div style="font-size:11px;color:#94a3b8;margin-top:2px;">con Ana García</div>
+                </div>
+                <span style="font-size:10px;font-weight:700;background:#dcfce7;color:#166534;padding:3px 10px;border-radius:999px;white-space:nowrap;">● Confirmada</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                <span style="font-size:11px;color:#64748b;">sáb. 6 sep 2026 · 10:00 a.m.</span>
+                <span style="font-size:13px;font-weight:800;color:#0f172a;">$180</span>
+              </div>
+              <div style="border-top:1px solid #f1f5f9;padding-top:8px;display:flex;align-items:center;justify-content:space-between;">
+                <span style="font-family:monospace;font-size:10px;color:#94a3b8;background:#f8fafc;padding:3px 8px;border-radius:6px;">K8F2JM</span>
+                <div style="display:flex;gap:10px;align-items:center;font-size:11px;font-weight:600;">
+                  <span style="color:#64748b;cursor:pointer;">Reagendar</span>
+                  <span style="color:#ef4444;cursor:pointer;">Cancelar</span>
+                  <span style="color:#0ea5e9;cursor:pointer;">Repetir</span>
+                  <span style="color:#334155;cursor:pointer;font-weight:700;">Ver →</span>
+                </div>
+              </div>
+              <span class="callout" style="top:70px;right:14px;">2</span>
+            </div>
+            <!-- Label historial -->
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;margin-top:4px;">
+              <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#64748b;">Historial</span>
+              <span style="font-size:10px;background:#f1f5f9;color:#475569;font-weight:700;padding:1px 8px;border-radius:999px;">2</span>
+            </div>
+            <!-- Cita histórica -->
+            <div style="background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:14px;">
+              <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px;">
+                <div>
+                  <div style="font-size:13px;font-weight:700;color:#0f172a;">Coloración completa</div>
+                  <div style="font-size:11px;color:#94a3b8;margin-top:2px;">con Luis Martínez</div>
+                </div>
+                <span style="font-size:10px;font-weight:700;background:#f1f5f9;color:#475569;padding:3px 10px;border-radius:999px;white-space:nowrap;">● Completada</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-size:11px;color:#64748b;">lun. 11 ago 2026 · 11:00 a.m.</span>
+                <span style="font-size:13px;font-weight:800;color:#0f172a;">$650</span>
+              </div>
+              <span class="callout" style="bottom:14px;right:14px;">3</span>
+            </div>
+          </div>
+        </div>
+        <div class="callout-legend">
+          <div class="legend-item"><span class="n">1</span><span>Header con tu correo activo y botón "Cambiar cuenta" para cerrar sesión</span></div>
+          <div class="legend-item"><span class="n">2</span><span>Cita próxima — badge de estado, fecha, precio, código y botones Reagendar / Cancelar / Repetir / Ver</span></div>
+          <div class="legend-item"><span class="n">3</span><span>Historial — citas pasadas con su estado (Completada, Cancelada, Inasistencia) y opción Repetir</span></div>
+        </div>
+      </div>
+
+      <div class="tip" role="note">
+        <svg class="tip-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+          <circle cx="11" cy="11" r="9" stroke="#C8A961" stroke-width="1.6"/>
+          <path d="M11 10v5" stroke="#C8A961" stroke-width="1.8" stroke-linecap="round"/>
+          <circle cx="11" cy="7.5" r="1" fill="#C8A961"/>
+        </svg>
+        <p><strong>Reagendar desde "Mis citas":</strong> toca el botón <em>Reagendar</em> en una cita próxima. Se abre un selector de fecha y hora; elige el nuevo horario y confirma. El cambio aplica inmediatamente, siempre que el negocio lo permita dentro del plazo de cancelación.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <!--  C-04 — CANCELAR UNA CITA                                       -->
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <section class="section anchor-target" id="c-cancelar" aria-labelledby="h-c-cancelar">
+    <div class="divider" aria-hidden="true"></div>
+    <div style="padding-top: 52px;">
+      <div class="section-label">Sección C-04</div>
+      <h2 class="section-title" id="h-c-cancelar">Cancelar una cita</h2>
+
+      <p style="font-size:14px;color:var(--gray);margin-bottom:24px;line-height:1.7;">
+        Puedes cancelar desde el enlace de tu correo de confirmación, desde la pantalla de confirmación o desde el portal "Mis citas". La página pide tu correo como verificación antes de proceder.
+      </p>
+
+      <div class="mockup-wrapper" role="img" aria-label="Pantalla de cancelación de cita con detalles y confirmación de correo">
+        <div class="app-screen" style="max-width:380px;margin:0 auto;">
+          <!-- Header del negocio -->
+          <div style="background:#334155;padding:16px 20px;text-align:center;">
+            <span style="font-size:15px;font-weight:700;color:#fff;">Estudio Kenji</span>
+            <span class="callout" style="top:10px;left:14px;">1</span>
+          </div>
+          <!-- Detalles de la cita -->
+          <div style="background:#fff;padding:18px 20px;">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#94a3b8;margin-bottom:12px;">Detalles de tu cita</div>
+            <div style="display:flex;flex-direction:column;gap:8px;font-size:13px;">
+              <div style="display:flex;justify-content:space-between;">
+                <span style="color:#64748b;">Servicio</span>
+                <span style="font-weight:600;color:#0f172a;">Corte de cabello</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;">
+                <span style="color:#64748b;">Con</span>
+                <span style="font-weight:600;color:#0f172a;">Ana García</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;">
+                <span style="color:#64748b;">Fecha</span>
+                <span style="font-weight:600;color:#0f172a;">sáb. 6 sep · 10:00 a.m.</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;">
+                <span style="color:#64748b;">Precio</span>
+                <span style="font-weight:600;color:#0f172a;">$180.00</span>
+              </div>
+            </div>
+            <!-- Política de cancelación -->
+            <div style="background:#fef3c7;border:1px solid #fde68a;border-radius:10px;padding:10px 12px;margin-top:12px;font-size:11px;color:#92400e;">
+              Esta cita solo puede cancelarse con al menos <strong>24 horas</strong> de anticipación.
+            </div>
+            <span class="callout" style="top:60px;right:14px;">2</span>
+          </div>
+          <!-- Formulario de confirmación -->
+          <div style="background:#f8fafc;padding:14px 20px;border-top:1px solid #e2e8f0;">
+            <div style="font-size:11px;color:#475569;margin-bottom:6px;">Confirma tu correo electrónico para cancelar</div>
+            <div style="background:#fff;border:1.5px solid #e2e8f0;border-radius:10px;padding:10px 12px;font-size:12px;color:#64748b;margin-bottom:10px;">tucorreo@ejemplo.com</div>
+            <div style="background:#ef4444;border-radius:10px;padding:10px;text-align:center;font-size:12px;font-weight:700;color:#fff;">Cancelar mi cita</div>
+            <span class="callout" style="bottom:14px;right:14px;">3</span>
+          </div>
+        </div>
+        <div class="callout-legend">
+          <div class="legend-item"><span class="n">1</span><span>Cabecera con el nombre del negocio — identifica de qué negocio es la cita que vas a cancelar</span></div>
+          <div class="legend-item"><span class="n">2</span><span>Detalles de la cita y política de cancelación — avisa si ya venció el período permitido</span></div>
+          <div class="legend-item"><span class="n">3</span><span>Campo de correo de verificación + botón de cancelación — después aparece una segunda confirmación antes de ejecutar la acción</span></div>
+        </div>
+      </div>
+
+      <div class="warn" role="note">
+        <svg class="warn-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+          <path d="M11 2L2 19h18L11 2z" stroke="#dc2626" stroke-width="1.6" stroke-linejoin="round"/>
+          <path d="M11 9v5" stroke="#dc2626" stroke-width="1.8" stroke-linecap="round"/>
+          <circle cx="11" cy="16.5" r="1" fill="#dc2626"/>
+        </svg>
+        <p><strong>Período vencido:</strong> si el negocio define un mínimo de horas de anticipación para cancelar y ese tiempo ya pasó, el botón aparece deshabilitado y no podrás cancelar en línea. Contacta directamente al negocio en ese caso.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <!--  C-05 — LISTA DE ESPERA                                         -->
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <section class="section anchor-target" id="c-lista-espera" aria-labelledby="h-c-lista-espera">
+    <div class="divider" aria-hidden="true"></div>
+    <div style="padding-top: 52px;">
+      <div class="section-label">Sección C-05</div>
+      <h2 class="section-title" id="h-c-lista-espera">Lista de espera</h2>
+
+      <p style="font-size:14px;color:var(--gray);margin-bottom:24px;line-height:1.7;">
+        Cuando el calendario del negocio no tiene horarios disponibles, puede activarse la lista de espera. Al registrarte, el sistema te avisa automáticamente si se libera un lugar.
+      </p>
+
+      <div class="mockup-wrapper" role="img" aria-label="Formulario de lista de espera con encabezado del negocio y campos de datos">
+        <div class="app-screen" style="max-width:400px;margin:0 auto;">
+          <!-- Header del negocio (oscuro con radial) -->
+          <div style="background:#0C0C0F;padding:28px 20px 18px;display:flex;flex-direction:column;align-items:center;gap:10px;position:relative;overflow:hidden;">
+            <div style="position:absolute;inset:0;background:radial-gradient(ellipse 80% 120% at 50% 0%, rgba(200,169,97,0.22) 0%, transparent 65%);pointer-events:none;" aria-hidden="true"></div>
+            <div style="position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:8px;">
+              <div style="width:48px;height:48px;border-radius:14px;background:rgba(200,169,97,0.18);border:1.5px solid rgba(200,169,97,0.4);display:flex;align-items:center;justify-content:center;font-size:24px;" aria-hidden="true">💇</div>
+              <span style="font-size:15px;font-weight:800;color:#fff;">Estudio Kenji</span>
+            </div>
+            <span class="callout" style="top:14px;right:14px;">1</span>
+          </div>
+          <!-- Formulario -->
+          <div style="background:#fff;margin:12px;border-radius:16px;padding:18px;box-shadow:0 4px 20px rgba(0,0,0,0.07);">
+            <div style="font-size:17px;font-weight:800;color:#0f172a;margin-bottom:4px;">Lista de espera</div>
+            <div style="font-size:12px;color:#64748b;margin-bottom:16px;">Déjanos tus datos y te avisamos cuando haya disponibilidad.</div>
+            <div style="display:flex;flex-direction:column;gap:12px;">
+              <div>
+                <label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Nombre completo <span style="color:#ef4444;">*</span></label>
+                <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px;font-size:12px;color:#0f172a;">María González</div>
+              </div>
+              <div>
+                <label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Teléfono <span style="color:#ef4444;">*</span></label>
+                <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px;font-size:12px;color:#0f172a;">55 1234 5678</div>
+              </div>
+              <div>
+                <label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Correo electrónico <span style="font-size:10px;color:#94a3b8;">(opcional)</span></label>
+                <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px;font-size:12px;color:#94a3b8;">correo@ejemplo.com</div>
+              </div>
+            </div>
+            <div style="margin-top:14px;background:var(--gold);border-radius:14px;padding:12px;text-align:center;font-size:13px;font-weight:700;color:#1a1a1a;">Unirme a la lista de espera</div>
+            <span class="callout" style="top:100px;right:14px;">2</span>
+            <span class="callout" style="bottom:14px;right:14px;">3</span>
+          </div>
+        </div>
+        <div class="callout-legend">
+          <div class="legend-item"><span class="n">1</span><span>Encabezado oscuro con logo y nombre del negocio — mismo estilo que la página de reserva</span></div>
+          <div class="legend-item"><span class="n">2</span><span>Formulario con nombre y teléfono obligatorios — el correo es opcional pero recomendable para recibir el aviso</span></div>
+          <div class="legend-item"><span class="n">3</span><span>Botón de registro — tras enviarlo aparece una pantalla de éxito confirmando que estás en la lista</span></div>
+        </div>
+      </div>
+
+      <div class="info" role="note">
+        <svg class="info-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+          <circle cx="11" cy="11" r="9" stroke="#2563eb" stroke-width="1.6"/>
+          <path d="M11 10v5" stroke="#2563eb" stroke-width="1.8" stroke-linecap="round"/>
+          <circle cx="11" cy="7.5" r="1" fill="#2563eb"/>
+        </svg>
+        <p><strong>Cómo llegas a la lista de espera:</strong> desde el paso 3 del asistente de reserva, si no hay horarios disponibles, encontrarás el enlace <em>"¿Sin disponibilidad? Únete a la lista de espera"</em> debajo del calendario. Este enlace lleva directamente aquí con el servicio preseleccionado.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <!--  C-06 — DEJAR UNA RESEÑA                                        -->
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <section class="section anchor-target" id="c-resena" aria-labelledby="h-c-resena">
+    <div class="divider" aria-hidden="true"></div>
+    <div style="padding-top: 52px;">
+      <div class="section-label">Sección C-06</div>
+      <h2 class="section-title" id="h-c-resena">Dejar una reseña</h2>
+
+      <p style="font-size:14px;color:var(--gray);margin-bottom:24px;line-height:1.7;">
+        Después de que el negocio marca tu cita como completada, recibes un correo con un enlace único para dejar tu reseña. Al calificar con 5 estrellas el texto de ayuda cambia a <strong>"¡Excelente!"</strong>. Las reseñas aparecen en la página pública del negocio.
+      </p>
+
+      <div class="mockup-wrapper" role="img" aria-label="Formulario de reseña con calificación de estrellas y campo de comentario">
+        <div class="app-screen" style="max-width:380px;margin:0 auto;background:#f8fafc;">
+          <div style="padding:24px 20px;display:flex;flex-direction:column;align-items:center;">
+            <div style="background:#fff;border:1px solid #e2e8f0;border-radius:20px;padding:28px 24px;width:100%;box-shadow:0 4px 24px rgba(0,0,0,0.06);">
+              <!-- Header -->
+              <div style="text-align:center;margin-bottom:20px;">
+                <div style="font-size:18px;font-weight:800;color:#0f172a;margin-bottom:4px;">Estudio Kenji</div>
+                <div style="font-size:12px;color:#64748b;">Corte de cabello · con Ana García</div>
+                <div style="font-size:12px;color:#94a3b8;margin-top:8px;">¿Cómo calificarías tu experiencia?</div>
+                <span class="callout" style="top:18px;right:14px;">1</span>
+              </div>
+              <!-- Estrellas -->
+              <div style="display:flex;justify-content:center;gap:8px;margin-bottom:12px;">
+                <span style="font-size:32px;filter:saturate(1);">⭐</span>
+                <span style="font-size:32px;">⭐</span>
+                <span style="font-size:32px;">⭐</span>
+                <span style="font-size:32px;">⭐</span>
+                <span style="font-size:28px;opacity:0.3;">☆</span>
+              </div>
+              <div style="text-align:center;font-size:13px;font-weight:600;color:#374151;margin-bottom:16px;">Bueno</div>
+              <span class="callout" style="top:118px;left:50%;transform:translateX(-50%);">2</span>
+              <!-- Comentario -->
+              <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px;font-size:12px;color:#64748b;min-height:64px;margin-bottom:16px;line-height:1.6;">
+                Excelente servicio, Ana estuvo muy atenta y el resultado fue justo lo que pedí. Definitivamente vuelvo.
+              </div>
+              <span class="callout" style="top:210px;right:14px;">3</span>
+              <!-- Botón -->
+              <div style="background:#0f172a;border-radius:12px;padding:12px;text-align:center;font-size:13px;font-weight:700;color:#fff;">Enviar reseña</div>
+              <span class="callout" style="bottom:14px;right:14px;">4</span>
+            </div>
+          </div>
+        </div>
+        <div class="callout-legend">
+          <div class="legend-item"><span class="n">1</span><span>Nombre del negocio, servicio recibido y nombre del profesional — identifican exactamente la cita calificada</span></div>
+          <div class="legend-item"><span class="n">2</span><span>5 estrellas interactivas — pasa el puntero o toca para seleccionar; el texto cambia de "Muy malo" a "¡Excelente!" según la calificación</span></div>
+          <div class="legend-item"><span class="n">3</span><span>Campo de comentario opcional (hasta 1 000 caracteres) — aparece debajo de las estrellas una vez que seleccionas una calificación</span></div>
+          <div class="legend-item"><span class="n">4</span><span>Botón "Enviar reseña" — solo se activa cuando seleccionas al menos 1 estrella; tras enviarlo el enlace expira</span></div>
+        </div>
+      </div>
+
+      <div class="success-note" role="note">
+        <svg class="success-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+          <circle cx="11" cy="11" r="9" stroke="#16a34a" stroke-width="1.6"/>
+          <path d="M7 11l3 3 5-5" stroke="#16a34a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <p><strong>Tu reseña aparece en la página pública:</strong> tras enviarla, se muestra en el perfil del negocio junto con tu nombre y la calificación. Ayuda a otros clientes a elegir y al negocio a mejorar su servicio.</p>
+      </div>
+    </div>
+  </section>
+
 </div><!-- /page -->
 </main>
 
