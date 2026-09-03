@@ -920,8 +920,8 @@
           <div class="toc-rail" aria-hidden="true"></div>
           <div class="toc-num" aria-hidden="true">05</div>
           <div class="toc-content">
-            <div class="toc-name">Mi perfil — foto, bio y horarios</div>
-            <div class="toc-desc">Configura cómo te ven los clientes y tus horas de trabajo</div>
+            <div class="toc-name">Mi perfil</div>
+            <div class="toc-desc">Contraseña, notificaciones y bloqueos de horario</div>
           </div>
           <div class="toc-arrow" aria-hidden="true">→</div>
         </a>
@@ -951,42 +951,50 @@
 
       <!-- MOCKUP S01: Login -->
       <div class="mockup-wrapper" role="img" aria-label="Pantalla de inicio de sesión del empleado">
-        <div class="app-screen" style="height:340px;background:#0f172a;display:flex;align-items:center;justify-content:center;">
-          <!-- Login card -->
-          <div style="background:#fff;border-radius:20px;padding:32px 28px;width:280px;box-shadow:0 8px 40px rgba(0,0,0,0.35);">
-            <div style="text-align:center;margin-bottom:20px;">
-              <div style="display:inline-flex;align-items:center;gap:8px;">
-                <div style="width:32px;height:32px;background:#334155;border-radius:9px;display:flex;align-items:center;justify-content:center;">
-                  <svg viewBox="0 0 18 18" fill="none" width="16" height="16"><rect x="2" y="3" width="14" height="13" rx="2.5" fill="white" fill-opacity="0.15" stroke="white" stroke-width="1.2"/><rect x="2" y="3" width="14" height="5" rx="2.5" fill="white" fill-opacity="0.25"/><line x1="6" y1="2" x2="6" y2="5" stroke="white" stroke-width="1.5" stroke-linecap="round"/><line x1="12" y1="2" x2="12" y2="5" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>
-                </div>
-                <span style="font-size:17px;font-weight:800;color:#0f172a;letter-spacing:-0.5px;">AppointVa</span>
-              </div>
-              <div style="margin-top:12px;font-size:13px;font-weight:600;color:#0f172a;">Iniciar sesión</div>
-              <div style="font-size:11px;color:#94a3b8;margin-top:2px;">Accede a tu panel de empleado</div>
+        <div class="app-screen" style="min-height:320px;display:flex;flex-direction:row;overflow:hidden;">
+          <!-- Left panel -->
+          <div style="flex:0 0 55%;background:#fff;padding:36px 32px;display:flex;flex-direction:column;justify-content:center;gap:14px;">
+            <div>
+              <div style="font-size:18px;font-weight:800;color:#0f172a;margin-bottom:4px;">Bienvenido de nuevo</div>
+              <div style="font-size:12px;color:#94a3b8;">Ingresa tus datos para continuar</div>
             </div>
-            <div style="margin-bottom:12px;">
+            <div>
               <div style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#94a3b8;margin-bottom:5px;">Correo electrónico</div>
               <div style="background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;padding:9px 12px;font-size:13px;color:#0f172a;">ana.lopez@gmail.com</div>
             </div>
-            <div style="margin-bottom:18px;">
-              <div style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#94a3b8;margin-bottom:5px;">Contraseña</div>
+            <div>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;">
+                <div style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#94a3b8;">Contraseña</div>
+                <span style="font-size:0.7rem;color:#C8A961;cursor:pointer;">¿Olvidaste tu contraseña?</span>
+              </div>
               <div style="background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;padding:9px 12px;font-size:13px;color:#0f172a;">••••••••••</div>
             </div>
-            <button style="width:100%;background:#334155;color:#fff;border:none;border-radius:12px;font-weight:600;font-size:13px;padding:11px;cursor:pointer;font-family:inherit;">Iniciar sesión</button>
-            <div style="text-align:center;margin-top:12px;font-size:12px;color:#475569;cursor:pointer;">¿Olvidaste tu contraseña?</div>
+            <button style="background:#334155;color:#fff;border:none;border-radius:12px;font-weight:600;font-size:13px;padding:11px;cursor:pointer;font-family:inherit;width:100%;">Iniciar sesión</button>
+          </div>
+          <!-- Right panel -->
+          <div style="flex:0 0 45%;background:#1e293b;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;gap:12px;">
+            <div style="font-size:22px;font-weight:800;color:#C8A961;letter-spacing:-0.5px;">AppointVa</div>
+            <div style="font-size:12px;color:#94a3b8;text-align:center;line-height:1.5;">La plataforma para tu negocio</div>
           </div>
           <!-- Callouts -->
-          <span class="callout" style="top:118px;left:calc(50% + 44px);">1</span>
-          <span class="callout" style="top:160px;left:calc(50% + 44px);">2</span>
-          <span class="callout" style="top:218px;left:calc(50% + 44px);">3</span>
-          <span class="callout" style="top:261px;left:calc(50% + 44px);">4</span>
+          <span class="callout" style="top:120px;left:calc(55% - 12px);">1</span>
+          <span class="callout" style="top:172px;left:calc(55% - 12px);">2</span>
+          <span class="callout" style="top:50%;right:12px;transform:translateY(-50%);">3</span>
         </div>
         <div class="callout-legend">
-          <div class="legend-item"><span class="n">1</span><span>Campo de correo electrónico — el mismo con el que el propietario te registró</span></div>
-          <div class="legend-item"><span class="n">2</span><span>Campo de contraseña — la que creaste al activar tu cuenta</span></div>
-          <div class="legend-item"><span class="n">3</span><span>Botón "Iniciar sesión" — te lleva directamente a tu panel de empleado</span></div>
-          <div class="legend-item"><span class="n">4</span><span>"¿Olvidaste tu contraseña?" — envía un correo de recuperación a tu email</span></div>
+          <div class="legend-item"><span class="n">1</span><span>Email y contraseña de tu cuenta</span></div>
+          <div class="legend-item"><span class="n">2</span><span>¿Olvidaste tu contraseña? — enlace junto a la etiqueta Contraseña</span></div>
+          <div class="legend-item"><span class="n">3</span><span>Panel derecho: branding AppointVa (solo informativo)</span></div>
         </div>
+      </div>
+
+      <div class="info" role="note">
+        <svg class="info-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+          <circle cx="11" cy="11" r="9" stroke="#2563eb" stroke-width="1.6"/>
+          <path d="M11 10v5" stroke="#2563eb" stroke-width="1.8" stroke-linecap="round"/>
+          <circle cx="11" cy="7.5" r="1" fill="#2563eb"/>
+        </svg>
+        <p><strong>Verificación en dos pasos:</strong> si tu cuenta tiene 2FA activado, después de ingresar tus credenciales verás una pantalla adicional para introducir el código de 6 dígitos enviado a tu correo.</p>
       </div>
 
       <p style="font-size:14px;color:var(--gray);margin-bottom:24px;line-height:1.7;">
@@ -1233,8 +1241,7 @@
           <!-- Main content -->
           <div style="flex:1;padding:18px;overflow:hidden;display:flex;flex-direction:column;gap:10px;">
             <div>
-              <div style="font-size:15px;font-weight:800;color:#0f172a;">Hola, Ana 👋</div>
-              <div style="font-size:11px;color:#94a3b8;">Salón Diana · Lunes 25 ago 2026</div>
+              <div style="font-size:15px;font-weight:800;color:#0f172a;">Buenos días, Ana</div>
             </div>
             <!-- Notification banner -->
             <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:10px 12px;display:flex;align-items:center;gap:10px;">
@@ -1252,43 +1259,51 @@
                 <div style="font-size:9px;color:#94a3b8;margin-top:2px;">Citas hoy</div>
               </div>
               <div style="background:#fff;border:1px solid #f1f5f9;border-radius:12px;padding:10px;">
-                <div style="font-size:22px;font-weight:800;color:#0f172a;line-height:1;">12</div>
-                <div style="font-size:9px;color:#94a3b8;margin-top:2px;">Esta semana</div>
-              </div>
-              <div style="background:#fff;border:1px solid #f1f5f9;border-radius:12px;padding:10px;">
                 <div style="font-size:22px;font-weight:800;color:#0f172a;line-height:1;">8</div>
                 <div style="font-size:9px;color:#94a3b8;margin-top:2px;">Completadas</div>
               </div>
+              <div style="background:#1a1a1a;border:1px solid #1a1a1a;border-radius:12px;padding:10px;">
+                <div style="font-size:22px;font-weight:800;color:#C8A961;line-height:1;">$1,250</div>
+                <div style="font-size:9px;color:#fff;margin-top:2px;">Ingresos</div>
+              </div>
             </div>
-            <!-- Upcoming appointments -->
-            <div style="font-size:9px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#94a3b8;">Próximas citas de hoy</div>
+            <!-- Weekly summary strip -->
+            <div style="background:#C8A961;color:#1a1a1a;padding:0.5rem 1rem;border-radius:8px;font-size:0.75rem;font-weight:700;">Esta semana: 3/8 citas completadas · $3,420</div>
+            <!-- Próxima cita -->
+            <div style="background:#fff;border:1px solid #f1f5f9;border-radius:10px;padding:8px 10px;">
+              <div style="font-size:8px;font-weight:700;text-transform:uppercase;color:#94a3b8;margin-bottom:3px;">Próxima cita</div>
+              <div style="font-size:11px;font-weight:700;color:#0f172a;">María González</div>
+              <div style="font-size:9px;color:#475569;margin-bottom:3px;">Corte y peinado</div>
+              <span style="background:#fef3c7;color:#92400e;font-size:8px;font-weight:700;padding:2px 7px;border-radius:999px;">En 25 min</span>
+            </div>
+            <!-- Agenda del día -->
+            <div style="font-size:9px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#94a3b8;">Agenda del día</div>
             <div style="background:#fff;border:1px solid #f1f5f9;border-radius:10px;padding:8px 10px;display:flex;align-items:center;gap:8px;">
               <div style="font-size:10px;font-weight:700;color:#334155;white-space:nowrap;">10:00</div>
               <div style="flex:1;"><div style="font-size:11px;font-weight:700;color:#0f172a;">María García</div><div style="font-size:9px;color:#94a3b8;">Corte de cabello · 45 min</div></div>
               <span style="background:#dcfce7;color:#166534;font-size:9px;font-weight:700;padding:2px 7px;border-radius:999px;">Confirmada</span>
             </div>
-            <div style="background:#fff;border:1px solid #f1f5f9;border-radius:10px;padding:8px 10px;display:flex;align-items:center;gap:8px;">
-              <div style="font-size:10px;font-weight:700;color:#334155;white-space:nowrap;">12:30</div>
-              <div style="flex:1;"><div style="font-size:11px;font-weight:700;color:#0f172a;">Sofía Reyes</div><div style="font-size:9px;color:#94a3b8;">Coloración completa · 90 min</div></div>
-              <span style="background:#fef3c7;color:#92400e;font-size:9px;font-weight:700;padding:2px 7px;border-radius:999px;">Pendiente</span>
-            </div>
           </div>
           <!-- Callouts -->
           <span class="callout" style="top:50%;left:80px;transform:translateY(-50%);">1</span>
           <span class="callout" style="top:78px;right:12px;">2</span>
-          <span class="callout" style="top:140px;right:12px;">3</span>
-          <span class="callout" style="top:230px;right:12px;">4</span>
+          <span class="callout" style="top:136px;right:12px;">3</span>
+          <span class="callout" style="top:200px;right:12px;">4</span>
+          <span class="callout" style="top:232px;right:12px;">5</span>
+          <span class="callout" style="top:280px;right:12px;">6</span>
         </div>
         <div class="callout-legend">
           <div class="legend-item"><span class="n">1</span><span>Sidebar del empleado — solo 4 secciones: Inicio, Mis citas, Pagos y Mi perfil</span></div>
           <div class="legend-item"><span class="n">2</span><span>Banner de notificaciones push — permite recibir alertas de nuevas citas en el navegador</span></div>
-          <div class="legend-item"><span class="n">3</span><span>Cards de resumen — citas del día, semana y completadas; solo las tuyas, no las del negocio completo</span></div>
-          <div class="legend-item"><span class="n">4</span><span>Lista de próximas citas del día con hora, cliente, servicio y chip de estado</span></div>
+          <div class="legend-item"><span class="n">3</span><span>Tres KPI cards: Citas hoy, Completadas e Ingresos — solo tus números, no los del negocio completo</span></div>
+          <div class="legend-item"><span class="n">4</span><span>Franja semanal — citas completadas e ingresos acumulados en la semana</span></div>
+          <div class="legend-item"><span class="n">5</span><span>Próxima cita — cliente, servicio y tiempo restante hasta la cita más cercana</span></div>
+          <div class="legend-item"><span class="n">6</span><span>Agenda del día — lista de citas con hora, cliente, servicio y chip de estado</span></div>
         </div>
       </div>
 
       <p style="font-size:14px;color:var(--gray);margin-bottom:24px;line-height:1.7;">
-        La pantalla de Inicio es lo primero que ves al entrar al panel. Te da un resumen rápido de lo que tienes programado sin necesidad de navegar a ningún otro lado.
+        La pantalla de Inicio es lo primero que ves al entrar al panel. Muestra el saludo con la hora del día, tres KPI cards (Citas hoy, Completadas e Ingresos), una franja con el resumen semanal, la tarjeta de próxima cita y la agenda del día — todo sin necesidad de navegar a ningún otro lado.
       </p>
 
       <div class="dashboard-mock" role="img" aria-label="Vista del panel de Inicio del empleado">
@@ -1323,7 +1338,7 @@
         </div>
         <!-- Contenido -->
         <div class="dmock-content">
-          <div class="dmock-content-title">Buenos días, Ana — Lunes 25 ago 2026</div>
+          <div class="dmock-content-title">Buenos días, Ana</div>
           <div class="stat-grid">
             <div class="dmock-stat">
               <div class="dmock-stat-num">5</div>
@@ -1433,16 +1448,33 @@
             <div style="font-size:14px;font-weight:800;color:#0f172a;">Mis citas</div>
             <!-- Toggle vista -->
             <div style="display:inline-flex;background:#f1f5f9;border-radius:10px;padding:3px;width:fit-content;">
-              <button style="background:#fff;border:none;border-radius:8px;font-size:10px;font-weight:700;color:#0f172a;padding:5px 12px;cursor:pointer;font-family:inherit;box-shadow:0 1px 3px rgba(0,0,0,0.1);">Vista lista</button>
-              <button style="background:transparent;border:none;font-size:10px;color:#475569;padding:5px 12px;cursor:pointer;font-family:inherit;">Vista semana</button>
+              <button style="background:#fff;border:none;border-radius:8px;font-size:10px;font-weight:700;color:#0f172a;padding:5px 12px;cursor:pointer;font-family:inherit;box-shadow:0 1px 3px rgba(0,0,0,0.1);">Lista</button>
+              <button style="background:transparent;border:none;font-size:10px;color:#475569;padding:5px 12px;cursor:pointer;font-family:inherit;">Calendario</button>
+              <button style="background:transparent;border:none;font-size:10px;color:#475569;padding:5px 12px;cursor:pointer;font-family:inherit;">Línea de tiempo</button>
             </div>
-            <!-- Filtros -->
-            <div style="display:flex;gap:5px;flex-wrap:wrap;">
-              <span style="background:#0f172a;color:#fff;font-size:9px;font-weight:700;padding:4px 10px;border-radius:999px;cursor:pointer;">Todas</span>
-              <span style="background:#fef3c7;color:#92400e;font-size:9px;font-weight:600;padding:4px 10px;border-radius:999px;cursor:pointer;">Pendiente</span>
-              <span style="background:#dcfce7;color:#166534;font-size:9px;font-weight:600;padding:4px 10px;border-radius:999px;cursor:pointer;">Confirmada</span>
-              <span style="background:#f1f5f9;color:#475569;font-size:9px;font-weight:600;padding:4px 10px;border-radius:999px;cursor:pointer;">Completada</span>
-              <span style="background:#fee2e2;color:#991b1b;font-size:9px;font-weight:600;padding:4px 10px;border-radius:999px;cursor:pointer;">Cancelada</span>
+            <!-- Barra de filtros -->
+            <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;">
+              <div style="display:flex;flex-direction:column;gap:1px;">
+                <span style="font-size:7px;font-weight:700;color:#94a3b8;text-transform:uppercase;">Desde</span>
+                <div style="background:#fff;border:1px solid #e2e8f0;border-radius:6px;padding:3px 7px;font-size:9px;color:#0f172a;">01/sep</div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:1px;">
+                <span style="font-size:7px;font-weight:700;color:#94a3b8;text-transform:uppercase;">Hasta</span>
+                <div style="background:#fff;border:1px solid #e2e8f0;border-radius:6px;padding:3px 7px;font-size:9px;color:#0f172a;">07/sep</div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:1px;">
+                <span style="font-size:7px;font-weight:700;color:#94a3b8;text-transform:uppercase;">Profesional</span>
+                <div style="background:#fff;border:1px solid #e2e8f0;border-radius:6px;padding:3px 7px;font-size:9px;color:#0f172a;">Todos ▾</div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:1px;">
+                <span style="font-size:7px;font-weight:700;color:#94a3b8;text-transform:uppercase;">Buscar</span>
+                <div style="background:#fff;border:1px solid #e2e8f0;border-radius:6px;padding:3px 7px;font-size:9px;color:#94a3b8;">Buscar...</div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:1px;">
+                <span style="font-size:7px;font-weight:700;color:#94a3b8;text-transform:uppercase;">Estado</span>
+                <div style="background:#fff;border:1px solid #e2e8f0;border-radius:6px;padding:3px 7px;font-size:9px;color:#0f172a;">Todas ▾</div>
+              </div>
+              <button style="background:#334155;color:#fff;border:none;border-radius:6px;font-size:8px;font-weight:700;padding:5px 8px;cursor:pointer;font-family:inherit;margin-top:8px;">+ Nueva cita</button>
             </div>
             <!-- Cita card 1 -->
             <div style="background:#fff;border:1px solid #f1f5f9;border-radius:14px;padding:12px 14px;">
@@ -1487,8 +1519,8 @@
           <span class="callout" style="top:180px;right:10px;">5</span>
         </div>
         <div class="callout-legend">
-          <div class="legend-item"><span class="n">1</span><span>Toggle "Vista lista / Vista semana" — alterna entre lista cronológica y calendario semanal</span></div>
-          <div class="legend-item"><span class="n">2</span><span>Filtros de estado — toca cualquier chip para ver solo las citas de ese estado</span></div>
+          <div class="legend-item"><span class="n">1</span><span>Toggle con 3 vistas: Lista, Calendario y Línea de tiempo — alterna según cómo prefieras ver tu agenda</span></div>
+          <div class="legend-item"><span class="n">2</span><span>Barra de filtros — rango de fechas (Desde/Hasta), Profesional, búsqueda por texto, Estado y botón "+ Nueva cita"</span></div>
           <div class="legend-item"><span class="n">3</span><span>Card de cita — muestra cliente, servicio, fecha/hora y estado de un vistazo</span></div>
           <div class="legend-item"><span class="n">4</span><span>Chip de estado con colores del sistema: Confirmada (verde), Pendiente (amarillo), etc.</span></div>
           <div class="legend-item"><span class="n">5</span><span>Botón "Ver detalle" — abre el modal completo con datos del cliente y acciones disponibles</span></div>
@@ -1496,7 +1528,7 @@
       </div>
 
       <p style="font-size:14px;color:var(--gray);margin-bottom:24px;line-height:1.7;">
-        Esta es tu pantalla principal de trabajo. Aquí encuentras todas tus citas organizadas por fecha, con dos modos de visualización que puedes alternar con un toque.
+        Esta es tu pantalla principal de trabajo. Aquí encuentras todas tus citas organizadas por fecha, con tres modos de visualización que puedes alternar según prefieras.
       </p>
 
       <!-- Vistas -->
@@ -1652,7 +1684,7 @@
             <p>Desde el detalle tienes dos acciones disponibles:</p>
             <p style="margin-top:6px;"><strong style="color:var(--dark);">Completada</strong> — el servicio se realizó con éxito. Tócalo al terminar la cita.</p>
             <p style="margin-top:4px;"><strong style="color:var(--dark);">Inasistencia</strong> — el cliente no llegó. Regístralo para que el propietario tenga el historial correcto.</p>
-            <span class="step-tag">No puedes cancelar ni crear citas desde aquí</span>
+            <span class="step-tag">Crear y cancelar citas depende de los permisos del negocio</span>
           </div>
           <div class="step-phone-col" aria-hidden="true">
             <div class="phone">
@@ -1688,7 +1720,7 @@
           <line x1="11" y1="10" x2="11" y2="14" stroke="#dc2626" stroke-width="1.8" stroke-linecap="round"/>
           <circle cx="11" cy="16.5" r="1" fill="#dc2626"/>
         </svg>
-        <p><strong>Los empleados no pueden cancelar ni crear citas.</strong> Si un cliente te pide cancelar o si necesitas bloquear un horario, comunícalo al propietario — solo él puede hacer esos cambios desde su panel.</p>
+        <p>Las acciones de crear y cancelar citas están disponibles; si el negocio restringe estos permisos, consúltalo con tu propietario.</p>
       </div>
     </div>
   </section>
@@ -1702,9 +1734,9 @@
       <div class="section-label">Sección 04</div>
       <h2 class="section-title" id="h-pagos">Pagos</h2>
 
-      <!-- MOCKUP S04: Pagos -->
-      <div class="mockup-wrapper" role="img" aria-label="Pantalla de Pagos con resumen de comisiones y tabla de pagos">
-        <div class="app-screen" style="height:360px;display:flex;flex-direction:row;overflow:hidden;">
+      <!-- MOCKUP S04: Pagos — tabbed -->
+      <div class="mockup-wrapper" role="img" aria-label="Pantalla de Pagos con pestañas Cobro, Historial y Corte del día">
+        <div class="app-screen" style="min-height:420px;display:flex;flex-direction:row;overflow:hidden;">
           <!-- Sidebar -->
           <div style="width:150px;flex-shrink:0;background:#fff;border-right:1px solid #f1f5f9;display:flex;flex-direction:column;padding:16px 0;">
             <div style="padding:0 14px 14px;border-bottom:1px solid #f1f5f9;margin-bottom:8px;">
@@ -1722,60 +1754,86 @@
           </div>
           <!-- Main content -->
           <div style="flex:1;padding:14px;overflow:hidden;display:flex;flex-direction:column;gap:10px;">
-            <div style="font-size:14px;font-weight:800;color:#0f172a;">Pagos — agosto 2026</div>
-            <!-- Summary cards -->
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-              <div style="background:#fff;border:1px solid #f1f5f9;border-radius:14px;padding:12px 14px;">
-                <div style="font-size:9px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#94a3b8;margin-bottom:6px;">Mis comisiones este mes</div>
-                <div style="font-size:22px;font-weight:800;color:#0f172a;line-height:1;">$2,400</div>
-                <div style="font-size:9px;color:#94a3b8;margin-top:3px;">MXN</div>
+            <div style="font-size:14px;font-weight:800;color:#0f172a;">Pagos</div>
+            <!-- Tab bar -->
+            <div style="display:inline-flex;background:#f1f5f9;border-radius:10px;padding:3px;width:fit-content;">
+              <button style="background:#fff;border:none;border-radius:8px;font-size:10px;font-weight:700;color:#0f172a;padding:5px 12px;cursor:pointer;font-family:inherit;box-shadow:0 1px 3px rgba(0,0,0,0.1);">Cobro</button>
+              <button style="background:transparent;border:none;font-size:10px;color:#475569;padding:5px 12px;cursor:pointer;font-family:inherit;">Historial</button>
+              <button style="background:transparent;border:none;font-size:10px;color:#475569;padding:5px 12px;cursor:pointer;font-family:inherit;">Corte del día</button>
+            </div>
+            <!-- Cobro tab — KPI strip -->
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">
+              <div style="background:#fff;border:1px solid #f1f5f9;border-radius:10px;padding:8px 10px;">
+                <div style="font-size:8px;color:#94a3b8;margin-bottom:2px;">Total cobrado</div>
+                <div style="font-size:15px;font-weight:800;color:#0f172a;line-height:1;">$2,840</div>
               </div>
-              <div style="background:#fff;border:1px solid #f1f5f9;border-radius:14px;padding:12px 14px;">
-                <div style="font-size:9px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#94a3b8;margin-bottom:6px;">Pagos recibidos</div>
-                <div style="font-size:22px;font-weight:800;color:#0f172a;line-height:1;">3</div>
-                <div style="font-size:9px;color:#94a3b8;margin-top:3px;">este mes</div>
+              <div style="background:#fff;border:1px solid #f1f5f9;border-radius:10px;padding:8px 10px;">
+                <div style="font-size:8px;color:#94a3b8;margin-bottom:2px;">Por cobrar</div>
+                <div style="font-size:15px;font-weight:800;color:#dc2626;line-height:1;">$460</div>
+              </div>
+              <div style="background:#fff;border:1px solid #f1f5f9;border-radius:10px;padding:8px 10px;">
+                <div style="font-size:8px;color:#94a3b8;margin-bottom:2px;">Citas pagadas</div>
+                <div style="font-size:15px;font-weight:800;color:#0f172a;line-height:1;">7</div>
               </div>
             </div>
-            <!-- Payment rows header -->
-            <div style="font-size:9px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#94a3b8;">Historial de pagos</div>
-            <!-- Payment rows -->
-            <div style="background:#fff;border:1px solid #f1f5f9;border-radius:12px;overflow:hidden;">
-              <div style="display:grid;grid-template-columns:1fr auto auto;padding:8px 12px;background:#f8fafc;border-bottom:1px solid #f1f5f9;">
-                <span style="font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;">Concepto</span>
-                <span style="font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-right:16px;">Monto</span>
-                <span style="font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;">Estado</span>
+            <!-- Cobro tab — cita row -->
+            <div style="background:#fff;border:1px solid #f1f5f9;border-radius:12px;padding:10px 12px;display:flex;align-items:center;gap:8px;">
+              <div style="flex:1;">
+                <div style="font-size:11px;font-weight:700;color:#0f172a;">Carlos Ruiz</div>
+                <div style="font-size:9px;color:#475569;">Masaje</div>
               </div>
-              <div style="display:grid;grid-template-columns:1fr auto auto;padding:9px 12px;border-bottom:1px solid #f1f5f9;align-items:center;">
-                <div><div style="font-size:11px;font-weight:600;color:#0f172a;">María García — Corte</div><div style="font-size:9px;color:#94a3b8;">Lun 25 ago</div></div>
-                <div style="font-size:12px;font-weight:700;color:#0f172a;margin-right:12px;">$180</div>
-                <span style="background:#dcfce7;color:#166534;font-size:9px;font-weight:700;padding:2px 7px;border-radius:999px;">Pagado</span>
+              <div style="font-size:13px;font-weight:800;color:#0f172a;margin-right:8px;">$580</div>
+              <button style="background:#C8A961;color:#fff;border:none;border-radius:8px;font-size:9px;font-weight:700;padding:5px 10px;cursor:pointer;font-family:inherit;">Cobrar</button>
+            </div>
+            <!-- Cobro tab — payment modal -->
+            <div style="background:#fff;border:1.5px solid #e2e8f0;border-radius:14px;padding:12px 14px;">
+              <div style="font-size:10px;font-weight:700;color:#0f172a;margin-bottom:8px;">Registrar pago</div>
+              <div style="display:flex;gap:5px;margin-bottom:8px;">
+                <button style="flex:1;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:7px;font-size:9px;font-weight:600;color:#0f172a;padding:5px 0;cursor:pointer;font-family:inherit;">Efectivo</button>
+                <button style="flex:1;background:#0f172a;border:1px solid #0f172a;border-radius:7px;font-size:9px;font-weight:700;color:#fff;padding:5px 0;cursor:pointer;font-family:inherit;">Tarjeta</button>
+                <button style="flex:1;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:7px;font-size:9px;font-weight:600;color:#0f172a;padding:5px 0;cursor:pointer;font-family:inherit;">Transferencia</button>
               </div>
-              <div style="display:grid;grid-template-columns:1fr auto auto;padding:9px 12px;border-bottom:1px solid #f1f5f9;align-items:center;">
-                <div><div style="font-size:11px;font-weight:600;color:#0f172a;">Sofía Reyes — Coloración</div><div style="font-size:9px;color:#94a3b8;">Lun 25 ago</div></div>
-                <div style="font-size:12px;font-weight:700;color:#0f172a;margin-right:12px;">$650</div>
-                <span style="background:#dcfce7;color:#166534;font-size:9px;font-weight:700;padding:2px 7px;border-radius:999px;">Pagado</span>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">
+                <div>
+                  <div style="font-size:8px;font-weight:700;color:#94a3b8;margin-bottom:3px;">Monto</div>
+                  <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:7px;padding:5px 8px;font-size:10px;color:#0f172a;">$580</div>
+                </div>
+                <div>
+                  <div style="font-size:8px;font-weight:700;color:#94a3b8;margin-bottom:3px;">Propina</div>
+                  <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:7px;padding:5px 8px;font-size:10px;color:#94a3b8;">$0</div>
+                </div>
               </div>
-              <div style="display:grid;grid-template-columns:1fr auto auto;padding:9px 12px;align-items:center;">
-                <div><div style="font-size:11px;font-weight:600;color:#0f172a;">Laura Mendez — Peinado</div><div style="font-size:9px;color:#94a3b8;">Mar 26 ago</div></div>
-                <div style="font-size:12px;font-weight:700;color:#0f172a;margin-right:12px;">$220</div>
-                <span style="background:#fef3c7;color:#92400e;font-size:9px;font-weight:700;padding:2px 7px;border-radius:999px;">Pendiente</span>
-              </div>
+              <button style="width:100%;background:#334155;color:#fff;border:none;border-radius:9px;font-size:10px;font-weight:700;padding:7px;cursor:pointer;font-family:inherit;">Registrar pago</button>
             </div>
           </div>
           <!-- Callouts -->
-          <span class="callout" style="top:64px;right:10px;">1</span>
-          <span class="callout" style="top:140px;right:10px;">2</span>
-          <span class="callout" style="top:300px;right:10px;">3</span>
+          <span class="callout" style="top:56px;left:175px;">1</span>
+          <span class="callout" style="top:108px;right:10px;">2</span>
+          <span class="callout" style="top:164px;right:10px;">3</span>
+          <span class="callout" style="top:230px;right:10px;">4</span>
         </div>
         <div class="callout-legend">
-          <div class="legend-item"><span class="n">1</span><span>Cards de resumen — comisiones del mes y cantidad de pagos recibidos (solo tus citas)</span></div>
-          <div class="legend-item"><span class="n">2</span><span>Tabla de pagos — fecha, concepto, monto cobrado por cada cita atendida</span></div>
-          <div class="legend-item"><span class="n">3</span><span>Estado del pago — "Pagado" (verde) cuando el propietario lo registró; "Pendiente" (amarillo) cuando aún no</span></div>
+          <div class="legend-item"><span class="n">1</span><span>Pestañas: Cobro (activa), Historial y Corte del día — cada una con su flujo propio</span></div>
+          <div class="legend-item"><span class="n">2</span><span>Tira de KPIs del tab Cobro: Total cobrado, Por cobrar y Citas pagadas</span></div>
+          <div class="legend-item"><span class="n">3</span><span>Fila de cita con botón "Cobrar" — abre el modal de registro de pago</span></div>
+          <div class="legend-item"><span class="n">4</span><span>Modal de pago: método (Efectivo/Tarjeta/Transferencia), monto, propina y botón "Registrar pago"</span></div>
         </div>
       </div>
 
       <p style="font-size:14px;color:var(--gray);margin-bottom:24px;line-height:1.7;">
-        La sección de Pagos te muestra un historial de los cobros asociados a <strong>tus</strong> citas. Es una vista de consulta — no puedes modificar montos ni emitir reembolsos desde aquí.
+        La sección de Pagos tiene tres pestañas: <strong>Cobro</strong> para registrar el pago al terminar una cita, <strong>Historial</strong> para consultar los cobros anteriores y <strong>Corte del día</strong> para el cierre de caja al final de la jornada.
+      </p>
+
+      <!-- Sub-section: Historial tab -->
+      <div class="section-label" style="margin-bottom:12px;">Pestaña Historial</div>
+      <p style="font-size:14px;color:var(--gray);margin-bottom:12px;line-height:1.7;">
+        Muestra todos los pagos registrados. Puedes filtrar por período: Hoy, Semana, Mes o un rango personalizado. La tabla incluye las columnas Cliente, Servicio, Monto, Estado y Método de pago.
+      </p>
+
+      <!-- Sub-section: Corte del día tab -->
+      <div class="section-label" style="margin-bottom:12px;">Pestaña Corte del día</div>
+      <p style="font-size:14px;color:var(--gray);margin-bottom:24px;line-height:1.7;">
+        Al final de tu jornada puedes realizar el cierre de caja: registra el efectivo inicial, el total cobrado en el día, el conteo físico del efectivo, los retiros realizados y la diferencia resultante. Esto ayuda al propietario a cuadrar la caja con precisión.
       </p>
 
       <!-- Mock de pantalla de pagos -->
@@ -1870,14 +1928,6 @@
         </div>
       </div>
 
-      <div class="info" role="note">
-        <svg class="info-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-          <circle cx="11" cy="11" r="9" stroke="#2563eb" stroke-width="1.6"/>
-          <path d="M11 10v5" stroke="#2563eb" stroke-width="1.8" stroke-linecap="round"/>
-          <circle cx="11" cy="7.5" r="1" fill="#2563eb"/>
-        </svg>
-        <p><strong>Esta sección es solo de consulta.</strong> Si detectas un pago incorrecto o necesitas emitir un reembolso, reporta la situación al propietario. Él tiene acceso a la gestión de pagos desde su panel.</p>
-      </div>
     </div>
   </section>
 
@@ -1888,11 +1938,11 @@
     <div class="divider" aria-hidden="true"></div>
     <div style="padding-top: 52px;">
       <div class="section-label">Sección 05</div>
-      <h2 class="section-title" id="h-mi-perfil">Mi perfil — foto, bio y horarios</h2>
+      <h2 class="section-title" id="h-mi-perfil">Mi perfil</h2>
 
-      <!-- MOCKUP S05: Mi Perfil -->
-      <div class="mockup-wrapper" role="img" aria-label="Pantalla Mi Perfil con foto, datos personales, horarios y botón guardar">
-        <div class="app-screen" style="height:380px;display:flex;flex-direction:row;overflow:hidden;">
+      <!-- MOCKUP S05: Mi Perfil — nuevo diseño dos columnas -->
+      <div class="mockup-wrapper" role="img" aria-label="Pantalla Mi Perfil con avatar, cambio de contraseña y bloqueos de horario">
+        <div class="app-screen" style="min-height:380px;display:flex;flex-direction:row;overflow:hidden;">
           <!-- Sidebar -->
           <div style="width:150px;flex-shrink:0;background:#fff;border-right:1px solid #f1f5f9;display:flex;flex-direction:column;padding:16px 0;">
             <div style="padding:0 14px 14px;border-bottom:1px solid #f1f5f9;margin-bottom:8px;">
@@ -1908,267 +1958,131 @@
             <div style="padding:5px 10px;margin:0 8px;margin-bottom:2px;"><span style="font-size:10px;color:#475569;">Pagos</span></div>
             <div style="padding:5px 10px;margin:0 8px;background:#0f172a;border-radius:10px;"><span style="font-size:10px;font-weight:700;color:#fff;">Mi perfil</span></div>
           </div>
-          <!-- Main content -->
+          <!-- Main content — two column -->
           <div style="flex:1;padding:14px;overflow:hidden;display:flex;flex-direction:column;gap:10px;">
             <div style="font-size:14px;font-weight:800;color:#0f172a;">Mi perfil</div>
-            <!-- Profile photo area -->
-            <div style="display:flex;align-items:center;gap:14px;">
-              <div style="width:64px;height:64px;background:#334155;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:24px;font-weight:800;color:#fff;">A</div>
-              <div>
-                <div style="font-size:12px;font-weight:700;color:#0f172a;margin-bottom:4px;">Ana López</div>
-                <button style="background:#f8fafc;border:1px solid #e2e8f0;color:#475569;border-radius:9px;font-size:9px;font-weight:600;padding:5px 10px;cursor:pointer;font-family:inherit;">Cambiar foto</button>
+            <div style="display:flex;gap:14px;flex:1;">
+              <!-- Left column: avatar + identity -->
+              <div style="flex:0 0 35%;display:flex;flex-direction:column;align-items:center;padding-top:8px;gap:6px;">
+                <div style="width:72px;height:72px;border-radius:50%;background:#C8A961;display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.5rem;font-weight:bold;">AG</div>
+                <div style="font-size:12px;font-weight:700;color:#0f172a;text-align:center;">Ana García</div>
+                <div style="font-size:10px;color:#94a3b8;text-align:center;">ana@example.com</div>
+                <span style="font-size:9px;font-weight:700;border:1px solid #C8A961;color:#C8A961;border-radius:999px;padding:2px 10px;">Empleado</span>
+              </div>
+              <!-- Right column: change password -->
+              <div style="flex:1;display:flex;flex-direction:column;gap:8px;">
+                <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#94a3b8;">Cambiar contraseña</div>
+                <div>
+                  <div style="font-size:8px;font-weight:700;color:#94a3b8;margin-bottom:3px;">Contraseña actual</div>
+                  <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:6px 10px;font-size:11px;color:#0f172a;">••••••••</div>
+                </div>
+                <div>
+                  <div style="font-size:8px;font-weight:700;color:#94a3b8;margin-bottom:3px;">Contraseña nueva</div>
+                  <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:6px 10px;font-size:11px;color:#94a3b8;">••••••••</div>
+                </div>
+                <div>
+                  <div style="font-size:8px;font-weight:700;color:#94a3b8;margin-bottom:3px;">Confirmar contraseña</div>
+                  <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:6px 10px;font-size:11px;color:#94a3b8;">••••••••</div>
+                </div>
+                <!-- Password strength bar -->
+                <div style="background:#e8e4d9;height:4px;border-radius:2px;overflow:hidden;">
+                  <div style="width:60%;height:100%;background:#C8A961;border-radius:2px;"></div>
+                </div>
+                <button style="background:#334155;color:#fff;border:none;border-radius:9px;font-size:10px;font-weight:700;padding:7px;cursor:pointer;font-family:inherit;width:100%;">Guardar cambios</button>
               </div>
             </div>
-            <!-- Personal fields -->
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-              <div>
-                <div style="font-size:9px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#94a3b8;margin-bottom:4px;">Nombre</div>
-                <div style="background:#fff;border:1px solid #e2e8f0;border-radius:9px;padding:7px 10px;font-size:11px;color:#0f172a;">Ana López</div>
-              </div>
-              <div>
-                <div style="font-size:9px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#94a3b8;margin-bottom:4px;">Teléfono</div>
-                <div style="background:#fff;border:1px solid #e2e8f0;border-radius:9px;padding:7px 10px;font-size:11px;color:#0f172a;">+52 55 1234 5678</div>
-              </div>
-            </div>
-            <div>
-              <div style="font-size:9px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#94a3b8;margin-bottom:4px;">Biografía</div>
-              <div style="background:#fff;border:1px solid #e2e8f0;border-radius:9px;padding:7px 10px;font-size:10px;color:#475569;line-height:1.5;min-height:44px;">Especialista en coloración con 6 años de experiencia. Me apasiona el trabajo con cabello rizado y técnicas de balayage.</div>
-            </div>
-            <!-- Horarios section header -->
-            <div style="display:flex;align-items:center;justify-content:space-between;">
-              <div style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#94a3b8;">Mis horarios</div>
-            </div>
-            <!-- Schedule rows -->
-            <div style="background:#fff;border:1px solid #f1f5f9;border-radius:12px;overflow:hidden;">
-              <div style="display:flex;align-items:center;gap:8px;padding:7px 12px;border-bottom:1px solid #f1f5f9;">
-                <span style="font-size:10px;font-weight:600;color:#0f172a;width:60px;">Lunes</span>
-                <div style="width:28px;height:16px;background:#334155;border-radius:999px;display:flex;align-items:center;justify-content:flex-end;padding:2px;flex-shrink:0;"><div style="width:12px;height:12px;background:#fff;border-radius:50%;"></div></div>
-                <span style="font-size:9px;background:#f1f5f9;color:#334155;font-weight:600;padding:2px 7px;border-radius:6px;">9:00 – 14:00</span>
-                <span style="font-size:9px;background:#f1f5f9;color:#334155;font-weight:600;padding:2px 7px;border-radius:6px;">16:00 – 20:00</span>
-              </div>
-              <div style="display:flex;align-items:center;gap:8px;padding:7px 12px;border-bottom:1px solid #f1f5f9;">
-                <span style="font-size:10px;font-weight:600;color:#0f172a;width:60px;">Martes</span>
-                <div style="width:28px;height:16px;background:#334155;border-radius:999px;display:flex;align-items:center;justify-content:flex-end;padding:2px;flex-shrink:0;"><div style="width:12px;height:12px;background:#fff;border-radius:50%;"></div></div>
-                <span style="font-size:9px;background:#f1f5f9;color:#334155;font-weight:600;padding:2px 7px;border-radius:6px;">9:00 – 18:00</span>
-              </div>
-              <div style="display:flex;align-items:center;gap:8px;padding:7px 12px;">
-                <span style="font-size:10px;font-weight:600;color:#94a3b8;width:60px;">Domingo</span>
-                <div style="width:28px;height:16px;background:#d1d5db;border-radius:999px;display:flex;align-items:center;justify-content:flex-start;padding:2px;flex-shrink:0;"><div style="width:12px;height:12px;background:#fff;border-radius:50%;"></div></div>
-                <span style="font-size:9px;color:#94a3b8;">Día libre</span>
-              </div>
-            </div>
-            <!-- Save button -->
-            <button style="background:#334155;color:#fff;border:none;border-radius:12px;font-weight:600;font-size:12px;padding:10px;cursor:pointer;font-family:inherit;width:100%;">Guardar cambios</button>
           </div>
           <!-- Callouts -->
-          <span class="callout" style="top:58px;left:185px;">1</span>
-          <span class="callout" style="top:130px;right:10px;">2</span>
-          <span class="callout" style="top:246px;right:10px;">3</span>
-          <span class="callout" style="top:346px;right:10px;">4</span>
+          <span class="callout" style="top:60px;left:185px;">1</span>
+          <span class="callout" style="top:116px;right:10px;">2</span>
+          <span class="callout" style="top:218px;right:10px;">3</span>
+          <span class="callout" style="top:310px;right:10px;">4</span>
         </div>
         <div class="callout-legend">
-          <div class="legend-item"><span class="n">1</span><span>Foto de perfil — círculo con inicial; el botón "Cambiar foto" permite subir una imagen real</span></div>
-          <div class="legend-item"><span class="n">2</span><span>Campos personales — Nombre, Teléfono y Biografía que los clientes ven al reservar</span></div>
-          <div class="legend-item"><span class="n">3</span><span>Sección Mis horarios — toggles para activar días, y pills con los intervalos de atención</span></div>
-          <div class="legend-item"><span class="n">4</span><span>Botón "Guardar cambios" — publica los cambios al instante en la página pública de reservas</span></div>
+          <div class="legend-item"><span class="n">1</span><span>Avatar con iniciales, nombre, email y badge de rol "Empleado"</span></div>
+          <div class="legend-item"><span class="n">2</span><span>Campos de cambio de contraseña: Contraseña actual, Contraseña nueva, Confirmar contraseña</span></div>
+          <div class="legend-item"><span class="n">3</span><span>Barra de fortaleza de contraseña — indicador visual del nivel de seguridad</span></div>
+          <div class="legend-item"><span class="n">4</span><span>Botón "Guardar cambios" — aplica la nueva contraseña</span></div>
         </div>
       </div>
 
       <p style="font-size:14px;color:var(--gray);margin-bottom:24px;line-height:1.7;">
-        Mi perfil es la sección más importante que puedes configurar como empleado. Lo que pongas aquí afecta directamente cómo te ven los clientes cuando reservan. Un perfil completo genera confianza y más reservas contigo.
+        En Mi perfil puedes cambiar tu contraseña, gestionar tus notificaciones y bloquear fechas u horas en las que no estarás disponible para nuevas citas.
       </p>
 
-      <!-- Foto y bio -->
-      <div class="card" style="margin-bottom:12px;">
-        <div style="display:flex;align-items:flex-start;gap:16px;">
-          <div style="width:40px;height:40px;background:var(--gold-light);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;" aria-hidden="true">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <circle cx="10" cy="7" r="4" stroke="#C8A961" stroke-width="1.5"/>
-              <path d="M2 18c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke="#C8A961" stroke-width="1.5" stroke-linecap="round"/>
-            </svg>
-          </div>
-          <div style="flex:1;">
-            <div class="card-title">Foto de perfil</div>
-            <p>Sube una foto tuya de buena calidad, preferiblemente con fondo claro y tu rostro visible. Esta imagen aparece en la página de reservas cuando los clientes eligen con qué profesional quieren su cita. Un perfil con foto genera significativamente más selecciones que uno sin foto.</p>
-            <div class="tip" role="note" style="margin-top:12px;">
-              <svg class="tip-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-                <circle cx="11" cy="11" r="9" stroke="#C8A961" stroke-width="1.6"/>
-                <path d="M11 10v5" stroke="#C8A961" stroke-width="1.8" stroke-linecap="round"/>
-                <circle cx="11" cy="7.5" r="1" fill="#C8A961"/>
-              </svg>
-              <p><strong>Recomendación:</strong> usa una foto reciente, bien iluminada, en la que se te vea profesional. Evita selfies con fondos cargados o fotos de grupo recortadas.</p>
+      <!-- Notificaciones -->
+      <div style="margin-bottom:24px;">
+        <div class="section-label" style="margin-bottom:12px;">Notificaciones</div>
+        <div class="card">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <div class="card-title" style="margin-bottom:2px;">Notificaciones push</div>
+              <p style="font-size:13px;color:var(--gray);">Recibe alertas en el navegador cuando te asignen una nueva cita o cuando una se acerque.</p>
             </div>
+            <div style="width:36px;height:20px;border-radius:10px;background:#C8A961;display:inline-block;vertical-align:middle;flex-shrink:0;margin-left:16px;"></div>
           </div>
         </div>
       </div>
 
-      <div class="card" style="margin-bottom:12px;">
-        <div style="display:flex;align-items:flex-start;gap:16px;">
-          <div style="width:40px;height:40px;background:var(--gold-light);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;" aria-hidden="true">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <path d="M4 5h12M4 9h12M4 13h8" stroke="#C8A961" stroke-width="1.5" stroke-linecap="round"/>
-            </svg>
-          </div>
-          <div style="flex:1;">
-            <div class="card-title">Nombre y biografía</div>
-            <p>Tu nombre aparece tal como lo configuró el propietario. La biografía es un campo breve (2-3 oraciones) que también aparece visible para los clientes. Usa ese espacio para describir tu especialidad, experiencia o lo que te hace diferente. Por ejemplo: <em style="color:var(--dark);">"Especialista en coloración con 6 años de experiencia. Me apasiona el trabajo con cabello rizado y técnicas de balayage."</em></p>
-          </div>
-        </div>
-      </div>
-
-      <div class="card" style="margin-bottom:12px;">
-        <div style="display:flex;align-items:flex-start;gap:16px;">
-          <div style="width:40px;height:40px;background:var(--gold-light);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;" aria-hidden="true">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <rect x="2" y="3" width="16" height="14" rx="2.5" stroke="#C8A961" stroke-width="1.5"/>
-              <path d="M7 8l2 2 4-4" stroke="#C8A961" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </div>
-          <div style="flex:1;">
-            <div class="card-title">Servicios que atiendo</div>
-            <p>Esta sección muestra los servicios que el propietario te asignó. Es de solo lectura para ti — no puedes agregar ni quitar servicios por tu cuenta. Si necesitas cambiar los servicios que atiendes, pídele al propietario que te actualice desde la sección <strong>Empleados</strong> de su panel.</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Horarios — la parte más importante -->
-      <div style="margin-top:32px;">
-        <div class="section-label" style="margin-bottom:12px;">Mis horarios — configuración detallada</div>
-        <p style="font-size:14px;color:var(--gray);margin-bottom:20px;line-height:1.7;">
-          Aquí defines en qué días y horas trabajas. El sistema usa esta información para mostrar a los clientes los horarios disponibles cuando reservan contigo. Configúralo con cuidado — los horarios incorrectos generan citas en momentos en que no puedes atender.
+      <!-- Mis bloqueos de horario -->
+      <div style="margin-top:8px;">
+        <div class="section-label" style="margin-bottom:12px;">Mis bloqueos de horario</div>
+        <p style="font-size:14px;color:var(--gray);margin-bottom:12px;line-height:1.7;">
+          Marca fechas u horas en las que no estarás disponible. Estas fechas no aparecen en tu agenda para nuevas citas.
         </p>
 
-        <!-- Ejemplo de tabla de horarios -->
-        <div class="schedule-table" style="margin-bottom:20px;" role="img" aria-label="Ejemplo de configuración de horarios">
-          <div style="background:var(--dark);padding:12px 20px;">
-            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--gold);">Mis horarios — Semana actual</div>
+        <div class="tip" role="note">
+          <svg class="tip-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+            <circle cx="11" cy="11" r="9" stroke="#C8A961" stroke-width="1.6"/>
+            <path d="M11 10v5" stroke="#C8A961" stroke-width="1.8" stroke-linecap="round"/>
+            <circle cx="11" cy="7.5" r="1" fill="#C8A961"/>
+          </svg>
+          <p>Esto no reemplaza tu horario laboral semanal — solo bloquea días u horas específicas.</p>
+        </div>
+
+        <!-- Existing blocks list -->
+        <div class="schedule-table" style="margin-top:16px;margin-bottom:16px;">
+          <div style="background:var(--dark);padding:10px 20px;">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--gold);">Bloqueos activos</div>
           </div>
           <div class="schedule-row">
-            <div class="schedule-day">Lunes</div>
-            <div class="schedule-toggle on" aria-label="Día activo">
-              <div class="schedule-toggle-knob"></div>
+            <div style="flex:1;">
+              <div style="font-size:13px;font-weight:700;color:var(--dark);">Lunes 8 sep · 13:00–15:00</div>
+              <div style="font-size:12px;color:var(--gray);">Cita médica</div>
             </div>
-            <div class="schedule-intervals">
-              <div class="interval-pill">9:00 – 14:00</div>
-              <div class="interval-pill">16:00 – 20:00</div>
-            </div>
-            <div class="schedule-add">+ Agregar intervalo</div>
+            <div style="font-size:12px;color:var(--red);cursor:pointer;font-weight:600;">Eliminar</div>
           </div>
           <div class="schedule-row">
-            <div class="schedule-day">Martes</div>
-            <div class="schedule-toggle on" aria-label="Día activo">
-              <div class="schedule-toggle-knob"></div>
+            <div style="flex:1;">
+              <div style="font-size:13px;font-weight:700;color:var(--dark);">Viernes 12 sep · Todo el día</div>
+              <div style="font-size:12px;color:var(--gray);">Vacaciones</div>
             </div>
-            <div class="schedule-intervals">
-              <div class="interval-pill">9:00 – 18:00</div>
-            </div>
-            <div class="schedule-add">+ Agregar intervalo</div>
-          </div>
-          <div class="schedule-row">
-            <div class="schedule-day">Miércoles</div>
-            <div class="schedule-toggle on" aria-label="Día activo">
-              <div class="schedule-toggle-knob"></div>
-            </div>
-            <div class="schedule-intervals">
-              <div class="interval-pill">9:00 – 14:00</div>
-              <div class="interval-pill">16:00 – 20:00</div>
-            </div>
-            <div class="schedule-add">+ Agregar intervalo</div>
-          </div>
-          <div class="schedule-row">
-            <div class="schedule-day">Jueves</div>
-            <div class="schedule-toggle on" aria-label="Día activo">
-              <div class="schedule-toggle-knob"></div>
-            </div>
-            <div class="schedule-intervals">
-              <div class="interval-pill">9:00 – 18:00</div>
-            </div>
-            <div class="schedule-add">+ Agregar intervalo</div>
-          </div>
-          <div class="schedule-row">
-            <div class="schedule-day">Viernes</div>
-            <div class="schedule-toggle on" aria-label="Día activo">
-              <div class="schedule-toggle-knob"></div>
-            </div>
-            <div class="schedule-intervals">
-              <div class="interval-pill">9:00 – 14:00</div>
-            </div>
-            <div class="schedule-add">+ Agregar intervalo</div>
-          </div>
-          <div class="schedule-row">
-            <div class="schedule-day">Sábado</div>
-            <div class="schedule-toggle on" aria-label="Día activo">
-              <div class="schedule-toggle-knob"></div>
-            </div>
-            <div class="schedule-intervals">
-              <div class="interval-pill">10:00 – 15:00</div>
-            </div>
-            <div class="schedule-add">+ Agregar intervalo</div>
-          </div>
-          <div class="schedule-row">
-            <div class="schedule-day">Domingo</div>
-            <div class="schedule-toggle off" aria-label="Día inactivo">
-              <div class="schedule-toggle-knob"></div>
-            </div>
-            <div class="schedule-intervals">
-              <div class="interval-pill interval-pill-off">Día libre</div>
-            </div>
+            <div style="font-size:12px;color:var(--red);cursor:pointer;font-weight:600;">Eliminar</div>
           </div>
         </div>
 
-        <!-- Como funciona en cards -->
-        <div class="intro-grid">
-          <div class="intro-card">
-            <div class="intro-icon" aria-hidden="true">
-              <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-                <rect x="2" y="11" width="18" height="8" rx="2" stroke="#C8A961" stroke-width="1.6"/>
-                <path d="M6 11V8a5 5 0 0110 0v3" stroke="#C8A961" stroke-width="1.6" stroke-linecap="round"/>
-              </svg>
-            </div>
-            <h3>Activa o desactiva días</h3>
-            <p>El interruptor de cada día habilita o inhabilita ese día en tu agenda. Un día desactivado no aparece disponible para los clientes.</p>
-          </div>
-          <div class="intro-card">
-            <div class="intro-icon" aria-hidden="true">
-              <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-                <path d="M11 4v14M4 11h14" stroke="#C8A961" stroke-width="1.6" stroke-linecap="round"/>
-              </svg>
-            </div>
-            <h3>Agregar intervalo</h3>
-            <p>Con "Agregar intervalo" puedes añadir un segundo bloque horario. Útil si tienes un descanso al mediodía: por ejemplo, 9:00–13:00 y 15:00–19:00.</p>
-          </div>
-          <div class="intro-card">
-            <div class="intro-icon" aria-hidden="true">
-              <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-                <path d="M11 3v2M11 17v2M3 11h2M17 11h2M5.6 5.6l1.4 1.4M15 15l1.4 1.4M5.6 16.4L7 15M15 7l1.4-1.4" stroke="#C8A961" stroke-width="1.6" stroke-linecap="round"/>
-              </svg>
-            </div>
-            <h3>Dentro del horario del negocio</h3>
-            <p>El selector solo muestra horas dentro del horario general del negocio. No puedes poner horarios fuera de ese rango — el sistema lo valida automáticamente.</p>
-          </div>
-        </div>
-
-        <div class="card" style="margin-top:16px;">
-          <div style="display:flex;align-items:flex-start;gap:14px;">
-            <div style="width:40px;height:40px;background:var(--gold-light);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;" aria-hidden="true">
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <path d="M10 2a8 8 0 100 16A8 8 0 0010 2z" stroke="#C8A961" stroke-width="1.5"/>
-                <path d="M10 6v4l3 3" stroke="#C8A961" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
+        <!-- Add block form -->
+        <div class="card">
+          <div class="card-title" style="margin-bottom:14px;">Agregar bloqueo</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+            <div>
+              <label style="font-size:12px;font-weight:700;color:var(--gray);display:block;margin-bottom:4px;">Fecha</label>
+              <div style="background:var(--light);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--gray);">dd/mm/aaaa</div>
             </div>
             <div>
-              <div class="card-title">Guardar horario</div>
-              <p>Cuando termines de ajustar tus horarios, toca el botón <strong>"Guardar horario"</strong> al final de la sección. Los cambios se reflejan de inmediato en la página pública de reservas — los clientes verán tus nuevos horarios disponibles al instante.</p>
+              <label style="font-size:12px;font-weight:700;color:var(--gray);display:block;margin-bottom:4px;">Hora inicio</label>
+              <div style="background:var(--light);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--gray);">09:00</div>
+            </div>
+            <div>
+              <label style="font-size:12px;font-weight:700;color:var(--gray);display:block;margin-bottom:4px;">Hora fin</label>
+              <div style="background:var(--light);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--gray);">11:00</div>
+            </div>
+            <div>
+              <label style="font-size:12px;font-weight:700;color:var(--gray);display:block;margin-bottom:4px;">Motivo (opcional)</label>
+              <div style="background:var(--light);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--gray-light);">Ej. Cita médica</div>
             </div>
           </div>
-        </div>
-
-        <div class="success-note" role="note" style="margin-top:16px;">
-          <svg class="success-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-            <circle cx="11" cy="11" r="9" stroke="#16a34a" stroke-width="1.6"/>
-            <path d="M7 11l3 3 5-5" stroke="#16a34a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          <p><strong>Consejo de productividad:</strong> un perfil completo — con foto, biografía y horarios bien configurados — hace que los clientes te elijan con mayor frecuencia. Dedica 5 minutos a configurarlo bien la primera vez; después solo lo ajustas cuando cambia tu disponibilidad.</p>
+          <button style="background:var(--gold);color:#1a1a1a;border:none;border-radius:10px;font-weight:700;font-size:13px;padding:10px 20px;cursor:pointer;font-family:inherit;">Agregar bloqueo</button>
         </div>
       </div>
     </div>
