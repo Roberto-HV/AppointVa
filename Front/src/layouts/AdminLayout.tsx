@@ -5,6 +5,7 @@ import { useAuthStore } from "../store/authStore";
 import { authApi } from "../api/auth";
 import { useInactividadTimeout } from "../hooks/useInactividadTimeout";
 import { useTheme } from "../hooks/useTheme";
+import { AppLogo } from "../components/AppLogo";
 
 export default function AdminLayout() {
   const { usuario, token, refreshToken, cerrarSesion } = useAuthStore();
@@ -63,7 +64,7 @@ export default function AdminLayout() {
       >
         {/* Logo + cerrar */}
         <div className="px-5 py-5 flex items-center justify-between">
-          <img src="/MasterLogo.png" alt="AppointVa" className="h-10 object-contain rounded-xl mx-auto" />
+          <AppLogo className="h-10 object-contain rounded-xl mx-auto" />
           <button
             onClick={cerrarSidebar}
             className="md:hidden text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"

@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Link } from "react-router-dom";
+import { AppLogo } from "../../components/AppLogo";
 import { authApi } from "../../api/auth";
 
 const schema = z.object({
@@ -34,7 +35,7 @@ export default function RecuperarContrasenaPage() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <img src="/MasterLogo.png" alt="AppointVa" className="h-20 object-contain mx-auto mb-2 rounded-xl" />
+          <AppLogo className="h-20 object-contain mx-auto mb-2 rounded-xl" />
           <p className="text-gray-500 text-sm">AppointVa</p>
         </div>
 

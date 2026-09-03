@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { ChevronLeft, Shield } from "lucide-react";
+import { AppLogo } from "../../components/AppLogo";
 
 export default function PrivacidadPage() {
   return (
@@ -14,7 +15,7 @@ export default function PrivacidadPage() {
           >
             <ChevronLeft size={20} />
           </Link>
-          <img src="/MasterLogo.png" alt="AppointVa" className="h-7 object-contain" />
+          <AppLogo className="h-7 object-contain" />
         </div>
       </div>
 
@@ -184,7 +185,7 @@ export default function PrivacidadPage() {
 
         {/* Footer */}
         <div className="mt-12 pt-6 border-t border-slate-100 flex flex-col items-center gap-2">
-          <img src="/MasterLogo.png" alt="AppointVa" className="h-6 object-contain opacity-25" />
+          <AppLogo className="h-6 object-contain opacity-25" />
           <p className="text-[11px] text-slate-400">
             © {new Date().getFullYear()} AppointVa · Todos los derechos reservados
           </p>

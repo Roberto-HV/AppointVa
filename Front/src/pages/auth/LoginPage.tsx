@@ -7,6 +7,7 @@ import { Eye, EyeOff, CalendarCheck, Star, Users } from "lucide-react";
 import { authApi } from "../../api/auth";
 import { useAuthStore } from "../../store/authStore";
 import { api } from "../../api/axios";
+import { AppLogo } from "../../components/AppLogo";
 
 const schema = z.object({
   email: z.string().email("Correo inválido"),
@@ -111,7 +112,7 @@ export default function LoginPage() {
 
           {/* Logo — centrado en mobile, izquierda en desktop */}
           <div className="mb-10 flex justify-center">
-            <img src="/MasterLogo.png" alt="AppointVa" className="h-20 md:h-24 w-auto object-contain rounded-xl" />
+            <AppLogo className="h-20 md:h-24 w-auto object-contain rounded-xl" />
           </div>
 
           {/* Alertas */}

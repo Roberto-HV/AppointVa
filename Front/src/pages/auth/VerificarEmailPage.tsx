@@ -1,6 +1,7 @@
 ﻿import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { api } from "../../api/axios";
+import { AppLogo } from "../../components/AppLogo";
 
 type Estado = "cargando" | "ok" | "error";
 
@@ -36,7 +37,7 @@ export default function VerificarEmailPage() {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md text-center">
-        <img src="/MasterLogo.png" alt="AppointVa" className="h-20 object-contain mx-auto mb-6" />
+        <AppLogo className="h-20 object-contain mx-auto mb-6" />
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
           {estado === "cargando" && (

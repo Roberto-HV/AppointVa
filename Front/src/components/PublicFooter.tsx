@@ -1,9 +1,10 @@
 import { Link } from "react-router-dom";
+import { AppLogo } from "./AppLogo";
 
 export default function PublicFooter() {
   return (
     <footer className="mt-10 pb-8 flex flex-col items-center gap-2 print:hidden">
-      <img src="/MasterLogo.png" alt="AppointVa" className="h-6 object-contain opacity-25" />
+      <AppLogo className="h-6 object-contain opacity-25" />
       <p className="text-[11px] text-slate-400">
         © {new Date().getFullYear()} AppointVa · Todos los derechos reservados
       </p>
