@@ -353,6 +353,8 @@ export default function DashboardLayout() {
                   <img src="/icons/LogoApp.png" alt="AppointVa" className="h-7 object-contain transition-all duration-200 block dark:hidden" />
                   <img src="/icons/LogoAppOscuro.png" alt="AppointVa" className="h-7 object-contain transition-all duration-200 hidden dark:block" />
                 </>
+              ) : theme === "dark" ? (
+                <img src="/MaterLogoOscuro.png" alt="AppointVa" className="h-10 object-contain transition-all duration-200" style={{ mixBlendMode: "screen" }} />
               ) : (
                 <img src="/icons/Banner.png" alt="AppointVa" className="h-10 object-contain transition-all duration-200" />
               )}
