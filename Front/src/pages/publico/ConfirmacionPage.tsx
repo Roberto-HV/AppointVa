@@ -423,8 +423,8 @@ export default function ConfirmacionPage() {
                     setErrorComprobante("");
                     const archivo = e.target.files?.[0];
                     if (archivo) {
-                      if (archivo.size > 5 * 1024 * 1024) {
-                        setErrorComprobante("No se pudo subir el comprobante. Verifica que el archivo sea una imagen menor a 5 MB.");
+                      if (archivo.size > 20 * 1024 * 1024) {
+                        setErrorComprobante("No se pudo subir el comprobante. Verifica que el archivo sea una imagen menor a 20 MB.");
                         if (fileInputRef.current) fileInputRef.current.value = "";
                         return;
                       }
