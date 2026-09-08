@@ -32,7 +32,7 @@ export default function ConfirmacionPage() {
     mutationFn: (archivo: File) => comprobantesApi.subirComprobante(codigo!, archivo),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["cita", codigo] }),
     onError: () => {
-      setErrorComprobante("No se pudo subir el comprobante. Verifica que el archivo sea una imagen menor a 5 MB.");
+      setErrorComprobante("No se pudo subir el comprobante. Verifica que el archivo sea una imagen menor a 20 MB.");
       if (fileInputRef.current) fileInputRef.current.value = "";
     },
   });
