@@ -14,7 +14,7 @@ export function AppLogo({ className }: AppLogoProps) {
         src="/MaterLogoOscuro.png"
         alt="AppointVa"
         aria-hidden="true"
-        className={`hidden dark:block ${className ?? ""}`}
+        className={`hidden dark:block mix-blend-screen ${className ?? ""}`}
       />
     </>
   );
