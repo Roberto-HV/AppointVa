@@ -64,7 +64,7 @@ export default function AdminLayout() {
       >
         {/* Logo + cerrar */}
         <div className="px-5 py-5 flex items-center justify-between">
-          <AppLogo className="h-10 object-contain rounded-xl mx-auto" />
+          <AppLogo isDark={theme === "dark"} className="h-10 object-contain rounded-xl mx-auto" />
           <button
             onClick={cerrarSidebar}
             className="md:hidden text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
