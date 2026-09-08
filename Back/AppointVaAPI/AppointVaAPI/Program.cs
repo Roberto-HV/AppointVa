@@ -150,10 +150,10 @@ builder.Services.AddHangfire(config => config
 builder.Services.AddHangfireServer();
 GlobalJobFilters.Filters.Add(new AutomaticRetryAttribute { Attempts = 3, DelaysInSeconds = [60, 300, 600] });
 
-// ── Límite de subida de archivos (5 MB) ───────────────────────────────────────
+// ── Límite de subida de archivos (20 MB) ──────────────────────────────────────
 builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(opt =>
 {
-    opt.MultipartBodyLengthLimit = 5 * 1024 * 1024;
+    opt.MultipartBodyLengthLimit = 20 * 1024 * 1024;
 });
 
 // ── Rate Limiting (por IP, políticas por endpoint) ────────────────────────────

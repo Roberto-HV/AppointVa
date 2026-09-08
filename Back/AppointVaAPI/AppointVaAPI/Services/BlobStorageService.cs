@@ -25,7 +25,7 @@ namespace AppointVaAPI.Services
             ["image/gif"]  = [0x47, 0x49, 0x46, 0x38], // "GIF8"
         };
 
-        private const long MaxBytes = 5 * 1024 * 1024; // 5 MB
+        private const long MaxBytes = 20 * 1024 * 1024; // 20 MB
 
         public BlobStorageService(
             IConfiguration config,
