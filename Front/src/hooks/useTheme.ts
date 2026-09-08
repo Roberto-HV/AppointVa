@@ -24,6 +24,7 @@ export function useTheme() {
     try {
       localStorage.setItem("appointva-theme", theme);
     } catch {}
+    window.dispatchEvent(new CustomEvent("appointva-theme-changed", { detail: theme }));
   }, [theme]);
 
   const toggle = () => setTheme((t) => (t === "dark" ? "light" : "dark"));
