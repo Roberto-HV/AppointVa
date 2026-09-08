@@ -2,7 +2,39 @@
   "permissions": {
     "allow": [
       "Bash(dotnet build *)",
-      "Bash(dotnet ef *)"
+      "Bash(dotnet ef *)",
+      "Bash(git -C \"c:\\\\Cursos\\\\AppointVa\\\\Front\" add src/api/admin.ts src/pages/admin/NegociosAdminPage.tsx)",
+      "Bash(git -C \"c:\\\\Cursos\\\\AppointVa\\\\Front\" commit -m \"feat\\(admin\\): edit/delete payments in historial, fix sector chip color and modal width\")",
+      "Bash(git -C \"c:\\\\Cursos\\\\AppointVa\\\\Back\\\\AppointVaAPI\" log --oneline -1)",
+      "Bash(git -C \"c:\\\\Cursos\\\\AppointVa\\\\Front\" log --oneline -1)",
+      "Bash(git -C \"c:\\\\Cursos\\\\AppointVa\\\\Back\\\\AppointVaAPI\" log --oneline -3)",
+      "mcp__engram__mem_save",
+      "mcp__engram__mem_judge",
+      "Bash(git push *)",
+      "WebSearch",
+      "mcp__engram__mem_session_summary",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(npm test *)",
+      "Bash(npx vitest *)",
+      "WebFetch(domain:simplybook.me)",
+      "WebFetch(domain:webscraft.org)",
+      "WebFetch(domain:bugs.webkit.org)",
+      "WebFetch(domain:dev.to)",
+      "WebFetch(domain:webkit.org)",
+      "WebFetch(domain:rottenwifi.com)",
+      "WebFetch(domain:www.magicbell.com)",
+      "WebFetch(domain:mjtsai.com)",
+      "WebFetch(domain:releasebot.io)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:pushpad.xyz)",
+      "WebFetch(domain:w3c.github.io)",
+      "WebFetch(domain:biz.booksy.com)",
+      "WebFetch(domain:www.fresha.com)",
+      "WebFetch(domain:terms.fresha.com)"
+    ],
+    "additionalDirectories": [
+      "c:\\Cursos\\AppointVa"
     ]
   }
 }

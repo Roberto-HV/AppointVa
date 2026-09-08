@@ -603,6 +603,53 @@
     .m-period-btn { padding: 4px 10px; border-radius: 7px; font-size: 10px; font-weight: 600; color: #475569; background: #fff; border: 1px solid #e2e8f0; cursor: default; }
     .m-period-btn.active { background: #0f172a; color: #fff; border-color: #0f172a; }
     .m-chart-lbl { font-size: 8px; color: #94a3b8; text-align: center; margin-top: 3px; }
+  @media print {
+    /* White background — no beige ink on paper */
+    html, body {
+      background: #ffffff !important;
+    }
+    .toc-section, .toc-agenda, .intro-card, .section-card,
+    .tip, .info, .warn, .callout-legend {
+      background: #ffffff !important;
+    }
+
+    /* Each top-level section starts on a fresh page */
+    section.section {
+      break-before: page;
+      page-break-before: always;
+    }
+
+    /* Keep headings with the content that follows */
+    h3 { break-after: avoid; page-break-after: avoid; }
+    h2 { break-after: avoid; page-break-after: avoid; }
+
+    /* Never break inside these blocks */
+    .mockup-wrapper,
+    .callout-legend,
+    .card,
+    .tip, .info, .warn,
+    .booking-step,
+    .feat-item,
+    .step-item,
+    .section-card,
+    .intro-card,
+    .feat-list,
+    .steps,
+    .toc-item,
+    .toc-section,
+    .toc-agenda {
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    /* Kill shadows and scrollbars */
+    * { box-shadow: none !important; }
+    .m-sidebar, .m-main,
+    .m-main > div, .app-screen > div {
+      overflow: visible !important;
+      max-height: none !important;
+    }
+  }
   </style>
 </head>
 <body>

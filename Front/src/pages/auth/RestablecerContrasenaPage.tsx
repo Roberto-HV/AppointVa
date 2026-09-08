@@ -3,7 +3,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Link, useSearchParams } from "react-router-dom";
-import { AppLogo } from "../../components/AppLogo";
 import { Eye, EyeOff } from "lucide-react";
 import { authApi } from "../../api/auth";
 import PasswordStrengthBar from "../../components/PasswordStrengthBar";
@@ -70,7 +69,7 @@ export default function RestablecerContrasenaPage() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <AppLogo className="h-20 object-contain mx-auto mb-2" />
+          <img src="/MasterLogo.png" alt="AppointVa" className="h-20 object-contain mx-auto mb-2" />
           <p className="text-gray-500 text-sm">AppointVa</p>
         </div>
 

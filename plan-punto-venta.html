@@ -1,0 +1,1569 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Punto de Venta</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+/* ── Design Tokens (Light) ─────────────────────────────────────────── */
+:root {
+  --ink:         #12110f;
+  --ink-mid:     #6b6460;
+  --ink-faint:   #a09890;
+  --ground:      #f5f2ed;
+  --surface:     #faf8f4;
+  --surface-alt: #eeeae2;
+  --accent:      #15803d;
+  --accent-dim:  #dcfce7;
+  --accent-text: #14532d;
+  --border:      #cec9bf;
+  --border-faint:#e2ddd6;
+  --blue:        #1d4ed8;
+  --blue-dim:    #dbeafe;
+  --purple:      #7c3aed;
+  --purple-dim:  #ede9fe;
+  --warn:        #92400e;
+  --warn-dim:    #fef3c7;
+  --chip-bg:     #e8e4dc;
+  --code-bg:     #e9e5dc;
+
+  --font-display: 'DM Serif Display', Georgia, serif;
+  --font-body:    'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono:    'IBM Plex Mono', 'Courier New', monospace;
+  --sidebar-w:   260px;
+  --content-max: 840px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ink:         #e5e0d8;
+    --ink-mid:     #8a847b;
+    --ink-faint:   #5c5650;
+    --ground:      #100f0d;
+    --surface:     #161410;
+    --surface-alt: #1e1c18;
+    --accent:      #4ade80;
+    --accent-dim:  #052e16;
+    --accent-text: #86efac;
+    --border:      #2a2620;
+    --border-faint:#1e1c18;
+    --blue:        #60a5fa;
+    --blue-dim:    #0a1628;
+    --purple:      #c084fc;
+    --purple-dim:  #160d26;
+    --warn:        #fbbf24;
+    --warn-dim:    #1c1400;
+    --chip-bg:     #252118;
+    --code-bg:     #1a1814;
+  }
+}
+:root[data-theme="dark"] {
+  --ink:         #e5e0d8;
+  --ink-mid:     #8a847b;
+  --ink-faint:   #5c5650;
+  --ground:      #100f0d;
+  --surface:     #161410;
+  --surface-alt: #1e1c18;
+  --accent:      #4ade80;
+  --accent-dim:  #052e16;
+  --accent-text: #86efac;
+  --border:      #2a2620;
+  --border-faint:#1e1c18;
+  --blue:        #60a5fa;
+  --blue-dim:    #0a1628;
+  --purple:      #c084fc;
+  --purple-dim:  #160d26;
+  --warn:        #fbbf24;
+  --warn-dim:    #1c1400;
+  --chip-bg:     #252118;
+  --code-bg:     #1a1814;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--ink);
+  background: var(--ground);
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ── Layout ────────────────────────────────────────────────────────── */
+.layout { display: flex; min-height: 100vh; }
+
+.sidebar {
+  width: var(--sidebar-w);
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+}
+.sidebar-logo {
+  padding: 1.5rem 1.25rem 1rem;
+  border-bottom: 1px solid var(--border-faint);
+}
+.sidebar-logo .name {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  color: var(--ink);
+  line-height: 1.2;
+}
+.sidebar-logo .version {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-top: 0.25rem;
+}
+.sidebar-nav { padding: 0.75rem 0 2rem; flex: 1; }
+.nav-group-label {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--ink-faint);
+  padding: 0.85rem 1.25rem 0.3rem;
+}
+.nav-link {
+  display: block;
+  padding: 0.28rem 1.25rem;
+  font-size: 0.81rem;
+  color: var(--ink-mid);
+  border-left: 2px solid transparent;
+  transition: color 0.1s, background 0.1s;
+}
+.nav-link:hover { color: var(--ink); background: var(--surface-alt); text-decoration: none; }
+.nav-link.active { color: var(--accent); border-left-color: var(--accent); background: var(--accent-dim); }
+
+.content { flex: 1; min-width: 0; padding: 2.5rem 3rem 5rem; }
+.content-inner { max-width: var(--content-max); }
+
+@media (max-width: 900px) {
+  .layout { flex-direction: column; }
+  .sidebar { width: 100%; height: auto; position: static; border-right: none; border-bottom: 1px solid var(--border); }
+  .sidebar-nav { display: flex; flex-wrap: wrap; padding: 0.5rem 0.75rem; gap: 0.25rem; }
+  .nav-group-label { display: none; }
+  .nav-link { padding: 0.25rem 0.6rem; border-radius: 3px; border-left: none; font-size: 0.73rem; background: var(--chip-bg); color: var(--ink-mid); }
+  .nav-link.active { background: var(--accent-dim); color: var(--accent); }
+  .content { padding: 2rem 1.25rem 4rem; }
+}
+
+/* ── Typography ─────────────────────────────────────────────────────── */
+.page-header { padding-bottom: 2rem; border-bottom: 1px solid var(--border); margin-bottom: 3rem; }
+.page-eyebrow { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.5rem; }
+.page-title { font-family: var(--font-display); font-size: 2.5rem; line-height: 1.15; color: var(--ink); text-wrap: balance; }
+.page-subtitle { margin-top: 0.75rem; font-size: 1rem; color: var(--ink-mid); max-width: 60ch; }
+.page-meta { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; margin-top: 1.25rem; font-family: var(--font-mono); font-size: 0.68rem; color: var(--ink-faint); }
+
+.section { margin-bottom: 3.5rem; scroll-margin-top: 2rem; }
+.section-title { font-family: var(--font-display); font-size: 1.55rem; color: var(--ink); line-height: 1.25; text-wrap: balance; margin-bottom: 0.75rem; }
+.section-intro { color: var(--ink-mid); margin-bottom: 1.5rem; max-width: 62ch; }
+
+h3 { font-size: 0.88rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink); margin: 1.75rem 0 0.6rem; }
+h3:first-of-type { margin-top: 0; }
+p { margin-bottom: 0.8rem; max-width: 65ch; }
+p:last-child { margin-bottom: 0; }
+
+/* ── Callout boxes ──────────────────────────────────────────────────── */
+.callout {
+  padding: 0.95rem 1.2rem;
+  margin: 1.25rem 0;
+  border-left: 4px solid;
+  font-size: 0.9rem;
+}
+.callout p { max-width: none; }
+.callout-label { font-family: var(--font-mono); font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 0.35rem; }
+.callout.green { background: var(--accent-dim); border-color: var(--accent); }
+.callout.green .callout-label { color: var(--accent-text); }
+.callout.blue  { background: var(--blue-dim);   border-color: var(--blue);   }
+.callout.blue .callout-label  { color: var(--blue);  }
+.callout.warn  { background: var(--warn-dim);   border-color: var(--warn);   }
+.callout.warn .callout-label  { color: var(--warn);  }
+.callout.purple{ background: var(--purple-dim); border-color: var(--purple); }
+.callout.purple .callout-label{ color: var(--purple); }
+
+/* ── Code ──────────────────────────────────────────────────────────── */
+.code-block {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  padding: 1rem 1.25rem;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  line-height: 1.75;
+  overflow-x: auto;
+  color: var(--ink);
+  white-space: pre;
+  margin: 0.75rem 0 1.25rem;
+}
+code { font-family: var(--font-mono); font-size: 0.83em; background: var(--code-bg); padding: 0.1em 0.35em; color: var(--ink); }
+
+/* ── Tables ─────────────────────────────────────────────────────────── */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.83rem;
+  overflow-x: auto;
+  display: block;
+  margin: 0.75rem 0 1.5rem;
+}
+.data-table th {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink-mid);
+  text-align: left;
+  padding: 0.45rem 0.85rem;
+  border-bottom: 2px solid var(--border);
+  white-space: nowrap;
+  background: var(--surface);
+}
+.data-table td {
+  padding: 0.5rem 0.85rem;
+  border-bottom: 1px solid var(--border-faint);
+  vertical-align: top;
+}
+.data-table tr:last-child td { border-bottom: none; }
+.data-table .label { font-weight: 500; color: var(--ink); white-space: nowrap; }
+.data-table .mono  { font-family: var(--font-mono); font-size: 0.78rem; color: var(--ink); white-space: nowrap; }
+.data-table .type  { font-family: var(--font-mono); font-size: 0.72rem; color: var(--accent-text); white-space: nowrap; }
+.data-table .muted { color: var(--ink-mid); }
+.data-table .faint { color: var(--ink-faint); font-size: 0.78rem; }
+
+.tag { display: inline-block; font-family: var(--font-mono); font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.08em; padding: 0.1rem 0.4rem; margin-left: 0.35rem; }
+.tag.green  { background: var(--accent); color: #fff; }
+.tag.blue   { background: var(--blue); color: #fff; }
+.tag.warn   { background: var(--warn); color: #fff; }
+.tag.muted  { background: var(--chip-bg); color: var(--ink-faint); }
+
+/* ── Architecture diagram ───────────────────────────────────────────── */
+.arch { display: flex; flex-direction: column; gap: 1px; background: var(--border); border: 1px solid var(--border); margin: 1.5rem 0; }
+.arch-row { display: grid; gap: 1px; background: var(--border); }
+.arch-row.c1 { grid-template-columns: 1fr; }
+.arch-row.c2 { grid-template-columns: 1fr 1fr; }
+.arch-row.c3 { grid-template-columns: 1fr 1fr 1fr; }
+.arch-row.c4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+.arch-cell { background: var(--surface); padding: 0.8rem 1rem; }
+.arch-cell.accent { background: var(--accent-dim); }
+.arch-cell.blue   { background: var(--blue-dim); }
+.arch-cell.alt    { background: var(--surface-alt); }
+.arch-cell.purple { background: var(--purple-dim); }
+.arch-lbl { font-family: var(--font-mono); font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-faint); margin-bottom: 0.15rem; }
+.arch-name { font-weight: 600; font-size: 0.88rem; color: var(--ink); margin-bottom: 0.1rem; }
+.arch-detail { font-size: 0.77rem; color: var(--ink-mid); line-height: 1.45; }
+.arch-arrow { text-align: center; padding: 0.35rem; background: var(--ground); font-size: 0.72rem; color: var(--ink-faint); font-family: var(--font-mono); }
+
+/* ── Monorepo tree ──────────────────────────────────────────────────── */
+.tree { font-family: var(--font-mono); font-size: 0.8rem; line-height: 2; background: var(--code-bg); border: 1px solid var(--border); padding: 1rem 1.25rem; overflow-x: auto; }
+.tree-dir  { color: var(--ink); font-weight: 500; }
+.tree-file { color: var(--ink-mid); }
+.tree-note { color: var(--ink-faint); }
+
+/* ── Feature grid ───────────────────────────────────────────────────── */
+.feature-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(215px, 1fr)); gap: 1px; background: var(--border); border: 1px solid var(--border); margin: 1rem 0; }
+.feature-item { background: var(--surface); padding: 0.8rem 1rem; }
+.feature-phase { font-family: var(--font-mono); font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.2rem; }
+.p1 { color: var(--accent); }
+.p2 { color: var(--blue); }
+.p3 { color: var(--purple); }
+.feature-name { font-size: 0.85rem; font-weight: 500; color: var(--ink); }
+.feature-note { font-size: 0.75rem; color: var(--ink-mid); margin-top: 0.1rem; line-height: 1.4; }
+
+/* ── Phase cards ───────────────────────────────────────────────────── */
+.phase-card { border: 1px solid var(--border); margin-bottom: 1rem; }
+.phase-header { display: flex; align-items: baseline; gap: 1rem; padding: 0.85rem 1.1rem; background: var(--surface); border-bottom: 1px solid var(--border); }
+.phase-n { font-family: var(--font-display); font-size: 1.1rem; color: var(--accent); flex-shrink: 0; }
+.phase-t { font-weight: 600; font-size: 0.9rem; color: var(--ink); }
+.phase-w { font-family: var(--font-mono); font-size: 0.63rem; color: var(--ink-faint); margin-left: auto; white-space: nowrap; }
+.phase-body { padding: 0.85rem 1.1rem; background: var(--ground); }
+.task-list { list-style: none; display: grid; gap: 0.35rem; }
+.task-list li { font-size: 0.84rem; color: var(--ink-mid); padding-left: 1.1rem; position: relative; max-width: none; }
+.task-list li::before { content: '–'; position: absolute; left: 0; color: var(--border); }
+.task-list li strong { color: var(--ink); }
+
+/* ── Differentiator list ────────────────────────────────────────────── */
+.diff-list { display: grid; gap: 0.75rem; margin: 1rem 0; }
+.diff-item { display: grid; grid-template-columns: auto 1fr; gap: 0.75rem; align-items: start; padding: 0.85rem 1rem; background: var(--surface); border: 1px solid var(--border-faint); }
+.diff-icon { font-family: var(--font-mono); font-size: 0.7rem; font-weight: 500; color: var(--accent); padding-top: 0.05rem; white-space: nowrap; }
+.diff-body {}
+.diff-name { font-weight: 600; font-size: 0.88rem; color: var(--ink); margin-bottom: 0.15rem; }
+.diff-desc { font-size: 0.8rem; color: var(--ink-mid); line-height: 1.45; }
+
+/* ── UX patterns ────────────────────────────────────────────────────── */
+.ux-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1rem; margin: 1rem 0; }
+.ux-card { border: 1px solid var(--border-faint); padding: 0.85rem 1rem; background: var(--surface); }
+.ux-card-label { font-family: var(--font-mono); font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-faint); margin-bottom: 0.3rem; }
+.ux-card-title { font-weight: 600; font-size: 0.88rem; color: var(--ink); margin-bottom: 0.25rem; }
+.ux-card-body { font-size: 0.8rem; color: var(--ink-mid); line-height: 1.45; }
+
+.section-divider { border: none; border-top: 1px solid var(--border-faint); margin: 3rem 0; }
+
+@media print {
+  .sidebar { display: none; }
+  .content { padding: 1.5cm; }
+  .phase-card, .arch { break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+<div class="layout">
+
+<!-- ── Sidebar ─────────────────────────────────────────────────────── -->
+<nav class="sidebar" aria-label="Navegación">
+  <div class="sidebar-logo">
+    <div class="name">Punto de Venta</div>
+    <div class="version">v2 · Multi-plataforma</div>
+  </div>
+  <div class="sidebar-nav">
+    <div class="nav-group-label">Arquitectura</div>
+    <a class="nav-link" href="#decision">Decisión de plataforma</a>
+    <a class="nav-link" href="#stack">Stack definitivo</a>
+    <a class="nav-link" href="#monorepo">Estructura monorepo</a>
+    <a class="nav-link" href="#diagrama">Diagrama del sistema</a>
+
+    <div class="nav-group-label">Datos y Sync</div>
+    <a class="nav-link" href="#sync">PowerSync + Supabase</a>
+    <a class="nav-link" href="#data-models">Modelo de datos</a>
+
+    <div class="nav-group-label">Dispositivos</div>
+    <a class="nav-link" href="#printing">Impresión térmica</a>
+    <a class="nav-link" href="#network">Red local</a>
+
+    <div class="nav-group-label">Producto</div>
+    <a class="nav-link" href="#differentiators">Diferenciadores</a>
+    <a class="nav-link" href="#features">Funcionalidades</a>
+    <a class="nav-link" href="#ux">UX de alta velocidad</a>
+
+    <div class="nav-group-label">Ejecución</div>
+    <a class="nav-link" href="#foundations">Bases — lecciones aprendidas</a>
+    <a class="nav-link" href="#fases">Fases</a>
+    <a class="nav-link" href="#setup">Setup inicial</a>
+    <a class="nav-link" href="#libraries">Librerías</a>
+  </div>
+</nav>
+
+<!-- ── Content ──────────────────────────────────────────────────────── -->
+<main class="content">
+<div class="content-inner">
+
+<header class="page-header">
+  <div class="page-eyebrow">Proyecto independiente · v2 · Agosto 2026</div>
+  <h1 class="page-title">Punto de Venta</h1>
+  <p class="page-subtitle">
+    Sistema instalable en desktop y móvil nativo. Offline-first con sync a la nube. Integración con AppointVa como diferenciador principal.
+  </p>
+  <div class="page-meta">
+    <span>Turborepo · Expo · Electron · PowerSync · Supabase</span>
+    <span>shadcn/ui + NativeWind</span>
+    <span>TypeScript end-to-end</span>
+  </div>
+</header>
+
+
+<!-- ─────────────────────────────────────────────────────────────────── -->
+<section class="section" id="decision">
+  <h2 class="section-title">Decisión de plataforma</h2>
+  <p class="section-intro">El requerimiento de instalación nativa en móvil cambia el juego. Electron no corre en iOS ni Android. Hay dos caminos reales.</p>
+
+  <div class="callout green">
+    <div class="callout-label">Recomendación — Path A</div>
+    <p><strong>Monorepo Turborepo con Expo (React Native) para móvil + Electron para desktop.</strong> Compartes el 60–65% del código: business logic, tipos, estado, API client, sync. Cada plataforma tiene su capa de UI y su capa de acceso a hardware. Aprovechas React y TypeScript que ya dominas. Tiempo a MVP es el más corto de todas las opciones.</p>
+  </div>
+
+  <div style="overflow-x:auto;">
+  <table class="data-table">
+    <thead>
+      <tr><th>Opción</th><th>Desktop</th><th>Móvil nativo</th><th>Código compartido</th><th>Curva de entrada</th><th>Printing móvil</th><th>Veredicto</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="label">Turborepo + Expo + Electron<span class="tag green">Elegir</span></td>
+        <td>Electron ✓</td>
+        <td>iOS + Android ✓</td>
+        <td>60–65 %</td>
+        <td>Inmediata — React/TS</td>
+        <td>react-native-esc-pos-printer</td>
+        <td>MVP más rápido, ecosystem maduro</td>
+      </tr>
+      <tr>
+        <td class="label">Flutter</td>
+        <td>✓ (maduro)</td>
+        <td>iOS + Android ✓</td>
+        <td>~90 %</td>
+        <td>Dart desde cero (2–4 semanas)</td>
+        <td>unified_esc_pos_printer ← el mejor</td>
+        <td>Arquitectura más limpia, curva real</td>
+      </tr>
+      <tr>
+        <td class="label">Tauri v2</td>
+        <td>✓</td>
+        <td>Plugins móvil inmaduro</td>
+        <td>~70 %</td>
+        <td>Rust para features nativas</td>
+        <td>Sin solución estable</td>
+        <td>Demasiado pronto para POS en prod</td>
+      </tr>
+      <tr>
+        <td class="label">Capacitor / PWA</td>
+        <td>No nativo</td>
+        <td>Wrap de WebView</td>
+        <td>~95 %</td>
+        <td>Inmediata</td>
+        <td>iOS bloquea WebUSB/WebSerial</td>
+        <td>Descartado — no hay impresión en iOS</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="callout warn">
+    <div class="callout-label">Por qué no PWA ni Capacitor</div>
+    <p>iOS Safari no implementa WebUSB ni Web Serial y Apple no tiene planes de hacerlo. Sin esas APIs no hay acceso a impresoras térmicas USB ni a puertos serie desde el navegador. En Android existe soporte parcial, pero no en iOS — y no puedes lanzar un POS que funcione solo en la mitad de los teléfonos.</p>
+  </div>
+</section>
+
+<hr class="section-divider">
+
+
+<!-- ─────────────────────────────────────────────────────────────────── -->
+<section class="section" id="stack">
+  <h2 class="section-title">Stack definitivo</h2>
+
+  <h3>Gestión del monorepo</h3>
+  <p><strong>Turborepo</strong> — builds incrementales cacheados, pipeline de tareas paralelas entre workspaces. Con <strong>pnpm workspaces</strong> como package manager (más eficiente en espacio en disco que npm/yarn para monorepos).</p>
+
+  <h3>App desktop</h3>
+  <p><strong>Electron 33</strong> + React 19 + TypeScript + <strong>electron-vite</strong>. El proceso main maneja SQLite, servidor Express para terminales locales, sync con PowerSync, y drivers de impresora. El renderer es React puro con shadcn/ui.</p>
+
+  <h3>App móvil</h3>
+  <p><strong>Expo SDK 53</strong> + React Native + TypeScript. Expo provee el toolchain completo: EAS Build para compilar .ipa y .apk sin Mac en CI, Expo Router para navegación, OTA updates para desplegar sin pasar por la App Store. La UI usa <strong>NativeWind v4</strong> — Tailwind CSS sobre primitivas nativas. Componentes complejos de UI de POS (carrito, teclado numérico, producto grid) se construyen custom.</p>
+
+  <h3>Base de datos local</h3>
+  <p><strong>better-sqlite3</strong> en desktop (síncrono, ideal para Electron). <strong>expo-sqlite</strong> en móvil (SQLite nativo en iOS/Android). El schema es idéntico en ambas plataformas — definido en el paquete compartido <code>packages/db-schema</code> con Drizzle ORM.</p>
+
+  <h3>Sync offline-first</h3>
+  <p><strong>PowerSync + Supabase</strong>. PowerSync sincroniza un subconjunto de Supabase Postgres a SQLite local por dispositivo. Las lecturas son siempre locales. Las escrituras van a una cola de upload local y se sincronizan cuando hay red. Reemplaza por completo el <code>sync_queue</code> manual — PowerSync lo maneja con reintentos, conflictos y estado visible.</p>
+
+  <h3>Cloud backend</h3>
+  <p><strong>Supabase</strong> — Postgres + Auth + Realtime + Storage. El tier gratuito cubre proyectos iniciales. Auth maneja sesiones de cajero via JWT con RLS (Row Level Security) — cada negocio solo ve sus propios datos.</p>
+
+  <h3>UI</h3>
+  <p><strong>shadcn/ui + Tailwind v4</strong> en desktop. <strong>NativeWind v4 + componentes propios</strong> en móvil. La lógica compartida (custom hooks, estado de carrito, cálculos de pago) vive en <code>packages/core</code> y la consumen ambas plataformas.</p>
+
+  <h3>Estado global</h3>
+  <p><strong>Zustand</strong> — el store de carrito, sesión de caja, cajero activo. Sin boilerplate, funciona igual en Electron renderer y React Native. No usar Context API para estado de alta frecuencia (actualizaciones del carrito) — Zustand es más eficiente.</p>
+</section>
+
+<hr class="section-divider">
+
+
+<!-- ─────────────────────────────────────────────────────────────────── -->
+<section class="section" id="monorepo">
+  <h2 class="section-title">Estructura del monorepo</h2>
+  <p class="section-intro">Todo el código vive en un solo repositorio. Cambias un tipo en <code>packages/db-schema</code> y TypeScript te señala al instante dónde falta actualizar en desktop y móvil.</p>
+
+  <div class="tree">
+<span class="tree-dir">mi-pos/</span>
+├── <span class="tree-dir">apps/</span>
+│   ├── <span class="tree-dir">desktop/</span>               <span class="tree-note"># Electron app</span>
+│   │   ├── <span class="tree-dir">src/</span>
+│   │   │   ├── <span class="tree-dir">main/</span>            <span class="tree-note"># Proceso Node.js</span>
+│   │   │   │   ├── <span class="tree-dir">db/</span>          <span class="tree-note"># better-sqlite3 + migraciones</span>
+│   │   │   │   ├── <span class="tree-dir">server/</span>      <span class="tree-note"># Express para terminales locales</span>
+│   │   │   │   ├── <span class="tree-dir">sync/</span>        <span class="tree-note"># PowerSync client</span>
+│   │   │   │   ├── <span class="tree-dir">printing/</span>    <span class="tree-note"># ESC/POS → USB/red</span>
+│   │   │   │   └── <span class="tree-dir">ipc/</span>         <span class="tree-note"># IPC handlers tipados</span>
+│   │   │   ├── <span class="tree-dir">renderer/</span>        <span class="tree-note"># React + shadcn/ui</span>
+│   │   │   │   ├── <span class="tree-dir">pages/</span>       <span class="tree-note"># POS, Productos, Reportes…</span>
+│   │   │   │   ├── <span class="tree-dir">components/</span>
+│   │   │   │   └── <span class="tree-dir">ui/</span>          <span class="tree-note"># shadcn/ui (auto-generado)</span>
+│   │   │   └── <span class="tree-dir">preload/</span>         <span class="tree-note"># contextBridge API</span>
+│   │   └── electron.vite.config.ts
+│   │
+│   └── <span class="tree-dir">mobile/</span>                <span class="tree-note"># Expo React Native</span>
+│       ├── <span class="tree-dir">app/</span>               <span class="tree-note"># Expo Router (file-based)</span>
+│       │   ├── <span class="tree-dir">(auth)/</span>        <span class="tree-note"># Login por PIN</span>
+│       │   ├── <span class="tree-dir">(pos)/</span>         <span class="tree-note"># Pantalla de ventas</span>
+│       │   └── <span class="tree-dir">(admin)/</span>       <span class="tree-note"># Catálogo, reportes</span>
+│       ├── <span class="tree-dir">components/</span>        <span class="tree-note"># Componentes RN específicos</span>
+│       ├── <span class="tree-dir">modules/</span>           <span class="tree-note"># Printing BT, barcode camera</span>
+│       └── app.json
+│
+├── <span class="tree-dir">packages/</span>                  <span class="tree-note"># Código compartido</span>
+│   ├── <span class="tree-dir">core/</span>                  <span class="tree-note"># Lógica de negocio pura</span>
+│   │   ├── cart.ts            <span class="tree-note"># Cálculos de carrito</span>
+│   │   ├── payment.ts         <span class="tree-note"># Split payment, cambio</span>
+│   │   ├── inventory.ts       <span class="tree-note"># Evento-sourcing de stock</span>
+│   │   └── reports.ts         <span class="tree-note"># Cálculos de corte de caja</span>
+│   │
+│   ├── <span class="tree-dir">db-schema/</span>             <span class="tree-note"># Schema único de Drizzle</span>
+│   │   ├── schema.ts          <span class="tree-note"># Definición de todas las tablas</span>
+│   │   └── types.ts           <span class="tree-note"># Tipos inferidos del schema</span>
+│   │
+│   ├── <span class="tree-dir">api/</span>                   <span class="tree-note"># Supabase client + endpoints</span>
+│   ├── <span class="tree-dir">sync/</span>                  <span class="tree-note"># PowerSync config + schema de sync</span>
+│   ├── <span class="tree-dir">store/</span>                 <span class="tree-note"># Zustand stores compartidos</span>
+│   └── <span class="tree-dir">config/</span>                <span class="tree-note"># tsconfig base, eslint</span>
+│
+├── turbo.json
+├── pnpm-workspace.yaml
+└── package.json</div>
+
+  <div class="callout blue">
+    <div class="callout-label">Qué se comparte vs qué es específico de plataforma</div>
+    <p><strong>Compartido (packages/):</strong> tipos del DB schema, lógica de cálculo de carrito y pagos, stores de Zustand, cliente de Supabase/PowerSync, formatters de dinero/fechas, validaciones.<br>
+    <strong>Específico de plataforma:</strong> componentes UI, acceso a hardware (impresora, cámara, USB), navegación, notificaciones push.</p>
+  </div>
+</section>
+
+<hr class="section-divider">
+
+
+<!-- ─────────────────────────────────────────────────────────────────── -->
+<section class="section" id="diagrama">
+  <h2 class="section-title">Diagrama del sistema</h2>
+  <p class="section-intro">Dos apps (desktop y móvil) con lógica compartida. La red local une terminales en el mismo negocio. La nube guarda todo cuando hay internet.</p>
+
+  <div class="arch">
+    <div class="arch-row c2">
+      <div class="arch-cell accent">
+        <div class="arch-lbl">Electron · Desktop (la caja principal)</div>
+        <div class="arch-name">Electron + React + shadcn/ui</div>
+        <div class="arch-detail">SQLite local vía better-sqlite3 · Express server en LAN · ESC/POS USB · PowerSync client</div>
+      </div>
+      <div class="arch-cell blue">
+        <div class="arch-lbl">Expo · Móvil (terminal secundaria o caja principal)</div>
+        <div class="arch-name">React Native + NativeWind</div>
+        <div class="arch-detail">SQLite local vía expo-sqlite · ESC/POS Bluetooth · Barcode por cámara · PowerSync client</div>
+      </div>
+    </div>
+    <div class="arch-row c1">
+      <div class="arch-arrow">↕ IPC tipado (desktop)  ·  ↕ Expo Modules API (móvil)</div>
+    </div>
+    <div class="arch-row c3">
+      <div class="arch-cell">
+        <div class="arch-lbl">Shared — packages/core</div>
+        <div class="arch-name">Lógica de negocio</div>
+        <div class="arch-detail">Carrito · Pagos · Inventario · Reportes · Validaciones</div>
+      </div>
+      <div class="arch-cell">
+        <div class="arch-lbl">Shared — packages/db-schema</div>
+        <div class="arch-name">Schema Drizzle + Tipos</div>
+        <div class="arch-detail">Una sola definición de tablas. Mismas migraciones en desktop y móvil.</div>
+      </div>
+      <div class="arch-cell">
+        <div class="arch-lbl">Shared — packages/store</div>
+        <div class="arch-name">Zustand stores</div>
+        <div class="arch-detail">useCartStore · useCashSessionStore · useCashierStore</div>
+      </div>
+    </div>
+    <div class="arch-row c1">
+      <div class="arch-arrow">↕ PowerSync (sync incremental offline-tolerante, cuando hay internet)</div>
+    </div>
+    <div class="arch-row c2">
+      <div class="arch-cell alt">
+        <div class="arch-lbl">Supabase Cloud</div>
+        <div class="arch-name">PostgreSQL + Auth + Realtime</div>
+        <div class="arch-detail">Respaldo en la nube · Reportes multi-terminal · RLS por negocio · Auth de cajeros</div>
+      </div>
+      <div class="arch-cell alt">
+        <div class="arch-lbl">Red local WiFi (opcional, sin internet)</div>
+        <div class="arch-name">Express en Electron + mDNS</div>
+        <div class="arch-detail">Terminales móviles se conectan al desktop vía <code>mi-pos.local</code>. Sync local en tiempo real sin internet.</div>
+      </div>
+    </div>
+    <div class="arch-row c1">
+      <div class="arch-arrow">↕ AppointVa API (opcional) — integración citas + checkout</div>
+    </div>
+    <div class="arch-row c1">
+      <div class="arch-cell purple">
+        <div class="arch-lbl">AppointVa · Integración futura</div>
+        <div class="arch-name">Citas → Cobro en un flujo</div>
+        <div class="arch-detail">El cliente llega con una cita de AppointVa. El POS la detecta, pre-carga el servicio en el carrito y procesa el pago. El diferenciador principal del producto.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="section-divider">
+
+
+<!-- ─────────────────────────────────────────────────────────────────── -->
+<section class="section" id="sync">
+  <h2 class="section-title">Sync con PowerSync + Supabase</h2>
+  <p class="section-intro">PowerSync es la capa que convierte tu Supabase Postgres en una base de datos local por dispositivo, con sync automático. Es la pieza que hace el offline-first real — no un queue manual con reintentos.</p>
+
+  <h3>Cómo funciona</h3>
+  <p>Cada dispositivo tiene su copia de SQLite. PowerSync define qué tablas se sincronizan y a qué dispositivo (via RLS en Supabase). Las lecturas son siempre locales — sin latencia. Las escrituras van a la cola local de PowerSync y se suben cuando hay red.</p>
+
+  <div class="callout blue">
+    <div class="callout-label">Por qué PowerSync sobre la alternativa manual</div>
+    <p>El sync queue manual que teníamos antes resuelve el "cómo subir" pero no resuelve conflictos, no sincroniza hacia abajo (cambios en la nube no bajan al dispositivo), y no tiene UI de estado de sync. PowerSync resuelve todo eso. Tiene tier gratuito hasta 3 usuarios y luego $39/mes — viable para un negocio.</p>
+  </div>
+
+  <h3>Inventario con event sourcing</h3>
+  <p>El problema del inventario en multi-terminal: terminal A vende 2 unidades mientras terminal B está offline. Cuando reconectan, ambas tienen stock = 4. El resultado correcto es stock = 2. Si guardas el stock como número, no puedes resolver esto.</p>
+  <p>La solución: guardar <em>eventos</em>, no el estado resultante.</p>
+
+  <div class="code-block">-- En vez de: UPDATE products SET stock = 4
+-- Guardar el evento:
+INSERT INTO inventory_events (product_id, delta, reason, terminal_id, created_at)
+VALUES ('uuid-producto', -2, 'sale', 'terminal-a', '2026-08-26T14:03:00')
+
+-- El stock actual es SIEMPRE:
+SELECT SUM(delta) FROM inventory_events WHERE product_id = ?</div>
+
+  <p>Con eventos, los conflictos desaparecen: terminal A restó 2, terminal B restó 1, resultado = −3 del stock inicial. Además obtienes un log de auditoría completo de quién vendió qué y cuándo.</p>
+
+  <h3>PowerSync schema</h3>
+  <div class="code-block">// packages/sync/powersync-schema.ts
+import { column, Schema, Table } from '@powersync/common'
+
+export const posSchema = new Schema([
+  new Table('products',         { name: column.text, price: column.integer, stock_computed: column.integer }),
+  new Table('orders',           { total: column.integer, status: column.text, cashier_id: column.text }),
+  new Table('order_items',      { order_id: column.text, product_id: column.text, quantity: column.integer }),
+  new Table('inventory_events', { product_id: column.text, delta: column.integer, reason: column.text }),
+  new Table('categories',       { name: column.text, color: column.text }),
+])</div>
+</section>
+
+<hr class="section-divider">
+
+
+<!-- ─────────────────────────────────────────────────────────────────── -->
+<section class="section" id="data-models">
+  <h2 class="section-title">Modelo de datos</h2>
+  <p class="section-intro">Schema Drizzle definido una sola vez en <code>packages/db-schema/schema.ts</code>. Drizzle genera los tipos TypeScript automáticamente.</p>
+
+  <div class="callout warn">
+    <div class="callout-label">Regla de dinero — sin excepción</div>
+    <p>Todo el dinero en enteros como centavos. <code>$150.50 → 15050</code>. Al mostrar: <code>(price / 100).toFixed(2)</code>. Los floats en dinero producen bugs imposibles de reproducir en producción. Esto no es negociable.</p>
+  </div>
+
+  <h3>products</h3>
+  <div style="overflow-x:auto;">
+  <table class="data-table">
+    <thead><tr><th>Campo</th><th>Tipo</th><th>Descripción</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">id</td><td class="type">text PK</td><td class="muted">UUID generado en cliente (offline-safe, nunca autoincrement)</td></tr>
+      <tr><td class="mono">name</td><td class="type">text</td><td class="muted">Nombre del producto</td></tr>
+      <tr><td class="mono">price</td><td class="type">integer</td><td class="muted">Precio en centavos</td></tr>
+      <tr><td class="mono">category_id</td><td class="type">text</td><td class="muted">FK → categories.id</td></tr>
+      <tr><td class="mono">barcode</td><td class="type">text?</td><td class="muted">Para scanner o cámara. Nullable.</td></tr>
+      <tr><td class="mono">track_stock</td><td class="type">integer</td><td class="muted">0/1 — si false, no decrementa inventario</td></tr>
+      <tr><td class="mono">image_url</td><td class="type">text?</td><td class="muted">URL de imagen. Supabase Storage.</td></tr>
+      <tr><td class="mono">active</td><td class="type">integer</td><td class="muted">0/1 — desactivar sin borrar</td></tr>
+      <tr><td class="mono">has_variants</td><td class="type">integer</td><td class="muted">0/1 — si true, bottom sheet de variantes en checkout</td></tr>
+      <tr><td class="mono">updated_at</td><td class="type">text</td><td class="muted">ISO timestamp para detección de conflictos</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>product_variants</h3>
+  <div style="overflow-x:auto;">
+  <table class="data-table">
+    <thead><tr><th>Campo</th><th>Tipo</th><th>Descripción</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">id</td><td class="type">text PK</td><td class="muted">UUID</td></tr>
+      <tr><td class="mono">product_id</td><td class="type">text</td><td class="muted">FK → products.id</td></tr>
+      <tr><td class="mono">name</td><td class="type">text</td><td class="muted">Ej: "Talla L", "Color Rojo"</td></tr>
+      <tr><td class="mono">price_delta</td><td class="type">integer</td><td class="muted">+500 centavos si la variante cuesta más</td></tr>
+      <tr><td class="mono">barcode</td><td class="type">text?</td><td class="muted">Barcode propio de la variante</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>orders</h3>
+  <div style="overflow-x:auto;">
+  <table class="data-table">
+    <thead><tr><th>Campo</th><th>Tipo</th><th>Descripción</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">id</td><td class="type">text PK</td><td class="muted">UUID</td></tr>
+      <tr><td class="mono">status</td><td class="type">text</td><td class="muted">open | completed | parked | refunded | voided</td></tr>
+      <tr><td class="mono">total</td><td class="type">integer</td><td class="muted">Suma de items en centavos</td></tr>
+      <tr><td class="mono">discount_amount</td><td class="type">integer</td><td class="muted">Descuento aplicado en centavos</td></tr>
+      <tr><td class="mono">discount_type</td><td class="type">text?</td><td class="muted">fixed | percent</td></tr>
+      <tr><td class="mono">cashier_id</td><td class="type">text</td><td class="muted">FK → cashiers.id</td></tr>
+      <tr><td class="mono">cash_session_id</td><td class="type">text</td><td class="muted">FK → cash_sessions.id</td></tr>
+      <tr><td class="mono">park_label</td><td class="type">text?</td><td class="muted">Nombre de la orden en pausa, ej: "Mesa 3" o "Juan"</td></tr>
+      <tr><td class="mono">appointva_cita_id</td><td class="type">text?</td><td class="muted">Si viene de AppointVa. El diferenciador.</td></tr>
+      <tr><td class="mono">note</td><td class="type">text?</td><td class="muted">Nota libre sobre la venta</td></tr>
+      <tr><td class="mono">created_at</td><td class="type">text</td><td class="muted">ISO timestamp local</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>payments</h3>
+  <div style="overflow-x:auto;">
+  <table class="data-table">
+    <thead><tr><th>Campo</th><th>Tipo</th><th>Descripción</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">id</td><td class="type">text PK</td><td class="muted">UUID</td></tr>
+      <tr><td class="mono">order_id</td><td class="type">text</td><td class="muted">FK → orders.id. Una orden puede tener N pagos (split payment)</td></tr>
+      <tr><td class="mono">method</td><td class="type">text</td><td class="muted">cash | card | transfer | qr | other</td></tr>
+      <tr><td class="mono">amount</td><td class="type">integer</td><td class="muted">Monto de este pago en centavos</td></tr>
+      <tr><td class="mono">received</td><td class="type">integer?</td><td class="muted">Solo en efectivo. Lo que dio el cliente.</td></tr>
+      <tr><td class="mono">change_given</td><td class="type">integer?</td><td class="muted">Solo en efectivo. El cambio entregado.</td></tr>
+      <tr><td class="mono">reference</td><td class="type">text?</td><td class="muted">Referencia de transferencia o terminal bancaria</td></tr>
+      <tr><td class="mono">tip</td><td class="type">integer?</td><td class="muted">Propina en centavos</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>inventory_events</h3>
+  <div style="overflow-x:auto;">
+  <table class="data-table">
+    <thead><tr><th>Campo</th><th>Tipo</th><th>Descripción</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">id</td><td class="type">text PK</td><td class="muted">UUID</td></tr>
+      <tr><td class="mono">product_id</td><td class="type">text</td><td class="muted">FK → products.id</td></tr>
+      <tr><td class="mono">delta</td><td class="type">integer</td><td class="muted">Negativo en venta (−2), positivo en recepción (+10)</td></tr>
+      <tr><td class="mono">reason</td><td class="type">text</td><td class="muted">sale | refund | adjustment | receipt | initial</td></tr>
+      <tr><td class="mono">order_id</td><td class="type">text?</td><td class="muted">FK → orders.id si es por una venta</td></tr>
+      <tr><td class="mono">terminal_id</td><td class="type">text</td><td class="muted">Qué dispositivo generó el evento</td></tr>
+      <tr><td class="mono">created_at</td><td class="type">text</td><td class="muted">ISO timestamp. El stock actual = SUM(delta).</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>Otras tablas</h3>
+  <p><code>order_items</code> (id, order_id, product_id, variant_id?, quantity, unit_price, discount) · <code>categories</code> (id, name, color, icon, order) · <code>cashiers</code> (id, name, pin_hash, role: admin|cashier, active) · <code>cash_sessions</code> (id, cashier_id, opened_at, closed_at, opening_amount, closing_amount, notes) · <code>customers</code> (id, name, phone, email?, total_visits, notes) · <code>discount_presets</code> (id, name, type: fixed|percent, amount)</p>
+</section>
+
+<hr class="section-divider">
+
+
+<!-- ─────────────────────────────────────────────────────────────────── -->
+<section class="section" id="printing">
+  <h2 class="section-title">Impresión térmica</h2>
+  <p class="section-intro">Desktop via USB. Móvil via Bluetooth. Misma interfaz abstracta en <code>packages/core/printing.ts</code> — la implementación cambia, el código de negocio no.</p>
+
+  <h3>Desktop (Electron) — USB</h3>
+  <div class="code-block">// apps/desktop/src/main/printing/usb.ts
+import { Encoder } from 'receipt-printer-encoder'
+import { Usb } from '@node-escpos/usb-adapter'
+
+export async function printToUsb(buffer: Uint8Array) {
+  const device = new Usb()
+  await device.open()
+  await device.write(Buffer.from(buffer))
+  await device.close()
+}</div>
+
+  <h3>Móvil (React Native) — Bluetooth</h3>
+  <p>Usar <code>react-native-esc-pos-printer</code> que envuelve el Epson ePOS SDK oficial para iOS y Android. Para impresoras no-Epson con BLE usar <code>@finan-me/react-native-thermal-printer</code>.</p>
+  <div class="code-block">// apps/mobile/modules/printing/bt.ts
+import EscPosPrinter from 'react-native-esc-pos-printer'
+
+export async function printTicket(data: TicketData) {
+  const devices = await EscPosPrinter.discover()
+  const printer  = devices[0]  // o mostrar UI de selección
+  await printer.connect()
+  await printer.addText(`${data.negocio}\n`)
+  await printer.addFeedLine(1)
+  for (const item of data.items) {
+    await printer.addText(`${item.name.padEnd(20)} $${item.price}\n`)
+  }
+  await printer.addCut()
+  await printer.printReceipt()
+  await printer.disconnect()
+}</div>
+
+  <h3>Interfaz abstracta compartida</h3>
+  <div class="code-block">// packages/core/printing.ts
+export interface PrintingPort {
+  printTicket(data: TicketData): Promise<void>
+}
+// Desktop inyecta UsbPrinting. Móvil inyecta BtPrinting.
+// El código de negocio solo habla con PrintingPort.</div>
+
+  <h3>Tipos de conexión en LatAm</h3>
+  <div style="overflow-x:auto;">
+  <table class="data-table">
+    <thead><tr><th>Conexión</th><th>Disponibilidad</th><th>Recomendado para</th></tr></thead>
+    <tbody>
+      <tr><td class="label">Bluetooth Classic</td><td class="muted">La más común en impresoras baratas</td><td class="muted">Móvil como caja principal</td></tr>
+      <tr><td class="label">USB</td><td class="muted">Estándar en desktop</td><td class="muted">Desktop como caja principal</td></tr>
+      <tr><td class="label">WiFi/LAN</td><td class="muted">Impresoras de $1,500+ MXN</td><td class="muted">Múltiples cajas compartiendo una impresora</td></tr>
+      <tr><td class="label">BLE</td><td class="muted">Impresoras modernas</td><td class="muted">Alternativa a BT Classic en móvil</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="callout warn">
+    <div class="callout-label">Probar con hardware real desde el día 1</div>
+    <p>Las impresoras genéricas baratas (menos de $500 MXN en Amazon México) a veces requieren drivers específicos en Windows. En iOS, el ePOS SDK de Epson requiere que la impresora sea de la familia Epson — las genéricas necesitan el path BLE con <code>@finan-me/react-native-thermal-printer</code>. No dejes la prueba de impresión para el final de la Fase 1.</p>
+  </div>
+</section>
+
+<hr class="section-divider">
+
+
+<!-- ─────────────────────────────────────────────────────────────────── -->
+<section class="section" id="network">
+  <h2 class="section-title">Red local</h2>
+  <p class="section-intro">Cuando las terminales están en el mismo WiFi, el desktop actúa como servidor local. No se necesita internet para que el negocio opere.</p>
+
+  <h3>Descubrimiento automático con mDNS</h3>
+  <p>El proceso main de Electron anuncia el servicio en la red local con <strong>bonjour-service</strong>. Los dispositivos en la misma red acceden via <code>http://mi-pos.local:3847</code> sin necesidad de conocer la IP del equipo.</p>
+
+  <div class="code-block">// apps/desktop/src/main/server/mdns.ts
+import Bonjour from 'bonjour-service'
+export function startDiscovery(port: number) {
+  const bonjour = new Bonjour()
+  bonjour.publish({ name: 'Mi POS', type: 'http', port })
+  return () => bonjour.unpublishAll()
+}</div>
+
+  <h3>Token de sesión</h3>
+  <p>Al arrancar el servidor, genera un UUID de sesión. El dispositivo móvil lo escanea via QR (o lo ingresa manualmente) la primera vez. Todas las peticiones posteriores incluyen ese token en el header. Sin token = 401.</p>
+
+  <h3>Cuando la terminal móvil ya tiene PowerSync</h3>
+  <p>En Fase 3, cuando el móvil tiene su propia copia de SQLite vía PowerSync, ya no necesita el Express server para operar — puede vender de forma completamente autónoma. El Express server queda solo para sincronización en tiempo real dentro de la red local cuando internet no está disponible.</p>
+</section>
+
+<hr class="section-divider">
+
+
+<!-- ─────────────────────────────────────────────────────────────────── -->
+<section class="section" id="differentiators">
+  <h2 class="section-title">Diferenciadores vs Square y Loyverse</h2>
+  <p class="section-intro">Square y Loyverse son herramientas de propósito general. Este POS puede ser la herramienta específica para negocios de servicio en México y LatAm.</p>
+
+  <div class="diff-list">
+    <div class="diff-item">
+      <div class="diff-icon">★ 1</div>
+      <div class="diff-body">
+        <div class="diff-name">Citas de AppointVa → Cobro directo</div>
+        <div class="diff-desc">El cliente llega con una cita agendada. El POS la detecta automáticamente, carga el servicio en el carrito, y procesa el pago. Un flujo, cero reingreso de datos. <strong>Ningún POS gratuito hace esto.</strong> Es el diferenciador del producto.</div>
+      </div>
+    </div>
+    <div class="diff-item">
+      <div class="diff-icon">★ 2</div>
+      <div class="diff-body">
+        <div class="diff-name">Ticket por WhatsApp o QR digital</div>
+        <div class="diff-desc">90%+ de penetración de WhatsApp en el mercado objetivo. Enviar el ticket como mensaje con el resumen de la compra elimina la impresión para clientes que no la quieren. El QR code en pantalla permite que el cliente lo guarde desde su celular.</div>
+      </div>
+    </div>
+    <div class="diff-item">
+      <div class="diff-icon">★ 3</div>
+      <div class="diff-body">
+        <div class="diff-name">Indicador de sync honesto y visible</div>
+        <div class="diff-desc">Un chip permanente: <code>En línea — sync al día</code> o <code>Sin internet — 3 ventas en cola</code>. Los cajeros saben exactamente qué está pasando. Square lo oculta. Loyverse lo oculta. La transparencia genera confianza en el sistema.</div>
+      </div>
+    </div>
+    <div class="diff-item">
+      <div class="diff-icon">★ 4</div>
+      <div class="diff-body">
+        <div class="diff-name">Órdenes en pausa con nombre (parked orders)</div>
+        <div class="diff-body">
+        <div class="diff-desc">Guardar una orden con un nombre ("Mesa 3", "Juan M.") y abrir una nueva mientras el cliente decide. Loyverse lo tiene parcialmente. Square no en el tier gratuito. Para salones, restaurantes pequeños, y tiendas con múltiples clientes simultáneos es esencial.</div>
+      </div>
+      </div>
+    </div>
+    <div class="diff-item">
+      <div class="diff-icon">★ 5</div>
+      <div class="diff-body">
+        <div class="diff-name">Corte de caja profundo (Z-Report)</div>
+        <div class="diff-desc">No solo el total del día — desglose por cajero, por método de pago, conteo físico de efectivo vs esperado, log de discrepancias, retiros de caja durante el turno. Las herramientas gratuitas tratan esto como un afterthought. Para el dueño del negocio, el corte de caja diario es su control más importante.</div>
+      </div>
+    </div>
+    <div class="diff-item">
+      <div class="diff-icon">★ 6</div>
+      <div class="diff-body">
+        <div class="diff-name">Split payment (efectivo + tarjeta en una sola venta)</div>
+        <div class="diff-desc">Extremadamente común en LatAm: el cliente paga $300 con tarjeta y $150 en efectivo. Square lo tiene. Loyverse gratuito no. Implementarlo desde el principio es más fácil que agregar después — el schema de <code>payments</code> ya lo soporta (N pagos por orden).</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="section-divider">
+
+
+<!-- ─────────────────────────────────────────────────────────────────── -->
+<section class="section" id="features">
+  <h2 class="section-title">Funcionalidades por fase</h2>
+  <p class="section-intro">MVP en Fase 1 es completamente operativo para un negocio real. Las fases 2 y 3 amplían, no corrigen.</p>
+
+  <div class="feature-grid">
+    <div class="feature-item">
+      <div class="feature-phase p1">Fase 1 · MVP</div>
+      <div class="feature-name">Pantalla de ventas</div>
+      <div class="feature-note">Grid de productos por categoría. Búsqueda por nombre. Carrito lateral.</div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-phase p1">Fase 1 · MVP</div>
+      <div class="feature-name">Checkout en efectivo</div>
+      <div class="feature-note">Teclado numérico, cálculo de cambio, registro de pago.</div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-phase p1">Fase 1 · MVP</div>
+      <div class="feature-name">Catálogo de productos</div>
+      <div class="feature-note">CRUD con categorías, precio, foto opcional, barcode.</div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-phase p1">Fase 1 · MVP</div>
+      <div class="feature-name">Sesión de caja</div>
+      <div class="feature-note">Apertura con efectivo inicial. Cierre con conteo físico y corte.</div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-phase p1">Fase 1 · MVP</div>
+      <div class="feature-name">Impresión de ticket</div>
+      <div class="feature-note">ESC/POS por USB (desktop) o Bluetooth (móvil).</div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-phase p1">Fase 1 · MVP</div>
+      <div class="feature-name">Login por PIN</div>
+      <div class="feature-note">Cada cajero tiene su PIN de 4 dígitos. Ventas atribuidas.</div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-phase p1">Fase 1 · MVP</div>
+      <div class="feature-name">Reporte diario</div>
+      <div class="feature-note">Total de ventas, desglose por método de pago.</div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-phase p2">Fase 2</div>
+      <div class="feature-name">Split payment</div>
+      <div class="feature-note">Efectivo + tarjeta en una orden. N métodos de pago por venta.</div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-phase p2">Fase 2</div>
+      <div class="feature-name">Órdenes en pausa</div>
+      <div class="feature-note">Guardar carrito con nombre. Múltiples órdenes abiertas simultáneas.</div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-phase p2">Fase 2</div>
+      <div class="feature-name">Variantes de producto</div>
+      <div class="feature-note">Bottom sheet al tocar: Talla S/M/L, color. Precio diferenciado por variante.</div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-phase p2">Fase 2</div>
+      <div class="feature-name">Descuentos</div>
+      <div class="feature-note">Por ítem o por orden. Fijo ($50 off) o porcentaje (10%). Presets guardados.</div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-phase p2">Fase 2</div>
+      <div class="feature-name">Control de inventario</div>
+      <div class="feature-note">Stock decrementa al vender. Evento-sourcing. Alertas de stock bajo.</div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-phase p2">Fase 2</div>
+      <div class="feature-name">Barcode por cámara</div>
+      <div class="feature-note">En móvil: escanear código con la cámara agrega al carrito.</div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-phase p2">Fase 2</div>
+      <div class="feature-name">Devoluciones</div>
+      <div class="feature-note">Reembolso parcial o total. Regresa stock al inventario.</div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-phase p2">Fase 2</div>
+      <div class="feature-name">Z-Report completo</div>
+      <div class="feature-note">Por cajero, por método de pago, retiros, discrepancias.</div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-phase p3">Fase 3</div>
+      <div class="feature-name">Sync PowerSync</div>
+      <div class="feature-note">Offline-first multi-terminal. Cola automática cuando sin red.</div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-phase p3">Fase 3</div>
+      <div class="feature-name">Ticket por WhatsApp</div>
+      <div class="feature-note">Link con resumen de venta enviado al número del cliente.</div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-phase p3">Fase 3</div>
+      <div class="feature-name">QR de recibo digital</div>
+      <div class="feature-note">El cliente escanea en pantalla. No requiere impresora.</div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-phase p3">Fase 3</div>
+      <div class="feature-name">AppointVa → POS</div>
+      <div class="feature-note">Cita del día carga el carrito automáticamente al escanear/buscar cliente.</div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-phase p3">Fase 3</div>
+      <div class="feature-name">Dashboard analítico</div>
+      <div class="feature-note">Gráficas de ventas por período, productos top, comparativo.</div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-phase p3">Fase 3</div>
+      <div class="feature-name">Gestión de clientes</div>
+      <div class="feature-note">Registro opcional en checkout. Historial de visitas y compras.</div>
+    </div>
+  </div>
+</section>
+
+<hr class="section-divider">
+
+
+<!-- ─────────────────────────────────────────────────────────────────── -->
+<section class="section" id="ux">
+  <h2 class="section-title">UX de alta velocidad</h2>
+  <p class="section-intro">En un POS la velocidad es la feature. Cada segundo en el checkout importa cuando hay fila. Estas son las decisiones de diseño que separan un POS bueno de uno excelente.</p>
+
+  <div class="ux-grid">
+    <div class="ux-card">
+      <div class="ux-card-label">Checkout</div>
+      <div class="ux-card-title">Grid de productos sobre lista</div>
+      <div class="ux-card-body">Tiles con imagen y precio. El cajero toca, no busca. La lista es para búsqueda de catálogos grandes. El grid es para lo que vende más el 80% de las veces.</div>
+    </div>
+    <div class="ux-card">
+      <div class="ux-card-label">Búsqueda</div>
+      <div class="ux-card-title">Búsqueda instantánea con Command</div>
+      <div class="ux-card-body">Atajo <code>⌘K</code> / <code>Ctrl+K</code> en desktop abre el buscador. Primeras letras del nombre del producto. No hay que navegar por categorías.</div>
+    </div>
+    <div class="ux-card">
+      <div class="ux-card-label">Teclado</div>
+      <div class="ux-card-title">Shortcuts en desktop</div>
+      <div class="ux-card-body"><code>F1</code> nuevo ticket · <code>F2</code> buscar producto · <code>F4</code> cobrar · <code>Esc</code> cancelar. Un cajero entrenado no toca el mouse.</div>
+    </div>
+    <div class="ux-card">
+      <div class="ux-card-label">Cantidades</div>
+      <div class="ux-card-title">Teclado numérico propio</div>
+      <div class="ux-card-body">No usar el teclado del sistema operativo para cantidades y montos. Un keypad custom en pantalla evita el layout del teclado virtual que tape la UI en mobile.</div>
+    </div>
+    <div class="ux-card">
+      <div class="ux-card-label">Feedback</div>
+      <div class="ux-card-title">Confirmación sonora opcional</div>
+      <div class="ux-card-body">Beep al agregar producto. Sonido de caja al completar pago. El cajero sabe que el tap registró sin mirar la pantalla. Toast visual + sonido.</div>
+    </div>
+    <div class="ux-card">
+      <div class="ux-card-label">Sin red</div>
+      <div class="ux-card-title">Chip de sync siempre visible</div>
+      <div class="ux-card-body">Un indicador pequeño, siempre en pantalla: verde = sincronizado, naranja = N ventas en cola. El cajero nunca se pregunta si el sistema "se cayó".</div>
+    </div>
+    <div class="ux-card">
+      <div class="ux-card-label">Errores</div>
+      <div class="ux-card-title">Sin errores bloqueantes en offline</div>
+      <div class="ux-card-body">El POS nunca muestra "Error de conexión" y bloquea el checkout. La falta de red es transparente para el cajero. Solo el chip de sync cambia de color.</div>
+    </div>
+    <div class="ux-card">
+      <div class="ux-card-label">Variantes</div>
+      <div class="ux-card-title">Bottom sheet, no pantalla nueva</div>
+      <div class="ux-card-body">Al tocar un producto con variantes, un bottom sheet aparece con las opciones (S/M/L, colores). El cajero elige y regresa al carrito. Sin navegar fuera del checkout.</div>
+    </div>
+  </div>
+</section>
+
+<hr class="section-divider">
+
+
+<!-- ─────────────────────────────────────────────────────────────────── -->
+<section class="section" id="foundations">
+  <h2 class="section-title">Bases — lecciones aprendidas</h2>
+  <p class="section-intro">
+    Estas son las convenciones que deben quedar escritas y acordadas en la Fase 0, antes de cualquier feature. No son opiniones — son correcciones directas a bugs reales que costaron horas de debugging en proyectos anteriores.
+  </p>
+
+  <div class="callout purple">
+    <div class="callout-label">Origen de estas reglas</div>
+    <p>Cada punto tiene una causa concreta. Un bug de timezone en un sistema de recordatorios. Un campo nuevo que requirió actualizar 5 archivos distintos y falló en producción porque faltó uno. Una variable declarada dentro de un bloque <code>if</code> usada afuera. Estas reglas existen para no repetir esos errores.</p>
+  </div>
+
+  <h3>1. Todos los timestamps en UTC — sin excepción</h3>
+  <p>
+    Guardar fechas como hora local es la fuente de bugs más difíciles de reproducir en un sistema. El POS opera en México, los servidores de Supabase están en otra zona horaria, PowerSync tiene su propio timestamp. Si cada capa usa una referencia distinta, eventualmente algo falla de manera intermitente.
+  </p>
+  <p><strong>La regla:</strong> toda fecha se guarda como string ISO 8601 en UTC (<code>"2026-08-26T20:30:00Z"</code>). La conversión a hora local de México (<code>America/Mexico_City</code>) ocurre <em>solo en la capa de presentación</em>, al momento de mostrar en pantalla, usando <code>date-fns</code> con la zona horaria del dispositivo.</p>
+  <div class="code-block">// packages/core/dates.ts — la única función que convierte a local
+import { format, toZonedTime } from 'date-fns-tz'
+
+const MX_TZ = 'America/Mexico_City'
+
+export function toMxDisplay(utcIso: string, fmt = 'dd/MM/yyyy HH:mm') {
+  return format(toZonedTime(new Date(utcIso), MX_TZ), fmt, { timeZone: MX_TZ })
+}
+
+// Al guardar — siempre:
+const created_at = new Date().toISOString()  // UTC
+// Al mostrar — siempre a través de toMxDisplay()
+// NUNCA: new Date().toLocaleString() — depende del locale del dispositivo</div>
+
+  <h3>2. Drizzle schema como fuente única de verdad</h3>
+  <p>
+    En AppointVa, agregar un campo nuevo requería actualizar el modelo C#, dos DTOs, dos interfaces TypeScript, y el mock de los tests. Faltar uno producía un error de build en producción. En el POS esto no puede pasar.
+  </p>
+  <p><strong>La regla:</strong> el schema de Drizzle en <code>packages/db-schema/schema.ts</code> es la única definición. Los tipos de TypeScript se <em>infieren</em> automáticamente — nunca se escriben a mano.</p>
+  <div class="code-block">// packages/db-schema/schema.ts
+export const products = sqliteTable('products', {
+  id:         text('id').primaryKey(),
+  name:       text('name').notNull(),
+  price:      integer('price').notNull(),   // centavos
+  categoryId: text('category_id'),
+  trackStock: integer('track_stock').default(1),
+  active:     integer('active').default(1),
+  updatedAt:  text('updated_at').notNull(),
+})
+
+// Los tipos salen solos — nunca se definen por separado:
+export type Product        = typeof products.$inferSelect
+export type NewProduct     = typeof products.$inferInsert
+// Ahora Product y NewProduct son el contrato en toda la app.
+// Si agregas un campo al schema, TypeScript señala dónde falta manejarlo.</div>
+
+  <div class="callout green">
+    <div class="callout-label">Por qué esto evita el bug de "5 archivos"</div>
+    <p>Cuando agregas <code>hasVariants: integer('has_variants').default(0)</code> al schema, TypeScript inmediatamente marca como error cada lugar donde construyes un objeto <code>Product</code> sin ese campo. No se puede olvidar actualizarlo — el compilador no deja pasar el build.</p>
+  </div>
+
+  <h3>3. Validación Zod en cada frontera del sistema</h3>
+  <p>
+    TypeScript solo existe en tiempo de compilación. En runtime, los datos que llegan del IPC de Electron, de Supabase, o de PowerSync son <em>unknown</em>. Si asumes que tienen la forma correcta y no la tienen, obtienes crashes silenciosos o, peor, datos corruptos guardados en SQLite.
+  </p>
+  <div class="code-block">// packages/core/schemas.ts
+import { z } from 'zod'
+
+export const ProductSchema = z.object({
+  id:         z.string().uuid(),
+  name:       z.string().min(1),
+  price:      z.number().int().positive(),  // centavos, siempre entero positivo
+  categoryId: z.string().uuid().nullable(),
+  trackStock: z.number().int().min(0).max(1),
+  active:     z.number().int().min(0).max(1),
+  updatedAt:  z.string().datetime({ offset: true }),  // ISO UTC obligatorio
+})
+
+// En el handler IPC del proceso main de Electron:
+ipcMain.handle('products:create', async (_, raw) => {
+  const data = ProductSchema.parse(raw)  // lanza ZodError si algo está mal
+  return db.insert(products).values(data)
+})</div>
+
+  <h3>4. Migraciones de SQLite corren en el arranque de la app</h3>
+  <p>
+    El POS se instala en equipos del cliente y se actualiza. Cada actualización puede traer cambios de schema. Si las migraciones no corren automáticamente al abrir la app, el equipo del cliente trabaja con un schema viejo y los datos no coinciden con el código nuevo.
+  </p>
+  <div class="code-block">// apps/desktop/src/main/db/migrate.ts
+import { migrate } from 'drizzle-orm/better-sqlite3/migrator'
+import { db } from './client'
+
+export function runMigrations() {
+  // Corre en el arranque, antes de que cualquier ventana abra
+  migrate(db, { migrationsFolder: './drizzle/migrations' })
+  console.log('Migrations OK')
+}
+
+// apps/desktop/src/main/index.ts
+app.whenReady().then(() => {
+  runMigrations()  // primero las migraciones
+  createWindow()   // luego la ventana
+})</div>
+
+  <h3>5. El IPC de Electron tiene un contrato TypeScript explícito</h3>
+  <p>
+    El proceso main y el renderer de Electron son procesos separados. Si expones una función en el <code>preload</code> y después cambias su firma en el <code>main</code>, el renderer recibe <code>undefined</code> sin error visible. Este tipo de bug es especialmente difícil de rastrear.
+  </p>
+  <div class="code-block">// packages/core/ipc-contract.ts — definido UNA sola vez
+export interface PosAPI {
+  products: {
+    list:   ()                          => Promise&lt;Product[]&gt;
+    create: (data: NewProduct)          => Promise&lt;Product&gt;
+    update: (id: string, data: Partial&lt;Product&gt;) => Promise&lt;Product&gt;
+  }
+  orders: {
+    create: (data: CreateOrderInput)   => Promise&lt;Order&gt;
+    today:  ()                          => Promise&lt;Order[]&gt;
+  }
+  printing: {
+    ticket: (orderId: string)           => Promise&lt;void&gt;
+  }
+}
+
+// preload/index.ts usa este tipo → el renderer también lo usa
+// Si no coinciden, TypeScript lo detecta antes de compilar</div>
+
+  <h3>6. Variables declaradas en el scope donde se usan</h3>
+  <p>
+    Regla simple: nunca declarar una variable dentro de un bloque <code>if</code>, <code>try</code>, o <code>for</code> si se va a usar fuera de él. En TypeScript esto es un error de compilación. En el proceso main de Electron (Node.js puro) también. Pero si la lógica es compleja, la solución es extraer la lógica a una función, no usar una variable con alcance más amplio.
+  </p>
+  <div class="code-block">// MAL — tz queda atrapado en el if:
+if (condicion) {
+  const tz = resolverZonaHoraria()
+}
+// tz no existe aquí — error en runtime
+
+// BIEN — declarar antes o extraer a función:
+const tz = condicion ? resolverZonaHoraria() : DEFAULT_TZ
+// o mejor aún, extraer toda la lógica a una función pura</div>
+
+  <h3>7. EAS Build configurado desde la Fase 0</h3>
+  <p>
+    El error más caro en Expo es descubrir que la app no compila para iOS cuando ya tienes 8 semanas de features. Los módulos nativos (react-native-esc-pos-printer, react-native-vision-camera) requieren un build nativo — no funcionan en Expo Go. Si no pruebas el build real desde el principio, encuentras problemas de compilación cuando ya hay mucho código encima.
+  </p>
+  <div class="code-block"># Configurar en Fase 0, no en Fase 3:
+npm install -g eas-cli
+eas login
+eas build:configure
+
+# Primer build de desarrollo — con los módulos nativos del día 0:
+eas build --profile development --platform android
+# Esto genera un .apk que puedes instalar en tu celular y conectar al Metro bundler</div>
+
+  <h3>8. Tests para packages/core desde el primer día</h3>
+  <p>
+    La lógica en <code>packages/core</code> — cálculo de carrito, split payment, cambio en efectivo, event sourcing de inventario — son funciones puras sin dependencias de UI ni de base de datos. Son triviales de testear y críticas de que funcionen correctamente. Un error en el cálculo de cambio en un POS es un problema real para el negocio.
+  </p>
+  <div class="code-block">// packages/core/cart.test.ts
+import { calcChange, applyDiscount } from './cart'
+
+test('calcChange regresa el cambio correcto', () => {
+  expect(calcChange(15000, 20000)).toBe(5000)  // centavos
+})
+
+test('applyDiscount percent no puede dar negativo', () => {
+  expect(applyDiscount(10000, { type: 'percent', amount: 110 })).toBe(0)
+})
+
+test('split payment suma igual al total', () => {
+  const payments = [{ amount: 8000 }, { amount: 7000 }]
+  expect(payments.reduce((s, p) => s + p.amount, 0)).toBe(15000)
+})</div>
+
+  <h3>9. Error boundaries — el POS nunca crashea completamente</h3>
+  <p>
+    Un error de JavaScript no capturado en el renderer de Electron o en React Native puede tumbar toda la pantalla de ventas en medio de una transacción. Los React Error Boundaries atrapan errores y muestran una pantalla de recuperación en lugar de un crash blanco.
+  </p>
+  <div class="code-block">// apps/desktop/src/renderer/POSErrorBoundary.tsx
+export class POSErrorBoundary extends React.Component {
+  state = { hasError: false, error: null }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error }
+  }
+
+  render() {
+    if (this.state.hasError) return (
+      &lt;div className="flex flex-col items-center justify-center h-screen gap-4"&gt;
+        &lt;p className="text-xl font-semibold"&gt;Algo salió mal&lt;/p&gt;
+        &lt;p className="text-sm text-slate-500"&gt;{this.state.error?.message}&lt;/p&gt;
+        &lt;button onClick={() =&gt; this.setState({ hasError: false })}&gt;
+          Reintentar
+        &lt;/button&gt;
+      &lt;/div&gt;
+    )
+    return this.props.children
+  }
+}</div>
+
+  <div class="callout green">
+    <div class="callout-label">Resumen — checklist de la Fase 0</div>
+    <p>
+      Antes de escribir la primera feature, verificar que el monorepo tenga:<br>
+      ✓ <code>packages/core/dates.ts</code> con <code>toMxDisplay()</code> como única función de conversión<br>
+      ✓ Schema Drizzle con tipos inferidos, sin interfaces duplicadas<br>
+      ✓ Zod schemas en <code>packages/core/schemas.ts</code> para cada entidad<br>
+      ✓ Migrador corriendo en <code>app.whenReady()</code> antes de <code>createWindow()</code><br>
+      ✓ Contrato IPC tipado en <code>packages/core/ipc-contract.ts</code><br>
+      ✓ EAS Build configurado, primer build de desarrollo exitoso en Android<br>
+      ✓ Vitest configurado en <code>packages/core</code> con al menos 3 tests pasando
+    </p>
+  </div>
+</section>
+
+<hr class="section-divider">
+
+
+<!-- ─────────────────────────────────────────────────────────────────── -->
+<section class="section" id="fases">
+  <h2 class="section-title">Fases de desarrollo</h2>
+  <p class="section-intro">El monorepo requiere 2 semanas de setup antes de cualquier feature. No es overhead — es lo que permite compartir código entre desktop y móvil sin duplicación.</p>
+
+  <div class="phase-card">
+    <div class="phase-header">
+      <div class="phase-n">Fase 0</div>
+      <div class="phase-t">Fundación del monorepo</div>
+      <div class="phase-w">semanas 1–2</div>
+    </div>
+    <div class="phase-body">
+      <ul class="task-list">
+        <li>Turborepo + pnpm workspaces. Apps: <code>desktop</code>, <code>mobile</code>. Packages: <code>core</code>, <code>db-schema</code>, <code>store</code>, <code>api</code>, <code>sync</code>, <code>config</code>.</li>
+        <li>TypeScript base config compartido. Path aliases: <code>@pos/core</code>, <code>@pos/db-schema</code>, etc.</li>
+        <li>Electron app con electron-vite. React 19 + Tailwind v4 + shadcn/ui init.</li>
+        <li>Expo app con Expo Router. NativeWind v4. EAS Build configurado (aunque sin builds todavía).</li>
+        <li>Drizzle schema inicial (products, categories, orders, order_items, payments, cashiers, cash_sessions).</li>
+        <li>Supabase proyecto creado. PowerSync tenant creado y conectado a Supabase.</li>
+        <li>CI básico: pnpm build en todas las apps. TypeScript check en todos los packages.</li>
+        <li><strong>Entregable:</strong> ambas apps corren, leen/escriben SQLite local, sin features de negocio aún.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="phase-card">
+    <div class="phase-header">
+      <div class="phase-n">Fase 1</div>
+      <div class="phase-t">MVP Desktop — Vender en efectivo</div>
+      <div class="phase-w">semanas 3–8</div>
+    </div>
+    <div class="phase-body">
+      <ul class="task-list">
+        <li>Semana 3: CRUD de productos y categorías en desktop. Grid de productos con búsqueda.</li>
+        <li>Semana 4: Carrito — agregar, quitar, editar cantidad. Subtotal, IVA configurable, total.</li>
+        <li>Semana 5: Checkout — teclado numérico custom, cobro en efectivo, cálculo de cambio, guardar orden + payment en SQLite.</li>
+        <li>Semana 6: Sesión de caja — apertura, efectivo inicial, cierre, corte básico. Login por PIN de cajero.</li>
+        <li>Semana 7: Impresión ESC/POS USB. Diseño del ticket. Prueba con hardware real.</li>
+        <li>Semana 8: Reporte diario. UX polish — shortcuts de teclado, feedback sonoro, chip de sync. <strong>Deploy a negocio piloto.</strong></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="phase-card">
+    <div class="phase-header">
+      <div class="phase-n">Fase 2</div>
+      <div class="phase-t">Operación completa</div>
+      <div class="phase-w">semanas 9–14</div>
+    </div>
+    <div class="phase-body">
+      <ul class="task-list">
+        <li>Semana 9: Split payment (N métodos por orden). Schema payments ya lo soporta — es lógica de UI.</li>
+        <li>Semana 10: Órdenes en pausa con nombre. Múltiples tickets abiertos simultáneos.</li>
+        <li>Semana 11: Variantes de producto — bottom sheet al tap, precio diferenciado.</li>
+        <li>Semana 12: Descuentos por ítem y por orden. Presets guardados.</li>
+        <li>Semana 13: Control de inventario con evento-sourcing. <code>inventory_events</code>. Alertas de stock bajo.</li>
+        <li>Semana 14: Devoluciones. Z-Report completo (por cajero, por método de pago, retiros). Exportación a CSV.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="phase-card">
+    <div class="phase-header">
+      <div class="phase-n">Fase 3</div>
+      <div class="phase-t">Móvil nativo + Red + Nube</div>
+      <div class="phase-w">semanas 15–22</div>
+    </div>
+    <div class="phase-body">
+      <ul class="task-list">
+        <li>Semana 15–16: App móvil — pantalla de ventas completa (carrito, checkout), login por PIN. <strong>Los shared packages ya tienen toda la lógica — es solo UI.</strong></li>
+        <li>Semana 17: Impresión Bluetooth en móvil con react-native-esc-pos-printer. Barcode por cámara.</li>
+        <li>Semana 18: PowerSync integrado en desktop y móvil. Sync bidireccional con Supabase. Chip de estado de sync.</li>
+        <li>Semana 19: Servidor Express en Electron para red local. mDNS con bonjour-service. QR de conexión para tablets.</li>
+        <li>Semana 20: Ticket por WhatsApp (twilio-node o wa-js). QR de recibo digital en pantalla.</li>
+        <li>Semana 21: Dashboard analítico con Recharts. Ventas por período, productos top, comparativo de cajeros.</li>
+        <li>Semana 22: Integración AppointVa → POS. API call a AppointVa para citas del día. Carga automática en carrito.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<hr class="section-divider">
+
+
+<!-- ─────────────────────────────────────────────────────────────────── -->
+<section class="section" id="setup">
+  <h2 class="section-title">Setup inicial del monorepo</h2>
+
+  <h3>Crear el monorepo con Turborepo</h3>
+  <div class="code-block">npx create-turbo@latest mi-pos --package-manager pnpm
+cd mi-pos</div>
+
+  <h3>Crear la app desktop (Electron)</h3>
+  <div class="code-block">cd apps
+npm create @quick-start/electron@latest desktop -- --template react-ts
+cd desktop
+pnpm install</div>
+
+  <h3>Crear la app móvil (Expo)</h3>
+  <div class="code-block">cd apps
+npx create-expo-app@latest mobile --template tabs
+cd mobile
+npx expo install expo-router expo-sqlite expo-camera
+pnpm add nativewind tailwindcss
+pnpm add -D @expo/metro-config</div>
+
+  <h3>Crear los packages compartidos</h3>
+  <div class="code-block">mkdir -p packages/{core,db-schema,store,api,sync,config}
+# Cada uno necesita su package.json con name "@pos/[nombre]"
+# y tsconfig.json que extiende packages/config/tsconfig.base.json</div>
+
+  <h3>tsconfig base compartido</h3>
+  <div class="code-block">// packages/config/tsconfig.base.json
+{
+  "compilerOptions": {
+    "strict": true,
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "skipLibCheck": true,
+    "paths": {
+      "@pos/core":      ["../../packages/core/src"],
+      "@pos/db-schema": ["../../packages/db-schema/src"],
+      "@pos/store":     ["../../packages/store/src"],
+      "@pos/api":       ["../../packages/api/src"],
+      "@pos/sync":      ["../../packages/sync/src"]
+    }
+  }
+}</div>
+
+  <h3>pnpm-workspace.yaml</h3>
+  <div class="code-block">packages:
+  - 'apps/*'
+  - 'packages/*'</div>
+
+  <h3>Instalar dependencias de cada capa</h3>
+  <div class="code-block"># En packages/db-schema:
+pnpm add drizzle-orm
+pnpm add -D drizzle-kit
+
+# En apps/desktop (además de lo de electron-vite):
+pnpm add better-sqlite3 express bonjour-service
+pnpm add receipt-printer-encoder @node-escpos/usb-adapter
+pnpm add -D @types/better-sqlite3 @types/express
+
+# En apps/mobile:
+pnpm add react-native-esc-pos-printer
+pnpm add react-native-vision-camera  # barcode scanning
+pnpm add @powersync/react-native
+
+# En packages/sync:
+pnpm add @powersync/common
+
+# En packages/store:
+pnpm add zustand
+
+# En packages/api:
+pnpm add @supabase/supabase-js
+
+# En apps/desktop renderer:
+pnpm add tailwindcss @tailwindcss/vite
+npx shadcn@latest init</div>
+
+  <h3>turbo.json</h3>
+  <div class="code-block">{
+  "pipeline": {
+    "build":    { "dependsOn": ["^build"], "outputs": ["dist/**"] },
+    "dev":      { "cache": false, "persistent": true },
+    "typecheck":{ "dependsOn": ["^build"] },
+    "lint":     {}
+  }
+}</div>
+</section>
+
+<hr class="section-divider">
+
+
+<!-- ─────────────────────────────────────────────────────────────────── -->
+<section class="section" id="libraries">
+  <h2 class="section-title">Librerías</h2>
+  <p class="section-intro">Todas gratuitas y open source.</p>
+
+  <h3>Infraestructura del monorepo</h3>
+  <div style="overflow-x:auto;">
+  <table class="data-table">
+    <thead><tr><th>Paquete</th><th>Rol</th><th>Por qué</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">turborepo</td><td class="muted">Monorepo build system</td><td class="faint">Builds cacheados, pipeline entre apps. La industria standard para monorepos TypeScript.</td></tr>
+      <tr><td class="mono">pnpm</td><td class="muted">Package manager</td><td class="faint">60% menos espacio en disco que npm en monorepos. Strict mode evita dependencias fantasma.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>Desktop (Electron)</h3>
+  <div style="overflow-x:auto;">
+  <table class="data-table">
+    <thead><tr><th>Paquete</th><th>Rol</th><th>Por qué</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">electron@33</td><td class="muted">Framework desktop</td><td class="faint">Node.js + Chromium. Ecosystem maduro, bugs documentados.</td></tr>
+      <tr><td class="mono">electron-vite</td><td class="muted">Build tool</td><td class="faint">Vite para renderer + ESBuild para main. HMR por proceso.</td></tr>
+      <tr><td class="mono">electron-builder</td><td class="muted">Empaquetado</td><td class="faint">Genera .exe, .dmg, .deb. Auto-update opcional.</td></tr>
+      <tr><td class="mono">better-sqlite3</td><td class="muted">SQLite síncrono</td><td class="faint">El único driver SQLite que funciona bien en el proceso main de Electron.</td></tr>
+      <tr><td class="mono">drizzle-orm + drizzle-kit</td><td class="muted">ORM + migraciones</td><td class="faint">TypeScript-first. Schema = tipos. Sin magia.</td></tr>
+      <tr><td class="mono">express</td><td class="muted">Servidor HTTP local</td><td class="faint">Para terminales secundarias en LAN.</td></tr>
+      <tr><td class="mono">bonjour-service</td><td class="muted">mDNS</td><td class="faint">Anuncia <code>mi-pos.local</code> en la red. Sin IP manual.</td></tr>
+      <tr><td class="mono">receipt-printer-encoder</td><td class="muted">Generador ESC/POS</td><td class="faint">Genera el buffer para cualquier impresora térmica.</td></tr>
+      <tr><td class="mono">@node-escpos/usb-adapter</td><td class="muted">Driver USB impresora</td><td class="faint">Envía el buffer al puerto USB de la impresora.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>UI Desktop</h3>
+  <div style="overflow-x:auto;">
+  <table class="data-table">
+    <thead><tr><th>Paquete</th><th>Rol</th><th>Por qué</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">react@19 + react-dom</td><td class="muted">UI</td><td class="faint">—</td></tr>
+      <tr><td class="mono">tailwindcss@4 + @tailwindcss/vite</td><td class="muted">CSS</td><td class="faint">v4 es ~10x más rápido en build que v3.</td></tr>
+      <tr><td class="mono">shadcn/ui</td><td class="muted">Componentes</td><td class="faint">Los componentes son tuyos — no dependencia. Accesibles, personalizables.</td></tr>
+      <tr><td class="mono">recharts</td><td class="muted">Gráficas (Fase 3)</td><td class="faint">Declarativo, React nativo. Para dashboards de ventas.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>Móvil (React Native + Expo)</h3>
+  <div style="overflow-x:auto;">
+  <table class="data-table">
+    <thead><tr><th>Paquete</th><th>Rol</th><th>Por qué</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">expo@53</td><td class="muted">Toolchain RN</td><td class="faint">EAS Build, OTA updates, módulos nativos precompilados.</td></tr>
+      <tr><td class="mono">expo-router</td><td class="muted">Navegación file-based</td><td class="faint">Rutas como archivos. Mismo paradigma que Next.js.</td></tr>
+      <tr><td class="mono">nativewind@4</td><td class="muted">Tailwind en RN</td><td class="faint">Las mismas clases de Tailwind que usas en desktop, ahora en primitivas nativas.</td></tr>
+      <tr><td class="mono">expo-sqlite</td><td class="muted">SQLite en móvil</td><td class="faint">SQLite nativo en iOS y Android. Mismo schema que desktop.</td></tr>
+      <tr><td class="mono">react-native-esc-pos-printer</td><td class="muted">Printing BT (Epson)</td><td class="faint">Envuelve Epson ePOS SDK oficial. iOS + Android.</td></tr>
+      <tr><td class="mono">@finan-me/react-native-thermal-printer</td><td class="muted">Printing BT (genéricas)</td><td class="faint">Para impresoras no-Epson con BLE o BT Classic.</td></tr>
+      <tr><td class="mono">react-native-vision-camera</td><td class="muted">Cámara + barcode</td><td class="faint">Scanner de código de barras via cámara. Tiempo real.</td></tr>
+      <tr><td class="mono">@powersync/react-native</td><td class="muted">Sync offline-first</td><td class="faint">PowerSync client para React Native.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>Shared packages</h3>
+  <div style="overflow-x:auto;">
+  <table class="data-table">
+    <thead><tr><th>Paquete</th><th>Rol</th><th>Por qué</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">@supabase/supabase-js</td><td class="muted">Cliente cloud</td><td class="faint">Auth + Postgres + Realtime + Storage. Tier gratuito amplio.</td></tr>
+      <tr><td class="mono">@powersync/common</td><td class="muted">PowerSync core</td><td class="faint">Schema de sync compartido entre desktop y móvil.</td></tr>
+      <tr><td class="mono">zustand</td><td class="muted">Estado global</td><td class="faint">Minimalista. Funciona igual en Electron y React Native.</td></tr>
+      <tr><td class="mono">uuid</td><td class="muted">IDs offline-safe</td><td class="faint">UUIDs en cliente, nunca autoincrement del servidor.</td></tr>
+      <tr><td class="mono">date-fns</td><td class="muted">Fechas</td><td class="faint">Tree-shakeable. Para reportes y formatos locales (es-MX).</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<hr class="section-divider">
+
+<footer style="padding-top: 1rem; border-top: 1px solid var(--border-faint);">
+  <p style="font-family: var(--font-mono); font-size: 0.68rem; color: var(--ink-faint); max-width: none;">
+    Punto de Venta · Plan v2 · Agosto 2026 · Turborepo + Expo (RN) + Electron + PowerSync + Supabase + shadcn/ui + NativeWind · Investigación basada en análisis de Square, Loyverse, Shopify POS, Toast, Clover, Zettle · Proyecto independiente de AppointVa con integración opcional en Fase 3
+  </p>
+</footer>
+
+</div>
+</main>
+</div>
+
+<script>
+(function() {
+  const links = document.querySelectorAll('.nav-link[href^="#"]');
+  const ids   = Array.from(links).map(l => l.getAttribute('href').slice(1));
+  const secs  = ids.map(id => document.getElementById(id)).filter(Boolean);
+
+  function update() {
+    let current = secs[0];
+    secs.forEach(s => { if (s.getBoundingClientRect().top <= 100) current = s; });
+    links.forEach(l => {
+      l.classList.toggle('active', l.getAttribute('href') === '#' + current.id);
+    });
+  }
+
+  window.addEventListener('scroll', update, { passive: true });
+  update();
+})();
+</script>
+</body>
+</html>

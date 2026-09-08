@@ -814,6 +814,54 @@
       outline-offset: 2px;
       border-radius: 4px;
     }
+  @media print {
+    /* White background — no beige ink on paper */
+    html, body {
+      background: #ffffff !important;
+    }
+    .toc-section, .toc-agenda, .intro-card, .section-card,
+    .tip, .info, .warn, .callout-legend {
+      background: #ffffff !important;
+    }
+
+    /* Each top-level section starts on a fresh page */
+    section.section {
+      break-before: page;
+      page-break-before: always;
+    }
+
+    /* Keep headings with the content that follows */
+    h3 { break-after: avoid; page-break-after: avoid; }
+    h2 { break-after: avoid; page-break-after: avoid; }
+
+    /* Never break inside these blocks */
+    .mockup-wrapper,
+    .callout-legend,
+    .card,
+    .tip, .info, .warn,
+    .booking-step,
+    .feat-item,
+    .step-item,
+    .section-card,
+    .intro-card,
+    .intro-grid-2,
+    .feat-list,
+    .steps,
+    .toc-item,
+    .toc-section,
+    .toc-agenda {
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    /* Kill shadows and scrollbars */
+    * { box-shadow: none !important; }
+    .m-sidebar, .m-main,
+    .m-main > div, .app-screen > div {
+      overflow: visible !important;
+      max-height: none !important;
+    }
+  }
   </style>
 </head>
 <body>

@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
 import { FileText, ChevronLeft } from "lucide-react";
-import { AppLogo } from "../../components/AppLogo";
 
 export default function TerminosPage() {
   return (
@@ -14,7 +13,7 @@ export default function TerminosPage() {
           >
             <ChevronLeft size={20} />
           </button>
-          <AppLogo className="h-7 object-contain" />
+          <img src="/MasterLogo.png" alt="AppointVa" className="h-7 object-contain" />
         </div>
       </div>
 
@@ -181,7 +180,7 @@ export default function TerminosPage() {
 
         {/* Footer */}
         <div className="mt-12 pt-6 border-t border-slate-100 flex flex-col items-center gap-2">
-          <AppLogo className="h-6 object-contain opacity-25" />
+          <img src="/MasterLogo.png" alt="AppointVa" className="h-6 object-contain opacity-25" />
           <p className="text-[11px] text-slate-400">
             © {new Date().getFullYear()} AppointVa · Todos los derechos reservados
           </p>
