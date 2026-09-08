@@ -690,7 +690,7 @@ namespace AppointVaAPI.Controllers.V1
         // POST api/publico/citas/{codigo}/comprobante — el cliente sube su comprobante de anticipo
         [HttpPost("citas/{codigo}/comprobante")]
         [EnableRateLimiting("PublicoEstricto")]
-        public async Task<IActionResult> SubirComprobante(string codigo, [FromQuery] string? email, IFormFile archivo)
+        public async Task<IActionResult> SubirComprobante(string codigo, IFormFile archivo)
         {
             if (archivo == null || archivo.Length == 0)
                 return BadRequest(new { mensaje = "El archivo es obligatorio" });
@@ -701,15 +701,6 @@ namespace AppointVaAPI.Controllers.V1
                 .FirstOrDefaultAsync(c => c.CodigoConfirmacion == codigo);
             if (cita is null)
                 return NotFound(new { mensaje = "Cita no encontrada" });
-
-            var emailCliente = cita.Cliente?.Email ?? string.Empty;
-            if (!string.IsNullOrWhiteSpace(emailCliente))
-            {
-                if (string.IsNullOrWhiteSpace(email))
-                    return BadRequest(new { mensaje = "El correo es requerido para subir el comprobante." });
-                if (!emailCliente.Equals(email.Trim(), StringComparison.OrdinalIgnoreCase))
-                    return Forbid();
-            }
 
             if (cita.Estado == EstadosCitas.Cancelada || cita.Estado == EstadosCitas.Completada)
                 return BadRequest(new { mensaje = "No se puede subir comprobante para esta cita" });

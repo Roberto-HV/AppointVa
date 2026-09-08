@@ -67,7 +67,7 @@ namespace AppointVaAPI.Services
                 throw new ArgumentException("El archivo está vacío.");
 
             if (archivo.Length > MaxBytes)
-                throw new ArgumentException("El archivo supera el límite de 5 MB.");
+                throw new ArgumentException("El archivo supera el límite de 20 MB.");
 
             var tipo = archivo.ContentType.ToLowerInvariant();
             if (!_tiposPermitidos.Contains(tipo))
