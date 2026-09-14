@@ -13,8 +13,7 @@ namespace AppointVaAPI.Models
         public Negocio? Negocio { get; set; }
         [Required]
         public string NombreCompleto { get; set; } = string.Empty;
-        [Required]
-        public string Telefono { get; set; } = string.Empty;
+        public string? Telefono { get; set; }
         public string? Email { get; set; }
         public string? Notas { get; set; }
         [Required]

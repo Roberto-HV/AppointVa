@@ -892,13 +892,16 @@ export default function CitasPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Teléfono <span className="text-gray-400 font-normal">(dejar vacío para no modificar)</span>
+                Teléfono{" "}
+                <span className="text-gray-400 dark:text-gray-500 font-normal">
+                  {fEditar.telefono ? "(vaciar para desvincular esta cita de la cliente)" : "(sin teléfono — cita independiente)"}
+                </span>
               </label>
               <input
                 type="tel"
                 value={fEditar.telefono}
                 onChange={(e) => setFEditar((p) => ({ ...p, telefono: e.target.value }))}
-                placeholder={citaEditar?.telefonoCliente || "Sin teléfono registrado"}
+                placeholder="Sin teléfono"
                 className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700"
               />
             </div>

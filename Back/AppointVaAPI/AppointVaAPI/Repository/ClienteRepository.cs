@@ -17,19 +17,23 @@ namespace AppointVaAPI.Repository
         public async Task<Cliente?> BuscarPorTelefonoAsync(Guid negocioId, string telefono)
         {
             return await _db.Clientes
-                .FirstOrDefaultAsync(c => c.NegocioId == negocioId && c.Telefono == telefono);
+                .FirstOrDefaultAsync(c => c.NegocioId == negocioId && c.Telefono == telefono && c.FechaEliminacion == null);
         }
 
-        public async Task<Cliente> ObtenerOCrearAsync(Guid negocioId, string nombreCompleto, string telefono, string? email)
+        public async Task<Cliente> ObtenerOCrearAsync(Guid negocioId, string nombreCompleto, string? telefono, string? email)
         {
-            var existente = await BuscarPorTelefonoAsync(negocioId, telefono);
-            if (existente is not null)
+            // Only look up by phone when one is provided
+            if (!string.IsNullOrWhiteSpace(telefono))
             {
-                if (!string.IsNullOrWhiteSpace(email) && string.IsNullOrWhiteSpace(existente.Email))
-                    existente.Email = email;
-                existente.FechaActualizacion = DateTime.UtcNow;
-                await _db.SaveChangesAsync();
-                return existente;
+                var existente = await BuscarPorTelefonoAsync(negocioId, telefono);
+                if (existente is not null)
+                {
+                    if (!string.IsNullOrWhiteSpace(email) && string.IsNullOrWhiteSpace(existente.Email))
+                        existente.Email = email;
+                    existente.FechaActualizacion = DateTime.UtcNow;
+                    await _db.SaveChangesAsync();
+                    return existente;
+                }
             }
 
             var nuevo = new Cliente
@@ -37,7 +41,7 @@ namespace AppointVaAPI.Repository
                 Id = Guid.NewGuid(),
                 NegocioId = negocioId,
                 NombreCompleto = nombreCompleto,
-                Telefono = telefono,
+                Telefono = string.IsNullOrWhiteSpace(telefono) ? null : telefono,
                 Email = email,
                 TotalCitas = 0,
                 CantidadInasistencias = 0,

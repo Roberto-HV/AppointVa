@@ -542,49 +542,61 @@ namespace AppointVaAPI.Controllers.V1
             var cliente = await _clienteRepo.ObtenerPorIdAsync(cita.ClienteId, _contexto.NegocioId.Value);
             if (cliente is null) return NotFound(new { mensaje = "Cliente no encontrado" });
 
-            cliente.NombreCompleto = dto.NombreCompleto.Trim();
+            var telefonoNuevo = string.IsNullOrWhiteSpace(dto.Telefono) ? null : dto.Telefono.Trim();
+            var emailNuevo = string.IsNullOrWhiteSpace(dto.Email) ? null : dto.Email.Trim();
 
-            // Phone: only update when provided; validate no duplicate with another client
-            if (!string.IsNullOrWhiteSpace(dto.Telefono))
+            // If phone changed or cleared: validate no collision, then relink or create new client
+            bool telefonoCambio = telefonoNuevo != cliente.Telefono;
+            if (telefonoCambio && telefonoNuevo is not null)
             {
-                var telefonoNuevo = dto.Telefono.Trim();
-                if (telefonoNuevo != cliente.Telefono)
-                {
-                    var duplicado = await _db.Clientes.FirstOrDefaultAsync(c =>
-                        c.NegocioId == _contexto.NegocioId.Value &&
-                        c.Telefono == telefonoNuevo &&
-                        c.Id != cliente.Id &&
-                        c.FechaEliminacion == null);
-                    if (duplicado is not null)
-                        return Conflict(new { mensaje = $"Este teléfono ya está registrado para {duplicado.NombreCompleto}" });
-                }
-                cliente.Telefono = telefonoNuevo;
+                var duplicado = await _db.Clientes.FirstOrDefaultAsync(c =>
+                    c.NegocioId == _contexto.NegocioId.Value &&
+                    c.Telefono == telefonoNuevo &&
+                    c.Id != cliente.Id &&
+                    c.FechaEliminacion == null);
+                if (duplicado is not null)
+                    return Conflict(new { mensaje = $"Este teléfono ya está registrado para {duplicado.NombreCompleto}" });
             }
 
-            // Email: nullable, can be cleared; validate no duplicate with another client
-            if (!string.IsNullOrWhiteSpace(dto.Email))
+            // Email duplicate check
+            if (emailNuevo is not null && emailNuevo != cliente.Email)
             {
-                var emailNuevo = dto.Email.Trim();
-                if (emailNuevo != cliente.Email)
+                var dupEmail = await _db.Clientes.FirstOrDefaultAsync(c =>
+                    c.NegocioId == _contexto.NegocioId.Value &&
+                    c.Email == emailNuevo &&
+                    c.Id != cliente.Id &&
+                    c.FechaEliminacion == null);
+                if (dupEmail is not null)
+                    return Conflict(new { mensaje = $"Este correo ya está registrado para {dupEmail.NombreCompleto}" });
+            }
+
+            // If phone is being cleared: create a new independent client for this appointment only
+            if (telefonoNuevo is null && cliente.Telefono is not null)
+            {
+                var nuevoCliente = new Cliente
                 {
-                    var dupEmail = await _db.Clientes.FirstOrDefaultAsync(c =>
-                        c.NegocioId == _contexto.NegocioId.Value &&
-                        c.Email == emailNuevo &&
-                        c.Id != cliente.Id &&
-                        c.FechaEliminacion == null);
-                    if (dupEmail is not null)
-                        return Conflict(new { mensaje = $"Este correo ya está registrado para {dupEmail.NombreCompleto}" });
-                }
-                cliente.Email = emailNuevo;
+                    Id = Guid.NewGuid(),
+                    NegocioId = _contexto.NegocioId.Value,
+                    NombreCompleto = dto.NombreCompleto.Trim(),
+                    Telefono = null,
+                    Email = emailNuevo,
+                    TotalCitas = 0,
+                    CantidadInasistencias = 0,
+                    FechaCreacion = DateTime.UtcNow,
+                    FechaActualizacion = DateTime.UtcNow
+                };
+                _db.Clientes.Add(nuevoCliente);
+                cita.ClienteId = nuevoCliente.Id;
             }
             else
             {
-                cliente.Email = null;
+                cliente.NombreCompleto = dto.NombreCompleto.Trim();
+                cliente.Telefono = telefonoNuevo;
+                cliente.Email = emailNuevo;
+                cliente.FechaActualizacion = DateTime.UtcNow;
+                await _clienteRepo.ActualizarAsync(cliente);
             }
 
-            cliente.FechaActualizacion = DateTime.UtcNow;
-
-            await _clienteRepo.ActualizarAsync(cliente);
             cita.FechaActualizacion = DateTime.UtcNow;
             await _citaRepo.ActualizarAsync(cita);
 
