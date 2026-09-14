@@ -681,52 +681,55 @@ export default function CitasPage() {
                     )}
 
                     <td className="px-4 py-3 text-center">
-                      <div className="flex items-center justify-center gap-1.5 flex-wrap">
-                        <EstadoBadge estado={c.estadoTexto} />
-                        {c.anticipoRequerido && (
-                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
-                            c.anticipoRecibido
-                              ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
-                              : 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-500'
-                          }`}>
-                            {c.anticipoRecibido ? '✓ Anticipo' : '⏳ Anticipo'}
-                          </span>
-                        )}
-                        {c.comprobanteUrl && c.estadoTexto === "Pendiente" && (
-                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-600">
-                            🧾
-                          </span>
-                        )}
-                        {/* WhatsApp — solo móvil */}
-                        {c.telefonoCliente && (
-                          <a
-                            href={whatsappUrl(c)}
-                            target="_blank"
-                            rel="noreferrer"
-                            aria-label={`Enviar WhatsApp a ${c.nombreCliente}`}
-                            className="sm:hidden inline-flex items-center justify-center w-7 h-7 rounded-lg bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] transition"
-                          >
-                            <SiWhatsapp size={16} />
-                          </a>
-                        )}
-                        {/* Editar cliente — solo móvil */}
-                        <button
-                          onClick={() => abrirEditar(c)}
-                          className="sm:hidden inline-flex items-center justify-center w-7 h-7 rounded-lg bg-yellow-100 text-yellow-600 hover:bg-yellow-200 transition"
-                          title="Editar cliente"
-                        >
-                          <Pencil size={13} />
-                        </button>
-                        {/* Cambiar estado — solo móvil */}
-                        {TRANSICIONES[c.estadoTexto] && (
+                      <div className="flex flex-col items-center gap-1.5">
+                        {/* Badges de estado */}
+                        <div className="flex items-center justify-center gap-1 flex-wrap">
+                          <EstadoBadge estado={c.estadoTexto} />
+                          {c.anticipoRequerido && (
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                              c.anticipoRecibido
+                                ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
+                                : 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-500'
+                            }`}>
+                              {c.anticipoRecibido ? '✓ Anticipo' : '⏳ Anticipo'}
+                            </span>
+                          )}
+                          {c.comprobanteUrl && c.estadoTexto === "Pendiente" && (
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-600">
+                              🧾
+                            </span>
+                          )}
+                        </div>
+                        {/* Botones de acción — solo móvil */}
+                        <div className="sm:hidden flex items-center justify-center gap-1.5">
+                          {c.telefonoCliente && (
+                            <a
+                              href={whatsappUrl(c)}
+                              target="_blank"
+                              rel="noreferrer"
+                              aria-label={`Enviar WhatsApp a ${c.nombreCliente}`}
+                              className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] transition"
+                            >
+                              <SiWhatsapp size={16} />
+                            </a>
+                          )}
                           <button
-                            onClick={() => abrirCambioEstado(c)}
-                            className="sm:hidden inline-flex items-center justify-center w-7 h-7 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 transition"
-                            title="Cambiar estado"
+                            onClick={() => abrirEditar(c)}
+                            className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-yellow-100 text-yellow-600 hover:bg-yellow-200 transition"
+                            title="Editar cliente"
                           >
-                            <MoreVertical size={14} />
+                            <Pencil size={13} />
                           </button>
-                        )}
+                          {TRANSICIONES[c.estadoTexto] && (
+                            <button
+                              onClick={() => abrirCambioEstado(c)}
+                              className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 transition"
+                              title="Cambiar estado"
+                            >
+                              <MoreVertical size={14} />
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </td>
 
