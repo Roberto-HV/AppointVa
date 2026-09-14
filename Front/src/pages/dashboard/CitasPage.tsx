@@ -962,13 +962,11 @@ export default function CitasPage() {
             {/* Fecha */}
             {svcSel && empSel && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha</label>
-                <input
-                  type="date"
+                <DatePicker
+                  label="Fecha"
                   value={fechaNueva}
-                  min={new Date().toISOString().split("T")[0]}
-                  onChange={(e) => { setFechaNueva(e.target.value); setSlotNuevo(""); }}
-                  className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700"
+                  minDate={new Date().toISOString().split("T")[0]}
+                  onChange={(v) => { setFechaNueva(v); setSlotNuevo(""); }}
                 />
               </div>
             )}
@@ -1115,13 +1113,11 @@ export default function CitasPage() {
               <p><span className="text-gray-500 dark:text-gray-400">Actual:</span> <span className="font-medium dark:text-gray-200 capitalize">{formatFechaHora(citaReag.inicioEn)}</span></p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nueva fecha</label>
-              <input
-                type="date"
+              <DatePicker
+                label="Nueva fecha"
                 value={fechaReag}
-                min={new Date().toISOString().split("T")[0]}
-                onChange={(e) => { setFechaReag(e.target.value); setSlotReag(""); }}
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700"
+                minDate={new Date().toISOString().split("T")[0]}
+                onChange={(v) => { setFechaReag(v); setSlotReag(""); }}
               />
             </div>
             {fechaReag && (

@@ -25,9 +25,7 @@ namespace AppointVaAPI.Repository
             var existente = await BuscarPorTelefonoAsync(negocioId, telefono);
             if (existente is not null)
             {
-                // Actualizar nombre/email si cambió
-                existente.NombreCompleto = nombreCompleto;
-                if (!string.IsNullOrWhiteSpace(email))
+                if (!string.IsNullOrWhiteSpace(email) && string.IsNullOrWhiteSpace(existente.Email))
                     existente.Email = email;
                 existente.FechaActualizacion = DateTime.UtcNow;
                 await _db.SaveChangesAsync();
