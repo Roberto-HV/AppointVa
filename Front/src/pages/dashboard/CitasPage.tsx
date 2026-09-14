@@ -24,7 +24,7 @@ function finMes() {
   const d = new Date();
   return fechaStr(new Date(d.getFullYear(), d.getMonth() + 1, 0));
 }
-import { Calendar, CheckCircle2, CheckCheck, CalendarClock, RotateCcw, MoreHorizontal, StickyNote, Receipt, Banknote, Star, MoreVertical, Pencil } from "lucide-react";
+import { Calendar, CheckCircle2, CheckCheck, CalendarClock, RotateCcw, MoreHorizontal, StickyNote, Receipt, Banknote, Star, MoreVertical, Pencil, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { citasApi, ESTADOS } from "../../api/citas";
@@ -687,12 +687,15 @@ export default function CitasPage() {
                       <div className="flex items-center justify-center gap-1 flex-wrap">
                         <EstadoBadge estado={c.estadoTexto} />
                         {c.anticipoRequerido && (
-                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border-[1.5px] bg-transparent ${
                             c.anticipoRecibido
-                              ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
-                              : 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-500'
+                              ? 'border-emerald-400 text-emerald-700 dark:border-emerald-500 dark:text-emerald-400'
+                              : 'border-amber-400 text-amber-700 dark:border-amber-500 dark:text-amber-500'
                           }`}>
-                            {c.anticipoRecibido ? '✓ Anticipo' : '⏳ Anticipo'}
+                            {c.anticipoRecibido
+                              ? <><CheckCircle2 size={11} /> Anticipo</>
+                              : <><Clock size={11} /> Anticipo</>
+                            }
                           </span>
                         )}
                         {c.comprobanteUrl && c.estadoTexto === "Pendiente" && (
