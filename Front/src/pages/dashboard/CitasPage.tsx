@@ -776,7 +776,7 @@ export default function CitasPage() {
                         <Tooltip text={c.notas ? "Ver o editar notas internas" : "Agregar nota interna"}>
                           <button
                             onClick={() => abrirNotas(c)}
-                            className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-yellow-100 text-yellow-600 hover:bg-yellow-200 dark:bg-yellow-900/40 dark:text-yellow-400 dark:hover:bg-yellow-900/60 transition relative"
+                            className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600 transition relative"
                           >
                             <StickyNote size={15} />
                             {c.notas && <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-amber-400" />}
@@ -786,7 +786,7 @@ export default function CitasPage() {
                         <Tooltip text="Editar datos del cliente">
                           <button
                             onClick={() => abrirEditar(c)}
-                            className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600 transition"
+                            className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-yellow-100 text-yellow-600 hover:bg-yellow-200 dark:bg-yellow-900/40 dark:text-yellow-400 dark:hover:bg-yellow-900/60 transition"
                           >
                             <Pencil size={14} />
                           </button>
