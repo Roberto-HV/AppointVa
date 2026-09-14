@@ -44,6 +44,20 @@ export function formatFechaHoraCorta(iso: string): string {
   });
 }
 
+/** Solo la parte de fecha corta: "14 sep 2026" */
+export function formatFechaCorta(iso: string): string {
+  const d = toUtcDate(iso);
+  if (isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" });
+}
+
+/** Solo la parte de hora: "04:30 p. m." */
+export function formatHora(iso: string): string {
+  const d = toUtcDate(iso);
+  if (isNaN(d.getTime())) return "—";
+  return d.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", hour12: true });
+}
+
 /** Fecha + hora estándar para vistas detalle: "15 de junio de 2026, 10:00 a. m." */
 export function formatFechaHora(iso: string): string {
   const d = toUtcDate(iso);

@@ -45,7 +45,7 @@ import { SkeletonTableRows } from "../../components/ui/Skeleton";
 import { Tooltip } from "../../components/ui/Tooltip";
 import { reportesApi } from "../../api/reportes";
 import { intakeApi } from "../../api/intake";
-import { formatPrecio, formatFechaHoraCorta as formatFechaHora } from "../../utils/formatters";
+import { formatPrecio, formatFechaHoraCorta as formatFechaHora, formatFechaCorta, formatHora } from "../../utils/formatters";
 import Pagination from "../../components/ui/Pagination";
 
 
@@ -664,7 +664,10 @@ export default function CitasPage() {
                     </td>
                     <td className="px-4 py-3 text-gray-700 dark:text-gray-300 hidden sm:table-cell">{c.nombreServicio}</td>
                     <td className="px-4 py-3 text-gray-700 dark:text-gray-300 hidden sm:table-cell">{c.nombreEmpleado}</td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-400 text-xs sm:text-sm">{formatFechaHora(c.inicioEn)}</td>
+                    <td className="px-4 py-3 text-gray-600 dark:text-gray-400 text-xs sm:text-sm whitespace-nowrap">
+                      <p>{formatFechaCorta(c.inicioEn)}</p>
+                      <p className="text-gray-400 dark:text-gray-500">{formatHora(c.inicioEn)}</p>
+                    </td>
                     <td className="px-4 py-3 text-right font-medium text-gray-800 dark:text-gray-200 hidden sm:table-cell">{formatPrecio(c.precio)}</td>
 
                     {/* Columna de pago — solo lectura */}
