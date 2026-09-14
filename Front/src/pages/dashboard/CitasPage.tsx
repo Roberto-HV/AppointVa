@@ -646,13 +646,13 @@ export default function CitasPage() {
               <thead>
                 <tr className="border-b border-gray-100 dark:border-slate-700 text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wide">
                   <th className="text-left px-4 py-3 font-medium">Cliente</th>
-                  <th className="text-left px-4 py-3 font-medium">Servicio</th>
+                  <th className="text-left px-4 py-3 font-medium hidden sm:table-cell">Servicio</th>
                   <th className="text-left px-4 py-3 font-medium hidden sm:table-cell">Profesional</th>
                   <th className="text-left px-4 py-3 font-medium">Fecha y hora</th>
                   <th className="text-right px-4 py-3 font-medium hidden sm:table-cell">Precio</th>
                   {tienePagos && <th className="text-center px-4 py-3 font-medium hidden sm:table-cell">Pago</th>}
                   <th className="text-center px-4 py-3 font-medium">Estado</th>
-                  <th className="text-right px-4 py-3 font-medium hidden sm:table-cell">Acciones</th>
+                  <th className="text-right px-4 py-3 font-medium">Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -662,7 +662,7 @@ export default function CitasPage() {
                       <p className="font-medium text-gray-800 dark:text-gray-200">{c.nombreCliente}</p>
                       <p className="text-xs text-gray-400 dark:text-gray-500">{c.telefonoCliente}</p>
                     </td>
-                    <td className="px-4 py-3 text-gray-700 dark:text-gray-300 text-xs sm:text-sm">{c.nombreServicio}</td>
+                    <td className="px-4 py-3 text-gray-700 dark:text-gray-300 hidden sm:table-cell">{c.nombreServicio}</td>
                     <td className="px-4 py-3 text-gray-700 dark:text-gray-300 hidden sm:table-cell">{c.nombreEmpleado}</td>
                     <td className="px-4 py-3 text-gray-600 dark:text-gray-400 text-xs sm:text-sm">{formatFechaHora(c.inicioEn)}</td>
                     <td className="px-4 py-3 text-right font-medium text-gray-800 dark:text-gray-200 hidden sm:table-cell">{formatPrecio(c.precio)}</td>
@@ -681,61 +681,59 @@ export default function CitasPage() {
                     )}
 
                     <td className="px-4 py-3 text-center">
-                      <div className="flex flex-col items-center gap-1.5">
-                        {/* Badges de estado */}
-                        <div className="flex items-center justify-center gap-1 flex-wrap">
-                          <EstadoBadge estado={c.estadoTexto} />
-                          {c.anticipoRequerido && (
-                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
-                              c.anticipoRecibido
-                                ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
-                                : 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-500'
-                            }`}>
-                              {c.anticipoRecibido ? '✓ Anticipo' : '⏳ Anticipo'}
-                            </span>
-                          )}
-                          {c.comprobanteUrl && c.estadoTexto === "Pendiente" && (
-                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-600">
-                              🧾
-                            </span>
-                          )}
-                        </div>
-                        {/* Botones de acción — solo móvil */}
-                        <div className="sm:hidden flex items-center justify-center gap-1.5">
-                          {c.telefonoCliente && (
-                            <a
-                              href={whatsappUrl(c)}
-                              target="_blank"
-                              rel="noreferrer"
-                              aria-label={`Enviar WhatsApp a ${c.nombreCliente}`}
-                              className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] transition"
-                            >
-                              <SiWhatsapp size={16} />
-                            </a>
-                          )}
-                          <button
-                            onClick={() => abrirEditar(c)}
-                            className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-yellow-100 text-yellow-600 hover:bg-yellow-200 transition"
-                            title="Editar cliente"
-                          >
-                            <Pencil size={13} />
-                          </button>
-                          {TRANSICIONES[c.estadoTexto] && (
-                            <button
-                              onClick={() => abrirCambioEstado(c)}
-                              className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 transition"
-                              title="Cambiar estado"
-                            >
-                              <MoreVertical size={14} />
-                            </button>
-                          )}
-                        </div>
+                      <div className="flex items-center justify-center gap-1 flex-wrap">
+                        <EstadoBadge estado={c.estadoTexto} />
+                        {c.anticipoRequerido && (
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                            c.anticipoRecibido
+                              ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
+                              : 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-500'
+                          }`}>
+                            {c.anticipoRecibido ? '✓ Anticipo' : '⏳ Anticipo'}
+                          </span>
+                        )}
+                        {c.comprobanteUrl && c.estadoTexto === "Pendiente" && (
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-600">
+                            🧾
+                          </span>
+                        )}
                       </div>
                     </td>
 
-                    {/* Acciones — solo desktop */}
-                    <td className="px-4 py-3 text-right hidden sm:table-cell">
-                      <div className="flex justify-end items-center gap-1">
+                    {/* Acciones */}
+                    <td className="px-4 py-3 text-right">
+                      {/* Botones móvil */}
+                      <div className="sm:hidden flex justify-end items-center gap-1.5">
+                        {c.telefonoCliente && (
+                          <a
+                            href={whatsappUrl(c)}
+                            target="_blank"
+                            rel="noreferrer"
+                            aria-label={`Enviar WhatsApp a ${c.nombreCliente}`}
+                            className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] transition"
+                          >
+                            <SiWhatsapp size={16} />
+                          </a>
+                        )}
+                        <button
+                          onClick={() => abrirEditar(c)}
+                          className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-yellow-100 text-yellow-600 hover:bg-yellow-200 transition"
+                          title="Editar cliente"
+                        >
+                          <Pencil size={13} />
+                        </button>
+                        {TRANSICIONES[c.estadoTexto] && (
+                          <button
+                            onClick={() => abrirCambioEstado(c)}
+                            className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 transition"
+                            title="Cambiar estado"
+                          >
+                            <MoreVertical size={14} />
+                          </button>
+                        )}
+                      </div>
+                      {/* Botones desktop */}
+                      <div className="hidden sm:flex justify-end items-center gap-1">
                         {/* WhatsApp */}
                         {c.telefonoCliente && (
                           <Tooltip text="Enviar recordatorio por WhatsApp">
