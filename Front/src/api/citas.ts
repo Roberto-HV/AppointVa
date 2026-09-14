@@ -92,7 +92,7 @@ export const citasApi = {
     return data;
   },
 
-  editarCliente: async (id: string, dto: { nombreCompleto: string; telefono?: string; email?: string }): Promise<CitaDto> => {
+  editarCliente: async (id: string, dto: { nombreCompleto: string; telefono: string; email: string }): Promise<CitaDto> => {
     const { data } = await api.patch(`/citas/${id}/cliente`, dto);
     return data;
   },

@@ -260,8 +260,8 @@ export default function CitasPage() {
   const { mutate: editarCliente, isPending: editando } = useMutation({
     mutationFn: () => citasApi.editarCliente(citaEditar!.id, {
       nombreCompleto: fEditar.nombre.trim(),
-      telefono: fEditar.telefono.trim() || undefined,
-      email: fEditar.email.trim() || undefined,
+      telefono: fEditar.telefono.trim(),
+      email: fEditar.email.trim(),
     }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["citas"] });

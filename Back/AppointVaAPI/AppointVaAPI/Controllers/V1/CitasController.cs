@@ -543,10 +543,8 @@ namespace AppointVaAPI.Controllers.V1
             if (cliente is null) return NotFound(new { mensaje = "Cliente no encontrado" });
 
             cliente.NombreCompleto = dto.NombreCompleto.Trim();
-            if (dto.Telefono is not null)
-                cliente.Telefono = dto.Telefono.Trim();
-            if (dto.Email is not null)
-                cliente.Email = string.IsNullOrWhiteSpace(dto.Email) ? null : dto.Email.Trim();
+            cliente.Telefono = string.IsNullOrWhiteSpace(dto.Telefono) ? null : dto.Telefono.Trim();
+            cliente.Email = string.IsNullOrWhiteSpace(dto.Email) ? null : dto.Email.Trim();
             cliente.FechaActualizacion = DateTime.UtcNow;
 
             await _clienteRepo.ActualizarAsync(cliente);
