@@ -24,7 +24,7 @@ function finMes() {
   const d = new Date();
   return fechaStr(new Date(d.getFullYear(), d.getMonth() + 1, 0));
 }
-import { Calendar, CheckCircle2, CheckCheck, CalendarClock, RotateCcw, MoreHorizontal, StickyNote, Receipt, Banknote, Star, MoreVertical, Pencil, Clock } from "lucide-react";
+import { Calendar, CheckCircle2, CheckCheck, CalendarClock, RotateCcw, MoreHorizontal, StickyNote, Receipt, Banknote, Star, MoreVertical, Pencil } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { citasApi, ESTADOS } from "../../api/citas";
