@@ -454,6 +454,7 @@ export default function BookingPage() {
   const [errorEnvio, setErrorEnvio] = useState("");
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [galeriaViewerIdx, setGaleriaViewerIdx] = useState<number | null>(null);
+  const [galeriaVisible, setGaleriaVisible] = useState(false);
 
   // Sub-flujo paso 4: elegir → buscar | listo
   const [modoCliente, setModoCliente] = useState<"elegir" | "buscar" | "listo">("elegir");
@@ -921,12 +922,6 @@ export default function BookingPage() {
         {paso === 1 && (
           <>
             <p className="text-sm font-medium text-slate-400 mb-4">{textos.cta}</p>
-            {/* Galería */}
-            {negocio.galeria?.length > 0 && (
-              <div className="lg:hidden">
-                <GaleriaSection imagenes={negocio.galeria} />
-              </div>
-            )}
 
             <PasoServicio
               servicios={negocio.servicios}
@@ -935,6 +930,25 @@ export default function BookingPage() {
               color={color}
               sector={negocio.sector}
             />
+
+            {/* Galería colapsable — solo móvil */}
+            {negocio.galeria?.length > 0 && (
+              <div className="lg:hidden mt-4">
+                <button
+                  onClick={() => setGaleriaVisible(v => !v)}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-medium text-slate-500 hover:text-slate-700 transition"
+                >
+                  <span>{galeriaVisible ? "Ocultar galería" : "Ver galería de fotos"}</span>
+                  <ChevronRight
+                    size={16}
+                    className="transition-transform duration-200"
+                    style={{ transform: galeriaVisible ? "rotate(90deg)" : "rotate(0deg)" }}
+                  />
+                </button>
+                {galeriaVisible && <GaleriaSection imagenes={negocio.galeria} />}
+              </div>
+            )}
+
             <button
               onClick={irSiguiente}
               disabled={!servicio}
