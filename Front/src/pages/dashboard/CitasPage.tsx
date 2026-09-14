@@ -694,7 +694,7 @@ export default function CitasPage() {
                           }`}>
                             {c.anticipoRecibido
                               ? <><CheckCircle2 size={11} /> Anticipo</>
-                              : <><Clock size={11} /> Anticipo</>
+                              : <><Banknote size={11} /> Anticipo</>
                             }
                           </span>
                         )}
