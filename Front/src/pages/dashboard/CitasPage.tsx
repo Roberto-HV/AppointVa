@@ -698,16 +698,26 @@ export default function CitasPage() {
                           </span>
                         )}
                         {/* WhatsApp — solo móvil */}
-                        <a
-                          href={whatsappUrl(c)}
-                          target="_blank"
-                          rel="noreferrer"
-                          aria-label={`Enviar WhatsApp a ${c.nombreCliente}`}
-                          className="sm:hidden inline-flex items-center justify-center w-7 h-7 rounded-lg bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] transition"
+                        {c.telefonoCliente && (
+                          <a
+                            href={whatsappUrl(c)}
+                            target="_blank"
+                            rel="noreferrer"
+                            aria-label={`Enviar WhatsApp a ${c.nombreCliente}`}
+                            className="sm:hidden inline-flex items-center justify-center w-7 h-7 rounded-lg bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] transition"
+                          >
+                            <SiWhatsapp size={16} />
+                          </a>
+                        )}
+                        {/* Editar cliente — solo móvil */}
+                        <button
+                          onClick={() => abrirEditar(c)}
+                          className="sm:hidden inline-flex items-center justify-center w-7 h-7 rounded-lg bg-yellow-100 text-yellow-600 hover:bg-yellow-200 transition"
+                          title="Editar cliente"
                         >
-                          <SiWhatsapp size={16} />
-                        </a>
-                        {/* Botón de acciones — solo móvil */}
+                          <Pencil size={13} />
+                        </button>
+                        {/* Cambiar estado — solo móvil */}
                         {TRANSICIONES[c.estadoTexto] && (
                           <button
                             onClick={() => abrirCambioEstado(c)}
