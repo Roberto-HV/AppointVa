@@ -270,8 +270,11 @@ export default function CitasPage() {
       toast("Datos del cliente actualizados");
     },
     onError: (err: unknown) => {
-      const msg = (err as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje
-        ?? "No se pudo actualizar el cliente";
+      const e = err as { response?: { status?: number; data?: { mensaje?: string } } };
+      const msg = e?.response?.data?.mensaje
+        ?? (e?.response?.status === 409
+          ? "Ese teléfono o correo ya está registrado con otra clienta"
+          : "No se pudo actualizar el cliente");
       toast(msg, "error");
     },
   });
@@ -889,13 +892,13 @@ export default function CitasPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Teléfono <span className="text-gray-400 font-normal">(opcional)</span>
+                Teléfono <span className="text-gray-400 font-normal">(dejar vacío para no modificar)</span>
               </label>
               <input
                 type="tel"
                 value={fEditar.telefono}
                 onChange={(e) => setFEditar((p) => ({ ...p, telefono: e.target.value }))}
-                placeholder="10 dígitos"
+                placeholder={citaEditar?.telefonoCliente || "Sin teléfono registrado"}
                 className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700"
               />
             </div>

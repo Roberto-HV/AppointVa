@@ -543,8 +543,45 @@ namespace AppointVaAPI.Controllers.V1
             if (cliente is null) return NotFound(new { mensaje = "Cliente no encontrado" });
 
             cliente.NombreCompleto = dto.NombreCompleto.Trim();
-            cliente.Telefono = string.IsNullOrWhiteSpace(dto.Telefono) ? null : dto.Telefono.Trim();
-            cliente.Email = string.IsNullOrWhiteSpace(dto.Email) ? null : dto.Email.Trim();
+
+            // Phone: only update when provided; validate no duplicate with another client
+            if (!string.IsNullOrWhiteSpace(dto.Telefono))
+            {
+                var telefonoNuevo = dto.Telefono.Trim();
+                if (telefonoNuevo != cliente.Telefono)
+                {
+                    var duplicado = await _db.Clientes.FirstOrDefaultAsync(c =>
+                        c.NegocioId == _contexto.NegocioId.Value &&
+                        c.Telefono == telefonoNuevo &&
+                        c.Id != cliente.Id &&
+                        c.FechaEliminacion == null);
+                    if (duplicado is not null)
+                        return Conflict(new { mensaje = $"Este teléfono ya está registrado para {duplicado.NombreCompleto}" });
+                }
+                cliente.Telefono = telefonoNuevo;
+            }
+
+            // Email: nullable, can be cleared; validate no duplicate with another client
+            if (!string.IsNullOrWhiteSpace(dto.Email))
+            {
+                var emailNuevo = dto.Email.Trim();
+                if (emailNuevo != cliente.Email)
+                {
+                    var dupEmail = await _db.Clientes.FirstOrDefaultAsync(c =>
+                        c.NegocioId == _contexto.NegocioId.Value &&
+                        c.Email == emailNuevo &&
+                        c.Id != cliente.Id &&
+                        c.FechaEliminacion == null);
+                    if (dupEmail is not null)
+                        return Conflict(new { mensaje = $"Este correo ya está registrado para {dupEmail.NombreCompleto}" });
+                }
+                cliente.Email = emailNuevo;
+            }
+            else
+            {
+                cliente.Email = null;
+            }
+
             cliente.FechaActualizacion = DateTime.UtcNow;
 
             await _clienteRepo.ActualizarAsync(cliente);
