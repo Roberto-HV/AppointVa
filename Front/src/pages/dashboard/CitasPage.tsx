@@ -24,7 +24,7 @@ function finMes() {
   const d = new Date();
   return fechaStr(new Date(d.getFullYear(), d.getMonth() + 1, 0));
 }
-import { Calendar, CheckCircle2, CheckCheck, CalendarClock, RotateCcw, MoreHorizontal, StickyNote, Receipt, Banknote, Star, MoreVertical } from "lucide-react";
+import { Calendar, CheckCircle2, CheckCheck, CalendarClock, RotateCcw, MoreHorizontal, StickyNote, Receipt, Banknote, Star, MoreVertical, Pencil } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { citasApi, ESTADOS } from "../../api/citas";
@@ -110,6 +110,11 @@ export default function CitasPage() {
   const [fCliente, setFCliente] = useState({ nombre: "", telefono: "", email: "", notas: "" });
   const [emailClienteError, setEmailClienteError] = useState("");
   const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+  // Modal editar cliente
+  const [citaEditar, setCitaEditar] = useState<CitaDto | null>(null);
+  const [fEditar, setFEditar] = useState({ nombre: "", telefono: "", email: "" });
+  const [emailEditarError, setEmailEditarError] = useState("");
 
   // Issue 12 — drag-to-reschedule confirmation
   const [confirmDrag, setConfirmDrag] = useState<{id: string; nombre: string; nuevoInicio: string; label: string} | null>(null);
@@ -251,6 +256,31 @@ export default function CitasPage() {
       toast(msg, "error");
     },
   });
+
+  const { mutate: editarCliente, isPending: editando } = useMutation({
+    mutationFn: () => citasApi.editarCliente(citaEditar!.id, {
+      nombreCompleto: fEditar.nombre.trim(),
+      telefono: fEditar.telefono.trim() || undefined,
+      email: fEditar.email.trim() || undefined,
+    }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["citas"] });
+      qc.invalidateQueries({ queryKey: ["clientes"] });
+      setCitaEditar(null);
+      toast("Datos del cliente actualizados");
+    },
+    onError: (err: unknown) => {
+      const msg = (err as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje
+        ?? "No se pudo actualizar el cliente";
+      toast(msg, "error");
+    },
+  });
+
+  const abrirEditar = (c: CitaDto) => {
+    setCitaEditar(c);
+    setFEditar({ nombre: c.nombreCliente, telefono: c.telefonoCliente ?? "", email: c.emailCliente ?? "" });
+    setEmailEditarError("");
+  };
 
   const abrirNuevaCita = () => {
     setModalNueva(true);
@@ -690,6 +720,20 @@ export default function CitasPage() {
                     {/* Acciones — solo desktop */}
                     <td className="px-4 py-3 text-right hidden sm:table-cell">
                       <div className="flex justify-end items-center gap-1">
+                        {/* WhatsApp */}
+                        {c.telefonoCliente && (
+                          <Tooltip text="Enviar recordatorio por WhatsApp">
+                            <a
+                              href={whatsappUrl(c)}
+                              target="_blank"
+                              rel="noreferrer"
+                              aria-label={`Enviar WhatsApp a ${c.nombreCliente}`}
+                              className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] transition"
+                            >
+                              <SiWhatsapp size={15} />
+                            </a>
+                          </Tooltip>
+                        )}
                         {/* Confirmar — Pendiente */}
                         {c.estadoTexto === "Pendiente" && (
                           <Tooltip text="Confirmar cita">
@@ -725,29 +769,6 @@ export default function CitasPage() {
                             </button>
                           </Tooltip>
                         )}
-                        {/* Repetir */}
-                        <Tooltip text="Repetir cita">
-                          <button
-                            onClick={() => abrirRepetirCita(c)}
-                            className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-cyan-100 text-cyan-600 hover:bg-cyan-200 dark:bg-cyan-900/40 dark:text-cyan-400 dark:hover:bg-cyan-900/60 transition"
-                          >
-                            <RotateCcw size={15} />
-                          </button>
-                        </Tooltip>
-                        {/* Separador visual */}
-                        <div className="w-px h-5 bg-gray-200 dark:bg-slate-600 mx-0.5" />
-                        {/* WhatsApp */}
-                        <Tooltip text="Enviar recordatorio por WhatsApp">
-                          <a
-                            href={whatsappUrl(c)}
-                            target="_blank"
-                            rel="noreferrer"
-                            aria-label={`Enviar WhatsApp a ${c.nombreCliente}`}
-                            className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] transition"
-                          >
-                            <SiWhatsapp size={15} />
-                          </a>
-                        </Tooltip>
                         {/* Notas */}
                         <Tooltip text={c.notas ? "Ver o editar notas internas" : "Agregar nota interna"}>
                           <button
@@ -758,17 +779,17 @@ export default function CitasPage() {
                             {c.notas && <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-amber-400" />}
                           </button>
                         </Tooltip>
-                        {/* Comprobante */}
-                        {c.comprobanteUrl && (
-                          <Tooltip text="Ver comprobante de anticipo">
-                            <button
-                              onClick={() => setUrlComprobante(c.comprobanteUrl!)}
-                              className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 hover:bg-indigo-200 dark:bg-indigo-900/40 dark:text-indigo-400 dark:hover:bg-indigo-900/60 transition"
-                            >
-                              <Receipt size={15} />
-                            </button>
-                          </Tooltip>
-                        )}
+                        {/* Editar cliente */}
+                        <Tooltip text="Editar datos del cliente">
+                          <button
+                            onClick={() => abrirEditar(c)}
+                            className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600 transition"
+                          >
+                            <Pencil size={14} />
+                          </button>
+                        </Tooltip>
+                        {/* Separador */}
+                        <div className="w-px h-5 bg-gray-200 dark:bg-slate-600 mx-0.5" />
                         {/* Anticipo */}
                         {c.anticipoRequerido && !c.pagada && (
                           <Tooltip text={c.anticipoRecibido ? 'Anular anticipo' : `Registrar anticipo $${(c.montoAnticipo ?? 0).toFixed(2)}`}>
@@ -785,6 +806,26 @@ export default function CitasPage() {
                             </button>
                           </Tooltip>
                         )}
+                        {/* Comprobante */}
+                        {c.comprobanteUrl && (
+                          <Tooltip text="Ver comprobante de anticipo">
+                            <button
+                              onClick={() => setUrlComprobante(c.comprobanteUrl!)}
+                              className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 hover:bg-indigo-200 dark:bg-indigo-900/40 dark:text-indigo-400 dark:hover:bg-indigo-900/60 transition"
+                            >
+                              <Receipt size={15} />
+                            </button>
+                          </Tooltip>
+                        )}
+                        {/* Repetir */}
+                        <Tooltip text="Repetir cita">
+                          <button
+                            onClick={() => abrirRepetirCita(c)}
+                            className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-cyan-100 text-cyan-600 hover:bg-cyan-200 dark:bg-cyan-900/40 dark:text-cyan-400 dark:hover:bg-cyan-900/60 transition"
+                          >
+                            <RotateCcw size={15} />
+                          </button>
+                        </Tooltip>
                         {/* Reseña — solo Completadas */}
                         {c.estadoTexto === "Completada" && c.telefonoCliente && (
                           <Tooltip text="Solicitar reseña al cliente">
@@ -829,6 +870,74 @@ export default function CitasPage() {
         )
       )}
 
+
+      {/* ── Modal: Editar cliente ── */}
+      <Modal abierto={!!citaEditar} onCerrar={() => setCitaEditar(null)} titulo="Editar datos del cliente" ancho="sm">
+        {citaEditar && (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Nombre <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="text"
+                value={fEditar.nombre}
+                onChange={(e) => setFEditar((p) => ({ ...p, nombre: e.target.value }))}
+                placeholder="Nombre completo"
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Teléfono <span className="text-gray-400 font-normal">(opcional)</span>
+              </label>
+              <input
+                type="tel"
+                value={fEditar.telefono}
+                onChange={(e) => setFEditar((p) => ({ ...p, telefono: e.target.value }))}
+                placeholder="10 dígitos"
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Correo <span className="text-gray-400 font-normal">(opcional)</span>
+              </label>
+              <input
+                type="email"
+                value={fEditar.email}
+                onChange={(e) => {
+                  setFEditar((p) => ({ ...p, email: e.target.value }));
+                  setEmailEditarError(validarEmailCliente(e.target.value));
+                }}
+                placeholder="correo@ejemplo.com"
+                className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100 ${
+                  emailEditarError ? "border-red-400 bg-red-50 dark:bg-red-900/20" : "border-gray-200 dark:border-slate-600"
+                }`}
+              />
+              {emailEditarError && <p className="text-red-500 text-xs mt-1">⚠ {emailEditarError}</p>}
+            </div>
+            <p className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded-lg px-3 py-2">
+              Esto actualiza los datos de la cliente en todas sus citas.
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setCitaEditar(null)}
+                className="px-4 py-2.5 border border-gray-200 dark:border-slate-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700 rounded-xl text-sm transition"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => { if (!emailEditarError) editarCliente(); }}
+                disabled={!fEditar.nombre.trim() || editando || !!emailEditarError}
+                className="flex-1 bg-slate-700 hover:bg-slate-800 disabled:opacity-40 text-white font-semibold py-2.5 rounded-xl text-sm transition"
+              >
+                {editando ? "Guardando..." : "Guardar cambios"}
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
 
       {/* ── Modal: Completar cita ── */}
       <Modal abierto={!!citaACompletar} onCerrar={() => setCitaACompletar(null)} titulo="Marcar como completada" ancho="sm">
@@ -1033,7 +1142,9 @@ export default function CitasPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Teléfono <span className="text-red-400">*</span></label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Teléfono <span className="text-gray-400 dark:text-gray-500 font-normal">(opcional)</span>
+              </label>
               <input
                 type="tel"
                 value={fCliente.telefono}
@@ -1093,7 +1204,7 @@ export default function CitasPage() {
                   setEmailClienteError(err);
                   if (!err) crearCita();
                 }}
-                disabled={!fCliente.nombre.trim() || !fCliente.telefono.trim() || creando || !!emailClienteError}
+                disabled={!fCliente.nombre.trim() || creando || !!emailClienteError}
                 className="flex-1 bg-slate-700 hover:bg-slate-800 disabled:opacity-40 text-white font-semibold py-2.5 rounded-xl text-sm transition"
               >
                 {creando ? "Creando..." : `Crear ${terms.cita.toLowerCase()}`}

@@ -528,6 +528,34 @@ namespace AppointVaAPI.Controllers.V1
             return Ok(new { mensaje = "Ticket enviado al correo del cliente" });
         }
 
+        // PATCH api/citas/{id}/cliente
+        [HttpPatch("{id:guid}/cliente")]
+        public async Task<IActionResult> EditarCliente(Guid id, [FromBody] EditarClienteCitaDto dto)
+        {
+            if (_contexto.NegocioId is null) return Unauthorized();
+            if (string.IsNullOrWhiteSpace(dto.NombreCompleto))
+                return BadRequest(new { mensaje = "El nombre es obligatorio" });
+
+            var cita = await _citaRepo.ObtenerPorIdAsync(id, _contexto.NegocioId.Value);
+            if (cita is null) return NotFound(new { mensaje = "Cita no encontrada" });
+
+            var cliente = await _clienteRepo.ObtenerPorIdAsync(cita.ClienteId, _contexto.NegocioId.Value);
+            if (cliente is null) return NotFound(new { mensaje = "Cliente no encontrado" });
+
+            cliente.NombreCompleto = dto.NombreCompleto.Trim();
+            if (dto.Telefono is not null)
+                cliente.Telefono = dto.Telefono.Trim();
+            if (dto.Email is not null)
+                cliente.Email = string.IsNullOrWhiteSpace(dto.Email) ? null : dto.Email.Trim();
+            cliente.FechaActualizacion = DateTime.UtcNow;
+
+            await _clienteRepo.ActualizarAsync(cliente);
+            cita.FechaActualizacion = DateTime.UtcNow;
+            await _citaRepo.ActualizarAsync(cita);
+
+            return Ok(MapearDto(cita));
+        }
+
         // PATCH api/citas/{id}/notas
         [HttpPatch("{id:guid}/notas")]
         public async Task<IActionResult> ActualizarNotas(Guid id, [FromBody] ActualizarNotasCitaDto dto)
