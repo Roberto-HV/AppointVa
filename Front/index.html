@@ -15,12 +15,19 @@
     <link rel="icon" type="image/png" href="/IconApp.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.json" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- viewport-fit=cover extiende la página bajo la barra de estado y es lo que activa
+         los env(safe-area-inset-*); sin él resuelven a 0. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="description" content="AppointVa – Tu agenda online sin llamadas. Crea tu página de reservas en 5 minutos para negocios de servicios en México." />
-    <meta name="theme-color" content="#C8A961" />
+    <!-- Tiñe el chrome de Safari cuando no está instalada. El dorado de marca chocaba con
+         el header oscuro de las páginas de reserva, así que sigue el esquema del sistema. -->
+    <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#18181B" media="(prefers-color-scheme: dark)" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <!-- black-translucent deja la barra de estado transparente sobre el contenido. Su texto
+         queda siempre en blanco, así que toda pantalla debe tener fondo oscuro tras ella. -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="AppointVa" />
     <!-- Open Graph -->
     <meta property="og:type" content="website" />

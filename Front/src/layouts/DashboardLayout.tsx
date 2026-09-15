@@ -320,7 +320,17 @@ export default function DashboardLayout() {
   }, []);
 
   return (
-    <div className="h-dvh flex overflow-hidden bg-white dark:bg-slate-950">
+    <div
+      className="h-dvh flex overflow-hidden bg-white dark:bg-slate-950"
+      style={{ paddingTop: "env(safe-area-inset-top)" }}
+    >
+      {/* Franja tras la barra de estado: su texto es blanco fijo por black-translucent y el
+          header del dashboard es claro, así que necesita un fondo oscuro propio. */}
+      <div
+        aria-hidden="true"
+        className="fixed top-0 inset-x-0 z-[60] bg-slate-900 pointer-events-none"
+        style={{ height: "env(safe-area-inset-top)" }}
+      />
 
       {/* ── Overlay backdrop (móvil) — siempre montado, fade vía inline style ── */}
       <div

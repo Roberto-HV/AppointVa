@@ -999,8 +999,9 @@ export default function BookingPage() {
             background: `radial-gradient(ellipse 80% 120% at 0% 0%, rgb(${hexToChannels(color)} / 0.20) 0%, transparent 65%)`,
           }}
         />
-        {/* Contenido con padding-top para dejar ver la foto arriba */}
-        <div className="relative z-10 px-5 sm:px-8 pt-4 pb-4 sm:pb-6">
+        {/* Contenido con padding-top para dejar ver la foto arriba. El inset superior baja
+            el contenido bajo la barra de estado; la portada sigue llegando al borde. */}
+        <div className="relative z-10 px-5 sm:px-8 pt-[calc(1rem+env(safe-area-inset-top))] pb-4 sm:pb-6">
           {/* Fila: logo + nombre alineados arriba */}
           <div className="flex items-start gap-3.5 sm:gap-5">
             {/* Logo */}
