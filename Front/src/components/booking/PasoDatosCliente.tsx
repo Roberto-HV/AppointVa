@@ -20,21 +20,20 @@ interface Props {
   servicio: ServicioPublico;
   empleado: EmpleadoPublico;
   slot: SlotDisponible;
-  enviando: boolean;
-  datosIniciales?: Partial<DatosClienteForm>;
+  /** El botón de envío vive en la barra de acción del wizard y se asocia por este id. */
+  formId: string;
+  politicasAceptadas: boolean;
+  onPoliticasAceptadasChange: (aceptadas: boolean) => void;
   onEnviar: (datos: DatosClienteForm) => void;
-  color?: string;
   notasLabel?: string;
   error?: string;
   politicasUrl?: string;
 }
 
-export default function PasoDatosCliente({ servicio, empleado, slot, enviando, datosIniciales, onEnviar, color = "#334155", notasLabel = 'Notas (opcional)', error, politicasUrl }: Props) {
+export default function PasoDatosCliente({ servicio, empleado, slot, formId, politicasAceptadas, onPoliticasAceptadasChange, onEnviar, notasLabel = 'Notas (opcional)', error, politicasUrl }: Props) {
   const [politicasAbiertas, setPoliticasAbiertas] = useState(false);
-  const [politicasAceptadas, setPoliticasAceptadas] = useState(false);
   const { register, handleSubmit, watch, formState: { errors } } = useForm<DatosClienteForm>({
     resolver: zodResolver(schema),
-    defaultValues: datosIniciales,
     mode: "onBlur",
   });
   const [emailTocado, setEmailTocado] = useState(false);
@@ -47,48 +46,10 @@ export default function PasoDatosCliente({ servicio, empleado, slot, enviando, d
 
   return (
     <div>
-      <h2 className="text-xl font-bold text-slate-900 mb-1">Tus datos</h2>
-      <p className="text-sm text-slate-500 mb-5">Casi listo — solo necesitamos saber quién eres</p>
+      <h2 className="text-xl font-bold text-slate-900 mb-5">Tus datos</h2>
 
-      {/* Resumen visual de la cita */}
-      <div className="bg-slate-900 text-white rounded-2xl p-4 mb-5">
-        <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">Resumen de tu cita</p>
-        <div className="space-y-2.5">
-          <div className="flex items-start gap-3">
-            <div className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center shrink-0 mt-0.5">
-              <Tag size={13} className="text-white/70" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold">{servicio.nombre}</p>
-              <p className="text-xs text-slate-400">{servicio.duracionMinutos} min</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
-              <User size={13} className="text-white/70" />
-            </div>
-            <p className="text-sm font-medium text-slate-200">{nombreEmpleado}</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
-              <CalendarDays size={13} className="text-white/70" />
-            </div>
-            <p className="text-sm font-medium text-slate-200">{formatFecha(slot.inicio)}</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
-              <Clock size={13} className="text-white/70" />
-            </div>
-            <p className="text-sm font-medium text-slate-200">{slot.horaTexto}</p>
-          </div>
-          <div className="border-t border-white/10 pt-2.5 flex justify-between items-center">
-            <span className="text-sm text-slate-400">Total a pagar</span>
-            <span className="text-lg font-bold text-white">{formatPrecio(servicio.precio)}</span>
-          </div>
-        </div>
-      </div>
-
-      <form onSubmit={handleSubmit(onEnviar)} className="space-y-4">
+      {/* handleSubmit pasa el evento como 2º argumento; se descarta para no filtrarlo al padre. */}
+      <form id={formId} onSubmit={handleSubmit((datos) => onEnviar(datos))} className="space-y-4">
         <div>
           <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">
             Nombre completo *
@@ -194,7 +155,7 @@ export default function PasoDatosCliente({ servicio, empleado, slot, enviando, d
               <input
                 type="checkbox"
                 checked={politicasAceptadas}
-                onChange={(e) => setPoliticasAceptadas(e.target.checked)}
+                onChange={(e) => onPoliticasAceptadasChange(e.target.checked)}
                 className="mt-0.5 accent-slate-700 w-4 h-4 shrink-0"
               />
               <span className="text-xs text-slate-600 leading-relaxed">
@@ -204,14 +165,43 @@ export default function PasoDatosCliente({ servicio, empleado, slot, enviando, d
           </div>
         )}
 
-        <button
-          type="submit"
-          disabled={enviando || (!!politicasUrl && !politicasAceptadas)}
-          className="w-full disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-2xl transition-all text-sm tracking-wide hover:opacity-90"
-          style={{ background: color }}
-        >
-          {enviando ? "Confirmando…" : "Confirmar cita"}
-        </button>
+        {/* Resumen visual de la cita */}
+        <div className="bg-slate-900 text-white rounded-2xl p-4">
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">Resumen de tu cita</p>
+          <div className="space-y-2.5">
+            <div className="flex items-start gap-3">
+              <div className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center shrink-0 mt-0.5">
+                <Tag size={13} className="text-white/70" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold">{servicio.nombre}</p>
+                <p className="text-xs text-slate-400">{servicio.duracionMinutos} min</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
+                <User size={13} className="text-white/70" />
+              </div>
+              <p className="text-sm font-medium text-slate-200">{nombreEmpleado}</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
+                <CalendarDays size={13} className="text-white/70" />
+              </div>
+              <p className="text-sm font-medium text-slate-200">{formatFecha(slot.inicio)}</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
+                <Clock size={13} className="text-white/70" />
+              </div>
+              <p className="text-sm font-medium text-slate-200">{slot.horaTexto}</p>
+            </div>
+            <div className="border-t border-white/10 pt-2.5 flex justify-between items-center">
+              <span className="text-sm text-slate-400">Total a pagar</span>
+              <span className="text-lg font-bold text-white">{formatPrecio(servicio.precio)}</span>
+            </div>
+          </div>
+        </div>
       </form>
     </div>
   );

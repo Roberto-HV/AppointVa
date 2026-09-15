@@ -1,6 +1,6 @@
-﻿import { useState, useEffect, useRef } from "react";
+﻿import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { useParams, useNavigate, useSearchParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { publicoApi } from "../../api/publico";
@@ -13,10 +13,115 @@ import PasoServicio from "../../components/booking/PasoServicio";
 import PasoEmpleado, { SIN_PREFERENCIA_ID } from "../../components/booking/PasoEmpleado";
 import PasoFechaHora from "../../components/booking/PasoFechaHora";
 import PasoDatosCliente, { type DatosClienteForm } from "../../components/booking/PasoDatosCliente";
-import { Star, X, UserCircle, UserCheck, Tag, AlertCircle, ChevronLeft, ChevronRight, Lock } from "lucide-react";
+import { Star, X, Tag, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import PublicFooter from "../../components/PublicFooter";
 
 import { hexToChannels, DEFAULT_COLOR, degradeGradient } from "../../lib/colorUtils";
+
+// El submit del paso 4 vive en la barra de acción, fuera del <form> de PasoDatosCliente.
+const ID_FORM_DATOS = "form-datos-cliente";
+const ID_HOJA_CONFLICTO = "hoja-cliente-existente";
+const ID_TITULO_CONFLICTO = "hoja-cliente-existente-titulo";
+
+const CODIGO_CLIENTE_DISTINTO = "CLIENTE_NOMBRE_DISTINTO";
+const CODIGO_HORARIO_NO_DISPONIBLE = "HORARIO_NO_DISPONIBLE";
+
+const BTN_BASE = "min-h-[48px] rounded-2xl text-sm transition inline-flex items-center justify-center gap-1.5";
+const BTN_PRIMARIO = `${BTN_BASE} text-white font-bold tracking-wide hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed`;
+const BTN_SECUNDARIO = `${BTN_BASE} border-2 border-slate-200 font-medium text-slate-600 hover:border-slate-300`;
+
+// Fija al viewport en móvil (pulgar); en lg vuelve al flujo, bajo la columna de reserva.
+const BARRA_ACCION =
+  "fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200 bg-white/95 backdrop-blur px-4 pt-3 " +
+  "pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0_-4px_16px_rgba(15,23,42,0.08)] " +
+  "lg:static lg:z-auto lg:mt-6 lg:border-0 lg:bg-transparent lg:backdrop-blur-none lg:p-0 lg:shadow-none";
+
+function HojaClienteExistente({
+  nombreExistente,
+  color,
+  onConfirmar,
+  onCorregir,
+}: {
+  nombreExistente: string;
+  color: string;
+  onConfirmar: () => void;
+  onCorregir: () => void;
+}) {
+  const confirmarRef = useRef<HTMLButtonElement>(null);
+  const reducirMovimiento = useReducedMotion();
+
+  useEffect(() => {
+    confirmarRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onCorregir();
+        return;
+      }
+      if (e.key !== "Tab") return;
+      const panel = document.getElementById(ID_HOJA_CONFLICTO);
+      const focusables = panel?.querySelectorAll<HTMLElement>("button:not([disabled])");
+      if (!focusables?.length) return;
+      const primero = focusables[0];
+      const ultimo = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === primero) {
+        e.preventDefault();
+        ultimo.focus();
+      } else if (!e.shiftKey && document.activeElement === ultimo) {
+        e.preventDefault();
+        primero.focus();
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onCorregir]);
+
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex items-end justify-center">
+      {/* Sin cierre al tocar: la decisión define a nombre de quién queda la cita. */}
+      <div className="absolute inset-0 bg-slate-900/50" aria-hidden="true" />
+      <motion.div
+        id={ID_HOJA_CONFLICTO}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={ID_TITULO_CONFLICTO}
+        initial={reducirMovimiento ? { opacity: 0 } : { y: "100%" }}
+        animate={reducirMovimiento ? { opacity: 1 } : { y: 0 }}
+        transition={reducirMovimiento ? { duration: 0.15 } : { type: "spring", damping: 32, stiffness: 320 }}
+        className="relative w-full max-w-lg rounded-t-3xl bg-white px-5 pt-4 shadow-2xl pb-[calc(1.25rem+env(safe-area-inset-bottom))]"
+      >
+        <div className="mx-auto mb-5 h-1 w-10 rounded-full bg-slate-200" aria-hidden="true" />
+        <h2 id={ID_TITULO_CONFLICTO} className="text-lg font-bold text-slate-900">
+          Encontramos una cuenta con ese teléfono
+        </h2>
+        <p className="mt-1 text-sm text-slate-500">Ese número ya está registrado a nombre de:</p>
+        <p className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-center text-xl font-bold text-slate-900">
+          {nombreExistente}
+        </p>
+        <p className="mt-3 text-sm text-slate-500">
+          Si eres tú, agendaremos la cita con ese nombre.
+        </p>
+        <button
+          ref={confirmarRef}
+          type="button"
+          onClick={onConfirmar}
+          className={`${BTN_PRIMARIO} mt-5 w-full`}
+          style={{ background: color }}
+        >
+          Sí, soy yo
+        </button>
+        <button
+          type="button"
+          onClick={onCorregir}
+          className={`${BTN_BASE} mt-2 w-full font-semibold text-slate-600 hover:bg-slate-50`}
+        >
+          Corregir mi teléfono
+        </button>
+      </motion.div>
+    </div>,
+    document.body
+  );
+}
 
 function GaleriaSection({ imagenes }: { imagenes: ImagenGaleria[] }) {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -456,15 +561,6 @@ export default function BookingPage() {
   const [galeriaViewerIdx, setGaleriaViewerIdx] = useState<number | null>(null);
   const [galeriaVisible, setGaleriaVisible] = useState(false);
 
-  // Sub-flujo paso 4: elegir → buscar | listo
-  const [modoCliente, setModoCliente] = useState<"elegir" | "buscar" | "listo">("elegir");
-  const [tipoBusqueda, setTipoBusqueda] = useState<"email" | "telefono">("email");
-  const [emailBusqueda, setEmailBusqueda] = useState("");
-  const [telefonoBusqueda, setTelefonoBusqueda] = useState("");
-  const [buscandoCliente, setBuscandoCliente] = useState(false);
-  const [errorBusqueda, setErrorBusqueda] = useState("");
-  const [datosPreRellenos, setDatosPreRellenos] = useState<Partial<DatosClienteForm> | null>(null);
-
   // Intake sub-step (between paso 3 and paso 4)
   const [mostrarIntake, setMostrarIntake] = useState(false);
   const [respuestasIntake, setRespuestasIntake] = useState<Record<string, string>>({});
@@ -476,6 +572,13 @@ export default function BookingPage() {
   const [descuentoAplicado, setDescuentoAplicado] = useState<DescuentoValidado | null>(null);
   const [validandoCupon, setValidandoCupon] = useState(false);
   const [errorCupon, setErrorCupon] = useState("");
+
+  // Políticas del negocio — vive aquí porque el submit está en la barra de acción
+  const [politicasAceptadas, setPoliticasAceptadas] = useState(false);
+
+  // Conflicto: el teléfono ya pertenece a otro cliente del negocio
+  const [nombreEnConflicto, setNombreEnConflicto] = useState<string | null>(null);
+  const datosPendientesRef = useRef<DatosClienteForm | null>(null);
 
   // Slot taken (409) error shown in paso 3
   const [errorSlotTomado, setErrorSlotTomado] = useState("");
@@ -574,12 +677,12 @@ export default function BookingPage() {
     if (paso === 3 && slot && camposIntake.length > 0 && !mostrarIntake) {
       setDirection(1);
       setMostrarIntake(true);
+
       return;
     }
     setDirection(1);
     setMostrarIntake(false);
     setPaso((p) => Math.min(p + 1, 4));
-    setModoCliente("elegir");
   };
 
   const irAtras = () => {
@@ -591,39 +694,10 @@ export default function BookingPage() {
       setIntentoContinuar(false);
       return;
     }
-    if (paso === 4 && modoCliente !== "elegir") {
-      if (modoCliente === "listo") { setDatosPreRellenos(null); setEmailBusqueda(""); setTelefonoBusqueda(""); }
-      setDirection(-1);
-      setModoCliente("elegir");
-      setErrorBusqueda("");
-      return;
-    }
     setDirection(-1);
     setPaso((p) => p - 1);
-    if (paso === 4) { setModoCliente("elegir"); setDatosPreRellenos(null); setEmailBusqueda(""); }
     if (paso === 3) setSlot(null);
     if (paso === 2) { setEmpleado(null); setRespuestasIntake({}); }
-  };
-
-  const buscarCliente = async () => {
-    if (!slug) return;
-    const opts = tipoBusqueda === "email"
-      ? { email: emailBusqueda }
-      : { telefono: telefonoBusqueda };
-    if (!opts.email && !opts.telefono) return;
-    setBuscandoCliente(true);
-    setErrorBusqueda("");
-    try {
-      const datos = await publicoApi.buscarClienteDatos(slug, opts);
-      if (!mountedRef.current) return;
-      setDatosPreRellenos(datos);
-      setModoCliente("listo");
-    } catch {
-      if (!mountedRef.current) return;
-      setErrorBusqueda("No encontramos registros con ese dato. Puedes continuar como invitado.");
-    } finally {
-      if (mountedRef.current) setBuscandoCliente(false);
-    }
   };
 
   const sinPreferencia = empleado?.id === SIN_PREFERENCIA_ID;
@@ -646,7 +720,7 @@ export default function BookingPage() {
     }
   };
 
-  const confirmarCita = async (datos: DatosClienteForm) => {
+  const confirmarCita = async (datos: DatosClienteForm, confirmarClienteExistente = false) => {
     if (!negocio || !servicio || !empleado || !slot) return;
     setErrorEnvio("");
     setEnviando(true);
@@ -667,13 +741,27 @@ export default function BookingPage() {
         notas: datos.notas || undefined,
         codigoDescuento: descuentoAplicado?.codigo,
         respuestasIntake: respuestasIntakeList.length > 0 ? respuestasIntakeList : undefined,
+        confirmarClienteExistente: confirmarClienteExistente || undefined,
       });
       navigate(`/b/${slug}/confirmacion/${cita.codigoConfirmacion}`);
     } catch (err: unknown) {
       if (!mountedRef.current) return;
-      const status = (err as { response?: { status?: number } })?.response?.status;
-      const msg = (err as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje;
-      if (status === 409 || msg?.toLowerCase().includes("disponible") || msg?.toLowerCase().includes("ocupado")) {
+      const respuesta = (err as {
+        response?: { status?: number; data?: { mensaje?: string; codigo?: string; nombreExistente?: string } };
+      })?.response;
+      const status = respuesta?.status;
+      const codigo = respuesta?.data?.codigo;
+      const msg = respuesta?.data?.mensaje;
+      // El código manda: el sniffing por mensaje es solo respaldo para respuestas viejas.
+      if (codigo === CODIGO_CLIENTE_DISTINTO) {
+        datosPendientesRef.current = datos;
+        setNombreEnConflicto(respuesta?.data?.nombreExistente ?? "");
+      } else if (
+        codigo === CODIGO_HORARIO_NO_DISPONIBLE ||
+        status === 409 ||
+        msg?.toLowerCase().includes("disponible") ||
+        msg?.toLowerCase().includes("ocupado")
+      ) {
         setErrorSlotTomado("Ese horario ya no está disponible, elige otro.");
         setDirection(-1);
         setPaso(3);
@@ -687,6 +775,20 @@ export default function BookingPage() {
       setEnviando(false);
     }
   };
+
+  const aceptarClienteExistente = () => {
+    const datos = datosPendientesRef.current;
+    setNombreEnConflicto(null);
+    datosPendientesRef.current = null;
+    if (datos) confirmarCita(datos, true);
+  };
+
+  // Estable: la hoja la usa como dependencia de su efecto de foco/teclado.
+  const corregirTelefono = useCallback(() => {
+    setNombreEnConflicto(null);
+    datosPendientesRef.current = null;
+    document.querySelector<HTMLInputElement>(`#${ID_FORM_DATOS} [name="telefonoCliente"]`)?.focus();
+  }, []);
 
   if (isLoading) {
     return (
@@ -756,11 +858,115 @@ export default function BookingPage() {
 
   const color = negocio.colorPrimario ?? DEFAULT_COLOR;
   const terms = getSectorTerms(negocio.sector);
-  const pasos = ["Servicio", terms.empleado, "Fecha y hora", "Tus datos"];
+  const pasos = camposIntake.length > 0
+    ? ["Servicio", terms.empleado, "Fecha y hora", "Sobre ti", "Tus datos"]
+    : ["Servicio", terms.empleado, "Fecha y hora", "Tus datos"];
+  const pasoIndicador = camposIntake.length > 0
+    ? mostrarIntake ? 4 : paso === 4 ? 5 : paso
+    : paso;
 
   const textos = negocio.sector === 'salud'
     ? { cta: 'Agenda tu consulta', cita: 'consulta' }
     : { cta: 'Reserva tu cita',    cita: 'cita'     };
+
+  const faltanCamposIntake = camposIntake
+    .filter((c) => c.requerido)
+    .some((c) => !respuestasIntake[c.id]?.trim());
+
+  const continuarDesdeIntake = () => {
+    setIntentoContinuar(true);
+    if (!faltanCamposIntake) irSiguiente();
+  };
+
+  const botonAtras = (
+    <button onClick={irAtras} className={`${BTN_SECUNDARIO} flex-1`}>
+      <ChevronLeft size={15} />
+      Atrás
+    </button>
+  );
+
+  // Una sola barra para todo el wizard: vive fuera del bloque animado porque un
+  // `position: fixed/sticky` dentro de un ancestro transformado se ancla al transform.
+  const accionesPaso = (() => {
+    if (paso === 1) {
+      return (
+        <button
+          onClick={irSiguiente}
+          disabled={!servicio}
+          className={`${BTN_PRIMARIO} w-full`}
+          style={{ background: color }}
+        >
+          Continuar
+        </button>
+      );
+    }
+
+    if (paso === 2 && servicio) {
+      return (
+        <div className="flex gap-3">
+          {botonAtras}
+          <button
+            onClick={irSiguiente}
+            disabled={!empleado}
+            className={`${BTN_PRIMARIO} flex-1`}
+            style={{ background: color }}
+          >
+            Continuar
+          </button>
+        </div>
+      );
+    }
+
+    if (paso === 3 && servicio && empleado && !mostrarIntake) {
+      return (
+        <div className="flex gap-3">
+          {botonAtras}
+          <button
+            onClick={irSiguiente}
+            disabled={!slot || cargandoIntake}
+            className={`${BTN_PRIMARIO} flex-1`}
+            style={{ background: color }}
+          >
+            {cargandoIntake ? "Cargando..." : "Continuar"}
+          </button>
+        </div>
+      );
+    }
+
+    if (paso === 3 && mostrarIntake && camposIntake.length > 0) {
+      return (
+        <div className="flex gap-3">
+          {botonAtras}
+          <button
+            onClick={continuarDesdeIntake}
+            className={`${BTN_PRIMARIO} flex-1`}
+            style={{ background: color }}
+          >
+            Continuar
+          </button>
+        </div>
+      );
+    }
+
+    if (paso === 4 && servicio && empleado && slot) {
+      return (
+        <div className="flex gap-3">
+          {botonAtras}
+          <button
+            type="submit"
+            form={ID_FORM_DATOS}
+            disabled={enviando || (!!negocio.politicasUrl && !politicasAceptadas)}
+            className={`${BTN_PRIMARIO} flex-1`}
+            style={{ background: color }}
+          >
+            {enviando ? "Confirmando…" : "Confirmar cita"}
+          </button>
+        </div>
+      );
+    }
+
+    return null;
+  })();
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -862,7 +1068,7 @@ export default function BookingPage() {
       </div>
 
       {/* Tira de pasos — full width, fondo oscuro */}
-      <IndicadorPasos pasoActual={paso} pasos={pasos} color={color} slug={negocio.slug} />
+      <IndicadorPasos pasoActual={pasoIndicador} pasos={pasos} color={color} slug={negocio.slug} />
 
       {/* Contenido */}
       <div className="lg:max-w-6xl lg:mx-auto lg:px-8 lg:flex lg:gap-8 lg:items-start lg:pt-8 lg:pb-12">
@@ -884,7 +1090,8 @@ export default function BookingPage() {
         )}
 
         {/* Right column — flujo de reserva */}
-        <div className="px-4 pt-5 pb-10 lg:flex-1 lg:px-0 lg:pt-0 lg:pb-0">
+        {/* pb-32: deja aire bajo el contenido para que la barra fija no tape el final */}
+        <div className="px-4 pt-5 pb-32 lg:flex-1 lg:px-0 lg:pt-0 lg:pb-0">
 
         {/* Mini-resumen breadcrumb */}
         {paso >= 2 && (servicio || empleado) && (
@@ -906,7 +1113,7 @@ export default function BookingPage() {
         {/* Pasos — wrapper con animación de transición */}
         <AnimatePresence mode="wait" custom={direction} initial={false}>
         <motion.div
-          key={`${paso}-${mostrarIntake ? "intake" : modoCliente}`}
+          key={`${paso}${mostrarIntake ? "-intake" : ""}`}
           custom={direction}
           variants={{
             enter: (dir: number) => ({ opacity: 0, x: dir * 30 }),
@@ -949,18 +1156,9 @@ export default function BookingPage() {
               </div>
             )}
 
-            <button
-              onClick={irSiguiente}
-              disabled={!servicio}
-              className="mt-6 w-full disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-2xl transition text-sm tracking-wide hover:opacity-90"
-              style={{ background: color }}
-            >
-              Continuar
-            </button>
-
             {/* Reseñas — solo mobile; en desktop aparecen en la columna izquierda */}
             {negocio.resenas?.length > 0 && (
-              <div className="lg:hidden">
+              <div className="lg:hidden mt-6">
                 <ResenasSection
                   resenas={negocio.resenas}
                   promedio={negocio.promedioResenas ?? 0}
@@ -982,20 +1180,6 @@ export default function BookingPage() {
               color={color}
               sector={negocio.sector}
             />
-            <div className="mt-6 flex gap-3">
-              <button onClick={irAtras} className="flex-1 py-3 rounded-2xl border-2 border-slate-200 text-sm font-medium text-slate-600 hover:border-slate-300 transition inline-flex items-center justify-center gap-1.5">
-                <ChevronLeft size={15} />
-                Atrás
-              </button>
-              <button
-                onClick={irSiguiente}
-                disabled={!empleado}
-                className="flex-1 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-3 rounded-2xl transition text-sm hover:opacity-90"
-                style={{ background: color }}
-              >
-                Continuar
-              </button>
-            </div>
           </>
         )}
 
@@ -1031,22 +1215,8 @@ export default function BookingPage() {
                 </span>
               </div>
             )}
-            <div className="mt-6 flex gap-3">
-              <button onClick={irAtras} className="flex-1 py-3 rounded-2xl border-2 border-slate-200 text-sm font-medium text-slate-600 hover:border-slate-300 transition inline-flex items-center justify-center gap-1.5">
-                <ChevronLeft size={15} />
-                Atrás
-              </button>
-              <button
-                onClick={irSiguiente}
-                disabled={!slot || cargandoIntake}
-                className="flex-1 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-3 rounded-2xl transition text-sm hover:opacity-90"
-                style={{ background: color }}
-              >
-                {cargandoIntake ? "Cargando..." : "Continuar"}
-              </button>
-            </div>
             {intakeError && (
-              <div className="flex items-center justify-center gap-3 mt-2">
+              <div className="flex items-center justify-center gap-3 mt-4">
                 <p className="text-xs text-red-500">
                   No se pudo cargar el formulario adicional.
                 </p>
@@ -1093,192 +1263,32 @@ export default function BookingPage() {
                 />
               ))}
             </div>
-            <div className="mt-6 flex gap-3">
-              <button
-                onClick={irAtras}
-                className="flex-1 py-3 rounded-2xl border-2 border-slate-200 text-sm font-medium text-slate-600 hover:border-slate-300 transition inline-flex items-center justify-center gap-1.5"
-              >
-                <ChevronLeft size={15} />
-                Atrás
-              </button>
-              <button
-                onClick={() => {
-                  setIntentoContinuar(true);
-                  const hayFaltantes = camposIntake
-                    .filter((c) => c.requerido)
-                    .some((c) => !respuestasIntake[c.id]?.trim());
-                  if (!hayFaltantes) {
-                    irSiguiente();
-                  }
-                }}
-                className="flex-1 text-white font-bold py-3 rounded-2xl transition text-sm hover:opacity-90"
-                style={{ background: color }}
-              >
-                Continuar
-              </button>
-            </div>
-            {intentoContinuar && camposIntake.filter((c) => c.requerido).some((c) => !respuestasIntake[c.id]?.trim()) && (
-              <p className="text-xs text-red-500 text-center mt-2">Completa los campos obligatorios para continuar</p>
+            {intentoContinuar && faltanCamposIntake && (
+              <p className="text-xs text-red-500 text-center mt-4">Completa los campos obligatorios para continuar</p>
             )}
           </>
         )}
 
-        {/* Paso 4 — elegir modo */}
-        {paso === 4 && modoCliente === "elegir" && (
-          <div>
-            <h2 className="text-xl font-bold text-slate-900 mb-1">¿Ya has reservado antes?</h2>
-            <p className="text-sm text-slate-500 mb-6">Busca tus datos o continúa como nuevo cliente.</p>
-            <div className="space-y-3">
-              {/* Opción 1 — Cliente recurrente (Klarna-style card) */}
-              <button
-                onClick={() => setModoCliente("buscar")}
-                className="w-full flex items-center gap-4 bg-white border-2 border-slate-100 hover:border-slate-300 rounded-2xl p-4 text-left transition hover:shadow-sm group"
-              >
-                <div className="w-11 h-11 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
-                  <UserCircle size={20} className="text-slate-500" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-slate-800 text-sm">Soy cliente recurrente</p>
-                  <p className="text-xs text-slate-400 mt-0.5">Busca con tu correo o teléfono</p>
-                </div>
-                <ChevronRight size={16} className="text-slate-300 group-hover:text-slate-400 transition shrink-0" />
-              </button>
-
-              {/* Separador "o" */}
-              <div className="flex items-center gap-3">
-                <div className="flex-1 h-px bg-slate-100" />
-                <span className="text-xs font-medium text-slate-300 uppercase tracking-widest">o</span>
-                <div className="flex-1 h-px bg-slate-100" />
-              </div>
-
-              {/* Opción 2 — Invitado */}
-              <button
-                onClick={() => setModoCliente("listo")}
-                className="w-full flex items-center gap-4 rounded-2xl p-4 text-left transition group hover:opacity-90"
-                style={{ background: color }}
-              >
-                <div className="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
-                  <UserCheck size={20} className="text-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-white text-sm">Continuar como invitado</p>
-                  <p className="text-xs text-white/50 mt-0.5">Ingresa tus datos manualmente</p>
-                </div>
-                <ChevronRight size={16} className="text-white/30 group-hover:text-white/50 transition shrink-0" />
-              </button>
-            </div>
-            <button onClick={irAtras} className="mt-5 w-full py-3 rounded-2xl border-2 border-slate-200 text-sm font-medium text-slate-600 hover:border-slate-300 transition inline-flex items-center justify-center gap-1.5">
-              <ChevronLeft size={15} />
-              Atrás
-            </button>
-          </div>
-        )}
-
-        {/* Paso 4 — buscar datos */}
-        {paso === 4 && modoCliente === "buscar" && (
-          <div>
-            <h2 className="text-xl font-bold text-slate-900 mb-1">Buscar mis datos</h2>
-            <p className="text-sm text-slate-500 mb-4">Busca con tu correo o número de teléfono.</p>
-
-            {/* Toggle email / teléfono */}
-            <div className="flex gap-2 mb-4 bg-slate-100 rounded-xl p-1">
-              {(["email", "telefono"] as const).map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => { setTipoBusqueda(t); setErrorBusqueda(""); }}
-                  className={`flex-1 py-2 rounded-lg text-xs font-semibold transition ${
-                    tipoBusqueda === t ? "bg-white text-slate-800 shadow-sm" : "text-slate-400"
-                  }`}
-                >
-                  {t === "email" ? "Correo electrónico" : "Teléfono"}
-                </button>
-              ))}
-            </div>
-
-            <div>
-              {tipoBusqueda === "email" ? (
-                <input
-                  type="email"
-                  value={emailBusqueda}
-                  onChange={(e) => { setEmailBusqueda(e.target.value); setErrorBusqueda(""); }}
-                  onKeyDown={(e) => e.key === "Enter" && buscarCliente()}
-                  placeholder="correo@ejemplo.com"
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-slate-700/20 focus:border-slate-700 transition bg-white"
-                  autoFocus
-                />
-              ) : (
-                <input
-                  type="tel"
-                  value={telefonoBusqueda}
-                  onChange={(e) => { setTelefonoBusqueda(e.target.value); setErrorBusqueda(""); }}
-                  onKeyDown={(e) => e.key === "Enter" && buscarCliente()}
-                  placeholder="55 1234 5678"
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-slate-700/20 focus:border-slate-700 transition bg-white"
-                  autoFocus
-                />
-              )}
-              {errorBusqueda && <p className="text-red-600 text-xs mt-1.5 bg-red-50 border border-red-200 rounded-xl px-3 py-2">{errorBusqueda}</p>}
-            </div>
-
-            <button
-              onClick={buscarCliente}
-              disabled={buscandoCliente || (tipoBusqueda === "email" ? !emailBusqueda.includes("@") : telefonoBusqueda.replace(/\D/g, "").length < 8)}
-              className="mt-4 w-full disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-2xl transition text-sm hover:opacity-90"
-              style={{ background: color }}
-            >
-              {buscandoCliente ? "Buscando…" : "Buscar mis datos"}
-            </button>
-            <button onClick={irAtras} className="mt-3 w-full py-3 rounded-2xl border-2 border-slate-200 text-sm font-medium text-slate-600 hover:border-slate-300 transition inline-flex items-center justify-center gap-1.5">
-              <ChevronLeft size={15} />
-              Atrás
-            </button>
-          </div>
-        )}
-
-        {/* Paso 4 — formulario (invitado o datos pre-rellenos) */}
-        {paso === 4 && modoCliente === "listo" && servicio && empleado && slot && (
+        {/* Paso 4 — formulario */}
+        {paso === 4 && servicio && empleado && slot && (
           <>
-            {/* Banner: datos pre-rellenos */}
-            {datosPreRellenos && (
-              <div className="mb-4 flex items-center gap-3 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
-                <svg className="w-5 h-5 text-green-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <p className="text-sm text-green-700 font-medium">¡Datos encontrados! Verifica que sean correctos.</p>
-              </div>
-            )}
-
             {/* Confirmación pendiente */}
             {negocio && !negocio.autoConfirmar && (
-              <div className="mb-4 flex items-center gap-2 text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5">
-                <AlertCircle size={13} className="shrink-0 text-slate-400" />
-                <span>Tu {textos.cita} quedará <strong>pendiente de confirmación</strong> por el negocio.</span>
-              </div>
+              <p className="mb-4 text-xs text-slate-400 flex items-center gap-1.5">
+                <AlertCircle size={12} className="shrink-0" />
+                Tu {textos.cita} quedará <strong className="text-slate-500">pendiente de confirmación</strong>.
+              </p>
             )}
-
-            {/* Aviso de privacidad */}
-            <div className="mb-4 flex items-start gap-2 text-xs text-slate-400 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2.5">
-              <Lock size={12} className="shrink-0 mt-0.5 text-slate-300" />
-              <span>
-                Tus datos serán compartidos únicamente con{" "}
-                <strong className="text-slate-500">{negocio.nombre}</strong> para gestionar tu cita,
-                de acuerdo con nuestra{" "}
-                <a href="/privacidad" target="_blank" rel="noreferrer" className="underline hover:text-slate-600 transition">
-                  política de privacidad
-                </a>.
-              </span>
-            </div>
 
             {/* Formulario — el error aparece dentro, justo antes del submit */}
             <PasoDatosCliente
               servicio={servicio}
               empleado={empleado}
               slot={slot}
-              enviando={enviando}
-              datosIniciales={datosPreRellenos ?? undefined}
+              formId={ID_FORM_DATOS}
+              politicasAceptadas={politicasAceptadas}
+              onPoliticasAceptadasChange={setPoliticasAceptadas}
               onEnviar={confirmarCita}
-              color={color}
               notasLabel={negocio.sector === 'salud' ? 'Motivo de consulta' : undefined}
               error={errorEnvio || undefined}
               politicasUrl={negocio.politicasUrl || undefined}
@@ -1354,19 +1364,26 @@ export default function BookingPage() {
                 </button>
               )}
             </div>
-
-            <button onClick={irAtras} className="mt-4 w-full py-3 rounded-2xl border-2 border-slate-200 text-sm font-medium text-slate-600 hover:border-slate-300 transition inline-flex items-center justify-center gap-1.5">
-              <ChevronLeft size={15} />
-              Atrás
-            </button>
           </>
         )}
 
         </motion.div>
         </AnimatePresence>
+
+        {accionesPaso && <div className={BARRA_ACCION}>{accionesPaso}</div>}
+
           <PublicFooter />
         </div>
       </div>
+
+      {nombreEnConflicto !== null && (
+        <HojaClienteExistente
+          nombreExistente={nombreEnConflicto}
+          color={color}
+          onConfirmar={aceptarClienteExistente}
+          onCorregir={corregirTelefono}
+        />
+      )}
 
       {/* Galería viewer — fuera de cualquier sticky/transform para evitar stacking context */}
       {galeriaViewerIdx !== null && negocio.galeria?.length > 0 && (

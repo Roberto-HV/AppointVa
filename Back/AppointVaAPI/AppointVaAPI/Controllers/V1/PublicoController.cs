@@ -327,7 +327,11 @@ namespace AppointVaAPI.Controllers.V1
                     if (haySolapamiento)
                     {
                         await tx.RollbackAsync();
-                        return Conflict(new { mensaje = "El horario seleccionado ya no está disponible" });
+                        return Conflict(new
+                        {
+                            codigo = CodigosError.HorarioNoDisponible,
+                            mensaje = "El horario seleccionado ya no está disponible"
+                        });
                     }
 
                     // Re-verificar cuota mensual dentro de la transacción (evita TOCTOU)
@@ -360,8 +364,22 @@ namespace AppointVaAPI.Controllers.V1
                         }
                     }
 
-                    cliente = await _clienteRepo.ObtenerOCrearAsync(
-                        negocio.Id, dto.NombreCliente, dto.TelefonoCliente, dto.EmailCliente);
+                    var resolucionCliente = await _clienteRepo.ObtenerOCrearAsync(
+                        negocio.Id, dto.NombreCliente, dto.TelefonoCliente, dto.EmailCliente,
+                        dto.ConfirmarClienteExistente);
+
+                    if (resolucionCliente.Resultado == ResultadoResolucionCliente.ConflictoNombre)
+                    {
+                        await tx.RollbackAsync();
+                        return Conflict(new
+                        {
+                            codigo = CodigosError.ClienteNombreDistinto,
+                            mensaje = "Ese teléfono ya está registrado a nombre de otra persona.",
+                            nombreExistente = resolucionCliente.Cliente.NombreCompleto
+                        });
+                    }
+
+                    cliente = resolucionCliente.Cliente;
 
                     cita = new Cita
                     {
@@ -436,7 +454,11 @@ namespace AppointVaAPI.Controllers.V1
                 catch (Exception ex) when (EsConflictoSerializacion(ex))
                 {
                     await tx.RollbackAsync();
-                    return Conflict(new { mensaje = "El horario fue reservado en este momento. Por favor elige otro." });
+                    return Conflict(new
+                    {
+                        codigo = CodigosError.HorarioNoDisponible,
+                        mensaje = "El horario fue reservado en este momento. Por favor elige otro."
+                    });
                 }
                 catch
                 {
@@ -461,6 +483,8 @@ namespace AppointVaAPI.Controllers.V1
                 CodigoConfirmacion = codigo,
                 NombreNegocio = negocio.Nombre,
                 NegocioSlug = negocio.Slug,
+                ServicioId = cita.ServicioId,
+                EmpleadoId = cita.EmpleadoId,
                 NombreServicio = servicio.Nombre,
                 NombreEmpleado = empleado?.Nombre ?? string.Empty,
                 NombreCliente = cliente.NombreCompleto,
@@ -1054,7 +1078,7 @@ namespace AppointVaAPI.Controllers.V1
 
             if (cliente is null && !string.IsNullOrWhiteSpace(telefono))
             {
-                var telNorm = new string(telefono.Where(char.IsDigit).ToArray());
+                var telNorm = AppointVaAPI.Helpers.NormalizacionHelper.SoloDigitos(telefono);
                 cliente = await _db.Clientes
                     .AsNoTracking()
                     .Where(c => c.NegocioId == negocio.Id && c.Telefono == telNorm)

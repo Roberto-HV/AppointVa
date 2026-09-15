@@ -467,16 +467,6 @@ export default function ConfirmacionPage() {
             Compartir por WhatsApp
           </a>
 
-          {/* Imprimir comprobante */}
-          <button
-            onClick={() => window.print()}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-white text-sm font-semibold transition hover:opacity-90"
-            style={{ background: "#0C0C0F" }}
-          >
-            <Printer size={15} />
-            Imprimir comprobante
-          </button>
-
           {/* Agregar al calendario */}
           {(cita.icalUrl || cita.googleCalUrl) && (
             <div>
@@ -516,13 +506,20 @@ export default function ConfirmacionPage() {
           )}
 
           {/* Enlace y acciones secundarias */}
-          <div className="flex items-center justify-center pt-1">
+          <div className="flex items-center justify-center gap-4 pt-1 flex-wrap">
             <button
               onClick={copiarLink}
               className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-600 transition"
             >
               {linkCopiado ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
-              {linkCopiado ? "¡Enlace copiado!" : "Copiar enlace de tu cita"}
+              {linkCopiado ? "¡Enlace copiado!" : "Copiar enlace"}
+            </button>
+            <button
+              onClick={() => window.print()}
+              className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-600 transition"
+            >
+              <Printer size={13} />
+              Imprimir
             </button>
           </div>
 

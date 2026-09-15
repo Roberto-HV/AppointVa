@@ -115,16 +115,16 @@ export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, on
             onClick={semanaAnterior}
             disabled={!puedeIrAtras}
             aria-label="Semana anterior"
-            className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100 disabled:opacity-25 disabled:cursor-not-allowed transition"
+            className="w-11 h-11 rounded-full flex items-center justify-center hover:bg-slate-100 disabled:opacity-25 disabled:cursor-not-allowed transition"
           >
-            <ChevronLeft size={16} className="text-slate-600" />
+            <ChevronLeft size={18} className="text-slate-600" />
           </button>
           <button
             onClick={semanaSiguiente}
             aria-label="Semana siguiente"
-            className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100 transition"
+            className="w-11 h-11 rounded-full flex items-center justify-center hover:bg-slate-100 transition"
           >
-            <ChevronRight size={16} className="text-slate-600" />
+            <ChevronRight size={18} className="text-slate-600" />
           </button>
         </div>
       </div>
@@ -215,7 +215,7 @@ export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, on
                         <button
                           key={slot.inicio}
                           onClick={() => onSeleccionar(slot)}
-                          className="py-2 rounded-xl text-xs font-semibold border-2 transition-all"
+                          className="min-h-[44px] px-1 rounded-xl text-xs font-semibold border-2 transition-all flex items-center justify-center"
                           style={activo
                             ? { borderColor: color, background: color, color: "#fff", boxShadow: `0 2px 8px ${color}40` }
                             : { borderColor: "#f1f5f9", background: "#fff", color: "#475569" }}

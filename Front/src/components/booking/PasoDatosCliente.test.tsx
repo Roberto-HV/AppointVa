@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import PasoDatosCliente from "./PasoDatosCliente";
 import type { ServicioPublico, EmpleadoPublico, SlotDisponible } from "../../types";
 
@@ -35,23 +35,28 @@ const mockSlot: SlotDisponible = {
   horaTexto: "10:00",
 };
 
-function renderComponente(datosIniciales?: { emailCliente?: string }) {
+type Props = React.ComponentProps<typeof PasoDatosCliente>;
+
+function renderComponente(props: Partial<Props> = {}) {
   return render(
     <PasoDatosCliente
       servicio={mockServicio}
       empleado={mockEmpleado}
       slot={mockSlot}
-      enviando={false}
-      datosIniciales={datosIniciales}
+      formId="form-datos-cliente"
+      politicasAceptadas={false}
+      onPoliticasAceptadasChange={vi.fn()}
       onEnviar={vi.fn()}
+      {...props}
     />
   );
 }
 
 describe("PasoDatosCliente — aviso de email", () => {
   it("no muestra el aviso cuando el campo de email tiene valor", async () => {
-    renderComponente({ emailCliente: "usuario@test.com" });
+    renderComponente();
     const input = screen.getByPlaceholderText(/correo@ejemplo\.com/i);
+    fireEvent.change(input, { target: { value: "usuario@test.com" } });
     fireEvent.blur(input);
     expect(
       screen.queryByText(/sin correo no recibirás confirmación/i)
@@ -77,30 +82,43 @@ describe("PasoDatosCliente — aviso de email", () => {
 
 describe("PasoDatosCliente — notasLabel prop", () => {
   it('shows "Notas (opcional)" label by default', () => {
-    render(
-      <PasoDatosCliente
-        servicio={mockServicio}
-        empleado={mockEmpleado}
-        slot={mockSlot}
-        enviando={false}
-        onEnviar={vi.fn()}
-      />
-    );
+    renderComponente();
     expect(screen.getByText('Notas (opcional)')).toBeInTheDocument();
   });
 
   it('shows the notasLabel prop when provided', () => {
-    render(
-      <PasoDatosCliente
-        servicio={mockServicio}
-        empleado={mockEmpleado}
-        slot={mockSlot}
-        enviando={false}
-        onEnviar={vi.fn()}
-        notasLabel="Motivo de consulta"
-      />
-    );
+    renderComponente({ notasLabel: "Motivo de consulta" });
     expect(screen.getByText('Motivo de consulta')).toBeInTheDocument();
     expect(screen.queryByText('Notas (opcional)')).not.toBeInTheDocument();
+  });
+});
+
+describe("PasoDatosCliente — submit externo", () => {
+  it("expone el formulario con el id recibido y sin botón de envío propio", () => {
+    const { container } = renderComponente({ formId: "mi-form" });
+    expect(container.querySelector("#mi-form")).toBeTruthy();
+    expect(container.querySelector('button[type="submit"]')).toBeNull();
+  });
+
+  it("delega el estado de las políticas al padre", () => {
+    const onPoliticasAceptadasChange = vi.fn();
+    renderComponente({ politicasUrl: "https://ejemplo.test/politicas.png", onPoliticasAceptadasChange });
+    fireEvent.click(screen.getByRole("checkbox"));
+    expect(onPoliticasAceptadasChange).toHaveBeenCalledWith(true);
+  });
+
+  // handleSubmit de react-hook-form pasa el evento como 2º argumento. Si se filtra,
+  // el padre lo recibe como flag y el DTO se vuelve circular: JSON.stringify revienta
+  // y la petición nunca sale.
+  it("invoca onEnviar solo con los datos, sin el evento del submit", async () => {
+    const onEnviar = vi.fn();
+    const { container } = renderComponente({ onEnviar });
+
+    fireEvent.change(screen.getByPlaceholderText("Tu nombre completo"), { target: { value: "Ana Martínez" } });
+    fireEvent.change(screen.getByPlaceholderText("55 1234 5678"), { target: { value: "5512345678" } });
+    fireEvent.submit(container.querySelector("#form-datos-cliente")!);
+
+    await waitFor(() => expect(onEnviar).toHaveBeenCalled());
+    expect(onEnviar.mock.calls[0]).toHaveLength(1);
   });
 });

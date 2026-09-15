@@ -130,6 +130,9 @@ public class PublicoControllerCrearCitaTests
         FechaActualizacion = DateTime.UtcNow,
     };
 
+    private static ResolucionCliente Creado(Cliente cliente) =>
+        new(ResultadoResolucionCliente.Creado, cliente);
+
     private static CrearCitaPublicaDto DtoBase(
         Negocio negocio,
         Servicio servicio,
@@ -281,7 +284,79 @@ public class PublicoControllerCrearCitaTests
 
         var result = await controller.CrearCita(DtoBase(negocio, servicio, empleado));
 
-        result.Should().BeOfType<ConflictObjectResult>();
+        var conflict = result.Should().BeOfType<ConflictObjectResult>().Subject;
+        conflict.Value.Should().BeEquivalentTo(new
+        {
+            codigo = CodigosError.HorarioNoDisponible,
+            mensaje = "El horario seleccionado ya no está disponible",
+        }, "el 409 de slot ocupado debe llevar discriminador legible por máquina");
+    }
+
+    // ── Conflicto de nombre del cliente ───────────────────────────────────────
+
+    [Fact]
+    public async Task RetornaConflict_ConCodigoYNombreEnArchivo_CuandoTelefonoEstaAOtroNombre()
+    {
+        var (controller, negocioRepo, citaRepo, clienteRepo, _, _, db) = CrearComponentes(
+            nameof(RetornaConflict_ConCodigoYNombreEnArchivo_CuandoTelefonoEstaAOtroNombre));
+        var negocio = NegocioActivo(autoConfirmar: true);
+        negocioRepo.ObtenerPorSlugAsync(negocio.Slug).Returns(negocio);
+
+        var (servicio, empleado) = await SeedDataAsync(db, negocio);
+        citaRepo.ExisteSolapamientoAsync(
+            Arg.Any<Guid>(), Arg.Any<DateTime>(), Arg.Any<DateTime>(), Arg.Any<Guid?>())
+            .Returns(false);
+
+        var registrado = ClienteDemo(negocio.Id);
+        registrado.NombreCompleto = "Elena López";
+        clienteRepo.ObtenerOCrearAsync(
+            Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<bool>())
+            .Returns(new ResolucionCliente(ResultadoResolucionCliente.ConflictoNombre, registrado));
+
+        var dto = DtoBase(negocio, servicio, empleado);
+        dto.NombreCliente = "María Ramírez";
+
+        var result = await controller.CrearCita(dto);
+
+        var conflict = result.Should().BeOfType<ConflictObjectResult>().Subject;
+        conflict.Value.Should().BeEquivalentTo(new
+        {
+            codigo = CodigosError.ClienteNombreDistinto,
+            mensaje = "Ese teléfono ya está registrado a nombre de otra persona.",
+            nombreExistente = "Elena López",
+        });
+        await citaRepo.DidNotReceive().CrearAsync(Arg.Any<Cita>());
+    }
+
+    [Fact]
+    public async Task Reserva_ConservandoNombreRegistrado_CuandoConfirmaClienteExistente()
+    {
+        var (controller, negocioRepo, citaRepo, clienteRepo, _, _, db) = CrearComponentes(
+            nameof(Reserva_ConservandoNombreRegistrado_CuandoConfirmaClienteExistente));
+        var negocio = NegocioActivo(autoConfirmar: true);
+        negocioRepo.ObtenerPorSlugAsync(negocio.Slug).Returns(negocio);
+
+        var (servicio, empleado) = await SeedDataAsync(db, negocio);
+        citaRepo.ExisteSolapamientoAsync(
+            Arg.Any<Guid>(), Arg.Any<DateTime>(), Arg.Any<DateTime>(), Arg.Any<Guid?>())
+            .Returns(false);
+
+        var registrado = ClienteDemo(negocio.Id);
+        registrado.NombreCompleto = "Elena López";
+        clienteRepo.ObtenerOCrearAsync(
+            Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string?>(), true)
+            .Returns(new ResolucionCliente(ResultadoResolucionCliente.Encontrado, registrado));
+
+        var dto = DtoBase(negocio, servicio, empleado);
+        dto.NombreCliente = "María Ramírez";
+        dto.ConfirmarClienteExistente = true;
+
+        var result = await controller.CrearCita(dto);
+
+        var created = result.Should().BeOfType<CreatedAtActionResult>().Subject;
+        var respuesta = created.Value.Should().BeOfType<ConfirmacionCitaDto>().Subject;
+        respuesta.NombreCliente.Should().Be("Elena López",
+            "al confirmar se conserva el nombre ya registrado, no el enviado");
     }
 
     [Fact]
@@ -297,8 +372,8 @@ public class PublicoControllerCrearCitaTests
             Arg.Any<Guid>(), Arg.Any<DateTime>(), Arg.Any<DateTime>(), Arg.Any<Guid?>())
             .Returns(false);
         clienteRepo.ObtenerOCrearAsync(
-            Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>())
-            .Returns(ClienteDemo(negocio.Id));
+            Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<bool>())
+            .Returns(Creado(ClienteDemo(negocio.Id)));
 
         var result = await controller.CrearCita(DtoBase(negocio, servicio, empleado));
 
@@ -321,8 +396,8 @@ public class PublicoControllerCrearCitaTests
             Arg.Any<Guid>(), Arg.Any<DateTime>(), Arg.Any<DateTime>(), Arg.Any<Guid?>())
             .Returns(false);
         clienteRepo.ObtenerOCrearAsync(
-            Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>())
-            .Returns(ClienteDemo(negocio.Id));
+            Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<bool>())
+            .Returns(Creado(ClienteDemo(negocio.Id)));
 
         var result = await controller.CrearCita(DtoBase(negocio, servicio, empleado));
 
@@ -345,8 +420,8 @@ public class PublicoControllerCrearCitaTests
             Arg.Any<Guid>(), Arg.Any<DateTime>(), Arg.Any<DateTime>(), Arg.Any<Guid?>())
             .Returns(false);
         clienteRepo.ObtenerOCrearAsync(
-            Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>())
-            .Returns(ClienteDemo(negocio.Id, email: "luis@email.com"));
+            Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<bool>())
+            .Returns(Creado(ClienteDemo(negocio.Id, email: "luis@email.com")));
 
         var result = await controller.CrearCita(
             DtoBase(negocio, servicio, empleado, email: "luis@email.com"));
@@ -369,8 +444,8 @@ public class PublicoControllerCrearCitaTests
             Arg.Any<Guid>(), Arg.Any<DateTime>(), Arg.Any<DateTime>(), Arg.Any<Guid?>())
             .Returns(false);
         clienteRepo.ObtenerOCrearAsync(
-            Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>())
-            .Returns(ClienteDemo(negocio.Id, email: null));
+            Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<bool>())
+            .Returns(Creado(ClienteDemo(negocio.Id, email: null)));
 
         var result = await controller.CrearCita(
             DtoBase(negocio, servicio, empleado, email: null));

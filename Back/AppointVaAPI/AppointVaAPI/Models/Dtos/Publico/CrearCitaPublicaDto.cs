@@ -34,6 +34,12 @@ namespace AppointVaAPI.Models.Dtos.Publico
         public string? CodigoDescuento { get; set; }
 
         public List<RespuestaIntakeInput>? RespuestasIntake { get; set; }
+
+        /// <summary>
+        /// El solicitante ya confirmó que el teléfono corresponde al cliente registrado.
+        /// La reserva se asocia a ese cliente y se conserva el nombre en archivo.
+        /// </summary>
+        public bool ConfirmarClienteExistente { get; set; }
     }
 
     public class RespuestaIntakeInput

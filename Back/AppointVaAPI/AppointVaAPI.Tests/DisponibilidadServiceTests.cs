@@ -299,8 +299,8 @@ public class DisponibilidadServiceTests
         var result = await svc.ObtenerSlotsDisponiblesAsync(negocioId, servicio.Id, empleado.Id, fecha);
 
         result.Should().HaveCount(2);
-        result[0].HoraTexto.Should().Be("09:00");
-        result[1].HoraTexto.Should().Be("10:00");
+        result[0].HoraTexto.Should().Be("9:00 am");
+        result[1].HoraTexto.Should().Be("10:00 am");
     }
 
     [Fact]
@@ -324,7 +324,7 @@ public class DisponibilidadServiceTests
         var result = await svc.ObtenerSlotsDisponiblesAsync(negocioId, servicio.Id, empleado.Id, fecha);
 
         result.Should().HaveCount(1);
-        result[0].HoraTexto.Should().Be("10:00", "el slot de 09:00 debe estar bloqueado por la cita Pendiente");
+        result[0].HoraTexto.Should().Be("10:00 am", "el slot de 09:00 debe estar bloqueado por la cita Pendiente");
     }
 
     [Fact]
@@ -348,7 +348,7 @@ public class DisponibilidadServiceTests
         var result = await svc.ObtenerSlotsDisponiblesAsync(negocioId, servicio.Id, empleado.Id, fecha);
 
         result.Should().HaveCount(1);
-        result[0].HoraTexto.Should().Be("10:00", "el slot de 09:00 debe estar bloqueado por la cita Confirmada");
+        result[0].HoraTexto.Should().Be("10:00 am", "el slot de 09:00 debe estar bloqueado por la cita Confirmada");
     }
 
     [Fact]
@@ -398,7 +398,7 @@ public class DisponibilidadServiceTests
         var result = await svc.ObtenerSlotsDisponiblesAsync(negocioId, servicio.Id, empleado.Id, fecha);
 
         result.Should().HaveCount(1, "el buffer debe extender el bloqueo al slot de las 09:00");
-        result[0].HoraTexto.Should().Be("10:00");
+        result[0].HoraTexto.Should().Be("10:00 am");
     }
 
     [Fact]
@@ -422,7 +422,7 @@ public class DisponibilidadServiceTests
         var result = await svc.ObtenerSlotsDisponiblesAsync(negocioId, servicio.Id, empleado.Id, fecha);
 
         result.Should().HaveCount(1);
-        result[0].HoraTexto.Should().Be("10:00", "el bloqueo horario debe eliminar el slot de 09:00");
+        result[0].HoraTexto.Should().Be("10:00 am", "el bloqueo horario debe eliminar el slot de 09:00");
     }
 
     [Fact]
@@ -464,8 +464,8 @@ public class DisponibilidadServiceTests
         var result = await svc.ObtenerSlotsDisponiblesAsync(negocioId, servicio.Id, empleado.Id, domingo);
 
         result.Should().HaveCount(2, "domingo debe resolverse a DiaSemana=7 y encontrar el horario");
-        result[0].HoraTexto.Should().Be("10:00");
-        result[1].HoraTexto.Should().Be("11:00");
+        result[0].HoraTexto.Should().Be("10:00 am");
+        result[1].HoraTexto.Should().Be("11:00 am");
     }
 
     // ── Tests — multi-employee path ───────────────────────────────────────────
@@ -511,7 +511,7 @@ public class DisponibilidadServiceTests
         var result = await svc.ObtenerSlotsDisponiblesAsync(negocioId, servicio.Id, null, fecha);
 
         result.Should().HaveCount(1, "DistinctBy(Inicio) debe eliminar el slot duplicado del segundo empleado");
-        result[0].HoraTexto.Should().Be("09:00");
+        result[0].HoraTexto.Should().Be("9:00 am");
     }
 
     [Fact]
@@ -540,7 +540,7 @@ public class DisponibilidadServiceTests
         var result = await svc.ObtenerSlotsDisponiblesAsync(negocioId, servicio.Id, null, fecha);
 
         result.Should().HaveCount(1, "emp2 tiene el slot libre, debe aparecer aunque emp1 esté ocupado");
-        result[0].HoraTexto.Should().Be("09:00");
+        result[0].HoraTexto.Should().Be("9:00 am");
     }
 
     [Fact]
@@ -583,7 +583,7 @@ public class DisponibilidadServiceTests
 
         var result = await svc.ObtenerSlotsDisponiblesAsync(negocioId, servicio.Id, empleado.Id, fecha);
 
-        result.Should().Contain(s => s.HoraTexto == "09:00",
+        result.Should().Contain(s => s.HoraTexto == "9:00 am",
             "el bloqueo termina exactamente cuando el slot inicia, no debe bloquearlo");
     }
 
@@ -607,7 +607,7 @@ public class DisponibilidadServiceTests
 
         var result = await svc.ObtenerSlotsDisponiblesAsync(negocioId, servicio.Id, empleado.Id, fecha);
 
-        result.Should().Contain(s => s.HoraTexto == "09:00",
+        result.Should().Contain(s => s.HoraTexto == "9:00 am",
             "con buffer 0, FinEn == slotInicio no debe bloquear el slot");
     }
 
@@ -634,14 +634,14 @@ public class DisponibilidadServiceTests
 
         var result = await svc.ObtenerSlotsDisponiblesAsync(negocioId, servicio.Id, empleado.Id, fecha);
 
-        result.Should().Contain(s => s.HoraTexto == "09:00", "primer intervalo inicio");
-        result.Should().Contain(s => s.HoraTexto == "10:00", "primer intervalo medio");
-        result.Should().Contain(s => s.HoraTexto == "11:00", "último slot del primer intervalo");
-        result.Should().NotContain(s => s.HoraTexto == "12:00", "slot 12:00–13:00 supera el fin del primer intervalo");
-        result.Should().NotContain(s => s.HoraTexto == "13:00", "13:00 cae en el hueco entre intervalos");
-        result.Should().Contain(s => s.HoraTexto == "14:00", "segundo intervalo inicio");
-        result.Should().Contain(s => s.HoraTexto == "15:00", "segundo intervalo medio");
-        result.Should().Contain(s => s.HoraTexto == "16:00", "último slot del segundo intervalo");
+        result.Should().Contain(s => s.HoraTexto == "9:00 am", "primer intervalo inicio");
+        result.Should().Contain(s => s.HoraTexto == "10:00 am", "primer intervalo medio");
+        result.Should().Contain(s => s.HoraTexto == "11:00 am", "último slot del primer intervalo");
+        result.Should().NotContain(s => s.HoraTexto == "12:00 pm", "slot 12:00–13:00 supera el fin del primer intervalo");
+        result.Should().NotContain(s => s.HoraTexto == "1:00 pm", "13:00 cae en el hueco entre intervalos");
+        result.Should().Contain(s => s.HoraTexto == "2:00 pm", "segundo intervalo inicio");
+        result.Should().Contain(s => s.HoraTexto == "3:00 pm", "segundo intervalo medio");
+        result.Should().Contain(s => s.HoraTexto == "4:00 pm", "último slot del segundo intervalo");
     }
 
     [Fact]
@@ -663,10 +663,10 @@ public class DisponibilidadServiceTests
 
         var result = await svc.ObtenerSlotsDisponiblesAsync(negocioId, servicio.Id, empleado.Id, fecha);
 
-        result.Should().NotContain(s => s.HoraTexto == "07:00", "07:00 está antes de la apertura del negocio");
-        result.Should().Contain(s => s.HoraTexto == "09:00", "09:00 está dentro del horario del negocio");
-        result.Should().Contain(s => s.HoraTexto == "16:00", "16:00–17:00 cabe justo dentro del cierre");
-        result.Should().NotContain(s => s.HoraTexto == "17:00", "slot 17:00–18:00 supera el cierre del negocio (17:00)");
+        result.Should().NotContain(s => s.HoraTexto == "7:00 am", "07:00 está antes de la apertura del negocio");
+        result.Should().Contain(s => s.HoraTexto == "9:00 am", "09:00 está dentro del horario del negocio");
+        result.Should().Contain(s => s.HoraTexto == "4:00 pm", "16:00–17:00 cabe justo dentro del cierre");
+        result.Should().NotContain(s => s.HoraTexto == "5:00 pm", "slot 17:00–18:00 supera el cierre del negocio (17:00)");
     }
 
     [Fact]
@@ -711,9 +711,9 @@ public class DisponibilidadServiceTests
 
         var result = await svc.ObtenerSlotsDisponiblesAsync(negocioId, servicio.Id, empleado.Id, fecha);
 
-        result.Should().Contain(s => s.HoraTexto == "11:00", "11:00–12:00 cabe dentro del primer intervalo del negocio");
-        result.Should().NotContain(s => s.HoraTexto == "12:00", "slot 12:00–13:00 supera el primer intervalo (cierra 12:00)");
-        result.Should().NotContain(s => s.HoraTexto == "13:00", "13:00 cae en el hueco del negocio (12:00–14:00)");
-        result.Should().Contain(s => s.HoraTexto == "14:00", "14:00–15:00 cabe dentro del segundo intervalo del negocio");
+        result.Should().Contain(s => s.HoraTexto == "11:00 am", "11:00–12:00 cabe dentro del primer intervalo del negocio");
+        result.Should().NotContain(s => s.HoraTexto == "12:00 pm", "slot 12:00–13:00 supera el primer intervalo (cierra 12:00)");
+        result.Should().NotContain(s => s.HoraTexto == "1:00 pm", "13:00 cae en el hueco del negocio (12:00–14:00)");
+        result.Should().Contain(s => s.HoraTexto == "2:00 pm", "14:00–15:00 cabe dentro del segundo intervalo del negocio");
     }
 }

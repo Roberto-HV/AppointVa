@@ -24,6 +24,8 @@ export interface CrearCitaDto {
   notas?: string;
   codigoDescuento?: string;
   respuestasIntake?: { campoIntakeId: string; valor?: string }[];
+  /** "Sí, soy yo": reservar como el cliente ya registrado con ese teléfono. */
+  confirmarClienteExistente?: boolean;
 }
 
 export const publicoApi = {
@@ -73,11 +75,6 @@ export const publicoApi = {
 
   enviarResena: async (token: string, dto: EnviarResenaDto): Promise<{ mensaje: string }> => {
     const { data } = await api.post(`/publico/resenas/${token}`, dto);
-    return data;
-  },
-
-  buscarClienteDatos: async (slug: string, opts: { email?: string; telefono?: string }): Promise<{ nombreCliente: string; emailCliente?: string; telefonoCliente?: string }> => {
-    const { data } = await api.get("/publico/cliente", { params: { slug, ...opts } });
     return data;
   },
 };

@@ -195,8 +195,11 @@ namespace AppointVaAPI.Controllers.V1
                         return Conflict(new { mensaje = "El horario seleccionado ya no está disponible" });
                     }
 
-                    cliente = await _clienteRepo.ObtenerOCrearAsync(
-                        negocioId, dto.NombreCliente, dto.TelefonoCliente, dto.EmailCliente);
+                    // El personal del negocio agenda a nombre del cliente ya registrado:
+                    // el conflicto de nombre no aplica en este camino.
+                    cliente = (await _clienteRepo.ObtenerOCrearAsync(
+                        negocioId, dto.NombreCliente, dto.TelefonoCliente, dto.EmailCliente,
+                        aceptarClienteExistente: true)).Cliente;
 
                     cita = new Cita
                     {
