@@ -26,6 +26,8 @@ namespace AppointVaAPI.Models.Dtos.Servicios
 
         public int Orden { get; set; }
 
+        public bool Destacado { get; set; }
+
         public bool Activo { get; set; } = true;
     }
 }

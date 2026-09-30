@@ -85,9 +85,10 @@ vi.mock("../../components/booking/PasoFechaHora", () => ({
 }));
 
 vi.mock("../../components/booking/PasoDatosCliente", () => ({
-  default: ({ formId, onEnviar }: {
+  default: ({ formId, onEnviar, onClienteReconocidoChange }: {
     formId: string;
     onEnviar: (d: { nombreCliente: string; telefonoCliente: string }) => void;
+    onClienteReconocidoChange?: (reconocido: boolean) => void;
   }) => (
     <form
       id={formId}
@@ -98,6 +99,9 @@ vi.mock("../../components/booking/PasoDatosCliente", () => ({
       }}
     >
       <input name="telefonoCliente" aria-label="Teléfono" defaultValue="5512345678" />
+      {/* Sustituyen al «Sí, soy yo» / «No, no soy yo» del paso real. */}
+      <button type="button" onClick={() => onClienteReconocidoChange?.(true)}>stub-reconocer</button>
+      <button type="button" onClick={() => onClienteReconocidoChange?.(false)}>stub-rechazar</button>
     </form>
   ),
 }));
@@ -126,9 +130,9 @@ vi.mock("../../components/icons/SocialLinks", () => ({
   default: () => <div data-testid="social-links" />,
 }));
 
-vi.mock("../../lib/colorUtils", () => ({
+vi.mock("../../lib/colorUtils", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../lib/colorUtils")>()),
   hexToChannels: () => "99 102 241",
-  DEFAULT_COLOR: "#334155",
   degradeGradient: () => "linear-gradient(#000, #111)",
 }));
 
@@ -341,6 +345,30 @@ describe("BookingPage — hoja «¿eres tú?»", () => {
 
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
     expect(publicoApi.crearCita).toHaveBeenCalledTimes(1);
+  });
+
+  it("envía confirmarClienteExistente sin abrir la hoja si el visitante ya se identificó", async () => {
+    const form = await avanzarHastaPaso4();
+    fireEvent.click(screen.getByRole("button", { name: "stub-reconocer" }));
+    vi.mocked(publicoApi.crearCita).mockResolvedValueOnce({ codigoConfirmacion: "ABC123" } as never);
+
+    fireEvent.submit(form);
+
+    await waitFor(() => expect(publicoApi.crearCita).toHaveBeenCalledTimes(1));
+    expect(vi.mocked(publicoApi.crearCita).mock.calls[0][0].confirmarClienteExistente).toBe(true);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("deja que la hoja aparezca cuando el visitante rechazó la sugerencia", async () => {
+    const form = await avanzarHastaPaso4();
+    fireEvent.click(screen.getByRole("button", { name: "stub-reconocer" }));
+    fireEvent.click(screen.getByRole("button", { name: "stub-rechazar" }));
+    rechazarPorNombreDistinto();
+
+    fireEvent.submit(form);
+
+    expect(vi.mocked(publicoApi.crearCita).mock.calls[0][0].confirmarClienteExistente).toBeUndefined();
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
   });
 
   it("sigue mandando al paso 3 cuando el 409 es por horario ocupado", async () => {

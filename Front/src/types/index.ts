@@ -75,6 +75,7 @@ export interface ServicioPublico {
   bufferMinutos: number;
   precio: number;
   imagenUrl?: string;
+  destacado?: boolean;
   orden: number;
 }
 
@@ -298,6 +299,7 @@ export interface ServicioDto {
   bufferMinutos: number;
   precio: number;
   imagenUrl?: string | null;
+  destacado: boolean;
   orden: number;
   activo: boolean;
 }
@@ -317,6 +319,7 @@ export interface CrearServicioDto {
   bufferMinutos: number;
   precio: number;
   orden: number;
+  destacado?: boolean;
 }
 
 // ── Negocio ───────────────────────────────────────────────────────────────────

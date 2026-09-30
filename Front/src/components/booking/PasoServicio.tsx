@@ -1,6 +1,9 @@
-﻿import type { ServicioPublico } from "../../types";
+import { useMemo } from "react";
+import type { ServicioPublico } from "../../types";
 import { formatPrecio } from "../../utils/formatters";
 import { getSectorTerms } from "../../hooks/useSectorTerms";
+import { brandAccent, brandTint } from "../../lib/colorUtils";
+import FilaSeleccion, { GrupoFilas } from "./FilaSeleccion";
 import { Clock } from "lucide-react";
 
 interface Props {
@@ -11,13 +14,57 @@ interface Props {
   sector?: string;
 }
 
+interface Grupo {
+  clave: string;
+  titulo?: string;
+  servicios: ServicioPublico[];
+}
+
+const TITULO_DESTACADOS = "Destacados";
+const TITULO_OTROS = "Otros";
+
+/**
+ * Un destacado aparece solo en su grupo, no también bajo su categoría: duplicar la
+ * fila rompe el "elige uno" y deja dos objetivos táctiles para el mismo servicio.
+ */
+function agrupar(servicios: ServicioPublico[]): Grupo[] {
+  const destacados = servicios.filter((s) => s.destacado);
+  const resto = servicios.filter((s) => !s.destacado);
+
+  const categorias: Grupo[] = [];
+  for (const s of resto) {
+    if (!s.categoriaNombre) continue;
+    const existente = categorias.find((g) => g.clave === s.categoriaNombre);
+    if (existente) existente.servicios.push(s);
+    else categorias.push({ clave: s.categoriaNombre, titulo: s.categoriaNombre, servicios: [s] });
+  }
+
+  const sinCategoria = resto.filter((s) => !s.categoriaNombre);
+  const grupos: Grupo[] = [];
+
+  if (destacados.length > 0) {
+    grupos.push({ clave: TITULO_DESTACADOS, titulo: TITULO_DESTACADOS, servicios: destacados });
+  }
+  grupos.push(...categorias);
+  if (sinCategoria.length > 0) {
+    // Sin otros grupos no hay nada de qué distinguirlo: un encabezado genérico
+    // inventado sobre la única lista es puro ruido.
+    const soloGrupo = grupos.length === 0;
+    grupos.push({
+      clave: TITULO_OTROS,
+      titulo: soloGrupo ? undefined : TITULO_OTROS,
+      servicios: sinCategoria,
+    });
+  }
+
+  return grupos;
+}
+
 export default function PasoServicio({ servicios, seleccionado, onSeleccionar, color = "#334155", sector }: Props) {
   const terms = getSectorTerms(sector);
-  const categorias = Array.from(new Set(servicios.map((s) => s.categoriaNombre ?? terms.servicios)));
-
-  const masPopularId = servicios.length > 0
-    ? servicios.reduce((a, b) => a.orden <= b.orden ? a : b).id
-    : null;
+  const acento = useMemo(() => brandAccent(color), [color]);
+  const tinte = useMemo(() => brandTint(color), [color]);
+  const grupos = useMemo(() => agrupar(servicios), [servicios]);
 
   return (
     <div>
@@ -25,89 +72,32 @@ export default function PasoServicio({ servicios, seleccionado, onSeleccionar, c
       <p className="text-sm text-slate-500 mb-5">{`Selecciona un ${terms.servicio.toLowerCase()} para continuar`}</p>
 
       <div className="space-y-5">
-        {categorias.map((cat) => (
-          <div key={cat}>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2.5">{cat}</p>
-            <div className="space-y-2">
-              {servicios
-                .filter((s) => (s.categoriaNombre ?? terms.servicios) === cat)
-                .map((servicio) => {
-                  const activo = seleccionado?.id === servicio.id;
-                  const esPopular = servicio.id === masPopularId;
-                  return (
-                    <button
-                      key={servicio.id}
-                      onClick={() => onSeleccionar(servicio)}
-                      className={`w-full text-left rounded-2xl border-2 transition-all duration-200 flex items-start gap-4 p-3.5 relative
-                        ${activo
-                          ? "shadow-sm"
-                          : "border-slate-100 hover:border-slate-300 bg-white hover:shadow-sm"
-                        }`}
-                      style={activo ? {
-                        borderColor: color,
-                        background: `${color}0D`,
-                        boxShadow: `inset 4px 0 0 ${color}`,
-                      } : undefined}
-                    >
-                      {servicio.imagenUrl && (
-                        <img
-                          src={servicio.imagenUrl}
-                          alt={servicio.nombre}
-                          className="w-16 h-16 rounded-xl object-cover shrink-0 bg-slate-100 mt-0.5"
-                          onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-                        />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                          <p
-                            className="font-semibold text-sm"
-                            style={{ color: activo ? color : undefined }}
-                          >
-                            {servicio.nombre}
-                          </p>
-                          {esPopular && (
-                            <span className="inline-flex items-center text-[10px] font-bold bg-amber-50 text-amber-600 border border-amber-100 px-1.5 py-0.5 rounded-full shrink-0">
-                              ★ Popular
-                            </span>
-                          )}
-                        </div>
-                        {servicio.descripcion && (
-                          <p
-                            className="text-xs text-slate-400 mb-1"
-                            style={activo ? {
-                              display: "block",
-                              overflow: "visible",
-                              whiteSpace: "normal",
-                              wordBreak: "break-word",
-                              overflowWrap: "break-word",
-                            } : {
-                              overflow: "hidden",
-                              display: "-webkit-box",
-                              WebkitBoxOrient: "vertical",
-                              WebkitLineClamp: 1,
-                            }}
-                          >
-                            {servicio.descripcion}
-                          </p>
-                        )}
-                        <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-500 text-[10px] font-semibold px-2 py-0.5 rounded-full mt-1">
-                          <Clock size={9} />
-                          {servicio.duracionMinutos} min
-                        </span>
-                      </div>
-                      <div className="shrink-0 text-right">
-                        <span
-                          className="text-base font-bold"
-                          style={{ color: activo ? color : undefined }}
-                        >
-                          {formatPrecio(servicio.precio)}
-                        </span>
-                      </div>
-                    </button>
-                  );
-                })}
-            </div>
-          </div>
+        {grupos.map((grupo) => (
+          <GrupoFilas key={grupo.clave} titulo={grupo.titulo}>
+            {grupo.servicios.map((servicio) => (
+              <FilaSeleccion
+                key={servicio.id}
+                activo={seleccionado?.id === servicio.id}
+                onSeleccionar={() => onSeleccionar(servicio)}
+                acento={acento}
+                tinte={tinte}
+                titulo={servicio.nombre}
+                descripcion={servicio.descripcion}
+                imagenUrl={servicio.imagenUrl}
+                meta={
+                  <span className="inline-flex items-center gap-1 text-xs text-slate-500">
+                    <Clock size={11} />
+                    {servicio.duracionMinutos} min
+                  </span>
+                }
+                valor={
+                  <span className="text-base font-bold text-slate-900">
+                    {formatPrecio(servicio.precio)}
+                  </span>
+                }
+              />
+            ))}
+          </GrupoFilas>
         ))}
       </div>
     </div>

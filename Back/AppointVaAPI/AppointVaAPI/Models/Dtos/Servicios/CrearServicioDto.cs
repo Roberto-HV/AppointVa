@@ -25,5 +25,7 @@ namespace AppointVaAPI.Models.Dtos.Servicios
         public decimal Precio { get; set; }
 
         public int Orden { get; set; }
+
+        public bool Destacado { get; set; }
     }
 }

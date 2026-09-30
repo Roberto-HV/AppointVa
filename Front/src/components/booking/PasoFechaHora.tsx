@@ -1,7 +1,8 @@
-﻿import { useState } from "react";
+﻿import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { publicoApi } from "../../api/publico";
 import type { SlotDisponible } from "../../types";
+import { brandAccent } from "../../lib/colorUtils";
 import { ChevronLeft, ChevronRight, Sun, Sunrise, Moon } from "lucide-react";
 
 interface Props {
@@ -47,6 +48,9 @@ function textoMesSemana(dias: Date[]): string {
 export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, onSeleccionar, onLimpiarSlot, color = "#334155", diasAnticipacionMinima = 0 }: Props) {
   const [semanaRef, setSemanaRef] = useState(() => lunesDeSemanaDe(new Date()));
   const [fechaSel, setFechaSel] = useState<string | null>(null);
+  // Las píldoras activas llevan texto blanco: el hex de marca crudo no garantiza
+  // contraste (un dorado deja el horario ilegible), el acento derivado sí.
+  const acento = useMemo(() => brandAccent(color), [color]);
 
   const fechaMinima = (() => {
     const f = hoy();
@@ -153,9 +157,9 @@ export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, on
                 }`}
               style={
                 seleccionada
-                  ? { background: color, color: "#fff", boxShadow: `0 4px 12px ${color}40` }
+                  ? { background: acento, color: "#fff", boxShadow: `0 4px 12px ${acento}40` }
                   : esHoy && !seleccionada
-                  ? { borderColor: color }
+                  ? { borderColor: acento }
                   : undefined
               }
             >
@@ -217,7 +221,7 @@ export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, on
                           onClick={() => onSeleccionar(slot)}
                           className="min-h-[44px] px-1 rounded-xl text-xs font-semibold border-2 transition-all flex items-center justify-center"
                           style={activo
-                            ? { borderColor: color, background: color, color: "#fff", boxShadow: `0 2px 8px ${color}40` }
+                            ? { borderColor: acento, background: acento, color: "#fff", boxShadow: `0 2px 8px ${acento}40` }
                             : { borderColor: "#f1f5f9", background: "#fff", color: "#475569" }}
                         >
                           {slot.horaTexto}

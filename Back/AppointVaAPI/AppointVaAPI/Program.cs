@@ -192,6 +192,21 @@ builder.Services.AddRateLimiter(options =>
                 QueueLimit = 0
             }));
 
+    // Búsqueda de cliente por teléfono: 12/min. Devuelve el nombre completo de una
+    // persona a cambio de un número, sin autenticación, así que 60/min abarataría
+    // demasiado enumerar números; un cliente real la dispara una o dos veces por
+    // reserva, y 5/min lo castigaría por corregir un dígito mal tecleado.
+    options.AddPolicy("PublicoClienteLookup", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 12,
+                Window = TimeSpan.FromMinutes(1),
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0
+            }));
+
     // Endpoints estrictos: 5/min (crear cita, buscar mis-citas, ver/cancelar cita por código)
     options.AddPolicy("PublicoEstricto", httpContext =>
         RateLimitPartition.GetFixedWindowLimiter(

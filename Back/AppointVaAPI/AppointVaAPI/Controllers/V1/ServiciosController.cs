@@ -65,6 +65,7 @@ namespace AppointVaAPI.Controllers.V1
                 DuracionMinutos = dto.DuracionMinutos,
                 BufferMinutos = dto.BufferMinutos,
                 Precio = dto.Precio,
+                Destacado = dto.Destacado,
                 Orden = dto.Orden,
                 Activo = 1,
                 FechaCreacion = DateTime.UtcNow,
@@ -91,6 +92,7 @@ namespace AppointVaAPI.Controllers.V1
             servicio.DuracionMinutos = dto.DuracionMinutos;
             servicio.BufferMinutos = dto.BufferMinutos;
             servicio.Precio = dto.Precio;
+            servicio.Destacado = dto.Destacado;
             servicio.Orden = dto.Orden;
             servicio.Activo = dto.Activo ? 1 : 0;
             servicio.FechaActualizacion = DateTime.UtcNow;
@@ -152,6 +154,7 @@ namespace AppointVaAPI.Controllers.V1
             BufferMinutos = s.BufferMinutos,
             Precio = s.Precio,
             ImagenUrl = s.ImagenUrl,
+            Destacado = s.Destacado,
             Orden = s.Orden,
             Activo = s.Activo == 1
         };

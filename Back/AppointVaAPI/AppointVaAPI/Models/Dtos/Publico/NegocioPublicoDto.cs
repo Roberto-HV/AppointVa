@@ -47,6 +47,7 @@
         public int BufferMinutos { get; set; }
         public decimal Precio { get; set; }
         public string? ImagenUrl { get; set; }
+        public bool Destacado { get; set; }
         public int Orden { get; set; }
     }
 

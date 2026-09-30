@@ -28,6 +28,13 @@ export interface CrearCitaDto {
   confirmarClienteExistente?: boolean;
 }
 
+/** Datos de un cliente ya registrado en el negocio, devueltos por la búsqueda por teléfono. */
+export interface ClienteConocido {
+  nombreCliente: string;
+  emailCliente: string | null;
+  telefonoCliente: string | null;
+}
+
 export const publicoApi = {
   obtenerNegocio: async (slug: string): Promise<NegocioPublico> => {
     const { data } = await api.get(`/publico/negocios/${slug}`);
@@ -42,6 +49,12 @@ export const publicoApi = {
     const params: Record<string, string> = { servicioId, fecha };
     if (empleadoId) params.empleadoId = empleadoId;
     const { data } = await api.get("/publico/disponibilidad", { params });
+    return data;
+  },
+
+  /** 404 cuando el teléfono no corresponde a ningún cliente del negocio. */
+  buscarClienteDatos: async (slug: string, telefono: string): Promise<ClienteConocido> => {
+    const { data } = await api.get("/publico/cliente", { params: { slug, telefono } });
     return data;
   },
 

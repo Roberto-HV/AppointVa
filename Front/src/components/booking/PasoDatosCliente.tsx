@@ -1,11 +1,12 @@
-﻿import { useState } from "react";
+﻿import { useState, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import type { ServicioPublico, EmpleadoPublico, SlotDisponible } from "../../types";
 import { SIN_PREFERENCIA_ID } from "./PasoEmpleado";
+import { publicoApi } from "../../api/publico";
 import { formatPrecio, formatFechaLarga as formatFecha } from "../../utils/formatters";
-import { CalendarDays, User, Clock, Tag, Info, ChevronDown, ChevronUp } from "lucide-react";
+import { CalendarDays, User, Clock, Tag, Info, ChevronDown, ChevronUp, UserCheck, Check } from "lucide-react";
 
 const schema = z.object({
   nombreCliente: z.string().min(2, "Ingresa tu nombre completo"),
@@ -16,29 +17,108 @@ const schema = z.object({
 
 export type DatosClienteForm = z.infer<typeof schema>;
 
+/** Mínimo de dígitos con el que vale la pena consultar; coincide con el mínimo del esquema. */
+const DIGITOS_MINIMOS = 10;
+
+const soloDigitos = (valor: string) => valor.replace(/\D/g, "");
+
 interface Props {
   servicio: ServicioPublico;
   empleado: EmpleadoPublico;
   slot: SlotDisponible;
   /** El botón de envío vive en la barra de acción del wizard y se asocia por este id. */
   formId: string;
+  /** Slug del negocio: la búsqueda de cliente conocido está acotada a un solo negocio. */
+  slug: string;
   politicasAceptadas: boolean;
   onPoliticasAceptadasChange: (aceptadas: boolean) => void;
   onEnviar: (datos: DatosClienteForm) => void;
+  /**
+   * El visitante confirmó que el teléfono es suyo. El padre lo necesita para enviar
+   * `confirmarClienteExistente` y evitar el 409 de nombre distinto.
+   */
+  onClienteReconocidoChange?: (reconocido: boolean) => void;
   notasLabel?: string;
   error?: string;
   politicasUrl?: string;
+  color?: string;
 }
 
-export default function PasoDatosCliente({ servicio, empleado, slot, formId, politicasAceptadas, onPoliticasAceptadasChange, onEnviar, notasLabel = 'Notas (opcional)', error, politicasUrl }: Props) {
+export default function PasoDatosCliente({ servicio, empleado, slot, formId, slug, politicasAceptadas, onPoliticasAceptadasChange, onEnviar, onClienteReconocidoChange, notasLabel = 'Notas (opcional)', error, politicasUrl, color = "#334155" }: Props) {
   const [politicasAbiertas, setPoliticasAbiertas] = useState(false);
-  const { register, handleSubmit, watch, formState: { errors } } = useForm<DatosClienteForm>({
+  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<DatosClienteForm>({
     resolver: zodResolver(schema),
     mode: "onBlur",
   });
   const [emailTocado, setEmailTocado] = useState(false);
   const emailValue = watch("emailCliente");
   const emailReg = register("emailCliente");
+
+  // ── Cliente conocido ──────────────────────────────────────────────────────
+  const [buscando, setBuscando] = useState(false);
+  const [sugerencia, setSugerencia] = useState<{ nombre: string; email: string | null } | null>(null);
+  const [nombreConfirmado, setNombreConfirmado] = useState<string | null>(null);
+  // Evita repetir la consulta cuando el campo se desenfoca varias veces con el mismo número.
+  const ultimoTelefonoRef = useRef<string | null>(null);
+  // Descarta respuestas de consultas que quedaron atrás si el visitante corrigió el número.
+  const consultaVigenteRef = useRef(0);
+  const montadoRef = useRef(true);
+  useEffect(() => {
+    montadoRef.current = true;
+    return () => { montadoRef.current = false; };
+  }, []);
+
+  const telefonoReg = register("telefonoCliente");
+  const nombreValue = watch("nombreCliente");
+
+  // Si el visitante retoca el nombre tras confirmar, la confirmación deja de valer:
+  // la cita ya no es necesariamente para la persona registrada con ese teléfono.
+  useEffect(() => {
+    if (nombreConfirmado === null) return;
+    if (nombreValue !== nombreConfirmado) {
+      setNombreConfirmado(null);
+      onClienteReconocidoChange?.(false);
+    }
+  }, [nombreValue, nombreConfirmado, onClienteReconocidoChange]);
+
+  const buscarCliente = async (valor: string) => {
+    const digitos = soloDigitos(valor);
+    if (digitos.length < DIGITOS_MINIMOS) return;
+    if (digitos === ultimoTelefonoRef.current) return;
+    ultimoTelefonoRef.current = digitos;
+
+    const consulta = ++consultaVigenteRef.current;
+    setSugerencia(null);
+    setNombreConfirmado(null);
+    onClienteReconocidoChange?.(false);
+    setBuscando(true);
+    try {
+      const cliente = await publicoApi.buscarClienteDatos(slug, digitos);
+      if (!montadoRef.current || consulta !== consultaVigenteRef.current) return;
+      setSugerencia({ nombre: cliente.nombreCliente, email: cliente.emailCliente ?? null });
+    } catch {
+      // 404 (teléfono nuevo) o fallo de red: se degrada en silencio y el visitante
+      // llena el formulario a mano. Nunca es motivo para bloquear la reserva.
+      if (montadoRef.current && consulta === consultaVigenteRef.current) setSugerencia(null);
+    } finally {
+      if (montadoRef.current && consulta === consultaVigenteRef.current) setBuscando(false);
+    }
+  };
+
+  const aceptarSugerencia = () => {
+    if (!sugerencia) return;
+    setValue("nombreCliente", sugerencia.nombre, { shouldValidate: true });
+    if (sugerencia.email) setValue("emailCliente", sugerencia.email, { shouldValidate: true });
+    setNombreConfirmado(sugerencia.nombre);
+    setSugerencia(null);
+    onClienteReconocidoChange?.(true);
+  };
+
+  const rechazarSugerencia = () => {
+    setSugerencia(null);
+    setNombreConfirmado(null);
+    onClienteReconocidoChange?.(false);
+  };
 
   const nombreEmpleado = empleado.id === SIN_PREFERENCIA_ID
     ? (slot.empleadoNombre ?? "Cualquier disponible")
@@ -50,6 +130,70 @@ export default function PasoDatosCliente({ servicio, empleado, slot, formId, pol
 
       {/* handleSubmit pasa el evento como 2º argumento; se descarta para no filtrarlo al padre. */}
       <form id={formId} onSubmit={handleSubmit((datos) => onEnviar(datos))} className="space-y-4">
+        {/* El teléfono va primero: es la llave con la que reconocemos al cliente, y
+            preguntarlo después del nombre haría inútil el autocompletado. */}
+        <div>
+          <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">
+            Teléfono *
+          </label>
+          <input
+            {...telefonoReg}
+            onBlur={(e) => {
+              telefonoReg.onBlur(e);
+              void buscarCliente(e.target.value);
+            }}
+            type="tel"
+            placeholder="55 1234 5678"
+            className={`w-full px-4 py-3 rounded-xl border text-sm outline-none transition bg-white
+              focus:ring-2 focus:ring-slate-700/20 focus:border-slate-700
+              ${errors.telefonoCliente ? "border-red-300 bg-red-50" : "border-slate-200"}`}
+          />
+          {errors.telefonoCliente && (
+            <p className="text-red-500 text-xs mt-1.5">{errors.telefonoCliente.message}</p>
+          )}
+
+          <div role="status" aria-live="polite">
+            {buscando && (
+              <p className="text-slate-400 text-xs mt-1.5">Buscando tus datos…</p>
+            )}
+            {sugerencia && (
+              <div className="mt-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                <p className="flex items-start gap-2 text-sm text-slate-700">
+                  <UserCheck size={16} className="shrink-0 mt-0.5 text-slate-400" />
+                  <span>
+                    Encontramos tu cuenta: <strong className="font-semibold text-slate-900">{sugerencia.nombre}</strong>. ¿Eres tú?
+                  </span>
+                </p>
+                <div className="mt-3 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={aceptarSugerencia}
+                    className="min-h-[40px] flex-1 rounded-xl px-3 text-sm font-semibold text-white transition hover:opacity-90"
+                    style={{ background: color }}
+                  >
+                    Sí, soy yo
+                  </button>
+                  <button
+                    type="button"
+                    onClick={rechazarSugerencia}
+                    className="min-h-[40px] flex-1 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-600 transition hover:border-slate-300"
+                  >
+                    No, no soy yo
+                  </button>
+                </div>
+              </div>
+            )}
+            {nombreConfirmado && (
+              <p className="mt-2 flex items-start gap-2 text-xs text-emerald-700">
+                <Check size={14} className="shrink-0 mt-0.5" />
+                <span>
+                  Listo, {nombreConfirmado}. Llenamos tu nombre y tu correo; puedes corregirlos si cambiaron.
+                </span>
+              </p>
+            )}
+          </div>
+        </div>
+
         <div>
           <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">
             Nombre completo *
@@ -63,23 +207,6 @@ export default function PasoDatosCliente({ servicio, empleado, slot, formId, pol
           />
           {errors.nombreCliente && (
             <p className="text-red-500 text-xs mt-1.5">{errors.nombreCliente.message}</p>
-          )}
-        </div>
-
-        <div>
-          <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">
-            Teléfono *
-          </label>
-          <input
-            {...register("telefonoCliente")}
-            type="tel"
-            placeholder="55 1234 5678"
-            className={`w-full px-4 py-3 rounded-xl border text-sm outline-none transition bg-white
-              focus:ring-2 focus:ring-slate-700/20 focus:border-slate-700
-              ${errors.telefonoCliente ? "border-red-300 bg-red-50" : "border-slate-200"}`}
-          />
-          {errors.telefonoCliente && (
-            <p className="text-red-500 text-xs mt-1.5">{errors.telefonoCliente.message}</p>
           )}
         </div>
 

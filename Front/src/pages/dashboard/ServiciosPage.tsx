@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Star, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Select from "../../components/ui/Select";
@@ -104,7 +104,8 @@ export default function ServiciosPage() {
   const { mutate: guardarServicio, isPending: guardandoServicio } = useMutation({
     mutationFn: (data: ServicioForm) =>
       servicioEdit
-        ? serviciosApi.actualizar(servicioEdit.id, { ...data, categoriaId: data.categoriaId || undefined })
+        // `destacado` no está en el formulario: se reenvía para que editar no lo borre.
+        ? serviciosApi.actualizar(servicioEdit.id, { ...data, categoriaId: data.categoriaId || undefined, destacado: servicioEdit.destacado })
         : serviciosApi.crear({ ...data, categoriaId: data.categoriaId || undefined }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["servicios"] });
@@ -124,6 +125,12 @@ export default function ServiciosPage() {
     mutationFn: (s: ServicioDto) => serviciosApi.toggleActivo(s),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["servicios"] }); },
     onError: () => toast("No se pudo cambiar el estado del servicio. Intenta de nuevo.", "error"),
+  });
+
+  const { mutate: mutToggleDestacado, isPending: togglendoDestacado } = useMutation({
+    mutationFn: (s: ServicioDto) => serviciosApi.toggleDestacado(s),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["servicios"] }); },
+    onError: () => toast("No se pudo cambiar el destacado. Intenta de nuevo.", "error"),
   });
 
   const { mutate: subirImagen } = useMutation({
@@ -285,6 +292,19 @@ export default function ServiciosPage() {
                       <div className="flex items-center gap-3 sm:gap-5 shrink-0">
                         <span className="hidden sm:inline font-semibold text-gray-800 text-sm dark:text-gray-200">{formatPrecio(s.precio)}</span>
                         <div className="flex gap-2">
+                          <button
+                            onClick={() => mutToggleDestacado(s)}
+                            disabled={togglendoDestacado}
+                            title={s.destacado ? "Quitar de destacados" : "Mostrar en Destacados de la página pública"}
+                            className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg transition disabled:opacity-50 ${
+                              s.destacado
+                                ? "bg-amber-50 text-amber-600 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50"
+                                : "bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-slate-700 dark:text-gray-400 dark:hover:bg-slate-600"
+                            }`}
+                          >
+                            <Star size={12} fill={s.destacado ? "currentColor" : "none"} />
+                            <span className="hidden sm:inline">Destacado</span>
+                          </button>
                           <button
                             onClick={() => mutToggleActivo(s)}
                             disabled={togglendoActivo}

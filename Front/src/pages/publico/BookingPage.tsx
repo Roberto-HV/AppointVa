@@ -8,6 +8,7 @@ import { intakePublicoApi, type CampoIntake } from "../../api/intake";
 import { descuentosPublicoApi, type DescuentoValidado } from "../../api/descuentos";
 import type { ServicioPublico, EmpleadoPublico, SlotDisponible, ImagenGaleria, ResenaPublica } from "../../types";
 import { getSectorTerms } from "../../hooks/useSectorTerms";
+import { formatPrecio } from "../../utils/formatters";
 import IndicadorPasos from "../../components/booking/IndicadorPasos";
 import PasoServicio from "../../components/booking/PasoServicio";
 import PasoEmpleado, { SIN_PREFERENCIA_ID } from "../../components/booking/PasoEmpleado";
@@ -16,7 +17,7 @@ import PasoDatosCliente, { type DatosClienteForm } from "../../components/bookin
 import { Star, X, Tag, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import PublicFooter from "../../components/PublicFooter";
 
-import { hexToChannels, DEFAULT_COLOR, degradeGradient } from "../../lib/colorUtils";
+import { hexToChannels, DEFAULT_COLOR, degradeGradient, brandSolid } from "../../lib/colorUtils";
 
 // El submit del paso 4 vive en la barra de acción, fuera del <form> de PasoDatosCliente.
 const ID_FORM_DATOS = "form-datos-cliente";
@@ -32,9 +33,9 @@ const BTN_SECUNDARIO = `${BTN_BASE} border-2 border-slate-200 font-medium text-s
 
 // Fija al viewport en móvil (pulgar); en lg vuelve al flujo, bajo la columna de reserva.
 const BARRA_ACCION =
-  "fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200 bg-white/95 backdrop-blur px-4 pt-3 " +
+  "fixed bottom-0 left-0 right-0 z-40 rounded-t-2xl border-t border-slate-200 bg-white/95 backdrop-blur px-4 pt-3 " +
   "pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0_-4px_16px_rgba(15,23,42,0.08)] " +
-  "lg:static lg:z-auto lg:mt-6 lg:border-0 lg:bg-transparent lg:backdrop-blur-none lg:p-0 lg:shadow-none";
+  "lg:static lg:z-auto lg:mt-6 lg:rounded-none lg:border-0 lg:bg-transparent lg:backdrop-blur-none lg:p-0 lg:shadow-none";
 
 function HojaClienteExistente({
   nombreExistente,
@@ -578,6 +579,9 @@ export default function BookingPage() {
 
   // Conflicto: el teléfono ya pertenece a otro cliente del negocio
   const [nombreEnConflicto, setNombreEnConflicto] = useState<string | null>(null);
+  // El visitante ya se identificó en el paso 4 ("Sí, soy yo"): no hace falta volver
+  // a preguntárselo con la hoja de conflicto al enviar.
+  const [clienteReconocido, setClienteReconocido] = useState(false);
   const datosPendientesRef = useRef<DatosClienteForm | null>(null);
 
   // Slot taken (409) error shown in paso 3
@@ -857,6 +861,8 @@ export default function BookingPage() {
   }
 
   const color = negocio.colorPrimario ?? DEFAULT_COLOR;
+  // El CTA lleva texto blanco: un dorado o un verde salvia crudos lo dejan ilegible.
+  const colorCta = brandSolid(color);
   const terms = getSectorTerms(negocio.sector);
   const pasos = camposIntake.length > 0
     ? ["Servicio", terms.empleado, "Fecha y hora", "Sobre ti", "Tus datos"]
@@ -890,14 +896,23 @@ export default function BookingPage() {
   const accionesPaso = (() => {
     if (paso === 1) {
       return (
-        <button
-          onClick={irSiguiente}
-          disabled={!servicio}
-          className={`${BTN_PRIMARIO} w-full`}
-          style={{ background: color }}
-        >
-          Continuar
-        </button>
+        <>
+          {/* Resumen corrido: en el paso 1 aún no existe el breadcrumb de arriba. */}
+          {servicio && (
+            <p className="mb-2 truncate text-xs text-slate-500">
+              <span className="font-semibold text-slate-700">{servicio.nombre}</span>
+              {` · ${servicio.duracionMinutos} min · ${formatPrecio(servicio.precio)}`}
+            </p>
+          )}
+          <button
+            onClick={irSiguiente}
+            disabled={!servicio}
+            className={`${BTN_PRIMARIO} w-full`}
+            style={{ background: colorCta }}
+          >
+            Continuar
+          </button>
+        </>
       );
     }
 
@@ -909,7 +924,7 @@ export default function BookingPage() {
             onClick={irSiguiente}
             disabled={!empleado}
             className={`${BTN_PRIMARIO} flex-1`}
-            style={{ background: color }}
+            style={{ background: colorCta }}
           >
             Continuar
           </button>
@@ -925,7 +940,7 @@ export default function BookingPage() {
             onClick={irSiguiente}
             disabled={!slot || cargandoIntake}
             className={`${BTN_PRIMARIO} flex-1`}
-            style={{ background: color }}
+            style={{ background: colorCta }}
           >
             {cargandoIntake ? "Cargando..." : "Continuar"}
           </button>
@@ -940,7 +955,7 @@ export default function BookingPage() {
           <button
             onClick={continuarDesdeIntake}
             className={`${BTN_PRIMARIO} flex-1`}
-            style={{ background: color }}
+            style={{ background: colorCta }}
           >
             Continuar
           </button>
@@ -957,7 +972,7 @@ export default function BookingPage() {
             form={ID_FORM_DATOS}
             disabled={enviando || (!!negocio.politicasUrl && !politicasAceptadas)}
             className={`${BTN_PRIMARIO} flex-1`}
-            style={{ background: color }}
+            style={{ background: colorCta }}
           >
             {enviando ? "Confirmando…" : "Confirmar cita"}
           </button>
@@ -1287,12 +1302,15 @@ export default function BookingPage() {
               empleado={empleado}
               slot={slot}
               formId={ID_FORM_DATOS}
+              slug={negocio.slug}
               politicasAceptadas={politicasAceptadas}
               onPoliticasAceptadasChange={setPoliticasAceptadas}
-              onEnviar={confirmarCita}
+              onEnviar={(datos) => confirmarCita(datos, clienteReconocido)}
+              onClienteReconocidoChange={setClienteReconocido}
               notasLabel={negocio.sector === 'salud' ? 'Motivo de consulta' : undefined}
               error={errorEnvio || undefined}
               politicasUrl={negocio.politicasUrl || undefined}
+              color={colorCta}
             />
 
             {/* Código de descuento — después del resumen para que el usuario vea el precio primero */}
@@ -1343,7 +1361,7 @@ export default function BookingPage() {
                       onClick={validarCupon}
                       disabled={validandoCupon || !codigoInput.trim()}
                       className="px-4 py-2 text-white text-sm font-semibold rounded-xl disabled:opacity-50 hover:opacity-90 transition"
-                      style={{ background: color }}
+                      style={{ background: colorCta }}
                     >
                       {validandoCupon ? "Aplicando…" : "Aplicar"}
                     </button>
@@ -1380,7 +1398,7 @@ export default function BookingPage() {
       {nombreEnConflicto !== null && (
         <HojaClienteExistente
           nombreExistente={nombreEnConflicto}
-          color={color}
+          color={colorCta}
           onConfirmar={aceptarClienteExistente}
           onCorregir={corregirTelefono}
         />

@@ -155,6 +155,7 @@ namespace AppointVaAPI.Controllers.V1
                     BufferMinutos = s.BufferMinutos,
                     Precio = s.Precio,
                     ImagenUrl = s.ImagenUrl,
+                    Destacado = s.Destacado,
                     Orden = s.Orden
                 }).ToList(),
                 Empleados = empleados.Select(e =>
@@ -1048,7 +1049,7 @@ namespace AppointVaAPI.Controllers.V1
 
         // GET api/publico/cliente?slug=yyy&email=xxx  OR  &telefono=xxx
         [HttpGet("cliente")]
-        [EnableRateLimiting("PublicoGeneral")]
+        [EnableRateLimiting("PublicoClienteLookup")]
         public async Task<IActionResult> BuscarClienteDatos(
             [FromQuery] string slug,
             [FromQuery] string? email,
@@ -1072,7 +1073,7 @@ namespace AppointVaAPI.Controllers.V1
                 var emailNorm = email.Trim().ToLower();
                 cliente = await _db.Clientes
                     .AsNoTracking()
-                    .Where(c => c.NegocioId == negocio.Id && c.Email == emailNorm)
+                    .Where(c => c.NegocioId == negocio.Id && c.Email == emailNorm && c.FechaEliminacion == null)
                     .FirstOrDefaultAsync();
             }
 
@@ -1081,7 +1082,7 @@ namespace AppointVaAPI.Controllers.V1
                 var telNorm = AppointVaAPI.Helpers.NormalizacionHelper.SoloDigitos(telefono);
                 cliente = await _db.Clientes
                     .AsNoTracking()
-                    .Where(c => c.NegocioId == negocio.Id && c.Telefono == telNorm)
+                    .Where(c => c.NegocioId == negocio.Id && c.Telefono == telNorm && c.FechaEliminacion == null)
                     .FirstOrDefaultAsync();
             }
 
@@ -1091,7 +1092,10 @@ namespace AppointVaAPI.Controllers.V1
             return Ok(new
             {
                 nombreCliente = cliente.NombreCompleto,
-                emailCliente = !string.IsNullOrWhiteSpace(email) ? cliente.Email : null,
+                // El correo se devuelve siempre: la reserva pública lo usa para no pedirle
+                // al cliente conocido que vuelva a teclearlo. El teléfono se sigue devolviendo
+                // sólo como eco de lo que ya trajo la consulta.
+                emailCliente = cliente.Email,
                 telefonoCliente = !string.IsNullOrWhiteSpace(telefono) ? cliente.Telefono : null,
             });
         }

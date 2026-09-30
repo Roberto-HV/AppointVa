@@ -1,25 +1,33 @@
 import { api } from "./axios";
 import type { ServicioDto, CategoriaDto, CrearServicioDto } from "../types";
 
+// El PUT reemplaza el servicio completo: hay que reenviar los campos que no cambian
+// o se pierden (un `destacado` ausente llega al backend como false).
+async function guardarCampos(s: ServicioDto, cambios: Partial<ServicioDto>): Promise<ServicioDto> {
+  const merged = { ...s, ...cambios };
+  const { data } = await api.put(`/servicios/${s.id}`, {
+    categoriaId: merged.categoriaId || undefined,
+    nombre: merged.nombre,
+    descripcion: merged.descripcion || undefined,
+    duracionMinutos: merged.duracionMinutos,
+    bufferMinutos: merged.bufferMinutos,
+    precio: merged.precio,
+    orden: merged.orden,
+    destacado: merged.destacado,
+    activo: merged.activo,
+  });
+  return data;
+}
+
 export const serviciosApi = {
   obtenerTodos: async (incluirInactivos = false): Promise<ServicioDto[]> => {
     const { data } = await api.get("/servicios", { params: { incluirInactivos } });
     return data;
   },
 
-  toggleActivo: async (s: ServicioDto): Promise<ServicioDto> => {
-    const { data } = await api.put(`/servicios/${s.id}`, {
-      categoriaId: s.categoriaId || undefined,
-      nombre: s.nombre,
-      descripcion: s.descripcion || undefined,
-      duracionMinutos: s.duracionMinutos,
-      bufferMinutos: s.bufferMinutos,
-      precio: s.precio,
-      orden: s.orden,
-      activo: !s.activo,
-    });
-    return data;
-  },
+  toggleActivo: (s: ServicioDto): Promise<ServicioDto> => guardarCampos(s, { activo: !s.activo }),
+
+  toggleDestacado: (s: ServicioDto): Promise<ServicioDto> => guardarCampos(s, { destacado: !s.destacado }),
 
   crear: async (dto: CrearServicioDto): Promise<ServicioDto> => {
     const { data } = await api.post("/servicios", dto);

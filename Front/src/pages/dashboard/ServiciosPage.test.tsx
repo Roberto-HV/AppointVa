@@ -67,6 +67,7 @@ const mockServicio = {
   precio: 200,
   orden: 1,
   activo: true,
+  destacado: false,
   categoriaId: null,
   categoriaNombre: null,
   imagenUrl: null,

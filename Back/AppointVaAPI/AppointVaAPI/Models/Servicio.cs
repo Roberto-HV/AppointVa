@@ -25,6 +25,8 @@ namespace AppointVaAPI.Models
         public decimal Precio { get; set; }
         public string? ImagenUrl { get; set; }
         [Required]
+        public bool Destacado { get; set; }
+        [Required]
         public int Orden { get; set; }
         [Required]
         public int Activo { get; set; }
