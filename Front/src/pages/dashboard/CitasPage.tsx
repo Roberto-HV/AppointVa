@@ -2,33 +2,14 @@
 import { SiWhatsapp } from "react-icons/si";
 import { useSectorTerms } from "../../hooks/useSectorTerms";
 
-function fechaStr(d: Date) {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-function hoy() { return fechaStr(new Date()); }
-function inicioSemana() {
-  const d = new Date();
-  const diff = d.getDay() === 0 ? 6 : d.getDay() - 1;
-  return fechaStr(new Date(d.getFullYear(), d.getMonth(), d.getDate() - diff));
-}
-function finSemana() {
-  const d = new Date();
-  const diff = d.getDay() === 0 ? 0 : 7 - d.getDay();
-  return fechaStr(new Date(d.getFullYear(), d.getMonth(), d.getDate() + diff));
-}
-function inicioMes() {
-  const d = new Date();
-  return fechaStr(new Date(d.getFullYear(), d.getMonth(), 1));
-}
-function finMes() {
-  const d = new Date();
-  return fechaStr(new Date(d.getFullYear(), d.getMonth() + 1, 0));
-}
+import { hoy, inicioSemana, finSemana, inicioMes, finMes } from "../../utils/fechas";
 import { Calendar, CheckCircle2, CheckCheck, CalendarClock, RotateCcw, MoreHorizontal, StickyNote, Receipt, Banknote, Star, MoreVertical, Pencil } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { citasApi, ESTADOS } from "../../api/citas";
-import Select from "../../components/ui/Select";
+import Tabs from "../../components/ui/Tabs";
+import EmptyState from "../../components/ui/EmptyState";
+import { FiltroBarra, campoActivo, type CampoFiltro } from "../../components/ui/filtros";
 import { empleadosApi } from "../../api/empleados";
 import { serviciosApi } from "../../api/servicios";
 import { negociosApi } from "../../api/negocios";
@@ -377,6 +358,55 @@ export default function CitasPage() {
     onError: () => toast("No se pudo actualizar el anticipo", "error"),
   });
 
+  // ── Filtros ──────────────────────────────────────────────────────────────────
+  // Todo cambio de filtro vuelve a la página 1: quedarse en la 7 tras filtrar
+  // devolvía una tabla vacía que parecía "sin resultados".
+  const campoEmpleado: CampoFiltro = {
+    tipo: "select",
+    id: "empleado",
+    etiqueta: "Profesional",
+    valor: empleadoId,
+    onChange: (v) => { setEmpleadoId(v); setPagina(1); },
+    opciones: empleados.map((e) => ({ valor: e.id, etiqueta: e.nombre })),
+  };
+
+  const campos: CampoFiltro[] = [
+    campoEmpleado,
+    {
+      tipo: "pills",
+      id: "estado",
+      etiqueta: "Estado",
+      valor: estadoFiltro,
+      onChange: (v) => { setEstadoFiltro(v); setPagina(1); },
+      etiquetaNeutra: "Todos",
+      opciones: ["Pendiente", "Confirmada", "Completada", "Cancelada", "Inasistencia"]
+        .map((e) => ({ valor: e, etiqueta: e })),
+    },
+    {
+      tipo: "rangoFechas",
+      id: "periodo",
+      etiqueta: "Período",
+      desde,
+      hasta,
+      onChange: (d, h) => { setDesde(d); setHasta(h); setPagina(1); },
+      presets: [
+        { etiqueta: "Hoy", desde: hoy(), hasta: hoy() },
+        { etiqueta: "Semana", desde: inicioSemana(), hasta: finSemana() },
+        { etiqueta: "Mes", desde: inicioMes(), hasta: finMes() },
+      ],
+    },
+  ];
+
+  // Uno solo para la barra y para el estado vacío. Antes eran dos handlers
+  // distintos y el del estado vacío se olvidaba de `empleadoId`.
+  const limpiarFiltros = () => {
+    setDesde(""); setHasta(""); setEmpleadoId("");
+    setBusqueda(""); setEstadoFiltro(""); setPagina(1);
+  };
+
+  const hayFiltrosActivos =
+    Boolean(busqueda) || campos.some(campoActivo);
+
   // ── Helpers ──────────────────────────────────────────────────────────────────
   const abrirReagendar = (c: CitaDto) => { setCitaReag(c); setFechaReag(""); setSlotReag(""); };
   const abrirCambioEstado = (c: CitaDto) => { setCitaSel(c); setNuevoEstado(null); setMotivo(""); };
@@ -471,126 +501,37 @@ export default function CitasPage() {
           </div>
         </div>
 
-        {/* Fila 2 — tabs: ancho completo en móvil, auto en desktop */}
-        <div className="flex bg-gray-100 dark:bg-slate-700 rounded-lg p-1 gap-1">
-          <button
-            onClick={() => setVista("lista")}
-            className={`flex-1 py-1.5 text-sm font-medium rounded-md transition whitespace-nowrap ${
-              vista === "lista" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Lista
-          </button>
-          <button
-            onClick={() => setVista("calendario")}
-            className={`flex-1 py-1.5 text-sm font-medium rounded-md transition whitespace-nowrap ${
-              vista === "calendario" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Calendario
-          </button>
-          <button
-            onClick={() => setVista("gantt")}
-            className={`flex-1 py-1.5 text-sm font-medium rounded-md transition whitespace-nowrap ${
-              vista === "gantt" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Línea de tiempo
-          </button>
-        </div>
+        {/* Fila 2 — tabs */}
+        <Tabs
+          etiqueta={`Vista de ${terms.citas.toLowerCase()}`}
+          valor={vista}
+          onChange={setVista}
+          opciones={[
+            { id: "lista", label: "Lista" },
+            { id: "calendario", label: "Calendario" },
+            { id: "gantt", label: "Línea de tiempo" },
+          ]}
+        />
 
       </div>
 
-      {/* Filtros */}
-      {vista === "lista" && (
-        <div className="grid grid-cols-2 gap-2 mb-6 min-w-0">
-          <div className="col-span-2 sm:col-span-1">
-            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Buscar cliente</label>
-            <input
-              type="text"
-              value={busqueda}
-              onChange={(e) => setBusqueda(e.target.value)}
-              placeholder="Nombre o teléfono..."
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700"
-            />
-          </div>
-          <div className="col-span-2">
-            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Profesional</label>
-            <Select value={empleadoId} onChange={(e) => { setEmpleadoId(e.target.value); setPagina(1); }} className="w-full">
-              <option value="">Todos</option>
-              {empleados.map((e) => <option key={e.id} value={e.id}>{e.nombre}</option>)}
-            </Select>
-          </div>
-          <div className="col-span-2">
-            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1.5">Estado</label>
-            <div className="flex flex-wrap gap-1.5">
-              {(["", "Pendiente", "Confirmada", "Completada", "Cancelada", "Inasistencia"] as const).map((e) => (
-                <button
-                  key={e || "todos"}
-                  onClick={() => { setEstadoFiltro(e); setPagina(1); }}
-                  className={`px-3 py-1 text-xs font-medium rounded-full border transition ${
-                    estadoFiltro === e
-                      ? "bg-slate-700 text-white border-slate-700"
-                      : "bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-slate-600 hover:border-slate-400"
-                  }`}
-                >
-                  {e || "Todos"}
-                </button>
-              ))}
-            </div>
-          </div>
-          {/* Atajos rápidos de fecha */}
-          <div className="col-span-2">
-            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1.5">Período</label>
-            <div className="flex flex-wrap gap-1.5">
-              {([
-                { label: "Hoy",    d: hoy(),        h: hoy() },
-                { label: "Semana", d: inicioSemana(), h: finSemana() },
-                { label: "Mes",    d: inicioMes(),   h: finMes() },
-              ] as const).map((p) => (
-                <button
-                  key={p.label}
-                  onClick={() => { setDesde(p.d); setHasta(p.h); setPagina(1); }}
-                  className={`px-2.5 py-1 text-xs font-medium rounded-md border transition ${
-                    desde === p.d && hasta === p.h
-                      ? "bg-slate-700 text-white border-slate-700"
-                      : "bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-slate-600 hover:border-slate-400"
-                  }`}
-                >
-                  {p.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="col-span-2 flex gap-2">
-            <div className="flex-1 min-w-0">
-              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Desde</label>
-              <DatePicker value={desde} onChange={(v) => { setDesde(v); setPagina(1); }} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Hasta</label>
-              <DatePicker value={hasta} onChange={(v) => { setHasta(v); setPagina(1); }} />
-            </div>
-          </div>
-          {(desde || hasta || empleadoId || busqueda || estadoFiltro) && (
-            <div className="col-span-2 flex">
-              <button onClick={() => { setDesde(""); setHasta(""); setEmpleadoId(""); setBusqueda(""); setEstadoFiltro(""); setPagina(1); }}
-                className="text-sm text-slate-700 font-medium hover:underline">
-                Limpiar filtros
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-      {vista === "calendario" && empleados.length > 1 && (
-        <div className="mb-4">
-          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Profesional</label>
-          <Select value={empleadoId} onChange={(e) => { setEmpleadoId(e.target.value); setPagina(1); }}>
-            <option value="">Todos</option>
-            {empleados.map((e) => <option key={e.id} value={e.id}>{e.nombre}</option>)}
-          </Select>
-        </div>
+      {/* Filtros — la vista calendario reusa el mismo campo de profesional */}
+      {(vista === "lista" || (vista === "calendario" && empleados.length > 1)) && (
+        <FiltroBarra
+          etiqueta={`Filtros de ${terms.citas.toLowerCase()}`}
+          busqueda={
+            vista === "lista"
+              ? {
+                  valor: busqueda,
+                  onChange: setBusqueda,
+                  etiqueta: "Buscar cliente",
+                  placeholder: "Nombre o teléfono...",
+                }
+              : undefined
+          }
+          campos={vista === "lista" ? campos : [campoEmpleado]}
+          onLimpiar={limpiarFiltros}
+        />
       )}
 
       {/* Vista calendario */}
@@ -622,23 +563,17 @@ export default function CitasPage() {
             </table>
           </div>
         ) : citas.length === 0 ? (
-          <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-12 text-center flex flex-col items-center gap-3">
-            <div className="w-14 h-14 rounded-full bg-gray-100 dark:bg-slate-700 flex items-center justify-center">
-              <Calendar size={26} className="text-gray-300" />
-            </div>
-            <div>
-              <p className="font-medium text-gray-500 dark:text-gray-400">
-                {estadoFiltro ? `Sin ${terms.citas.toLowerCase()} ${estadoFiltro.toLowerCase()}s` : `No hay ${terms.citas.toLowerCase()} en este rango`}
-              </p>
-              {(estadoFiltro || busqueda) && (
-                <button
-                  onClick={() => { setEstadoFiltro(""); setBusqueda(""); setDesde(""); setHasta(""); setPagina(1); }}
-                  className="mt-2 text-sm text-slate-700 hover:underline"
-                >
-                  Limpiar filtros
-                </button>
-              )}
-            </div>
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700">
+            <EmptyState
+              variante={hayFiltrosActivos ? "sinResultados" : "vacio"}
+              icon={hayFiltrosActivos ? undefined : <Calendar size={40} strokeWidth={1.5} />}
+              title={
+                estadoFiltro
+                  ? `Sin ${terms.citas.toLowerCase()} ${estadoFiltro.toLowerCase()}s`
+                  : `No hay ${terms.citas.toLowerCase()} en este rango`
+              }
+              onLimpiarFiltros={hayFiltrosActivos ? limpiarFiltros : undefined}
+            />
           </div>
         ) : (
           <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 overflow-x-auto">

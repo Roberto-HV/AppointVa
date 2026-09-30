@@ -3,6 +3,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Clock, Trash2, CheckCircle, Bell, Ban, Phone, Mail, Calendar, User, Scissors } from "lucide-react";
 import { listaEsperaApi, type EntradaListaEspera } from "../../api/listaEspera";
 import { useToastStore } from "../../store/toastStore";
+import EmptyState from "../../components/ui/EmptyState";
+import { FiltroBarra } from "../../components/ui/filtros";
 
 const ESTADOS_CONFIG: Record<string, { label: string; color: string }> = {
   Esperando: { label: "Esperando", color: "bg-yellow-100 text-yellow-700" },
@@ -27,6 +29,15 @@ export default function ListaEsperaPage() {
     queryFn: () => listaEsperaApi.obtener(filtroEstado || undefined),
   });
 
+  // Los KPIs siempre cuentan sobre la lista completa. Antes contaban sobre la
+  // lista ya filtrada por el servidor, así que al filtrar "Esperando" los demás
+  // contadores caían a 0 y "Total" pasaba a ser el subtotal del filtro. Sin
+  // filtro activo esta query comparte clave con la de arriba y no pide nada.
+  const { data: listaCompleta = [] } = useQuery({
+    queryKey: ["lista-espera", ""],
+    queryFn: () => listaEsperaApi.obtener(undefined),
+  });
+
   const mutCambiarEstado = useMutation({
     mutationFn: ({ id, estado }: { id: string; estado: string }) =>
       listaEsperaApi.cambiarEstado(id, estado),
@@ -46,8 +57,7 @@ export default function ListaEsperaPage() {
     onError: () => toast("No se pudo eliminar la entrada. Intenta de nuevo.", "error"),
   });
 
-  const esperando = lista.filter((e) => e.estado === "Esperando").length;
-  const notificados = lista.filter((e) => e.estado === "Notificado").length;
+  const cuantos = (estado: string) => listaCompleta.filter((e) => e.estado === estado).length;
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
@@ -61,41 +71,37 @@ export default function ListaEsperaPage() {
       {/* KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: "Total", value: lista.length, color: "text-gray-700 dark:text-gray-300" },
-          { label: "Esperando", value: esperando, color: "text-yellow-600" },
-          { label: "Notificados", value: notificados, color: "text-blue-600" },
-          {
-            label: "Confirmados",
-            value: lista.filter((e) => e.estado === "Confirmado").length,
-            color: "text-green-600",
-          },
+          { label: "Total", value: listaCompleta.length, color: "text-gray-700 dark:text-gray-300" },
+          { label: "Esperando", value: cuantos("Esperando"), color: "text-yellow-600" },
+          { label: "Notificados", value: cuantos("Notificado"), color: "text-blue-600" },
+          { label: "Confirmados", value: cuantos("Confirmado"), color: "text-green-600" },
         ].map((k) => (
           <div key={k.label} className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4">
             <p className="text-xs text-gray-500 dark:text-gray-400">{k.label}</p>
             <p className={`text-3xl font-bold mt-1 ${k.color}`}>{k.value}</p>
-            {filtroEstado && (
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">(filtrado)</p>
-            )}
           </div>
         ))}
       </div>
 
       {/* Filtro */}
-      <div className="flex gap-2 flex-wrap">
-        {["", "Esperando", "Notificado", "Confirmado", "Expirado"].map((e) => (
-          <button
-            key={e}
-            onClick={() => setFiltroEstado(e)}
-            className={`px-3 py-1.5 text-sm rounded-full border transition ${
-              filtroEstado === e
-                ? "bg-slate-700 text-white border-slate-700"
-                : "border-gray-200 dark:border-slate-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700"
-            }`}
-          >
-            {e || "Todos"}
-          </button>
-        ))}
-      </div>
+      <FiltroBarra
+        etiqueta="Filtros de lista de espera"
+        className="mb-0"
+        onLimpiar={() => setFiltroEstado("")}
+        campos={[
+          {
+            tipo: "pills",
+            id: "estado",
+            etiqueta: "Estado",
+            valor: filtroEstado,
+            onChange: setFiltroEstado,
+            etiquetaNeutra: "Todos",
+            opciones: ["Esperando", "Notificado", "Confirmado", "Expirado"]
+              .map((e) => ({ valor: e, etiqueta: e })),
+          },
+        ]}
+      />
+
 
       {/* Tabla */}
       {isLoading ? (
@@ -103,10 +109,12 @@ export default function ListaEsperaPage() {
       ) : isError ? (
         <div className="text-center py-16 text-red-400">No se pudo cargar la lista de espera.</div>
       ) : lista.length === 0 ? (
-        <div className="text-center py-16 text-gray-400 dark:text-gray-500">
-          <Clock size={40} className="mx-auto mb-3 opacity-30" />
-          <p>No hay entradas en la lista de espera</p>
-        </div>
+        <EmptyState
+          variante={filtroEstado ? "sinResultados" : "vacio"}
+          icon={filtroEstado ? undefined : <Clock size={40} strokeWidth={1.5} />}
+          title="No hay entradas en la lista de espera"
+          onLimpiarFiltros={filtroEstado ? () => setFiltroEstado("") : undefined}
+        />
       ) : (
         <div className="space-y-3">
           {lista.map((entrada) => (

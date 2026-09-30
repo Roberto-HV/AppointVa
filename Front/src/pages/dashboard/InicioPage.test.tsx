@@ -319,11 +319,13 @@ describe("InicioPage — toggle de período", () => {
     renderConQuery();
 
     const btn14d = await screen.findByRole("button", { name: "14d" });
-    // Active period button gets bg-white class (light mode active indicator)
-    expect(btn14d.className).toContain("bg-white");
+    // El período activo se rellena con bg-slate-700, igual que los atajos de
+    // período de FiltroRangoFechas y que las pills activas del dashboard.
+    expect(btn14d).toHaveAttribute("aria-pressed", "true");
+    expect(btn14d.className).toContain("bg-slate-700");
 
-    // Inactive buttons should not have bg-white
     const btn7d = screen.getByRole("button", { name: "7d" });
-    expect(btn7d.className).not.toContain("bg-white");
+    expect(btn7d).toHaveAttribute("aria-pressed", "false");
+    expect(btn7d.className).not.toContain("bg-slate-700");
   });
 });

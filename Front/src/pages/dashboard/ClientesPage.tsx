@@ -12,7 +12,10 @@ import { formatPrecio, formatFecha, formatFechaHora } from "../../utils/formatte
 import Pagination from "../../components/ui/Pagination";
 import { useToastStore } from "../../store/toastStore";
 import { SiWhatsapp } from "react-icons/si";
-import { UserX, Eye } from "lucide-react";
+import { UserX, Eye, Users } from "lucide-react";
+import Tabs from "../../components/ui/Tabs";
+import EmptyState from "../../components/ui/EmptyState";
+import { FiltroBarra } from "../../components/ui/filtros";
 
 type TabClientes = "todos" | "inactivos";
 const TAMANO = 30;
@@ -121,6 +124,7 @@ export default function ClientesPage() {
   };
 
   const buscarClientes = () => { setPagina(1); setBuscarActivo(buscar); };
+  const limpiarBusqueda = () => { setBuscar(""); setBuscarActivo(""); setPagina(1); };
 
   const exportarClientes = () => {
     const enc = ["Nombre", "Teléfono", "Correo", "Total citas", "Inasistencias", "Última visita", "Cliente desde"];
@@ -155,44 +159,37 @@ export default function ClientesPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex bg-gray-100 dark:bg-slate-700 rounded-lg p-1 gap-1 mb-6">
-        {([["todos", "Todos"], ["inactivos", "Inactivos"]] as [TabClientes, string][]).map(([key, label]) => (
-          <button
-            key={key}
-            onClick={() => setTab(key)}
-            className={`flex-1 py-1.5 text-sm font-medium rounded-md transition ${
-              tab === key
-                ? "bg-white dark:bg-slate-800 text-gray-800 dark:text-gray-200 shadow-sm"
-                : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <Tabs
+        etiqueta={`Secciones de ${terms.clientes.toLowerCase()}`}
+        valor={tab}
+        onChange={setTab}
+        className="mb-6"
+        opciones={[
+          { id: "todos", label: "Todos" },
+          { id: "inactivos", label: "Inactivos" },
+        ]}
+      />
 
       {/* ── Tab: Inactivos ── */}
       {tab === "inactivos" && (
         <div className="space-y-5">
           {/* Selector de días */}
-          <div className="flex items-center gap-3 flex-wrap">
-            <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">Sin visitar en:</span>
-            <div className="flex gap-1">
-              {OPCIONES_DIAS.map((d) => (
-                <button
-                  key={d}
-                  onClick={() => setDiasInactivo(d)}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-md border transition ${
-                    diasInactivo === d
-                      ? "bg-slate-700 text-white border-slate-700"
-                      : "bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-600 text-gray-600 dark:text-gray-400 hover:border-slate-400"
-                  }`}
-                >
-                  {d} días
-                </button>
-              ))}
-            </div>
-          </div>
+          <FiltroBarra
+            etiqueta="Filtros de inactivos"
+            className="mb-0"
+            onLimpiar={() => setDiasInactivo(60)}
+            campos={[
+              {
+                tipo: "pills",
+                id: "diasInactivo",
+                etiqueta: "Sin visitar en",
+                valor: String(diasInactivo),
+                onChange: (v) => setDiasInactivo(Number(v) as typeof OPCIONES_DIAS[number]),
+                valorNeutro: "60",
+                opciones: OPCIONES_DIAS.map((d) => ({ valor: String(d), etiqueta: `${d} días` })),
+              },
+            ]}
+          />
 
           {cargandoInactivos ? (
             <div className="space-y-2">
@@ -201,14 +198,12 @@ export default function ClientesPage() {
               ))}
             </div>
           ) : clientesInactivos.length === 0 ? (
-            <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-12 text-center">
-              <UserX size={36} className="mx-auto mb-3 text-gray-300 dark:text-slate-600" />
-              <p className="font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Sin clientes inactivos
-              </p>
-              <p className="text-sm text-gray-400 dark:text-gray-500">
-                Todos tus clientes han visitado en los últimos {diasInactivo} días
-              </p>
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700">
+              <EmptyState
+                icon={<UserX size={40} strokeWidth={1.5} />}
+                title={`Sin ${terms.clientes.toLowerCase()} inactivos`}
+                description={`Todos tus ${terms.clientes.toLowerCase()} han visitado en los últimos ${diasInactivo} días`}
+              />
             </div>
           ) : (
             <>
@@ -265,63 +260,61 @@ export default function ClientesPage() {
 
       {/* ── Tab: Todos ── */}
       {tab === "todos" && (<>
-      {/* Buscador */}
-      <div className="flex gap-2 mb-6">
-        <input
-          type="text"
-          value={buscar}
-          onChange={(e) => setBuscar(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && buscarClientes()}
-          placeholder="Buscar por nombre o teléfono..."
-          className="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100 dark:border-slate-600"
-        />
-        <button
-          onClick={buscarClientes}
-          className="px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white text-sm font-medium rounded-lg transition"
-        >
-          Buscar
-        </button>
-        {buscarActivo && (
-          <button
-            onClick={() => { setBuscar(""); setBuscarActivo(""); setPagina(1); }}
-            className="px-3 py-2 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400"
-          >
-            Limpiar
-          </button>
-        )}
-      </div>
+      {/* Buscador — se confirma con Enter o con el botón, no filtra al teclear */}
+      <FiltroBarra
+        etiqueta={`Búsqueda de ${terms.clientes.toLowerCase()}`}
+        busqueda={{
+          valor: buscar,
+          onChange: setBuscar,
+          etiqueta: `Buscar ${terms.cliente.toLowerCase()}`,
+          placeholder: "Buscar por nombre o teléfono...",
+          onSubmit: buscarClientes,
+          // "Buscar" y "Limpiar" viven junto al campo, no en el panel de
+          // filtros: pertenecen al ciclo escribir → confirmar de esta página.
+          accion: (
+            <>
+              <button
+                type="button"
+                onClick={buscarClientes}
+                className="shrink-0 min-h-[44px] px-4 bg-slate-700 hover:bg-slate-800 text-white text-sm font-medium rounded-xl transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40"
+              >
+                Buscar
+              </button>
+              {buscarActivo && (
+                <button
+                  type="button"
+                  onClick={limpiarBusqueda}
+                  className="shrink-0 min-h-[44px] px-3 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-xl transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40"
+                >
+                  Limpiar
+                </button>
+              )}
+            </>
+          ),
+        }}
+        campos={[]}
+        onLimpiar={limpiarBusqueda}
+      />
 
       {/* Lista */}
       {isLoading ? (
         <p className="text-gray-400 dark:text-gray-500">Cargando clientes...</p>
       ) : clientes.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-100 p-12 text-center dark:bg-slate-800 dark:border-slate-700">
+        <div className="bg-white rounded-xl border border-gray-100 dark:bg-slate-800 dark:border-slate-700">
           {buscarActivo ? (
-            <>
-              <div className="w-14 h-14 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 dark:bg-slate-700">
-                <svg className="w-7 h-7 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
-              <p className="font-medium text-gray-700 mb-1 dark:text-gray-300">Sin resultados</p>
-              <p className="text-sm text-gray-400 mb-4 dark:text-gray-500">No hay clientes que coincidan con tu búsqueda</p>
-              <button
-                onClick={() => { setBuscar(""); setBuscarActivo(""); setPagina(1); }}
-                className="text-slate-700 text-sm font-medium hover:underline"
-              >
-                Ver todos los clientes
-              </button>
-            </>
+            <EmptyState
+              variante="sinResultados"
+              title="Sin resultados"
+              description={`No hay ${terms.clientes.toLowerCase()} que coincidan con tu búsqueda`}
+              onLimpiarFiltros={limpiarBusqueda}
+              labelLimpiarFiltros={`Ver todos los ${terms.clientes.toLowerCase()}`}
+            />
           ) : (
-            <>
-              <div className="w-14 h-14 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 dark:bg-slate-700">
-                <svg className="w-7 h-7 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-              </div>
-              <p className="font-medium text-gray-700 mb-1 dark:text-gray-300">{`Aún no hay ${terms.clientes.toLowerCase()}`}</p>
-              <p className="text-sm text-gray-400 dark:text-gray-500">{`Los ${terms.clientes.toLowerCase()} aparecerán aquí automáticamente cuando hagan su primera reserva`}</p>
-            </>
+            <EmptyState
+              icon={<Users size={40} strokeWidth={1.5} />}
+              title={`Aún no hay ${terms.clientes.toLowerCase()}`}
+              description={`Los ${terms.clientes.toLowerCase()} aparecerán aquí automáticamente cuando hagan su primera reserva`}
+            />
           )}
         </div>
       ) : (

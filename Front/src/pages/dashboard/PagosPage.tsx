@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   CreditCard, Clock, CheckCircle2, Circle, Banknote, Building2,
-  RotateCcw, Download, Search, TrendingUp, AlertCircle, Receipt, Printer, Users, X,
+  RotateCcw, Download, TrendingUp, AlertCircle, Receipt, Printer, Users, X,
 } from "lucide-react";
 import { citasApi, METODOS_PAGO } from "../../api/citas";
 import { pagosApi } from "../../api/pagos";
@@ -10,7 +10,11 @@ import { negociosApi } from "../../api/negocios";
 import { useAuthStore } from "../../store/authStore";
 import { useToastStore } from "../../store/toastStore";
 import { exportarExcel } from "../../utils/exportarExcel";
+import { hoy, inicioSemana, finSemana, inicioMes, finMes } from "../../utils/fechas";
 import Modal from "../../components/ui/Modal";
+import Tabs from "../../components/ui/Tabs";
+import EmptyState from "../../components/ui/EmptyState";
+import { FiltroBarra } from "../../components/ui/filtros";
 import { DatePicker } from "../../components/ui/DateTimePicker";
 import TicketRecibo from "../../components/dashboard/TicketRecibo";
 import { cierreCajaApi } from "../../api/cierreCaja";
@@ -19,24 +23,6 @@ import type { CitaDto, CierreCajaDto, GuardarCierreCajaDto, RetiroItem } from ".
 type FiltroEstadoPago = "todas" | "pendientes" | "pagadas";
 type FiltroPeriodo = "hoy" | "semana" | "mes";
 type Tab = "cobro" | "historial" | "corte";
-
-const hoy = () => new Date().toISOString().slice(0, 10);
-const inicioSemana = () => {
-  const d = new Date();
-  const day = d.getDay();
-  d.setDate(d.getDate() - (day === 0 ? 6 : day - 1));
-  return d.toISOString().slice(0, 10);
-};
-const finSemana = () => {
-  const d = new Date();
-  const day = d.getDay();
-  d.setDate(d.getDate() + (day === 0 ? 0 : 7 - day));
-  return d.toISOString().slice(0, 10);
-};
-const inicioMes = () =>
-  new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10);
-const finMes = () =>
-  new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString().slice(0, 10);
 
 const PERIODOS: { key: FiltroPeriodo; label: string; desde: () => string; hasta: () => string }[] = [
   { key: "hoy",    label: "Hoy",    desde: hoy,          hasta: hoy },
@@ -204,6 +190,9 @@ export default function PagosPage() {
     }
     return lista;
   }, [todas, filtroPago, busquedaCobro]);
+
+  const cobroFiltrado =
+    periodo !== "hoy" || filtroPago !== "todas" || Boolean(busquedaCobro.trim());
 
   // ── Historial derived data ────────────────────────────────────────────────
   const histFiltrado = useMemo(() => {
@@ -459,21 +448,16 @@ export default function PagosPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex bg-gray-100 dark:bg-slate-700 rounded-lg p-1 gap-1">
-        {([["cobro", "Cobro"], ["historial", "Historial"], ["corte", "Corte del día"]] as [Tab, string][]).map(([key, label]) => (
-          <button
-            key={key}
-            onClick={() => setTab(key)}
-            className={`flex-1 py-1.5 text-sm font-medium rounded-md transition whitespace-nowrap ${
-              tab === key
-                ? "bg-white dark:bg-slate-800 text-gray-800 dark:text-gray-200 shadow-sm"
-                : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <Tabs
+        etiqueta="Secciones de pagos"
+        valor={tab}
+        onChange={setTab}
+        opciones={[
+          { id: "cobro", label: "Cobro" },
+          { id: "historial", label: "Historial" },
+          { id: "corte", label: "Corte del día" },
+        ]}
+      />
 
       {/* ── TAB COBRO ─────────────────────────────────────────────────────── */}
       {tab === "cobro" && (
@@ -526,57 +510,41 @@ export default function PagosPage() {
           )}
 
           {/* Filtros */}
-          <div className="flex flex-wrap gap-4 items-end">
-            <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1.5">Período</p>
-              <div className="flex gap-1">
-                {PERIODOS.map((p) => (
-                  <button
-                    key={p.key}
-                    onClick={() => setPeriodo(p.key)}
-                    className={`px-3 py-1.5 text-xs font-medium rounded-md border transition ${
-                      periodo === p.key
-                        ? "bg-slate-700 text-white border-slate-700"
-                        : "bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-600 text-gray-600 dark:text-gray-400 hover:border-slate-400"
-                    }`}
-                  >
-                    {p.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1.5">Estado</p>
-              <div className="flex gap-1">
-                {(["pendientes", "todas", "pagadas"] as FiltroEstadoPago[]).map((f) => (
-                  <button
-                    key={f}
-                    onClick={() => setFiltroPago(f)}
-                    className={`px-3 py-1.5 text-xs font-medium rounded-md border transition ${
-                      filtroPago === f
-                        ? "bg-slate-700 text-white border-slate-700"
-                        : "bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-600 text-gray-600 dark:text-gray-400 hover:border-slate-400"
-                    }`}
-                  >
-                    {f === "pendientes" ? "Pendientes" : f === "pagadas" ? "Pagadas" : "Todas"}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="flex-1 min-w-[160px]">
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1.5">Buscar cliente</p>
-              <div className="relative">
-                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                <input
-                  type="text"
-                  placeholder="Nombre del cliente..."
-                  value={busquedaCobro}
-                  onChange={e => setBusquedaCobro(e.target.value)}
-                  className="w-full pl-8 pr-3 py-1.5 text-xs border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-700/30"
-                />
-              </div>
-            </div>
-          </div>
+          <FiltroBarra
+            etiqueta="Filtros de cobro"
+            className="mb-0"
+            busqueda={{
+              valor: busquedaCobro,
+              onChange: setBusquedaCobro,
+              etiqueta: "Buscar cliente",
+              placeholder: "Nombre del cliente...",
+            }}
+            onLimpiar={() => { setPeriodo("hoy"); setFiltroPago("todas"); setBusquedaCobro(""); }}
+            campos={[
+              {
+                tipo: "pills",
+                id: "periodo",
+                etiqueta: "Período",
+                valor: periodo,
+                onChange: (v) => setPeriodo(v as FiltroPeriodo),
+                valorNeutro: "hoy",
+                opciones: PERIODOS.map((p) => ({ valor: p.key, etiqueta: p.label })),
+              },
+              {
+                tipo: "pills",
+                id: "estadoPago",
+                etiqueta: "Estado",
+                valor: filtroPago,
+                onChange: (v) => setFiltroPago(v as FiltroEstadoPago),
+                valorNeutro: "todas",
+                opciones: [
+                  { valor: "todas", etiqueta: "Todas" },
+                  { valor: "pendientes", etiqueta: "Pendientes" },
+                  { valor: "pagadas", etiqueta: "Pagadas" },
+                ],
+              },
+            ]}
+          />
 
           {/* Cards */}
           {cobroLoading ? (
@@ -586,16 +554,22 @@ export default function PagosPage() {
               ))}
             </div>
           ) : citasFiltradas.length === 0 ? (
-            <div className="text-center py-16 text-gray-400 dark:text-gray-500">
-              <CreditCard size={40} className="mx-auto mb-3 opacity-30" />
-              <p className="font-medium">
-                {busquedaCobro.trim()
+            <EmptyState
+              variante={cobroFiltrado ? "sinResultados" : "vacio"}
+              icon={cobroFiltrado ? undefined : <CreditCard size={40} strokeWidth={1.5} />}
+              title={
+                busquedaCobro.trim()
                   ? "No hay citas para ese cliente"
                   : filtroPago === "pendientes"
                   ? "No hay citas pendientes de pago en este período"
-                  : "No hay citas en este período"}
-              </p>
-            </div>
+                  : "No hay citas en este período"
+              }
+              onLimpiarFiltros={
+                cobroFiltrado
+                  ? () => { setPeriodo("hoy"); setFiltroPago("todas"); setBusquedaCobro(""); }
+                  : undefined
+              }
+            />
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {citasFiltradas.map((cita) => (
@@ -631,31 +605,41 @@ export default function PagosPage() {
       {tab === "historial" && (
         <>
           {/* Filtros historial */}
-          <div className="flex flex-wrap gap-4 items-end">
-            <div className="w-full sm:w-48">
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1.5">Fecha pago desde</p>
-              <DatePicker value={histDesde} onChange={v => setHistDesde(v)} />
-            </div>
-            <div className="w-full sm:w-48">
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1.5">Hasta</p>
-              <DatePicker value={histHasta} onChange={v => setHistHasta(v)} />
-            </div>
-            <div className="flex-1 min-w-[160px]">
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1.5">Buscar cliente</p>
-              <div className="relative">
-                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                <input
-                  type="text"
-                  placeholder="Nombre del cliente..."
-                  value={busquedaHist}
-                  onChange={e => setBusquedaHist(e.target.value)}
-                  className="w-full pl-8 pr-3 py-1.5 text-xs border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-700/30"
-                />
-              </div>
-            </div>
+          <div className="flex flex-col gap-3">
+            <FiltroBarra
+              etiqueta="Filtros del historial"
+              className="mb-0"
+              busqueda={{
+                valor: busquedaHist,
+                onChange: setBusquedaHist,
+                etiqueta: "Buscar cliente",
+                placeholder: "Nombre del cliente...",
+              }}
+              onLimpiar={() => {
+                setHistDesde(inicioMes());
+                setHistHasta(hoy());
+                setBusquedaHist("");
+              }}
+              campos={[
+                {
+                  tipo: "rangoFechas",
+                  id: "fechaPago",
+                  etiqueta: "Fecha de pago",
+                  desde: histDesde,
+                  hasta: histHasta,
+                  rangoNeutro: { desde: inicioMes(), hasta: hoy() },
+                  onChange: (d, h) => { setHistDesde(d); setHistHasta(h); },
+                  presets: [
+                    { etiqueta: "Hoy", desde: hoy(), hasta: hoy() },
+                    { etiqueta: "Semana", desde: inicioSemana(), hasta: finSemana() },
+                    { etiqueta: "Mes", desde: inicioMes(), hasta: finMes() },
+                  ],
+                },
+              ]}
+            />
             <button
               onClick={handleExportarHistorial}
-              className="flex items-center gap-2 px-3 py-2 text-xs border border-gray-200 dark:border-slate-600 rounded-md hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-600 dark:text-gray-400 transition"
+              className="self-start min-h-[44px] lg:min-h-[36px] flex items-center gap-2 px-3 text-xs border border-gray-200 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-600 dark:text-gray-400 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40"
             >
               <Download size={14} /> Exportar Excel
             </button>

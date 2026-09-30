@@ -253,6 +253,7 @@ describe("CitasPage — lista de citas", () => {
 });
 
 describe("CitasPage — filtros de estado", () => {
+  // FiltroPills expone las opciones como radiogroup, no como botones sueltos.
   it("muestra los botones de filtro de estado", async () => {
     vi.mocked(citasApi.obtenerTodas).mockResolvedValue({
       datos: [],
@@ -262,11 +263,11 @@ describe("CitasPage — filtros de estado", () => {
     });
     renderConQuery();
     await waitFor(() =>
-      expect(screen.getByRole("button", { name: /Pendiente/ })).toBeInTheDocument()
+      expect(screen.getByRole("radio", { name: /Pendiente/ })).toBeInTheDocument()
     );
-    expect(screen.getByRole("button", { name: /Confirmada/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Completada/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Cancelada/ })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: /Confirmada/ })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: /Completada/ })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: /Cancelada/ })).toBeInTheDocument();
   });
 
   it("muestra estado vacío filtrado al filtrar por estado sin coincidencias", async () => {
@@ -278,9 +279,9 @@ describe("CitasPage — filtros de estado", () => {
     });
     renderConQuery();
     await waitFor(() =>
-      expect(screen.getByRole("button", { name: /Pendiente/ })).toBeInTheDocument()
+      expect(screen.getByRole("radio", { name: /Pendiente/ })).toBeInTheDocument()
     );
-    fireEvent.click(screen.getByRole("button", { name: /Pendiente/ }));
+    fireEvent.click(screen.getByRole("radio", { name: /Pendiente/ }));
     await waitFor(() =>
       expect(screen.getByText("Sin citas pendientes")).toBeInTheDocument()
     );

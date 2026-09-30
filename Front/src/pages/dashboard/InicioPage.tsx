@@ -460,13 +460,23 @@ function VistaPropietario({ nombre }: { nombre: string }) {
           <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-5 mb-6 overflow-hidden">
             <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
               <h2 className="text-sm font-bold text-slate-800 dark:text-gray-200">Ingresos y citas por día</h2>
-              <div className="flex bg-slate-100 dark:bg-slate-700 rounded-xl p-0.5 gap-0.5">
+              {/*
+                No usa FiltroBarra: es un control del encabezado de la gráfica,
+                no un filtro de la página, y meterlo en una barra con su propio
+                "Limpiar filtros" pesaría más de lo que ordena. Solo adopta el
+                estilo de los atajos de período de FiltroRangoFechas.
+              */}
+              <div role="group" aria-label="Días de la tendencia" className="flex flex-wrap gap-1.5">
                 {[7, 14, 30].map((d) => (
                   <button
                     key={d}
+                    type="button"
+                    aria-pressed={dias === d}
                     onClick={() => setDias(d)}
-                    className={`px-3 py-1 text-xs font-semibold rounded-lg transition ${
-                      dias === d ? "bg-white dark:bg-slate-800 text-slate-800 dark:text-gray-200 shadow-sm" : "text-slate-500 dark:text-gray-400 hover:text-slate-700 dark:hover:text-gray-300"
+                    className={`min-h-[44px] lg:min-h-[36px] px-3 inline-flex items-center rounded-lg border text-sm lg:text-xs font-medium whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40 ${
+                      dias === d
+                        ? "bg-slate-700 text-white border-slate-700 dark:bg-slate-600 dark:border-slate-600"
+                        : "bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-300 border-gray-200 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500"
                     }`}
                   >
                     {d}d

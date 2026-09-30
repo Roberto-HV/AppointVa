@@ -89,8 +89,10 @@ describe("ListaEsperaPage — filtro de estado", () => {
     renderConQuery();
     // wait for page to settle (empty state renders)
     await screen.findByText("No hay entradas en la lista de espera");
-    const btn = screen.getByRole("button", { name: "Esperando" });
+    // FiltroPills expone las opciones como radiogroup, no como botones sueltos.
+    const btn = screen.getByRole("radio", { name: "Esperando" });
     fireEvent.click(btn);
+    expect(btn).toBeChecked();
     expect(btn.className).toContain("bg-slate-700");
   });
 });

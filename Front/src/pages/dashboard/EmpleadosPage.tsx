@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -12,6 +12,8 @@ import { citasApi } from "../../api/citas";
 import Modal from "../../components/ui/Modal";
 import { DatePicker, TimePicker, citasABusySlots, HORAS } from "../../components/ui/DateTimePicker";
 import { SkeletonCards } from "../../components/ui/Skeleton";
+import EmptyState from "../../components/ui/EmptyState";
+import { FiltroBarra } from "../../components/ui/filtros";
 import { useToastStore } from "../../store/toastStore";
 import { useSectorTerms } from "../../hooks/useSectorTerms";
 import type { EmpleadoDto, HorarioDiaDto } from "../../types";
@@ -93,6 +95,11 @@ export default function EmpleadosPage() {
     queryKey: ["servicios"],
     queryFn: () => serviciosApi.obtenerTodos(),
   });
+
+  const empleadosFiltrados = useMemo(() => {
+    const q = busqueda.trim().toLowerCase();
+    return q ? empleados.filter((e) => e.nombre.toLowerCase().includes(q)) : empleados;
+  }, [empleados, busqueda]);
 
   const { data: bloqueos = [], isLoading: cargandoBloqueos } = useQuery({
     queryKey: ["bloqueos", empleadoBloqueo?.id],
@@ -358,15 +365,17 @@ export default function EmpleadosPage() {
       </div>
 
       {empleados.length > 0 && (
-        <div className="mb-5">
-          <input
-            type="text"
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-            placeholder="Buscar por nombre..."
-            className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100 dark:border-slate-600"
-          />
-        </div>
+        <FiltroBarra
+          etiqueta={`Filtros de ${terms.empleados.toLowerCase()}`}
+          busqueda={{
+            valor: busqueda,
+            onChange: setBusqueda,
+            etiqueta: `Buscar ${terms.empleado.toLowerCase()}`,
+            placeholder: "Buscar por nombre...",
+          }}
+          campos={[]}
+          onLimpiar={() => setBusqueda("")}
+        />
       )}
 
       {isLoading ? (
@@ -387,6 +396,16 @@ export default function EmpleadosPage() {
             Agregar primer {terms.empleado.toLowerCase()}
           </button>
         </div>
+      ) : empleadosFiltrados.length === 0 ? (
+        <div className="bg-white rounded-xl border border-gray-100 dark:bg-slate-800 dark:border-slate-700">
+          <EmptyState
+            variante="sinResultados"
+            title="Sin resultados"
+            description={`Ningún ${terms.empleado.toLowerCase()} coincide con "${busqueda.trim()}"`}
+            onLimpiarFiltros={() => setBusqueda("")}
+            labelLimpiarFiltros="Limpiar búsqueda"
+          />
+        </div>
       ) : (
         <motion.div
           initial="hidden"
@@ -394,9 +413,7 @@ export default function EmpleadosPage() {
           variants={{ hidden: {}, show: { transition: { staggerChildren: 0.07 } } }}
           className="grid grid-cols-1 md:grid-cols-2 gap-4"
         >
-          {empleados
-            .filter((e) => !busqueda.trim() || e.nombre.toLowerCase().includes(busqueda.toLowerCase()))
-            .map((emp) => (
+          {empleadosFiltrados.map((emp) => (
             <motion.div
               key={emp.id}
               variants={{ hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0, transition: { duration: 0.35 } } }}

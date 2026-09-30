@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import Select from "../../components/ui/Select";
+import Tabs from "../../components/ui/Tabs";
+import Pagination from "../../components/ui/Pagination";
+import { FiltroBarra, type CampoFiltro } from "../../components/ui/filtros";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
 } from "recharts";
@@ -12,9 +14,9 @@ import { exportarExcel } from "../../utils/exportarExcel";
 import { empleadosApi } from "../../api/empleados";
 import { serviciosApi } from "../../api/servicios";
 import EstadoBadge from "../../components/ui/EstadoBadge";
-import { DatePicker } from "../../components/ui/DateTimePicker";
 import { SkeletonTableRows } from "../../components/ui/Skeleton";
 import { formatPrecio, formatFechaHora as formatFecha } from "../../utils/formatters";
+import { hoy, inicioSemana, inicioMes, finMes, inicioAnio } from "../../utils/fechas";
 
 type Tab = "citas" | "ingresos" | "empleados" | "heatmap" | "retencion";
 
@@ -29,32 +31,6 @@ const ESTADOS_OPCIONES = [
 ];
 
 const COLORES_GRAFICA = ["#C8A961", "#a88b45", "#e8d4a0", "#7a6530", "#d4bc80"];
-
-function hoy() {
-  return new Date().toISOString().split("T")[0];
-}
-
-function inicioMes() {
-  const d = new Date();
-  return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split("T")[0];
-}
-
-function inicioSemana() {
-  const d = new Date();
-  const dia = d.getDay();
-  const lunes = new Date(d);
-  lunes.setDate(d.getDate() - (dia === 0 ? 6 : dia - 1));
-  return lunes.toISOString().split("T")[0];
-}
-
-function inicioAnio() {
-  return `${new Date().getFullYear()}-01-01`;
-}
-
-function finMes() {
-  const d = new Date();
-  return new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().split("T")[0];
-}
 
 function Tarjeta({ label, valor, subvalor, icono }: { label: string; valor: React.ReactNode; subvalor?: string; icono: React.ReactNode }) {
   return (
@@ -98,6 +74,75 @@ export default function ReportesPage() {
     queryFn: () => serviciosApi.obtenerTodos(),
     staleTime: 1000 * 60 * 5,
   });
+
+  const RANGO_INICIAL = { desde: inicioMes(), hasta: hoy() };
+
+  const camposFiltro: CampoFiltro[] = [
+    {
+      tipo: "rangoFechas",
+      id: "periodo",
+      etiqueta: "Período",
+      desde,
+      hasta,
+      rangoNeutro: RANGO_INICIAL,
+      onChange: (d, h) => {
+        setDesde(d);
+        setHasta(h);
+        setErrorFecha(d > h ? "La fecha de inicio debe ser anterior a la de fin." : null);
+      },
+      presets: [
+        { etiqueta: "Hoy", desde: hoy(), hasta: hoy() },
+        { etiqueta: "Esta semana", desde: inicioSemana(), hasta: hoy() },
+        { etiqueta: "Este mes", desde: inicioMes(), hasta: finMes() },
+        { etiqueta: "Este año", desde: inicioAnio(), hasta: hoy() },
+      ],
+    },
+    // Empleado, servicio y estado solo aplican al reporte de citas.
+    ...(tab === "citas"
+      ? ([
+          {
+            tipo: "select",
+            id: "empleado",
+            etiqueta: "Empleado",
+            valor: empleadoId,
+            onChange: setEmpleadoId,
+            opciones: empleados.map((e) => ({ valor: e.id, etiqueta: e.nombre })),
+          },
+          {
+            tipo: "select",
+            id: "servicio",
+            etiqueta: "Servicio",
+            valor: servicioId,
+            onChange: setServicioId,
+            opciones: servicios.map((s) => ({ valor: s.id, etiqueta: s.nombre })),
+          },
+          {
+            // Pills, igual que en Citas; aquí era el único "Estado" con <Select>.
+            tipo: "pills",
+            id: "estado",
+            etiqueta: "Estado",
+            valor: estado,
+            onChange: setEstado,
+            etiquetaNeutra: "Todos",
+            opciones: ESTADOS_OPCIONES.map((o) => ({
+              valor: String(o.valor),
+              etiqueta: o.texto,
+            })),
+          },
+        ] satisfies CampoFiltro[])
+      : []),
+  ];
+
+  const limpiarFiltros = () => {
+    setDesde(RANGO_INICIAL.desde);
+    setHasta(RANGO_INICIAL.hasta);
+    setEmpleadoId("");
+    setServicioId("");
+    setEstado("");
+    setErrorFecha(null);
+    setReportePagina(1);
+  };
+
 
   const { data: reporteCitas, isLoading: cargandoCitas, isError: errorCitas } = useQuery({
     queryKey: ["reporte-citas", filtros],
@@ -223,94 +268,31 @@ export default function ReportesPage() {
         )}
       </div>
 
-      {/* Filtros */}
-      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4">
-        {/* Presets de fechas */}
-        <div className="flex flex-wrap gap-1.5 mb-3">
-          {([
-            { label: "Hoy", d: hoy(), h: hoy() },
-            { label: "Esta semana", d: inicioSemana(), h: hoy() },
-            { label: "Este mes", d: inicioMes(), h: finMes() },
-            { label: "Este año", d: inicioAnio(), h: hoy() },
-          ] as const).map((p) => (
-            <button
-              key={p.label}
-              onClick={() => { setDesde(p.d); setHasta(p.h); setErrorFecha(null); }}
-              className={`px-2.5 py-1 text-xs font-medium rounded-md border transition ${
-                desde === p.d && hasta === p.h
-                  ? "bg-slate-700 text-white border-slate-700"
-                  : "bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-slate-600 hover:border-slate-400"
-              }`}
-            >
-              {p.label}
-            </button>
-          ))}
-        </div>
-        <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-3 items-end">
-          <div className="flex flex-col gap-1 min-w-0 w-full sm:w-48">
-            <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Desde</label>
-            <DatePicker value={desde} onChange={(v) => { setDesde(v); setErrorFecha(v > hasta ? "La fecha de inicio debe ser anterior a la de fin." : null); }} />
-          </div>
-          <div className="flex flex-col gap-1 min-w-0 w-full sm:w-48">
-            <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Hasta</label>
-            <DatePicker value={hasta} onChange={(v) => { setHasta(v); setErrorFecha(desde > v ? "La fecha de fin debe ser posterior a la de inicio." : null); }} />
-          </div>
-          {errorFecha && (
-            <p className="col-span-2 sm:col-span-1 text-xs text-red-500 dark:text-red-400 self-end pb-1">{errorFecha}</p>
-          )}
-          {tab === "citas" && (
-            <>
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Empleado</label>
-                <Select value={empleadoId} onChange={(e) => setEmpleadoId(e.target.value)}>
-                  <option value="">Todos</option>
-                  {empleados.map((e) => (
-                    <option key={e.id} value={e.id}>{e.nombre}</option>
-                  ))}
-                </Select>
-              </div>
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Servicio</label>
-                <Select value={servicioId} onChange={(e) => setServicioId(e.target.value)}>
-                  <option value="">Todos</option>
-                  {servicios.map((s) => (
-                    <option key={s.id} value={s.id}>{s.nombre}</option>
-                  ))}
-                </Select>
-              </div>
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Estado</label>
-                <Select value={estado} onChange={(e) => setEstado(e.target.value)}>
-                  <option value="">Todos</option>
-                  {ESTADOS_OPCIONES.map((o) => (
-                    <option key={o.valor} value={o.valor}>{o.texto}</option>
-                  ))}
-                </Select>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex bg-gray-100 dark:bg-slate-700 p-1 rounded-lg">
-        {([
+      {/* Tabs — antes iban debajo de los filtros, al revés que el resto del panel */}
+      <Tabs
+        etiqueta="Tipo de reporte"
+        valor={tab}
+        onChange={setTab}
+        opciones={[
           { id: "citas", label: terms.citas },
           { id: "ingresos", label: "Ingresos" },
           { id: "empleados", label: "Empleados" },
           { id: "heatmap", label: "Horarios" },
           { id: "retencion", label: "Retención" },
-        ] as { id: Tab; label: string }[]).map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            className={`flex-1 whitespace-nowrap px-1.5 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition ${
-              tab === t.id ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
+        ]}
+      />
+
+      {/* Filtros */}
+      <div>
+        <FiltroBarra
+          etiqueta="Filtros del reporte"
+          className="mb-0"
+          onLimpiar={limpiarFiltros}
+          campos={camposFiltro}
+        />
+        {errorFecha && (
+          <p role="alert" className="text-xs text-red-500 dark:text-red-400 mt-2">{errorFecha}</p>
+        )}
       </div>
 
       {/* ── Tab: Citas ── */}
@@ -369,32 +351,6 @@ export default function ReportesPage() {
 
           {/* Tabla */}
           <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 overflow-x-auto">
-            {reporteCitas && reporteCitas.citas.length > 0 && (
-              <div className="px-4 py-2 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-                <span>
-                  Mostrando {Math.min((reportePagina - 1) * REPORTE_PAGE_SIZE + 1, reporteCitas.citas.length)}–{Math.min(reportePagina * REPORTE_PAGE_SIZE, reporteCitas.citas.length)} de {reporteCitas.citas.length} citas
-                </span>
-                {reporteCitas.citas.length > REPORTE_PAGE_SIZE && (
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setReportePagina((p) => Math.max(1, p - 1))}
-                      disabled={reportePagina === 1}
-                      className="px-2 py-1 rounded border border-gray-200 dark:border-slate-600 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-slate-700 transition"
-                    >
-                      ← Anterior
-                    </button>
-                    <span>{reportePagina} / {Math.ceil(reporteCitas.citas.length / REPORTE_PAGE_SIZE)}</span>
-                    <button
-                      onClick={() => setReportePagina((p) => Math.min(Math.ceil(reporteCitas.citas.length / REPORTE_PAGE_SIZE), p + 1))}
-                      disabled={reportePagina >= Math.ceil(reporteCitas.citas.length / REPORTE_PAGE_SIZE)}
-                      className="px-2 py-1 rounded border border-gray-200 dark:border-slate-600 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-slate-700 transition"
-                    >
-                      Siguiente →
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-100 dark:border-slate-700">
@@ -444,6 +400,15 @@ export default function ReportesPage() {
                 )}
               </tbody>
             </table>
+
+            <Pagination
+              pagina={reportePagina}
+              totalPaginas={Math.max(1, Math.ceil((reporteCitas?.citas.length ?? 0) / REPORTE_PAGE_SIZE))}
+              total={reporteCitas?.citas.length ?? 0}
+              labelTotal={terms.citas.toLowerCase()}
+              onCambiar={setReportePagina}
+              cargando={cargandoCitas}
+            />
           </div>
         </>
       )}

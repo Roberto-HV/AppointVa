@@ -119,9 +119,14 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
           type="button"
           onClick={() => !disabled && setOpen((o) => !o)}
           disabled={disabled}
+          aria-haspopup="listbox"
+          aria-expanded={open}
+          aria-label={props["aria-label"]}
+          aria-labelledby={props["aria-labelledby"]}
           className={[
-            "w-full flex items-center justify-between pl-4 pr-3 py-2.5",
+            "w-full min-h-[44px] flex items-center justify-between pl-4 pr-3 py-2.5",
             "rounded-xl border text-sm text-left shadow-sm outline-none transition-all duration-150",
+            "focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40",
             "bg-white dark:bg-slate-800",
             open
               ? "border-slate-700 ring-2 ring-slate-700/20 dark:border-slate-500 dark:ring-slate-500/20"
@@ -145,17 +150,19 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
         {/* Dropdown panel */}
         {open && (
           <div className="absolute z-[200] top-full mt-1.5 left-0 right-0 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden">
-            <ul className="py-1.5 max-h-60 overflow-y-auto">
+            <ul role="listbox" aria-label={props["aria-label"]} className="py-1.5 max-h-60 overflow-y-auto">
               {options.map((opt) => {
                 const isSelected = opt.value === displayValue;
                 return (
                   <li key={opt.value}>
                     <button
                       type="button"
+                      role="option"
+                      aria-selected={isSelected}
                       disabled={opt.disabled}
                       onClick={() => !opt.disabled && handleOptionClick(opt.value)}
                       className={[
-                        "w-full flex items-center justify-between px-4 py-2.5 text-sm text-left transition-colors",
+                        "w-full min-h-[44px] flex items-center justify-between px-4 py-2.5 text-sm text-left transition-colors",
                         opt.disabled
                           ? "text-gray-300 dark:text-slate-600 cursor-not-allowed"
                           : isSelected
