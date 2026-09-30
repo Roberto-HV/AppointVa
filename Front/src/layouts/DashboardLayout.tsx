@@ -471,19 +471,36 @@ export default function DashboardLayout() {
             )}
           </div>
         )}
-      </aside>
 
-      {/* Pestaña de colapsar — div de ancho 0 anclado en el borde del sidebar */}
-      <div className="hidden xl:block w-0 relative z-20 shrink-0">
-        <button
-          onClick={toggleCollapsed}
-          title={sidebarCollapsed ? "Expandir menú" : "Colapsar menú"}
-          className="absolute left-0 top-20 -translate-x-1/2 flex w-6 h-10 items-center justify-center rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 shadow-sm transition-colors select-none"
-          style={{ touchAction: "manipulation" }}
-        >
-          {sidebarCollapsed ? <ChevronRight size={12} /> : <ChevronLeft size={12} />}
-        </button>
-      </div>
+        {/* Colapsar — vive en el pie porque su padding es constante: a diferencia del borde
+            derecho del sidebar, este punto no se desplaza al cambiar el ancho. */}
+        <div className={`hidden xl:block p-3 border-t border-slate-100 dark:border-slate-700/50 shrink-0 ${sidebarCollapsed ? "flex justify-center" : ""}`}>
+          {sidebarCollapsed ? (
+            <Tooltip text="Expandir menú" side="right">
+              <span className="block">
+                <button
+                  onClick={toggleCollapsed}
+                  aria-label="Expandir menú"
+                  className="w-11 h-11 flex items-center justify-center rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white transition"
+                >
+                  <ChevronRight size={20} />
+                </button>
+              </span>
+            </Tooltip>
+          ) : (
+            <button
+              onClick={toggleCollapsed}
+              aria-label="Colapsar menú"
+              className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-medium text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white transition"
+            >
+              <div className="w-6 h-6 flex items-center justify-center shrink-0">
+                <ChevronLeft size={14} />
+              </div>
+              <span className="flex-1 text-left truncate">Colapsar menú</span>
+            </button>
+          )}
+        </div>
+      </aside>
 
       {/* ── Columna derecha ── */}
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
