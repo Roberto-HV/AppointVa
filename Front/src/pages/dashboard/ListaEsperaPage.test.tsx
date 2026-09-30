@@ -85,15 +85,15 @@ describe("ListaEsperaPage — entrada en lista", () => {
 });
 
 describe("ListaEsperaPage — filtro de estado", () => {
-  it("el botón 'Esperando' adquiere estilo activo al hacer clic", async () => {
+  it("el desplegable refleja el estado elegido", async () => {
     renderConQuery();
     // wait for page to settle (empty state renders)
     await screen.findByText("No hay entradas en la lista de espera");
-    // FiltroPills expone las opciones como radiogroup, no como botones sueltos.
-    const btn = screen.getByRole("radio", { name: "Esperando" });
-    fireEvent.click(btn);
-    expect(btn).toBeChecked();
-    expect(btn.className).toContain("bg-slate-700");
+    // El estado es un <Select>: las opciones solo existen con el panel abierto.
+    const disparador = screen.getByRole("button", { name: "Estado" });
+    fireEvent.click(disparador);
+    fireEvent.click(screen.getByRole("option", { name: "Esperando" }));
+    expect(disparador).toHaveTextContent("Esperando");
   });
 });
 

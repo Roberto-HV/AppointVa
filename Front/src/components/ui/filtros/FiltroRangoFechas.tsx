@@ -17,6 +17,10 @@ interface FiltroRangoFechasProps {
  *
  * Los dos DatePicker comparten fila; su popover ya se sujeta al viewport, así
  * que el segundo calendario no se sale por el borde derecho en móvil.
+ *
+ * En escritorio el rango continúa en la misma fila, justo después del último
+ * atajo, en vez de caer a un segundo renglón. En móvil sí baja, y el bloque
+ * queda centrado.
  */
 export default function FiltroRangoFechas({
   labelId,
@@ -27,9 +31,13 @@ export default function FiltroRangoFechas({
   presets,
 }: FiltroRangoFechasProps) {
   return (
-    <div role="group" aria-labelledby={labelId} className="flex flex-col gap-2">
+    <div
+      role="group"
+      aria-labelledby={labelId}
+      className="flex flex-col items-center gap-2 lg:flex-row lg:flex-wrap lg:items-center lg:gap-x-3 lg:gap-y-2"
+    >
       {presets && presets.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap justify-center gap-1.5 lg:justify-start">
           {presets.map((preset) => {
             const activo = desde === preset.desde && hasta === preset.hasta;
             return (
@@ -54,7 +62,7 @@ export default function FiltroRangoFechas({
         </div>
       )}
 
-      <div className="flex items-center gap-2">
+      <div className="flex w-full items-center gap-2 lg:w-auto">
         <div className="flex-1 min-w-0 lg:w-40 lg:flex-none">
           <DatePicker
             value={desde}

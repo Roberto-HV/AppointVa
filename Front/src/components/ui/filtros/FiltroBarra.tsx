@@ -114,9 +114,9 @@ export default function FiltroBarra({
             abierto ? "flex" : "hidden",
             "flex-col gap-4 mt-3",
             // `lg:flex` gana sobre `hidden`: en escritorio el panel nunca colapsa.
-            // Alineado arriba, no abajo: el rango de fechas ocupa dos filas
-            // (atajos + pickers) y con `items-end` arrastraba las etiquetas de
-            // los demás campos hacia el medio de la barra.
+            // Alineado arriba, no abajo: cada campo lleva su label encima y con
+            // `items-end` las etiquetas quedaban a distinta altura según el alto
+            // del control.
             "lg:flex lg:flex-row lg:flex-wrap lg:items-start lg:gap-x-5 lg:gap-y-3 lg:mt-3"
           )}
         >

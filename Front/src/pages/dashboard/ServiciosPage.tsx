@@ -3,6 +3,7 @@ import { Pencil, Star, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Select from "../../components/ui/Select";
+import Tabs from "../../components/ui/Tabs";
 import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -202,29 +203,19 @@ export default function ServiciosPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex bg-gray-100 dark:bg-slate-700 rounded-lg p-1 gap-1 mb-6">
-        <button
-          onClick={() => setTab("servicios")}
-          className={`flex-1 py-1.5 text-sm font-medium rounded-md transition whitespace-nowrap ${
-            tab === "servicios" ? "bg-white text-gray-800 shadow-sm dark:bg-slate-800 dark:text-gray-200" : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-          }`}
-        >
-          {terms.servicios}
-        </button>
-        <button
-          onClick={() => setTab("categorias")}
-          className={`flex-1 py-1.5 text-sm font-medium rounded-md transition whitespace-nowrap ${
-            tab === "categorias" ? "bg-white text-gray-800 shadow-sm dark:bg-slate-800 dark:text-gray-200" : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-          }`}
-        >
-          Categorías
-          {categorias.length > 0 && (
-            <span className="ml-1.5 text-xs bg-gray-200 text-gray-600 rounded-full px-1.5 py-0.5 dark:bg-slate-600 dark:text-gray-400">
-              {categorias.length}
-            </span>
-          )}
-        </button>
-      </div>
+      <Tabs
+        etiqueta={`Secciones de ${terms.servicios.toLowerCase()}`}
+        valor={tab}
+        onChange={setTab}
+        className="mb-6"
+        opciones={[
+          { id: "servicios", label: terms.servicios },
+          {
+            id: "categorias",
+            label: categorias.length > 0 ? `Categorías (${categorias.length})` : "Categorías",
+          },
+        ]}
+      />
 
       {/* ── Tab Servicios ──────────────────────────────────────────────────── */}
       {tab === "servicios" && (

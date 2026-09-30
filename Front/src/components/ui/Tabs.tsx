@@ -28,6 +28,10 @@ interface TabsProps<T extends string> {
  * `overflow-x-auto` y pestañas que no se comprimen: la tira de 5 de Reportes y
  * la de 3 de Citas se cortaban a 390px porque `flex-1` las encogía por debajo
  * de su texto. Ahora se desplazan en horizontal y conservan su ancho.
+ *
+ * La bandeja se dimensiona a su contenido (`w-fit`) y las pestañas no crecen:
+ * con `grow` y ancho completo, dos pestañas a 1600px quedaban como dos botones
+ * gigantes de 800px cada uno.
  */
 export default function Tabs<T extends string>({
   opciones,
@@ -40,7 +44,7 @@ export default function Tabs<T extends string>({
     <nav
       aria-label={etiqueta}
       className={cn(
-        "flex gap-1 p-1 rounded-lg bg-gray-100 dark:bg-slate-700",
+        "flex w-fit max-w-full gap-1 p-1 rounded-lg bg-gray-100 dark:bg-slate-700",
         "overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
         className
       )}
@@ -54,7 +58,7 @@ export default function Tabs<T extends string>({
             aria-current={activo ? "page" : undefined}
             onClick={() => onChange(o.id)}
             className={cn(
-              "min-h-[44px] lg:min-h-[36px] px-3 sm:px-4 shrink-0 grow",
+              "min-h-[44px] lg:min-h-[36px] px-3 sm:px-4 shrink-0",
               "rounded-md text-sm font-medium whitespace-nowrap transition-colors",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40",
               activo

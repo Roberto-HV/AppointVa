@@ -373,7 +373,7 @@ export default function CitasPage() {
   const campos: CampoFiltro[] = [
     campoEmpleado,
     {
-      tipo: "pills",
+      tipo: "select",
       id: "estado",
       etiqueta: "Estado",
       valor: estadoFiltro,
@@ -472,8 +472,13 @@ export default function CitasPage() {
       <div className="mb-6 space-y-3">
 
         {/* Fila 1 — título + acciones desktop */}
-        <div className="flex items-center justify-between gap-3">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{terms.citas}</h1>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{terms.citas}</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              Agenda del día, confirmaciones y reprogramaciones
+            </p>
+          </div>
           <div className="flex items-center gap-2">
             {/* Recepción y Exportar: solo desktop */}
             <Link

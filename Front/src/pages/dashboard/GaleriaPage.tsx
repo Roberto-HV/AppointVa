@@ -68,7 +68,7 @@ export default function GaleriaPage() {
       <div className="flex items-start justify-between gap-4 mb-6 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Galería</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             Fotos de tus trabajos visibles en tu página de reservas
             <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">({imagenes.length}/{MAX_FOTOS})</span>
           </p>

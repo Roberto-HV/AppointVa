@@ -276,18 +276,21 @@ describe("cobro: filtrado en el servidor", () => {
     );
   });
 
-  it("cambiar la pill de estado refetchea con el nuevo estado de pago", async () => {
+  it("cambiar el estado refetchea con el nuevo estado de pago", async () => {
     renderPage();
     await waitFor(() => screen.getByText("Ana García"));
 
-    await userEvent.click(screen.getByRole("radio", { name: "Pagadas" }));
+    // El estado es un <Select>: hay que abrirlo antes de elegir una opción.
+    await userEvent.click(screen.getByRole("button", { name: "Estado" }));
+    await userEvent.click(screen.getByRole("option", { name: "Pagadas" }));
     await waitFor(() =>
       expect(citasApi.obtenerTodas).toHaveBeenCalledWith(
         expect.objectContaining({ pagada: true })
       )
     );
 
-    await userEvent.click(screen.getByRole("radio", { name: "Todas" }));
+    await userEvent.click(screen.getByRole("button", { name: "Estado" }));
+    await userEvent.click(screen.getByRole("option", { name: "Todas" }));
     await waitFor(() =>
       expect(citasApi.obtenerTodas).toHaveBeenCalledWith(
         expect.objectContaining({ pagada: undefined })

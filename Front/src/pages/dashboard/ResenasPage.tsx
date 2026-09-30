@@ -52,11 +52,14 @@ export default function ResenasPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Reseñas</h1>
-          {!isLoading && (
-            <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">
-              {total} reseña{total !== 1 ? "s" : ""}
-            </p>
-          )}
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            Opiniones que dejan tus clientes al terminar su cita
+            {!isLoading && (
+              <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">
+                ({total} reseña{total !== 1 ? "s" : ""})
+              </span>
+            )}
+          </p>
         </div>
         {promedioRating && (
           <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800 rounded-xl px-4 py-2">

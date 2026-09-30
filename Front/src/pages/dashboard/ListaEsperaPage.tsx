@@ -90,7 +90,7 @@ export default function ListaEsperaPage() {
         onLimpiar={() => setFiltroEstado("")}
         campos={[
           {
-            tipo: "pills",
+            tipo: "select",
             id: "estado",
             etiqueta: "Estado",
             valor: filtroEstado,

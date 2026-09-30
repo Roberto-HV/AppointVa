@@ -554,14 +554,14 @@ export default function PagosPage() {
                 opciones: PERIODOS.map((p) => ({ valor: p.key, etiqueta: p.label })),
               },
               {
-                tipo: "pills",
+                tipo: "select",
                 id: "estadoPago",
                 etiqueta: "Estado",
                 valor: filtroPago,
                 onChange: (v) => setFiltroPago(v as FiltroEstadoPago),
                 valorNeutro: "todas",
+                etiquetaNeutra: "Todas",
                 opciones: [
-                  { valor: "todas", etiqueta: "Todas" },
                   { valor: "pendientes", etiqueta: "Pendientes" },
                   { valor: "pagadas", etiqueta: "Pagadas" },
                 ],

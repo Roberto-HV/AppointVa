@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useId } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { clientesApi } from "../../api/clientes";
@@ -13,7 +13,7 @@ import Pagination from "../../components/ui/Pagination";
 import { useToastStore } from "../../store/toastStore";
 import { SiWhatsapp } from "react-icons/si";
 import { UserX, Eye, Users } from "lucide-react";
-import Tabs from "../../components/ui/Tabs";
+import Select from "../../components/ui/Select";
 import EmptyState from "../../components/ui/EmptyState";
 import { FiltroBarra } from "../../components/ui/filtros";
 
@@ -34,6 +34,7 @@ export default function ClientesPage() {
   const [notas, setNotas] = useState("");
   const [notasGuardadas, setNotasGuardadas] = useState(false);
   const [diasInactivo, setDiasInactivo] = useState<typeof OPCIONES_DIAS[number]>(60);
+  const idMostrar = useId();
 
   const { data: paginaClientes, isLoading } = useQuery({
     queryKey: ["clientes", buscarActivo, pagina],
@@ -142,8 +143,13 @@ export default function ClientesPage() {
 
   return (
     <div className="p-4 sm:p-8">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{terms.clientes}</h1>
+      <div className="flex items-start justify-between gap-3 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{terms.clientes}</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            Directorio, historial y notas de cada {terms.cliente.toLowerCase()}
+          </p>
+        </div>
         {tab === "todos" && clientes.length > 0 && (
           <div className="flex flex-col items-end gap-0.5">
             <button
@@ -158,17 +164,26 @@ export default function ClientesPage() {
         )}
       </div>
 
-      {/* Tabs */}
-      <Tabs
-        etiqueta={`Secciones de ${terms.clientes.toLowerCase()}`}
-        valor={tab}
-        onChange={setTab}
-        className="mb-6"
-        opciones={[
-          { id: "todos", label: "Todos" },
-          { id: "inactivos", label: "Inactivos" },
-        ]}
-      />
+      {/* "Inactivos" acota el mismo listado en vez de abrir otra sección, así que
+          es un desplegable y no una pestaña: dos pestañas se estiraban a lo ancho
+          de la pantalla. */}
+      <div className="mb-6">
+        <span
+          id={idMostrar}
+          className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-1.5"
+        >
+          Mostrar
+        </span>
+        <Select
+          value={tab}
+          onChange={(e) => setTab(e.target.value as TabClientes)}
+          aria-labelledby={idMostrar}
+          className="w-full sm:w-56"
+        >
+          <option value="todos">Todos</option>
+          <option value="inactivos">Inactivos</option>
+        </Select>
+      </div>
 
       {/* ── Tab: Inactivos ── */}
       {tab === "inactivos" && (

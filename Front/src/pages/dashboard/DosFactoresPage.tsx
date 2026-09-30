@@ -94,7 +94,7 @@ export default function DosFactoresPage() {
     <div className="w-full max-w-lg space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Seguridad</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Autenticación de dos factores (2FA)</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Autenticación de dos factores (2FA)</p>
       </div>
 
       {/* Estado actual */}

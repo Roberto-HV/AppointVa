@@ -253,8 +253,9 @@ describe("CitasPage — lista de citas", () => {
 });
 
 describe("CitasPage — filtros de estado", () => {
-  // FiltroPills expone las opciones como radiogroup, no como botones sueltos.
-  it("muestra los botones de filtro de estado", async () => {
+  // El estado es un <Select>; aquí está mockeado como <select> nativo, así que
+  // el control expone `combobox` y sus `option` en vez de pills.
+  it("ofrece los estados como opciones del desplegable", async () => {
     vi.mocked(citasApi.obtenerTodas).mockResolvedValue({
       datos: [],
       total: 0,
@@ -262,12 +263,11 @@ describe("CitasPage — filtros de estado", () => {
       tamano: 50,
     });
     renderConQuery();
-    await waitFor(() =>
-      expect(screen.getByRole("radio", { name: /Pendiente/ })).toBeInTheDocument()
-    );
-    expect(screen.getByRole("radio", { name: /Confirmada/ })).toBeInTheDocument();
-    expect(screen.getByRole("radio", { name: /Completada/ })).toBeInTheDocument();
-    expect(screen.getByRole("radio", { name: /Cancelada/ })).toBeInTheDocument();
+    await screen.findByRole("combobox", { name: "Estado" });
+    expect(screen.getByRole("option", { name: "Pendiente" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Confirmada" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Completada" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Cancelada" })).toBeInTheDocument();
   });
 
   it("muestra estado vacío filtrado al filtrar por estado sin coincidencias", async () => {
@@ -278,10 +278,8 @@ describe("CitasPage — filtros de estado", () => {
       tamano: 50,
     });
     renderConQuery();
-    await waitFor(() =>
-      expect(screen.getByRole("radio", { name: /Pendiente/ })).toBeInTheDocument()
-    );
-    fireEvent.click(screen.getByRole("radio", { name: /Pendiente/ }));
+    const selector = await screen.findByRole("combobox", { name: "Estado" });
+    fireEvent.change(selector, { target: { value: "Pendiente" } });
     await waitFor(() =>
       expect(screen.getByText("Sin citas pendientes")).toBeInTheDocument()
     );

@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
 import Select from "../../components/ui/Select";
+import Tabs from "../../components/ui/Tabs";
 import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -409,31 +410,27 @@ export default function PerfilPage() {
   return (
     <>
     <div className="p-4 sm:p-8">
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">Mi negocio</h1>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Mi negocio</h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          Datos públicos, horarios de atención y reglas de reserva
+        </p>
+      </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-gray-100 dark:bg-slate-700 rounded-xl p-1 mb-6 overflow-x-auto">
-        {([
+      <Tabs
+        etiqueta="Secciones del negocio"
+        valor={tab}
+        onChange={setTab}
+        className="mb-6"
+        opciones={[
           { id: "perfil", label: "Perfil" },
           { id: "citas", label: "Citas" },
           { id: "anticipos", label: "Anticipos" },
           { id: "horarios", label: "Horarios" },
           { id: "cuenta", label: "Cuenta" },
-        ] as { id: Tab; label: string }[]).map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            onClick={() => setTab(t.id)}
-            className={`flex-1 whitespace-nowrap py-2 px-2 sm:px-3 text-xs sm:text-sm font-medium rounded-lg transition ${
-              tab === t.id
-                ? "bg-white dark:bg-slate-800 shadow-sm text-gray-900 dark:text-gray-100"
-                : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+        ]}
+      />
 
       {/* ── TAB: PERFIL ─────────────────────────────────────────────────────── */}
       <form onSubmit={handleSubmit(onSubmit)}>

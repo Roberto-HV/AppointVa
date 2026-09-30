@@ -117,8 +117,7 @@ export default function ReportesPage() {
             opciones: servicios.map((s) => ({ valor: s.id, etiqueta: s.nombre })),
           },
           {
-            // Pills, igual que en Citas; aquí era el único "Estado" con <Select>.
-            tipo: "pills",
+            tipo: "select",
             id: "estado",
             etiqueta: "Estado",
             valor: estado,
@@ -246,7 +245,7 @@ export default function ReportesPage() {
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Reportes</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Análisis de citas e ingresos</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Análisis de citas e ingresos</p>
         </div>
         {(tab === "citas" || tab === "ingresos" || tab === "empleados") && (
           <button
