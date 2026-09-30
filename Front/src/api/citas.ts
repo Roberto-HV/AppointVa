@@ -7,8 +7,30 @@ export interface FiltrosCitas {
   empleadoId?: string;
   busqueda?: string;
   estado?: number;
+  /** true = solo pagadas, false = solo pendientes, omitido = todas */
+  pagada?: boolean;
   pagina?: number;
   tamano?: number;
+}
+
+export interface FiltrosResumenCobros {
+  desde?: string;
+  hasta?: string;
+  empleadoId?: string;
+}
+
+export interface DesgloseMetodoPago {
+  metodo: string;
+  cantidad: number;
+  monto: number;
+}
+
+export interface ResumenCobros {
+  totalCobrado: number;
+  totalPendiente: number;
+  citasPagadas: number;
+  totalCitas: number;
+  desglose: DesgloseMetodoPago[];
 }
 
 export interface PaginaCitas {
@@ -36,6 +58,17 @@ export interface CrearCitaFormDto {
 export const METODOS_PAGO = ["Efectivo", "Tarjeta", "Transferencia"] as const;
 export type MetodoPago = (typeof METODOS_PAGO)[number];
 
+// El backend compara contra InicioEn, así que una fecha suelta debe cubrir el día entero.
+// El listado y el resumen tienen que normalizarla igual o los totales no cuadran con la tabla.
+function conFinDeDia<T extends { hasta?: string }>(filtros?: T): T | undefined {
+  if (!filtros) return undefined;
+  const params = { ...filtros };
+  if (params.hasta && params.hasta.length === 10) {
+    params.hasta = `${params.hasta}T23:59:59`;
+  }
+  return params;
+}
+
 export const citasApi = {
   obtenerPorId: async (id: string): Promise<CitaDto> => {
     const { data } = await api.get(`/citas/${id}`);
@@ -43,10 +76,7 @@ export const citasApi = {
   },
 
   obtenerTodas: async (filtros?: FiltrosCitas): Promise<PaginaCitas> => {
-    const params = filtros ? { ...filtros } : undefined;
-    if (params?.hasta && params.hasta.length === 10) {
-      params.hasta = `${params.hasta}T23:59:59`;
-    }
+    const params = conFinDeDia(filtros);
     const { data, headers } = await api.get("/citas", { params });
     const total = parseInt(headers["x-total-count"] ?? "0", 10);
     return {
@@ -84,6 +114,11 @@ export const citasApi = {
 
   registrarAnticipo: async (id: string, recibido: boolean): Promise<CitaDto> => {
     const { data } = await api.patch<CitaDto>(`/citas/${id}/anticipo`, { recibido });
+    return data;
+  },
+
+  obtenerResumenCobros: async (filtros?: FiltrosResumenCobros): Promise<ResumenCobros> => {
+    const { data } = await api.get("/citas/resumen-cobros", { params: conFinDeDia(filtros) });
     return data;
   },
 

@@ -15,7 +15,7 @@ namespace AppointVaAPI.Repository
             _db = db;
         }
 
-        public async Task<List<Cita>> ObtenerCitasAsync(Guid negocioId, DateTime? desde, DateTime? hasta, Guid? empleadoId, string? busqueda = null, byte? estado = null)
+        public async Task<List<Cita>> ObtenerCitasAsync(Guid negocioId, DateTime? desde, DateTime? hasta, Guid? empleadoId, string? busqueda = null, byte? estado = null, bool? pagada = null)
         {
             var query = _db.Citas
                 .Include(c => c.Cliente)
@@ -31,6 +31,8 @@ namespace AppointVaAPI.Repository
                 query = query.Where(c => c.EmpleadoId == empleadoId.Value);
             if (estado.HasValue)
                 query = query.Where(c => c.Estado == estado.Value);
+            if (pagada.HasValue)
+                query = query.Where(c => c.Pagada == pagada.Value);
             if (!string.IsNullOrWhiteSpace(busqueda))
             {
                 var q = busqueda.ToLower();

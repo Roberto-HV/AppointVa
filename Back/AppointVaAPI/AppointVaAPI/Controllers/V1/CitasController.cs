@@ -50,7 +50,7 @@ namespace AppointVaAPI.Controllers.V1
             _config = config;
         }
 
-        // GET api/citas?desde=...&hasta=...&empleadoId=...&pagina=1&tamano=100
+        // GET api/citas?desde=...&hasta=...&empleadoId=...&pagada=false&pagina=1&tamano=100
         [HttpGet]
         public async Task<IActionResult> ObtenerTodas(
             [FromQuery] DateTime? desde,
@@ -58,6 +58,7 @@ namespace AppointVaAPI.Controllers.V1
             [FromQuery] Guid? empleadoId,
             [FromQuery] string? busqueda,
             [FromQuery] byte? estado,
+            [FromQuery] bool? pagada,
             [FromQuery] int pagina = 1,
             [FromQuery] int tamano = 0)
         {
@@ -78,7 +79,7 @@ namespace AppointVaAPI.Controllers.V1
             }
 
             var citas = await _citaRepo.ObtenerCitasAsync(
-                _contexto.NegocioId.Value, desde, hasta, filtroEmpleado, busqueda, estado);
+                _contexto.NegocioId.Value, desde, hasta, filtroEmpleado, busqueda, estado, pagada);
 
             var total = citas.Count;
             Response.Headers["X-Total-Count"] = total.ToString();
@@ -762,6 +763,87 @@ namespace AppointVaAPI.Controllers.V1
                 .ToListAsync();
 
             return Ok(citas.Select(MapearDto));
+        }
+
+        // GET api/citas/resumen-cobros?desde=...&hasta=...&empleadoId=...
+        // Totales del período completo: el listado de /api/citas está paginado y
+        // sus KPIs no pueden derivarse de una sola página.
+        [HttpGet("resumen-cobros")]
+        public async Task<IActionResult> ResumenCobros(
+            [FromQuery] DateTime? desde,
+            [FromQuery] DateTime? hasta,
+            [FromQuery] Guid? empleadoId)
+        {
+            if (_contexto.NegocioId is null) return Unauthorized();
+
+            Guid? filtroEmpleado = empleadoId;
+            if (_contexto.Rol == Roles.Empleado)
+            {
+                var registroEmpleado = await _db.Empleados
+                    .FirstOrDefaultAsync(e =>
+                        e.NegocioId == _contexto.NegocioId.Value &&
+                        e.UsuarioId == _contexto.UsuarioId &&
+                        e.FechaEliminacion == null);
+
+                if (registroEmpleado is null) return Forbid();
+                filtroEmpleado = registroEmpleado.Id;
+            }
+
+            // Mismos predicados que ObtenerTodas para que los totales cuadren con el listado
+            var query = _db.Citas.Where(c => c.NegocioId == _contexto.NegocioId.Value);
+            if (desde.HasValue)
+                query = query.Where(c => c.InicioEn >= desde.Value);
+            if (hasta.HasValue)
+                query = query.Where(c => c.InicioEn <= hasta.Value);
+            if (filtroEmpleado.HasValue)
+                query = query.Where(c => c.EmpleadoId == filtroEmpleado.Value);
+
+            var totalCitas = await query.CountAsync();
+            var totalPendiente = await query.Where(c => !c.Pagada).SumAsync(c => (decimal?)c.Precio) ?? 0m;
+
+            // Solo las columnas del cobro: el reparto de un pago mixto no se puede
+            // expresar en SQL sin duplicar la lógica en cada motor soportado.
+            var pagos = await query
+                .Where(c => c.Pagada)
+                .Select(c => new
+                {
+                    c.MontoCobrado,
+                    c.Precio,
+                    c.MetodoPago,
+                    c.MetodoPago2,
+                    c.MontoPago2,
+                })
+                .AsNoTracking()
+                .ToListAsync();
+
+            var totalCobrado = pagos.Sum(p => p.MontoCobrado ?? p.Precio);
+
+            var desglose = MetodosPago.Todos
+                .Select(metodo => new DesgloseMetodoPagoDto
+                {
+                    Metodo = metodo,
+                    Cantidad = pagos.Count(p => p.MetodoPago == metodo),
+                    Monto = pagos.Sum(p =>
+                    {
+                        var total = p.MontoCobrado ?? p.Precio;
+                        var m2 = p.MontoPago2 ?? 0m;
+                        var m1 = total - m2;
+                        var monto = 0m;
+                        if (string.Equals(p.MetodoPago, metodo, StringComparison.OrdinalIgnoreCase)) monto += m1;
+                        if (string.Equals(p.MetodoPago2, metodo, StringComparison.OrdinalIgnoreCase)) monto += m2;
+                        return monto;
+                    }),
+                })
+                .ToList();
+
+            return Ok(new ResumenCobrosDto
+            {
+                TotalCobrado = totalCobrado,
+                TotalPendiente = totalPendiente,
+                CitasPagadas = pagos.Count,
+                TotalCitas = totalCitas,
+                Desglose = desglose,
+            });
         }
 
         private static bool EsConflictoSerializacion(Exception ex)

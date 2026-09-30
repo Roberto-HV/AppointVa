@@ -14,6 +14,7 @@ import { hoy, inicioSemana, finSemana, inicioMes, finMes } from "../../utils/fec
 import Modal from "../../components/ui/Modal";
 import Tabs from "../../components/ui/Tabs";
 import EmptyState from "../../components/ui/EmptyState";
+import Pagination from "../../components/ui/Pagination";
 import { FiltroBarra } from "../../components/ui/filtros";
 import { DatePicker } from "../../components/ui/DateTimePicker";
 import TicketRecibo from "../../components/dashboard/TicketRecibo";
@@ -29,6 +30,14 @@ const PERIODOS: { key: FiltroPeriodo; label: string; desde: () => string; hasta:
   { key: "semana", label: "Semana", desde: inicioSemana, hasta: finSemana },
   { key: "mes",    label: "Mes",    desde: inicioMes,    hasta: finMes },
 ];
+
+const TAMANO_COBRO = 50;
+
+const PAGADA_POR_FILTRO: Record<FiltroEstadoPago, boolean | undefined> = {
+  todas:      undefined,
+  pendientes: false,
+  pagadas:    true,
+};
 
 const METODO_ICONO: Record<string, React.ReactNode> = {
   Efectivo:      <Banknote   size={16} strokeWidth={1.5} />,
@@ -65,6 +74,8 @@ export default function PagosPage() {
   const [periodo,       setPeriodo]       = useState<FiltroPeriodo>("hoy");
   const [filtroPago,    setFiltroPago]    = useState<FiltroEstadoPago>("pendientes");
   const [busquedaCobro, setBusquedaCobro] = useState("");
+  const [busquedaCobroQuery, setBusquedaCobroQuery] = useState("");
+  const [paginaCobro,   setPaginaCobro]   = useState(1);
   const [citaSel,       setCitaSel]       = useState<CitaDto | null>(null);
   const [metodoPago,    setMetodoPago]    = useState("");
   const [montoRecibido, setMontoRecibido] = useState("");
@@ -97,7 +108,17 @@ export default function PagosPage() {
     setMetodoPago2(primera);
   }, [metodoPago]);
 
+  // Debounce búsqueda 400ms para no disparar una request por cada tecla
+  useEffect(() => {
+    const t = setTimeout(() => { setBusquedaCobroQuery(busquedaCobro); setPaginaCobro(1); }, 400);
+    return () => clearTimeout(t);
+  }, [busquedaCobro]);
+
+  useEffect(() => { setPaginaCobro(1); }, [periodo, filtroPago]);
+
   const periodoActivo = PERIODOS.find((p) => p.key === periodo)!;
+  const cobroDesde = periodoActivo.desde();
+  const cobroHasta = periodoActivo.hasta();
 
   // ── Queries ───────────────────────────────────────────────────────────────
   const { data: negocio } = useQuery({
@@ -106,17 +127,30 @@ export default function PagosPage() {
     staleTime: 5 * 60 * 1000,
   });
 
+  // El filtrado por estado de pago y la búsqueda ocurren en el servidor: filtrar en
+  // memoria sobre una página escondía las citas que no venían en ella.
   const { data: pagina, isLoading: cobroLoading } = useQuery({
-    queryKey: ["citas-pagos", periodo],
+    queryKey: ["citas-pagos", periodo, filtroPago, busquedaCobroQuery, paginaCobro],
     queryFn: () =>
       citasApi.obtenerTodas({
-        desde: periodoActivo.desde(),
-        hasta: periodoActivo.hasta(),
-        pagina: 1,
-        tamano: 200,
+        desde: cobroDesde,
+        hasta: cobroHasta,
+        pagada: PAGADA_POR_FILTRO[filtroPago],
+        busqueda: busquedaCobroQuery || undefined,
+        pagina: paginaCobro,
+        tamano: TAMANO_COBRO,
       }),
+    placeholderData: (prev) => prev,
     staleTime: 0,
     // Solo sigue el polling mientras el usuario está en el tab de cobro
+    refetchInterval: tab === "cobro" ? 30_000 : false,
+  });
+
+  // Los KPIs son del período completo, no de la página visible.
+  const { data: resumen } = useQuery({
+    queryKey: ["resumen-cobros", periodo],
+    queryFn: () => citasApi.obtenerResumenCobros({ desde: cobroDesde, hasta: cobroHasta }),
+    staleTime: 0,
     refetchInterval: tab === "cobro" ? 30_000 : false,
   });
 
@@ -159,40 +193,27 @@ export default function PagosPage() {
   }, [cierreData]);
 
   // ── Cobro derived data ────────────────────────────────────────────────────
-  const todas = pagina?.datos ?? [];
+  const citasFiltradas = pagina?.datos ?? [];
+  const totalResultados = pagina?.total ?? 0;
+  const totalPaginasCobro = Math.ceil(totalResultados / TAMANO_COBRO) || 1;
 
-  const totalCobrado   = todas.filter(c => c.pagada).reduce((s, c) => s + (c.montoCobrado ?? c.precio), 0);
-  const totalPendiente = todas.filter(c => !c.pagada).reduce((s, c) => s + c.precio, 0);
-  const citasPagadas   = todas.filter(c => c.pagada).length;
-  const totalCitas     = todas.length;
+  const totalCobrado   = resumen?.totalCobrado   ?? 0;
+  const totalPendiente = resumen?.totalPendiente ?? 0;
+  const citasPagadas   = resumen?.citasPagadas   ?? 0;
+  const totalCitas     = resumen?.totalCitas     ?? 0;
 
-  const desglose = METODOS_PAGO.reduce<Record<string, number>>((acc, m) => {
-    acc[m] = todas.filter(c => c.pagada)
-      .reduce((s, c) => s + montoParaMetodo(c, m), 0);
-    return acc;
-  }, {});
-
-  const cobroDesglose = METODOS_PAGO
-    .map(m => ({
-      metodo: m,
-      cantidad: todas.filter(c => c.pagada && c.metodoPago === m).length,
-      monto: desglose[m] ?? 0,
-    }))
-    .filter(d => d.monto > 0);
-
-  const citasFiltradas = useMemo(() => {
-    let lista = todas;
-    if (filtroPago === "pendientes") lista = lista.filter(c => !c.pagada);
-    if (filtroPago === "pagadas")    lista = lista.filter(c => c.pagada);
-    if (busquedaCobro.trim()) {
-      const q = busquedaCobro.trim().toLowerCase();
-      lista = lista.filter(c => c.nombreCliente.toLowerCase().includes(q));
-    }
-    return lista;
-  }, [todas, filtroPago, busquedaCobro]);
+  const cobroDesglose = (resumen?.desglose ?? []).filter(d => d.monto > 0);
 
   const cobroFiltrado =
-    periodo !== "hoy" || filtroPago !== "todas" || Boolean(busquedaCobro.trim());
+    periodo !== "hoy" || filtroPago !== "todas" || Boolean(busquedaCobroQuery.trim());
+
+  const limpiarFiltrosCobro = () => {
+    setPeriodo("hoy");
+    setFiltroPago("todas");
+    setBusquedaCobro("");
+    setBusquedaCobroQuery("");
+    setPaginaCobro(1);
+  };
 
   // ── Historial derived data ────────────────────────────────────────────────
   const histFiltrado = useMemo(() => {
@@ -359,6 +380,7 @@ export default function PagosPage() {
       }),
     onSuccess: (citaActualizada) => {
       qc.invalidateQueries({ queryKey: ["citas-pagos"] });
+      qc.invalidateQueries({ queryKey: ["resumen-cobros"] });
       qc.invalidateQueries({ queryKey: ["citas"] });
       setCitaSel(null);
       setMetodoPago("");
@@ -375,6 +397,7 @@ export default function PagosPage() {
     mutationFn: (id: string) => pagosApi.registrar(id, { pagada: false }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["citas-pagos"] });
+      qc.invalidateQueries({ queryKey: ["resumen-cobros"] });
       qc.invalidateQueries({ queryKey: ["historial-pagos"] });
       qc.invalidateQueries({ queryKey: ["citas"] });
       toast("Pago revertido");
@@ -463,7 +486,7 @@ export default function PagosPage() {
       {tab === "cobro" && (
         <>
           {/* KPI cards */}
-          {!cobroLoading && (
+          {resumen && (
             <div className="grid grid-cols-3 gap-4">
               <div className="relative bg-card border border-border rounded-xl p-4 overflow-hidden">
                 <div className="absolute top-0 left-0 right-0 h-0.5 bg-primary/50" />
@@ -489,7 +512,7 @@ export default function PagosPage() {
           )}
 
           {/* Payment progress + desglose */}
-          {!cobroLoading && totalCitas > 0 && (
+          {totalCitas > 0 && (
             <div className="space-y-1.5">
               <div className="flex items-center gap-3">
                 <div className="flex-1 bg-gray-100 dark:bg-slate-700 rounded-full h-1.5">
@@ -505,7 +528,7 @@ export default function PagosPage() {
             </div>
           )}
 
-          {!cobroLoading && cobroDesglose.length > 0 && (
+          {cobroDesglose.length > 0 && (
             <DesglosePorMetodo titulo="Desglose por método" data={cobroDesglose} total={totalCobrado} />
           )}
 
@@ -519,7 +542,7 @@ export default function PagosPage() {
               etiqueta: "Buscar cliente",
               placeholder: "Nombre del cliente...",
             }}
-            onLimpiar={() => { setPeriodo("hoy"); setFiltroPago("todas"); setBusquedaCobro(""); }}
+            onLimpiar={limpiarFiltrosCobro}
             campos={[
               {
                 tipo: "pills",
@@ -558,17 +581,13 @@ export default function PagosPage() {
               variante={cobroFiltrado ? "sinResultados" : "vacio"}
               icon={cobroFiltrado ? undefined : <CreditCard size={40} strokeWidth={1.5} />}
               title={
-                busquedaCobro.trim()
+                busquedaCobroQuery.trim()
                   ? "No hay citas para ese cliente"
                   : filtroPago === "pendientes"
                   ? "No hay citas pendientes de pago en este período"
                   : "No hay citas en este período"
               }
-              onLimpiarFiltros={
-                cobroFiltrado
-                  ? () => { setPeriodo("hoy"); setFiltroPago("todas"); setBusquedaCobro(""); }
-                  : undefined
-              }
+              onLimpiarFiltros={cobroFiltrado ? limpiarFiltrosCobro : undefined}
             />
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -598,6 +617,14 @@ export default function PagosPage() {
               ))}
             </div>
           )}
+
+          <Pagination
+            pagina={paginaCobro}
+            totalPaginas={totalPaginasCobro}
+            total={totalResultados}
+            labelTotal="citas"
+            onCambiar={setPaginaCobro}
+          />
         </>
       )}
 

@@ -4,7 +4,7 @@ namespace AppointVaAPI.Repository.IRepository
 {
     public interface ICitaRepository
     {
-        Task<List<Cita>> ObtenerCitasAsync(Guid negocioId, DateTime? desde, DateTime? hasta, Guid? empleadoId, string? busqueda = null, byte? estado = null);
+        Task<List<Cita>> ObtenerCitasAsync(Guid negocioId, DateTime? desde, DateTime? hasta, Guid? empleadoId, string? busqueda = null, byte? estado = null, bool? pagada = null);
         Task<Cita?> ObtenerPorIdAsync(Guid id, Guid negocioId);
         Task<Cita?> ObtenerPorCodigoAsync(string codigo);
         Task<Cita> CrearAsync(Cita cita);
