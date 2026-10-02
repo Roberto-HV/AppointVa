@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import ClientesPage from "./ClientesPage";
@@ -214,38 +215,44 @@ describe("ClientesPage — buscador", () => {
     vi.mocked(clientesApi.obtenerTodos).mockResolvedValue(paginaVacia);
     renderConQuery();
     const input = screen.getByPlaceholderText("Buscar por nombre o teléfono...");
-    fireEvent.change(input, { target: { value: "María" } });
-    fireEvent.keyDown(input, { key: "Enter" });
+    await userEvent.type(input, "María{Enter}");
     await waitFor(() =>
       expect(clientesApi.obtenerTodos).toHaveBeenCalledWith("María", 1, 30)
     );
   });
 
-  it("muestra el botón Limpiar después de activar una búsqueda", async () => {
+  it("no consulta mientras se teclea: solo al confirmar", async () => {
     vi.mocked(clientesApi.obtenerTodos).mockResolvedValue(paginaVacia);
     renderConQuery();
+    await waitFor(() =>
+      expect(clientesApi.obtenerTodos).toHaveBeenCalledWith(undefined, 1, 30)
+    );
+    vi.mocked(clientesApi.obtenerTodos).mockClear();
     const input = screen.getByPlaceholderText("Buscar por nombre o teléfono...");
-    fireEvent.change(input, { target: { value: "Carlos" } });
+    await userEvent.type(input, "Carlos");
+    expect(clientesApi.obtenerTodos).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "Buscar" }));
     await waitFor(() =>
-      expect(screen.getByRole("button", { name: "Limpiar" })).toBeInTheDocument()
+      expect(clientesApi.obtenerTodos).toHaveBeenCalledWith("Carlos", 1, 30)
     );
   });
 
-  it("limpiar borra el input y restablece la búsqueda", async () => {
+  it("borrar vacía el campo y restablece la búsqueda sin confirmar", async () => {
     vi.mocked(clientesApi.obtenerTodos).mockResolvedValue(paginaVacia);
     renderConQuery();
     const input = screen.getByPlaceholderText("Buscar por nombre o teléfono...");
     fireEvent.change(input, { target: { value: "Carlos" } });
     fireEvent.click(screen.getByRole("button", { name: "Buscar" }));
     await waitFor(() =>
-      expect(screen.getByRole("button", { name: "Limpiar" })).toBeInTheDocument()
+      expect(clientesApi.obtenerTodos).toHaveBeenCalledWith("Carlos", 1, 30)
     );
-    fireEvent.click(screen.getByRole("button", { name: "Limpiar" }));
-    await waitFor(() =>
-      expect(screen.queryByRole("button", { name: "Limpiar" })).not.toBeInTheDocument()
-    );
+
+    fireEvent.click(screen.getByRole("button", { name: /^Borrar buscar/i }));
     expect(input).toHaveValue("");
+    // Vaciar se aplica solo: no hace falta volver a pulsar "Buscar".
+    await waitFor(() =>
+      expect(clientesApi.obtenerTodos).toHaveBeenLastCalledWith(undefined, 1, 30)
+    );
   });
 });
 

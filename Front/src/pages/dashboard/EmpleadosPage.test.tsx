@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import EmpleadosPage from "./EmpleadosPage";
 
@@ -194,7 +195,9 @@ describe("EmpleadosPage — lista de empleados", () => {
     );
   });
 
-  it("filtra empleados según la búsqueda", async () => {
+  // El filtrado es en memoria, pero se confirma igual que las búsquedas que van
+  // al servidor: para quien usa el panel el control se comporta siempre igual.
+  it("filtra empleados al confirmar la búsqueda, no al teclear", async () => {
     const otroEmpleado = { ...mockEmpleado, id: "emp-2", nombre: "Juan Pérez" };
     vi.mocked(empleadosApi.obtenerTodos).mockResolvedValue([mockEmpleado, otroEmpleado]);
     renderConQuery();
@@ -202,7 +205,10 @@ describe("EmpleadosPage — lista de empleados", () => {
       expect(screen.getByText("María García")).toBeInTheDocument()
     );
     const input = screen.getByPlaceholderText("Buscar por nombre...");
-    fireEvent.change(input, { target: { value: "Juan" } });
+    await userEvent.type(input, "Juan");
+    expect(screen.getByText("María García")).toBeInTheDocument();
+
+    await userEvent.type(input, "{Enter}");
     await waitFor(() =>
       expect(screen.queryByText("María García")).not.toBeInTheDocument()
     );

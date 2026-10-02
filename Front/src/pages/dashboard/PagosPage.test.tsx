@@ -303,7 +303,8 @@ describe("cobro: filtrado en el servidor", () => {
     await waitFor(() => screen.getByText("Ana García"));
     expect(screen.queryByText("Zoe Ramírez")).toBeNull();
 
-    await userEvent.type(screen.getByLabelText("Buscar cliente"), "Zoe");
+    // La búsqueda se confirma; ya no hay debounce que la dispare al teclear.
+    await userEvent.type(screen.getByLabelText("Buscar cliente"), "Zoe{Enter}");
 
     await waitFor(
       () =>

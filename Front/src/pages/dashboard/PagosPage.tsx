@@ -74,7 +74,6 @@ export default function PagosPage() {
   const [periodo,       setPeriodo]       = useState<FiltroPeriodo>("hoy");
   const [filtroPago,    setFiltroPago]    = useState<FiltroEstadoPago>("pendientes");
   const [busquedaCobro, setBusquedaCobro] = useState("");
-  const [busquedaCobroQuery, setBusquedaCobroQuery] = useState("");
   const [paginaCobro,   setPaginaCobro]   = useState(1);
   const [citaSel,       setCitaSel]       = useState<CitaDto | null>(null);
   const [metodoPago,    setMetodoPago]    = useState("");
@@ -108,11 +107,8 @@ export default function PagosPage() {
     setMetodoPago2(primera);
   }, [metodoPago]);
 
-  // Debounce búsqueda 400ms para no disparar una request por cada tecla
-  useEffect(() => {
-    const t = setTimeout(() => { setBusquedaCobroQuery(busquedaCobro); setPaginaCobro(1); }, 400);
-    return () => clearTimeout(t);
-  }, [busquedaCobro]);
+  // La búsqueda ya llega confirmada desde la barra; aquí solo vuelve a la página 1.
+  const aplicarBusquedaCobro = (v: string) => { setBusquedaCobro(v); setPaginaCobro(1); };
 
   useEffect(() => { setPaginaCobro(1); }, [periodo, filtroPago]);
 
@@ -130,13 +126,13 @@ export default function PagosPage() {
   // El filtrado por estado de pago y la búsqueda ocurren en el servidor: filtrar en
   // memoria sobre una página escondía las citas que no venían en ella.
   const { data: pagina, isLoading: cobroLoading } = useQuery({
-    queryKey: ["citas-pagos", periodo, filtroPago, busquedaCobroQuery, paginaCobro],
+    queryKey: ["citas-pagos", periodo, filtroPago, busquedaCobro, paginaCobro],
     queryFn: () =>
       citasApi.obtenerTodas({
         desde: cobroDesde,
         hasta: cobroHasta,
         pagada: PAGADA_POR_FILTRO[filtroPago],
-        busqueda: busquedaCobroQuery || undefined,
+        busqueda: busquedaCobro || undefined,
         pagina: paginaCobro,
         tamano: TAMANO_COBRO,
       }),
@@ -205,13 +201,12 @@ export default function PagosPage() {
   const cobroDesglose = (resumen?.desglose ?? []).filter(d => d.monto > 0);
 
   const cobroFiltrado =
-    periodo !== "hoy" || filtroPago !== "todas" || Boolean(busquedaCobroQuery.trim());
+    periodo !== "hoy" || filtroPago !== "todas" || Boolean(busquedaCobro.trim());
 
   const limpiarFiltrosCobro = () => {
     setPeriodo("hoy");
     setFiltroPago("todas");
     setBusquedaCobro("");
-    setBusquedaCobroQuery("");
     setPaginaCobro(1);
   };
 
@@ -538,7 +533,7 @@ export default function PagosPage() {
             className="mb-0"
             busqueda={{
               valor: busquedaCobro,
-              onChange: setBusquedaCobro,
+              onChange: aplicarBusquedaCobro,
               etiqueta: "Buscar cliente",
               placeholder: "Nombre del cliente...",
             }}
@@ -581,7 +576,7 @@ export default function PagosPage() {
               variante={cobroFiltrado ? "sinResultados" : "vacio"}
               icon={cobroFiltrado ? undefined : <CreditCard size={40} strokeWidth={1.5} />}
               title={
-                busquedaCobroQuery.trim()
+                busquedaCobro.trim()
                   ? "No hay citas para ese cliente"
                   : filtroPago === "pendientes"
                   ? "No hay citas pendientes de pago en este período"

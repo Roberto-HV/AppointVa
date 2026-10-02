@@ -8,19 +8,19 @@ import FiltroRangoFechas from "./FiltroRangoFechas";
 import { campoActivo, type CampoFiltro } from "./tipos";
 
 interface BusquedaProps {
+  /** Término ya aplicado; `FiltroBusqueda` lleva el borrador por dentro. */
   valor: string;
+  /** Se dispara al confirmar la búsqueda o al vaciar el campo, no al teclear. */
   onChange: (valor: string) => void;
   etiqueta?: string;
   placeholder?: string;
-  /** Búsquedas que se confirman con Enter en vez de filtrar al teclear. */
-  onSubmit?: () => void;
-  /** Control extra en la fila de búsqueda (p. ej. el botón "Buscar"). */
-  accion?: ReactNode;
 }
 
 interface FiltroBarraProps {
   /** Campo de texto: permanece visible siempre, también con el panel colapsado. */
   busqueda?: BusquedaProps;
+  /** Control extra en la fila de búsqueda, junto al campo y antes del toggle. */
+  accion?: ReactNode;
   /** Declaración de los filtros; la barra decide cómo y cuándo mostrarlos. */
   campos: CampoFiltro[];
   /** Restablece todo. La barra solo muestra el botón cuando hay algo que limpiar. */
@@ -45,6 +45,7 @@ interface FiltroBarraProps {
  */
 export default function FiltroBarra({
   busqueda,
+  accion,
   campos,
   onLimpiar,
   etiqueta = "Filtros",
@@ -65,18 +66,24 @@ export default function FiltroBarra({
 
   return (
     <section aria-label={etiqueta} className={cn("mb-6", className)}>
-      <div className="flex items-center gap-2">
+      {/* `items-end` y no `items-center`: la acción puede traer su propio label
+          encima (el desplegable de Clientes) y lo que debe alinearse son los
+          controles, no las etiquetas. `flex-wrap` deja que una acción `w-full`
+          baje sola de línea en móvil sin arrastrar el toggle de filtros. */}
+      <div className="flex flex-wrap items-end gap-2">
         {busqueda && (
           <FiltroBusqueda
             valor={busqueda.valor}
             onChange={busqueda.onChange}
             etiqueta={busqueda.etiqueta}
             placeholder={busqueda.placeholder}
-            onSubmit={busqueda.onSubmit}
-            className="flex-1 min-w-0 lg:max-w-xs"
+            // `basis-64` es el umbral de salto: con el toggle "Filtros" al lado
+            // no cabe en 390px, así que la búsqueda se queda sola en su línea en
+            // vez de encogerse hasta que el placeholder no se lee.
+            className="grow basis-64 min-w-0 lg:max-w-md"
           />
         )}
-        {busqueda?.accion}
+        {accion}
 
         {campos.length > 0 && (
           <button

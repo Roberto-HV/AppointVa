@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+﻿import { useState } from "react";
 import { SiWhatsapp } from "react-icons/si";
 import { useSectorTerms } from "../../hooks/useSectorTerms";
 
@@ -52,7 +52,6 @@ export default function CitasPage() {
   const [hasta, setHasta] = useState(() => hoy());
   const [empleadoId, setEmpleadoId] = useState("");
   const [busqueda, setBusqueda] = useState("");
-  const [busquedaQuery, setBusquedaQuery] = useState("");
   const [estadoFiltro, setEstadoFiltro] = useState("");
   const [pagina, setPagina] = useState(1);
   const TAMANO = 50;
@@ -108,22 +107,19 @@ export default function CitasPage() {
   const validarEmailCliente = (v: string) =>
     v.trim() && !EMAIL_RE.test(v.trim()) ? "Correo no válido (ej: nombre@dominio.com)" : "";
 
-  // Debounce búsqueda 400ms para no disparar una request por cada tecla
-  useEffect(() => {
-    const t = setTimeout(() => { setBusquedaQuery(busqueda); setPagina(1); }, 400);
-    return () => clearTimeout(t);
-  }, [busqueda]);
+  // La búsqueda ya llega confirmada desde la barra; aquí solo vuelve a la página 1.
+  const aplicarBusqueda = (v: string) => { setBusqueda(v); setPagina(1); };
 
   // ── Queries ──────────────────────────────────────────────────────────────────
   const estadoNum = estadoFiltro ? ESTADOS[estadoFiltro as keyof typeof ESTADOS] : undefined;
 
   const { data: pagCitas, isLoading } = useQuery({
-    queryKey: ["citas", desde, hasta, empleadoId, busquedaQuery, estadoFiltro, pagina],
+    queryKey: ["citas", desde, hasta, empleadoId, busqueda, estadoFiltro, pagina],
     queryFn: () => citasApi.obtenerTodas({
       desde: desde || undefined,
       hasta: hasta || undefined,
       empleadoId: empleadoId || undefined,
-      busqueda: busquedaQuery || undefined,
+      busqueda: busqueda || undefined,
       estado: estadoNum,
       pagina,
       tamano: TAMANO,
@@ -528,7 +524,7 @@ export default function CitasPage() {
             vista === "lista"
               ? {
                   valor: busqueda,
-                  onChange: setBusqueda,
+                  onChange: aplicarBusqueda,
                   etiqueta: "Buscar cliente",
                   placeholder: "Nombre o teléfono...",
                 }

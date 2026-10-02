@@ -25,13 +25,14 @@ interface TabsProps<T extends string> {
  * de tabs exige `tabpanel`, `aria-controls` y navegación con flechas en las
  * cuatro páginas, y sin eso `role="tab"` solo empeora lo que anuncia el lector.
  *
- * `overflow-x-auto` y pestañas que no se comprimen: la tira de 5 de Reportes y
- * la de 3 de Citas se cortaban a 390px porque `flex-1` las encogía por debajo
- * de su texto. Ahora se desplazan en horizontal y conservan su ancho.
- *
- * La bandeja se dimensiona a su contenido (`w-fit`) y las pestañas no crecen:
- * con `grow` y ancho completo, dos pestañas a 1600px quedaban como dos botones
- * gigantes de 800px cada uno.
+ * Ancho completo y reparto proporcional conviven con el desplazamiento
+ * horizontal gracias a `grow basis-0 min-w-fit`: la base cero reparte el ancho
+ * de la bandeja en partes iguales, y `min-w-fit` es el piso que impide que una
+ * pestaña baje de su propio texto. Cuando la suma de esos pisos cabe —1024px o
+ * 390px con dos pestañas— las pestañas llenan la fila; cuando no cabe —la tira
+ * de cinco de Reportes a 390px— todas quedan clavadas en su ancho de texto, la
+ * fila desborda y `overflow-x-auto` la convierte en desplazamiento lateral en
+ * vez de recortar las etiquetas.
  */
 export default function Tabs<T extends string>({
   opciones,
@@ -44,7 +45,7 @@ export default function Tabs<T extends string>({
     <nav
       aria-label={etiqueta}
       className={cn(
-        "flex w-fit max-w-full gap-1 p-1 rounded-lg bg-gray-100 dark:bg-slate-700",
+        "flex w-full gap-1 p-1 rounded-lg bg-gray-100 dark:bg-slate-700",
         "overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
         className
       )}
@@ -58,7 +59,7 @@ export default function Tabs<T extends string>({
             aria-current={activo ? "page" : undefined}
             onClick={() => onChange(o.id)}
             className={cn(
-              "min-h-[44px] lg:min-h-[36px] px-3 sm:px-4 shrink-0",
+              "min-h-[44px] lg:min-h-[36px] px-3 sm:px-4 grow basis-0 min-w-fit",
               "rounded-md text-sm font-medium whitespace-nowrap transition-colors",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40",
               activo

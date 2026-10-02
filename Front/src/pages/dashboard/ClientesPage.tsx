@@ -27,14 +27,13 @@ export default function ClientesPage() {
   const terms = useSectorTerms();
   const [searchParams, setSearchParams] = useSearchParams();
   const [tab, setTab] = useState<TabClientes>("todos");
-  const [buscar, setBuscar] = useState("");
   const [buscarActivo, setBuscarActivo] = useState("");
   const [pagina, setPagina] = useState(1);
   const [clienteSel, setClienteSel] = useState<ClienteDto | null>(null);
   const [notas, setNotas] = useState("");
   const [notasGuardadas, setNotasGuardadas] = useState(false);
   const [diasInactivo, setDiasInactivo] = useState<typeof OPCIONES_DIAS[number]>(60);
-  const idMostrar = useId();
+  const idActividad = useId();
 
   const { data: paginaClientes, isLoading } = useQuery({
     queryKey: ["clientes", buscarActivo, pagina],
@@ -124,8 +123,8 @@ export default function ClientesPage() {
     setNotasGuardadas(false);
   };
 
-  const buscarClientes = () => { setPagina(1); setBuscarActivo(buscar); };
-  const limpiarBusqueda = () => { setBuscar(""); setBuscarActivo(""); setPagina(1); };
+  const buscarClientes = (termino: string) => { setPagina(1); setBuscarActivo(termino); };
+  const limpiarBusqueda = () => { setBuscarActivo(""); setPagina(1); };
 
   const exportarClientes = () => {
     const enc = ["Nombre", "Teléfono", "Correo", "Total citas", "Inasistencias", "Última visita", "Cliente desde"];
@@ -164,48 +163,62 @@ export default function ClientesPage() {
         )}
       </div>
 
-      {/* "Inactivos" acota el mismo listado en vez de abrir otra sección, así que
-          es un desplegable y no una pestaña: dos pestañas se estiraban a lo ancho
-          de la pantalla. */}
-      <div className="mb-6">
-        <span
-          id={idMostrar}
-          className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-1.5"
-        >
-          Mostrar
-        </span>
-        <Select
-          value={tab}
-          onChange={(e) => setTab(e.target.value as TabClientes)}
-          aria-labelledby={idMostrar}
-          className="w-full sm:w-56"
-        >
-          <option value="todos">Todos</option>
-          <option value="inactivos">Inactivos</option>
-        </Select>
-      </div>
+      {/* Una sola barra para los dos modos: "Inactivos" acota el mismo listado en
+          vez de abrir otra sección, así que es un filtro más —no una pestaña— y
+          se lee en la misma fila que la búsqueda. "Actividad" y no "Estado":
+          "Estado" ya nombra el estado de la cita en el resto del dashboard. */}
+      <FiltroBarra
+        etiqueta={`Filtros de ${terms.clientes.toLowerCase()}`}
+        busqueda={
+          tab === "todos"
+            ? {
+                valor: buscarActivo,
+                onChange: buscarClientes,
+                etiqueta: `Buscar ${terms.cliente.toLowerCase()}`,
+                placeholder: "Buscar por nombre o teléfono...",
+              }
+            : undefined
+        }
+        accion={
+          <div className="w-full sm:w-auto">
+            <span
+              id={idActividad}
+              className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-1.5"
+            >
+              Actividad
+            </span>
+            <Select
+              value={tab}
+              onChange={(e) => setTab(e.target.value as TabClientes)}
+              aria-labelledby={idActividad}
+              className="w-full sm:w-56"
+            >
+              <option value="todos">Todos</option>
+              <option value="inactivos">Inactivos</option>
+            </Select>
+          </div>
+        }
+        campos={
+          tab === "inactivos"
+            ? [
+                {
+                  tipo: "pills",
+                  id: "diasInactivo",
+                  etiqueta: "Sin visitar en",
+                  valor: String(diasInactivo),
+                  onChange: (v) => setDiasInactivo(Number(v) as typeof OPCIONES_DIAS[number]),
+                  valorNeutro: "60",
+                  opciones: OPCIONES_DIAS.map((d) => ({ valor: String(d), etiqueta: `${d} días` })),
+                },
+              ]
+            : []
+        }
+        onLimpiar={tab === "inactivos" ? () => setDiasInactivo(60) : limpiarBusqueda}
+      />
 
       {/* ── Tab: Inactivos ── */}
       {tab === "inactivos" && (
         <div className="space-y-5">
-          {/* Selector de días */}
-          <FiltroBarra
-            etiqueta="Filtros de inactivos"
-            className="mb-0"
-            onLimpiar={() => setDiasInactivo(60)}
-            campos={[
-              {
-                tipo: "pills",
-                id: "diasInactivo",
-                etiqueta: "Sin visitar en",
-                valor: String(diasInactivo),
-                onChange: (v) => setDiasInactivo(Number(v) as typeof OPCIONES_DIAS[number]),
-                valorNeutro: "60",
-                opciones: OPCIONES_DIAS.map((d) => ({ valor: String(d), etiqueta: `${d} días` })),
-              },
-            ]}
-          />
-
           {cargandoInactivos ? (
             <div className="space-y-2">
               {[1, 2, 3, 4].map((i) => (
@@ -275,42 +288,6 @@ export default function ClientesPage() {
 
       {/* ── Tab: Todos ── */}
       {tab === "todos" && (<>
-      {/* Buscador — se confirma con Enter o con el botón, no filtra al teclear */}
-      <FiltroBarra
-        etiqueta={`Búsqueda de ${terms.clientes.toLowerCase()}`}
-        busqueda={{
-          valor: buscar,
-          onChange: setBuscar,
-          etiqueta: `Buscar ${terms.cliente.toLowerCase()}`,
-          placeholder: "Buscar por nombre o teléfono...",
-          onSubmit: buscarClientes,
-          // "Buscar" y "Limpiar" viven junto al campo, no en el panel de
-          // filtros: pertenecen al ciclo escribir → confirmar de esta página.
-          accion: (
-            <>
-              <button
-                type="button"
-                onClick={buscarClientes}
-                className="shrink-0 min-h-[44px] px-4 bg-slate-700 hover:bg-slate-800 text-white text-sm font-medium rounded-xl transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40"
-              >
-                Buscar
-              </button>
-              {buscarActivo && (
-                <button
-                  type="button"
-                  onClick={limpiarBusqueda}
-                  className="shrink-0 min-h-[44px] px-3 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-xl transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40"
-                >
-                  Limpiar
-                </button>
-              )}
-            </>
-          ),
-        }}
-        campos={[]}
-        onLimpiar={limpiarBusqueda}
-      />
-
       {/* Lista */}
       {isLoading ? (
         <p className="text-gray-400 dark:text-gray-500">Cargando clientes...</p>
