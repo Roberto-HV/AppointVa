@@ -16,6 +16,7 @@ import Tabs from "../../components/ui/Tabs";
 import EmptyState from "../../components/ui/EmptyState";
 import Pagination from "../../components/ui/Pagination";
 import { FiltroBarra } from "../../components/ui/filtros";
+import { usePaginacionLocal, TAMANO_PAGINA } from "../../hooks/usePaginacionLocal";
 import { DatePicker } from "../../components/ui/DateTimePicker";
 import TicketRecibo from "../../components/dashboard/TicketRecibo";
 import { cierreCajaApi } from "../../api/cierreCaja";
@@ -31,7 +32,7 @@ const PERIODOS: { key: FiltroPeriodo; label: string; desde: () => string; hasta:
   { key: "mes",    label: "Mes",    desde: inicioMes,    hasta: finMes },
 ];
 
-const TAMANO_COBRO = 50;
+const TAMANO_COBRO = TAMANO_PAGINA;
 
 const PAGADA_POR_FILTRO: Record<FiltroEstadoPago, boolean | undefined> = {
   todas:      undefined,
@@ -234,6 +235,11 @@ export default function PagosPage() {
     .filter(d => d.cantidad > 0);
 
   const histPromedio = histFiltrado.length > 0 ? histTotalCobrado / histFiltrado.length : 0;
+
+  // La tabla se pagina, pero los KPIs, el desglose, el pie de tabla y la
+  // exportación siguen leyendo `histFiltrado` entero: son cifras del período,
+  // no de la página, y el rango de fechas ya acota cuánto se trae del servidor.
+  const hist = usePaginacionLocal(histFiltrado);
 
   // ── Corte derived data ────────────────────────────────────────────────────
   const corteTotalCobrado  = corteData.reduce((s, c) => s + (c.montoCobrado ?? c.precio), 0);
@@ -730,7 +736,7 @@ export default function PagosPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
-                    {histFiltrado.map((c) => (
+                    {hist.visibles.map((c) => (
                       <HistorialRow
                         key={c.id}
                         cita={c}
@@ -741,7 +747,9 @@ export default function PagosPage() {
                   </tbody>
                   <tfoot>
                     <tr className="border-t-2 border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-700/50 font-semibold">
-                      <td colSpan={5} className="px-4 py-3 text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total</td>
+                      {/* "Total del período" y no "Total": con la tabla paginada
+                          un "Total" a secas se leería como el total de la página. */}
+                      <td colSpan={5} className="px-4 py-3 text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total del período</td>
                       <td className="px-4 py-3 text-right text-emerald-600 dark:text-emerald-400">${histTotalCobrado.toFixed(2)}</td>
                       <td className="px-4 py-3 text-right text-teal-600 dark:text-teal-400 hidden sm:table-cell">${histTotalPropinas.toFixed(2)}</td>
                       <td></td>
@@ -749,6 +757,14 @@ export default function PagosPage() {
                   </tfoot>
                 </table>
               </div>
+              <Pagination
+                pagina={hist.pagina}
+                totalPaginas={hist.totalPaginas}
+                total={hist.total}
+                labelTotal="pagos"
+                onCambiar={hist.setPagina}
+                cargando={histLoading}
+              />
             </div>
           )}
         </>

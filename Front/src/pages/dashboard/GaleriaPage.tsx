@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { negociosApi } from "../../api/negocios";
 import { useToastStore } from "../../store/toastStore";
 import { Upload, Trash2, X, ImageIcon } from "lucide-react";
+import BotonAccion, { AccionesPagina } from "../../components/ui/BotonAccion";
 
 const MAX_FOTOS = 20;
 
@@ -74,14 +75,12 @@ export default function GaleriaPage() {
           </p>
         </div>
         {imagenes.length < MAX_FOTOS && (
-          <button
-            onClick={() => inputRef.current?.click()}
-            disabled={subiendo}
-            className="flex items-center gap-2 px-4 py-2.5 bg-gray-900 hover:bg-gray-700 disabled:opacity-40 text-white text-sm font-semibold rounded-xl transition"
-          >
-            <Upload size={15} />
-            {subiendo ? "Subiendo..." : "Agregar fotos"}
-          </button>
+          <AccionesPagina>
+            <BotonAccion onClick={() => inputRef.current?.click()} disabled={subiendo}>
+              <Upload size={15} />
+              {subiendo ? "Subiendo..." : "Agregar fotos"}
+            </BotonAccion>
+          </AccionesPagina>
         )}
         <input
           ref={inputRef}

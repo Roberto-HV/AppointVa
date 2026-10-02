@@ -5,7 +5,9 @@ import { formatFecha } from "../../utils/formatters";
 import Pagination from "../../components/ui/Pagination";
 import { Star } from "lucide-react";
 
-const PAGE_SIZE = 20;
+import { TAMANO_PAGINA } from "../../hooks/usePaginacionLocal";
+
+const PAGE_SIZE = TAMANO_PAGINA;
 
 function formatearNombre(nombre: string): string {
   const partes = nombre.trim().split(/\s+/);
@@ -49,7 +51,7 @@ export default function ResenasPage() {
 
   return (
     <div className="p-4 sm:p-8">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-start justify-between flex-wrap gap-3 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Reseñas</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
@@ -61,11 +63,19 @@ export default function ResenasPage() {
             )}
           </p>
         </div>
+        {/* No es una acción de encabezado, así que no usa `BotonAccion`: el ámbar
+            aquí es el color de la calificación, el mismo de las estrellas, y lo
+            que muestra es un dato. El promedio sale de las reseñas cargadas —no
+            hay agregado del servidor—, de ahí la leyenda: con 15 por página el
+            número describe la página, no el histórico. */}
         {promedioRating && (
-          <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800 rounded-xl px-4 py-2">
+          <div className="ml-auto shrink-0 flex items-center gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800 rounded-xl px-4 py-2">
             <Star size={18} className="text-amber-400 fill-amber-400 shrink-0" />
             <span className="text-xl font-bold text-amber-600 dark:text-amber-400">{promedioRating}</span>
             <span className="text-xs text-amber-500 dark:text-amber-500">/ 5</span>
+            <span className="text-[10px] leading-tight text-amber-600/70 dark:text-amber-400/70 max-w-[5.5rem]">
+              promedio de esta página
+            </span>
           </div>
         )}
       </div>
@@ -88,7 +98,10 @@ export default function ResenasPage() {
         </div>
       ) : (
         <>
-          <p className="text-xs text-gray-400 dark:text-gray-500 mb-3">{total} reseña{total !== 1 ? "s" : ""} aprobada{total !== 1 ? "s" : ""}</p>
+          {/* Sin "aprobadas": `total` lo da el servidor sobre todas las reseñas y
+              el filtro de aprobación se aplica aquí, sobre la página cargada, así
+              que ese número no puede afirmar cuántas están aprobadas. */}
+          <p className="text-xs text-gray-400 dark:text-gray-500 mb-3">{total} reseña{total !== 1 ? "s" : ""} recibida{total !== 1 ? "s" : ""}</p>
           <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 overflow-x-auto">
             <table className="w-full text-sm min-w-[520px]">
               <thead>

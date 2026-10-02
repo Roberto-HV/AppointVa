@@ -186,7 +186,7 @@ describe("CitasPage — estado vacío", () => {
       datos: [],
       total: 0,
       pagina: 1,
-      tamano: 50,
+      tamano: 15,
     });
     renderConQuery();
     await waitFor(() =>
@@ -201,7 +201,7 @@ describe("CitasPage — lista de citas", () => {
       datos: [makeCita()],
       total: 1,
       pagina: 1,
-      tamano: 50,
+      tamano: 15,
     });
     renderConQuery();
     await waitFor(() =>
@@ -214,7 +214,7 @@ describe("CitasPage — lista de citas", () => {
       datos: [makeCita()],
       total: 1,
       pagina: 1,
-      tamano: 50,
+      tamano: 15,
     });
     renderConQuery();
     await waitFor(() =>
@@ -227,7 +227,7 @@ describe("CitasPage — lista de citas", () => {
       datos: [makeCita()],
       total: 1,
       pagina: 1,
-      tamano: 50,
+      tamano: 15,
     });
     renderConQuery();
     await waitFor(() =>
@@ -241,7 +241,7 @@ describe("CitasPage — lista de citas", () => {
       datos: [],
       total: 0,
       pagina: 1,
-      tamano: 50,
+      tamano: 15,
     });
     renderConQuery();
     await waitFor(() =>
@@ -260,7 +260,7 @@ describe("CitasPage — filtros de estado", () => {
       datos: [],
       total: 0,
       pagina: 1,
-      tamano: 50,
+      tamano: 15,
     });
     renderConQuery();
     await screen.findByRole("combobox", { name: "Estado" });
@@ -275,7 +275,7 @@ describe("CitasPage — filtros de estado", () => {
       datos: [],
       total: 0,
       pagina: 1,
-      tamano: 50,
+      tamano: 15,
     });
     renderConQuery();
     const selector = await screen.findByRole("combobox", { name: "Estado" });
@@ -292,7 +292,7 @@ describe("CitasPage — botones de acción en filas", () => {
       datos: [makeCita({ estadoTexto: "Pendiente" })],
       total: 1,
       pagina: 1,
-      tamano: 50,
+      tamano: 15,
     });
     renderConQuery();
     await waitFor(() =>
@@ -305,7 +305,7 @@ describe("CitasPage — botones de acción en filas", () => {
       datos: [makeCita({ estadoTexto: "Pendiente" })],
       total: 1,
       pagina: 1,
-      tamano: 50,
+      tamano: 15,
     });
     renderConQuery();
     await waitFor(() =>
@@ -320,7 +320,7 @@ describe("CitasPage — tabs de vista", () => {
       datos: [],
       total: 0,
       pagina: 1,
-      tamano: 50,
+      tamano: 15,
     });
     renderConQuery();
     await waitFor(() =>
@@ -337,7 +337,7 @@ describe("CitasPage — tabs de vista", () => {
       datos: [],
       total: 0,
       pagina: 1,
-      tamano: 50,
+      tamano: 15,
     });
     renderConQuery();
     await waitFor(() =>
@@ -356,7 +356,7 @@ describe("CitasPage — input de búsqueda", () => {
       datos: [],
       total: 0,
       pagina: 1,
-      tamano: 50,
+      tamano: 15,
     });
     renderConQuery();
     await waitFor(() =>
@@ -371,7 +371,7 @@ describe("CitasPage — input de búsqueda", () => {
       datos: [],
       total: 0,
       pagina: 1,
-      tamano: 50,
+      tamano: 15,
     });
     renderConQuery();
     const input = await screen.findByPlaceholderText("Nombre o teléfono...");
@@ -386,7 +386,7 @@ describe("CitasPage — atajo 'Hoy'", () => {
       datos: [],
       total: 0,
       pagina: 1,
-      tamano: 50,
+      tamano: 15,
     });
     const { container } = renderConQuery();
 
@@ -411,7 +411,7 @@ describe("CitasPage — paginación", () => {
       datos: [makeCita()],
       total: 150,
       pagina: 1,
-      tamano: 50,
+      tamano: 15,
     });
     renderConQuery();
     await waitFor(() =>
@@ -426,7 +426,7 @@ describe("CitasPage — filtro de Profesional", () => {
       datos: [],
       total: 0,
       pagina: 1,
-      tamano: 50,
+      tamano: 15,
     });
     const { container } = renderConQuery();
     await waitFor(() =>

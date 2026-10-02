@@ -1,8 +1,11 @@
-﻿import { useState } from "react";
+﻿import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Trash2, Tag, X, Check, Copy } from "lucide-react";
 import { descuentosApi, type Descuento } from "../../api/descuentos";
 import { useToastStore } from "../../store/toastStore";
+import Pagination from "../../components/ui/Pagination";
+import BotonAccion, { AccionesPagina } from "../../components/ui/BotonAccion";
+import { usePaginacionLocal } from "../../hooks/usePaginacionLocal";
 
 const TIPOS = [
   { value: "Porcentaje", label: "Porcentaje (%)" },
@@ -82,24 +85,37 @@ export default function DescuentosPage() {
     setTimeout(() => setCopiado(null), 2000);
   };
 
-  const activos = descuentos.filter((d) => !d.agotado && !d.expirado);
-  const inactivos = descuentos.filter((d) => d.agotado || d.expirado);
+  const vigente = (d: Descuento) => !d.agotado && !d.expirado;
+
+  // Se pagina la lista aplanada —activos y después inactivos, el mismo orden que
+  // ya tenía— con un solo paginador, para que una página sean 15 cupones y no 15
+  // por sección. Los encabezados siguen contando el grupo completo, por eso
+  // dicen "en total": partida en páginas, "Activos (12)" se leería como "los que
+  // hay aquí abajo".
+  const { activos, inactivos, ordenados } = useMemo(() => {
+    const activos = descuentos.filter(vigente);
+    const inactivos = descuentos.filter((d) => !vigente(d));
+    return { activos, inactivos, ordenados: [...activos, ...inactivos] };
+  }, [descuentos]);
+
+  const paginados = usePaginacionLocal(ordenados);
+  const activosVisibles = paginados.visibles.filter(vigente);
+  const inactivosVisibles = paginados.visibles.filter((d) => !vigente(d));
 
   return (
     <div className="p-6 max-w-3xl mx-auto space-y-6">
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Cupones de descuento</h1>
           <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
             Los clientes ingresan el código al reservar para obtener un descuento
           </p>
         </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-slate-700 text-white rounded-xl text-sm font-semibold hover:opacity-90 transition"
-        >
-          <Plus size={16} /> Nuevo cupón
-        </button>
+        <AccionesPagina>
+          <BotonAccion onClick={() => setShowForm(true)}>
+            <Plus size={16} /> Nuevo cupón
+          </BotonAccion>
+        </AccionesPagina>
       </div>
 
       {/* Form */}
@@ -205,10 +221,10 @@ export default function DescuentosPage() {
         </div>
       ) : (
         <>
-          {activos.length > 0 && (
+          {activosVisibles.length > 0 && (
             <div className="space-y-3">
-              <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Activos ({activos.length})</h2>
-              {activos.map((d) => (
+              <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Activos · {activos.length} en total</h2>
+              {activosVisibles.map((d) => (
                 <DescuentoRow
                   key={d.id}
                   descuento={d}
@@ -222,10 +238,10 @@ export default function DescuentosPage() {
               ))}
             </div>
           )}
-          {inactivos.length > 0 && (
+          {inactivosVisibles.length > 0 && (
             <div className="space-y-3">
-              <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Inactivos / expirados ({inactivos.length})</h2>
-              {inactivos.map((d) => (
+              <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Inactivos / expirados · {inactivos.length} en total</h2>
+              {inactivosVisibles.map((d) => (
                 <DescuentoRow
                   key={d.id}
                   descuento={d}
@@ -237,6 +253,18 @@ export default function DescuentosPage() {
                   }}
                 />
               ))}
+            </div>
+          )}
+          {paginados.totalPaginas > 1 && (
+            <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-xl">
+              <Pagination
+                pagina={paginados.pagina}
+                totalPaginas={paginados.totalPaginas}
+                total={paginados.total}
+                labelTotal="cupones"
+                onCambiar={paginados.setPagina}
+                cargando={isLoading}
+              />
             </div>
           )}
         </>

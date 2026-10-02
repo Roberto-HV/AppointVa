@@ -8,18 +8,22 @@ import Modal from "../../components/ui/Modal";
 import EstadoBadge from "../../components/ui/EstadoBadge";
 import { exportarExcel } from "../../utils/exportarExcel";
 import type { ClienteDto } from "../../types";
-import { formatPrecio, formatFecha, formatFechaHora } from "../../utils/formatters";
+import { formatPrecio, formatFecha, formatFechaCorta, formatFechaHora } from "../../utils/formatters";
 import Pagination from "../../components/ui/Pagination";
 import { useToastStore } from "../../store/toastStore";
 import { SiWhatsapp } from "react-icons/si";
-import { UserX, Eye, Users } from "lucide-react";
+import { UserX, UserCheck, Eye, Users } from "lucide-react";
 import Select from "../../components/ui/Select";
 import EmptyState from "../../components/ui/EmptyState";
+import BotonAccion, { AccionesPagina } from "../../components/ui/BotonAccion";
 import { FiltroBarra } from "../../components/ui/filtros";
+import { usePaginacionLocal, TAMANO_PAGINA } from "../../hooks/usePaginacionLocal";
 
-type TabClientes = "todos" | "inactivos";
-const TAMANO = 30;
+type TabClientes = "todos" | "activos" | "inactivos";
+const TAMANO = TAMANO_PAGINA;
 const OPCIONES_DIAS = [30, 60, 90, 180] as const;
+/** Tope del análisis de actividad: es un filtro de cliente sobre una sola página. */
+const TAMANO_ACTIVIDAD = 500;
 
 export default function ClientesPage() {
   const qc = useQueryClient();
@@ -46,22 +50,44 @@ export default function ClientesPage() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const { data: todosParaInactivos = [], isLoading: cargandoInactivos } = useQuery({
-    queryKey: ["clientes-inactivos-base"],
-    queryFn: () => clientesApi.obtenerTodos(undefined, 1, 500),
-    enabled: tab === "inactivos",
+  const { data: baseActividad = [], isLoading: cargandoActividad } = useQuery({
+    queryKey: ["clientes-actividad-base"],
+    queryFn: () => clientesApi.obtenerTodos(undefined, 1, TAMANO_ACTIVIDAD),
+    enabled: tab !== "todos",
     staleTime: 2 * 60 * 1000,
     select: (p) => p.datos,
   });
 
   const ahora = useMemo(() => new Date(), []);
 
-  const clientesInactivos = useMemo(() => {
-    const umbral = new Date(ahora.getTime() - diasInactivo * 24 * 60 * 60 * 1000);
-    return todosParaInactivos
-      .filter((c) => c.ultimaCitaEn && new Date(c.ultimaCitaEn) < umbral)
-      .sort((a, b) => new Date(a.ultimaCitaEn!).getTime() - new Date(b.ultimaCitaEn!).getTime());
-  }, [todosParaInactivos, diasInactivo, ahora]);
+  /**
+   * Los tres grupos salen del mismo recorrido para que sumen siempre el total
+   * analizado. "Sin visitas" no es un descarte: `ultimaCitaEn` es nulo solo
+   * cuando el cliente existe en el directorio pero nunca se le agendó una cita,
+   * y ese cliente no es activo (no ha venido) ni es reactivable (no hay nada a
+   * qué volver, ni fecha desde la cual contar días). Va aparte y se muestra.
+   */
+  const { activos, inactivos, sinVisitas } = useMemo(() => {
+    const umbral = ahora.getTime() - diasInactivo * 24 * 60 * 60 * 1000;
+    const activos: ClienteDto[] = [];
+    const inactivos: ClienteDto[] = [];
+    const sinVisitas: ClienteDto[] = [];
+    for (const c of baseActividad) {
+      if (!c.ultimaCitaEn) sinVisitas.push(c);
+      else if (new Date(c.ultimaCitaEn).getTime() < umbral) inactivos.push(c);
+      else activos.push(c);
+    }
+    inactivos.sort((a, b) => new Date(a.ultimaCitaEn!).getTime() - new Date(b.ultimaCitaEn!).getTime());
+    activos.sort((a, b) => new Date(b.ultimaCitaEn!).getTime() - new Date(a.ultimaCitaEn!).getTime());
+    return { activos, inactivos, sinVisitas };
+  }, [baseActividad, diasInactivo, ahora]);
+
+  const listaActividad = tab === "activos" ? activos : inactivos;
+  // Estos dos modos dibujaban los hasta 500 clientes del análisis de una sola
+  // vez. Se paginan en el cliente porque el recorrido que reparte activos,
+  // inactivos y sin visitas necesita el arreglo completo: los tres conteos de
+  // la línea de cuadre siguen saliendo de ahí, no de la página.
+  const paginaActividad = usePaginacionLocal(listaActividad);
 
   const formatWaPhone = (tel: string) => {
     const digits = tel.replace(/\D/g, "");
@@ -149,24 +175,31 @@ export default function ClientesPage() {
             Directorio, historial y notas de cada {terms.cliente.toLowerCase()}
           </p>
         </div>
+        {/* El aviso ámbar se queda: no decora, advierte que el archivo no trae
+            todo el directorio. Lo que cambia es el número — decía siempre "30"
+            aunque la página tuviera tres filas, y a 15 por página eso pasaría
+            más seguido. Ahora cuenta las filas que realmente se exportan. */}
         {tab === "todos" && clientes.length > 0 && (
-          <div className="flex flex-col items-end gap-0.5">
-            <button
+          <AccionesPagina className="flex-col items-end gap-0.5">
+            <BotonAccion
+              variante="secundaria"
               onClick={exportarClientes}
-              className="text-xs text-gray-500 hover:text-gray-700 border border-gray-200 hover:border-gray-300 px-3 py-1.5 rounded-lg transition dark:text-gray-400 dark:border-slate-600"
-              title={`Exporta solo los ${TAMANO} clientes de esta página`}
+              title={`Exporta los ${clientes.length} ${terms.clientes.toLowerCase()} de esta página, no los ${totalClientes} del directorio`}
             >
               Exportar Excel
-            </button>
-            <span className="text-[10px] text-amber-500 dark:text-amber-400">Solo página actual ({TAMANO} clientes)</span>
-          </div>
+            </BotonAccion>
+            <span className="text-[10px] text-amber-500 dark:text-amber-400">
+              Solo esta página: {clientes.length} de {totalClientes}
+            </span>
+          </AccionesPagina>
         )}
       </div>
 
-      {/* Una sola barra para los dos modos: "Inactivos" acota el mismo listado en
-          vez de abrir otra sección, así que es un filtro más —no una pestaña— y
-          se lee en la misma fila que la búsqueda. "Actividad" y no "Estado":
-          "Estado" ya nombra el estado de la cita en el resto del dashboard. */}
+      {/* Una sola barra para los tres modos: "Activos" e "Inactivos" acotan el
+          mismo listado en vez de abrir otra sección, así que son un filtro más
+          —no pestañas— y se leen en la misma fila que la búsqueda. "Actividad"
+          y no "Estado": "Estado" ya nombra el estado de la cita en el resto del
+          dashboard. */}
       <FiltroBarra
         etiqueta={`Filtros de ${terms.clientes.toLowerCase()}`}
         busqueda={
@@ -194,17 +227,21 @@ export default function ClientesPage() {
               className="w-full sm:w-56"
             >
               <option value="todos">Todos</option>
+              <option value="activos">Activos</option>
               <option value="inactivos">Inactivos</option>
             </Select>
           </div>
         }
         campos={
-          tab === "inactivos"
+          tab !== "todos"
             ? [
                 {
                   tipo: "pills",
-                  id: "diasInactivo",
-                  etiqueta: "Sin visitar en",
+                  id: "diasActividad",
+                  // El umbral es el mismo en los dos modos, pero la frase no:
+                  // "Sin visitar en 30 días" describe justo lo contrario de lo
+                  // que se está listando cuando el modo es Activos.
+                  etiqueta: tab === "activos" ? "Con visita en los últimos" : "Sin visitar en",
                   valor: String(diasInactivo),
                   onChange: (v) => setDiasInactivo(Number(v) as typeof OPCIONES_DIAS[number]),
                   valorNeutro: "60",
@@ -213,38 +250,62 @@ export default function ClientesPage() {
               ]
             : []
         }
-        onLimpiar={tab === "inactivos" ? () => setDiasInactivo(60) : limpiarBusqueda}
+        onLimpiar={tab === "todos" ? limpiarBusqueda : () => setDiasInactivo(60)}
       />
 
-      {/* ── Tab: Inactivos ── */}
-      {tab === "inactivos" && (
+      {/* ── Modos de actividad: Activos / Inactivos ── */}
+      {tab !== "todos" && (
         <div className="space-y-5">
-          {cargandoInactivos ? (
+          {cargandoActividad ? (
             <div className="space-y-2">
               {[1, 2, 3, 4].map((i) => (
                 <div key={i} className="h-16 bg-gray-100 dark:bg-slate-800 rounded-xl animate-pulse" />
               ))}
             </div>
-          ) : clientesInactivos.length === 0 ? (
-            <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700">
-              <EmptyState
-                icon={<UserX size={40} strokeWidth={1.5} />}
-                title={`Sin ${terms.clientes.toLowerCase()} inactivos`}
-                description={`Todos tus ${terms.clientes.toLowerCase()} han visitado en los últimos ${diasInactivo} días`}
-              />
-            </div>
           ) : (
             <>
-              <div className="flex items-baseline gap-3 flex-wrap">
-                <p className="text-xs text-gray-400 dark:text-gray-500">
-                  {clientesInactivos.length} cliente{clientesInactivos.length !== 1 ? "s" : ""} sin visitar en más de {diasInactivo} días
+              {/* El resumen va antes del listado —y también cuando el grupo
+                  elegido está vacío— porque es donde cuadran las cuentas: si
+                  "sin visitas" solo apareciera junto a una lista con filas, el
+                  grupo se volvería invisible justo cuando más desconcierta. */}
+              <div className="space-y-1">
+                <div className="flex items-baseline gap-3 flex-wrap">
+                  <p className="text-xs text-gray-400 dark:text-gray-500">
+                    {listaActividad.length} cliente{listaActividad.length !== 1 ? "s" : ""}{" "}
+                    {tab === "activos"
+                      ? `con visita en los últimos ${diasInactivo} días`
+                      : `sin visitar en más de ${diasInactivo} días`}
+                  </p>
+                  <span className="text-[10px] text-amber-500 dark:text-amber-400">
+                    El análisis se realiza sobre los últimos {TAMANO_ACTIVIDAD} clientes. Si tienes más, algunos pueden no aparecer.
+                  </span>
+                </div>
+                <p className="text-[11px] text-gray-400 dark:text-gray-500">
+                  De {baseActividad.length} analizados: {activos.length} activos, {inactivos.length} inactivos
+                  y {sinVisitas.length} sin visitas registradas
+                  {sinVisitas.length > 0 && " (nunca se les agendó una cita, así que no cuentan en ninguno de los dos grupos)"}.
                 </p>
-                <span className="text-[10px] text-amber-500 dark:text-amber-400">
-                  El análisis se realiza sobre los últimos 500 clientes. Si tienes más, algunos inactivos pueden no aparecer.
-                </span>
               </div>
-              <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 divide-y divide-gray-50 dark:divide-slate-700">
-                {clientesInactivos.map((c) => {
+
+              {listaActividad.length === 0 ? (
+                <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700">
+                  {tab === "activos" ? (
+                    <EmptyState
+                      icon={<UserCheck size={40} strokeWidth={1.5} />}
+                      title={`Sin ${terms.clientes.toLowerCase()} activos`}
+                      description={`Ningún ${terms.cliente.toLowerCase()} ha visitado en los últimos ${diasInactivo} días`}
+                    />
+                  ) : (
+                    <EmptyState
+                      icon={<UserX size={40} strokeWidth={1.5} />}
+                      title={`Sin ${terms.clientes.toLowerCase()} inactivos`}
+                      description={`Todos tus ${terms.clientes.toLowerCase()} han visitado en los últimos ${diasInactivo} días`}
+                    />
+                  )}
+                </div>
+              ) : (
+                <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 divide-y divide-gray-50 dark:divide-slate-700">
+                {paginaActividad.visibles.map((c) => {
                   const dias = Math.floor(
                     (ahora.getTime() - new Date(c.ultimaCitaEn!).getTime()) / (1000 * 60 * 60 * 24)
                   );
@@ -261,11 +322,25 @@ export default function ClientesPage() {
                           {c.telefono} · {c.totalCitas} cita{c.totalCitas !== 1 ? "s" : ""}
                         </p>
                       </div>
-                      <div className="text-right shrink-0 mr-2">
-                        <p className="text-sm font-bold text-amber-500">{dias} días</p>
-                        <p className="text-xs text-gray-400 dark:text-gray-500">sin visitar</p>
-                      </div>
-                      {c.telefono && (
+                      {tab === "activos" ? (
+                        // Fecha y no "hace N días": `ultimaCitaEn` guarda el
+                        // inicio de la última cita agendada, que puede estar en
+                        // el futuro, y entonces el conteo saldría en negativo.
+                        // Formato corto: la fecha larga se come el ancho del
+                        // nombre en móvil.
+                        <div className="text-right shrink-0 mr-2">
+                          <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                            {formatFechaCorta(c.ultimaCitaEn!)}
+                          </p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500">última cita</p>
+                        </div>
+                      ) : (
+                        <div className="text-right shrink-0 mr-2">
+                          <p className="text-sm font-bold text-amber-500">{dias} días</p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500">sin visitar</p>
+                        </div>
+                      )}
+                      {tab === "inactivos" && c.telefono && (
                         <a
                           href={whatsappReactivacion(c)}
                           target="_blank"
@@ -280,7 +355,16 @@ export default function ClientesPage() {
                     </div>
                   );
                 })}
-              </div>
+                <Pagination
+                  pagina={paginaActividad.pagina}
+                  totalPaginas={paginaActividad.totalPaginas}
+                  total={paginaActividad.total}
+                  labelTotal={terms.clientes.toLowerCase()}
+                  onCambiar={paginaActividad.setPagina}
+                  cargando={cargandoActividad}
+                />
+                </div>
+              )}
             </>
           )}
         </div>

@@ -2,7 +2,7 @@ import { useId, useState, type ReactNode } from "react";
 import { SlidersHorizontal, X } from "lucide-react";
 import { cn } from "../../../lib/utils";
 import Select from "../Select";
-import FiltroBusqueda from "./FiltroBusqueda";
+import FiltroBusqueda, { FiltroBotonBuscar } from "./FiltroBusqueda";
 import FiltroPills from "./FiltroPills";
 import FiltroRangoFechas from "./FiltroRangoFechas";
 import { campoActivo, type CampoFiltro } from "./tipos";
@@ -19,7 +19,7 @@ interface BusquedaProps {
 interface FiltroBarraProps {
   /** Campo de texto: permanece visible siempre, también con el panel colapsado. */
   busqueda?: BusquedaProps;
-  /** Control extra en la fila de búsqueda, junto al campo y antes del toggle. */
+  /** Control extra en la fila de búsqueda, entre el campo y el toggle. */
   accion?: ReactNode;
   /** Declaración de los filtros; la barra decide cómo y cuándo mostrarlos. */
   campos: CampoFiltro[];
@@ -54,6 +54,7 @@ export default function FiltroBarra({
   const [abierto, setAbierto] = useState(false);
   const idPanel = useId();
   const idBase = useId();
+  const idFormBusqueda = useId();
 
   // El badge cuenta lo que queda oculto tras el toggle; la búsqueda se ve sola.
   const activosColapsados = campos.filter(campoActivo).length;
@@ -69,12 +70,19 @@ export default function FiltroBarra({
       {/* `items-end` y no `items-center`: la acción puede traer su propio label
           encima (el desplegable de Clientes) y lo que debe alinearse son los
           controles, no las etiquetas. `flex-wrap` deja que una acción `w-full`
-          baje sola de línea en móvil sin arrastrar el toggle de filtros. */}
+          baje sola de línea en móvil sin arrastrar el toggle de filtros.
+
+          Orden de la fila: campo, filtros en línea, y "Buscar" al final. Los
+          filtros van seguidos y la acción que confirma cierra; con el botón
+          pegado al campo, el desplegable quedaba al otro lado y la fila se leía
+          partida. Cuando la página no declara controles en línea —lo normal—
+          "Buscar" queda igualmente justo después del campo. */}
       <div className="flex flex-wrap items-end gap-2">
         {busqueda && (
           <FiltroBusqueda
             valor={busqueda.valor}
             onChange={busqueda.onChange}
+            formId={idFormBusqueda}
             etiqueta={busqueda.etiqueta}
             placeholder={busqueda.placeholder}
             // `basis-64` es el umbral de salto: con el toggle "Filtros" al lado
@@ -112,6 +120,8 @@ export default function FiltroBarra({
             )}
           </button>
         )}
+
+        {busqueda && <FiltroBotonBuscar formId={idFormBusqueda} />}
       </div>
 
       {campos.length > 0 && (

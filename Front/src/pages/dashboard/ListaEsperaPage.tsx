@@ -4,7 +4,9 @@ import { Clock, Trash2, CheckCircle, Bell, Ban, Phone, Mail, Calendar, User, Sci
 import { listaEsperaApi, type EntradaListaEspera } from "../../api/listaEspera";
 import { useToastStore } from "../../store/toastStore";
 import EmptyState from "../../components/ui/EmptyState";
+import Pagination from "../../components/ui/Pagination";
 import { FiltroBarra } from "../../components/ui/filtros";
+import { usePaginacionLocal } from "../../hooks/usePaginacionLocal";
 
 const ESTADOS_CONFIG: Record<string, { label: string; color: string }> = {
   Esperando: { label: "Esperando", color: "bg-yellow-100 text-yellow-700" },
@@ -58,6 +60,11 @@ export default function ListaEsperaPage() {
   });
 
   const cuantos = (estado: string) => listaCompleta.filter((e) => e.estado === estado).length;
+
+  // En el cliente: los KPIs de arriba ya exigen la lista completa (`listaCompleta`),
+  // así que pedirle páginas al servidor no ahorraría ninguna descarga. Los
+  // contadores siguen leyendo el conjunto entero, no la página.
+  const paginada = usePaginacionLocal(lista);
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
@@ -117,7 +124,7 @@ export default function ListaEsperaPage() {
         />
       ) : (
         <div className="space-y-3">
-          {lista.map((entrada) => (
+          {paginada.visibles.map((entrada) => (
             <EntradaCard
               key={entrada.id}
               entrada={entrada}
@@ -130,6 +137,18 @@ export default function ListaEsperaPage() {
               }}
             />
           ))}
+          {paginada.totalPaginas > 1 && (
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700">
+              <Pagination
+                pagina={paginada.pagina}
+                totalPaginas={paginada.totalPaginas}
+                total={paginada.total}
+                labelTotal="entradas"
+                onCambiar={paginada.setPagina}
+                cargando={isLoading}
+              />
+            </div>
+          )}
         </div>
       )}
     </div>

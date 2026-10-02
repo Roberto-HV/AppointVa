@@ -31,7 +31,7 @@ vi.mock("../../api/citas", () => ({
       ],
       total: 1,
       pagina: 1,
-      tamano: 50,
+      tamano: 15,
     }),
     obtenerResumenCobros: vi.fn().mockResolvedValue({
       totalCobrado: 0,
@@ -175,7 +175,7 @@ describe("anticipo en checkout", () => {
       datos: [citaConAnticipo],
       total: 1,
       pagina: 1,
-      tamano: 50,
+      tamano: 15,
     });
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(
@@ -197,7 +197,7 @@ describe("anticipo en checkout", () => {
       datos: [citaConAnticipo],
       total: 1,
       pagina: 1,
-      tamano: 50,
+      tamano: 15,
     });
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(
@@ -219,7 +219,7 @@ describe("anticipo en checkout", () => {
       datos: [{ ...citaConAnticipo, anticipoRecibido: false }],
       total: 1,
       pagina: 1,
-      tamano: 50,
+      tamano: 15,
     });
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(

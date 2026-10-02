@@ -14,8 +14,11 @@ import { DatePicker, TimePicker, citasABusySlots, HORAS } from "../../components
 import { SkeletonCards } from "../../components/ui/Skeleton";
 import EmptyState from "../../components/ui/EmptyState";
 import { FiltroBarra } from "../../components/ui/filtros";
+import Pagination from "../../components/ui/Pagination";
+import BotonAccion, { AccionesPagina } from "../../components/ui/BotonAccion";
 import { useToastStore } from "../../store/toastStore";
 import { useSectorTerms } from "../../hooks/useSectorTerms";
+import { usePaginacionLocal } from "../../hooks/usePaginacionLocal";
 import type { EmpleadoDto, HorarioDiaDto } from "../../types";
 
 const DIAS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
@@ -100,6 +103,11 @@ export default function EmpleadosPage() {
     const q = busqueda.trim().toLowerCase();
     return q ? empleados.filter((e) => e.nombre.toLowerCase().includes(q)) : empleados;
   }, [empleados, busqueda]);
+
+  // Paginación en el cliente: la plantilla de un negocio no crece sin límite y
+  // `obtenerTodos` ya se consume entera en los selectores de otras pantallas,
+  // así que moverla al servidor no ahorraría la carga, solo la duplicaría.
+  const paginaEmpleados = usePaginacionLocal(empleadosFiltrados);
 
   const { data: bloqueos = [], isLoading: cargandoBloqueos } = useQuery({
     queryKey: ["bloqueos", empleadoBloqueo?.id],
@@ -363,10 +371,11 @@ export default function EmpleadosPage() {
             Altas, horarios de atención y accesos al sistema
           </p>
         </div>
-        <button onClick={abrirCrear}
-          className="bg-slate-700 hover:bg-slate-800 text-white text-sm font-semibold px-4 py-2 rounded-lg transition">
-          + Nuevo {terms.empleado.toLowerCase()}
-        </button>
+        <AccionesPagina>
+          <BotonAccion onClick={abrirCrear}>
+            + Nuevo {terms.empleado.toLowerCase()}
+          </BotonAccion>
+        </AccionesPagina>
       </div>
 
       {empleados.length > 0 && (
@@ -412,13 +421,14 @@ export default function EmpleadosPage() {
           />
         </div>
       ) : (
+        <>
         <motion.div
           initial="hidden"
           animate="show"
           variants={{ hidden: {}, show: { transition: { staggerChildren: 0.07 } } }}
           className="grid grid-cols-1 md:grid-cols-2 gap-4"
         >
-          {empleadosFiltrados.map((emp) => (
+          {paginaEmpleados.visibles.map((emp) => (
             <motion.div
               key={emp.id}
               variants={{ hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0, transition: { duration: 0.35 } } }}
@@ -491,6 +501,21 @@ export default function EmpleadosPage() {
             </motion.div>
           ))}
         </motion.div>
+        {/* Fuera de la tarjeta: la lista es una rejilla de tarjetas sueltas, no
+            una tabla con borde al que pegar el paginador. */}
+        {paginaEmpleados.totalPaginas > 1 && (
+          <div className="mt-2 bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700">
+            <Pagination
+              pagina={paginaEmpleados.pagina}
+              totalPaginas={paginaEmpleados.totalPaginas}
+              total={paginaEmpleados.total}
+              labelTotal={terms.empleados.toLowerCase()}
+              onCambiar={paginaEmpleados.setPagina}
+              cargando={isLoading}
+            />
+          </div>
+        )}
+        </>
       )}
 
       {/* Modal crear/editar empleado */}

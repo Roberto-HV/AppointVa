@@ -28,6 +28,8 @@ import { reportesApi } from "../../api/reportes";
 import { intakeApi } from "../../api/intake";
 import { formatPrecio, formatFechaHoraCorta as formatFechaHora, formatFechaCorta, formatHora } from "../../utils/formatters";
 import Pagination from "../../components/ui/Pagination";
+import BotonAccion, { AccionesPagina, EnlaceAccion } from "../../components/ui/BotonAccion";
+import { TAMANO_PAGINA } from "../../hooks/usePaginacionLocal";
 
 
 const TRANSICIONES: Record<string, { label: string; estado: number; clase: string }[]> = {
@@ -54,7 +56,7 @@ export default function CitasPage() {
   const [busqueda, setBusqueda] = useState("");
   const [estadoFiltro, setEstadoFiltro] = useState("");
   const [pagina, setPagina] = useState(1);
-  const TAMANO = 50;
+  const TAMANO = TAMANO_PAGINA;
 
   // Modal cambiar estado
   const [citaSel, setCitaSel] = useState<CitaDto | null>(null);
@@ -475,31 +477,31 @@ export default function CitasPage() {
               Agenda del día, confirmaciones y reprogramaciones
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            {/* Recepción y Exportar: solo desktop */}
-            <Link
+          {/* Recepción y Exportar siguen ocultas bajo `sm`: son atajos de
+              mostrador y, con las tres visibles, a 390px la fila ocuparía más
+              ancho que la pantalla. Crear la cita es la única que queda. */}
+          <AccionesPagina>
+            <EnlaceAccion
               to="/dashboard/kiosk"
               target="_blank"
               rel="noopener noreferrer"
-              className="hidden sm:flex p-2 text-gray-400 hover:text-gray-600 border border-gray-200 hover:border-gray-300 rounded-lg transition items-center gap-1.5 text-xs font-medium"
+              className="hidden sm:inline-flex"
             >
               🖥 Recepción
-            </Link>
+            </EnlaceAccion>
             {citas.length > 0 && vista === "lista" && (
-              <button
+              <BotonAccion
+                variante="secundaria"
                 onClick={exportarCSV}
-                className="hidden sm:block text-xs text-gray-500 hover:text-gray-700 border border-gray-200 hover:border-gray-300 px-3 py-1.5 rounded-lg transition"
+                className="hidden sm:inline-flex"
               >
                 Exportar Excel
-              </button>
+              </BotonAccion>
             )}
-            <button
-              onClick={abrirNuevaCita}
-              className="whitespace-nowrap px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white text-sm font-semibold rounded-lg transition"
-            >
+            <BotonAccion onClick={abrirNuevaCita}>
               {`+ Nueva ${terms.cita.toLowerCase()}`}
-            </button>
-          </div>
+            </BotonAccion>
+          </AccionesPagina>
         </div>
 
         {/* Fila 2 — tabs */}

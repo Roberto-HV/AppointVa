@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Tabs from "../../components/ui/Tabs";
 import Pagination from "../../components/ui/Pagination";
+import BotonAccion, { AccionesPagina } from "../../components/ui/BotonAccion";
+import { TAMANO_PAGINA } from "../../hooks/usePaginacionLocal";
 import { FiltroBarra, type CampoFiltro } from "../../components/ui/filtros";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
@@ -20,7 +22,7 @@ import { hoy, inicioSemana, inicioMes, finMes, inicioAnio } from "../../utils/fe
 
 type Tab = "citas" | "ingresos" | "empleados" | "heatmap" | "retencion";
 
-const REPORTE_PAGE_SIZE = 100;
+const REPORTE_PAGE_SIZE = TAMANO_PAGINA;
 
 const ESTADOS_OPCIONES = [
   { valor: 1, texto: "Pendiente" },
@@ -242,28 +244,30 @@ export default function ReportesPage() {
   return (
     <div className="p-4 sm:p-8 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between gap-4 flex-wrap">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Reportes</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Análisis de citas e ingresos</p>
         </div>
         {(tab === "citas" || tab === "ingresos" || tab === "empleados") && (
-          <button
-            onClick={
-              tab === "citas" ? handleExportar
-              : tab === "empleados" ? handleExportarEmpleados
-              : handleExportarIngresos
-            }
-            disabled={
-              tab === "citas" ? !reporteCitas?.citas.length
-              : tab === "empleados" ? !reporteIngresos?.porEmpleado.length
-              : !reporteIngresos?.porServicio.length
-            }
-            className="flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-800 disabled:opacity-40 text-white text-sm font-semibold rounded-lg transition"
-          >
-            <Download size={15} />
-            Exportar Excel
-          </button>
+          <AccionesPagina>
+            <BotonAccion
+              variante="secundaria"
+              onClick={
+                tab === "citas" ? handleExportar
+                : tab === "empleados" ? handleExportarEmpleados
+                : handleExportarIngresos
+              }
+              disabled={
+                tab === "citas" ? !reporteCitas?.citas.length
+                : tab === "empleados" ? !reporteIngresos?.porEmpleado.length
+                : !reporteIngresos?.porServicio.length
+              }
+            >
+              <Download size={15} />
+              Exportar Excel
+            </BotonAccion>
+          </AccionesPagina>
         )}
       </div>
 

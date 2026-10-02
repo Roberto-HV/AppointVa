@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Pencil, Star, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -9,8 +9,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { serviciosApi, categoriasApi } from "../../api/servicios";
 import Modal from "../../components/ui/Modal";
+import Pagination from "../../components/ui/Pagination";
+import BotonAccion, { AccionesPagina } from "../../components/ui/BotonAccion";
 import { useToastStore } from "../../store/toastStore";
 import { useSectorTerms } from "../../hooks/useSectorTerms";
+import { usePaginacionLocal } from "../../hooks/usePaginacionLocal";
 import type { CategoriaDto, ServicioDto } from "../../types";
 import { formatPrecio } from "../../utils/formatters";
 
@@ -31,6 +34,15 @@ const schemaCategoria = z.object({
   orden: z.coerce.number().min(1),
 });
 type CategoriaForm = z.infer<typeof schemaCategoria>;
+
+function agruparPorCategoria(items: ServicioDto[]) {
+  return items.reduce<Record<string, ServicioDto[]>>((acc, s) => {
+    const cat = s.categoriaNombre ?? "Sin categoría";
+    if (!acc[cat]) acc[cat] = [];
+    acc[cat].push(s);
+    return acc;
+  }, {});
+}
 
 export default function ServiciosPage() {
   const terms = useSectorTerms();
@@ -166,12 +178,26 @@ export default function ServiciosPage() {
   });
 
   // ── Helpers ───────────────────────────────────────────────────────────────
-  const grupos = servicios.reduce<Record<string, ServicioDto[]>>((acc, s) => {
-    const cat = s.categoriaNombre ?? "Sin categoría";
-    if (!acc[cat]) acc[cat] = [];
-    acc[cat].push(s);
-    return acc;
-  }, {});
+  /**
+   * La lista se pagina aplanada en el orden en que ya se dibujaba —categoría por
+   * categoría— y la página se vuelve a agrupar para conservar los encabezados.
+   * Paginar cada grupo por separado habría puesto un paginador por categoría.
+   *
+   * En el cliente y no en el servidor: el catálogo de un negocio está acotado y
+   * esta misma query alimenta los selectores de Empleados y de Citas, así que ya
+   * se trae completa.
+   */
+  const serviciosOrdenados = useMemo(
+    () => Object.values(agruparPorCategoria(servicios)).flat(),
+    [servicios]
+  );
+  const paginaServicios = usePaginacionLocal(serviciosOrdenados);
+  const gruposVisibles = useMemo(
+    () => agruparPorCategoria(paginaServicios.visibles),
+    [paginaServicios.visibles]
+  );
+
+  const paginaCategorias = usePaginacionLocal(categorias);
 
   const serviciosPorCategoria = (catId: string) =>
     servicios.filter((s) => s.categoriaId === catId).length;
@@ -180,26 +206,22 @@ export default function ServiciosPage() {
   return (
     <div className="p-4 sm:p-8">
       {/* Header */}
-      <div className="flex items-center justify-between mb-1 gap-3">
+      <div className="flex items-start justify-between flex-wrap mb-1 gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{terms.servicios}</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Gestión de {terms.servicios.toLowerCase()} y categorías</p>
         </div>
-        {tab === "servicios" ? (
-          <button
-            onClick={abrirCrearServicio}
-            className="bg-slate-700 hover:bg-slate-800 text-white text-sm font-semibold px-4 py-2 rounded-lg transition"
-          >
-            + Nuevo {terms.servicio.toLowerCase()}
-          </button>
-        ) : (
-          <button
-            onClick={abrirCrearCategoria}
-            className="bg-slate-700 hover:bg-slate-800 text-white text-sm font-semibold px-4 py-2 rounded-lg transition"
-          >
-            + Nueva categoría
-          </button>
-        )}
+        <AccionesPagina>
+          {tab === "servicios" ? (
+            <BotonAccion onClick={abrirCrearServicio}>
+              + Nuevo {terms.servicio.toLowerCase()}
+            </BotonAccion>
+          ) : (
+            <BotonAccion onClick={abrirCrearCategoria}>
+              + Nueva categoría
+            </BotonAccion>
+          )}
+        </AccionesPagina>
       </div>
 
       {/* Tabs */}
@@ -239,7 +261,7 @@ export default function ServiciosPage() {
           </div>
         ) : (
           <div className="space-y-6">
-            {Object.entries(grupos).map(([cat, items]) => (
+            {Object.entries(gruposVisibles).map(([cat, items]) => (
               <div key={cat}>
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 dark:text-gray-500">{cat}</p>
                 <motion.div
@@ -329,6 +351,18 @@ export default function ServiciosPage() {
                 </motion.div>
               </div>
             ))}
+            {paginaServicios.totalPaginas > 1 && (
+              <div className="bg-white rounded-xl border border-gray-100 dark:bg-slate-800 dark:border-slate-700">
+                <Pagination
+                  pagina={paginaServicios.pagina}
+                  totalPaginas={paginaServicios.totalPaginas}
+                  total={paginaServicios.total}
+                  labelTotal={terms.servicios.toLowerCase()}
+                  onCambiar={paginaServicios.setPagina}
+                  cargando={isLoading}
+                />
+              </div>
+            )}
           </div>
         )
       )}
@@ -355,7 +389,7 @@ export default function ServiciosPage() {
           </div>
         ) : (
           <div className="space-y-2">
-            {categorias.map((c) => {
+            {paginaCategorias.visibles.map((c) => {
               const count = serviciosPorCategoria(c.id);
               return (
                 <div key={c.id} className="bg-white rounded-xl border border-gray-100 px-4 py-3 dark:bg-slate-800 dark:border-slate-700">
@@ -387,6 +421,18 @@ export default function ServiciosPage() {
                 </div>
               );
             })}
+            {paginaCategorias.totalPaginas > 1 && (
+              <div className="bg-white rounded-xl border border-gray-100 dark:bg-slate-800 dark:border-slate-700">
+                <Pagination
+                  pagina={paginaCategorias.pagina}
+                  totalPaginas={paginaCategorias.totalPaginas}
+                  total={paginaCategorias.total}
+                  labelTotal="categorías"
+                  onCambiar={paginaCategorias.setPagina}
+                  cargando={cargandoCategorias}
+                />
+              </div>
+            )}
           </div>
         )
       )}

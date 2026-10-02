@@ -7,6 +7,11 @@ interface FiltroBusquedaProps {
   valor: string;
   /** Se dispara al confirmar (botón "Buscar" o Enter) y al vaciar el campo. */
   onChange: (valor: string) => void;
+  /**
+   * Id del `<form>`. El botón de envío se renderiza fuera, al final de la fila,
+   * y se asocia con `form={formId}` (ver `FiltroBotonBuscar`).
+   */
+  formId: string;
   /** Etiqueta accesible; se muestra solo a lectores de pantalla. */
   etiqueta?: string;
   placeholder?: string;
@@ -29,10 +34,14 @@ interface FiltroBusquedaProps {
  * El tamaño de fuente es `text-base` (16px) hasta `lg`: Safari en iOS hace zoom
  * sobre cualquier input enfocado con fuente menor a 16px, y varias páginas lo
  * disparaban con `text-xs`. En escritorio sí baja a 14px.
+ *
+ * Aquí solo vive el campo: el botón de envío es `FiltroBotonBuscar` y lo coloca
+ * `FiltroBarra` al final de la fila, asociado por `form={formId}`.
  */
 export default function FiltroBusqueda({
   valor,
   onChange,
+  formId,
   etiqueta = "Buscar",
   placeholder = "Buscar...",
   className,
@@ -51,9 +60,10 @@ export default function FiltroBusqueda({
 
   return (
     <form
+      id={formId}
       role="search"
       onSubmit={(e) => { e.preventDefault(); onChange(texto); }}
-      className={cn("flex items-center gap-2", className)}
+      className={cn("flex items-center", className)}
     >
       <div className="relative flex-1 min-w-0">
         <label htmlFor={id} className="sr-only">{etiqueta}</label>
@@ -96,18 +106,36 @@ export default function FiltroBusqueda({
           </button>
         )}
       </div>
-
-      <button
-        type="submit"
-        className={cn(
-          "shrink-0 min-h-[44px] px-4 rounded-xl text-sm font-medium shadow-sm transition-colors",
-          "bg-slate-700 hover:bg-slate-800 text-white",
-          "dark:bg-slate-600 dark:hover:bg-slate-500",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40"
-        )}
-      >
-        Buscar
-      </button>
     </form>
+  );
+}
+
+/**
+ * Botón de envío de la búsqueda.
+ *
+ * Vive fuera del `<form>` para poder quedar al final de la fila, después de los
+ * demás filtros: el atributo `form` es la vía estándar para que un botón de
+ * envío siga perteneciendo a su formulario estando fuera de él. Así "Buscar" y
+ * Enter siguen siendo la misma acción —ambos disparan el `submit` del form— sin
+ * meter los filtros dentro del landmark `search` ni duplicar el handler.
+ */
+export function FiltroBotonBuscar({ formId, className }: { formId: string; className?: string }) {
+  return (
+    <button
+      type="submit"
+      form={formId}
+      className={cn(
+        // `grow` hasta `sm`: al quedar al final de la fila puede caer solo en
+        // su línea en móvil, y ahí un botón pequeño alineado a la izquierda se
+        // lee como un resto. En pantallas anchas se ajusta a su contenido.
+        "shrink-0 grow sm:grow-0 min-h-[44px] px-4 rounded-xl text-sm font-medium shadow-sm transition-colors",
+        "bg-slate-700 hover:bg-slate-800 text-white",
+        "dark:bg-slate-600 dark:hover:bg-slate-500",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40",
+        className
+      )}
+    >
+      Buscar
+    </button>
   );
 }

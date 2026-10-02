@@ -115,6 +115,92 @@ describe("FiltroBarra", () => {
     expect(input.className).not.toMatch(/(^|\s)text-xs/);
   });
 
+  it("sin controles en línea, 'Buscar' queda inmediatamente después del campo", () => {
+    render(
+      <FiltroBarra
+        busqueda={{ valor: "", onChange: vi.fn(), etiqueta: "Buscar cliente" }}
+        campos={[]}
+        onLimpiar={vi.fn()}
+      />
+    );
+    const form = screen.getByRole("search");
+    expect(form.nextElementSibling).toBe(screen.getByRole("button", { name: "Buscar" }));
+  });
+
+  it("'Buscar' cierra la fila: va después de la acción y del toggle", () => {
+    render(
+      <FiltroBarra
+        busqueda={{ valor: "", onChange: vi.fn(), etiqueta: "Buscar cliente" }}
+        accion={<button type="button">Actividad</button>}
+        campos={camposBase()}
+        onLimpiar={vi.fn()}
+      />
+    );
+    const fila = screen.getByRole("search").parentElement!;
+    const posicion = (el: Element) => Array.from(fila.children).indexOf(el);
+    const buscar = screen.getByRole("button", { name: "Buscar" });
+
+    expect(posicion(screen.getByRole("search"))).toBeLessThan(
+      posicion(screen.getByRole("button", { name: "Actividad" }))
+    );
+    expect(posicion(screen.getByRole("button", { name: /^filtros/i }))).toBeLessThan(posicion(buscar));
+    expect(posicion(buscar)).toBe(fila.children.length - 1);
+  });
+
+  it("'Buscar' envía el formulario aunque viva fuera de él", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <FiltroBarra
+        busqueda={{ valor: "", onChange, etiqueta: "Buscar cliente" }}
+        accion={<button type="button">Actividad</button>}
+        campos={camposBase()}
+        onLimpiar={vi.fn()}
+      />
+    );
+    const buscar = screen.getByRole("button", { name: "Buscar" });
+    // El botón queda fuera del landmark `search`; lo une al form el atributo `form`.
+    expect(screen.getByRole("search").contains(buscar)).toBe(false);
+
+    await user.type(screen.getByLabelText("Buscar cliente"), "ana");
+    expect(onChange).not.toHaveBeenCalled();
+    await user.click(buscar);
+    expect(onChange).toHaveBeenCalledWith("ana");
+  });
+
+  it("Enter y 'Buscar' son la misma acción", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <FiltroBarra
+        busqueda={{ valor: "", onChange, etiqueta: "Buscar cliente" }}
+        campos={[]}
+        onLimpiar={vi.fn()}
+      />
+    );
+    await user.type(screen.getByLabelText("Buscar cliente"), "ana{Enter}");
+    expect(onChange).toHaveBeenCalledWith("ana");
+  });
+
+  it("vaciar el campo se aplica solo, sin pasar por 'Buscar'", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <FiltroBarra
+        busqueda={{ valor: "ana", onChange, etiqueta: "Buscar cliente" }}
+        campos={[]}
+        onLimpiar={vi.fn()}
+      />
+    );
+    await user.click(screen.getByRole("button", { name: /^borrar buscar cliente/i }));
+    expect(onChange).toHaveBeenCalledWith("");
+  });
+
+  it("sin búsqueda declarada no hay botón 'Buscar'", () => {
+    render(<FiltroBarra campos={camposBase()} onLimpiar={vi.fn()} />);
+    expect(screen.queryByRole("button", { name: "Buscar" })).not.toBeInTheDocument();
+  });
+
   it("solo ofrece limpiar cuando hay algo que limpiar", async () => {
     const user = userEvent.setup();
     const onLimpiar = vi.fn();
