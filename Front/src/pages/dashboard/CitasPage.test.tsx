@@ -480,7 +480,10 @@ describe("anticipo badge y botón", () => {
     expect(screen.queryByText(/Anticipo/)).toBeNull();
   });
 
-  it("muestra badge ámbar cuando anticipo pendiente", async () => {
+  // El badge ya no usa emoji: es un pill con borde e icono de lucide, igual que
+  // EstadoBadge. El texto es "Anticipo" en ambos estados, así que lo que los
+  // distingue es el color del borde (ámbar/esmeralda) y el icono.
+  it("muestra badge ámbar con icono de billete cuando el anticipo está pendiente", async () => {
     renderWithCitas([{
       ...baseCita,
       anticipoRequerido: true,
@@ -488,10 +491,13 @@ describe("anticipo badge y botón", () => {
       montoAnticipo: 50,
     }]);
     await waitFor(() => screen.getByText("Luis Pérez"));
-    expect(screen.getByText("⏳ Anticipo")).toBeInTheDocument();
+    const badge = screen.getByText("Anticipo");
+    expect(badge.className).toContain("border-amber-400");
+    expect(badge.className).not.toContain("border-emerald-400");
+    expect(badge.querySelector("svg")?.getAttribute("class")).toContain("banknote");
   });
 
-  it("muestra badge verde cuando anticipo recibido", async () => {
+  it("muestra badge esmeralda con icono de check cuando el anticipo fue recibido", async () => {
     renderWithCitas([{
       ...baseCita,
       anticipoRequerido: true,
@@ -499,7 +505,10 @@ describe("anticipo badge y botón", () => {
       montoAnticipo: 50,
     }]);
     await waitFor(() => screen.getByText("Luis Pérez"));
-    expect(screen.getByText("✓ Anticipo")).toBeInTheDocument();
+    const badge = screen.getByText("Anticipo");
+    expect(badge.className).toContain("border-emerald-400");
+    expect(badge.className).not.toContain("border-amber-400");
+    expect(badge.querySelector("svg")?.getAttribute("class")).toContain("check");
   });
 
   it("muestra botón $ Anticipo cuando pendiente y no pagada", async () => {

@@ -236,6 +236,7 @@ export default function ConfirmacionPage() {
             <div className="flex items-center gap-2 flex-wrap">
               <button
                 onClick={copiarLinkBanner}
+                aria-label={bannerCopiado ? "Enlace de esta página copiado" : "Copiar enlace de esta página"}
                 className="text-amber-700 border border-amber-300 rounded-lg px-3 py-1.5 text-xs font-medium hover:bg-amber-100 transition"
               >
                 {bannerCopiado ? "¡Copiado!" : "Copiar enlace"}
@@ -509,6 +510,7 @@ export default function ConfirmacionPage() {
           <div className="flex items-center justify-center gap-4 pt-1 flex-wrap">
             <button
               onClick={copiarLink}
+              aria-label={linkCopiado ? "Enlace de la cita copiado" : "Copiar enlace de la cita"}
               className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-600 transition"
             >
               {linkCopiado ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}

@@ -136,7 +136,12 @@ describe("ConfirmacionPage — banner sin email", () => {
       expect(screen.getByText(/sin correo registrado/i)).toBeInTheDocument()
     );
 
-    const botonCopiar = screen.getByRole("button", { name: "Copiar enlace" });
+    // La página tiene dos controles de copiado con el mismo texto visible
+    // ("Copiar enlace"): el del banner copia la URL actual y el del comprobante
+    // copia el enlace corto de la cita. Se distinguen por su aria-label.
+    const botonCopiar = screen.getByRole("button", {
+      name: "Copiar enlace de esta página",
+    });
     fireEvent.click(botonCopiar);
 
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
@@ -145,6 +150,33 @@ describe("ConfirmacionPage — banner sin email", () => {
 
     await waitFor(() =>
       expect(screen.getByText(/¡copiado!/i)).toBeInTheDocument()
+    );
+  });
+
+  it("los dos botones de copiado tienen nombres accesibles distintos y copian enlaces distintos", async () => {
+    vi.mocked(publicoApi.obtenerCita).mockResolvedValue({
+      ...mockCitaBase,
+      emailCliente: undefined,
+    } as never);
+
+    renderConQuery();
+
+    await waitFor(() =>
+      expect(screen.getByText(/sin correo registrado/i)).toBeInTheDocument()
+    );
+
+    const botonBanner = screen.getByRole("button", {
+      name: "Copiar enlace de esta página",
+    });
+    const botonComprobante = screen.getByRole("button", {
+      name: "Copiar enlace de la cita",
+    });
+    expect(botonBanner).not.toBe(botonComprobante);
+
+    fireEvent.click(botonComprobante);
+
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+      `${window.location.origin}/cita/ABC123`
     );
   });
 

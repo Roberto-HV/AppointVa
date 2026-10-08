@@ -160,6 +160,20 @@ const mockResumen: any = {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const emptyPage: any = { datos: [], total: 0, pagina: 1, tamano: 100 };
 
+// VistaPropietario sustituye todo el panel por BienvenidaScreen mientras el
+// negocio no tenga servicios y al menos un día de horario activo. Para probar
+// el panel real (KPIs, wizard, gráfica) hay que partir de un negocio ya
+// configurado.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const mockServicios: any = [
+  { id: "srv-1", nombre: "Corte de cabello", duracionMinutos: 30, precio: 200, activo: true },
+];
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const mockHorarios: any = [
+  { diaSemana: 1, activo: true, intervalos: [{ horaInicio: "09:00", horaFin: "18:00" }] },
+];
+
 // ── Render helper ─────────────────────────────────────────────────────────────
 function renderConQuery() {
   const qc = new QueryClient({
@@ -189,10 +203,10 @@ beforeEach(() => {
   vi.mocked(dashboardApi.obtenerTendencia).mockResolvedValue([]);
   vi.mocked(citasApi.obtenerTodas).mockResolvedValue(emptyPage);
   vi.mocked(negociosApi.obtenerPerfil).mockResolvedValue(mockNegocio);
-  vi.mocked(negociosApi.obtenerHorarios).mockResolvedValue([]);
+  vi.mocked(negociosApi.obtenerHorarios).mockResolvedValue(mockHorarios);
   vi.mocked(negociosApi.obtenerGaleria).mockResolvedValue([]);
   vi.mocked(empleadosApi.obtenerTodos).mockResolvedValue([]);
-  vi.mocked(serviciosApi.obtenerTodos).mockResolvedValue([]);
+  vi.mocked(serviciosApi.obtenerTodos).mockResolvedValue(mockServicios);
 });
 
 afterEach(() => {
@@ -213,6 +227,20 @@ describe("InicioPage — vista propietario", () => {
 
     const mesLabels = screen.getAllByText("Mes");
     expect(mesLabels.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("muestra la pantalla de bienvenida en lugar del panel cuando aún no hay servicios", async () => {
+    vi.spyOn(Storage.prototype, "getItem").mockReturnValue(null);
+    vi.mocked(serviciosApi.obtenerTodos).mockResolvedValue([]);
+
+    renderConQuery();
+
+    expect(
+      await screen.findByText("Tu página está casi lista")
+    ).toBeInTheDocument();
+    // La bienvenida reemplaza KPIs, wizard y gráfica mientras falte configuración.
+    expect(screen.queryByText("Configura tu negocio")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "14d" })).not.toBeInTheDocument();
   });
 });
 

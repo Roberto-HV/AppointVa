@@ -170,7 +170,10 @@ describe("MisCitasPage", () => {
       expect(screen.getByText("Sin citas registradas")).toBeInTheDocument()
     );
     expect(
-      screen.getByText(/no encontramos reservas asociadas/i)
+      screen.getByText(/no encontramos reservas con los datos proporcionados/i)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /nueva reserva/i })
     ).toBeInTheDocument();
   });
 });
