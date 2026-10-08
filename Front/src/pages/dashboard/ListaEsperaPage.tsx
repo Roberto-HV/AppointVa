@@ -5,6 +5,7 @@ import { listaEsperaApi, type EntradaListaEspera } from "../../api/listaEspera";
 import { useToastStore } from "../../store/toastStore";
 import EmptyState from "../../components/ui/EmptyState";
 import Pagination from "../../components/ui/Pagination";
+import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
 import { FiltroBarra } from "../../components/ui/filtros";
 import { usePaginacionLocal } from "../../hooks/usePaginacionLocal";
 
@@ -67,13 +68,11 @@ export default function ListaEsperaPage() {
   const paginada = usePaginacionLocal(lista);
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Lista de espera</h1>
-        <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
-          Clientes que quieren una cita cuando se libere un espacio
-        </p>
-      </div>
+    <div className="p-4 sm:p-8 space-y-6">
+      <EncabezadoPagina
+        titulo="Lista de espera"
+        subtitulo="Clientes que quieren una cita cuando se libere un espacio"
+      />
 
       {/* KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">

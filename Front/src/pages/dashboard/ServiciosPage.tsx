@@ -10,7 +10,8 @@ import { z } from "zod";
 import { serviciosApi, categoriasApi } from "../../api/servicios";
 import Modal from "../../components/ui/Modal";
 import Pagination from "../../components/ui/Pagination";
-import BotonAccion, { AccionesPagina } from "../../components/ui/BotonAccion";
+import BotonAccion from "../../components/ui/BotonAccion";
+import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
 import { useToastStore } from "../../store/toastStore";
 import { useSectorTerms } from "../../hooks/useSectorTerms";
 import { usePaginacionLocal } from "../../hooks/usePaginacionLocal";
@@ -205,14 +206,12 @@ export default function ServiciosPage() {
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="p-4 sm:p-8">
-      {/* Header */}
-      <div className="flex items-start justify-between flex-wrap mb-1 gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{terms.servicios}</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Gestión de {terms.servicios.toLowerCase()} y categorías</p>
-        </div>
-        <AccionesPagina>
-          {tab === "servicios" ? (
+      <EncabezadoPagina
+        className="mb-1"
+        titulo={terms.servicios}
+        subtitulo={`Gestión de ${terms.servicios.toLowerCase()} y categorías`}
+        acciones={
+          tab === "servicios" ? (
             <BotonAccion onClick={abrirCrearServicio}>
               + Nuevo {terms.servicio.toLowerCase()}
             </BotonAccion>
@@ -220,9 +219,9 @@ export default function ServiciosPage() {
             <BotonAccion onClick={abrirCrearCategoria}>
               + Nueva categoría
             </BotonAccion>
-          )}
-        </AccionesPagina>
-      </div>
+          )
+        }
+      />
 
       {/* Tabs */}
       <Tabs

@@ -38,10 +38,17 @@ interface FiltroBarraProps {
  * página reimplementa el colapso ni el contador.
  *
  * Móvil: la búsqueda queda fija y el resto se colapsa tras el botón "Filtros".
- * Escritorio (lg+): fila horizontal que envuelve y dimensiona cada control a su
- * contenido. Nunca es una columna vertical, que era lo que hacía el `grid
- * grid-cols-2` con todo en `col-span-2`: a 1440px se apilaba y se comía la
+ * Escritorio (lg+): una sola fila continua que envuelve y dimensiona cada
+ * control a su contenido. Nunca es una columna vertical, que era lo que hacía el
+ * `grid grid-cols-2` con todo en `col-span-2`: a 1440px se apilaba y se comía la
  * altura de la pantalla antes de la tabla.
+ *
+ * El colapso de móvil obliga a que la búsqueda y los campos sean dos cajas
+ * distintas —una se ve siempre, la otra se oculta—, pero en escritorio eso
+ * imponía un salto de línea entre ambas. La salida es `lg:contents` en las dos:
+ * desde `lg` dejan de generar caja y sus hijos pasan a ser ítems directos de la
+ * `<section>`, que es la que lleva el `flex-wrap`. El marcado y el orden del DOM
+ * no cambian, así que el colapso de móvil sigue siendo el mismo.
  */
 export default function FiltroBarra({
   busqueda,
@@ -66,7 +73,21 @@ export default function FiltroBarra({
   };
 
   return (
-    <section aria-label={etiqueta} className={cn("mb-6", className)}>
+    <section
+      aria-label={etiqueta}
+      className={cn(
+        "mb-6",
+        // Desde `lg` la propia sección es la fila: la búsqueda, los controles en
+        // línea y los campos declarados comparten contenedor y renglón.
+        //
+        // `items-end` y no `items-start`: los campos llevan label encima y la
+        // búsqueda y "Buscar" no, así que alinear por arriba alinearía etiquetas
+        // contra inputs. Alineando por abajo —y como todo control mide 44px— lo
+        // que queda a la misma altura son los controles, que es lo que se mira.
+        "lg:flex lg:flex-wrap lg:items-end lg:gap-x-4 lg:gap-y-3",
+        className
+      )}
+    >
       {/* `items-end` y no `items-center`: la acción puede traer su propio label
           encima (el desplegable de Clientes) y lo que debe alinearse son los
           controles, no las etiquetas. `flex-wrap` deja que una acción `w-full`
@@ -76,8 +97,11 @@ export default function FiltroBarra({
           filtros van seguidos y la acción que confirma cierra; con el botón
           pegado al campo, el desplegable quedaba al otro lado y la fila se leía
           partida. Cuando la página no declara controles en línea —lo normal—
-          "Buscar" queda igualmente justo después del campo. */}
-      <div className="flex flex-wrap items-end gap-2">
+          "Buscar" queda igualmente justo después del campo.
+
+          Desde `lg` esta caja desaparece (`contents`) y los campos declarados
+          continúan este mismo renglón, después de "Buscar". */}
+      <div className="flex flex-wrap items-end gap-2 lg:contents">
         {busqueda && (
           <FiltroBusqueda
             valor={busqueda.valor}
@@ -130,11 +154,10 @@ export default function FiltroBarra({
           className={cn(
             abierto ? "flex" : "hidden",
             "flex-col gap-4 mt-3",
-            // `lg:flex` gana sobre `hidden`: en escritorio el panel nunca colapsa.
-            // Alineado arriba, no abajo: cada campo lleva su label encima y con
-            // `items-end` las etiquetas quedaban a distinta altura según el alto
-            // del control.
-            "lg:flex lg:flex-row lg:flex-wrap lg:items-start lg:gap-x-5 lg:gap-y-3 lg:mt-3"
+            // `lg:contents` gana sobre `hidden`: en escritorio el panel nunca
+            // colapsa y además deja de ser una caja, así que los campos suben a
+            // la fila de la sección en vez de abrir un segundo renglón.
+            "lg:contents"
           )}
         >
           {campos.map((campo) => {
@@ -152,10 +175,8 @@ export default function FiltroBarra({
             );
           })}
 
-          {/* `lg:mt-6` compensa el label que sí tienen los campos, para que el
-              botón quede a la altura de los controles y no de las etiquetas. */}
           {hayAlgoQueLimpiar && (
-            <div className="w-full lg:w-auto lg:mt-6">
+            <div className="w-full lg:w-auto">
               <button
                 type="button"
                 onClick={limpiar}

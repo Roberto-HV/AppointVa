@@ -82,13 +82,20 @@ export function EnlaceAccion({
 }
 
 /**
- * Contenedor del hueco de acciones. `flex-wrap` + `justify-end` es lo que evita
- * que dos acciones se pisen o desborden a 390px: si no caben en la fila del
- * título, bajan alineadas a la derecha en vez de recortarse.
+ * Contenedor del hueco de acciones, dentro de `EncabezadoPagina`.
  *
- * `ml-auto` sostiene la posición que pidió el dueño —arriba a la derecha— también
- * cuando el bloque baja de línea: en una línea propia el margen automático se
- * come el espacio libre y lo deja pegado al borde derecho, no al izquierdo.
+ * `shrink-0` es lo que mantiene el botón junto al título en una pantalla
+ * angosta: quien cede ancho es el bloque del título, que reparte su texto en
+ * más líneas, no la acción.
+ *
+ * `max-w-[60%]` es el seguro para cuando una página muestre dos acciones a la
+ * vez en móvil. Sin tope, `shrink-0` mide por el contenido y una fila de dos
+ * botones se saldría de la pantalla; con el tope, `flex-wrap` la parte en dos
+ * renglones alineados a la derecha. En escritorio el 60% sobra incluso para las
+ * tres acciones de Citas, así que nunca llega a envolver ahí.
+ *
+ * `ml-auto` sostiene la posición que pidió el dueño —arriba a la derecha—
+ * también cuando el encabezado se usa sin bajada ni título largo.
  */
 export function AccionesPagina({
   children,
@@ -98,7 +105,12 @@ export function AccionesPagina({
   className?: string;
 }) {
   return (
-    <div className={cn("flex flex-wrap items-center justify-end gap-2 ml-auto", className)}>
+    <div
+      className={cn(
+        "flex flex-wrap items-center justify-end gap-2 ml-auto shrink-0 max-w-[60%]",
+        className
+      )}
+    >
       {children}
     </div>
   );

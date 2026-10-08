@@ -4,7 +4,8 @@ import { Plus, Trash2, Tag, X, Check, Copy } from "lucide-react";
 import { descuentosApi, type Descuento } from "../../api/descuentos";
 import { useToastStore } from "../../store/toastStore";
 import Pagination from "../../components/ui/Pagination";
-import BotonAccion, { AccionesPagina } from "../../components/ui/BotonAccion";
+import BotonAccion from "../../components/ui/BotonAccion";
+import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
 import { usePaginacionLocal } from "../../hooks/usePaginacionLocal";
 
 const TIPOS = [
@@ -103,24 +104,23 @@ export default function DescuentosPage() {
   const inactivosVisibles = paginados.visibles.filter((d) => !vigente(d));
 
   return (
-    <div className="p-6 max-w-3xl mx-auto space-y-6">
-      <div className="flex items-start justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Cupones de descuento</h1>
-          <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
-            Los clientes ingresan el código al reservar para obtener un descuento
-          </p>
-        </div>
-        <AccionesPagina>
+    <div className="p-4 sm:p-8 space-y-6">
+      <EncabezadoPagina
+        titulo="Cupones de descuento"
+        subtitulo="Los clientes ingresan el código al reservar para obtener un descuento"
+        acciones={
           <BotonAccion onClick={() => setShowForm(true)}>
             <Plus size={16} /> Nuevo cupón
           </BotonAccion>
-        </AccionesPagina>
-      </div>
+        }
+      />
 
-      {/* Form */}
+      {/* El formulario sí se acota: a ancho completo sus seis campos quedarían de
+          más de 700px cada uno, que es peor de llenar. El resto de la página
+          —encabezado, listados y paginación— va al ancho del panel como en
+          Clientes o Servicios. */}
       {showForm && (
-        <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-2xl p-5 shadow-sm space-y-4">
+        <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-2xl p-5 shadow-sm space-y-4 max-w-3xl">
           <div className="flex items-center justify-between">
             <h2 className="font-semibold text-gray-800 dark:text-gray-200">Nuevo cupón</h2>
             <button onClick={() => { setShowForm(false); setForm(EMPTY); }} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400">

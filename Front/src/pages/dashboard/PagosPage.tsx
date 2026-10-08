@@ -15,6 +15,7 @@ import Modal from "../../components/ui/Modal";
 import Tabs from "../../components/ui/Tabs";
 import EmptyState from "../../components/ui/EmptyState";
 import Pagination from "../../components/ui/Pagination";
+import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
 import { FiltroBarra } from "../../components/ui/filtros";
 import { usePaginacionLocal, TAMANO_PAGINA } from "../../hooks/usePaginacionLocal";
 import { DatePicker } from "../../components/ui/DateTimePicker";
@@ -463,13 +464,10 @@ export default function PagosPage() {
 
   return (
     <div className="p-4 sm:p-8 space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Pagos</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          {esEmpleado ? "Tus citas del período seleccionado" : "Gestión y registro de cobros"}
-        </p>
-      </div>
+      <EncabezadoPagina
+        titulo="Pagos"
+        subtitulo={esEmpleado ? "Tus citas del período seleccionado" : "Gestión y registro de cobros"}
+      />
 
       {/* Tabs */}
       <Tabs

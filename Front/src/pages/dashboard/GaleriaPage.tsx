@@ -3,7 +3,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { negociosApi } from "../../api/negocios";
 import { useToastStore } from "../../store/toastStore";
 import { Upload, Trash2, X, ImageIcon } from "lucide-react";
-import BotonAccion, { AccionesPagina } from "../../components/ui/BotonAccion";
+import BotonAccion from "../../components/ui/BotonAccion";
+import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
 
 const MAX_FOTOS = 20;
 
@@ -64,33 +65,33 @@ export default function GaleriaPage() {
   };
 
   return (
-    <div className="p-4 sm:p-8 max-w-4xl mx-auto">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4 mb-6 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Galería</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+    <div className="p-4 sm:p-8">
+      <EncabezadoPagina
+        className="mb-6"
+        titulo="Galería"
+        subtitulo={
+          <>
             Fotos de tus trabajos visibles en tu página de reservas
             <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">({imagenes.length}/{MAX_FOTOS})</span>
-          </p>
-        </div>
-        {imagenes.length < MAX_FOTOS && (
-          <AccionesPagina>
+          </>
+        }
+        acciones={
+          imagenes.length < MAX_FOTOS && (
             <BotonAccion onClick={() => inputRef.current?.click()} disabled={subiendo}>
               <Upload size={15} />
               {subiendo ? "Subiendo..." : "Agregar fotos"}
             </BotonAccion>
-          </AccionesPagina>
-        )}
-        <input
-          ref={inputRef}
-          type="file"
-          accept="image/*"
-          multiple
-          className="hidden"
-          onChange={(e) => { handleArchivos(e.target.files); e.target.value = ""; }}
-        />
-      </div>
+          )
+        }
+      />
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        className="hidden"
+        onChange={(e) => { handleArchivos(e.target.files); e.target.value = ""; }}
+      />
 
       {/* Drop zone (solo cuando no hay fotos) */}
       {!isLoading && imagenes.length === 0 && (
@@ -108,7 +109,7 @@ export default function GaleriaPage() {
 
       {/* Grid de fotos */}
       {isLoading ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-3">
           {Array.from({ length: 8 }).map((_, i) => (
             <div key={i} className="aspect-square rounded-xl bg-gray-100 dark:bg-slate-700 animate-pulse" />
           ))}
@@ -116,7 +117,9 @@ export default function GaleriaPage() {
       ) : imagenes.length > 0 && (
         <>
           <div
-            className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3"
+            // Más columnas al ensanchar: el grid ya no está acotado a 4xl, y con
+            // cuatro columnas fijas cada miniatura pasaría de 350px de lado.
+            className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-3"
             onDrop={handleDrop}
             onDragOver={(e) => e.preventDefault()}
           >

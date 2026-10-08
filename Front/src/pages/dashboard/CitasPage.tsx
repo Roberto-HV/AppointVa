@@ -28,7 +28,8 @@ import { reportesApi } from "../../api/reportes";
 import { intakeApi } from "../../api/intake";
 import { formatPrecio, formatFechaHoraCorta as formatFechaHora, formatFechaCorta, formatHora } from "../../utils/formatters";
 import Pagination from "../../components/ui/Pagination";
-import BotonAccion, { AccionesPagina, EnlaceAccion } from "../../components/ui/BotonAccion";
+import BotonAccion, { EnlaceAccion } from "../../components/ui/BotonAccion";
+import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
 import { TAMANO_PAGINA } from "../../hooks/usePaginacionLocal";
 
 
@@ -470,39 +471,37 @@ export default function CitasPage() {
       <div className="mb-6 space-y-3">
 
         {/* Fila 1 — título + acciones desktop */}
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{terms.citas}</h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Agenda del día, confirmaciones y reprogramaciones
-            </p>
-          </div>
-          {/* Recepción y Exportar siguen ocultas bajo `sm`: son atajos de
-              mostrador y, con las tres visibles, a 390px la fila ocuparía más
-              ancho que la pantalla. Crear la cita es la única que queda. */}
-          <AccionesPagina>
-            <EnlaceAccion
-              to="/dashboard/kiosk"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hidden sm:inline-flex"
-            >
-              🖥 Recepción
-            </EnlaceAccion>
-            {citas.length > 0 && vista === "lista" && (
-              <BotonAccion
-                variante="secundaria"
-                onClick={exportarCSV}
+        <EncabezadoPagina
+          titulo={terms.citas}
+          subtitulo="Agenda del día, confirmaciones y reprogramaciones"
+          acciones={
+            /* Recepción y Exportar siguen ocultas bajo `sm`: son atajos de
+               mostrador y, con las tres visibles, a 390px la fila ocuparía más
+               ancho que la pantalla. Crear la cita es la única que queda. */
+            <>
+              <EnlaceAccion
+                to="/dashboard/kiosk"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="hidden sm:inline-flex"
               >
-                Exportar Excel
+                🖥 Recepción
+              </EnlaceAccion>
+              {citas.length > 0 && vista === "lista" && (
+                <BotonAccion
+                  variante="secundaria"
+                  onClick={exportarCSV}
+                  className="hidden sm:inline-flex"
+                >
+                  Exportar Excel
+                </BotonAccion>
+              )}
+              <BotonAccion onClick={abrirNuevaCita}>
+                {`+ Nueva ${terms.cita.toLowerCase()}`}
               </BotonAccion>
-            )}
-            <BotonAccion onClick={abrirNuevaCita}>
-              {`+ Nueva ${terms.cita.toLowerCase()}`}
-            </BotonAccion>
-          </AccionesPagina>
-        </div>
+            </>
+          }
+        />
 
         {/* Fila 2 — tabs */}
         <Tabs

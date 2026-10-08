@@ -5,7 +5,8 @@ import { intakeApi, type CampoIntake } from "../../api/intake";
 import { serviciosApi } from "../../api/servicios";
 import { useToastStore } from "../../store/toastStore";
 import Modal from "../../components/ui/Modal";
-import BotonAccion, { AccionesPagina } from "../../components/ui/BotonAccion";
+import BotonAccion from "../../components/ui/BotonAccion";
+import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
 
 const TIPOS = [
   { value: "Texto", label: "Texto corto" },
@@ -125,20 +126,16 @@ export default function IntakePage() {
   }
 
   return (
-    <div className="p-6 max-w-3xl mx-auto space-y-6">
-      <div className="flex items-start justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Cuestionario</h1>
-          <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
-            Preguntas adicionales que verá el cliente al reservar
-          </p>
-        </div>
-        <AccionesPagina>
+    <div className="p-4 sm:p-8 space-y-6">
+      <EncabezadoPagina
+        titulo="Cuestionario"
+        subtitulo="Preguntas adicionales que verá el cliente al reservar"
+        acciones={
           <BotonAccion onClick={abrirCrear}>
             <Plus size={16} /> Nueva pregunta
           </BotonAccion>
-        </AccionesPagina>
-      </div>
+        }
+      />
 
       {/* Form modal */}
       <Modal

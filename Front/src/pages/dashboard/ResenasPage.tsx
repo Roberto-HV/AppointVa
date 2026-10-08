@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { meApi } from "../../api/me";
 import { formatFecha } from "../../utils/formatters";
 import Pagination from "../../components/ui/Pagination";
+import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
 import { Star } from "lucide-react";
 
 import { TAMANO_PAGINA } from "../../hooks/usePaginacionLocal";
@@ -51,34 +52,39 @@ export default function ResenasPage() {
 
   return (
     <div className="p-4 sm:p-8">
-      <div className="flex items-start justify-between flex-wrap gap-3 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Reseñas</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+      <EncabezadoPagina
+        className="mb-6"
+        titulo="Reseñas"
+        subtitulo={
+          <>
             Opiniones que dejan tus clientes al terminar su cita
             {!isLoading && (
               <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">
                 ({total} reseña{total !== 1 ? "s" : ""})
               </span>
             )}
-          </p>
-        </div>
-        {/* No es una acción de encabezado, así que no usa `BotonAccion`: el ámbar
-            aquí es el color de la calificación, el mismo de las estrellas, y lo
-            que muestra es un dato. El promedio sale de las reseñas cargadas —no
-            hay agregado del servidor—, de ahí la leyenda: con 15 por página el
-            número describe la página, no el histórico. */}
-        {promedioRating && (
-          <div className="ml-auto shrink-0 flex items-center gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800 rounded-xl px-4 py-2">
-            <Star size={18} className="text-amber-400 fill-amber-400 shrink-0" />
-            <span className="text-xl font-bold text-amber-600 dark:text-amber-400">{promedioRating}</span>
-            <span className="text-xs text-amber-500 dark:text-amber-500">/ 5</span>
-            <span className="text-[10px] leading-tight text-amber-600/70 dark:text-amber-400/70 max-w-[5.5rem]">
-              promedio de esta página
-            </span>
-          </div>
-        )}
-      </div>
+          </>
+        }
+        /* Va por `complemento` y no por `acciones`: el ámbar aquí es el color de
+           la calificación, el mismo de las estrellas, y lo que muestra es un
+           dato, no algo que se pueda pulsar. Se queda en el hueco de la derecha
+           porque describe la página entera, igual que el título. El promedio
+           sale de las reseñas cargadas —no hay agregado del servidor—, de ahí la
+           leyenda: con 15 por página el número describe la página, no el
+           histórico. */
+        complemento={
+          promedioRating && (
+            <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800 rounded-xl px-4 py-2">
+              <Star size={18} className="text-amber-400 fill-amber-400 shrink-0" />
+              <span className="text-xl font-bold text-amber-600 dark:text-amber-400">{promedioRating}</span>
+              <span className="text-xs text-amber-500 dark:text-amber-500">/ 5</span>
+              <span className="text-[10px] leading-tight text-amber-600/70 dark:text-amber-400/70 max-w-[5.5rem]">
+                promedio de esta página
+              </span>
+            </div>
+          )
+        }
+      />
 
       {isLoading ? (
         <div className="space-y-2">

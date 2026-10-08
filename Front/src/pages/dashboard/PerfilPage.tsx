@@ -15,6 +15,7 @@ import { authApi } from "../../api/auth";
 import { useAuthStore } from "../../store/authStore";
 import { useToastStore } from "../../store/toastStore";
 import { Skeleton } from "../../components/ui/Skeleton";
+import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
 import { TimePicker, DatePicker } from "../../components/ui/DateTimePicker";
 import type { ActualizarNegocioDto, HorarioDiaDto } from "../../types";
 
@@ -410,12 +411,11 @@ export default function PerfilPage() {
   return (
     <>
     <div className="p-4 sm:p-8">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Mi negocio</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          Datos públicos, horarios de atención y reglas de reserva
-        </p>
-      </div>
+      <EncabezadoPagina
+        className="mb-6"
+        titulo="Mi negocio"
+        subtitulo="Datos públicos, horarios de atención y reglas de reserva"
+      />
 
       {/* Tabs */}
       <Tabs

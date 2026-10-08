@@ -4,6 +4,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { Shield, ShieldCheck, ShieldOff } from "lucide-react";
 import { authApi } from "../../api/auth";
 import { useToastStore } from "../../store/toastStore";
+import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
 
 type Paso = "idle" | "configurando" | "activado";
 
@@ -92,10 +93,7 @@ export default function DosFactoresPage() {
   return (
     <div className="p-6 w-full flex flex-col items-center">
     <div className="w-full max-w-lg space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Seguridad</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Autenticación de dos factores (2FA)</p>
-      </div>
+      <EncabezadoPagina titulo="Seguridad" subtitulo="Autenticación de dos factores (2FA)" />
 
       {/* Estado actual */}
       <div className={`rounded-xl border p-5 flex items-center gap-4 ${

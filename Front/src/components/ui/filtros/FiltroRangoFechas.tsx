@@ -21,6 +21,13 @@ interface FiltroRangoFechasProps {
  * En escritorio el rango continúa en la misma fila, justo después del último
  * atajo, en vez de caer a un segundo renglón. En móvil sí baja, y el bloque
  * queda centrado.
+ *
+ * `lg:flex-nowrap`: en escritorio este campo comparte renglón con la búsqueda y
+ * los demás filtros, y es el más ancho de todos. Si se partiera por dentro
+ * crecería a dos alturas y arrastraría el alto de toda la fila; manteniéndolo en
+ * una línea mide lo mismo que un select (44px) y, cuando no cabe, baja entero al
+ * siguiente renglón. Ahí dispone del ancho completo, que desde `lg` siempre
+ * supera lo que ocupa.
  */
 export default function FiltroRangoFechas({
   labelId,
@@ -34,7 +41,7 @@ export default function FiltroRangoFechas({
     <div
       role="group"
       aria-labelledby={labelId}
-      className="flex flex-col items-center gap-2 lg:flex-row lg:flex-wrap lg:items-center lg:gap-x-3 lg:gap-y-2"
+      className="flex flex-col items-center gap-2 lg:flex-row lg:flex-nowrap lg:items-center lg:gap-x-3"
     >
       {presets && presets.length > 0 && (
         <div className="flex flex-wrap justify-center gap-1.5 lg:justify-start">

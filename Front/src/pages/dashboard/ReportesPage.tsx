@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Tabs from "../../components/ui/Tabs";
 import Pagination from "../../components/ui/Pagination";
-import BotonAccion, { AccionesPagina } from "../../components/ui/BotonAccion";
+import BotonAccion from "../../components/ui/BotonAccion";
+import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
 import { TAMANO_PAGINA } from "../../hooks/usePaginacionLocal";
 import { FiltroBarra, type CampoFiltro } from "../../components/ui/filtros";
 import {
@@ -243,14 +244,11 @@ export default function ReportesPage() {
 
   return (
     <div className="p-4 sm:p-8 space-y-6">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Reportes</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Análisis de citas e ingresos</p>
-        </div>
-        {(tab === "citas" || tab === "ingresos" || tab === "empleados") && (
-          <AccionesPagina>
+      <EncabezadoPagina
+        titulo="Reportes"
+        subtitulo="Análisis de citas e ingresos"
+        acciones={
+          (tab === "citas" || tab === "ingresos" || tab === "empleados") && (
             <BotonAccion
               variante="secundaria"
               onClick={
@@ -267,9 +265,9 @@ export default function ReportesPage() {
               <Download size={15} />
               Exportar Excel
             </BotonAccion>
-          </AccionesPagina>
-        )}
-      </div>
+          )
+        }
+      />
 
       {/* Tabs — antes iban debajo de los filtros, al revés que el resto del panel */}
       <Tabs

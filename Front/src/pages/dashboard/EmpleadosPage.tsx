@@ -15,7 +15,8 @@ import { SkeletonCards } from "../../components/ui/Skeleton";
 import EmptyState from "../../components/ui/EmptyState";
 import { FiltroBarra } from "../../components/ui/filtros";
 import Pagination from "../../components/ui/Pagination";
-import BotonAccion, { AccionesPagina } from "../../components/ui/BotonAccion";
+import BotonAccion from "../../components/ui/BotonAccion";
+import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
 import { useToastStore } from "../../store/toastStore";
 import { useSectorTerms } from "../../hooks/useSectorTerms";
 import { usePaginacionLocal } from "../../hooks/usePaginacionLocal";
@@ -364,19 +365,16 @@ export default function EmpleadosPage() {
 
   return (
     <div className="p-4 sm:p-8">
-      <div className="flex items-start justify-between mb-4 flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{terms.empleados}</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Altas, horarios de atención y accesos al sistema
-          </p>
-        </div>
-        <AccionesPagina>
+      <EncabezadoPagina
+        className="mb-4"
+        titulo={terms.empleados}
+        subtitulo="Altas, horarios de atención y accesos al sistema"
+        acciones={
           <BotonAccion onClick={abrirCrear}>
             + Nuevo {terms.empleado.toLowerCase()}
           </BotonAccion>
-        </AccionesPagina>
-      </div>
+        }
+      />
 
       {empleados.length > 0 && (
         <FiltroBarra
@@ -465,13 +463,13 @@ export default function EmpleadosPage() {
                   <div className="grid grid-cols-2 gap-1.5">
                     <button
                       onClick={() => abrirEditar(emp)}
-                      className="border border-blue-300 text-blue-600 hover:border-blue-500 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-400 dark:hover:bg-blue-950 rounded-md py-2 text-sm font-medium flex items-center justify-center gap-1.5 transition-colors"
+                      className="border border-blue-300 bg-blue-50 text-blue-600 hover:border-blue-500 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-400 dark:hover:bg-blue-950 rounded-md py-2 text-sm font-medium flex items-center justify-center gap-1.5 transition-colors"
                     >
                       <Pencil size={12} /> Editar
                     </button>
                     <button
                       onClick={() => abrirHorario(emp)}
-                      className="border border-violet-300 text-violet-600 hover:border-violet-500 hover:bg-violet-50 dark:border-violet-800 dark:text-violet-400 dark:hover:bg-violet-950 rounded-md py-2 text-sm font-medium flex items-center justify-center gap-1.5 transition-colors"
+                      className="border border-violet-300 bg-violet-50 text-violet-600 hover:border-violet-500 hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-950/40 dark:text-violet-400 dark:hover:bg-violet-950 rounded-md py-2 text-sm font-medium flex items-center justify-center gap-1.5 transition-colors"
                     >
                       <Clock size={12} /> Horarios
                     </button>
@@ -479,19 +477,19 @@ export default function EmpleadosPage() {
                   <div className="grid grid-cols-3 gap-1.5">
                     <button
                       onClick={() => abrirBloqueo(emp)}
-                      className="border border-amber-300 text-amber-600 hover:border-amber-500 hover:bg-amber-50 dark:border-amber-800 dark:text-amber-400 dark:hover:bg-amber-950 rounded-md py-2 text-sm font-medium flex items-center justify-center gap-1.5 transition-colors"
+                      className="border border-amber-300 bg-amber-50 text-amber-600 hover:border-amber-500 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-400 dark:hover:bg-amber-950 rounded-md py-2 text-sm font-medium flex items-center justify-center gap-1.5 transition-colors"
                     >
                       <CalendarX size={12} /> Bloqueos
                     </button>
                     <button
                       onClick={() => abrirInvitar(emp)}
-                      className="border border-emerald-300 text-emerald-600 hover:border-emerald-500 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-400 dark:hover:bg-emerald-950 rounded-md py-2 text-sm font-medium flex items-center justify-center gap-1.5 transition-colors"
+                      className="border border-emerald-300 bg-emerald-50 text-emerald-600 hover:border-emerald-500 hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-400 dark:hover:bg-emerald-950 rounded-md py-2 text-sm font-medium flex items-center justify-center gap-1.5 transition-colors"
                     >
                       <Mail size={12} /> Invitar
                     </button>
                     <button
                       onClick={() => setEmpleadoEliminar(emp)}
-                      className="border border-destructive/40 text-destructive hover:bg-destructive hover:text-white rounded-md py-2 text-sm font-medium flex items-center justify-center gap-1.5 transition-colors"
+                      className="border border-destructive/40 bg-destructive/5 text-destructive hover:bg-destructive hover:text-white rounded-md py-2 text-sm font-medium flex items-center justify-center gap-1.5 transition-colors"
                     >
                       <Trash2 size={12} /> Eliminar
                     </button>

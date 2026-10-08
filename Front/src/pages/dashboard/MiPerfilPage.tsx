@@ -12,6 +12,7 @@ import { citasApi } from "../../api/citas";
 import { DatePicker, TimePicker, citasABusySlots } from "../../components/ui/DateTimePicker";
 import type { HorarioDiaDto } from "../../types";
 import PasswordStrengthBar from "../../components/PasswordStrengthBar";
+import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
 import { useAuthStore } from "../../store/authStore";
 import { useToastStore } from "../../store/toastStore";
 import { NotificacionPerfilSection } from "../../components/ui/NotificacionBanner";
@@ -190,14 +191,15 @@ export default function MiPerfilPage() {
 
   return (
     <div className="p-4 sm:p-8">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Mi perfil</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          {esEmpleado
+      <EncabezadoPagina
+        className="mb-6"
+        titulo="Mi perfil"
+        subtitulo={
+          esEmpleado
             ? "Tus datos, notificaciones y bloqueos de horario"
-            : "Tus datos de acceso y preferencias de notificación"}
-        </p>
-      </div>
+            : "Tus datos de acceso y preferencias de notificación"
+        }
+      />
 
       <div className="flex flex-col lg:flex-row gap-6 items-start">
 
