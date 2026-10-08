@@ -148,12 +148,12 @@ export default function App() {
                   </Route>
                 </Route>
 
-                {/* Root — smart redirect based on auth state */}
+                {/* Raíz — la landing para visitantes; RutaPublica manda al panel a quien ya tiene sesión */}
                 <Route element={<RutaPublica />}>
-                  <Route path="/" element={<Navigate to="/login" replace />} />
+                  <Route path="/" element={<LandingPage />} />
                 </Route>
 
-                {/* Landing pages — accessible but not the default entry point */}
+                {/* /landing se conserva: hay enlaces publicados que apuntan ahí */}
                 <Route path="/landing" element={<LandingPage />} />
                 <Route path="/salud" element={<LandingPageSalud />} />
                 <Route path="*" element={<NotFoundPage />} />

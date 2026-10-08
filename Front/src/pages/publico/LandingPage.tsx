@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { useState, useEffect, useRef, type ReactNode, type CSSProperties } from "react";
+import { useState, useEffect, useRef, type ReactNode, type CSSProperties, type RefObject } from "react";
 
 const GOLD = "#C8A961";
 const SLATE_700 = "#334155";
@@ -75,7 +75,7 @@ function Navbar() {
           <a href="#precios" className="hover:text-slate-900 transition-colors">Precios</a>
           <span className="text-slate-200">·</span>
           <Link to="/salud" className="text-sm text-slate-500 hover:text-slate-700 transition-colors">
-            ¿Tienes un consultorio? →
+            ¿Tienes un consultorio?
           </Link>
         </div>
 
@@ -88,7 +88,7 @@ function Navbar() {
             className="px-5 py-2 text-sm font-bold text-white rounded-xl transition-colors"
             style={{ backgroundColor: SLATE_700 }}
           >
-            Comenzar gratis →
+            Comenzar gratis
           </Link>
         </div>
 
@@ -106,10 +106,10 @@ function Navbar() {
           <a href="#caracteristicas" className="py-2 text-sm font-medium text-slate-700" onClick={() => setOpen(false)}>Características</a>
           <a href="#como-funciona" className="py-2 text-sm font-medium text-slate-700" onClick={() => setOpen(false)}>Cómo funciona</a>
           <a href="#precios" className="py-2 text-sm font-medium text-slate-700" onClick={() => setOpen(false)}>Precios</a>
-          <Link to="/salud" className="py-2 text-sm font-medium text-slate-500 hover:text-slate-700 transition-colors" onClick={() => setOpen(false)}>¿Tienes un consultorio? →</Link>
+          <Link to="/salud" className="py-2 text-sm font-medium text-slate-500 hover:text-slate-700 transition-colors" onClick={() => setOpen(false)}>¿Tienes un consultorio?</Link>
           <div className="border-t border-slate-100 pt-3 flex flex-col gap-2">
             <Link to="/login" className="py-2.5 text-sm font-medium text-center text-slate-600 border border-slate-200 rounded-xl">Iniciar sesión</Link>
-            <Link to="/registro?sector=belleza" className="py-2.5 text-sm font-bold text-center text-white rounded-xl" style={{ backgroundColor: SLATE_700 }}>Comenzar gratis →</Link>
+            <Link to="/registro?sector=belleza" className="py-2.5 text-sm font-bold text-center text-white rounded-xl" style={{ backgroundColor: SLATE_700 }}>Comenzar gratis</Link>
           </div>
         </div>
       )}
@@ -131,14 +131,6 @@ function PhoneMockup() {
         <div>
           <p className="text-[11px] font-bold text-slate-800 leading-none mb-0.5">Nueva cita confirmada</p>
           <p className="text-[10px] text-slate-400">Hace 2 minutos</p>
-        </div>
-      </div>
-
-      <div className="absolute -bottom-3 -left-4 z-20 bg-white rounded-2xl shadow-2xl shadow-slate-200 px-3.5 py-2.5 flex items-center gap-2">
-        <span className="text-base">⭐</span>
-        <div>
-          <p className="text-[11px] font-bold text-slate-800 leading-none mb-0.5">4.9 / 5.0</p>
-          <p className="text-[10px] text-slate-400">128 reseñas</p>
         </div>
       </div>
 
@@ -255,35 +247,65 @@ function StepCard({ number, title, desc, delay }: { number: string; title: strin
   );
 }
 
-// ─── Testimonial card ─────────────────────────────────────────────────────────
-function TestimonialCard({ quote, metric, name, role, initials, delay = 0 }: {
-  quote: string; metric: string; name: string; role: string; initials: string; delay?: number;
+// ─── Negocio real ─────────────────────────────────────────────────────────────
+// Fila completa dentro de una columna: la lista se lee intencional con dos
+// negocios y admite un tercero sin rehacer la retícula.
+function NegocioCard({ nombre, tipo, slug, initials, delay = 0 }: {
+  nombre: string; tipo: string; slug: string; initials: string; delay?: number;
 }) {
   const fade = useFadeInUp(delay);
   return (
-    <div ref={fade.ref} style={fade.style} className="flex flex-col p-7 rounded-2xl border border-slate-200 bg-white hover:border-amber-200 hover:shadow-lg hover:shadow-amber-50/50 transition-all duration-300">
-      <div className="flex gap-0.5 mb-5">
-        {[...Array(5)].map((_, i) => (
-          <svg key={i} viewBox="0 0 24 24" className="w-4 h-4" fill={GOLD}>
-            <path d={dStar} />
-          </svg>
-        ))}
-      </div>
-      <p className="text-slate-700 text-sm leading-relaxed flex-1 mb-5">"{quote}"</p>
-      <div className="inline-flex items-center self-start px-2.5 py-1 rounded-lg text-xs font-bold mb-6" style={{ backgroundColor: "#FEF9EC", color: "#92701A", border: "1px solid #F3E0A0" }}>
-        {metric}
-      </div>
-      <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-black text-white flex-shrink-0" style={{ background: `linear-gradient(135deg, ${GOLD}, #a8862e)` }}>
+    <div ref={fade.ref} style={fade.style}>
+      <Link
+        to={`/b/${slug}`}
+        aria-label={`Abrir la página de reservas de ${nombre}`}
+        className="group flex items-center gap-4 p-5 rounded-2xl border border-slate-200 bg-white hover:border-amber-200 hover:shadow-lg hover:shadow-amber-50/50 transition-all duration-300"
+      >
+        <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-sm font-black text-white flex-shrink-0" style={{ background: `linear-gradient(135deg, ${GOLD}, #a8862e)` }}>
           {initials}
         </div>
-        <div>
-          <p className="text-sm font-bold text-slate-900">{name}</p>
-          <p className="text-xs text-slate-400">{role}</p>
+
+        <div className="min-w-0 flex-1">
+          <p className="font-bold text-slate-900 leading-tight">{nombre}</p>
+          <p className="text-xs text-slate-400 mt-1 leading-snug">{tipo}</p>
+          <p className="text-xs text-slate-400 mt-1.5 truncate">appointva.com/b/{slug}</p>
         </div>
-      </div>
+
+        <span className="shrink-0 inline-flex items-center gap-1.5 text-sm font-bold text-slate-700 group-hover:text-slate-900 transition-colors">
+          <span className="hidden sm:inline">Ver su página</span>
+          <Ico d={dArrow} className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-0.5" />
+        </span>
+      </Link>
     </div>
   );
+}
+
+// ─── Sticky CTA (solo móvil) ──────────────────────────────────────────────────
+// Visible entre el final del hero y el CTA oscuro, para que los dos no se apilen.
+function useStickyCta(
+  heroRef: RefObject<HTMLElement | null>,
+  finalCtaRef: RefObject<HTMLElement | null>,
+) {
+  const [heroOut, setHeroOut] = useState(false);
+  const [finalCtaVisible, setFinalCtaVisible] = useState(false);
+
+  useEffect(() => {
+    const el = heroRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(([e]) => setHeroOut(!e.isIntersecting), { threshold: 0 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [heroRef]);
+
+  useEffect(() => {
+    const el = finalCtaRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(([e]) => setFinalCtaVisible(e.isIntersecting), { threshold: 0 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [finalCtaRef]);
+
+  return heroOut && !finalCtaVisible;
 }
 
 // ─── FAQ accordion item ───────────────────────────────────────────────────────
@@ -360,7 +382,7 @@ function PricingCard({
         </div>
       ) : (
         <Link to="/registro?sector=belleza" className="block text-center py-3 rounded-xl text-sm font-bold transition-all hover:opacity-90 active:scale-95" style={{ backgroundColor: highlighted ? GOLD : SLATE_700, color: highlighted ? DARK : "white" }}>
-          Empezar con {name} →
+          Empezar con {name}
         </Link>
       )}
     </div>
@@ -370,6 +392,9 @@ function PricingCard({
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function LandingPage() {
   const [billedAnnually, setBilledAnnually] = useState(false);
+  const heroRef = useRef<HTMLElement>(null);
+  const finalCtaRef = useRef<HTMLElement>(null);
+  const showStickyCta = useStickyCta(heroRef, finalCtaRef);
 
   return (
     <>
@@ -380,6 +405,14 @@ export default function LandingPage() {
           66% { transform: translateY(-8px) rotate(-0.5deg); }
         }
         .av-float { animation: av-float 8s ease-in-out infinite; }
+        @keyframes av-sticky-in {
+          from { transform: translateY(100%); }
+          to { transform: translateY(0); }
+        }
+        .av-sticky-in { animation: av-sticky-in .28s ease-out; }
+        @media (prefers-reduced-motion: reduce) {
+          .av-float, .av-sticky-in { animation: none; }
+        }
         html { scroll-behavior: smooth; }
         ::selection { background: #C8A96133; }
       `}</style>
@@ -388,7 +421,7 @@ export default function LandingPage() {
         <Navbar />
 
         {/* ── HERO ──────────────────────────────────────────────────────────── */}
-        <section className="relative pt-36 pb-24 md:pt-44 md:pb-32 overflow-hidden">
+        <section ref={heroRef} className="relative pt-36 pb-24 md:pt-44 md:pb-32 overflow-hidden">
           <div className="absolute inset-0 -z-10" style={{ backgroundImage: "radial-gradient(#33415520 1px, transparent 1px)", backgroundSize: "32px 32px" }} />
           <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-white to-transparent -z-10" />
 
@@ -413,31 +446,22 @@ export default function LandingPage() {
                   cuando quieran — tú recibes notificaciones y gestionas todo desde un panel limpio.
                 </p>
 
+                {/* min-w iguala el ancho de los dos botones pese a que sus etiquetas difieren. */}
                 <div className="flex flex-wrap gap-3 mb-8">
                   <Link
                     to="/registro?sector=belleza"
-                    className="inline-flex items-center gap-2 px-7 py-3.5 text-sm font-bold text-white rounded-xl transition-all hover:-translate-y-0.5 hover:shadow-lg active:scale-95"
+                    className="inline-flex items-center justify-center min-w-[180px] px-7 py-3.5 text-sm font-bold text-white rounded-xl border border-transparent transition-all hover:-translate-y-0.5 hover:shadow-lg active:scale-95"
                     style={{ backgroundColor: SLATE_700, boxShadow: `0 4px 16px -2px ${SLATE_700}44` }}
                   >
                     Comenzar gratis
-                    <Ico d={dArrow} className="w-4 h-4" />
                   </Link>
-                  <a href="#precios" className="inline-flex items-center gap-2 px-7 py-3.5 text-sm font-semibold text-slate-700 rounded-xl border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-95">
+                  <a href="#precios" className="inline-flex items-center justify-center min-w-[180px] px-7 py-3.5 text-sm font-semibold text-slate-700 rounded-xl border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-95">
                     Ver precios
                   </a>
                 </div>
 
-                {/* Trust strip */}
+                {/* Trust strip — sin calificación: el producto aún no tiene reseñas que la respalden. */}
                 <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-                  <div className="flex items-center gap-1.5">
-                    <div className="flex gap-0.5">
-                      {[...Array(5)].map((_, i) => (
-                        <svg key={i} viewBox="0 0 24 24" className="w-3.5 h-3.5" fill={GOLD}><path d={dStar} /></svg>
-                      ))}
-                    </div>
-                    <span className="text-xs font-bold text-slate-700">4.9 / 5</span>
-                  </div>
-                  <span className="text-slate-200 hidden sm:block text-xs">·</span>
                   <p className="flex items-center gap-1.5 text-xs text-slate-400">
                     <Ico d={dShield} className="w-3 h-3 text-emerald-400 shrink-0" />
                     Sin tarjeta · Sin comisiones · Cancela cuando quieras
@@ -449,6 +473,23 @@ export default function LandingPage() {
                 <div className="av-float"><PhoneMockup /></div>
               </div>
             </div>
+          </div>
+        </section>
+
+        {/* ── STATS ─────────────────────────────────────────────────────────── */}
+        <section className="border-t border-slate-100 bg-white">
+          <div className="max-w-6xl mx-auto px-6 py-12 grid grid-cols-2 md:grid-cols-4 gap-8">
+            {[
+              { val: "5 min",   label: "Para configurar tu agenda completa" },
+              { val: "24/7",    label: "Tu booking disponible para clientes" },
+              { val: "$0",      label: "Comisión por cada cita agendada" },
+              { val: "$249",    label: "Todo incluido desde MXN/mes" },
+            ].map(({ val, label }) => (
+              <div key={label} className="text-center md:text-left">
+                <p className="text-3xl font-black text-slate-900 mb-1 tabular-nums" style={{ fontVariantNumeric: "tabular-nums" }}>{val}</p>
+                <p className="text-sm text-slate-500 leading-snug">{label}</p>
+              </div>
+            ))}
           </div>
         </section>
 
@@ -465,23 +506,6 @@ export default function LandingPage() {
                 ))}
               </div>
             </div>
-          </div>
-        </section>
-
-        {/* ── STATS ─────────────────────────────────────────────────────────── */}
-        <section className="border-b border-slate-100 bg-white">
-          <div className="max-w-6xl mx-auto px-6 py-12 grid grid-cols-2 md:grid-cols-4 gap-8">
-            {[
-              { val: "5 min",   label: "Para configurar tu agenda completa" },
-              { val: "24/7",    label: "Tu booking disponible para clientes" },
-              { val: "$0",      label: "Comisión por cada cita agendada" },
-              { val: "$249",    label: "Todo incluido desde MXN/mes" },
-            ].map(({ val, label }) => (
-              <div key={label} className="text-center md:text-left">
-                <p className="text-3xl font-black text-slate-900 mb-1 tabular-nums" style={{ fontVariantNumeric: "tabular-nums" }}>{val}</p>
-                <p className="text-sm text-slate-500 leading-snug">{label}</p>
-              </div>
-            ))}
           </div>
         </section>
 
@@ -504,47 +528,6 @@ export default function LandingPage() {
               <FeatureCard delay={0}   icon={<Ico d={dTag} />}      title="Descuentos y códigos" desc="Crea promociones para nuevos clientes o temporadas. Fideliza con un código y sin complejidad extra." />
               <FeatureCard delay={80}  icon={<Ico d={dStar} />}     title="Reseñas automáticas" desc="Solicita opiniones tras cada cita completada. Construye tu reputación en piloto automático." />
               <FeatureCard delay={160} icon={<Ico d={dChart} />}    title="Reportes en tiempo real" desc="Citas, ingresos y clientes de este mes. Visualiza el crecimiento y exporta a Excel con un clic." />
-            </div>
-          </div>
-        </section>
-
-        {/* ── TESTIMONIOS ───────────────────────────────────────────────────── */}
-        <section className="py-28 bg-slate-50">
-          <div className="max-w-6xl mx-auto px-6">
-            <div className="text-center mb-16">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] mb-4" style={{ color: GOLD }}>Testimonios</p>
-              <h2 className="text-4xl md:text-5xl font-black text-slate-900 mb-5 leading-tight">
-                Lo que dicen los negocios
-                <br />que lo usaron primero
-              </h2>
-              <p className="text-slate-500 text-base max-w-md mx-auto">Resultados reales de propietarios en México.</p>
-            </div>
-
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              <TestimonialCard
-                delay={0}
-                quote="Antes perdía 2 horas diarias contestando WhatsApps para confirmar citas. Ahora mis clientas agendan solas y yo me enfoco en el trabajo. En el primer mes recuperé la mensualidad con una clienta que llegó por mi link de Instagram."
-                metric="−2h diarias de mensajes"
-                name="María González"
-                role="Centro de Belleza Lumé · CDMX"
-                initials="MG"
-              />
-              <TestimonialCard
-                delay={120}
-                quote="Los recordatorios automáticos cambiaron el negocio. Antes perdía 3 o 4 citas por semana porque la gente simplemente no llegaba. Ahora prácticamente no hay ausencias y mis barberos trabajan con la agenda llena."
-                metric="Ausencias casi a cero"
-                name="Carlos Ramírez"
-                role="BarberShop Kingz · Guadalajara"
-                initials="CR"
-              />
-              <TestimonialCard
-                delay={240}
-                quote="Tenía clientas que llegaban el día y hora equivocada porque todo se coordinaba por mensaje. Desde que uso AppointVa ellas mismas eligen su horario y llegan puntual. Mis técnicas trabajan sin interrupciones y yo dejé de vivir pegada al teléfono."
-                metric="Cero confusiones de horario"
-                name="Valeria Torres"
-                role="Nails Studio VT · Monterrey"
-                initials="VT"
-              />
             </div>
           </div>
         </section>
@@ -623,8 +606,43 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* ── NEGOCIOS REALES ───────────────────────────────────────────────── */}
+        <section className="py-24 bg-white">
+          <div className="max-w-5xl mx-auto px-6">
+            <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+              <div className="text-center lg:text-left">
+                <p className="text-xs font-bold uppercase tracking-[0.2em] mb-4" style={{ color: GOLD }}>Negocios reales</p>
+                <h2 className="text-4xl md:text-5xl font-black text-slate-900 mb-5 leading-tight">
+                  Negocios que ya reservan con AppointVa
+                </h2>
+                <p className="text-slate-500 text-base max-w-sm mx-auto lg:mx-0">
+                  Abre su página y reserva como lo haría tu cliente.
+                </p>
+              </div>
+
+              {/* min-w-0: sin esto el ítem de grid toma el ancho de su contenido y se sale del padding. */}
+              <div className="flex flex-col gap-4 min-w-0">
+                <NegocioCard
+                  delay={0}
+                  nombre="Aramis Manzo Salón"
+                  tipo="Salón de belleza"
+                  slug="aramis-manzo-salon"
+                  initials="AM"
+                />
+                <NegocioCard
+                  delay={120}
+                  nombre="Lashes_crisantemo"
+                  tipo="Estudio de pestañas · Zacatepec, Tejupilco"
+                  slug="lashescrisantemo"
+                  initials="LC"
+                />
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* ── FAQ ───────────────────────────────────────────────────────────── */}
-        <section className="py-28 scroll-mt-20">
+        <section className="py-28 bg-slate-50 scroll-mt-20">
           <div className="max-w-3xl mx-auto px-6">
             <div className="text-center mb-16">
               <p className="text-xs font-bold uppercase tracking-[0.2em] mb-4" style={{ color: GOLD }}>FAQ</p>
@@ -642,10 +660,6 @@ export default function LandingPage() {
                 a="No. Tus clientes reservan directamente desde tu página personalizada en cualquier navegador, sin registrarse ni instalar nada. Solo entran, eligen horario y confirman."
               />
               <FaqItem
-                q="¿Qué pasa cuando llego al límite de citas del mes?"
-                a="Te avisamos cuando estás al 80% de tu límite para que puedas decidir con tiempo. Puedes actualizar tu plan en cualquier momento sin perder tu configuración ni tu historial."
-              />
-              <FaqItem
                 q="¿Puedo manejar varios empleados con horarios diferentes?"
                 a="Sí. Cada empleado tiene su propio calendario con sus horarios y los servicios que ofrece. Tus clientes pueden elegir específicamente con quién quieren agendar, o dejar que el sistema asigne automáticamente."
               />
@@ -658,7 +672,7 @@ export default function LandingPage() {
         </section>
 
         {/* ── DARK CTA ──────────────────────────────────────────────────────── */}
-        <section style={{ backgroundColor: DARK }} className="py-28 relative overflow-hidden">
+        <section ref={finalCtaRef} style={{ backgroundColor: DARK }} className="py-28 relative overflow-hidden">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] blur-3xl opacity-10 pointer-events-none" style={{ backgroundColor: GOLD }} />
           <div className="relative max-w-2xl mx-auto px-6 text-center">
             <p className="text-xs font-bold uppercase tracking-[0.2em] mb-6" style={{ color: GOLD }}>Empieza hoy</p>
@@ -718,6 +732,21 @@ export default function LandingPage() {
             </div>
           </div>
         </footer>
+
+        {/* ── STICKY CTA (móvil) ────────────────────────────────────────────── */}
+        {showStickyCta && (
+          <div className="md:hidden fixed bottom-0 inset-x-0 z-40 av-sticky-in border-t border-slate-200 bg-white/95 backdrop-blur-lg px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-6px_24px_-10px_rgba(15,23,42,0.35)]">
+            <Link
+              to="/registro?sector=belleza"
+              className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl text-sm font-bold text-white active:scale-[0.98] transition-transform"
+              style={{ backgroundColor: SLATE_700 }}
+            >
+              Comenzar gratis
+              <Ico d={dArrow} className="w-4 h-4" />
+            </Link>
+            <p className="mt-2 text-center text-[11px] text-slate-400">Sin tarjeta · Cancela cuando quieras</p>
+          </div>
+        )}
       </div>
     </>
   );
