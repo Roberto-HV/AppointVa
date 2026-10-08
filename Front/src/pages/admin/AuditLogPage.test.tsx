@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import AuditLogPage from "./AuditLogPage";
 import { adminApi } from "../../api/admin";
@@ -47,7 +48,7 @@ const emptyResponse: AuditLogsRespuesta = {
   datos: [],
   total: 0,
   pagina: 1,
-  tamano: 50,
+  tamano: 15,
 };
 
 function makeLog(overrides: Partial<AuditLogDto> = {}): AuditLogDto {
@@ -60,9 +61,26 @@ function makeLog(overrides: Partial<AuditLogDto> = {}): AuditLogDto {
     entidadId: null,
     detalles: null,
     ipAddress: "127.0.0.1",
-    fechaEn: "2024-06-15T10:00:00Z",
+    fechaEn: "2024-06-15T10:00:00",
     ...overrides,
   };
+}
+
+/** El filtro usa el `Select` del dashboard: botón visible + lista de opciones. */
+async function elegirAccion(opcion: string) {
+  const user = userEvent.setup();
+  await user.click(screen.getByRole("button", { name: "Acción" }));
+  await user.click(screen.getByRole("option", { name: opcion }));
+}
+
+/** La búsqueda se confirma; teclear no dispara la consulta. */
+async function buscarUsuario(valor: string) {
+  const user = userEvent.setup();
+  await user.clear(screen.getByRole("searchbox", { name: "Buscar por ID de usuario" }));
+  if (valor) {
+    await user.type(screen.getByRole("searchbox", { name: "Buscar por ID de usuario" }), valor);
+  }
+  await user.click(screen.getByRole("button", { name: "Buscar" }));
 }
 
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
@@ -104,6 +122,15 @@ describe("AuditLogPage — estado vacío", () => {
     renderAuditLog();
     await screen.findByText("Sin registros");
   });
+
+  it("ofrece limpiar los filtros cuando el vacío viene de un filtro", async () => {
+    renderAuditLog();
+    await screen.findByText("Sin registros");
+
+    await elegirAccion("Logout");
+
+    expect(await screen.findByRole("button", { name: "Ver todos los eventos" })).toBeInTheDocument();
+  });
 });
 
 describe("AuditLogPage — fila de datos", () => {
@@ -112,7 +139,7 @@ describe("AuditLogPage — fila de datos", () => {
       datos: [makeLog()],
       total: 1,
       pagina: 1,
-      tamano: 50,
+      tamano: 15,
     });
     renderAuditLog();
     await screen.findByText("user@test.com");
@@ -125,8 +152,7 @@ describe("AuditLogPage — filtro de acción", () => {
     renderAuditLog();
     await screen.findByText("Sin registros");
 
-    const select = screen.getByRole("combobox");
-    fireEvent.change(select, { target: { value: "Login" } });
+    await elegirAccion("Login");
 
     await waitFor(() => {
       expect(adminApi.obtenerAuditLogs).toHaveBeenCalledWith(
@@ -134,18 +160,90 @@ describe("AuditLogPage — filtro de acción", () => {
       );
     });
   });
+
+  it("no ofrece acciones que el backend nunca registra", async () => {
+    renderAuditLog();
+    await screen.findByText("Sin registros");
+
+    fireEvent.click(screen.getByRole("button", { name: "Acción" }));
+
+    // "SubirFoto" es el nombre de dos endpoints, no un valor de AuditLog.Accion:
+    // filtrar por ella devolvía siempre cero registros.
+    expect(screen.queryByRole("option", { name: "SubirFoto" })).not.toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Login" })).toBeInTheDocument();
+  });
+});
+
+describe("AuditLogPage — filtro por ID de usuario", () => {
+  it("avisa y no consulta cuando el ID no es un UUID completo", async () => {
+    renderAuditLog();
+    await screen.findByText("Sin registros");
+    vi.mocked(adminApi.obtenerAuditLogs).mockClear();
+
+    await buscarUsuario("abc");
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/UUID completo/i);
+    expect(adminApi.obtenerAuditLogs).not.toHaveBeenCalled();
+  });
+
+  it("consulta con el UUID cuando está completo", async () => {
+    renderAuditLog();
+    await screen.findByText("Sin registros");
+
+    const uuid = "3f8a1c2e-7b94-4d61-9a0f-52c6e8d4b7a3";
+    await buscarUsuario(uuid);
+
+    await waitFor(() => {
+      expect(adminApi.obtenerAuditLogs).toHaveBeenCalledWith(
+        expect.objectContaining({ usuarioId: uuid })
+      );
+    });
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
 });
 
 describe("AuditLogPage — paginación", () => {
-  it("el botón Anterior está deshabilitado en la primera página", async () => {
+  it("pide páginas de 15, el mismo tamaño que el resto del dashboard", async () => {
+    renderAuditLog();
+    await screen.findByText("Sin registros");
+    expect(adminApi.obtenerAuditLogs).toHaveBeenCalledWith(
+      expect.objectContaining({ tamano: 15 })
+    );
+  });
+
+  it("el botón de página anterior está deshabilitado en la primera página", async () => {
     vi.mocked(adminApi.obtenerAuditLogs).mockResolvedValue({
-      datos: [],
+      datos: [makeLog()],
       total: 100,
       pagina: 1,
-      tamano: 50,
+      tamano: 15,
     });
     renderAuditLog();
-    const anterior = await screen.findByRole("button", { name: "Anterior" });
+    const anterior = await screen.findByRole("button", { name: "Página anterior" });
     expect(anterior).toBeDisabled();
+  });
+
+  it("pide la página siguiente al avanzar", async () => {
+    vi.mocked(adminApi.obtenerAuditLogs).mockResolvedValue({
+      datos: [makeLog()],
+      total: 100,
+      pagina: 1,
+      tamano: 15,
+    });
+    renderAuditLog();
+
+    fireEvent.click(await screen.findByRole("button", { name: "Página siguiente" }));
+
+    await waitFor(() => {
+      expect(adminApi.obtenerAuditLogs).toHaveBeenCalledWith(
+        expect.objectContaining({ pagina: 2 })
+      );
+    });
+  });
+
+  it("muestra un reintento cuando la consulta falla", async () => {
+    vi.mocked(adminApi.obtenerAuditLogs).mockRejectedValue(new Error("boom"));
+    renderAuditLog();
+    expect(await screen.findByRole("button", { name: "Reintentar" })).toBeInTheDocument();
   });
 });

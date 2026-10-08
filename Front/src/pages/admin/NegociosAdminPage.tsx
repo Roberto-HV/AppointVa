@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Select from "../../components/ui/Select";
 import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Eye, EyeOff, CreditCard, Clock, CheckCircle, XCircle, AlertTriangle, Printer, Pencil, Trash2 } from "lucide-react";
+import { Eye, EyeOff, CreditCard, Clock, CheckCircle, XCircle, AlertTriangle, Printer, Pencil, Trash2, Palette, UserPlus, MailCheck, ExternalLink, Power } from "lucide-react";
 import {
   adminApi,
   type NegocioMetricasDto,
@@ -15,6 +15,13 @@ import {
 } from "../../api/admin";
 import Modal from "../../components/ui/Modal";
 import BarraProgreso from "../../components/ui/BarraProgreso";
+import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
+import BotonAccion from "../../components/ui/BotonAccion";
+import Tabs from "../../components/ui/Tabs";
+import EmptyState from "../../components/ui/EmptyState";
+import Pagination from "../../components/ui/Pagination";
+import { FiltroBarra } from "../../components/ui/filtros";
+import { usePaginacionLocal } from "../../hooks/usePaginacionLocal";
 import { useToastStore } from "../../store/toastStore";
 import { formatPrecio, toUtcDate } from "../../utils/formatters";
 
@@ -32,6 +39,67 @@ const ESTADO_BADGE: Record<string, { label: string; className: string }> = {
 
 const PRECIO_EXTRA_EMP = 50;
 const LIFETIME_SENTINEL = 1200;
+
+/**
+ * Umbral a partir del cual la vigencia deja de ser un dato y pasa a ser
+ * "permanente".
+ *
+ * "De por vida" se registra como un pago de 1200 meses y el backend fija el
+ * vencimiento en `periodoDesde.AddMonths(1200)`, es decir cien años. Por eso
+ * `diasRestantes` llegaba al badge como 37160 y se pintaba "Activa · 37160d":
+ * el dato es correcto, lo que no se sostiene es mostrarlo en días. Cincuenta
+ * años deja margen de sobra sobre cualquier suscripción real sin acercarse al
+ * centenar del centinela.
+ */
+const DIAS_DE_POR_VIDA = 365 * 50;
+
+/**
+ * Base de los botones de acción de la tarjeta de negocio.
+ *
+ * Mismo tratamiento que las acciones de Empleados: el tinte claro del borde es
+ * también el relleno, no blanco. Con siete botones blancos de cinco colores de
+ * borde distintos la tarjeta se leía como un semáforo; con el tinte, el color
+ * informa sin gritar. El alto sigue el mínimo táctil de 44px y baja a 36px en
+ * escritorio, igual que `BotonAccion`, `Tabs` y `Pagination`.
+ */
+const ACCION_TARJETA =
+  "min-h-[44px] lg:min-h-[36px] px-2 rounded-md border text-xs font-medium " +
+  "inline-flex items-center justify-center gap-1.5 text-center transition-colors " +
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 " +
+  "dark:focus-visible:ring-slate-400/40 disabled:opacity-50 disabled:cursor-not-allowed";
+
+/** Campo de texto de los modales: mismo alto táctil y mismo modo oscuro. */
+const CAMPO_MODAL =
+  "w-full min-h-[44px] px-3 py-2 rounded-lg border text-sm outline-none transition-colors " +
+  "bg-white dark:bg-slate-800 text-gray-800 dark:text-gray-100 " +
+  "placeholder:text-gray-400 dark:placeholder:text-slate-500 " +
+  "focus:border-slate-700 dark:focus:border-slate-400";
+const CAMPO_OK = "border-gray-200 dark:border-slate-600";
+const CAMPO_ERROR = "border-red-400 bg-red-50 dark:bg-red-950/30";
+
+/** Par de botones al pie de los modales. El primario es el mismo `slate-700`
+ *  que `BotonAccion`, para que el panel no mantenga su propio negro. */
+const BOTON_PIE =
+  "flex-1 min-h-[44px] rounded-xl text-sm transition-colors disabled:opacity-50 " +
+  "disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 " +
+  "focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40";
+const BOTON_PIE_SECUNDARIO =
+  `${BOTON_PIE} border-2 font-medium border-gray-200 dark:border-slate-600 ` +
+  "text-gray-600 dark:text-slate-300 hover:border-gray-300 dark:hover:border-slate-500";
+const BOTON_PIE_PRIMARIO =
+  `${BOTON_PIE} font-semibold bg-slate-700 hover:bg-slate-800 text-white ` +
+  "dark:bg-slate-600 dark:hover:bg-slate-500";
+
+/** Vigencia restante en la unidad que se pueda leer de un vistazo. */
+function formatVigencia(dias: number): string {
+  if (dias >= DIAS_DE_POR_VIDA) return "de por vida";
+  if (dias >= 365) {
+    const anios = Math.floor(dias / 365);
+    return `${anios} año${anios === 1 ? "" : "s"}`;
+  }
+  if (dias >= 60) return `${Math.round(dias / 30)} meses`;
+  return `${dias} d`;
+}
 
 // ── Schemas ────────────────────────────────────────────────────────────────
 const schemaNegocio = z.object({
@@ -107,31 +175,54 @@ function imprimirComprobante(pago: PagoSuscripcionDto) {
 }
 
 // ── BadgeSuscripcion ───────────────────────────────────────────────────────
-function BadgeSuscripcion({ estado, dias }: { estado: SuscripcionResumenDto["estado"]; dias: number | null }) {
+function BadgeSuscripcion({
+  estado,
+  dias,
+  vence,
+}: {
+  estado: SuscripcionResumenDto["estado"];
+  dias: number | null;
+  /** Fecha de vencimiento ISO; alimenta el `title` con el dato exacto. */
+  vence?: string | null;
+}) {
+  const titulo = vence ? `Vence el ${formatFechaMx(vence)}` : undefined;
+
   if (estado === "Activa") {
+    const permanente = dias !== null && dias >= DIAS_DE_POR_VIDA;
     return (
-      <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">
-        <CheckCircle size={10} /> Activa {dias !== null && `· ${dias}d`}
+      <span
+        title={permanente ? "Acceso permanente — sin vencimiento" : titulo}
+        className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400"
+      >
+        <CheckCircle size={10} aria-hidden="true" />
+        {permanente ? "De por vida" : `Activa${dias !== null ? ` · ${formatVigencia(dias)}` : ""}`}
       </span>
     );
   }
   if (estado === "PorVencer") {
     return (
-      <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700">
-        <AlertTriangle size={10} /> Vence en {dias}d
+      <span
+        title={titulo}
+        className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400"
+      >
+        <AlertTriangle size={10} aria-hidden="true" />
+        {dias !== null && dias <= 0 ? "Vence hoy" : `Vence en ${dias} d`}
       </span>
     );
   }
   if (estado === "Vencida") {
     return (
-      <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-50 text-red-600">
-        <XCircle size={10} /> Vencida
+      <span
+        title={titulo}
+        className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400"
+      >
+        <XCircle size={10} aria-hidden="true" /> Vencida
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">
-      <Clock size={10} /> Sin suscripción
+    <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 dark:bg-slate-700 dark:text-slate-400">
+      <Clock size={10} aria-hidden="true" /> Sin suscripción
     </span>
   );
 }
@@ -167,6 +258,8 @@ function ModalSuscripcion({
     queryKey: ["pagos-negocio", negocio.id],
     queryFn: () => adminApi.obtenerPagos(negocio.id),
   });
+
+  const paginaHistorial = usePaginacionLocal(historial);
 
   const { mutate: registrar, isPending: registrando } = useMutation({
     mutationFn: () =>
@@ -226,8 +319,11 @@ function ModalSuscripcion({
     setEditForm({
         monto: String(pago.monto),
         notas: pago.notas ?? "",
-        desde: toUtcDate(pago.periodoDesde).toISOString().slice(0, 10),
-        hasta: toUtcDate(pago.periodoHasta).toISOString().slice(0, 10),
+        // El período es una fecha de calendario, no un instante: se recorta del
+        // propio ISO. Pasar por `Date` y `toISOString()` reintroduce el desfase
+        // de zona horaria que ya se corrigió dos veces en este repo.
+        desde: pago.periodoDesde.slice(0, 10),
+        hasta: pago.periodoHasta.slice(0, 10),
     });
   };
 
@@ -263,6 +359,7 @@ function ModalSuscripcion({
 
   const estado = suscripcion?.estado ?? "SinSuscripcion";
   const vencimiento = suscripcion?.fechaVencimiento;
+  const esPermanente = (suscripcion?.diasRestantes ?? 0) >= DIAS_DE_POR_VIDA;
 
   return (
     <div className="space-y-4">
@@ -271,33 +368,32 @@ function ModalSuscripcion({
       <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 flex items-center justify-between gap-3">
         <div>
           <p className="text-xs text-gray-400 mb-1">Estado de suscripción</p>
-          <BadgeSuscripcion estado={estado} dias={suscripcion?.diasRestantes ?? null} />
+          <BadgeSuscripcion
+            estado={estado}
+            dias={suscripcion?.diasRestantes ?? null}
+            vence={vencimiento}
+          />
         </div>
         {vencimiento && (
           <div className="text-right">
             <p className="text-xs text-gray-400">Vence</p>
-            <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{formatFechaMx(vencimiento)}</p>
+            <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+              {esPermanente ? "Sin vencimiento" : formatFechaMx(vencimiento)}
+            </p>
           </div>
         )}
       </div>
 
       {/* ── Tab bar ── */}
-      <div className="flex border-b border-gray-200 dark:border-gray-700">
-        {(['cuenta', 'pagos'] as const).map(t => (
-          <button
-            key={t}
-            type="button"
-            onClick={() => setTab(t)}
-            className={`flex-1 pb-2.5 text-xs font-semibold transition-colors border-b-2 -mb-px ${
-              tab === t
-                ? 'border-gray-900 dark:border-gray-100 text-gray-900 dark:text-gray-100'
-                : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
-            }`}
-          >
-            {t === 'cuenta' ? 'Cuenta' : 'Pagos'}
-          </button>
-        ))}
-      </div>
+      <Tabs
+        etiqueta="Secciones de la suscripción"
+        valor={tab}
+        onChange={setTab}
+        opciones={[
+          { id: 'cuenta', label: 'Cuenta' },
+          { id: 'pagos', label: 'Pagos' },
+        ]}
+      />
 
       {/* ── Tab: Cuenta ── */}
       {tab === 'cuenta' && (
@@ -311,7 +407,8 @@ function ModalSuscripcion({
                   key={p.id}
                   type="button"
                   onClick={() => handleSetPlan(p.id)}
-                  className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                  aria-pressed={negocio.planId === p.id}
+                  className={`min-h-[44px] lg:min-h-[36px] px-3.5 rounded-full text-xs font-medium border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40 ${
                     negocio.planId === p.id
                       ? 'bg-gray-900 text-white border-gray-900 dark:bg-gray-100 dark:text-gray-900 dark:border-gray-100'
                       : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-gray-500'
@@ -335,7 +432,8 @@ function ModalSuscripcion({
                   key={s}
                   type="button"
                   onClick={() => handleSetSector(s)}
-                  className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                  aria-pressed={suscripcion?.sector === s}
+                  className={`min-h-[44px] lg:min-h-[36px] px-3.5 rounded-full text-xs font-medium border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40 ${
                     suscripcion?.sector === s
                       ? 'bg-gray-900 text-white border-gray-900 dark:bg-gray-100 dark:text-gray-900 dark:border-gray-100'
                       : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-indigo-400'
@@ -367,6 +465,7 @@ function ModalSuscripcion({
                 <input
                   type="number"
                   min={0}
+                  aria-label="Empleados extra"
                   value={empleadosExtra}
                   onChange={e => {
                     const val = Math.max(0, Number(e.target.value));
@@ -401,10 +500,12 @@ function ModalSuscripcion({
               {[1, 3, 6, 12].map((m) => (
                 <button
                   key={m}
+                  type="button"
                   onClick={() => handleMesesChange(m)}
-                  className={`flex-1 py-2 rounded-lg text-xs font-bold border transition ${
+                  aria-pressed={meses === m}
+                  className={`flex-1 min-h-[44px] lg:min-h-[36px] rounded-lg text-xs font-bold border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40 ${
                     meses === m
-                      ? "bg-gray-900 text-white border-gray-900"
+                      ? "bg-gray-900 text-white border-gray-900 dark:bg-gray-100 dark:text-gray-900 dark:border-gray-100"
                       : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:border-gray-400"
                   }`}
                 >
@@ -413,8 +514,10 @@ function ModalSuscripcion({
               ))}
             </div>
             <button
+              type="button"
               onClick={() => handleMesesChange(LIFETIME_SENTINEL)}
-              className={`w-full py-2 rounded-lg text-xs font-bold border transition mb-3 ${
+              aria-pressed={meses === LIFETIME_SENTINEL}
+              className={`w-full min-h-[44px] lg:min-h-[36px] rounded-lg text-xs font-bold border transition mb-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40 ${
                 meses === LIFETIME_SENTINEL
                   ? "bg-amber-600 text-white border-amber-600"
                   : "bg-white dark:bg-gray-800 text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/20"
@@ -431,7 +534,7 @@ function ModalSuscripcion({
                   inputMode="decimal"
                   value={monto}
                   onChange={(e) => setMonto(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-sm outline-none focus:border-gray-400 font-variant-numeric"
+                  className={`${CAMPO_MODAL} ${CAMPO_OK} tabular-nums`}
                 />
                 {meses === LIFETIME_SENTINEL && (
                   <p className="text-[10px] text-amber-600 mt-1 font-medium">Acceso permanente — sin vencimiento</p>
@@ -444,15 +547,16 @@ function ModalSuscripcion({
                   value={notas}
                   onChange={(e) => setNotas(e.target.value)}
                   placeholder="Efectivo, transferencia…"
-                  className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-sm outline-none focus:border-gray-400"
+                  className={`${CAMPO_MODAL} ${CAMPO_OK}`}
                 />
               </div>
             </div>
 
             <button
+              type="button"
               onClick={() => registrar()}
               disabled={registrando || !monto || parseFloat(monto) <= 0}
-              className="w-full bg-gray-900 hover:bg-gray-700 disabled:opacity-50 text-white text-sm font-semibold py-2.5 rounded-xl transition"
+              className={`${BOTON_PIE_PRIMARIO} w-full`}
             >
               {registrando
                 ? "Registrando..."
@@ -471,7 +575,7 @@ function ModalSuscripcion({
               <p className="text-xs text-gray-400 py-4 text-center">Sin pagos registrados</p>
             ) : (
               <div className="divide-y divide-gray-100 dark:divide-gray-700 border border-gray-100 dark:border-gray-700 rounded-xl overflow-hidden">
-                {historial.map((pago) => {
+                {paginaHistorial.visibles.map((pago) => {
                   const enEdicion = editandoId === pago.id;
                   const enConfirmar = confirmandoEliminarId === pago.id;
 
@@ -587,6 +691,7 @@ function ModalSuscripcion({
                       <div className="flex items-center gap-1 shrink-0">
                         <button
                           onClick={() => imprimirComprobante(pago)}
+                          aria-label={`Imprimir comprobante del pago ${pago.numeroPago}`}
                           title="Imprimir comprobante"
                           className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
                         >
@@ -594,6 +699,7 @@ function ModalSuscripcion({
                         </button>
                         <button
                           onClick={() => iniciarEdicion(pago)}
+                          aria-label={`Editar el pago ${pago.numeroPago}`}
                           title="Editar pago"
                           className="text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
                         >
@@ -604,6 +710,7 @@ function ModalSuscripcion({
                             setConfirmandoEliminarId(enConfirmar ? null : pago.id);
                             setEditandoId(null);
                           }}
+                          aria-label={`Eliminar el pago ${pago.numeroPago}`}
                           title="Eliminar pago"
                           className={`transition p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 ${
                             enConfirmar
@@ -617,6 +724,15 @@ function ModalSuscripcion({
                     </div>
                   );
                 })}
+                {paginaHistorial.totalPaginas > 1 && (
+                  <Pagination
+                    pagina={paginaHistorial.pagina}
+                    totalPaginas={paginaHistorial.totalPaginas}
+                    total={paginaHistorial.total}
+                    labelTotal="pagos"
+                    onCambiar={paginaHistorial.setPagina}
+                  />
+                )}
               </div>
             )}
           </div>
@@ -675,7 +791,9 @@ function TarjetaNegocio({
         </div>
         <span
           className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
-            esActivo ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-600"
+            esActivo
+              ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400"
+              : "bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400"
           }`}
         >
           {esActivo ? "Activo" : "Inactivo"}
@@ -684,25 +802,29 @@ function TarjetaNegocio({
 
       {/* Plan + suscripción */}
       <div className="px-4 pb-3 flex items-center gap-2 flex-wrap">
-        <span className="text-[11px] font-semibold bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">
+        <span className="text-[11px] font-semibold bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-300 px-2 py-0.5 rounded-full">
           {negocio.planNombre ?? "Sin plan"}
         </span>
         {suscripcion && (
-          <BadgeSuscripcion estado={suscripcion.estado} dias={suscripcion.diasRestantes} />
+          <BadgeSuscripcion
+            estado={suscripcion.estado}
+            dias={suscripcion.diasRestantes}
+            vence={suscripcion.fechaVencimiento}
+          />
         )}
         {suscripcion && (
           <span
             className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${
               suscripcion.sector === 'salud'
-                ? 'bg-blue-100 text-blue-800'
-                : 'bg-pink-100 text-pink-800'
+                ? 'bg-blue-100 text-blue-800 dark:bg-blue-950/40 dark:text-blue-300'
+                : 'bg-pink-100 text-pink-800 dark:bg-pink-950/40 dark:text-pink-300'
             }`}
           >
             {suscripcion.sector === 'salud' ? 'Salud' : 'Belleza'}
           </span>
         )}
         {negocio.esTester && (
-          <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300">
+          <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300">
             Tester
           </span>
         )}
@@ -720,7 +842,11 @@ function TarjetaNegocio({
           <span className="text-xs text-gray-400">Emails este mes:</span>
           <span
             className={`text-xs font-semibold ${
-              negocio.emailsMes > 200 ? "text-red-600" : negocio.emailsMes > 100 ? "text-amber-600" : "text-gray-600"
+              negocio.emailsMes > 200
+                ? "text-red-600 dark:text-red-400"
+                : negocio.emailsMes > 100
+                ? "text-amber-600 dark:text-amber-400"
+                : "text-gray-600 dark:text-slate-300"
             }`}
           >
             {negocio.emailsMes}
@@ -728,99 +854,135 @@ function TarjetaNegocio({
         </div>
       </div>
 
-      {/* Acciones */}
-      <div className="border-t border-gray-100 dark:border-gray-700 px-4 py-3 flex flex-wrap gap-2 items-center">
-        <button
-          onClick={esActivo ? onDesactivar : onActivar}
-          disabled={isToggling}
-          className={`text-xs font-medium px-3 py-1.5 rounded-lg border transition disabled:opacity-50 ${
-            esActivo
-              ? "bg-red-50 text-red-600 hover:bg-red-100 border-red-100"
-              : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-100"
-          }`}
-        >
-          {isToggling ? "Guardando…" : esActivo ? "Desactivar" : "Activar"}
-        </button>
-        <button
-          onClick={onConfirmarEmail}
-          className="text-xs font-medium px-3 py-1.5 rounded-lg border border-blue-100 bg-blue-50 text-blue-700 hover:bg-blue-100 transition"
-          title="Confirmar email del propietario manualmente"
-        >
-          Confirmar email
-        </button>
-        <button
-          onClick={onSuscripcion}
-          className="text-xs font-medium px-3 py-1.5 rounded-lg border border-amber-100 bg-amber-50 text-amber-700 hover:bg-amber-100 transition inline-flex items-center gap-1"
-        >
-          <CreditCard size={11} /> Suscripción
-        </button>
-        <button
-          onClick={onColores}
-          className="text-xs font-medium px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 transition"
-        >
-          Colores
-        </button>
-        <button
-          onClick={onCrearPropietario}
-          className="text-xs font-medium px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 transition"
-        >
-          + Propietario
-        </button>
-        <a
-          href={`/b/${negocio.slug}`}
-          target="_blank"
-          rel="noreferrer"
-          className="text-xs font-medium px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 transition"
-        >
-          Ver booking
-        </a>
+      {/* Acciones
+          Siete acciones no pesan lo mismo. Las seis reversibles comparten una
+          rejilla de dos columnas ordenada por frecuencia de uso —suscripción y
+          alta/baja arriba, lo cosmético abajo— y "Eliminar" sale de la rejilla
+          a su propio renglón: es la única irreversible y no debe quedar a un
+          dedo de distancia de las demás mientras se recorre la tarjeta. */}
+      <div className="border-t border-gray-100 dark:border-gray-700 px-4 py-3 space-y-1.5">
+        <div className="grid grid-cols-2 gap-1.5">
+          <button
+            onClick={onSuscripcion}
+            className={`${ACCION_TARJETA} border-amber-300 bg-amber-50 text-amber-700 hover:border-amber-500 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-400 dark:hover:bg-amber-950`}
+          >
+            <CreditCard size={12} aria-hidden="true" /> Suscripción
+          </button>
+          <button
+            onClick={esActivo ? onDesactivar : onActivar}
+            disabled={isToggling}
+            className={`${ACCION_TARJETA} ${
+              esActivo
+                ? "border-red-300 bg-red-50 text-red-600 hover:border-red-500 hover:bg-red-100 dark:border-red-800 dark:bg-red-950/40 dark:text-red-400 dark:hover:bg-red-950"
+                : "border-emerald-300 bg-emerald-50 text-emerald-700 hover:border-emerald-500 hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-400 dark:hover:bg-emerald-950"
+            }`}
+          >
+            <Power size={12} aria-hidden="true" />
+            {isToggling ? "Guardando…" : esActivo ? "Desactivar" : "Activar"}
+          </button>
+          <button
+            onClick={onCrearPropietario}
+            className={`${ACCION_TARJETA} border-blue-300 bg-blue-50 text-blue-600 hover:border-blue-500 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-400 dark:hover:bg-blue-950`}
+          >
+            <UserPlus size={12} aria-hidden="true" /> Propietario
+          </button>
+          <button
+            onClick={onConfirmarEmail}
+            title="Confirmar manualmente el correo del propietario"
+            className={`${ACCION_TARJETA} border-sky-300 bg-sky-50 text-sky-600 hover:border-sky-500 hover:bg-sky-100 dark:border-sky-800 dark:bg-sky-950/40 dark:text-sky-400 dark:hover:bg-sky-950`}
+          >
+            <MailCheck size={12} aria-hidden="true" /> Confirmar correo
+          </button>
+          <button
+            onClick={onColores}
+            className={`${ACCION_TARJETA} border-violet-300 bg-violet-50 text-violet-600 hover:border-violet-500 hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-950/40 dark:text-violet-400 dark:hover:bg-violet-950`}
+          >
+            <Palette size={12} aria-hidden="true" /> Colores
+          </button>
+          <a
+            href={`/b/${negocio.slug}`}
+            target="_blank"
+            rel="noreferrer"
+            className={`${ACCION_TARJETA} border-slate-300 bg-slate-50 text-slate-600 hover:border-slate-500 hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-700/40 dark:text-slate-300 dark:hover:bg-slate-700`}
+          >
+            <ExternalLink size={12} aria-hidden="true" /> Ver booking
+          </a>
+        </div>
         <button
           onClick={onEliminar}
-          className="text-xs font-medium px-3 py-1.5 rounded-lg border border-red-100 bg-red-50 text-red-500 hover:bg-red-100 transition inline-flex items-center gap-1"
           title="Eliminar negocio"
+          // Tinte muy tenue en reposo y relleno sólido al apuntar. En oscuro el
+          // `destructive/5` quedaba casi negro sobre la tarjeta y la etiqueta no
+          // se leía, así que ahí el reposo usa el mismo `950/40` que el resto.
+          className={`${ACCION_TARJETA} w-full border-destructive/40 bg-destructive/5 text-destructive hover:bg-destructive hover:border-destructive hover:text-white dark:border-red-900 dark:bg-red-950/40 dark:text-red-400 dark:hover:bg-red-600 dark:hover:border-red-600 dark:hover:text-white`}
         >
-          <Trash2 size={11} /> Eliminar
+          <Trash2 size={12} aria-hidden="true" /> Eliminar
         </button>
       </div>
-      <div className="flex items-center gap-2 px-4 py-2 border-t border-gray-100 dark:border-gray-700">
-        <span className="text-xs text-gray-400 flex-1">Módulo pagos</span>
-        <button
-          onClick={() => onTogglePagos(!negocio.moduloPagosHabilitado)}
-          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1 ${
-            negocio.moduloPagosHabilitado ? "bg-emerald-500" : "bg-gray-200 dark:bg-gray-700"
-          }`}
-          title={negocio.moduloPagosHabilitado ? "Deshabilitar módulo de pagos" : "Habilitar módulo de pagos"}
-          aria-label={negocio.moduloPagosHabilitado ? "Deshabilitar módulo de pagos" : "Habilitar módulo de pagos"}
-          role="switch"
-          aria-checked={!!negocio.moduloPagosHabilitado}
-        >
-          <span
-            className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${
-              negocio.moduloPagosHabilitado ? "translate-x-4" : "translate-x-1"
-            }`}
-          />
-        </button>
-      </div>
-      <div className="flex items-center gap-2 px-4 py-2 border-t border-gray-100 dark:border-gray-700">
-        <span className="text-xs text-gray-400 flex-1">🧪 Tester</span>
-        <button
-          onClick={onToggleTester}
-          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-1 ${
-            negocio.esTester ? "bg-purple-500" : "bg-gray-200 dark:bg-gray-700"
-          }`}
-          title={negocio.esTester ? "Quitar modo tester" : "Activar modo tester"}
-          aria-label={negocio.esTester ? "Quitar modo tester" : "Activar modo tester"}
-          role="switch"
-          aria-checked={!!negocio.esTester}
-        >
-          <span
-            className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${
-              negocio.esTester ? "translate-x-4" : "translate-x-1"
-            }`}
-          />
-        </button>
+
+      {/* Interruptores: una sola fila en vez de dos renglones con borde cada uno. */}
+      <div className="grid grid-cols-2 gap-x-3 px-4 py-2 border-t border-gray-100 dark:border-gray-700">
+        <InterruptorTarjeta
+          etiqueta="Módulo pagos"
+          activo={!!negocio.moduloPagosHabilitado}
+          onToggle={() => onTogglePagos(!negocio.moduloPagosHabilitado)}
+          colorActivo="bg-emerald-500"
+          anillo="focus-visible:ring-emerald-500"
+        />
+        <InterruptorTarjeta
+          etiqueta="Tester"
+          activo={!!negocio.esTester}
+          onToggle={onToggleTester}
+          colorActivo="bg-purple-500"
+          anillo="focus-visible:ring-purple-500"
+        />
       </div>
     </div>
+  );
+}
+
+/**
+ * Interruptor con su etiqueta dentro de la tarjeta de negocio.
+ *
+ * La etiqueta es parte del `<button role="switch">` y no un `<span>` suelto al
+ * lado: así el nombre accesible sale del propio contenido y el área táctil
+ * incluye el texto, que es lo que la gente toca en un teléfono.
+ */
+function InterruptorTarjeta({
+  etiqueta,
+  activo,
+  onToggle,
+  colorActivo,
+  anillo,
+}: {
+  etiqueta: string;
+  activo: boolean;
+  onToggle: () => void;
+  colorActivo: string;
+  anillo: string;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={activo}
+      onClick={onToggle}
+      className={`flex items-center gap-2 min-h-[44px] lg:min-h-[36px] rounded-lg px-1 -mx-1 text-left transition-colors hover:bg-gray-50 dark:hover:bg-slate-700/40 focus-visible:outline-none focus-visible:ring-2 ${anillo}`}
+    >
+      <span className="text-xs text-gray-500 dark:text-slate-400 flex-1 min-w-0 truncate">{etiqueta}</span>
+      <span
+        aria-hidden="true"
+        className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
+          activo ? colorActivo : "bg-gray-200 dark:bg-gray-700"
+        }`}
+      >
+        <span
+          className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${
+            activo ? "translate-x-4" : "translate-x-1"
+          }`}
+        />
+      </span>
+    </button>
   );
 }
 
@@ -841,6 +1003,8 @@ export default function NegociosAdminPage() {
   const [mostrarConfirmarPassword, setMostrarConfirmarPassword] = useState(false);
   const [resetandoPassword, setResetandoPassword] = useState(false);
   const [busqueda, setBusqueda] = useState("");
+  const [filtroActivo, setFiltroActivo] = useState("");
+  const [filtroSuscripcion, setFiltroSuscripcion] = useState("");
   const [colorPrimario, setColorPrimario] = useState("#334155");
   const [modalEliminar, setModalEliminar] = useState(false);
   const [pasoEliminar, setPasoEliminar] = useState<1 | 2>(1);
@@ -861,19 +1025,36 @@ export default function NegociosAdminPage() {
     staleTime: 1000 * 60,
   });
 
-  const suscripcionMap = Object.fromEntries(suscripciones.map((s) => [s.negocioId, s]));
+  const suscripcionMap = useMemo(
+    () => Object.fromEntries(suscripciones.map((s) => [s.negocioId, s])),
+    [suscripciones]
+  );
 
-  const testerIds = new Set(metricas.filter(m => m.esTester).map(m => m.id));
+  const testerIds = useMemo(
+    () => new Set(metricas.filter(m => m.esTester).map(m => m.id)),
+    [metricas]
+  );
 
-  const sortedSuscripciones = [...suscripciones]
-    .filter(s => !testerIds.has(s.negocioId))
-    .sort((a, b) => (ESTADO_ORDER[a.estado] ?? 4) - (ESTADO_ORDER[b.estado] ?? 4));
+  const sortedSuscripciones = useMemo(
+    () => [...suscripciones]
+      .filter(s => !testerIds.has(s.negocioId))
+      .sort((a, b) => (ESTADO_ORDER[a.estado] ?? 4) - (ESTADO_ORDER[b.estado] ?? 4)),
+    [suscripciones, testerIds]
+  );
 
   const totalEstimado = suscripciones
     .filter(s => s.estado !== 'SinSuscripcion' && !testerIds.has(s.negocioId))
     .reduce((sum, s) => sum + s.totalMensual, 0);
 
   const negociosConPlan = suscripciones.filter(s => s.estado !== 'SinSuscripcion' && !testerIds.has(s.negocioId)).length;
+
+  // Los negocios de prueba no cuentan como clientes con plan: quedan fuera de
+  // "Ingresos est." y del total de Facturación, así que contarlos aquí hacía
+  // que la tira de KPIs y el pie de la tabla dieran cifras distintas de lo
+  // mismo en la misma pantalla.
+  const conPlan = suscripciones.filter(
+    s => s.planNombre !== null && !testerIds.has(s.negocioId)
+  ).length;
 
   const { data: planes = [] } = useQuery({
     queryKey: ["planes"],
@@ -1044,123 +1225,215 @@ export default function NegociosAdminPage() {
     setModalEliminar(true);
   };
 
-  const metricasFiltradas = metricas
-    .filter(
-      (n) =>
-        n.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
-        n.slug.toLowerCase().includes(busqueda.toLowerCase())
-    )
-    .sort((a, b) => b.activo - a.activo);
+  const termino = busqueda.trim().toLowerCase();
+
+  const metricasFiltradas = useMemo(
+    () => metricas
+      .filter((n) => {
+        const coincide =
+          !termino ||
+          n.nombre.toLowerCase().includes(termino) ||
+          n.slug.toLowerCase().includes(termino);
+        if (!coincide) return false;
+        if (filtroActivo === "activos" && n.activo !== 1) return false;
+        if (filtroActivo === "inactivos" && n.activo === 1) return false;
+        if (filtroSuscripcion) {
+          const estado = suscripcionMap[n.id]?.estado ?? "SinSuscripcion";
+          if (estado !== filtroSuscripcion) return false;
+        }
+        return true;
+      })
+      .sort((a, b) => b.activo - a.activo),
+    [metricas, termino, filtroActivo, filtroSuscripcion, suscripcionMap]
+  );
+
+  const suscripcionesFiltradas = useMemo(
+    () => sortedSuscripciones.filter(
+      (s) =>
+        !termino ||
+        s.negocioNombre.toLowerCase().includes(termino) ||
+        s.negocioSlug.toLowerCase().includes(termino)
+    ),
+    [sortedSuscripciones, termino]
+  );
+
+  const paginaNegocios = usePaginacionLocal(metricasFiltradas);
+  const paginaFacturacion = usePaginacionLocal(suscripcionesFiltradas);
+
+  const hayFiltros = Boolean(termino || filtroActivo || filtroSuscripcion);
+  const limpiarFiltros = () => {
+    setBusqueda("");
+    setFiltroActivo("");
+    setFiltroSuscripcion("");
+  };
 
   return (
     <div className="p-4 sm:p-8">
-      {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Panel de negocios</h1>
-          <p className="text-sm text-gray-400 dark:text-gray-400 mt-0.5">{metricas.length} registrados en total</p>
-        </div>
-        <button
-          onClick={() => { formNegocio.reset(); setModalNegocio(true); }}
-          className="bg-gray-900 hover:bg-gray-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition"
-        >
-          + Nuevo negocio
-        </button>
-      </div>
+      <EncabezadoPagina
+        className="mb-5"
+        titulo="Panel de negocios"
+        subtitulo={`${metricas.length} ${metricas.length === 1 ? "registrado" : "registrados"} en total`}
+        acciones={
+          <BotonAccion onClick={() => { formNegocio.reset(); setModalNegocio(true); }}>
+            + Nuevo negocio
+          </BotonAccion>
+        }
+      />
 
       {/* Metrics strip */}
       {!isLoading && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
           {[
-            { label: "Total", value: metricas.length, color: "text-gray-700 dark:text-gray-200" },
-            { label: "Activos", value: metricas.filter(n => n.activo === 1).length, color: "text-emerald-600 dark:text-emerald-400" },
-            { label: "Con plan", value: suscripciones.filter(s => s.planNombre !== null).length, color: "text-amber-600 dark:text-amber-400" },
+            { label: "Total", value: String(metricas.length), color: "text-gray-700 dark:text-gray-200" },
+            { label: "Activos", value: String(metricas.filter(n => n.activo === 1).length), color: "text-emerald-600 dark:text-emerald-400" },
+            { label: "Con plan", value: String(conPlan), color: "text-amber-600 dark:text-amber-400" },
             { label: "Ingresos est.", value: formatPrecio(totalEstimado) + "/mes", color: "text-[#C8A961]" },
           ].map(({ label, value, color }) => (
-            <div key={label} className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 px-4 py-3">
-              <p className="text-xs text-gray-400 dark:text-gray-400 mb-0.5">{label}</p>
-              <p className={`text-lg font-bold ${color}`}>{value}</p>
+            <div key={label} className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 px-4 py-3 min-w-0">
+              <p className="text-xs text-gray-400 dark:text-slate-400 mb-0.5 truncate">{label}</p>
+              <p className={`text-lg font-bold truncate ${color}`}>{value}</p>
             </div>
           ))}
         </div>
       )}
 
-      {/* Tab bar */}
-      <div className="flex bg-gray-100 dark:bg-slate-700 rounded-lg p-1 gap-1 mb-6">
-        <button
-          onClick={() => setTab('negocios')}
-          className={`flex-1 py-1.5 text-sm font-medium rounded-md transition whitespace-nowrap ${
-            tab === 'negocios'
-              ? 'bg-white text-gray-800 shadow-sm dark:bg-slate-800 dark:text-gray-200'
-              : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
-          }`}
-        >
-          Negocios
-        </button>
-        <button
-          onClick={() => setTab('facturacion')}
-          className={`flex-1 py-1.5 text-sm font-medium rounded-md transition whitespace-nowrap ${
-            tab === 'facturacion'
-              ? 'bg-white text-gray-800 shadow-sm dark:bg-slate-800 dark:text-gray-200'
-              : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
-          }`}
-        >
-          Facturación
-        </button>
-      </div>
+      <Tabs
+        className="mb-5"
+        etiqueta="Secciones del panel"
+        valor={tab}
+        onChange={setTab}
+        opciones={[
+          { id: 'negocios', label: 'Negocios' },
+          { id: 'facturacion', label: 'Facturación' },
+        ]}
+      />
+
+      <FiltroBarra
+        etiqueta="Filtros de negocios"
+        busqueda={{
+          valor: busqueda,
+          onChange: setBusqueda,
+          etiqueta: "Buscar negocio",
+          placeholder: "Buscar por nombre o slug...",
+        }}
+        // Activo/inactivo solo describe la tarjeta; en Facturación la tabla ya
+        // trae su propia columna de estado de suscripción.
+        campos={tab === 'negocios' ? [
+          {
+            id: "activo",
+            tipo: "select",
+            etiqueta: "Estado",
+            valor: filtroActivo,
+            onChange: setFiltroActivo,
+            etiquetaNeutra: "Todos",
+            opciones: [
+              { valor: "activos", etiqueta: "Activos" },
+              { valor: "inactivos", etiqueta: "Inactivos" },
+            ],
+          },
+          {
+            id: "suscripcion",
+            tipo: "select",
+            etiqueta: "Suscripción",
+            valor: filtroSuscripcion,
+            onChange: setFiltroSuscripcion,
+            etiquetaNeutra: "Todas",
+            opciones: [
+              { valor: "Activa", etiqueta: "Activa" },
+              { valor: "PorVencer", etiqueta: "Por vencer" },
+              { valor: "Vencida", etiqueta: "Vencida" },
+              { valor: "SinSuscripcion", etiqueta: "Sin suscripción" },
+            ],
+          },
+        ] : []}
+        onLimpiar={limpiarFiltros}
+      />
 
       {tab === 'negocios' && (
         <>
-          {/* Buscador */}
-          <input
-            type="text"
-            placeholder="Buscar por nombre o slug..."
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-            className="w-full max-w-sm px-4 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-gray-400 mb-6"
-          />
-
           {/* Grid de tarjetas */}
           {isLoading ? (
-            <p className="text-gray-400">Cargando negocios...</p>
+            <p className="text-gray-400 dark:text-slate-500">Cargando negocios...</p>
           ) : metricasFiltradas.length === 0 ? (
-            <div className="bg-white rounded-xl border border-gray-100 p-12 text-center">
-              <p className="text-gray-400">
-                {busqueda ? "Sin resultados para esa búsqueda" : "No hay negocios registrados"}
-              </p>
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700">
+              {hayFiltros ? (
+                <EmptyState
+                  variante="sinResultados"
+                  title="Sin resultados"
+                  description="Ningún negocio coincide con los filtros actuales."
+                  onLimpiarFiltros={limpiarFiltros}
+                  // Distinto del "Limpiar filtros" de la barra: dos botones con
+                  // el mismo nombre accesible en la misma pantalla no se
+                  // distinguen al navegar por lista.
+                  labelLimpiarFiltros="Ver todos los negocios"
+                />
+              ) : (
+                <EmptyState
+                  title="No hay negocios registrados"
+                  description="Crea el primero con “+ Nuevo negocio”."
+                />
+              )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-              {metricasFiltradas.map((neg) => (
-                <TarjetaNegocio
-                  key={neg.id}
-                  negocio={neg}
-                  suscripcion={suscripcionMap[neg.id]}
-                  onActivar={() => activar(neg.id)}
-                  onDesactivar={() => desactivar(neg.id)}
-                  onConfirmarEmail={() => confirmarEmail(neg.id)}
-                  onCrearPropietario={() => abrirPropietario(neg)}
-                  onColores={() => abrirColores(neg)}
-                  onSuscripcion={() => abrirSuscripcion(neg)}
-                  onTogglePagos={(habilitado) => togglePagos({ id: neg.id, habilitado })}
-                  onToggleTester={() => toggleTester(neg.id)}
-                  onEliminar={() => abrirEliminar(neg)}
-                  isToggling={activando || desactivando}
-                />
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                {paginaNegocios.visibles.map((neg) => (
+                  <TarjetaNegocio
+                    key={neg.id}
+                    negocio={neg}
+                    suscripcion={suscripcionMap[neg.id]}
+                    onActivar={() => activar(neg.id)}
+                    onDesactivar={() => desactivar(neg.id)}
+                    onConfirmarEmail={() => confirmarEmail(neg.id)}
+                    onCrearPropietario={() => abrirPropietario(neg)}
+                    onColores={() => abrirColores(neg)}
+                    onSuscripcion={() => abrirSuscripcion(neg)}
+                    onTogglePagos={(habilitado) => togglePagos({ id: neg.id, habilitado })}
+                    onToggleTester={() => toggleTester(neg.id)}
+                    onEliminar={() => abrirEliminar(neg)}
+                    isToggling={activando || desactivando}
+                  />
+                ))}
+              </div>
+              {paginaNegocios.totalPaginas > 1 && (
+                <div className="mt-2 bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700">
+                  <Pagination
+                    pagina={paginaNegocios.pagina}
+                    totalPaginas={paginaNegocios.totalPaginas}
+                    total={paginaNegocios.total}
+                    labelTotal="negocios"
+                    onCambiar={paginaNegocios.setPagina}
+                    cargando={isLoading}
+                  />
+                </div>
+              )}
+            </>
           )}
         </>
       )}
 
       {tab === 'facturacion' && (
         <div>
-          {sortedSuscripciones.length === 0 ? (
-            <p className="text-gray-400 dark:text-gray-500 text-sm text-center py-12">
-              Ningún negocio tiene un plan activo todavía.
-            </p>
+          {suscripcionesFiltradas.length === 0 ? (
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700">
+              {hayFiltros ? (
+                <EmptyState
+                  variante="sinResultados"
+                  title="Sin resultados"
+                  description="Ningún negocio coincide con los filtros actuales."
+                  onLimpiarFiltros={limpiarFiltros}
+                  labelLimpiarFiltros="Ver todas las suscripciones"
+                />
+              ) : (
+                <EmptyState
+                  title="Sin facturación todavía"
+                  description="Ningún negocio tiene un plan activo."
+                />
+              )}
+            </div>
           ) : (
-            <div className="overflow-x-auto rounded-xl border border-gray-100 dark:border-slate-700">
+            <div className="rounded-xl border border-gray-100 dark:border-slate-700 overflow-hidden">
+            <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-gray-50 dark:bg-slate-800 text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wide">
@@ -1175,17 +1448,22 @@ export default function NegociosAdminPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
-                  {sortedSuscripciones.map(s => {
+                  {paginaFacturacion.visibles.map(s => {
                     const badge = ESTADO_BADGE[s.estado] ?? ESTADO_BADGE.SinSuscripcion;
                     return (
                       <tr key={s.negocioId} className="bg-white dark:bg-slate-900 hover:bg-gray-50 dark:hover:bg-slate-800/60 transition">
-                        <td className="px-4 py-3 font-medium text-gray-800 dark:text-gray-200">{s.negocioNombre}</td>
-                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{s.planNombre ?? '—'}</td>
+                        {/* `whitespace-nowrap`: la tabla ya se desplaza en
+                            horizontal; sin esto, a 390px el nombre se parte en
+                            cuatro líneas y estira la fila en vez de aprovechar
+                            el desplazamiento que ya existe. */}
+                        <td className="px-4 py-3 font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap">{s.negocioNombre}</td>
+                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400 whitespace-nowrap">{s.planNombre ?? '—'}</td>
                         <td className="px-4 py-3 text-center text-gray-600 dark:text-gray-400">{s.maxEmpleadosBase}</td>
                         <td className="px-4 py-3 text-center">
                           <input
                             type="number"
                             min={0}
+                            aria-label={`Empleados extra de ${s.negocioNombre}`}
                             defaultValue={s.empleadosExtra}
                             onBlur={e => {
                               const val = Math.max(0, Number(e.target.value));
@@ -1203,8 +1481,12 @@ export default function NegociosAdminPage() {
                         <td className="px-4 py-3 text-right font-semibold text-[#C8A961]">
                           {formatPrecio(s.totalMensual)}
                         </td>
-                        <td className="px-4 py-3 text-center text-gray-500 dark:text-gray-400">
-                          {s.fechaVencimiento
+                        <td className="px-4 py-3 text-center text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                          {/* Un acceso de por vida vence el año 2126: la fecha
+                              es cierta y no dice nada. */}
+                          {(s.diasRestantes ?? 0) >= DIAS_DE_POR_VIDA
+                            ? 'De por vida'
+                            : s.fechaVencimiento
                             ? toUtcDate(s.fechaVencimiento).toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' })
                             : '—'}
                         </td>
@@ -1219,7 +1501,7 @@ export default function NegociosAdminPage() {
                               const neg = metricas?.find(m => m.id === s.negocioId);
                               if (neg) abrirSuscripcion(neg);
                             }}
-                            className="text-xs text-[#C8A961] hover:underline whitespace-nowrap"
+                            className="min-h-[44px] lg:min-h-[36px] px-2 -mx-2 rounded-lg text-xs text-[#C8A961] hover:underline whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40"
                           >
                             Ver suscripción
                           </button>
@@ -1229,15 +1511,32 @@ export default function NegociosAdminPage() {
                   })}
                 </tbody>
                 <tfoot>
+                  {/* El pie suma TODAS las suscripciones vigentes, no las de la
+                      página ni las que pasan el filtro: es el ingreso del mes,
+                      y recortarlo al filtro haría que el mismo rótulo
+                      significara cosas distintas según lo que esté escrito en
+                      el buscador. */}
                   <tr className="bg-gray-50 dark:bg-slate-800 font-semibold text-gray-700 dark:text-gray-300">
-                    <td colSpan={4} className="px-4 py-3 text-right text-xs uppercase tracking-wide text-gray-400">
-                      Total estimado ({negociosConPlan} negocio{negociosConPlan !== 1 ? 's' : ''})
+                    <td colSpan={4} className="px-4 py-3 text-right text-xs uppercase tracking-wide text-gray-400 dark:text-slate-500">
+                      Total estimado · {negociosConPlan} negocio{negociosConPlan !== 1 ? 's' : ''} con suscripción
                     </td>
-                    <td className="px-4 py-3 text-right text-[#C8A961]">{formatPrecio(totalEstimado)}</td>
+                    <td className="px-4 py-3 text-right text-[#C8A961] whitespace-nowrap">{formatPrecio(totalEstimado)}</td>
                     <td colSpan={3}></td>
                   </tr>
                 </tfoot>
               </table>
+            </div>
+            {paginaFacturacion.totalPaginas > 1 && (
+              <div className="bg-white dark:bg-slate-800">
+                <Pagination
+                  pagina={paginaFacturacion.pagina}
+                  totalPaginas={paginaFacturacion.totalPaginas}
+                  total={paginaFacturacion.total}
+                  labelTotal="suscripciones"
+                  onCambiar={paginaFacturacion.setPagina}
+                />
+              </div>
+            )}
             </div>
           )}
         </div>
@@ -1267,8 +1566,7 @@ export default function NegociosAdminPage() {
             <input
               {...formNegocio.register("nombre")}
               placeholder="Barbería Luis"
-              className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-primary
-                ${formNegocio.formState.errors.nombre ? "border-red-400 bg-red-50" : "border-gray-200"}`}
+              className={`${CAMPO_MODAL} ${formNegocio.formState.errors.nombre ? CAMPO_ERROR : CAMPO_OK}`}
             />
             {formNegocio.formState.errors.nombre && (
               <p className="text-red-500 text-xs mt-1">{formNegocio.formState.errors.nombre.message}</p>
@@ -1285,8 +1583,7 @@ export default function NegociosAdminPage() {
             <input
               {...formNegocio.register("slug")}
               placeholder="barberia-luis"
-              className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-primary font-mono
-                ${formNegocio.formState.errors.slug ? "border-red-400 bg-red-50" : "border-gray-200"}`}
+              className={`${CAMPO_MODAL} font-mono ${formNegocio.formState.errors.slug ? CAMPO_ERROR : CAMPO_OK}`}
             />
             {formNegocio.formState.errors.slug && (
               <p className="text-red-500 text-xs mt-1">{formNegocio.formState.errors.slug.message}</p>
@@ -1298,7 +1595,7 @@ export default function NegociosAdminPage() {
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Teléfono</label>
               <input
                 {...formNegocio.register("telefono")}
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary"
+                className={`${CAMPO_MODAL} ${CAMPO_OK}`}
               />
             </div>
             <div>
@@ -1306,7 +1603,7 @@ export default function NegociosAdminPage() {
               <input
                 type="email"
                 {...formNegocio.register("email")}
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary"
+                className={`${CAMPO_MODAL} ${CAMPO_OK}`}
               />
             </div>
           </div>
@@ -1328,14 +1625,14 @@ export default function NegociosAdminPage() {
             <textarea
               rows={2}
               {...formNegocio.register("descripcion")}
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-primary resize-none"
+              className={`${CAMPO_MODAL} ${CAMPO_OK} resize-none`}
             />
           </div>
 
           <button
             type="submit"
             disabled={creandoNegocio}
-            className="w-full bg-gray-900 hover:bg-gray-700 disabled:opacity-50 text-white font-semibold py-2.5 rounded-xl transition"
+            className={`${BOTON_PIE_PRIMARIO} w-full`}
           >
             {creandoNegocio ? "Creando..." : "Crear negocio"}
           </button>
@@ -1383,12 +1680,13 @@ export default function NegociosAdminPage() {
                       value={nuevaPasswordProp}
                       onChange={e => setNuevaPasswordProp(e.target.value)}
                       placeholder="Mínimo 6 caracteres"
-                      className="w-full px-3 py-2 pr-10 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-sm outline-none focus:border-gray-400"
+                      className={`${CAMPO_MODAL} ${CAMPO_OK} pr-10`}
                     />
                     <button
                       type="button"
                       onMouseDown={e => e.preventDefault()}
                       onClick={() => setMostrarNuevaPassword(v => !v)}
+                      aria-label={mostrarNuevaPassword ? "Ocultar la nueva contraseña" : "Mostrar la nueva contraseña"}
                       className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                       tabIndex={-1}
                     >
@@ -1404,12 +1702,13 @@ export default function NegociosAdminPage() {
                       value={confirmarPasswordProp}
                       onChange={e => setConfirmarPasswordProp(e.target.value)}
                       placeholder="Repite la contraseña"
-                      className="w-full px-3 py-2 pr-10 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-sm outline-none focus:border-gray-400"
+                      className={`${CAMPO_MODAL} ${CAMPO_OK} pr-10`}
                     />
                     <button
                       type="button"
                       onMouseDown={e => e.preventDefault()}
                       onClick={() => setMostrarConfirmarPassword(v => !v)}
+                      aria-label={mostrarConfirmarPassword ? "Ocultar la confirmación" : "Mostrar la confirmación"}
                       className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                       tabIndex={-1}
                     >
@@ -1424,7 +1723,7 @@ export default function NegociosAdminPage() {
                   <button
                     onClick={handleRestablecerPassword}
                     disabled={resetandoPassword || nuevaPasswordProp.length < 6 || confirmarPasswordProp.length < 6}
-                    className="w-full bg-gray-900 dark:bg-gray-100 hover:bg-gray-700 dark:hover:bg-gray-200 disabled:opacity-50 text-white dark:text-gray-900 font-semibold py-2.5 rounded-xl transition text-sm"
+                    className={`${BOTON_PIE_PRIMARIO} w-full`}
                   >
                     {resetandoPassword ? "Restableciendo…" : "Restablecer contraseña"}
                   </button>
@@ -1442,8 +1741,7 @@ export default function NegociosAdminPage() {
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre *</label>
                       <input
                         {...formPropietario.register("nombre")}
-                        className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-primary
-                          ${formPropietario.formState.errors.nombre ? "border-red-400 bg-red-50" : "border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200"}`}
+                        className={`${CAMPO_MODAL} ${formPropietario.formState.errors.nombre ? CAMPO_ERROR : CAMPO_OK}`}
                       />
                       {formPropietario.formState.errors.nombre && (
                         <p className="text-red-500 text-xs mt-1">{formPropietario.formState.errors.nombre.message}</p>
@@ -1453,7 +1751,7 @@ export default function NegociosAdminPage() {
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Apellido</label>
                       <input
                         {...formPropietario.register("apellido")}
-                        className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-sm outline-none focus:border-primary"
+                        className={`${CAMPO_MODAL} ${CAMPO_OK}`}
                       />
                     </div>
                   </div>
@@ -1462,8 +1760,7 @@ export default function NegociosAdminPage() {
                     <input
                       type="email"
                       {...formPropietario.register("email")}
-                      className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-primary
-                        ${formPropietario.formState.errors.email ? "border-red-400 bg-red-50" : "border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200"}`}
+                      className={`${CAMPO_MODAL} ${formPropietario.formState.errors.email ? CAMPO_ERROR : CAMPO_OK}`}
                     />
                     {formPropietario.formState.errors.email && (
                       <p className="text-red-500 text-xs mt-1">{formPropietario.formState.errors.email.message}</p>
@@ -1475,13 +1772,13 @@ export default function NegociosAdminPage() {
                       <input
                         type={mostrarPasswordProp ? "text" : "password"}
                         {...formPropietario.register("password")}
-                        className={`w-full px-3 py-2 pr-10 rounded-lg border text-sm outline-none focus:border-primary
-                          ${formPropietario.formState.errors.password ? "border-red-400 bg-red-50" : "border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200"}`}
+                        className={`${CAMPO_MODAL} pr-10 ${formPropietario.formState.errors.password ? CAMPO_ERROR : CAMPO_OK}`}
                       />
                       <button
                         type="button"
                         onMouseDown={e => e.preventDefault()}
                         onClick={() => setMostrarPasswordProp(v => !v)}
+                        aria-label={mostrarPasswordProp ? "Ocultar la contraseña" : "Mostrar la contraseña"}
                         className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                         tabIndex={-1}
                       >
@@ -1500,7 +1797,7 @@ export default function NegociosAdminPage() {
                   <button
                     type="submit"
                     disabled={creandoPropietario}
-                    className="w-full bg-gray-900 dark:bg-gray-100 hover:bg-gray-700 dark:hover:bg-gray-200 disabled:opacity-50 text-white dark:text-gray-900 font-semibold py-2.5 rounded-xl transition"
+                    className={`${BOTON_PIE_PRIMARIO} w-full`}
                   >
                     {creandoPropietario ? "Creando cuenta…" : "Crear propietario"}
                   </button>
@@ -1532,20 +1829,20 @@ export default function NegociosAdminPage() {
                 value={nombreConfirmacion}
                 onChange={e => setNombreConfirmacion(e.target.value)}
                 placeholder={negocioSel.nombre}
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-sm outline-none focus:border-gray-400"
+                className={`${CAMPO_MODAL} ${CAMPO_OK}`}
               />
             </div>
             <div className="flex gap-3">
               <button
                 onClick={() => { setModalEliminar(false); setPasoEliminar(1); setNombreConfirmacion(""); }}
-                className="flex-1 py-2.5 rounded-xl border-2 border-gray-200 text-sm font-medium text-gray-600 hover:border-gray-300 transition"
+                className={BOTON_PIE_SECUNDARIO}
               >
                 Cancelar
               </button>
               <button
                 onClick={() => setPasoEliminar(2)}
                 disabled={nombreConfirmacion !== negocioSel.nombre}
-                className="flex-1 py-2.5 rounded-xl bg-gray-900 hover:bg-gray-700 disabled:opacity-50 text-white text-sm font-semibold transition"
+                className={BOTON_PIE_PRIMARIO}
               >
                 Continuar →
               </button>
@@ -1566,14 +1863,14 @@ export default function NegociosAdminPage() {
             <div className="flex gap-3">
               <button
                 onClick={() => setPasoEliminar(1)}
-                className="flex-1 py-2.5 rounded-xl border-2 border-gray-200 text-sm font-medium text-gray-600 hover:border-gray-300 transition"
+                className={BOTON_PIE_SECUNDARIO}
               >
                 ← Volver
               </button>
               <button
                 onClick={() => eliminarNegocio(negocioSel.id)}
                 disabled={eliminandoNegocio}
-                className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-sm font-semibold transition"
+                className={`${BOTON_PIE} font-semibold bg-red-600 hover:bg-red-700 text-white`}
               >
                 {eliminandoNegocio ? "Eliminando…" : "Eliminar definitivamente"}
               </button>
@@ -1586,23 +1883,26 @@ export default function NegociosAdminPage() {
       <Modal abierto={modalColores} onCerrar={() => setModalColores(false)} titulo="Colores del negocio" ancho="sm">
         {negocioSel && (
           <div className="space-y-5">
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-gray-500 dark:text-slate-400">
               Personaliza los colores del panel de{" "}
-              <span className="font-semibold text-gray-800">{negocioSel.nombre}</span>.
+              <span className="font-semibold text-gray-800 dark:text-slate-200">{negocioSel.nombre}</span>.
             </p>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Color primario</label>
+              <label htmlFor="color-primario" className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                Color primario
+              </label>
               <div className="flex gap-3 items-center">
-                <input type="color" value={colorPrimario} onChange={(e) => setColorPrimario(e.target.value)}
-                  className="w-12 h-12 rounded-lg cursor-pointer border border-gray-200 p-0.5" />
+                <input id="color-primario" type="color" value={colorPrimario} onChange={(e) => setColorPrimario(e.target.value)}
+                  className="w-12 h-12 shrink-0 rounded-lg cursor-pointer border border-gray-200 dark:border-slate-600 p-0.5 bg-white dark:bg-slate-800" />
                 <input type="text" value={colorPrimario} onChange={(e) => setColorPrimario(e.target.value)}
-                  className="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-gray-400 font-mono uppercase"
+                  aria-label="Color primario en hexadecimal"
+                  className={`${CAMPO_MODAL} ${CAMPO_OK} flex-1 min-w-0 font-mono uppercase`}
                   maxLength={7} placeholder="#334155" />
-                <div className="w-10 h-10 rounded-lg border border-gray-200 shrink-0" style={{ backgroundColor: colorPrimario }} />
+                <div aria-hidden="true" className="w-10 h-10 rounded-lg border border-gray-200 dark:border-slate-600 shrink-0" style={{ backgroundColor: colorPrimario }} />
               </div>
             </div>
-            <div className="rounded-xl border border-gray-100 p-3 bg-gray-50">
-              <p className="text-xs text-gray-400 mb-2">Vista previa</p>
+            <div className="rounded-xl border border-gray-100 dark:border-slate-700 p-3 bg-gray-50 dark:bg-slate-800/60">
+              <p className="text-xs text-gray-400 dark:text-slate-500 mb-2">Vista previa</p>
               <div className="flex flex-col gap-1">
                 {["Inicio", "Citas", "Empleados", "Servicios"].map((item, i) => (
                   <div key={item} className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium"
@@ -1614,12 +1914,10 @@ export default function NegociosAdminPage() {
               </div>
             </div>
             <div className="flex gap-3">
-              <button onClick={() => setModalColores(false)}
-                className="flex-1 py-2.5 rounded-xl border-2 border-gray-200 text-sm font-medium text-gray-600 hover:border-gray-300 transition">
+              <button onClick={() => setModalColores(false)} className={BOTON_PIE_SECUNDARIO}>
                 Cancelar
               </button>
-              <button onClick={() => actualizarColores()} disabled={guardandoColores}
-                className="flex-1 py-2.5 rounded-xl bg-gray-900 hover:bg-gray-700 disabled:opacity-50 text-white text-sm font-semibold transition">
+              <button onClick={() => actualizarColores()} disabled={guardandoColores} className={BOTON_PIE_PRIMARIO}>
                 {guardandoColores ? "Guardando..." : "Guardar colores"}
               </button>
             </div>

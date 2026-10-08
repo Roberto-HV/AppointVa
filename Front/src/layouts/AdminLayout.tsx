@@ -7,6 +7,16 @@ import { useInactividadTimeout } from "../hooks/useInactividadTimeout";
 import { useTheme } from "../hooks/useTheme";
 import { AppLogo } from "../components/AppLogo";
 
+const ENLACE_NAV =
+  "flex items-center gap-1 min-h-[44px] px-4 rounded-xl text-sm font-medium transition-colors " +
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40";
+const ENLACE_NAV_ACTIVO = "bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400";
+const ENLACE_NAV_INACTIVO =
+  "text-gray-500 dark:text-gray-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-gray-200";
+
+const claseEnlaceNav = ({ isActive }: { isActive: boolean }) =>
+  `${ENLACE_NAV} ${isActive ? ENLACE_NAV_ACTIVO : ENLACE_NAV_INACTIVO}`;
+
 export default function AdminLayout() {
   const { usuario, token, refreshToken, cerrarSesion } = useAuthStore();
   const navigate = useNavigate();
@@ -33,9 +43,11 @@ export default function AdminLayout() {
       <header className="md:hidden bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-800 px-4 py-3 flex items-center gap-3 sticky top-0 z-30 shadow-sm">
         <button
           onClick={() => setSidebarOpen(true)}
-          className="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition"
+          aria-label="Abrir el menú"
+          aria-expanded={sidebarOpen}
+          className="min-h-[44px] min-w-[44px] -ml-2 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40"
         >
-          <Menu size={22} />
+          <Menu size={22} aria-hidden="true" />
         </button>
         <span className="font-bold text-gray-900 dark:text-white">
           Appoint<span className="text-[#C8A961]">Va</span>
@@ -43,6 +55,15 @@ export default function AdminLayout() {
         <span className="text-xs bg-yellow-400 text-gray-900 font-bold px-2 py-0.5 rounded-full">
           Admin
         </span>
+        {/* El tema vivía solo en la cabecera de escritorio: en un teléfono no
+            había forma de cambiarlo. */}
+        <button
+          onClick={toggle}
+          aria-label={theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+          className="ml-auto min-h-[44px] min-w-[44px] -mr-2 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40"
+        >
+          {theme === "dark" ? <Sun size={18} aria-hidden="true" /> : <Moon size={18} aria-hidden="true" />}
+        </button>
       </header>
 
       {/* ── Overlay backdrop (móvil) ── */}
@@ -67,49 +88,29 @@ export default function AdminLayout() {
           <AppLogo isDark={theme === "dark"} className="h-10 object-contain rounded-xl mx-auto" />
           <button
             onClick={cerrarSidebar}
-            className="md:hidden text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+            aria-label="Cerrar el menú"
+            className="md:hidden min-h-[44px] min-w-[44px] -mr-2 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40"
           >
-            <X size={20} />
+            <X size={20} aria-hidden="true" />
           </button>
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 py-4 px-3 space-y-1">
-          <NavLink
-            to="/admin"
-            end
-            onClick={cerrarSidebar}
-            className={({ isActive }) =>
-              `block px-4 py-2.5 rounded-xl text-sm font-medium transition ${
-                isActive
-                  ? "bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400"
-                  : "text-gray-500 dark:text-gray-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-gray-200"
-              }`
-            }
-          >
+        <nav aria-label="Secciones de administración" className="flex-1 py-4 px-3 space-y-1">
+          <NavLink to="/admin" end onClick={cerrarSidebar} className={claseEnlaceNav}>
             Negocios
           </NavLink>
-          <NavLink
-            to="/admin/audit"
-            onClick={cerrarSidebar}
-            className={({ isActive }) =>
-              `block px-4 py-2.5 rounded-xl text-sm font-medium transition ${
-                isActive
-                  ? "bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400"
-                  : "text-gray-500 dark:text-gray-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-gray-200"
-              }`
-            }
-          >
-            Audit Log
+          <NavLink to="/admin/audit" onClick={cerrarSidebar} className={claseEnlaceNav}>
+            Registro de auditoría
           </NavLink>
           <a
             href={`${import.meta.env.VITE_API_URL?.replace("/api", "")}/hangfire-session?token=${token}`}
             target="_blank"
             rel="noopener noreferrer"
             onClick={cerrarSidebar}
-            className="block px-4 py-2.5 rounded-xl text-sm font-medium transition text-gray-500 dark:text-gray-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-gray-200 flex items-center gap-1"
+            className={`${ENLACE_NAV} ${ENLACE_NAV_INACTIVO}`}
           >
-            Jobs <ExternalLink size={12} />
+            Tareas programadas <ExternalLink size={12} aria-hidden="true" />
           </a>
         </nav>
 
@@ -119,7 +120,7 @@ export default function AdminLayout() {
           <p className="text-xs text-gray-400 dark:text-gray-500 truncate mb-3">{usuario?.email}</p>
           <button
             onClick={handleLogout}
-            className="text-xs text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition"
+            className="min-h-[44px] lg:min-h-[36px] px-2 -mx-2 rounded-lg text-xs text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40"
           >
             Cerrar sesión
           </button>
@@ -139,10 +140,11 @@ export default function AdminLayout() {
           </div>
           <button
             onClick={toggle}
-            className="p-2 rounded-lg text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+            aria-label={theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+            className="min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40"
             title={theme === "dark" ? "Modo claro" : "Modo oscuro"}
           >
-            {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+            {theme === "dark" ? <Sun size={18} aria-hidden="true" /> : <Moon size={18} aria-hidden="true" />}
           </button>
         </div>
         <div className="flex-1">

@@ -1,4 +1,5 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import NegociosAdminPage from './NegociosAdminPage';
@@ -9,6 +10,7 @@ vi.mock('../../api/admin', () => ({
     obtenerMetricas: vi.fn(),
     obtenerSuscripciones: vi.fn(),
     obtenerPagos: vi.fn(),
+    obtenerPlanes: vi.fn(),
     setEmpleadosExtra: vi.fn(),
   },
 }));
@@ -172,5 +174,170 @@ describe('Facturación tab', () => {
       // 449 + 249 = 698 (may appear in metrics strip and table footer)
       expect(screen.getAllByText(/\$698/).length).toBeGreaterThan(0);
     });
+  });
+});
+
+// ── Badge de vigencia ───────────────────────────────────────────────────────
+
+describe('BadgeSuscripcion — vigencia legible', () => {
+  function conDiasRestantes(dias: number, fechaVencimiento: string) {
+    vi.mocked(adminModule.adminApi.obtenerMetricas).mockResolvedValue([mockNegocio]);
+    vi.mocked(adminModule.adminApi.obtenerSuscripciones).mockResolvedValue([
+      { ...mockSuscripcion, diasRestantes: dias, fechaVencimiento },
+    ]);
+    vi.mocked(adminModule.adminApi.obtenerPagos).mockResolvedValue([]);
+  }
+
+  it('resume un acceso de por vida en vez de imprimir los días', async () => {
+    // "De por vida" se registra como 1200 meses, así que el backend devuelve
+    // ~37160 días: un número correcto pero ilegible.
+    conDiasRestantes(37160, '2126-09-30T00:00:00');
+    renderPage();
+
+    expect(await screen.findByText('De por vida')).toBeInTheDocument();
+    expect(screen.queryByText(/37160/)).not.toBeInTheDocument();
+  });
+
+  it('usa meses cuando la vigencia pasa de dos meses', async () => {
+    conDiasRestantes(147, '2026-12-31T00:00:00');
+    renderPage();
+
+    expect(await screen.findByText(/Activa · 5 meses/)).toBeInTheDocument();
+  });
+
+  it('usa años cuando la vigencia pasa de un año', async () => {
+    conDiasRestantes(800, '2028-12-31T00:00:00');
+    renderPage();
+
+    expect(await screen.findByText(/Activa · 2 años/)).toBeInTheDocument();
+  });
+
+  it('mantiene los días cuando la cifra todavía se lee', async () => {
+    conDiasRestantes(21, '2026-10-29T00:00:00');
+    renderPage();
+
+    expect(await screen.findByText(/Activa · 21 d/)).toBeInTheDocument();
+  });
+});
+
+// ── Filtros y paginación ────────────────────────────────────────────────────
+
+function negocio(i: number, extra: Partial<typeof mockNegocio> = {}) {
+  return {
+    ...mockNegocio,
+    id: `neg-${i}`,
+    nombre: `Negocio ${String(i).padStart(2, '0')}`,
+    slug: `negocio-${i}`,
+    ...extra,
+  };
+}
+
+describe('NegociosAdminPage — filtros y paginación', () => {
+  beforeEach(() => {
+    vi.mocked(adminModule.adminApi.obtenerSuscripciones).mockResolvedValue([]);
+    vi.mocked(adminModule.adminApi.obtenerPagos).mockResolvedValue([]);
+  });
+
+  it('pagina la rejilla de tarjetas a 15 por página', async () => {
+    vi.mocked(adminModule.adminApi.obtenerMetricas).mockResolvedValue(
+      Array.from({ length: 18 }, (_, i) => negocio(i + 1))
+    );
+    renderPage();
+
+    await screen.findByText('Negocio 01');
+    expect(screen.queryByText('Negocio 16')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Página siguiente' }));
+
+    expect(await screen.findByText('Negocio 16')).toBeInTheDocument();
+    expect(screen.queryByText('Negocio 01')).not.toBeInTheDocument();
+  });
+
+  it('el contador de la paginación describe el total, no la página', async () => {
+    vi.mocked(adminModule.adminApi.obtenerMetricas).mockResolvedValue(
+      Array.from({ length: 18 }, (_, i) => negocio(i + 1))
+    );
+    renderPage();
+
+    const paginacion = await screen.findByRole('navigation', { name: 'Paginación' });
+    expect(paginacion).toHaveTextContent('18 negocios · página 1 de 2');
+  });
+
+  it('la búsqueda se aplica al confirmar, no al teclear', async () => {
+    const user = userEvent.setup();
+    vi.mocked(adminModule.adminApi.obtenerMetricas).mockResolvedValue([
+      negocio(1, { nombre: 'Barbería Luis' }),
+      negocio(2, { nombre: 'Salón Aramis' }),
+    ]);
+    renderPage();
+
+    await screen.findByText('Barbería Luis');
+
+    await user.type(screen.getByRole('searchbox', { name: 'Buscar negocio' }), 'Aramis');
+    expect(screen.getByText('Barbería Luis')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Buscar' }));
+
+    await waitFor(() => {
+      expect(screen.queryByText('Barbería Luis')).not.toBeInTheDocument();
+    });
+    expect(screen.getByText('Salón Aramis')).toBeInTheDocument();
+  });
+
+  it('filtra por estado activo/inactivo', async () => {
+    const user = userEvent.setup();
+    vi.mocked(adminModule.adminApi.obtenerMetricas).mockResolvedValue([
+      negocio(1, { nombre: 'Activo SA', activo: 1 }),
+      negocio(2, { nombre: 'Inactivo SA', activo: 0 }),
+    ]);
+    renderPage();
+
+    await screen.findByText('Activo SA');
+
+    await user.click(screen.getByRole('button', { name: 'Estado' }));
+    await user.click(screen.getByRole('option', { name: 'Inactivos' }));
+
+    await waitFor(() => {
+      expect(screen.queryByText('Activo SA')).not.toBeInTheDocument();
+    });
+    expect(screen.getByText('Inactivo SA')).toBeInTheDocument();
+  });
+
+  it('ofrece restablecer cuando ningún negocio coincide', async () => {
+    const user = userEvent.setup();
+    vi.mocked(adminModule.adminApi.obtenerMetricas).mockResolvedValue([negocio(1)]);
+    renderPage();
+
+    await screen.findByText('Negocio 01');
+
+    await user.type(screen.getByRole('searchbox', { name: 'Buscar negocio' }), 'zzz');
+    await user.click(screen.getByRole('button', { name: 'Buscar' }));
+
+    const reset = await screen.findByRole('button', { name: 'Ver todos los negocios' });
+    await user.click(reset);
+
+    expect(await screen.findByText('Negocio 01')).toBeInTheDocument();
+  });
+});
+
+// ── KPI "Con plan" ──────────────────────────────────────────────────────────
+
+describe('NegociosAdminPage — KPI "Con plan"', () => {
+  it('no cuenta los negocios de prueba, igual que "Ingresos est."', async () => {
+    vi.mocked(adminModule.adminApi.obtenerMetricas).mockResolvedValue([
+      { ...mockNegocio, id: 'neg-1', esTester: false },
+      { ...mockNegocio, id: 'neg-tester', nombre: 'Tester SA', esTester: true },
+    ]);
+    vi.mocked(adminModule.adminApi.obtenerSuscripciones).mockResolvedValue([
+      { ...mockSuscripcion, negocioId: 'neg-1' },
+      { ...mockSuscripcion, negocioId: 'neg-tester', negocioNombre: 'Tester SA' },
+    ]);
+    vi.mocked(adminModule.adminApi.obtenerPagos).mockResolvedValue([]);
+
+    renderPage();
+
+    const tarjeta = (await screen.findByText('Con plan')).closest('div')!;
+    // Dos suscripciones con plan, pero una es de un negocio tester.
+    expect(within(tarjeta).getByText('1')).toBeInTheDocument();
   });
 });
