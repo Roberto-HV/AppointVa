@@ -1,6 +1,7 @@
 using AppointVaAPI.Constants;
 using AppointVaAPI.Data;
 using AppointVaAPI.Models;
+using AppointVaAPI.Models.Dtos.Clientes;
 using AppointVaAPI.Repository.IRepository;
 using AppointVaAPI.Services.IServices;
 using Microsoft.AspNetCore.Authorization;
@@ -28,29 +29,50 @@ namespace AppointVaAPI.Controllers.V1
             _db = db;
         }
 
-        // GET api/clientes?buscar=&pagina=1&tamano=100
+        /// <summary>Umbral por omisión, igual al que la pantalla trae preseleccionado.</summary>
+        private const int DiasActividadPorDefecto = 60;
+        private const string ActividadActivos = "activos";
+        private const string ActividadInactivos = "inactivos";
+
+        // GET api/clientes?buscar=&actividad=inactivos&dias=60&pagina=1&tamano=15
         [HttpGet]
         public async Task<IActionResult> ObtenerTodos(
             [FromQuery] string? buscar,
+            [FromQuery] string? actividad,
+            [FromQuery] int? dias,
             [FromQuery] int pagina = 1,
             [FromQuery] int tamano = 0)
         {
             if (_contexto.NegocioId is null) return Unauthorized();
+            if (!ActividadEsValida(actividad)) return BadRequest(new { mensaje = MensajeActividadInvalida });
+            if (!DiasEsValido(dias)) return BadRequest(new { mensaje = MensajeDiasInvalido });
 
-            var query = _db.Clientes
-                .Where(c => c.NegocioId == _contexto.NegocioId.Value)
-                .AsQueryable();
+            var query = FiltrarDirectorio(buscar);
 
-            if (!string.IsNullOrWhiteSpace(buscar))
+            // El orden depende del grupo porque la pantalla los usa para cosas
+            // distintas: los inactivos son una lista de a quién llamar, y ahí el
+            // más abandonado va primero.
+            IQueryable<Cliente> ordenada;
+            if (EsActivos(actividad))
             {
-                var b = buscar.ToLower().Trim();
-                query = query.Where(c =>
-                    c.NombreCompleto.ToLower().Contains(b) ||
-                    c.Telefono.Contains(b));
+                var umbral = UmbralActividad(dias);
+                ordenada = query
+                    .Where(c => c.UltimaCitaEn != null && c.UltimaCitaEn >= umbral)
+                    .OrderByDescending(c => c.UltimaCitaEn);
+            }
+            else if (EsInactivos(actividad))
+            {
+                var umbral = UmbralActividad(dias);
+                ordenada = query
+                    .Where(c => c.UltimaCitaEn != null && c.UltimaCitaEn < umbral)
+                    .OrderBy(c => c.UltimaCitaEn);
+            }
+            else
+            {
+                ordenada = query.OrderBy(c => c.NombreCompleto);
             }
 
-            var lista = await query
-                .OrderBy(c => c.NombreCompleto)
+            var lista = await ordenada
                 .AsNoTracking()
                 .ToListAsync();
 
@@ -61,6 +83,36 @@ namespace AppointVaAPI.Controllers.V1
                 : lista.AsEnumerable();
 
             return Ok(resultado.Select(MapearDto));
+        }
+
+        // GET api/clientes/resumen-actividad?buscar=&dias=60
+        // Los tres grupos del directorio completo: el listado está paginado y la
+        // línea de cuadre de la pantalla tiene que sumar el total, no la página.
+        [HttpGet("resumen-actividad")]
+        public async Task<IActionResult> ResumenActividad(
+            [FromQuery] string? buscar,
+            [FromQuery] int? dias)
+        {
+            if (_contexto.NegocioId is null) return Unauthorized();
+            if (!DiasEsValido(dias)) return BadRequest(new { mensaje = MensajeDiasInvalido });
+
+            // Mismos predicados que ObtenerTodas para que los conteos cuadren con el listado.
+            var query = FiltrarDirectorio(buscar);
+            var umbral = UmbralActividad(dias);
+
+            var total = await query.CountAsync();
+            var sinVisitas = await query.CountAsync(c => c.UltimaCitaEn == null);
+            var activos = await query.CountAsync(c => c.UltimaCitaEn != null && c.UltimaCitaEn >= umbral);
+
+            return Ok(new ResumenActividadDto
+            {
+                Total = total,
+                Activos = activos,
+                // Por resta y no por un tercer COUNT: así los tres grupos suman el
+                // total aunque se agende una cita entre una consulta y la siguiente.
+                Inactivos = total - sinVisitas - activos,
+                SinVisitas = sinVisitas,
+            });
         }
 
         // GET api/clientes/{id}
@@ -126,6 +178,47 @@ namespace AppointVaAPI.Controllers.V1
             if (!eliminado) return NotFound(new { mensaje = "Cliente no encontrado" });
 
             return NoContent();
+        }
+
+        private const string MensajeActividadInvalida =
+            "El filtro de actividad solo acepta 'activos' o 'inactivos'.";
+        private const string MensajeDiasInvalido =
+            "El umbral en días debe ser mayor que cero.";
+
+        private static bool EsActivos(string? actividad) =>
+            string.Equals(actividad, ActividadActivos, StringComparison.OrdinalIgnoreCase);
+
+        private static bool EsInactivos(string? actividad) =>
+            string.Equals(actividad, ActividadInactivos, StringComparison.OrdinalIgnoreCase);
+
+        private static bool ActividadEsValida(string? actividad) =>
+            string.IsNullOrWhiteSpace(actividad) || EsActivos(actividad) || EsInactivos(actividad);
+
+        private static bool DiasEsValido(int? dias) => !dias.HasValue || dias.Value > 0;
+
+        /// <summary>
+        /// Frontera entre activo e inactivo. `UltimaCitaEn` guarda el inicio de la
+        /// última cita agendada, que puede estar en el futuro: quien ya tiene
+        /// reserva por venir es activo. Justo sobre el corte cuenta como activo.
+        /// </summary>
+        private static DateTime UmbralActividad(int? dias) =>
+            DateTime.UtcNow.AddDays(-(dias ?? DiasActividadPorDefecto));
+
+        private IQueryable<Cliente> FiltrarDirectorio(string? buscar)
+        {
+            var query = _db.Clientes
+                .Where(c => c.NegocioId == _contexto.NegocioId!.Value)
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(buscar))
+            {
+                var b = buscar.ToLower().Trim();
+                query = query.Where(c =>
+                    c.NombreCompleto.ToLower().Contains(b) ||
+                    c.Telefono.Contains(b));
+            }
+
+            return query;
         }
 
         private static object MapearDto(Cliente c) => new

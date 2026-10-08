@@ -15,15 +15,14 @@ import { SiWhatsapp } from "react-icons/si";
 import { UserX, UserCheck, Eye, Users } from "lucide-react";
 import Select from "../../components/ui/Select";
 import EmptyState from "../../components/ui/EmptyState";
-import BotonAccion, { AccionesPagina } from "../../components/ui/BotonAccion";
+import BotonAccion from "../../components/ui/BotonAccion";
+import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
 import { FiltroBarra } from "../../components/ui/filtros";
-import { usePaginacionLocal, TAMANO_PAGINA } from "../../hooks/usePaginacionLocal";
+import { TAMANO_PAGINA } from "../../hooks/usePaginacionLocal";
 
 type TabClientes = "todos" | "activos" | "inactivos";
 const TAMANO = TAMANO_PAGINA;
 const OPCIONES_DIAS = [30, 60, 90, 180] as const;
-/** Tope del análisis de actividad: es un filtro de cliente sobre una sola página. */
-const TAMANO_ACTIVIDAD = 500;
 
 export default function ClientesPage() {
   const qc = useQueryClient();
@@ -37,11 +36,15 @@ export default function ClientesPage() {
   const [notas, setNotas] = useState("");
   const [notasGuardadas, setNotasGuardadas] = useState(false);
   const [diasInactivo, setDiasInactivo] = useState<typeof OPCIONES_DIAS[number]>(60);
+  const [paginaActividad, setPaginaActividad] = useState(1);
   const idActividad = useId();
 
   const { data: paginaClientes, isLoading } = useQuery({
     queryKey: ["clientes", buscarActivo, pagina],
     queryFn: () => clientesApi.obtenerTodos(buscarActivo || undefined, pagina, TAMANO),
+    // Los modos de actividad traen su propio listado del servidor; sin esto el
+    // directorio completo se pedía también ahí y su resultado se descartaba.
+    enabled: tab === "todos",
   });
 
   const { data: negocio } = useQuery({
@@ -50,44 +53,39 @@ export default function ClientesPage() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const { data: baseActividad = [], isLoading: cargandoActividad } = useQuery({
-    queryKey: ["clientes-actividad-base"],
-    queryFn: () => clientesApi.obtenerTodos(undefined, 1, TAMANO_ACTIVIDAD),
+  // El reparto en activos / inactivos / sin visitas lo hace el servidor. Antes
+  // se traía una página de 500 y se repartía en memoria, así que un negocio con
+  // más clientes que eso analizaba solo a los primeros 500 sin saberlo.
+  const { data: listaActividad, isLoading: cargandoActividad } = useQuery({
+    queryKey: ["clientes-actividad", tab, diasInactivo, paginaActividad],
+    queryFn: () =>
+      clientesApi.obtenerPorActividad(
+        tab as Exclude<TabClientes, "todos">,
+        diasInactivo,
+        paginaActividad,
+        TAMANO
+      ),
     enabled: tab !== "todos",
-    staleTime: 2 * 60 * 1000,
-    select: (p) => p.datos,
+    placeholderData: (prev) => prev,
   });
+
+  // Los tres conteos describen el directorio completo, no la página visible: su
+  // razón de ser es cuadrar con el total para que el dueño pueda confiar en ellos.
+  const { data: resumenActividad } = useQuery({
+    queryKey: ["clientes-resumen-actividad", diasInactivo],
+    queryFn: () => clientesApi.obtenerResumenActividad(diasInactivo),
+    enabled: tab !== "todos",
+  });
+
+  // Un cambio de grupo o de umbral reordena el listado entero: la página en la
+  // que estabas ya no significa lo mismo.
+  useEffect(() => { setPaginaActividad(1); }, [tab, diasInactivo]);
 
   const ahora = useMemo(() => new Date(), []);
 
-  /**
-   * Los tres grupos salen del mismo recorrido para que sumen siempre el total
-   * analizado. "Sin visitas" no es un descarte: `ultimaCitaEn` es nulo solo
-   * cuando el cliente existe en el directorio pero nunca se le agendó una cita,
-   * y ese cliente no es activo (no ha venido) ni es reactivable (no hay nada a
-   * qué volver, ni fecha desde la cual contar días). Va aparte y se muestra.
-   */
-  const { activos, inactivos, sinVisitas } = useMemo(() => {
-    const umbral = ahora.getTime() - diasInactivo * 24 * 60 * 60 * 1000;
-    const activos: ClienteDto[] = [];
-    const inactivos: ClienteDto[] = [];
-    const sinVisitas: ClienteDto[] = [];
-    for (const c of baseActividad) {
-      if (!c.ultimaCitaEn) sinVisitas.push(c);
-      else if (new Date(c.ultimaCitaEn).getTime() < umbral) inactivos.push(c);
-      else activos.push(c);
-    }
-    inactivos.sort((a, b) => new Date(a.ultimaCitaEn!).getTime() - new Date(b.ultimaCitaEn!).getTime());
-    activos.sort((a, b) => new Date(b.ultimaCitaEn!).getTime() - new Date(a.ultimaCitaEn!).getTime());
-    return { activos, inactivos, sinVisitas };
-  }, [baseActividad, diasInactivo, ahora]);
-
-  const listaActividad = tab === "activos" ? activos : inactivos;
-  // Estos dos modos dibujaban los hasta 500 clientes del análisis de una sola
-  // vez. Se paginan en el cliente porque el recorrido que reparte activos,
-  // inactivos y sin visitas necesita el arreglo completo: los tres conteos de
-  // la línea de cuadre siguen saliendo de ahí, no de la página.
-  const paginaActividad = usePaginacionLocal(listaActividad);
+  const clientesActividad = listaActividad?.datos ?? [];
+  const totalActividad = listaActividad?.total ?? 0;
+  const totalPaginasActividad = Math.max(1, Math.ceil(totalActividad / TAMANO));
 
   const formatWaPhone = (tel: string) => {
     const digits = tel.replace(/\D/g, "");
@@ -168,32 +166,31 @@ export default function ClientesPage() {
 
   return (
     <div className="p-4 sm:p-8">
-      <div className="flex items-start justify-between gap-3 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{terms.clientes}</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Directorio, historial y notas de cada {terms.cliente.toLowerCase()}
-          </p>
-        </div>
-        {/* El aviso ámbar se queda: no decora, advierte que el archivo no trae
-            todo el directorio. Lo que cambia es el número — decía siempre "30"
-            aunque la página tuviera tres filas, y a 15 por página eso pasaría
-            más seguido. Ahora cuenta las filas que realmente se exportan. */}
-        {tab === "todos" && clientes.length > 0 && (
-          <AccionesPagina className="flex-col items-end gap-0.5">
-            <BotonAccion
-              variante="secundaria"
-              onClick={exportarClientes}
-              title={`Exporta los ${clientes.length} ${terms.clientes.toLowerCase()} de esta página, no los ${totalClientes} del directorio`}
-            >
-              Exportar Excel
-            </BotonAccion>
-            <span className="text-[10px] text-amber-500 dark:text-amber-400">
-              Solo esta página: {clientes.length} de {totalClientes}
-            </span>
-          </AccionesPagina>
-        )}
-      </div>
+      <EncabezadoPagina
+        className="mb-6"
+        titulo={terms.clientes}
+        subtitulo={`Directorio, historial y notas de cada ${terms.cliente.toLowerCase()}`}
+        acciones={
+          /* El aviso ámbar se queda: no decora, advierte que el archivo no trae
+             todo el directorio. Lo que cambia es el número — decía siempre "30"
+             aunque la página tuviera tres filas, y a 15 por página eso pasaría
+             más seguido. Ahora cuenta las filas que realmente se exportan. */
+          tab === "todos" && clientes.length > 0 && (
+            <div className="flex flex-col items-end gap-0.5">
+              <BotonAccion
+                variante="secundaria"
+                onClick={exportarClientes}
+                title={`Exporta los ${clientes.length} ${terms.clientes.toLowerCase()} de esta página, no los ${totalClientes} del directorio`}
+              >
+                Exportar Excel
+              </BotonAccion>
+              <span className="text-[10px] text-amber-500 dark:text-amber-400">
+                Solo esta página: {clientes.length} de {totalClientes}
+              </span>
+            </div>
+          )
+        }
+      />
 
       {/* Una sola barra para los tres modos: "Activos" e "Inactivos" acotan el
           mismo listado en vez de abrir otra sección, así que son un filtro más
@@ -267,27 +264,27 @@ export default function ClientesPage() {
               {/* El resumen va antes del listado —y también cuando el grupo
                   elegido está vacío— porque es donde cuadran las cuentas: si
                   "sin visitas" solo apareciera junto a una lista con filas, el
-                  grupo se volvería invisible justo cuando más desconcierta. */}
+                  grupo se volvería invisible justo cuando más desconcierta.
+                  El aviso ámbar que lo acompañaba solo existía para confesar el
+                  tope de 500; el análisis ya recorre el directorio entero, así
+                  que dejarlo sería advertir de un recorte que no ocurre. */}
               <div className="space-y-1">
-                <div className="flex items-baseline gap-3 flex-wrap">
-                  <p className="text-xs text-gray-400 dark:text-gray-500">
-                    {listaActividad.length} cliente{listaActividad.length !== 1 ? "s" : ""}{" "}
-                    {tab === "activos"
-                      ? `con visita en los últimos ${diasInactivo} días`
-                      : `sin visitar en más de ${diasInactivo} días`}
-                  </p>
-                  <span className="text-[10px] text-amber-500 dark:text-amber-400">
-                    El análisis se realiza sobre los últimos {TAMANO_ACTIVIDAD} clientes. Si tienes más, algunos pueden no aparecer.
-                  </span>
-                </div>
-                <p className="text-[11px] text-gray-400 dark:text-gray-500">
-                  De {baseActividad.length} analizados: {activos.length} activos, {inactivos.length} inactivos
-                  y {sinVisitas.length} sin visitas registradas
-                  {sinVisitas.length > 0 && " (nunca se les agendó una cita, así que no cuentan en ninguno de los dos grupos)"}.
+                <p className="text-xs text-gray-400 dark:text-gray-500">
+                  {totalActividad} cliente{totalActividad !== 1 ? "s" : ""}{" "}
+                  {tab === "activos"
+                    ? `con visita en los últimos ${diasInactivo} días`
+                    : `sin visitar en más de ${diasInactivo} días`}
                 </p>
+                {resumenActividad && (
+                  <p className="text-[11px] text-gray-400 dark:text-gray-500">
+                    De {resumenActividad.total} {terms.clientes.toLowerCase()}: {resumenActividad.activos} activos,{" "}
+                    {resumenActividad.inactivos} inactivos y {resumenActividad.sinVisitas} sin visitas registradas
+                    {resumenActividad.sinVisitas > 0 && " (nunca se les agendó una cita, así que no cuentan en ninguno de los dos grupos)"}.
+                  </p>
+                )}
               </div>
 
-              {listaActividad.length === 0 ? (
+              {clientesActividad.length === 0 ? (
                 <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700">
                   {tab === "activos" ? (
                     <EmptyState
@@ -305,7 +302,7 @@ export default function ClientesPage() {
                 </div>
               ) : (
                 <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 divide-y divide-gray-50 dark:divide-slate-700">
-                {paginaActividad.visibles.map((c) => {
+                {clientesActividad.map((c) => {
                   const dias = Math.floor(
                     (ahora.getTime() - new Date(c.ultimaCitaEn!).getTime()) / (1000 * 60 * 60 * 24)
                   );
@@ -356,11 +353,11 @@ export default function ClientesPage() {
                   );
                 })}
                 <Pagination
-                  pagina={paginaActividad.pagina}
-                  totalPaginas={paginaActividad.totalPaginas}
-                  total={paginaActividad.total}
+                  pagina={paginaActividad}
+                  totalPaginas={totalPaginasActividad}
+                  total={totalActividad}
                   labelTotal={terms.clientes.toLowerCase()}
-                  onCambiar={paginaActividad.setPagina}
+                  onCambiar={setPaginaActividad}
                   cargando={cargandoActividad}
                 />
                 </div>

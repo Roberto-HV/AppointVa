@@ -8,6 +8,8 @@ import ClientesPage from "./ClientesPage";
 vi.mock("../../api/clientes", () => ({
   clientesApi: {
     obtenerTodos: vi.fn(),
+    obtenerPorActividad: vi.fn(),
+    obtenerResumenActividad: vi.fn(),
     obtenerPorId: vi.fn(),
     obtenerCitas: vi.fn().mockResolvedValue([]),
     actualizarNotas: vi.fn(),
@@ -276,27 +278,26 @@ const CLIENTE_INACTIVO = makeCliente({
   nombreCompleto: "Carla Inactiva",
   ultimaCitaEn: haceDias(200),
 });
-const CLIENTE_SIN_VISITAS = makeCliente({
-  id: "sin-1",
-  nombreCompleto: "Diego Sin Citas",
-  totalCitas: 0,
-  ultimaCitaEn: null,
-});
 
-const BASE_ACTIVIDAD = [
-  CLIENTE_ACTIVO,
-  CLIENTE_FUTURO,
-  CLIENTE_INACTIVO,
-  CLIENTE_SIN_VISITAS,
-];
-
-/** La página pide 500 para el análisis de actividad y 30 para el listado. */
-function mockConBaseDeActividad() {
-  vi.mocked(clientesApi.obtenerTodos).mockImplementation((_q, _p, tamano) =>
+/**
+ * El servidor ya devuelve cada grupo listo y paginado: la página solo pide el
+ * que está seleccionado, con el umbral elegido.
+ */
+function mockConActividadDelServidor() {
+  vi.mocked(clientesApi.obtenerTodos).mockResolvedValue(paginaCon([CLIENTE_ACTIVO], 1));
+  vi.mocked(clientesApi.obtenerPorActividad).mockImplementation((actividad) =>
     Promise.resolve(
-      tamano === 500 ? paginaCon(BASE_ACTIVIDAD) : paginaCon([CLIENTE_ACTIVO], 1)
+      actividad === "activos"
+        ? paginaCon([CLIENTE_ACTIVO, CLIENTE_FUTURO])
+        : paginaCon([CLIENTE_INACTIVO])
     )
   );
+  vi.mocked(clientesApi.obtenerResumenActividad).mockResolvedValue({
+    total: 4,
+    activos: 2,
+    inactivos: 1,
+    sinVisitas: 1,
+  });
 }
 
 async function elegirActividad(opcion: string) {
@@ -305,9 +306,14 @@ async function elegirActividad(opcion: string) {
   await user.click(screen.getByRole("option", { name: opcion }));
 }
 
+async function elegirUmbral(dias: string) {
+  const user = userEvent.setup();
+  await user.click(screen.getByRole("radio", { name: `${dias} días` }));
+}
+
 describe("ClientesPage — filtro de actividad", () => {
   it("el desplegable ofrece Todos, Activos e Inactivos", async () => {
-    mockConBaseDeActividad();
+    mockConActividadDelServidor();
     renderConQuery();
     const user = userEvent.setup();
     await user.click(screen.getByRole("button", { name: "Actividad" }));
@@ -317,7 +323,7 @@ describe("ClientesPage — filtro de actividad", () => {
   });
 
   it("Activos lista a quien visitó dentro del umbral", async () => {
-    mockConBaseDeActividad();
+    mockConActividadDelServidor();
     renderConQuery();
     await elegirActividad("Activos");
     await waitFor(() =>
@@ -326,7 +332,7 @@ describe("ClientesPage — filtro de actividad", () => {
   });
 
   it("Activos incluye a quien ya tiene una cita agendada a futuro", async () => {
-    mockConBaseDeActividad();
+    mockConActividadDelServidor();
     renderConQuery();
     await elegirActividad("Activos");
     await waitFor(() =>
@@ -336,40 +342,38 @@ describe("ClientesPage — filtro de actividad", () => {
     expect(screen.queryByText(/-\d+ días/)).not.toBeInTheDocument();
   });
 
-  it("Activos excluye al inactivo y a quien nunca agendó", async () => {
-    mockConBaseDeActividad();
-    renderConQuery();
-    await elegirActividad("Activos");
-    await waitFor(() =>
-      expect(screen.getByText("Ana Activa")).toBeInTheDocument()
-    );
-    expect(screen.queryByText("Carla Inactiva")).not.toBeInTheDocument();
-    expect(screen.queryByText("Diego Sin Citas")).not.toBeInTheDocument();
-  });
-
-  it("Inactivos sigue excluyendo a quien nunca agendó", async () => {
-    mockConBaseDeActividad();
-    renderConQuery();
-    await elegirActividad("Inactivos");
-    await waitFor(() =>
-      expect(screen.getByText("Carla Inactiva")).toBeInTheDocument()
-    );
-    expect(screen.queryByText("Diego Sin Citas")).not.toBeInTheDocument();
-  });
-
-  it("el resumen cuadra con el total analizado", async () => {
-    mockConBaseDeActividad();
+  it("el resumen cuadra con el directorio completo", async () => {
+    mockConActividadDelServidor();
     renderConQuery();
     await elegirActividad("Activos");
     await waitFor(() =>
       expect(
-        screen.getByText(/De 4 analizados: 2 activos, 1 inactivos y 1 sin visitas registradas/)
+        screen.getByText(/De 4 clientes: 2 activos, 1 inactivos y 1 sin visitas registradas/)
+      ).toBeInTheDocument()
+    );
+  });
+
+  it("los conteos vienen del resumen, no de la página visible", async () => {
+    // La página trae 2 filas; el resumen describe 640 clientes. Si los conteos
+    // se calcularan sobre lo dibujado, aquí dirían 2.
+    mockConActividadDelServidor();
+    vi.mocked(clientesApi.obtenerResumenActividad).mockResolvedValue({
+      total: 640,
+      activos: 600,
+      inactivos: 25,
+      sinVisitas: 15,
+    });
+    renderConQuery();
+    await elegirActividad("Activos");
+    await waitFor(() =>
+      expect(
+        screen.getByText(/De 640 clientes: 600 activos, 25 inactivos y 15 sin visitas registradas/)
       ).toBeInTheDocument()
     );
   });
 
   it("nombra al grupo sin visitas en vez de descartarlo en silencio", async () => {
-    mockConBaseDeActividad();
+    mockConActividadDelServidor();
     renderConQuery();
     await elegirActividad("Activos");
     await waitFor(() =>
@@ -378,25 +382,38 @@ describe("ClientesPage — filtro de actividad", () => {
   });
 
   it("el resumen sigue visible aunque el grupo elegido esté vacío", async () => {
-    vi.mocked(clientesApi.obtenerTodos).mockImplementation((_q, _p, tamano) =>
-      Promise.resolve(
-        tamano === 500
-          ? paginaCon([CLIENTE_SIN_VISITAS])
-          : paginaCon([CLIENTE_SIN_VISITAS], 1)
-      )
-    );
+    mockConActividadDelServidor();
+    vi.mocked(clientesApi.obtenerPorActividad).mockResolvedValue(paginaCon([], 0));
+    vi.mocked(clientesApi.obtenerResumenActividad).mockResolvedValue({
+      total: 1,
+      activos: 0,
+      inactivos: 0,
+      sinVisitas: 1,
+    });
     renderConQuery();
     await elegirActividad("Activos");
     await waitFor(() =>
       expect(
-        screen.getByText(/De 1 analizados: 0 activos, 0 inactivos y 1 sin visitas registradas/)
+        screen.getByText(/De 1 clientes: 0 activos, 0 inactivos y 1 sin visitas registradas/)
       ).toBeInTheDocument()
     );
     expect(screen.getByText(/Sin clientes activos/i)).toBeInTheDocument();
   });
 
+  it("ya no advierte de un tope de análisis", async () => {
+    // El aviso ámbar solo confesaba el corte en 500. Sin corte, sería falso.
+    mockConActividadDelServidor();
+    renderConQuery();
+    await elegirActividad("Activos");
+    await waitFor(() =>
+      expect(screen.getByText("Ana Activa")).toBeInTheDocument()
+    );
+    expect(screen.queryByText(/El análisis se realiza sobre/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/algunos pueden no aparecer/i)).not.toBeInTheDocument();
+  });
+
   it("el umbral se enuncia distinto en cada modo", async () => {
-    mockConBaseDeActividad();
+    mockConActividadDelServidor();
     renderConQuery();
     await elegirActividad("Activos");
     await waitFor(() =>
@@ -412,7 +429,7 @@ describe("ClientesPage — filtro de actividad", () => {
   });
 
   it("no ofrece reactivar a un cliente activo", async () => {
-    mockConBaseDeActividad();
+    mockConActividadDelServidor();
     renderConQuery();
     await elegirActividad("Activos");
     await waitFor(() =>
@@ -422,12 +439,73 @@ describe("ClientesPage — filtro de actividad", () => {
   });
 
   it("Inactivos sí ofrece reactivar", async () => {
-    mockConBaseDeActividad();
+    mockConActividadDelServidor();
     renderConQuery();
     await elegirActividad("Inactivos");
     await waitFor(() =>
       expect(screen.getAllByText("Reactivar").length).toBeGreaterThan(0)
     );
+  });
+});
+
+// ── El reparto lo hace el servidor, no la memoria ─────────────────────────────
+
+describe("ClientesPage — el reparto por actividad va al servidor", () => {
+  it("cambiar de modo vuelve a consultar en vez de filtrar lo ya traído", async () => {
+    mockConActividadDelServidor();
+    renderConQuery();
+
+    await elegirActividad("Activos");
+    await waitFor(() =>
+      expect(clientesApi.obtenerPorActividad).toHaveBeenCalledWith("activos", 60, 1, 15)
+    );
+
+    await elegirActividad("Inactivos");
+    await waitFor(() =>
+      expect(clientesApi.obtenerPorActividad).toHaveBeenCalledWith("inactivos", 60, 1, 15)
+    );
+    await waitFor(() =>
+      expect(screen.getByText("Carla Inactiva")).toBeInTheDocument()
+    );
+    expect(screen.queryByText("Ana Activa")).not.toBeInTheDocument();
+  });
+
+  it("cambiar el umbral vuelve a consultar el listado con los días nuevos", async () => {
+    mockConActividadDelServidor();
+    renderConQuery();
+    await elegirActividad("Inactivos");
+    await waitFor(() =>
+      expect(clientesApi.obtenerPorActividad).toHaveBeenCalledWith("inactivos", 60, 1, 15)
+    );
+
+    await elegirUmbral("180");
+    await waitFor(() =>
+      expect(clientesApi.obtenerPorActividad).toHaveBeenCalledWith("inactivos", 180, 1, 15)
+    );
+  });
+
+  it("cambiar el umbral también recalcula los conteos en el servidor", async () => {
+    mockConActividadDelServidor();
+    renderConQuery();
+    await elegirActividad("Activos");
+    await waitFor(() =>
+      expect(clientesApi.obtenerResumenActividad).toHaveBeenCalledWith(60)
+    );
+
+    await elegirUmbral("30");
+    await waitFor(() =>
+      expect(clientesApi.obtenerResumenActividad).toHaveBeenCalledWith(30)
+    );
+  });
+
+  it("no pide el análisis de actividad mientras el modo es Todos", async () => {
+    mockConActividadDelServidor();
+    renderConQuery();
+    await waitFor(() =>
+      expect(clientesApi.obtenerTodos).toHaveBeenCalledWith(undefined, 1, 15)
+    );
+    expect(clientesApi.obtenerPorActividad).not.toHaveBeenCalled();
+    expect(clientesApi.obtenerResumenActividad).not.toHaveBeenCalled();
   });
 });
 
