@@ -932,6 +932,10 @@ namespace AppointVaAPI.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
 
+                    b.Property<string>("PortadaPreset")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
                     b.Property<string>("PortadaUrl")
                         .HasColumnType("text");
 

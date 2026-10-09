@@ -102,6 +102,9 @@ namespace AppointVaAPI.Controllers.V1
             negocio.TiktokUrl = string.IsNullOrWhiteSpace(dto.TiktokUrl) ? null : dto.TiktokUrl.Trim();
             if (!string.IsNullOrWhiteSpace(dto.PortadaObjectPosition))
                 negocio.PortadaObjectPosition = dto.PortadaObjectPosition.Trim();
+            // Cadena vacía quita el fondo generado; null deja lo guardado como está.
+            if (dto.PortadaPreset != null)
+                negocio.PortadaPreset = string.IsNullOrWhiteSpace(dto.PortadaPreset) ? null : dto.PortadaPreset.Trim();
             negocio.FechaActualizacion = DateTime.UtcNow;
 
             await _repo.ActualizarAsync(negocio);
@@ -492,7 +495,12 @@ namespace AppointVaAPI.Controllers.V1
                 else if (tipo == "politicas")
                     negocio.PoliticasUrl = url;
                 else
+                {
                     negocio.PortadaUrl = url;
+                    // Subir una foto es una decisión explícita: gana sobre el fondo
+                    // generado que estuviera elegido, si no la subida no se vería.
+                    negocio.PortadaPreset = null;
+                }
 
                 negocio.FechaActualizacion = DateTime.UtcNow;
                 await _repo.ActualizarAsync(negocio);
@@ -704,6 +712,7 @@ namespace AppointVaAPI.Controllers.V1
             LogoUrl = n.LogoUrl,
             PortadaUrl = n.PortadaUrl,
             PortadaObjectPosition = n.PortadaObjectPosition,
+            PortadaPreset = n.PortadaPreset,
             PoliticasUrl = n.PoliticasUrl,
             ColorPrimario = n.ColorPrimario,
             ColorSecundario = n.ColorSecundario,

@@ -41,6 +41,7 @@ export interface NegocioPublico {
   portadaUrl?: string;
   politicasUrl?: string;
   portadaObjectPosition?: string;
+  portadaPreset?: string;
   colorPrimario?: string;
   colorSecundario?: string;
   telefono?: string;
@@ -335,6 +336,7 @@ export interface NegocioDto {
   portadaUrl?: string;
   politicasUrl?: string;
   portadaObjectPosition?: string;
+  portadaPreset?: string;
   colorPrimario?: string;
   colorSecundario?: string;
   zonaHoraria?: string;
@@ -384,6 +386,8 @@ export interface ActualizarNegocioDto {
   facebookUrl?: string;
   tiktokUrl?: string;
   portadaObjectPosition?: string;
+  /** Clave del fondo generado; cadena vacía lo quita y vuelve al degradado de marca. */
+  portadaPreset?: string;
 }
 
 export interface ActualizarColoresNegocioDto {

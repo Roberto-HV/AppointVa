@@ -20,6 +20,9 @@ namespace AppointVaAPI.Models
         public string? PortadaUrl { get; set; }
         [MaxLength(20)]
         public string? PortadaObjectPosition { get; set; }
+        // Clave del fondo generado por código (ej. "deg-aurora"); el CSS vive en el front.
+        [MaxLength(40)]
+        public string? PortadaPreset { get; set; }
         public string? PoliticasUrl { get; set; }
         public string? ColorPrimario { get; set; }
         public string? ColorSecundario { get; set; }
@@ -44,7 +47,10 @@ namespace AppointVaAPI.Models
         public decimal MontoAnticipo { get; set; } = 0;
         [MaxLength(500)]
         public string? InstruccionesAnticipo { get; set; }
-        public int PorcentajeAnticipo { get; set; } = 0;
+        // 10 es el piso del porcentaje en el panel (deslizador 10–80). Nacer en 0
+        // dejaba la columna fuera de su propio rango y el formulario de perfil
+        // rechazaba en silencio cualquier negocio sin anticipos.
+        public int PorcentajeAnticipo { get; set; } = 10;
         public int HorasCancelacionConReembolso { get; set; } = 24;
         [MaxLength(500)]
         public string PoliticaCancelacionAnticipo { get; set; } = string.Empty;

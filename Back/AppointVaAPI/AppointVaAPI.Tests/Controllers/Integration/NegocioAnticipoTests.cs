@@ -88,4 +88,34 @@ public class NegocioAnticipoTests : IClassFixture<CustomWebApplicationFactory>
         // Assert
         Assert.Equal(System.Net.HttpStatusCode.BadRequest, response.StatusCode);
     }
+
+    [Fact]
+    public async Task RegistrarNegocio_NuevoNegocio_NacePorcentajeDentroDelRangoDelPanel()
+    {
+        // Un negocio recién creado nunca toca los anticipos, así que se queda con el
+        // valor por defecto de la columna. Ese valor tiene que caer dentro del rango
+        // que el panel permite elegir (10%–80%): si nace fuera, el formulario de
+        // perfil se rechaza entero y el negocio no puede guardar ninguna pestaña.
+        var sufijo = Guid.NewGuid().ToString("N")[..8];
+        var client = _factory.CreateClient();
+
+        var dto = new
+        {
+            NombreNegocio = "Negocio Nuevo",
+            Slug = $"negocio-nuevo-{sufijo}",
+            NombrePropietario = "Propietaria Nueva",
+            Email = $"propietaria-{sufijo}@ejemplo.com",
+            Contrasena = "Contrasena123!",
+            Sector = "belleza"
+        };
+
+        var response = await client.PostAsJsonAsync("/api/publico/registro", dto);
+        response.EnsureSuccessStatusCode();
+
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var creado = db.Negocios.Single(n => n.Slug == dto.Slug);
+
+        Assert.InRange(creado.PorcentajeAnticipo, 10, 80);
+    }
 }

@@ -53,7 +53,7 @@ function hslCrudo(hex: string): [number, number, number] {
   return [hue * 360, s * 100, l * 100];
 }
 
-function hslARgb(h: number, s: number, l: number): [number, number, number] {
+export function hslARgb(h: number, s: number, l: number): [number, number, number] {
   const sN = s / 100;
   const lN = l / 100;
   const c = (1 - Math.abs(2 * lN - 1)) * sN;
@@ -75,7 +75,7 @@ function aHex([r, g, b]: [number, number, number]): string {
 }
 
 /** Contraste WCAG 2.1 contra blanco. */
-function contrasteSobreBlanco([r, g, b]: [number, number, number]): number {
+export function contrasteSobreBlanco([r, g, b]: [number, number, number]): number {
   const lin = (v: number) => {
     const c = v / 255;
     return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);

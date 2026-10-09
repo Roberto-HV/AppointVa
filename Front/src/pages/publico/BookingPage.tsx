@@ -17,7 +17,8 @@ import PasoDatosCliente, { type DatosClienteForm } from "../../components/bookin
 import { Star, X, Tag, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import PublicFooter from "../../components/PublicFooter";
 
-import { hexToChannels, DEFAULT_COLOR, degradeGradient, brandSolid } from "../../lib/colorUtils";
+import { hexToChannels, DEFAULT_COLOR, brandSolid } from "../../lib/colorUtils";
+import { fondoPortada } from "../../lib/portadaPresets";
 
 // El submit del paso 4 vive en la barra de acción, fuera del <form> de PasoDatosCliente.
 const ID_FORM_DATOS = "form-datos-cliente";
@@ -26,6 +27,20 @@ const ID_TITULO_CONFLICTO = "hoja-cliente-existente-titulo";
 
 const CODIGO_CLIENTE_DISTINTO = "CLIENTE_NOMBRE_DISTINTO";
 const CODIGO_HORARIO_NO_DISPONIBLE = "HORARIO_NO_DISPONIBLE";
+
+// Piso de legibilidad del texto de la portada: el velo sostiene el contraste en
+// conjunto, pero una zona clara aislada de la foto puede colarse bajo una línea.
+const SOMBRA_TEXTO_PORTADA = "0 1px 3px rgba(12,12,15,0.65)";
+
+// Velo del bloque de texto sobre una foto. Los tramos están medidos contra una
+// portada blanca pura: el nombre cae alrededor del 60% y necesita ~0.80 de negro
+// para llegar al 4.5:1 de la WCAG 1.4.3; arriba se desvanece hasta cero.
+// Los tramos intermedios no son decorativos: aproximan una curva suave para que el
+// borde superior del velo no se lea como una banda sobre una foto plana y clara.
+const VELO_TEXTO_PORTADA =
+  "linear-gradient(to top, rgba(12,12,15,0.86) 0%, rgba(12,12,15,0.81) 42%, " +
+  "rgba(12,12,15,0.70) 60%, rgba(12,12,15,0.50) 74%, rgba(12,12,15,0.28) 85%, " +
+  "rgba(12,12,15,0.11) 93%, rgba(12,12,15,0) 100%)";
 
 const BTN_BASE = "min-h-[48px] rounded-2xl text-sm transition inline-flex items-center justify-center gap-1.5";
 const BTN_PRIMARIO = `${BTN_BASE} text-white font-bold tracking-wide hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed`;
@@ -863,6 +878,11 @@ export default function BookingPage() {
   const color = negocio.colorPrimario ?? DEFAULT_COLOR;
   // El CTA lleva texto blanco: un dorado o un verde salvia crudos lo dejan ilegible.
   const colorCta = brandSolid(color);
+  // Un fondo elegido gana sobre la foto: es la última decisión explícita del
+  // negocio y, si no, el selector del dashboard no tendría efecto visible.
+  const presetPortada = negocio.portadaPreset || null;
+  const mostrarFoto = !presetPortada && !!negocio.portadaUrl;
+  const fondoDePortada = fondoPortada(presetPortada, color);
   const terms = getSectorTerms(negocio.sector);
   const pasos = camposIntake.length > 0
     ? ["Servicio", terms.empleado, "Fecha y hora", "Sobre ti", "Tus datos"]
@@ -987,36 +1007,41 @@ export default function BookingPage() {
     <div className="min-h-screen bg-slate-50">
       {/* Header oscuro del negocio */}
       <div
+        data-testid="portada-negocio"
         className="relative overflow-hidden min-h-[180px] sm:min-h-[260px] lg:min-h-[300px] xl:min-h-[340px] flex flex-col justify-end"
-        style={{ background: negocio.portadaUrl ? "#0C0C0F" : degradeGradient(color) }}
+        style={mostrarFoto ? { background: "#0C0C0F" } : fondoDePortada}
       >
-        {/* Portada visible */}
-        {negocio.portadaUrl && (
+        {/* Portada visible, a opacidad completa: el contraste lo sostiene el velo de abajo */}
+        {mostrarFoto && (
           <img
             src={negocio.portadaUrl}
             alt=""
             className="absolute inset-0 w-full h-full object-cover pointer-events-none"
-            style={{ opacity: 0.5, objectPosition: negocio.portadaObjectPosition ?? "center" }}
-            loading="lazy"
+            style={{ objectPosition: negocio.portadaObjectPosition ?? "center" }}
+            loading="eager"
+            fetchPriority="high"
+            decoding="async"
           />
         )}
-        {/* Gradiente: transparente arriba → oscuro abajo */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background: "linear-gradient(to bottom, rgba(12,12,15,0.15) 0%, rgba(12,12,15,0.92) 100%)",
-          }}
-        />
-        {/* Glow radial con el color de marca */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background: `radial-gradient(ellipse 80% 120% at 0% 0%, rgb(${hexToChannels(color)} / 0.20) 0%, transparent 65%)`,
-          }}
-        />
+        {/* Glow de marca solo cuando no hay foto ni fondo elegido: los fondos
+            generados ya traen su propia luz y un halo encima los ensucia. */}
+        {!mostrarFoto && !presetPortada && (
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              background: `radial-gradient(ellipse 80% 120% at 0% 0%, rgb(${hexToChannels(color)} / 0.20) 0%, transparent 65%)`,
+            }}
+          />
+        )}
         {/* Contenido con padding-top para dejar ver la foto arriba. El inset superior baja
-            el contenido bajo la barra de estado; la portada sigue llegando al borde. */}
-        <div className="relative z-10 px-5 sm:px-8 pt-[calc(1rem+env(safe-area-inset-top))] pb-4 sm:pb-6">
+            el contenido bajo la barra de estado; la portada sigue llegando al borde.
+            El velo va aquí y no en toda la portada: así se ajusta al bloque de texto
+            —crece y encoge con él— y deja la foto intacta por encima. Los fondos
+            generados no lo llevan, ya nacen oscuros donde cae el texto. */}
+        <div
+          className="relative z-10 px-5 sm:px-8 pt-[calc(3.5rem+env(safe-area-inset-top))] pb-4 sm:pb-6"
+          style={mostrarFoto ? { background: VELO_TEXTO_PORTADA } : undefined}
+        >
           {/* Fila: logo + nombre alineados arriba */}
           <div className="flex items-start gap-3.5 sm:gap-5">
             {/* Logo */}
@@ -1035,7 +1060,7 @@ export default function BookingPage() {
                       border: `1.5px solid rgb(${hexToChannels(color)} / 0.45)`,
                       boxShadow: `0 2px 16px rgb(${hexToChannels(color)} / 0.28)`,
                     }}
-                    loading="lazy"
+                    loading="eager"
                   />
                 </button>
               ) : (
@@ -1053,15 +1078,18 @@ export default function BookingPage() {
             {/* Nombre, descripción y redes en la misma columna */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-white font-black text-[1.05rem] sm:text-2xl leading-none tracking-tight">
+                <h1
+                  className="text-white font-black text-[1.05rem] sm:text-2xl leading-none tracking-tight"
+                  style={{ textShadow: SOMBRA_TEXTO_PORTADA }}
+                >
                   {negocio.nombre}
                 </h1>
                 <div
                   className="flex items-center gap-1 rounded-full px-2 py-0.5"
-                  style={{ background: "rgba(255,255,255,0.08)" }}
+                  style={{ background: "rgba(12,12,15,0.38)" }}
                 >
                   <Star size={9} fill="#F59E0B" stroke="#F59E0B" strokeWidth={0} />
-                  <span className="text-[10px] sm:text-xs" style={{ color: "rgba(255,255,255,0.55)" }}>
+                  <span className="text-[10px] sm:text-xs" style={{ color: "rgba(255,255,255,0.86)" }}>
                     {(negocio.totalResenas ?? 0) > 0
                       ? (negocio.promedioResenas ?? 0).toFixed(1)
                       : "Sin reseñas"}
@@ -1069,12 +1097,18 @@ export default function BookingPage() {
                 </div>
               </div>
               {negocio.descripcion && (
-                <p className="text-xs sm:text-sm mt-1 leading-snug" style={{ color: "rgba(255,255,255,0.62)" }}>
+                <p
+                  className="text-xs sm:text-sm mt-1 leading-snug"
+                  style={{ color: "rgba(255,255,255,0.92)", textShadow: SOMBRA_TEXTO_PORTADA }}
+                >
                   {negocio.descripcion}
                 </p>
               )}
               {negocio.direccion && (
-                <p className="text-xs sm:text-sm mt-2 leading-snug" style={{ color: "rgba(255,255,255,0.45)" }}>
+                <p
+                  className="text-xs sm:text-sm mt-2 leading-snug"
+                  style={{ color: "rgba(255,255,255,0.80)", textShadow: SOMBRA_TEXTO_PORTADA }}
+                >
                   📍 {negocio.direccion}
                 </p>
               )}

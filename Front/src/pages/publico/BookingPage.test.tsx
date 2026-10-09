@@ -138,6 +138,7 @@ vi.mock("../../lib/colorUtils", async (importOriginal) => ({
 
 // ── Test data ─────────────────────────────────────────────────────────────────
 import { publicoApi } from "../../api/publico";
+import { fondoPortada } from "../../lib/portadaPresets";
 
 const mockNegocio: NegocioPublico = {
   id: "neg-1",
@@ -380,5 +381,84 @@ describe("BookingPage — hoja «¿eres tú?»", () => {
 
     expect(await screen.findByText(/ya no está disponible/i)).toBeInTheDocument();
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+});
+
+// ── Portada ───────────────────────────────────────────────────────────────────
+describe("BookingPage — portada", () => {
+  // La foto de portada es el único <img alt=""> del encabezado; el logo lleva el
+  // nombre del negocio como texto alternativo.
+  const fotoDePortada = () => document.querySelector<HTMLImageElement>('img[alt=""]');
+
+  // jsdom reescribe el shorthand `background` al serializarlo, así que el valor
+  // esperado tiene que pasar por la misma normalización para poder compararse.
+  function fondoNormalizado(clave: string | null): string {
+    const el = document.createElement("div");
+    el.style.background = fondoPortada(clave, mockNegocio.colorPrimario!).background;
+    return el.style.background;
+  }
+
+  it("dibuja el fondo generado cuando el negocio eligió uno y no hay foto", async () => {
+    vi.mocked(publicoApi.obtenerNegocio).mockResolvedValue({
+      ...mockNegocio,
+      portadaPreset: "deg-aurora",
+    });
+    renderConQuery();
+
+    const portada = await screen.findByTestId("portada-negocio");
+    expect(portada.style.background).toBe(fondoNormalizado("deg-aurora"));
+    expect(fotoDePortada()).toBeNull();
+  });
+
+  it("dibuja la foto cuando el negocio subió una y no eligió fondo", async () => {
+    vi.mocked(publicoApi.obtenerNegocio).mockResolvedValue({
+      ...mockNegocio,
+      portadaUrl: "https://cdn.test/portada.jpg",
+    });
+    renderConQuery();
+
+    await screen.findByTestId("portada-negocio");
+    const foto = fotoDePortada();
+    expect(foto).not.toBeNull();
+    expect(foto!.src).toBe("https://cdn.test/portada.jpg");
+  });
+
+  it("el fondo elegido gana sobre la foto subida", async () => {
+    vi.mocked(publicoApi.obtenerNegocio).mockResolvedValue({
+      ...mockNegocio,
+      portadaUrl: "https://cdn.test/portada.jpg",
+      portadaPreset: "geo-arcos",
+    });
+    renderConQuery();
+
+    const portada = await screen.findByTestId("portada-negocio");
+    expect(portada.style.background).toBe(fondoNormalizado("geo-arcos"));
+    expect(fotoDePortada()).toBeNull();
+  });
+
+  it("carga la foto con prioridad: es el elemento LCP de la página", async () => {
+    vi.mocked(publicoApi.obtenerNegocio).mockResolvedValue({
+      ...mockNegocio,
+      portadaUrl: "https://cdn.test/portada.jpg",
+    });
+    renderConQuery();
+
+    await screen.findByTestId("portada-negocio");
+    const foto = fotoDePortada()!;
+    expect(foto.getAttribute("loading")).toBe("eager");
+    expect(foto.getAttribute("fetchpriority")).toBe("high");
+    // Sin atenuar: el contraste del texto lo sostiene el velo, no la opacidad.
+    expect(foto.style.opacity).toBe("");
+  });
+
+  it("cae al degradado de marca con una clave de fondo que ya no existe", async () => {
+    vi.mocked(publicoApi.obtenerNegocio).mockResolvedValue({
+      ...mockNegocio,
+      portadaPreset: "preset-retirado",
+    });
+    renderConQuery();
+
+    const portada = await screen.findByTestId("portada-negocio");
+    expect(portada.style.background).toBe(fondoNormalizado(null));
   });
 });

@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
 import Select from "../../components/ui/Select";
 import Tabs from "../../components/ui/Tabs";
-import { useForm, type Resolver } from "react-hook-form";
+import { useForm, type FieldErrors, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Download, Mail, Trash2 } from "lucide-react";
@@ -16,6 +16,7 @@ import { useAuthStore } from "../../store/authStore";
 import { useToastStore } from "../../store/toastStore";
 import { Skeleton } from "../../components/ui/Skeleton";
 import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
+import SelectorFondoPortada from "../../components/dashboard/SelectorFondoPortada";
 import { TimePicker, DatePicker } from "../../components/ui/DateTimePicker";
 import type { ActualizarNegocioDto, HorarioDiaDto } from "../../types";
 
@@ -71,16 +72,55 @@ const schema = z.object({
   requiereAnticipo: z.boolean().optional(),
   montoAnticipo: z.coerce.number().min(0).optional(),
   instruccionesAnticipo: z.string().max(500).optional(),
-  porcentajeAnticipo: z.number().int().min(1).max(100).default(10),
+  // El porcentaje solo significa algo cuando se exige anticipo. El mínimo real
+  // (10, igual que el default del backend) se exige en el superRefine de abajo;
+  // aquí el rango queda abierto para que ningún valor heredado deje a un negocio
+  // sin poder guardar las demás pestañas.
+  porcentajeAnticipo: z.number().int().min(0).max(100).default(10),
   horasCancelacionConReembolso: z.number().int().min(0).default(24),
   politicaCancelacionAnticipo: z.string().max(500).default(''),
   instagramUrl: z.string().max(200).optional(),
   facebookUrl: z.string().max(200).optional(),
   tiktokUrl: z.string().max(200).optional(),
+}).superRefine((datos, ctx) => {
+  // 10–80 es el rango del deslizador y el que acepta la API (`[Range(0, 80)]`).
+  if (datos.requiereAnticipo && (datos.porcentajeAnticipo < 10 || datos.porcentajeAnticipo > 80)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["porcentajeAnticipo"],
+      message: "El porcentaje de anticipo debe estar entre 10% y 80%.",
+    });
+  }
 });
 type PerfilForm = z.infer<typeof schema>;
 
 type Tab = "perfil" | "citas" | "anticipos" | "horarios" | "cuenta";
+
+/** Pestaña donde vive cada campo, para poder mostrar el error que lo rechazó. */
+const TAB_DEL_CAMPO: Record<keyof PerfilForm, Tab> = {
+  nombre: "perfil",
+  telefono: "perfil",
+  email: "perfil",
+  direccion: "perfil",
+  descripcion: "perfil",
+  instagramUrl: "perfil",
+  facebookUrl: "perfil",
+  tiktokUrl: "perfil",
+  zonaHoraria: "citas",
+  horasRecordatorio: "citas",
+  horasCancelacion: "citas",
+  diasAnticipacionMinima: "citas",
+  autoConfirmar: "citas",
+  listaEsperaActiva: "citas",
+  metodoNotificacion: "citas",
+  telefonoWhatsApp: "citas",
+  requiereAnticipo: "anticipos",
+  montoAnticipo: "anticipos",
+  instruccionesAnticipo: "anticipos",
+  porcentajeAnticipo: "anticipos",
+  horasCancelacionConReembolso: "anticipos",
+  politicaCancelacionAnticipo: "anticipos",
+};
 
 export default function PerfilPage() {
   const qc = useQueryClient();
@@ -126,7 +166,10 @@ export default function PerfilPage() {
         requiereAnticipo: negocio.requiereAnticipo ?? false,
         montoAnticipo: negocio.montoAnticipo ?? 0,
         instruccionesAnticipo: negocio.instruccionesAnticipo ?? "",
-        porcentajeAnticipo: negocio.porcentajeAnticipo ?? 10,
+        // `|| 10`, no `?? 10`: el backend ya nace en 10, pero una base sin la
+        // migración `SetNegocioPorcentajeAnticipoDefault` aún puede devolver 0 y
+        // ese 0 dejaría el deslizador (mínimo 10%) fuera de su propio rango.
+        porcentajeAnticipo: negocio.porcentajeAnticipo || 10,
         horasCancelacionConReembolso: negocio.horasCancelacionConReembolso ?? 24,
         politicaCancelacionAnticipo: negocio.politicaCancelacionAnticipo ?? '',
         instagramUrl: negocio.instagramUrl ?? "",
@@ -141,6 +184,7 @@ export default function PerfilPage() {
       else if (raw === "bottom") setPortadaObjectPosition("50% 100%");
       else if (raw === "center") setPortadaObjectPosition("50% 50%");
       else setPortadaObjectPosition(raw);
+      setPortadaPreset(negocio.portadaPreset ?? null);
     }
   }, [negocio, reset]);
 
@@ -206,14 +250,34 @@ export default function PerfilPage() {
   });
 
   const onSubmit = (data: PerfilForm) => {
-    if (data.requiereAnticipo && (data.porcentajeAnticipo < 1 || data.porcentajeAnticipo > 100)) {
-      toast("El porcentaje de anticipo debe estar entre 1% y 100%.", "error");
-      return;
-    }
-    guardar({ ...data, email: data.email || undefined, telefono: data.telefono || undefined, portadaObjectPosition });
+    // Cadena vacía quita el fondo en el backend; `undefined` lo dejaría intacto.
+    guardar({
+      ...data,
+      email: data.email || undefined,
+      telefono: data.telefono || undefined,
+      portadaObjectPosition,
+      portadaPreset: portadaPreset ?? "",
+    });
     if (colorPrimario !== colorGuardado && colorPrimario.length >= 4) {
       guardarColores();
     }
+  };
+
+  // Sin esto el botón "Guardar cambios" no hace nada visible cuando la
+  // validación rechaza un campo que vive en otra pestaña: el dueño se queda sin
+  // enterarse de por qué no se guardó.
+  const onInvalid = (erroresForm: FieldErrors<PerfilForm>) => {
+    const campo = (Object.keys(erroresForm) as (keyof PerfilForm)[])[0];
+    if (!campo) return;
+    const destino = TAB_DEL_CAMPO[campo];
+    if (destino && destino !== tab) setTab(destino);
+    const detalle = erroresForm[campo]?.message;
+    toast(
+      typeof detalle === "string" && detalle
+        ? `No se guardó: ${detalle}`
+        : "No se guardó: revisa los campos marcados en rojo.",
+      "error"
+    );
   };
 
   const { mutate: eliminarCuenta, isPending: eliminando } = useMutation({
@@ -228,6 +292,7 @@ export default function PerfilPage() {
 
   // ── Horarios ─────────────────────────────────────────────────────────────
   const [portadaObjectPosition, setPortadaObjectPosition] = useState<string>("50% 50%");
+  const [portadaPreset, setPortadaPreset] = useState<string | null>(null);
   const [portadaModal, setPortadaModal] = useState<{ src: string; file?: File } | null>(null);
   const [portadaModalPos, setPortadaModalPos] = useState("50% 50%");
   const portadaModalDragRef = useRef<{ startX: number; startY: number; posX: number; posY: number } | null>(null);
@@ -433,7 +498,7 @@ export default function PerfilPage() {
       />
 
       {/* ── TAB: PERFIL ─────────────────────────────────────────────────────── */}
-      <form onSubmit={handleSubmit(onSubmit)}>
+      <form onSubmit={handleSubmit(onSubmit, onInvalid)}>
         <div className={tab !== "perfil" ? "hidden" : "space-y-6"}>
 
           {/* Información del negocio */}
@@ -618,6 +683,28 @@ export default function PerfilPage() {
             {colorPrimario !== colorGuardado && (
               <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
                 Color sin guardar — se guardará con "Guardar cambios"
+              </p>
+            )}
+          </div>
+
+          {/* Fondo de portada */}
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Fondo de portada</h2>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">
+              {negocio?.portadaUrl
+                ? "Elige un fondo si prefieres no mostrar tu foto. Tu foto se conserva: puedes volver a ella cuando quieras."
+                : "Cada fondo se dibuja con tu color de marca, así que ningún otro negocio tiene el tuyo."}
+            </p>
+            <SelectorFondoPortada
+              valor={portadaPreset}
+              onCambiar={setPortadaPreset}
+              color={colorPrimario}
+              portadaUrl={negocio?.portadaUrl}
+              portadaObjectPosition={portadaObjectPosition}
+            />
+            {portadaPreset !== (negocio?.portadaPreset ?? null) && (
+              <p className="text-xs text-amber-600 dark:text-amber-400 mt-3">
+                Fondo sin guardar — se guardará con "Guardar cambios"
               </p>
             )}
           </div>
@@ -824,6 +911,9 @@ export default function PerfilPage() {
                       </span>
                     </div>
                     <p className="text-xs text-gray-400 mt-1">Entre 10% y 80% del costo del servicio</p>
+                    {errors.porcentajeAnticipo && (
+                      <p className="text-red-500 text-xs mt-1">{errors.porcentajeAnticipo.message}</p>
+                    )}
                   </div>
 
                   <div>

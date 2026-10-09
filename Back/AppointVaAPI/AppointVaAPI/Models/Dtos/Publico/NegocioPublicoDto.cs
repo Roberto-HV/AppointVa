@@ -9,6 +9,7 @@
         public string? LogoUrl { get; set; }
         public string? PortadaUrl { get; set; }
         public string? PortadaObjectPosition { get; set; }
+        public string? PortadaPreset { get; set; }
         public string? PoliticasUrl { get; set; }
         public string? ColorPrimario { get; set; }
         public string? ColorSecundario { get; set; }

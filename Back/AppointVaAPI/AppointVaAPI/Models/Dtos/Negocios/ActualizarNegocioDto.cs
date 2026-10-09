@@ -61,5 +61,11 @@ namespace AppointVaAPI.Models.Dtos.Negocios
         public string? TiktokUrl { get; set; }
         [MaxLength(20)]
         public string? PortadaObjectPosition { get; set; }
+
+        // Clave del fondo generado (ej. "deg-aurora"). Cadena vacía = quitar el fondo
+        // y volver al degradado de marca; null = no tocar lo guardado.
+        [MaxLength(40)]
+        [RegularExpression("^[a-z0-9-]*$", ErrorMessage = "Fondo de portada inválido")]
+        public string? PortadaPreset { get; set; }
     }
 }
