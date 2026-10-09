@@ -17,6 +17,7 @@ import { useToastStore } from "../../store/toastStore";
 import { Skeleton } from "../../components/ui/Skeleton";
 import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
 import SelectorFondoPortada from "../../components/dashboard/SelectorFondoPortada";
+import { fondoPortada } from "../../lib/portadaPresets";
 import { TimePicker, DatePicker } from "../../components/ui/DateTimePicker";
 import type { ActualizarNegocioDto, HorarioDiaDto } from "../../types";
 
@@ -36,6 +37,20 @@ const ZONAS_HORARIAS = [
 ];
 
 const DIAS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+
+// Velos de la vista previa del booking. Van de arriba abajo porque aquí el texto
+// está arriba; en la portada real va abajo y el velo se invierte.
+// Sobre una foto blanca —el peor caso— el tramo que cubre el bloque de texto
+// (19%-74% de la altura) deja el nombre en 12.7:1 y la descripción en 6.2:1.
+const VELO_PREVIEW_FOTO =
+  "linear-gradient(to bottom, rgba(12,12,15,0.86) 0%, rgba(12,12,15,0.84) 50%, " +
+  "rgba(12,12,15,0.70) 74%, rgba(12,12,15,0.38) 88%, rgba(12,12,15,0.12) 100%)";
+// El degradado de marca solo necesita que no queme arriba: lo justo para pasar el
+// 4.5:1 con margen sin apagar el color que el negocio está eligiendo.
+const HEX_COMPLETO = /^#[0-9A-Fa-f]{6}$/;
+
+const VELO_PREVIEW_MARCA =
+  "linear-gradient(to bottom, rgba(12,12,15,0.42) 0%, rgba(12,12,15,0.22) 70%, rgba(12,12,15,0) 100%)";
 
 const HORAS_RECORDATORIO = [
   { valor: 2,  texto: "2 horas antes" },
@@ -258,7 +273,9 @@ export default function PerfilPage() {
       portadaObjectPosition,
       portadaPreset: portadaPreset ?? "",
     });
-    if (colorPrimario !== colorGuardado && colorPrimario.length >= 4) {
+    // Exige el hexadecimal completo: `length >= 4` dejaba pasar un "#FF0" a medio
+    // teclear y lo guardaba como color de la marca.
+    if (colorPrimario !== colorGuardado && HEX_COMPLETO.test(colorPrimario)) {
       guardarColores();
     }
   };
@@ -298,15 +315,35 @@ export default function PerfilPage() {
   const portadaModalDragRef = useRef<{ startX: number; startY: number; posX: number; posY: number } | null>(null);
   const [colorPrimario, setColorPrimario] = useState("#334155");
   const [colorGuardado, setColorGuardado] = useState("#334155");
+  // Lo que se teclea va aparte del color aplicado: así el campo se puede vaciar o
+  // dejar a medias mientras se escribe, sin que un `#FF0` llegue a la vista previa
+  // ni al guardado. `colorPrimario` solo cambia con un hexadecimal completo.
+  const [colorTexto, setColorTexto] = useState("#334155");
+  useEffect(() => { setColorTexto(colorPrimario); }, [colorPrimario]);
 
+  // Al salir del campo: normaliza un pegado sin "#" y, si quedó incompleto,
+  // devuelve el último color válido en vez de dejar al dueño con un campo roto.
+  const confirmarColorTexto = () => {
+    const normalizado = colorTexto.startsWith("#") ? colorTexto : `#${colorTexto}`;
+    if (HEX_COMPLETO.test(normalizado)) {
+      setColorPrimario(normalizado);
+      setColorTexto(normalizado);
+    } else {
+      setColorTexto(colorPrimario);
+    }
+  };
+
+  // El color viaja siempre con "Guardar cambios" —nunca se guarda solo—, así que
+  // en éxito calla: habla "Cambios guardados" por los dos. Un clic, un veredicto.
+  // El fallo sí habla, o un verde anunciaría un guardado a medias; va redactado
+  // como detalle de ese guardado y no como un segundo veredicto en competencia.
   const { mutate: guardarColores } = useMutation({
     mutationFn: () => negociosApi.actualizarColores(colorPrimario),
     onSuccess: () => {
       setColorGuardado(colorPrimario);
       qc.invalidateQueries({ queryKey: ["negocio-perfil"] });
-      toast("Color actualizado");
     },
-    onError: () => toast("No se pudo guardar el color. Intenta de nuevo.", "error"),
+    onError: () => toast("El color no se guardó. Intenta de nuevo.", "error"),
   });
 
   const [horarios, setHorarios] = useState<HorarioDiaDto[]>([]);
@@ -447,15 +484,91 @@ export default function PerfilPage() {
     a.href = url; a.download = `qr-${negocio?.slug ?? "reservas"}.png`; a.click();
   };
 
-  // ── Botón guardar compartido ─────────────────────────────────────────────
+  // ── Portada: misma regla que el booking ──────────────────────────────────
+  // El fondo elegido gana sobre la foto. Se deriva del estado local, no de lo
+  // guardado, para que la miniatura y la vista previa reflejen la elección
+  // antes de pulsar "Guardar cambios".
+  const presetPortada = portadaPreset || null;
+  const mostrarFotoPortada = !presetPortada && !!negocio?.portadaUrl;
+  const fondoPortadaActual = fondoPortada(presetPortada, colorPrimario);
+  const fotoOcultaPorFondo = !!presetPortada && !!negocio?.portadaUrl;
+  // Velo del texto de la vista previa, medido sobre los píxeles que se renderizan.
+  // La maqueta mide 64 px y pone el texto arriba; la portada real mide 180-340 px
+  // y lo pone abajo, así que lo que cae bajo el texto no es lo mismo en cada caso:
+  //  · Foto: puede ser blanca. Sin velo el nombre queda en 1:1, y con un velo suave
+  //    en 3.7:1. Necesita el mismo peso que el velo de la portada real.
+  //  · Fondo elegido: ya nace oscuro, incluso comprimido en 64 px (el peor caso
+  //    medido es 6.2:1). Taparlo mentiría sobre cómo se ve el fondo que se eligió.
+  //  · Degradado de marca: va de L 42% a L 9%, y en la portada real el texto cae en
+  //    el extremo oscuro. Aquí cae en el claro —un dorado da 4.2:1— y pide un velo
+  //    ligero, el mínimo para no desteñir el color de marca que se está eligiendo.
+  const veloPreviewPortada = mostrarFotoPortada
+    ? VELO_PREVIEW_FOTO
+    : presetPortada
+      ? null
+      : VELO_PREVIEW_MARCA;
+
+  // ── Barra de guardado compartida ─────────────────────────────────────────
+  // Las tres pestañas del formulario son largas y el botón vivía al final de
+  // cada una: editar algo de arriba dejaba al dueño sin ver cómo guardar.
   const btnGuardar = (
     <button
       type="submit"
       disabled={isSubmitting}
-      className="bg-slate-700 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-xl transition text-sm"
+      className="bg-slate-700 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-xl transition text-sm
+        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50 dark:focus-visible:ring-offset-slate-950"
     >
       {isSubmitting ? "Guardando..." : "Guardar cambios"}
     </button>
+  );
+
+  // El centinela va justo debajo de la barra: mientras no se vea, queda página
+  // por debajo y la barra está pegada al fondo. Solo entonces se despega del
+  // contenido con borde y sombra; al llegar al final vuelve a ser una fila más.
+  const centinelaBarra = useRef<HTMLDivElement>(null);
+  const barraRef = useRef<HTMLDivElement>(null);
+  const [barraPegada, setBarraPegada] = useState(false);
+
+  useEffect(() => {
+    const el = centinelaBarra.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const obs = new IntersectionObserver(([e]) => setBarraPegada(!e.isIntersecting), { threshold: 1 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [tab, isLoading]);
+
+  // Los toasts viven en `fixed bottom-5 right-5`. Medido a 390 px, el de error
+  // ocupa dos líneas y tapaba el botón entero. La barra publica su alto para que
+  // aterricen encima de ella; al desmontarse, los toasts vuelven a su sitio.
+  useEffect(() => {
+    const alto = barraRef.current?.offsetHeight;
+    if (!alto) return;
+    document.documentElement.style.setProperty("--barra-accion", `${alto}px`);
+    return () => { document.documentElement.style.removeProperty("--barra-accion"); };
+  }, [tab, isLoading]);
+
+  // `sticky`, no `fixed`: el contenedor que hace scroll es la columna <main> del
+  // dashboard, así que la barra se queda dentro de ella sola. Una barra fija
+  // abarcaría todo el viewport y habría que compensarla a mano para el sidebar
+  // abierto, cerrado y móvil. Los márgenes negativos la llevan al borde de la
+  // columna, contra el padding del contenedor de la página.
+  const barraGuardar = (
+    <>
+      <div
+        ref={barraRef}
+        data-testid="barra-guardar"
+        className={`sticky bottom-0 z-20 -mx-4 sm:-mx-8 mt-6 flex items-center px-4 sm:px-8 pt-3
+          pb-[calc(0.75rem+env(safe-area-inset-bottom))] rounded-t-2xl border-t transition-colors ${
+            barraPegada
+              ? "border-gray-200 dark:border-slate-700 bg-slate-50/90 dark:bg-slate-950/90 backdrop-blur " +
+                "shadow-[0_-4px_16px_rgba(15,23,42,0.08)] dark:shadow-[0_-4px_16px_rgba(0,0,0,0.45)]"
+              : "border-transparent"
+          }`}
+      >
+        {btnGuardar}
+      </div>
+      <div ref={centinelaBarra} aria-hidden className="h-px" />
+    </>
   );
 
   if (isLoading) return (
@@ -565,10 +678,18 @@ export default function PerfilPage() {
               </div>
               {/* Portada */}
               <div className="flex flex-col items-center col-span-2">
-                <div className="w-full aspect-[2/1] rounded-xl bg-gray-100 dark:bg-slate-700 overflow-hidden mb-2 flex items-center justify-center">
-                  {negocio?.portadaUrl
-                    ? <img src={negocio.portadaUrl} alt="Portada" className="w-full h-full object-cover" style={{ objectPosition: portadaObjectPosition }} />
-                    : <span className="text-xs text-gray-400 dark:text-gray-500">Sin portada</span>}
+                {/* Muestra lo que realmente se verá en la portada: la foto, o el
+                    fondo elegido, que gana sobre ella. */}
+                <div
+                  className="w-full aspect-[2/1] rounded-xl bg-gray-100 dark:bg-slate-700 overflow-hidden mb-2 flex items-center justify-center"
+                  style={presetPortada ? fondoPortadaActual : undefined}
+                >
+                  {mostrarFotoPortada && (
+                    <img src={negocio!.portadaUrl!} alt="Portada" className="w-full h-full object-cover" style={{ objectPosition: portadaObjectPosition }} />
+                  )}
+                  {!mostrarFotoPortada && !presetPortada && (
+                    <span className="text-xs text-gray-400 dark:text-gray-500">Sin portada</span>
+                  )}
                 </div>
                 <input ref={portadaRef} type="file" accept="image/*" className="hidden"
                   onChange={(e) => {
@@ -581,6 +702,12 @@ export default function PerfilPage() {
                   className="text-xs text-slate-700 dark:text-slate-300 hover:underline disabled:opacity-50">
                   {subiendoPortada ? "Subiendo..." : "Cambiar portada"}
                 </button>
+                {/* Sin este aviso, "Eliminar" borraría una foto que la miniatura no muestra. */}
+                {fotoOcultaPorFondo && (
+                  <p className="text-[11px] text-gray-400 dark:text-gray-500 text-center mt-1">
+                    Tu foto sigue guardada, oculta tras el fondo elegido.
+                  </p>
+                )}
                 <div className="mt-auto pt-1 min-h-[1.25rem] flex items-center gap-3">
                   {negocio?.portadaUrl && (
                     <>
@@ -634,11 +761,17 @@ export default function PerfilPage() {
               />
               <input
                 type="text"
-                value={colorPrimario}
+                value={colorTexto}
                 onChange={(e) => {
                   const v = e.target.value;
-                  if (/^#[0-9A-Fa-f]{0,6}$/.test(v)) setColorPrimario(v);
+                  // Acepta vacío, parcial y pegado sin "#"; aplicar es otra cosa.
+                  if (!/^#?[0-9A-Fa-f]{0,6}$/.test(v)) return;
+                  setColorTexto(v);
+                  if (HEX_COMPLETO.test(v)) setColorPrimario(v);
                 }}
+                onBlur={confirmarColorTexto}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); confirmarColorTexto(); } }}
+                aria-label="Color en hexadecimal"
                 className="w-32 px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700 font-mono uppercase"
                 maxLength={7}
                 placeholder="#334155"
@@ -646,15 +779,33 @@ export default function PerfilPage() {
             </div>
             {/* Vista previa del header del booking */}
             <div className="rounded-xl overflow-hidden border border-gray-100 dark:border-slate-700 mb-4">
+              {/* Refleja la portada real: foto, fondo elegido, o el degradado de
+                  marca. Antes era un negro fijo, que no era ninguno de los tres. */}
               <div className="px-4 pt-3 pb-3 flex items-start gap-3 relative"
-                style={{ background: "#0C0C0F" }}>
-                <div className="absolute inset-0 pointer-events-none"
-                  style={{ background: `radial-gradient(ellipse 80% 120% at 0% 0%, ${colorPrimario}38 0%, transparent 70%)` }} />
+                style={mostrarFotoPortada ? { background: "#0C0C0F" } : fondoPortadaActual}>
+                {mostrarFotoPortada && (
+                  <img src={negocio!.portadaUrl!} alt="" aria-hidden
+                    className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+                    style={{ objectPosition: portadaObjectPosition }} />
+                )}
+                {/* El glow solo donde el booking lo pone: sin foto y sin fondo elegido. */}
+                {!mostrarFotoPortada && !presetPortada && (
+                  <div className="absolute inset-0 pointer-events-none"
+                    style={{ background: `radial-gradient(ellipse 80% 120% at 0% 0%, ${colorPrimario}38 0%, transparent 70%)` }} />
+                )}
+                {/* Velo del texto, solo donde el fondo de verdad se aclara bajo él. */}
+                {veloPreviewPortada && (
+                  <div className="absolute inset-0 pointer-events-none"
+                    style={{ background: veloPreviewPortada }} />
+                )}
                 <div className="w-10 h-10 rounded-xl shrink-0 relative z-10"
                   style={{ background: `${colorPrimario}28`, border: `1.5px solid ${colorPrimario}60` }} />
                 <div className="relative z-10">
                   <div className="text-white text-sm font-bold leading-tight">Tu negocio</div>
-                  <div className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>Descripción breve...</div>
+                  {/* Mismo blanco que la descripción de la portada real: al 0.35 no
+                      llegaba al 4.5:1 sobre ningún fondo, y además se leía apagada
+                      comparada con lo que el cliente acaba viendo. */}
+                  <div className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.92)" }}>Descripción breve...</div>
                 </div>
               </div>
               <div className="px-4 py-2.5 flex items-center gap-1.5" style={{ background: "#18181B" }}>
@@ -767,8 +918,6 @@ export default function PerfilPage() {
               </div>
             </div>
           )}
-
-          {btnGuardar}
         </div>
 
         {/* ── TAB: CITAS ──────────────────────────────────────────────────────── */}
@@ -871,8 +1020,6 @@ export default function PerfilPage() {
                 <p className="text-xs text-gray-400 dark:text-gray-500">Los clientes reciben confirmaciones, recordatorios y cancelaciones por correo electrónico.</p>
               </div>
             </div>
-
-            {btnGuardar}
           </div>
         )}
 
@@ -960,10 +1107,12 @@ export default function PerfilPage() {
                 </div>
               )}
             </div>
-
-            {btnGuardar}
           </div>
         )}
+
+        {/* Horarios y Días bloqueados tienen sus propias mutaciones y sus
+            propios botones; este formulario no los guarda. */}
+        {tab !== "horarios" && tab !== "cuenta" && barraGuardar}
       </form>
 
       {/* ── Modal: eliminar cuenta ─────────────────────────────────────────── */}

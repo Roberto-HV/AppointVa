@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { render, screen, waitFor, within, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -200,6 +200,132 @@ describe("PerfilPage — 5 tabs", () => {
       expect(toastSpy).toHaveBeenCalledWith(expect.stringContaining("No se guardó"), "error")
     );
     expect(negociosApi.actualizarPerfil).not.toHaveBeenCalled();
+  });
+
+  // El botón vivía al final de cada pestaña y se perdía de vista al editar
+  // arriba. Ahora hay una sola barra pegada al fondo, y solo en las pestañas que
+  // este formulario guarda: Horarios y Días bloqueados tienen sus propias
+  // mutaciones y su propio botón.
+  it.each([
+    ["", "perfil"],
+    ["?tab=citas", "citas"],
+    ["?tab=anticipos", "anticipos"],
+  ])("muestra una sola barra de guardado en %s", async (params) => {
+    renderPerfilPage(params);
+    await waitFor(() => expect(screen.getByTestId("barra-guardar")).toBeInTheDocument());
+    expect(screen.getAllByTestId("barra-guardar")).toHaveLength(1);
+    expect(
+      within(screen.getByTestId("barra-guardar")).getByRole("button", { name: "Guardar cambios" })
+    ).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Guardar cambios" })).toHaveLength(1);
+  });
+
+  it.each([
+    ["?tab=horarios", "Guardar horarios"],
+    ["?tab=cuenta", "Eliminar mi cuenta"],
+  ])("no muestra la barra de guardado en %s", async (params, propio) => {
+    renderPerfilPage(params);
+    await waitFor(() => expect(screen.getByRole("button", { name: propio })).toBeInTheDocument());
+    expect(screen.queryByTestId("barra-guardar")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Guardar cambios" })).toBeNull();
+  });
+
+  it("confirma con un toast cuando el guardado sale bien", async () => {
+    renderPerfilPage();
+    await waitFor(() => screen.getByText("Información del negocio"));
+
+    await userEvent.click(screen.getByRole("button", { name: "Guardar cambios" }));
+
+    await waitFor(() => expect(negociosApi.actualizarPerfil).toHaveBeenCalled());
+    await waitFor(() => expect(toastSpy).toHaveBeenCalledWith("Cambios guardados"));
+  });
+
+  it("deja vaciar el hexadecimal y no aplica un color a medio teclear", async () => {
+    // El filtro anterior exigía el "#", así que el campo no se podía vaciar; y
+    // aceptaba parciales, que llegaban a guardarse como color de la marca.
+    renderPerfilPage();
+    await waitFor(() => screen.getByText("Color de tu página de reservas"));
+
+    const campo = screen.getByLabelText("Color en hexadecimal");
+    fireEvent.change(campo, { target: { value: "" } });
+    expect(campo).toHaveValue("");
+
+    fireEvent.change(campo, { target: { value: "#FF0" } });
+    expect(campo).toHaveValue("#FF0");
+
+    await userEvent.click(screen.getByRole("button", { name: "Guardar cambios" }));
+    await waitFor(() => expect(negociosApi.actualizarPerfil).toHaveBeenCalled());
+    expect(negociosApi.actualizarColores).not.toHaveBeenCalled();
+  });
+
+  it("acepta un hexadecimal pegado sin almohadilla y revierte lo incompleto", async () => {
+    renderPerfilPage();
+    await waitFor(() => screen.getByText("Color de tu página de reservas"));
+
+    const campo = screen.getByLabelText("Color en hexadecimal");
+    fireEvent.change(campo, { target: { value: "FF0000" } });
+    fireEvent.blur(campo);
+    expect(campo).toHaveValue("#FF0000");
+
+    fireEvent.change(campo, { target: { value: "#AB" } });
+    fireEvent.blur(campo);
+    expect(campo).toHaveValue("#FF0000");
+  });
+
+  it("da un solo aviso cuando el guardado también lleva color", async () => {
+    // El color viaja en el mismo clic pero por otro endpoint. Antes anunciaba su
+    // propio éxito, así que un botón devolvía dos veredictos apilados.
+    renderPerfilPage();
+    await waitFor(() => screen.getByText("Información del negocio"));
+
+    // El campo filtra con /^#[0-9A-Fa-f]{0,6}$/, así que `clear` no pasa el
+    // filtro y teclear carácter por carácter no llega al valor; se cambia entero.
+    fireEvent.change(screen.getByPlaceholderText("#334155"), { target: { value: "#FF0000" } });
+
+    await userEvent.click(screen.getByRole("button", { name: "Guardar cambios" }));
+
+    await waitFor(() => expect(negociosApi.actualizarColores).toHaveBeenCalled());
+    await waitFor(() => expect(toastSpy).toHaveBeenCalledWith("Cambios guardados"));
+
+    expect(toastSpy).not.toHaveBeenCalledWith("Color actualizado");
+    expect(toastSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("avisa que el color no se guardó sin callar el resto", async () => {
+    // Si el color falla y el perfil no, un verde solo estaría anunciando un
+    // guardado a medias.
+    vi.mocked(negociosApi.actualizarColores).mockRejectedValueOnce(new Error("500"));
+    renderPerfilPage();
+    await waitFor(() => screen.getByText("Información del negocio"));
+
+    fireEvent.change(screen.getByPlaceholderText("#334155"), { target: { value: "#FF0000" } });
+
+    await userEvent.click(screen.getByRole("button", { name: "Guardar cambios" }));
+
+    await waitFor(() =>
+      expect(toastSpy).toHaveBeenCalledWith("El color no se guardó. Intenta de nuevo.", "error")
+    );
+    expect(toastSpy).toHaveBeenCalledWith("Cambios guardados");
+  });
+
+  it("avisa con un toast y conserva lo escrito cuando el guardado falla", async () => {
+    vi.mocked(negociosApi.actualizarPerfil).mockRejectedValueOnce(new Error("500"));
+    renderPerfilPage();
+    await waitFor(() => screen.getByText("Información del negocio"));
+
+    const nombre = screen.getByDisplayValue("Salón Test");
+    await userEvent.clear(nombre);
+    await userEvent.type(nombre, "Salón Aramis");
+    await userEvent.click(screen.getByRole("button", { name: "Guardar cambios" }));
+
+    await waitFor(() =>
+      expect(toastSpy).toHaveBeenCalledWith(
+        "No se pudieron guardar los cambios. Intenta de nuevo.",
+        "error"
+      )
+    );
+    // Sin esto, un 500 borraría lo que el dueño acababa de escribir.
+    expect(screen.getByDisplayValue("Salón Aramis")).toBeInTheDocument();
   });
 
   it("clic en Cuenta muestra la zona de peligro", async () => {

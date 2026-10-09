@@ -5,8 +5,11 @@ import { useToastStore } from "../../store/toastStore";
 export default function ToastContainer() {
   const { toasts, quitar } = useToastStore();
 
+  // `--barra-accion` lo publica la página que tenga una barra de acción pegada al
+  // fondo. Sin ella el cálculo da el `bottom-5` de siempre; con ella los toasts
+  // aterrizan justo encima y no tapan el botón en pantallas estrechas.
   return (
-    <div className="fixed bottom-5 right-5 z-[200] flex flex-col gap-2 pointer-events-none">
+    <div className="fixed bottom-[calc(1.25rem_+_var(--barra-accion,0px))] right-5 z-[200] flex flex-col gap-2 pointer-events-none">
       <AnimatePresence mode="popLayout">
         {toasts.map((t) => (
           <motion.div
