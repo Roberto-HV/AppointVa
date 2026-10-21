@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useNavigate, Link, useLocation } from "react-router-dom";
+import LogoMarca from "../../components/LogoMarca";
 import { Eye, EyeOff, CalendarCheck, Star, Users } from "lucide-react";
 import { authApi } from "../../api/auth";
 import { useAuthStore } from "../../store/authStore";
@@ -111,7 +112,7 @@ export default function LoginPage() {
 
           {/* Logo — centrado en mobile, izquierda en desktop */}
           <div className="mb-10 flex justify-center">
-            <img src="/MasterLogo.png" alt="AppointVa" className="h-20 md:h-24 w-auto object-contain rounded-xl" />
+            <LogoMarca prioridad className="h-20 md:h-24 rounded-xl" />
           </div>
 
           {/* Alertas */}

@@ -377,6 +377,21 @@ export default function MisCitasPage() {
                           </div>
                         </div>
 
+                        {/* AP-04: sin correo el servidor no permite cambios; decirlo en vez de ocultar las acciones. */}
+                        {(c.estadoTexto === "Pendiente" || c.estadoTexto === "Confirmada") && puedeModificar && !tieneEmail && (
+                          <p className="mt-3 text-xs text-slate-600 bg-slate-50 rounded-lg px-3 py-2">
+                            Para reagendar o cancelar, busca tus citas con el correo que usaste al reservar.
+                            Si reservaste sin correo, contacta directamente al negocio.{" "}
+                            <button
+                              type="button"
+                              onClick={() => setBuscado(null)}
+                              className="font-semibold text-slate-800 underline"
+                            >
+                              Buscar con mi correo
+                            </button>
+                          </p>
+                        )}
+
                         <div className="mt-2 flex items-center gap-3">
                           <a
                             href={buildGoogleCalUrl(c)}

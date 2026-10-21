@@ -12,6 +12,8 @@ import { citasApi } from "../../api/citas";
 import { DatePicker, TimePicker, citasABusySlots } from "../../components/ui/DateTimePicker";
 import type { HorarioDiaDto } from "../../types";
 import PasswordStrengthBar from "../../components/PasswordStrengthBar";
+import ReglasContrasena from "../../components/ReglasContrasena";
+import { esquemaContrasena } from "../../utils/contrasena";
 import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
 import { useAuthStore } from "../../store/authStore";
 import { useToastStore } from "../../store/toastStore";
@@ -21,11 +23,7 @@ import { hoy as hoyLocal } from "../../utils/fechas";
 const schemaPwd = z
   .object({
     passwordActual: z.string().min(1, "Requerido"),
-    passwordNuevo: z
-      .string()
-      .min(6, "Mínimo 6 caracteres")
-      .regex(/[A-Z]/, "Debe tener al menos una mayúscula")
-      .regex(/[0-9]/, "Debe tener al menos un número"),
+    passwordNuevo: esquemaContrasena,
     confirmar: z.string(),
   })
   .refine((v) => v.passwordNuevo === v.confirmar, {
@@ -289,6 +287,7 @@ export default function MiPerfilPage() {
                   </button>
                 </div>
                 {errors.passwordNuevo && <p className="text-red-500 text-xs mt-1">{errors.passwordNuevo.message}</p>}
+                <ReglasContrasena valor={nuevaValor ?? ""} />
                 <PasswordStrengthBar password={nuevaValor} />
               </div>
 

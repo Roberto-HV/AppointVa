@@ -71,6 +71,15 @@ export const authApi = {
   },
 };
 
+/**
+ * Pide otro enlace de verificación. El servidor responde lo mismo exista o no
+ * la cuenta ("Si el correo está registrado…"), así que no revela correos.
+ */
+export async function reenviarVerificacion(email: string): Promise<{ mensaje: string }> {
+  const { data } = await api.post<{ mensaje: string }>("/publico/reenviar-verificacion", { email });
+  return data;
+}
+
 export async function verificarSlug(slug: string): Promise<{ disponible: boolean }> {
   const res = await api.get<{ disponible: boolean }>("/publico/verificar-slug", {
     params: { slug },

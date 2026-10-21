@@ -14,6 +14,8 @@ import {
   type EditarPagoRequestDto,
 } from "../../api/admin";
 import Modal from "../../components/ui/Modal";
+import ConfirmarAccion from "../../components/ui/ConfirmarAccion";
+import { esPendienteActivacion, ordenarNegociosAdmin } from "../../utils/negociosAdmin";
 import BarraProgreso from "../../components/ui/BarraProgreso";
 import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
 import BotonAccion from "../../components/ui/BotonAccion";
@@ -732,6 +734,7 @@ function TarjetaNegocio({
   isToggling?: boolean;
 }) {
   const esActivo = negocio.activo === 1;
+  const pendiente = esPendienteActivacion(negocio);
   const iniciales = negocio.nombre.split(" ").slice(0, 2).map((p) => p[0]).join("").toUpperCase();
 
   return (
@@ -753,10 +756,12 @@ function TarjetaNegocio({
           className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
             esActivo
               ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400"
+              : pendiente
+              ? "bg-amber-50 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300"
               : "bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400"
           }`}
         >
-          {esActivo ? "Activo" : "Inactivo"}
+          {esActivo ? "Activo" : pendiente ? "Pendiente de activación" : "Inactivo"}
         </span>
       </div>
 
@@ -1045,15 +1050,24 @@ export default function NegociosAdminPage() {
     onError: () => toast("Error al crear el negocio. Intenta de nuevo.", "error"),
   });
 
-  const { mutate: activar, isPending: activando } = useMutation({
+  const { mutate: activar, isPending: activando, variables: idActivando } = useMutation({
     mutationFn: (id: string) => adminApi.activar(id),
-    onSuccess: invalidar,
+    onSuccess: () => {
+      invalidar();
+      toast("Negocio activado");
+    },
     onError: () => toast("Error al activar el negocio. Intenta de nuevo.", "error"),
   });
 
-  const { mutate: desactivar, isPending: desactivando } = useMutation({
+  // Desactivar saca de línea la página pública: se confirma antes (AP-06).
+  const [negocioADesactivar, setNegocioADesactivar] = useState<NegocioMetricasDto | null>(null);
+  const { mutate: desactivar, isPending: desactivando, variables: idDesactivando } = useMutation({
     mutationFn: (id: string) => adminApi.desactivar(id),
-    onSuccess: invalidar,
+    onSuccess: () => {
+      invalidar();
+      setNegocioADesactivar(null);
+      toast("Negocio desactivado");
+    },
     onError: () => toast("Error al desactivar el negocio. Intenta de nuevo.", "error"),
   });
 
@@ -1197,13 +1211,14 @@ export default function NegociosAdminPage() {
         if (!coincide) return false;
         if (filtroActivo === "activos" && n.activo !== 1) return false;
         if (filtroActivo === "inactivos" && n.activo === 1) return false;
+        if (filtroActivo === "pendientes" && !esPendienteActivacion(n)) return false;
         if (filtroSuscripcion) {
           const estado = suscripcionMap[n.id]?.estado ?? "SinSuscripcion";
           if (estado !== filtroSuscripcion) return false;
         }
         return true;
       })
-      .sort((a, b) => b.activo - a.activo),
+      .sort(ordenarNegociosAdmin),
     [metricas, termino, filtroActivo, filtroSuscripcion, suscripcionMap]
   );
 
@@ -1287,6 +1302,7 @@ export default function NegociosAdminPage() {
             onChange: setFiltroActivo,
             etiquetaNeutra: "Todos",
             opciones: [
+              { valor: "pendientes", etiqueta: "Pendientes de activación" },
               { valor: "activos", etiqueta: "Activos" },
               { valor: "inactivos", etiqueta: "Inactivos" },
             ],
@@ -1343,7 +1359,7 @@ export default function NegociosAdminPage() {
                     negocio={neg}
                     suscripcion={suscripcionMap[neg.id]}
                     onActivar={() => activar(neg.id)}
-                    onDesactivar={() => desactivar(neg.id)}
+                    onDesactivar={() => setNegocioADesactivar(neg)}
                     onConfirmarEmail={() => confirmarEmail(neg.id)}
                     onCrearPropietario={() => abrirPropietario(neg)}
                     onColores={() => abrirColores(neg)}
@@ -1351,7 +1367,8 @@ export default function NegociosAdminPage() {
                     onTogglePagos={(habilitado) => togglePagos({ id: neg.id, habilitado })}
                     onToggleTester={() => toggleTester(neg.id)}
                     onEliminar={() => abrirEliminar(neg)}
-                    isToggling={activando || desactivando}
+                    // Solo la tarjeta cuyo estado está cambiando queda en espera (AP-06).
+                    isToggling={(activando && idActivando === neg.id) || (desactivando && idDesactivando === neg.id)}
                   />
                 ))}
               </div>
@@ -1501,6 +1518,26 @@ export default function NegociosAdminPage() {
           )}
         </div>
       )}
+
+      {/* Confirmación: desactivar negocio */}
+      <ConfirmarAccion
+        abierto={negocioADesactivar !== null}
+        titulo={`¿Desactivar ${negocioADesactivar?.nombre ?? "el negocio"}?`}
+        mensaje={
+          <>
+            <p>
+              La página <span className="font-mono text-foreground">/b/{negocioADesactivar?.slug}</span> dejará
+              de aceptar reservas y sus clientes no podrán verla hasta que vuelvas a activar el negocio.
+            </p>
+            <p className="mt-2">Las citas ya agendadas no se cancelan.</p>
+          </>
+        }
+        etiquetaConfirmar="Desactivar negocio"
+        destructiva
+        pendiente={desactivando}
+        onConfirmar={() => negocioADesactivar && desactivar(negocioADesactivar.id)}
+        onCerrar={() => { if (!desactivando) setNegocioADesactivar(null); }}
+      />
 
       {/* Modal: suscripción */}
       <Modal

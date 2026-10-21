@@ -12,11 +12,14 @@ vi.mock('../../api/admin', () => ({
     obtenerPagos: vi.fn(),
     obtenerPlanes: vi.fn(),
     setEmpleadosExtra: vi.fn(),
+    activar: vi.fn(),
+    desactivar: vi.fn(),
   },
 }));
 
+const toastMock = vi.hoisted(() => vi.fn());
 vi.mock('../../store/toastStore', () => ({
-  useToastStore: () => ({ success: vi.fn(), error: vi.fn() }),
+  useToastStore: () => ({ success: vi.fn(), error: vi.fn(), toast: toastMock }),
 }));
 
 const mockNegocio = {
@@ -317,6 +320,116 @@ describe('NegociosAdminPage — filtros y paginación', () => {
     await user.click(reset);
 
     expect(await screen.findByText('Negocio 01')).toBeInTheDocument();
+  });
+});
+
+// ── Activar / desactivar (AP-06) ────────────────────────────────────────────
+
+describe('NegociosAdminPage — desactivar negocio', () => {
+  beforeEach(() => {
+    vi.mocked(adminModule.adminApi.obtenerSuscripciones).mockResolvedValue([]);
+    vi.mocked(adminModule.adminApi.obtenerPagos).mockResolvedValue([]);
+    vi.mocked(adminModule.adminApi.desactivar).mockReset();
+    vi.mocked(adminModule.adminApi.activar).mockReset();
+    toastMock.mockReset();
+  });
+
+  function tarjetaDe(nombre: string) {
+    // La tarjeta es el contenedor que tiene el nombre y el botón de estado.
+    let el: HTMLElement | null = screen.getByText(nombre);
+    while (el && !within(el).queryByRole('button', { name: /Desactivar|Activar|Guardando/ })) {
+      el = el.parentElement;
+    }
+    return el!;
+  }
+
+  it('pide confirmación con el nombre y la consecuencia antes de desactivar', async () => {
+    const user = userEvent.setup();
+    vi.mocked(adminModule.adminApi.obtenerMetricas).mockResolvedValue([negocio(1, { nombre: 'Barbería Luis', slug: 'barberia-luis' })]);
+    vi.mocked(adminModule.adminApi.desactivar).mockResolvedValue(undefined as never);
+    renderPage();
+
+    await screen.findByText('Barbería Luis');
+    await user.click(within(tarjetaDe('Barbería Luis')).getByRole('button', { name: /Desactivar/ }));
+
+    // Nada se envía hasta confirmar.
+    expect(adminModule.adminApi.desactivar).not.toHaveBeenCalled();
+    const dialogo = await screen.findByRole('dialog');
+    expect(dialogo).toHaveTextContent('¿Desactivar Barbería Luis?');
+    expect(dialogo).toHaveTextContent('/b/barberia-luis');
+    expect(dialogo).toHaveTextContent('dejará de aceptar reservas');
+
+    await user.click(within(dialogo).getByRole('button', { name: 'Desactivar negocio' }));
+    await waitFor(() => expect(adminModule.adminApi.desactivar).toHaveBeenCalledWith('neg-1'));
+    await waitFor(() => expect(toastMock).toHaveBeenCalledWith('Negocio desactivado'));
+  });
+
+  it('volver cierra la confirmación sin desactivar', async () => {
+    const user = userEvent.setup();
+    vi.mocked(adminModule.adminApi.obtenerMetricas).mockResolvedValue([negocio(1, { nombre: 'Barbería Luis' })]);
+    renderPage();
+
+    await screen.findByText('Barbería Luis');
+    await user.click(within(tarjetaDe('Barbería Luis')).getByRole('button', { name: /Desactivar/ }));
+    await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Volver' }));
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(adminModule.adminApi.desactivar).not.toHaveBeenCalled();
+  });
+
+  it('mientras se activa un negocio solo su tarjeta queda en espera', async () => {
+    const user = userEvent.setup();
+    vi.mocked(adminModule.adminApi.obtenerMetricas).mockResolvedValue([
+      negocio(1, { nombre: 'Inactivo Uno', activo: 0 }),
+      negocio(2, { nombre: 'Inactivo Dos', activo: 0 }),
+    ]);
+    // La petición no termina durante la prueba.
+    vi.mocked(adminModule.adminApi.activar).mockReturnValue(new Promise(() => {}) as never);
+    renderPage();
+
+    await screen.findByText('Inactivo Uno');
+    await user.click(within(tarjetaDe('Inactivo Uno')).getByRole('button', { name: /^Activar/ }));
+
+    expect(await within(tarjetaDe('Inactivo Uno')).findByRole('button', { name: /Guardando/ })).toBeDisabled();
+    const otra = within(tarjetaDe('Inactivo Dos')).getByRole('button', { name: /^Activar/ });
+    expect(otra).toBeEnabled();
+  });
+});
+
+// ── Pendientes de activación (AP-07) ────────────────────────────────────────
+
+describe('NegociosAdminPage — pendientes de activación', () => {
+  beforeEach(() => {
+    vi.mocked(adminModule.adminApi.obtenerSuscripciones).mockResolvedValue([]);
+    vi.mocked(adminModule.adminApi.obtenerPagos).mockResolvedValue([]);
+    vi.mocked(adminModule.adminApi.obtenerMetricas).mockResolvedValue([
+      negocio(1, { nombre: 'Activo SA', activo: 1 }),
+      negocio(2, { nombre: 'Suspendido SA', activo: 0 }),
+      negocio(3, { nombre: 'Nuevo SA', activo: 0, planNombre: undefined, planId: undefined }),
+    ]);
+  });
+
+  it('muestra primero los registros nuevos sin activar, con su insignia', async () => {
+    renderPage();
+    await screen.findByText('Nuevo SA');
+
+    const texto = document.body.textContent ?? '';
+    expect(texto.indexOf('Nuevo SA')).toBeLessThan(texto.indexOf('Activo SA'));
+    expect(texto.indexOf('Activo SA')).toBeLessThan(texto.indexOf('Suspendido SA'));
+    expect(screen.getByText('Pendiente de activación')).toBeInTheDocument();
+  });
+
+  it('el filtro "Pendientes de activación" deja fuera a los desactivados', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('Nuevo SA');
+
+    await user.click(screen.getByRole('button', { name: 'Estado' }));
+    await user.click(screen.getByRole('option', { name: 'Pendientes de activación' }));
+
+    await waitFor(() => expect(screen.queryByText('Suspendido SA')).not.toBeInTheDocument());
+    expect(screen.queryByText('Activo SA')).not.toBeInTheDocument();
+    expect(screen.getByText('Nuevo SA')).toBeInTheDocument();
   });
 });
 

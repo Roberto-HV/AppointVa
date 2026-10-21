@@ -159,6 +159,33 @@ describe("MisCitasPage", () => {
     expect(screen.getAllByText("Reseña por correo")).toHaveLength(1);
   });
 
+  it("sin correo explica por qué no hay Reagendar/Cancelar y cómo obtenerlos (AP-04)", async () => {
+    localStorage.setItem(SESSION_KEY, JSON.stringify({ telefono: "5511223344" }));
+    vi.mocked(api.get).mockResolvedValue({
+      data: [futureCita],
+      headers: { "x-total-count": "1" },
+    });
+    renderConQuery();
+    await waitFor(() => expect(screen.getByText("Corte de cabello")).toBeInTheDocument());
+
+    expect(screen.queryByRole("button", { name: "Reagendar" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Cancelar" })).not.toBeInTheDocument();
+    expect(screen.getByText(/busca tus citas con el correo que usaste al reservar/i)).toBeInTheDocument();
+    expect(screen.getByText(/contacta directamente al negocio/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Buscar con mi correo" })).toBeInTheDocument();
+  });
+
+  it("con correo muestra las acciones y no la explicación", async () => {
+    localStorage.setItem(SESSION_KEY, JSON.stringify(mockSession));
+    vi.mocked(api.get).mockResolvedValue({
+      data: [futureCita],
+      headers: { "x-total-count": "1" },
+    });
+    renderConQuery();
+    await waitFor(() => expect(screen.getByRole("button", { name: "Reagendar" })).toBeInTheDocument());
+    expect(screen.queryByText(/busca tus citas con el correo/i)).not.toBeInTheDocument();
+  });
+
   it("muestra el estado vacío cuando no hay citas", async () => {
     localStorage.setItem(SESSION_KEY, JSON.stringify(mockSession));
     vi.mocked(api.get).mockResolvedValue({

@@ -2,13 +2,16 @@
 import { useParams } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { publicoApi } from "../../api/publico";
-import { Star } from "lucide-react";
 import PublicFooter from "../../components/PublicFooter";
+import EstrellasCalificacion from "../../components/EstrellasCalificacion";
+import { ETIQUETAS_CALIFICACION } from "../../lib/calificacion";
+import { mensajeError } from "../../utils/errores";
+
+const MAX_COMENTARIO = 1000;
 
 export default function ResenaPage() {
   const { token } = useParams<{ token: string }>();
   const [rating, setRating] = useState(0);
-  const [hover, setHover] = useState(0);
   const [comentario, setComentario] = useState("");
   const [enviado, setEnviado] = useState(false);
   const [errorEnvio, setErrorEnvio] = useState<string | null>(null);
@@ -23,7 +26,7 @@ export default function ResenaPage() {
   const { mutate: enviar, isPending } = useMutation({
     mutationFn: () => publicoApi.enviarResena(token!, { rating, comentario: comentario.trim() || undefined }),
     onSuccess: () => setEnviado(true),
-    onError: () => setErrorEnvio("No se pudo enviar tu reseña. Intenta de nuevo."),
+    onError: (err) => setErrorEnvio(mensajeError(err, "No se pudo enviar tu reseña. Intenta de nuevo.")),
   });
 
   const errorMsg = (error as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje;
@@ -88,48 +91,38 @@ export default function ResenaPage() {
               {info.empleado ? ` · con ${info.empleado}` : ""}
             </p>
           )}
-          <p className="text-sm text-gray-400 mt-3">¿Cómo calificarías tu experiencia?</p>
+          <p id="pregunta-calificacion" className="text-sm text-gray-500 mt-3">¿Cómo calificarías tu experiencia?</p>
         </div>
 
         {/* Stars */}
-        <div className="flex justify-center gap-2 mb-6">
-          {[1, 2, 3, 4, 5].map((star) => (
-            <button
-              key={star}
-              onClick={() => setRating(star)}
-              onPointerEnter={() => setHover(star)}
-              onPointerLeave={() => setHover(0)}
-              className="transition-transform hover:scale-110"
-            >
-              <Star
-                size={36}
-                className="transition-colors"
-                fill={(hover || rating) >= star ? "#C8A961" : "none"}
-                stroke={(hover || rating) >= star ? "#C8A961" : "#d1d5db"}
-                strokeWidth={1.5}
-              />
-            </button>
-          ))}
+        <div className="mb-4">
+          <EstrellasCalificacion valor={rating} onCambiar={setRating} etiquetadoPor="pregunta-calificacion" />
         </div>
 
-        {rating > 0 && (
-          <p className="text-center text-sm font-medium text-gray-600 mb-4">
-            {["", "Muy malo", "Malo", "Regular", "Bueno", "¡Excelente!"][rating]}
-          </p>
-        )}
+        <p className="text-center text-sm font-medium text-gray-600 mb-4 min-h-[1.25rem]" aria-hidden="true">
+          {rating > 0 ? ETIQUETAS_CALIFICACION[rating - 1] : ""}
+        </p>
 
         {/* Comentario */}
+        <label htmlFor="comentario-resena" className="block text-sm font-medium text-gray-700 mb-1">
+          Comentario <span className="font-normal text-gray-500">(opcional)</span>
+        </label>
         <textarea
+          id="comentario-resena"
           value={comentario}
           onChange={(e) => setComentario(e.target.value)}
-          placeholder="Cuéntanos más sobre tu experiencia (opcional)"
-          maxLength={1000}
+          placeholder="Cuéntanos más sobre tu experiencia"
+          maxLength={MAX_COMENTARIO}
           rows={3}
-          className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:border-slate-700 resize-none mb-4"
+          aria-describedby="contador-comentario"
+          className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:border-slate-700 resize-none"
         />
+        <p id="contador-comentario" className="text-right text-xs text-gray-500 mt-1 mb-4">
+          {comentario.length}/{MAX_COMENTARIO}
+        </p>
 
         {errorEnvio && (
-          <p className="text-red-500 text-sm text-center mb-2">{errorEnvio}</p>
+          <p role="alert" className="text-red-600 text-sm text-center mb-2">{errorEnvio}</p>
         )}
         <button
           onClick={() => { setErrorEnvio(null); enviar(); }}

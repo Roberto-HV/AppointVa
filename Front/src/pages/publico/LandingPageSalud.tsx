@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { useState, useEffect, useRef, type ReactNode, type CSSProperties } from "react";
+import { precioVisible, formatMonto } from "../../lib/precios";
 
 const GOLD = "#C8A961";
 const SLATE_700 = "#334155";
@@ -169,7 +170,7 @@ function PricingCard({
   features: string[]; highlighted?: boolean; delay?: number; comingSoon?: boolean; billedAnnually?: boolean;
 }) {
   const fade = useFadeInUp(delay);
-  const displayPrice = billedAnnually && annualPrice ? annualPrice : price;
+  const precio = precioVisible({ mensual: price, anual: annualPrice }, billedAnnually);
   return (
     <div
       ref={fade.ref}
@@ -186,12 +187,17 @@ function PricingCard({
         <p className={`text-xs font-bold uppercase tracking-widest mb-3 ${highlighted ? "text-amber-400" : "text-slate-400"}`}>{name}</p>
 
         <div className="flex items-baseline gap-1.5 mb-1">
-          <span className={`text-5xl font-black tabular-nums ${highlighted ? "text-white" : "text-slate-900"}`}>${displayPrice.toLocaleString()}</span>
+          <span className={`text-5xl font-black tabular-nums ${highlighted ? "text-white" : "text-slate-900"}`}>${formatMonto(precio.porMes)}</span>
           <span className="text-sm text-slate-400">/mes</span>
         </div>
-        {billedAnnually && annualPrice && (
+        {precio.facturaAnual && (
           <p className="text-xs font-semibold mb-1" style={{ color: GOLD }}>
-            Facturado anual · Ahorras ${((price - annualPrice) * 12).toLocaleString()}/año
+            Facturado anual · Ahorras ${formatMonto(precio.ahorroAnual)}/año
+          </p>
+        )}
+        {precio.sinPrecioAnual && (
+          <p className={`text-xs font-semibold mb-1 ${highlighted ? "text-slate-300" : "text-slate-500"}`}>
+            Sin descuento anual · Se factura mes a mes
           </p>
         )}
         <p className="text-xs text-slate-400">
@@ -427,6 +433,7 @@ export function LandingPageSalud() {
               />
               <PricingCard
                 delay={200} name="Premium" price={799} employees={50} comingSoon
+                billedAnnually={billedAnnually}
                 features={["Todo lo del plan Pro", "Formularios de admisión", "Reportes avanzados", "Soporte prioritario"]}
               />
             </div>

@@ -6,14 +6,13 @@ import { Link, useSearchParams } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import { authApi } from "../../api/auth";
 import PasswordStrengthBar from "../../components/PasswordStrengthBar";
+import ReglasContrasena from "../../components/ReglasContrasena";
+import LogoMarca from "../../components/LogoMarca";
+import { esquemaContrasena } from "../../utils/contrasena";
 
 const schema = z
   .object({
-    nuevaContrasena: z
-      .string()
-      .min(6, "Mínimo 6 caracteres")
-      .regex(/[A-Z]/, "Debe tener al menos una mayúscula")
-      .regex(/[0-9]/, "Debe tener al menos un número"),
+    nuevaContrasena: esquemaContrasena,
     confirmar: z.string(),
   })
   .refine((v) => v.nuevaContrasena === v.confirmar, {
@@ -69,8 +68,7 @@ export default function RestablecerContrasenaPage() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <img src="/MasterLogo.png" alt="AppointVa" className="h-20 object-contain mx-auto mb-2" />
-          <p className="text-gray-500 text-sm">AppointVa</p>
+          <LogoMarca prioridad className="h-20 mx-auto" />
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8">
@@ -113,7 +111,7 @@ export default function RestablecerContrasenaPage() {
                       className={`w-full px-4 py-2.5 pr-11 rounded-lg border text-sm outline-none transition
                         focus:ring-2 focus:ring-slate-700/40 focus:border-slate-700
                         ${errors.nuevaContrasena ? "border-red-400 bg-red-50" : "border-gray-300"}`}
-                      placeholder="Mín. 6 caracteres, una mayúscula y un número"
+                      aria-describedby="reglas-nueva-contrasena"
                     />
                     <button
                       type="button"
@@ -128,6 +126,7 @@ export default function RestablecerContrasenaPage() {
                   {errors.nuevaContrasena && (
                     <p className="text-red-500 text-xs mt-1">{errors.nuevaContrasena.message}</p>
                   )}
+                  <ReglasContrasena id="reglas-nueva-contrasena" valor={nuevaValor ?? ""} />
                   <PasswordStrengthBar password={nuevaValor} />
                 </div>
 

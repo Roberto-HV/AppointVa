@@ -1,6 +1,6 @@
 ﻿import { useState, useRef, useEffect } from "react";
 import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
-import { Menu, X, LayoutDashboard, CalendarDays, Users, Scissors, UserCheck, Building2, Link, Copy, Check, BarChart2, ShieldCheck, UserCircle, Images, ClipboardList, Tag, LogOut, ChevronLeft, ChevronRight, Mail, BookOpen, Moon, Sun, CreditCard, Star } from "lucide-react";
+import { Menu, X, LayoutDashboard, CalendarDays, Users, Scissors, UserCheck, Building2, Link, Copy, Check, BarChart2, ShieldCheck, UserCircle, Images, ClipboardList, Tag, LogOut, ChevronLeft, ChevronRight, BookOpen, Moon, Sun, CreditCard, Star } from "lucide-react";
 import { useTheme } from "../hooks/useTheme";
 import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "../store/authStore";
@@ -11,6 +11,7 @@ import { useToastStore } from "../store/toastStore";
 import { Tooltip } from "../components/ui/Tooltip";
 import { NotificacionesBell } from '../components/dashboard/NotificacionesBell';
 import { EncuestaSatisfaccionModal } from '../components/dashboard/EncuestaSatisfaccionModal';
+import AvisoActivacionPendiente from '../components/dashboard/AvisoActivacionPendiente';
 import { encuestaApi } from '../api/encuesta';
 import { toUtcDate, capitalizarPrimera } from '../utils/formatters';
 import { useInactividadTimeout } from '../hooks/useInactividadTimeout';
@@ -656,20 +657,7 @@ export default function DashboardLayout() {
         </header>
 
         {/* ── Banner cuenta inactiva ── */}
-        {!esEmpleado && perfil && !perfil.activo && (
-          <div className="shrink-0 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800 px-4 py-2.5 flex items-center gap-2.5">
-            <div className="w-5 h-5 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center shrink-0">
-              <Mail size={11} className="text-amber-700 dark:text-amber-300" aria-hidden="true" />
-            </div>
-            <p className="text-xs text-amber-800 dark:text-amber-200 font-medium">
-              Tu negocio está pendiente de activación.{" "}
-              <a href="mailto:hola@appointva.com" className="underline font-semibold hover:text-amber-900 dark:hover:text-amber-100 transition-colors">
-                Escríbenos a hola@appointva.com
-              </a>{" "}
-              para habilitarlo.
-            </p>
-          </div>
-        )}
+        {!esEmpleado && perfil && !perfil.activo && <AvisoActivacionPendiente />}
 
         {/* ── Contenido principal ── */}
         {/* `--barra-accion` lo publica la página que tenga una barra de acción

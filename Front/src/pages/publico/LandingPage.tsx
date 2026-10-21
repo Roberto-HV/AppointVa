@@ -1,5 +1,7 @@
 import { Link } from "react-router-dom";
 import { useState, useEffect, useRef, type ReactNode, type CSSProperties, type RefObject } from "react";
+import { precioVisible, formatMonto } from "../../lib/precios";
+import { ACTIVACION_FAQ } from "../../lib/activacion";
 
 const GOLD = "#C8A961";
 const SLATE_700 = "#334155";
@@ -84,7 +86,7 @@ function Navbar() {
             Iniciar sesión
           </Link>
           <Link
-            to="/registro?sector=belleza"
+            to="/registro"
             className="px-5 py-2 text-sm font-bold text-white rounded-xl transition-colors"
             style={{ backgroundColor: SLATE_700 }}
           >
@@ -109,7 +111,7 @@ function Navbar() {
           <Link to="/salud" className="py-2 text-sm font-medium text-slate-500 hover:text-slate-700 transition-colors" onClick={() => setOpen(false)}>¿Tienes un consultorio?</Link>
           <div className="border-t border-slate-100 pt-3 flex flex-col gap-2">
             <Link to="/login" className="py-2.5 text-sm font-medium text-center text-slate-600 border border-slate-200 rounded-xl">Iniciar sesión</Link>
-            <Link to="/registro?sector=belleza" className="py-2.5 text-sm font-bold text-center text-white rounded-xl" style={{ backgroundColor: SLATE_700 }}>Comenzar gratis</Link>
+            <Link to="/registro" className="py-2.5 text-sm font-bold text-center text-white rounded-xl" style={{ backgroundColor: SLATE_700 }}>Comenzar gratis</Link>
           </div>
         </div>
       )}
@@ -336,7 +338,7 @@ function PricingCard({
   features: string[]; highlighted?: boolean; delay?: number; comingSoon?: boolean; billedAnnually?: boolean;
 }) {
   const fade = useFadeInUp(delay);
-  const displayPrice = billedAnnually && annualPrice ? annualPrice : price;
+  const precio = precioVisible({ mensual: price, anual: annualPrice }, billedAnnually);
   return (
     <div
       ref={fade.ref}
@@ -353,12 +355,17 @@ function PricingCard({
         <p className={`text-xs font-bold uppercase tracking-widest mb-3 ${highlighted ? "text-amber-400" : "text-slate-400"}`}>{name}</p>
 
         <div className="flex items-baseline gap-1.5 mb-1">
-          <span className={`text-5xl font-black tabular-nums ${highlighted ? "text-white" : "text-slate-900"}`}>${displayPrice.toLocaleString()}</span>
+          <span className={`text-5xl font-black tabular-nums ${highlighted ? "text-white" : "text-slate-900"}`}>${formatMonto(precio.porMes)}</span>
           <span className="text-sm text-slate-400">/mes</span>
         </div>
-        {billedAnnually && annualPrice && (
+        {precio.facturaAnual && (
           <p className="text-xs font-semibold mb-1" style={{ color: GOLD }}>
-            Facturado anual · Ahorras ${((price - annualPrice) * 12).toLocaleString()}/año
+            Facturado anual · Ahorras ${formatMonto(precio.ahorroAnual)}/año
+          </p>
+        )}
+        {precio.sinPrecioAnual && (
+          <p className={`text-xs font-semibold mb-1 ${highlighted ? "text-slate-300" : "text-slate-500"}`}>
+            Sin descuento anual · Se factura mes a mes
           </p>
         )}
         <p className="text-xs text-slate-400">
@@ -381,7 +388,7 @@ function PricingCard({
           Próximamente disponible
         </div>
       ) : (
-        <Link to="/registro?sector=belleza" className="block text-center py-3 rounded-xl text-sm font-bold transition-all hover:opacity-90 active:scale-95" style={{ backgroundColor: highlighted ? GOLD : SLATE_700, color: highlighted ? DARK : "white" }}>
+        <Link to="/registro" className="block text-center py-3 rounded-xl text-sm font-bold transition-all hover:opacity-90 active:scale-95" style={{ backgroundColor: highlighted ? GOLD : SLATE_700, color: highlighted ? DARK : "white" }}>
           Empezar con {name}
         </Link>
       )}
@@ -449,7 +456,7 @@ export default function LandingPage() {
                 {/* min-w iguala el ancho de los dos botones pese a que sus etiquetas difieren. */}
                 <div className="flex flex-wrap gap-3 mb-8">
                   <Link
-                    to="/registro?sector=belleza"
+                    to="/registro"
                     className="inline-flex items-center justify-center min-w-[180px] px-7 py-3.5 text-sm font-bold text-white rounded-xl border border-transparent transition-all hover:-translate-y-0.5 hover:shadow-lg active:scale-95"
                     style={{ backgroundColor: SLATE_700, boxShadow: `0 4px 16px -2px ${SLATE_700}44` }}
                   >
@@ -593,6 +600,7 @@ export default function LandingPage() {
               />
               <PricingCard
                 delay={200} name="Premium" price={799} employees={50} comingSoon
+                billedAnnually={billedAnnually}
                 features={["Todo lo del plan Pro", "Formularios de admisión", "Reportes avanzados", "Soporte prioritario"]}
               />
             </div>
@@ -665,7 +673,7 @@ export default function LandingPage() {
               />
               <FaqItem
                 q="¿Cómo funciona el proceso de activación después de registrarme?"
-                a="Después de crear tu cuenta, nuestro equipo revisa tu información y activa tu negocio en 24-48 horas. Te notificamos por email cuando esté lista para recibir reservas. Sin tarjeta de crédito requerida."
+                a={ACTIVACION_FAQ}
               />
             </div>
           </div>
@@ -681,7 +689,7 @@ export default function LandingPage() {
             </h2>
             <p className="text-slate-400 mb-10 text-lg">Únete en 5 minutos. Sin tarjeta de crédito.</p>
             <Link
-              to="/registro?sector=belleza"
+              to="/registro"
               className="inline-flex items-center gap-2.5 px-8 py-4 rounded-2xl font-black text-base transition-all hover:scale-105 hover:opacity-95 active:scale-95 shadow-2xl"
               style={{ backgroundColor: GOLD, color: DARK, boxShadow: `0 20px 60px -10px ${GOLD}55` }}
             >
@@ -711,7 +719,7 @@ export default function LandingPage() {
                   <a href="#caracteristicas" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">Características</a>
                   <a href="#como-funciona" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">Cómo funciona</a>
                   <a href="#precios" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">Precios</a>
-                  <Link to="/registro?sector=belleza" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">Registrarse</Link>
+                  <Link to="/registro" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">Registrarse</Link>
                   <Link to="/login" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">Iniciar sesión</Link>
                 </nav>
               </div>
@@ -737,7 +745,7 @@ export default function LandingPage() {
         {showStickyCta && (
           <div className="md:hidden fixed bottom-0 inset-x-0 z-40 av-sticky-in border-t border-slate-200 bg-white/95 backdrop-blur-lg px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-6px_24px_-10px_rgba(15,23,42,0.35)]">
             <Link
-              to="/registro?sector=belleza"
+              to="/registro"
               className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl text-sm font-bold text-white active:scale-[0.98] transition-transform"
               style={{ backgroundColor: SLATE_700 }}
             >
