@@ -5,10 +5,9 @@ import { Link } from "react-router-dom";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
-import { CheckCircle2, Circle, X, Scissors, Users, CalendarDays, BarChart2, UserCheck, ChevronRight, Clock, TrendingUp, Store, Images, ExternalLink } from "lucide-react";
-import { SiWhatsapp } from "react-icons/si";
+import { CheckCircle2, Circle, X, Scissors, Users, CalendarDays, Clock, TrendingUp, Store, Images, ExternalLink, History } from "lucide-react";
 import { clientesApi } from "../../api/clientes";
-import type { CitaDto, ClienteCitaDto } from "../../types";
+import type { ClienteCitaDto } from "../../types";
 import { NotificacionBanner } from "../../components/ui/NotificacionBanner";
 import { dashboardApi } from "../../api/dashboard";
 import { citasApi } from "../../api/citas";
@@ -19,6 +18,11 @@ import { useAuthStore } from "../../store/authStore";
 import EstadoBadge from "../../components/ui/EstadoBadge";
 import { Skeleton } from "../../components/ui/Skeleton";
 import AnimatedCounter from "../../components/ui/AnimatedCounter";
+import Modal from "../../components/ui/Modal";
+import AccionesCita from "../../components/dashboard/AccionesCita";
+import { useTheme } from "../../hooks/useTheme";
+import { citaAbierta, estiloEstadoCita } from "../../lib/estadoCita";
+import { hoy as hoyLocal, inicioSemana as inicioSemanaLocal, finSemana as finSemanaLocal, fechaLocal } from "../../utils/fechas";
 import { formatPrecio, formatFechaHoraResumen as formatFechaHora } from "../../utils/formatters";
 
 interface TarjetaProps { label: string; valor?: string | number; rawValue?: number; valorCorto?: string; color?: string; accent?: boolean }
@@ -44,12 +48,6 @@ function Tarjeta({ label, valor, rawValue, color = "text-slate-900 dark:text-gra
 function formatPrecioCorto(n: number) {
   if (n >= 10000) return `$${Math.round(n / 1000)}k`;
   return `$${Math.round(n).toLocaleString("es-MX")}`;
-}
-
-function formatWaPhone(telefono: string) {
-  const digits = telefono.replace(/\D/g, "");
-  if (digits.startsWith("52") && digits.length >= 12) return digits;
-  return `52${digits}`;
 }
 
 // ── Wizard de onboarding ──────────────────────────────────────────────────────
@@ -87,7 +85,7 @@ function WizardOnboarding({ negocioId, slug, tieneServicios, tieneHorarios, tien
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-700/20 p-5 mb-6 relative">
-      <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 dark:text-gray-500 hover:text-gray-600 transition">
+      <button onClick={onClose} aria-label="Cerrar la guía de inicio" className="absolute top-2 right-2 w-11 h-11 inline-flex items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition">
         <X size={16} />
       </button>
 
@@ -101,8 +99,8 @@ function WizardOnboarding({ negocioId, slug, tieneServicios, tieneHorarios, tien
 
       <div className="space-y-3">
         {pasos.map((p, i) => (
-          <div key={i} className={`flex items-start gap-3 p-3 rounded-lg ${p.hecho ? "bg-gray-50 dark:bg-slate-700" : "bg-slate-700/5 border border-slate-700/10"}`}>
-            <div className={`mt-0.5 shrink-0 ${p.hecho ? "text-emerald-500" : "text-slate-700"}`}>
+          <div key={i} className={`flex items-start gap-3 p-3 rounded-lg ${p.hecho ? "bg-gray-50 dark:bg-slate-700" : "bg-slate-700/5 dark:bg-slate-700/40 border border-slate-700/10 dark:border-slate-600"}`}>
+            <div className={`mt-0.5 shrink-0 ${p.hecho ? "text-emerald-500" : "text-slate-700 dark:text-slate-300"}`}>
               {p.hecho ? <CheckCircle2 size={18} /> : <Circle size={18} />}
             </div>
             <div className="flex-1 min-w-0">
@@ -116,12 +114,12 @@ function WizardOnboarding({ negocioId, slug, tieneServicios, tieneHorarios, tien
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={p.accion.onClick}
-                  className="shrink-0 text-xs font-semibold text-slate-700 bg-slate-700/10 hover:bg-slate-700/20 px-3 py-1.5 rounded-lg transition"
+                  className="shrink-0 text-xs font-semibold text-slate-700 dark:text-slate-100 bg-slate-700/10 dark:bg-slate-600 hover:bg-slate-700/20 dark:hover:bg-slate-500 px-3 py-1.5 rounded-lg transition"
                 >
                   {p.accion.texto}
                 </a>
               ) : (
-                <Link to={p.accion.href} className="shrink-0 text-xs font-semibold text-slate-700 bg-slate-700/10 hover:bg-slate-700/20 px-3 py-1.5 rounded-lg transition">
+                <Link to={p.accion.href} className="shrink-0 text-xs font-semibold text-slate-700 dark:text-slate-100 bg-slate-700/10 dark:bg-slate-600 hover:bg-slate-700/20 dark:hover:bg-slate-500 px-3 py-1.5 rounded-lg transition">
                   {p.accion.texto}
                 </Link>
               )
@@ -256,9 +254,11 @@ function VistaPropietario({ nombre }: { nombre: string }) {
   const usuario = useAuthStore((s) => s.usuario);
   const keyOnboarding = usuario?.negocioId ? `onboarding-ok-${usuario.negocioId}` : "";
   const [mostrarWizard, setMostrarWizard] = useState(() => keyOnboarding ? !localStorage.getItem(keyOnboarding) : false);
-  const hoy = new Date().toISOString().slice(0, 10);
+  // Fecha local: en UTC-6, `toISOString()` ya es "mañana" desde las 18:00.
+  const hoy = hoyLocal();
+  const { theme } = useTheme();
 
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["dashboard-resumen"],
     queryFn: dashboardApi.obtenerResumen,
     staleTime: 0,
@@ -304,27 +304,13 @@ function VistaPropietario({ nombre }: { nombre: string }) {
   const tieneHorarios = horarios.some(h => h.activo);
   const enBienvenida = mostrarWizard && (!tieneServicios || !tieneHorarios);
 
-  const { data: citasDeHoy = [], isLoading: cargandoAgenda } = useQuery({
+  const { data: citasDeHoy = [], isLoading: cargandoAgenda, isError: errorAgenda, refetch: reintentarAgenda } = useQuery({
     queryKey: ["citas-agenda-hoy", hoy],
     queryFn: () => citasApi.obtenerTodas({ desde: hoy, hasta: hoy, tamano: 100 }),
     select: (p) => [...p.datos].sort((a, b) => new Date(a.inicioEn).getTime() - new Date(b.inicioEn).getTime()),
     staleTime: 0,
     refetchInterval: 30_000,
   });
-
-  const whatsappHoy = (c: CitaDto) => {
-    const tel = formatWaPhone(c.telefonoCliente);
-    const negocioText = negocio?.nombre ? ` en *${negocio.nombre}*` : "";
-    const msg =
-      `Hola ${c.nombreCliente} 👋, te recordamos tu cita${negocioText}:\n\n` +
-      `📌 *Servicio:* ${c.nombreServicio}\n` +
-      `👤 *Con:* ${c.nombreEmpleado}\n` +
-      `📅 *Fecha:* ${formatFechaHora(c.inicioEn)}\n` +
-      `💰 *Total:* ${formatPrecio(c.precio)}\n` +
-      `🔖 *Código:* ${c.codigoConfirmacion}\n\n` +
-      `¡Te esperamos!`;
-    return `https://wa.me/${tel}?text=${encodeURIComponent(msg)}`;
-  };
 
   return (
     <div className="p-4 sm:p-8">
@@ -346,40 +332,10 @@ function VistaPropietario({ nombre }: { nombre: string }) {
         </div>
       </div>
 
-      {/* Quick actions — ElevenReader 4-col grid */}
-      <motion.div
-        initial="hidden"
-        animate="show"
-        variants={{ hidden: {}, show: { transition: { staggerChildren: 0.07 } } }}
-        className="grid grid-cols-4 gap-2 sm:gap-3 mb-6"
-      >
-        {[
-          { label: "Citas", icon: CalendarDays, to: "/dashboard/citas" },
-          { label: "Servicios", icon: Scissors, to: "/dashboard/servicios" },
-          { label: "Clientes", icon: UserCheck, to: "/dashboard/clientes" },
-          { label: "Reportes", icon: BarChart2, to: "/dashboard/reportes" },
-        ].map(({ label, icon: Icon, to }) => (
-          <motion.div
-            key={to}
-            variants={{ hidden: { opacity: 0, y: 12, scale: 0.95 }, show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.3, ease: "easeOut" } } }}
-          >
-            <Link
-              to={to}
-              className="flex flex-col items-center gap-2 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-3 hover:border-slate-200 dark:hover:border-slate-600 hover:-translate-y-0.5 hover:shadow-md transition group"
-            >
-              <div className="w-10 h-10 rounded-xl bg-slate-50 dark:bg-slate-700 group-hover:bg-slate-100 dark:group-hover:bg-slate-600 flex items-center justify-center transition">
-                <Icon size={18} className="text-slate-600 dark:text-gray-400" />
-              </div>
-              <span className="text-[10px] font-semibold text-slate-500 dark:text-gray-400 text-center leading-tight">{label}</span>
-            </Link>
-          </motion.div>
-        ))}
-      </motion.div>
-
       {isError && !data && (
         <div className="rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-6 text-center mb-6">
           <p className="text-sm font-medium text-red-600 dark:text-red-400">No se pudo cargar el resumen del negocio</p>
-          <button onClick={() => window.location.reload()} className="mt-3 text-xs text-red-500 underline">Reintentar</button>
+          <button onClick={() => refetch()} className="mt-3 min-h-[44px] px-4 rounded-lg text-sm font-medium text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/40 transition">Reintentar</button>
         </div>
       )}
 
@@ -422,7 +378,104 @@ function VistaPropietario({ nombre }: { nombre: string }) {
         </>
       ) : data ? (
         <>
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2.5">Citas</p>
+          {/* Highlight próxima cita */}
+          {data.proximasCitas.length > 0 && (() => {
+            const proxima = data.proximasCitas[0];
+            const proximaCompleta = citasDeHoy.find((c) => c.id === proxima.id);
+            const msRestantes = new Date(proxima.inicioEn).getTime() - Date.now();
+            const minutos = Math.round(msRestantes / 60000);
+            const esHoy = msRestantes > 0 && msRestantes < 24 * 60 * 60 * 1000;
+            const etiqueta = msRestantes <= 0
+              ? "En curso"
+              : minutos < 60
+              ? `En ${minutos} min`
+              : minutos < 1440
+              ? `En ${Math.floor(minutos / 60)}h ${minutos % 60 > 0 ? `${minutos % 60}min` : ""}`
+              : null;
+            if (!esHoy && !etiqueta) return null;
+            return (
+              <div className="bg-card border border-border rounded-xl p-4 mb-6 flex flex-wrap items-center justify-between gap-3 animate-fade-in">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center shrink-0">
+                    <CalendarDays size={18} className="text-muted-foreground" aria-hidden="true" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wide mb-0.5">Próxima cita</p>
+                    <p className="font-semibold text-foreground truncate">{proxima.nombreCliente}</p>
+                    <p className="text-xs text-muted-foreground truncate">{proxima.nombreServicio} · {proxima.nombreEmpleado}</p>
+                  </div>
+                </div>
+                <div className="text-right shrink-0">
+                  {etiqueta && (
+                    <p className={`text-sm font-bold ${msRestantes <= 0 ? "text-status-confirmed-fg" : "text-foreground"}`}>{etiqueta}</p>
+                  )}
+                  <p className="text-xs text-muted-foreground mb-1">{formatFechaHora(proxima.inicioEn)}</p>
+                  <EstadoBadge estado={proxima.estadoTexto} />
+                </div>
+                {/* El resumen no trae la cita completa; si es de hoy, la agenda sí. */}
+                {proximaCompleta && (
+                  <AccionesCita cita={proximaCompleta} nombreNegocio={negocio?.nombre} className="w-full sm:w-auto" />
+                )}
+              </div>
+            );
+          })()}
+
+          {/* Agenda de hoy */}
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-5 mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-sm font-bold text-slate-800 dark:text-gray-200">Agenda de hoy</h2>
+                <span className="text-xs text-muted-foreground capitalize">
+                  {new Date().toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" })}
+                </span>
+              </div>
+              <Link
+                to="/dashboard/citas"
+                className="min-h-[44px] lg:min-h-[36px] inline-flex items-center px-3 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition"
+              >
+                Ver todas las citas
+              </Link>
+            </div>
+            {cargandoAgenda ? (
+              <div className="space-y-2">
+                {[1, 2, 3].map((i) => <Skeleton key={i} className="h-14 rounded-xl" />)}
+              </div>
+            ) : errorAgenda ? (
+              <div className="text-center py-6" role="alert">
+                <p className="text-sm text-red-700 dark:text-red-400">No se pudo cargar la agenda de hoy.</p>
+                <button onClick={() => reintentarAgenda()} className="mt-2 min-h-[44px] px-4 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition">Reintentar</button>
+              </div>
+            ) : citasDeHoy.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">Sin citas para hoy</p>
+            ) : (
+              <div className="space-y-1.5">
+                {citasDeHoy.map((c) => {
+                  const hora = new Date(c.inicioEn).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", hour12: true });
+                  // Solo se atenúa lo que ya está cerrado; una cita pasada que sigue
+                  // abierta es trabajo pendiente y conserva su contraste.
+                  const atenuada = new Date(c.finEn) < new Date() && !citaAbierta(c.estadoTexto);
+                  return (
+                    <div
+                      key={c.id}
+                      className={`flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 rounded-xl transition ${
+                        atenuada ? "opacity-70" : "bg-slate-50 dark:bg-slate-700/40"
+                      }`}
+                    >
+                      <span className="text-xs font-mono font-bold text-slate-600 dark:text-slate-300 w-16 shrink-0">{hora}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-slate-800 dark:text-gray-100 truncate">{c.nombreCliente}</p>
+                        <p className="text-xs text-muted-foreground truncate">{c.nombreServicio} · {c.nombreEmpleado}</p>
+                      </div>
+                      <EstadoBadge estado={c.estadoTexto} />
+                      <AccionesCita cita={c} nombreNegocio={negocio?.nombre} whatsapp={false} className="ml-auto" />
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2.5">Citas</p>
           <motion.div
             initial="hidden" animate="show"
             variants={{ hidden: {}, show: { transition: { staggerChildren: 0.08 } } }}
@@ -439,7 +492,7 @@ function VistaPropietario({ nombre }: { nombre: string }) {
             ))}
           </motion.div>
 
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2.5">Ingresos</p>
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2.5">Ingresos</p>
           <motion.div
             initial="hidden" animate="show"
             variants={{ hidden: {}, show: { transition: { staggerChildren: 0.08 } } }}
@@ -499,7 +552,7 @@ function VistaPropietario({ nombre }: { nombre: string }) {
                       <stop offset="95%" stopColor="#0D9488" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                  <CartesianGrid strokeDasharray="3 3" stroke={theme === "dark" ? "#334155" : "#f3f4f6"} />
                   <XAxis dataKey="etiqueta" tick={{ fontSize: 10, fill: "#9ca3af" }} axisLine={false} tickLine={false} />
                   <YAxis yAxisId="ingresos" tickFormatter={formatPrecioCorto} tick={{ fontSize: 10, fill: "#9ca3af" }} axisLine={false} tickLine={false} width={40} />
                   <YAxis yAxisId="citas" orientation="right" tick={{ fontSize: 10, fill: "#9ca3af" }} axisLine={false} tickLine={false} width={28} allowDecimals={false} />
@@ -507,7 +560,13 @@ function VistaPropietario({ nombre }: { nombre: string }) {
                     formatter={(val, name) =>
                       name === "ingresos" ? [formatPrecio(Number(val)), "Ingresos"] : [Number(val), "Citas"]
                     }
-                    contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e5e7eb" }}
+                    contentStyle={{
+                      fontSize: 12,
+                      borderRadius: 8,
+                      border: "1px solid hsl(var(--border))",
+                      backgroundColor: "hsl(var(--popover))",
+                      color: "hsl(var(--popover-foreground))",
+                    }}
                   />
                   <Legend
                     iconType="circle"
@@ -519,95 +578,6 @@ function VistaPropietario({ nombre }: { nombre: string }) {
                   <Area yAxisId="citas" type="monotone" dataKey="citas" stroke="#0D9488" strokeWidth={2} fill="url(#gradCitas)" dot={false} />
                 </AreaChart>
               </ResponsiveContainer>
-            )}
-          </div>
-
-          {/* Highlight próxima cita */}
-          {data.proximasCitas.length > 0 && (() => {
-            const proxima = data.proximasCitas[0];
-            const msRestantes = new Date(proxima.inicioEn).getTime() - Date.now();
-            const minutos = Math.round(msRestantes / 60000);
-            const esHoy = msRestantes > 0 && msRestantes < 24 * 60 * 60 * 1000;
-            const etiqueta = msRestantes <= 0
-              ? "En curso"
-              : minutos < 60
-              ? `En ${minutos} min`
-              : minutos < 1440
-              ? `En ${Math.floor(minutos / 60)}h ${minutos % 60 > 0 ? `${minutos % 60}min` : ""}`
-              : null;
-            if (!esHoy && !etiqueta) return null;
-            return (
-              <div className="bg-slate-700/5 border border-slate-700/20 rounded-xl p-4 mb-6 flex items-center justify-between gap-4 animate-fade-in">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-10 h-10 rounded-full bg-slate-700/15 flex items-center justify-center shrink-0">
-                    <span className="text-lg">📅</span>
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-xs text-slate-700 font-semibold uppercase tracking-wide mb-0.5">Próxima cita</p>
-                    <p className="font-semibold text-gray-900 truncate">{proxima.nombreCliente}</p>
-                    <p className="text-xs text-gray-500 truncate">{proxima.nombreServicio} · {proxima.nombreEmpleado}</p>
-                  </div>
-                </div>
-                <div className="text-right shrink-0">
-                  {etiqueta && (
-                    <p className={`text-sm font-bold ${msRestantes <= 0 ? "text-green-600" : "text-slate-700"}`}>{etiqueta}</p>
-                  )}
-                  <p className="text-xs text-gray-400">{formatFechaHora(proxima.inicioEn)}</p>
-                  <EstadoBadge estado={proxima.estadoTexto} />
-                </div>
-              </div>
-            );
-          })()}
-
-          {/* Agenda de hoy */}
-          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-5 mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-bold text-slate-800 dark:text-gray-200">Agenda de hoy</h2>
-              <span className="text-xs text-slate-400 capitalize">
-                {new Date().toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" })}
-              </span>
-            </div>
-            {cargandoAgenda ? (
-              <div className="space-y-2">
-                {[1, 2, 3].map((i) => <Skeleton key={i} className="h-14 rounded-xl" />)}
-              </div>
-            ) : citasDeHoy.length === 0 ? (
-              <p className="text-sm text-slate-400 text-center py-8">Sin citas para hoy</p>
-            ) : (
-              <div className="space-y-1.5">
-                {citasDeHoy.map((c) => {
-                  const hora = new Date(c.inicioEn).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", hour12: true });
-                  const isPast = new Date(c.finEn) < new Date();
-                  return (
-                    <div
-                      key={c.id}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition ${
-                        isPast
-                          ? "opacity-40"
-                          : "bg-slate-50 dark:bg-slate-700/40 hover:bg-slate-100 dark:hover:bg-slate-700/60"
-                      }`}
-                    >
-                      <span className="text-xs font-mono font-bold text-slate-500 dark:text-slate-400 w-16 shrink-0">{hora}</span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-slate-800 dark:text-gray-200 truncate">{c.nombreCliente}</p>
-                        <p className="text-xs text-slate-400 truncate">{c.nombreServicio} · {c.nombreEmpleado}</p>
-                      </div>
-                      <EstadoBadge estado={c.estadoTexto} />
-                      {c.telefonoCliente && (
-                        <a
-                          href={whatsappHoy(c)}
-                          target="_blank"
-                          rel="noreferrer"
-                          aria-label={`Recordatorio WhatsApp a ${c.nombreCliente}`}
-                          className="shrink-0 inline-flex items-center justify-center w-7 h-7 rounded-lg bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] transition"
-                        >
-                          <SiWhatsapp size={14} />
-                        </a>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
             )}
           </div>
 
@@ -667,29 +637,27 @@ function VistaPropietario({ nombre }: { nombre: string }) {
 // ── Vista del empleado ────────────────────────────────────────────────────────
 function VistaEmpleado({ nombre }: { nombre: string }) {
   const ahora = new Date();
-  const hoy = ahora.toISOString().slice(0, 10);
-  const manana = new Date(new Date().setDate(ahora.getDate() + 1)).toISOString().slice(0, 10);
+  // Fechas locales: con `toISOString()` la agenda saltaba a mañana desde las 18:00 (UTC-6).
+  const hoy = hoyLocal(ahora);
+  const manana = fechaLocal(new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate() + 1));
   const saludo = ahora.getHours() < 12 ? "Buenos días" : ahora.getHours() < 19 ? "Buenas tardes" : "Buenas noches";
 
   // Inicio y fin de semana (lunes–domingo)
-  const diaSemana = ahora.getDay() === 0 ? 6 : ahora.getDay() - 1;
-  const inicioSemana = new Date(ahora); inicioSemana.setDate(ahora.getDate() - diaSemana);
-  const finSemana = new Date(inicioSemana); finSemana.setDate(inicioSemana.getDate() + 6);
-  const inicioSemanaStr = inicioSemana.toISOString().slice(0, 10);
-  const finSemanaStr = finSemana.toISOString().slice(0, 10);
+  const inicioSemanaStr = inicioSemanaLocal(ahora);
+  const finSemanaStr = finSemanaLocal(ahora);
 
   const [clienteSel, setClienteSel] = useState<{ id: string; nombre: string } | null>(null);
 
-  const { data: citasHoy = [], isLoading: cargandoHoy, isError: errorCitasHoy } = useQuery({
-    queryKey: ["mis-citas-hoy"],
+  const { data: citasHoy = [], isLoading: cargandoHoy, isError: errorCitasHoy, refetch: reintentarHoy } = useQuery({
+    queryKey: ["mis-citas-hoy", hoy],
     queryFn: () => citasApi.obtenerTodas({ desde: hoy, hasta: hoy }),
     select: (p) => p.datos,
     staleTime: 0,
     refetchInterval: 30_000,
   });
 
-  const { data: citasProximas = [], isLoading: cargandoProximas, isError: errorCitasProximas } = useQuery({
-    queryKey: ["mis-citas-proximas"],
+  const { data: citasProximas = [], isLoading: cargandoProximas, isError: errorCitasProximas, refetch: reintentarProximas } = useQuery({
+    queryKey: ["mis-citas-proximas", manana],
     queryFn: () => citasApi.obtenerTodas({ desde: manana }),
     select: (p) => p.datos,
     staleTime: 2 * 60 * 1000,
@@ -778,20 +746,20 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
       </div>
 
       {/* Resumen semanal */}
-      <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 mb-6 flex items-center gap-4">
-        <div className="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
-          <TrendingUp size={18} className="text-emerald-600" />
+      <div className="bg-card border border-border rounded-2xl p-4 mb-6 flex items-center gap-4">
+        <div className="w-9 h-9 rounded-xl bg-status-confirmed-bg flex items-center justify-center shrink-0">
+          <TrendingUp size={18} className="text-status-confirmed-fg" aria-hidden="true" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-600 mb-0.5">Esta semana</p>
-          <p className="text-sm text-slate-700">
+          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-0.5">Esta semana</p>
+          <p className="text-sm text-foreground">
             <span className="font-black">{completadasSemana.length}</span> completadas de{" "}
             <span className="font-bold">{totalSemana}</span> citas
           </p>
         </div>
         <div className="text-right shrink-0">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-600 mb-0.5">Ingresos</p>
-          <p className="text-base font-black text-slate-900">
+          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-0.5">Ingresos</p>
+          <p className="text-base font-black text-foreground">
             {ingresosSemana >= 10000
               ? `$${Math.round(ingresosSemana / 1000)}k`
               : `$${Math.round(ingresosSemana).toLocaleString("es-MX")}`}
@@ -801,17 +769,18 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
 
       {/* Próxima cita del día */}
       {!cargandoHoy && proxima && (
-        <div className="bg-slate-700/5 border border-slate-700/20 rounded-2xl p-4 mb-6">
-          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">Próxima cita</p>
-          <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0">
-              <p className="font-bold text-slate-900 truncate">{proxima.nombreCliente}</p>
-              <p className="text-sm text-slate-500 truncate">{proxima.nombreServicio} · {proxima.duracionMinutos} min</p>
+        <div className="bg-card border border-border rounded-2xl p-4 mb-6">
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3">Próxima cita</p>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="font-bold text-foreground truncate">{proxima.nombreCliente}</p>
+              <p className="text-sm text-muted-foreground truncate">{proxima.nombreServicio} · {proxima.duracionMinutos} min</p>
             </div>
             <div className="text-right shrink-0">
-              <p className="text-sm font-black text-slate-700">{etiquetaProxima}</p>
-              <p className="text-xs text-slate-400">{horaTexto(proxima.inicioEn)}</p>
+              <p className="text-sm font-black text-foreground">{etiquetaProxima}</p>
+              <p className="text-xs text-muted-foreground">{horaTexto(proxima.inicioEn)}</p>
             </div>
+            <AccionesCita cita={proxima} whatsapp={false} className="w-full sm:w-auto" />
           </div>
         </div>
       )}
@@ -820,7 +789,7 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
       <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-5 mb-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Agenda de hoy</h2>
-          <span className="text-xs bg-slate-700/10 text-slate-700 font-semibold px-2.5 py-1 rounded-full">
+          <span className="text-xs bg-slate-700/10 text-slate-700 dark:bg-slate-700 dark:text-slate-200 font-semibold px-2.5 py-1 rounded-full">
             {cargandoHoy ? "..." : citasHoy.length}
           </span>
         </div>
@@ -829,7 +798,10 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
             {[0, 1, 2].map((i) => <Skeleton key={i} className="h-14 rounded-xl" />)}
           </div>
         ) : errorCitasHoy ? (
-          <p className="text-sm text-red-500 dark:text-red-400 text-center py-4">No se pudo cargar tu agenda. Recarga la página.</p>
+          <div className="text-center py-4" role="alert">
+            <p className="text-sm text-red-700 dark:text-red-400">No se pudo cargar tu agenda.</p>
+            <button onClick={() => reintentarHoy()} className="mt-2 min-h-[44px] px-4 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition">Reintentar</button>
+          </div>
         ) : citasOrdenadas.length === 0 ? (
           <p className="text-gray-400 dark:text-gray-500 text-sm py-2">No tienes citas hoy — ¡disfruta el día!</p>
         ) : (
@@ -837,44 +809,43 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
             {citasOrdenadas.map((c) => {
               const inicio = new Date(c.inicioEn);
               const fin = new Date(inicio.getTime() + c.duracionMinutos * 60000);
-              const enCurso = inicio <= ahora && ahora < fin;
-              const terminada = ahora >= fin || c.estadoTexto === "Completada" || c.estadoTexto === "Cancelada";
+              const enCurso = inicio <= ahora && ahora < fin && citaAbierta(c.estadoTexto);
+              const cerrada = !citaAbierta(c.estadoTexto);
               return (
-                <button
+                <div
                   key={c.id}
-                  onClick={() => setClienteSel({ id: c.clienteId, nombre: c.nombreCliente })}
-                  className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all text-left ${
+                  className={`flex items-center gap-1 rounded-xl transition-colors ${
                     enCurso
-                      ? "bg-emerald-50 border border-emerald-200 hover:bg-emerald-100"
-                      : terminada
-                      ? "opacity-55 bg-gray-50 hover:opacity-75"
-                      : "bg-slate-50 hover:bg-slate-100"
+                      ? "bg-status-confirmed-bg border border-status-confirmed-dot"
+                      : cerrada
+                      ? "bg-transparent border border-border"
+                      : "bg-muted"
                   }`}
                 >
-                  <div className="shrink-0 text-right w-[52px]">
-                    <p className={`text-xs font-bold ${enCurso ? "text-emerald-600" : "text-slate-600"}`}>
-                      {horaTexto(c.inicioEn)}
-                    </p>
-                    <p className="text-[10px] text-slate-300">{c.duracionMinutos}min</p>
-                  </div>
-                  <div className={`w-1 h-10 rounded-full shrink-0 ${
-                    enCurso ? "bg-emerald-500"
-                    : c.estadoTexto === "Completada" ? "bg-slate-300"
-                    : c.estadoTexto === "Cancelada" ? "bg-red-300"
-                    : "bg-slate-700"
-                  }`} />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate">{c.nombreCliente}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{c.nombreServicio}</p>
-                  </div>
-                  <div className="shrink-0 flex items-center gap-2">
-                    <div className="text-right">
-                      <EstadoBadge estado={c.estadoTexto} />
-                      <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mt-0.5">{formatPrecio(c.precio)}</p>
+                  <button
+                    type="button"
+                    onClick={() => setClienteSel({ id: c.clienteId, nombre: c.nombreCliente })}
+                    aria-label={`${horaTexto(c.inicioEn)} ${c.nombreCliente}, ${c.nombreServicio}. Ver historial del cliente`}
+                    className="flex-1 min-w-0 flex items-center gap-3 p-3 text-left rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <div className="shrink-0 text-right w-[52px]">
+                      <p className={`text-xs font-bold ${enCurso ? "text-status-confirmed-fg" : "text-foreground"}`}>
+                        {horaTexto(c.inicioEn)}
+                      </p>
+                      <p className="text-xs text-muted-foreground">{c.duracionMinutos} min</p>
                     </div>
-                    <ChevronRight size={14} className="text-slate-300" />
-                  </div>
-                </button>
+                    <div className={`w-1 h-10 rounded-full shrink-0 ${estiloEstadoCita(c.estadoTexto).punto}`} aria-hidden="true" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-foreground truncate">{c.nombreCliente}</p>
+                      <p className="text-xs text-muted-foreground truncate">{c.nombreServicio}</p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <EstadoBadge estado={c.estadoTexto} />
+                      <p className="text-xs font-semibold text-muted-foreground mt-0.5">{formatPrecio(c.precio)}</p>
+                    </div>
+                  </button>
+                  <AccionesCita cita={c} whatsapp={false} primaria={false} className="pr-1" />
+                </div>
               );
             })}
           </div>
@@ -889,11 +860,14 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
             {[0, 1, 2].map((i) => <Skeleton key={i} className="h-12 rounded-xl" />)}
           </div>
         ) : errorCitasProximas ? (
-          <p className="text-sm text-red-500 dark:text-red-400 text-center py-4">No se pudo cargar tu agenda. Recarga la página.</p>
+          <div className="text-center py-4" role="alert">
+            <p className="text-sm text-red-700 dark:text-red-400">No se pudieron cargar tus próximas citas.</p>
+            <button onClick={() => reintentarProximas()} className="mt-2 min-h-[44px] px-4 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition">Reintentar</button>
+          </div>
         ) : pendientesOConfirmadas.length === 0 ? (
           <p className="text-gray-400 dark:text-gray-500 text-sm">Sin citas próximas</p>
         ) : (
-          <div className="divide-y divide-slate-50">
+          <div className="divide-y divide-border">
             {pendientesOConfirmadas.map((c) => (
               <div key={c.id} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
                 <div className="min-w-0 mr-3">
@@ -908,69 +882,50 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
         )}
       </div>
 
-      {/* Panel historial del cliente */}
-      {clienteSel && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setClienteSel(null)} />
-          <div className="relative bg-white rounded-t-3xl sm:rounded-2xl w-full sm:max-w-md max-h-[80vh] flex flex-col shadow-2xl">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-              <div>
-                <h3 className="font-bold text-slate-900">{clienteSel.nombre}</h3>
-                <p className="text-xs text-slate-400 mt-0.5">Historial de visitas</p>
-              </div>
-              <button
-                onClick={() => setClienteSel(null)}
-                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition"
-              >
-                <X size={14} className="text-slate-500" />
-              </button>
-            </div>
-            <div className="overflow-y-auto flex-1 p-4 space-y-2">
-              {cargandoHistorial ? (
-                <div className="space-y-2">
-                  {[0, 1, 2].map((i) => <Skeleton key={i} className="h-14 rounded-xl" />)}
+      {/* Historial del cliente: Modal (Radix) da foco, Escape y tema oscuro */}
+      <Modal
+        abierto={!!clienteSel}
+        onCerrar={() => setClienteSel(null)}
+        titulo={clienteSel ? `Historial de ${clienteSel.nombre}` : "Historial"}
+        ancho="md"
+      >
+        <div className="space-y-2">
+          {cargandoHistorial ? (
+            [0, 1, 2].map((i) => <Skeleton key={i} className="h-14 rounded-xl" />)
+          ) : errorHistorial ? (
+            <p className="text-sm text-red-700 dark:text-red-400 text-center py-8" role="alert">No se pudo cargar el historial</p>
+          ) : historialCliente.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">Primera visita del cliente</p>
+          ) : (
+            historialCliente.map((h: ClienteCitaDto) => (
+              <div key={h.id} className="flex items-center gap-3 p-3 bg-muted rounded-xl">
+                <div className="w-8 h-8 rounded-lg bg-background flex items-center justify-center shrink-0">
+                  <Clock size={14} className="text-muted-foreground" aria-hidden="true" />
                 </div>
-              ) : errorHistorial ? (
-                <p className="text-xs text-slate-400 text-center py-8">No se pudo cargar el historial</p>
-              ) : !errorHistorial && historialCliente.length === 0 ? (
-                <p className="text-slate-400 text-sm text-center py-8">Primera visita del cliente</p>
-              ) : (
-                historialCliente.map((h: ClienteCitaDto) => (
-                  <div key={h.id} className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
-                    <div className="w-8 h-8 rounded-lg bg-slate-200 flex items-center justify-center shrink-0">
-                      <Clock size={14} className="text-slate-500" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-slate-800 truncate">{h.nombreServicio}</p>
-                      <p className="text-xs text-slate-400">
-                        {new Date(h.inicioEn).toLocaleDateString("es-MX", {
-                          day: "numeric", month: "short", year: "numeric",
-                        })}
-                        {h.nombreEmpleado ? ` · ${h.nombreEmpleado}` : ""}
-                      </p>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <p className="text-xs font-semibold text-slate-600">{formatPrecio(h.precio)}</p>
-                      <span className={`text-[10px] font-bold ${
-                        h.estadoTexto === "Completada" ? "text-blue-500"
-                        : h.estadoTexto === "Cancelada" ? "text-red-400"
-                        : "text-emerald-500"
-                      }`}>{h.estadoTexto}</span>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-            {historialCliente.length > 0 && (
-              <div className="px-5 py-3 border-t border-slate-100 bg-slate-50 rounded-b-2xl">
-                <p className="text-xs text-slate-400 text-center">
-                  {historialCliente.length} visita{historialCliente.length !== 1 ? "s" : ""} en total
-                </p>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-foreground truncate">{h.nombreServicio}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {new Date(h.inicioEn).toLocaleDateString("es-MX", {
+                      day: "numeric", month: "short", year: "numeric",
+                    })}
+                    {h.nombreEmpleado ? ` · ${h.nombreEmpleado}` : ""}
+                  </p>
+                </div>
+                <div className="text-right shrink-0 space-y-1">
+                  <p className="text-xs font-semibold text-foreground">{formatPrecio(h.precio)}</p>
+                  <EstadoBadge estado={h.estadoTexto} />
+                </div>
               </div>
-            )}
-          </div>
+            ))
+          )}
+          {historialCliente.length > 0 && (
+            <p className="text-xs text-muted-foreground text-center pt-2 flex items-center justify-center gap-1">
+              <History size={12} aria-hidden="true" />
+              {historialCliente.length} visita{historialCliente.length !== 1 ? "s" : ""} en total
+            </p>
+          )}
         </div>
-      )}
+      </Modal>
     </div>
   );
 }

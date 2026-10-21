@@ -7,6 +7,7 @@ import { negociosApi } from "../../api/negocios";
 import { useSectorTerms } from "../../hooks/useSectorTerms";
 import { useAuthStore } from "../../store/authStore";
 import type { CitaDto } from "../../types";
+import { estiloEstadoCita } from "../../lib/estadoCita";
 
 const EMP_COLORS = [
   "#4F46E5", "#7C3AED", "#0891B2", "#059669",
@@ -84,7 +85,9 @@ export default function KioskPage() {
   const fechaStr = ahora.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" });
 
   return (
-    <div className="min-h-screen bg-[#060C1A] text-white flex flex-col select-none overflow-hidden">
+    // `dark` en la raíz: el modo recepción siempre es oscuro, así que los tokens
+    // --status-* toman sus valores oscuros aunque el resto del panel esté en claro.
+    <div className="dark min-h-screen bg-[#060C1A] text-white flex flex-col select-none overflow-hidden">
 
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 flex-shrink-0">
@@ -192,9 +195,7 @@ export default function KioskPage() {
                                 className={`text-[10px] font-bold px-2 py-0.5 rounded-full leading-none ${
                                   enProgreso
                                     ? "bg-indigo-500/30 text-indigo-300"
-                                    : completada
-                                    ? "bg-emerald-500/20 text-emerald-400"
-                                    : "bg-white/[0.08] text-white/35"
+                                    : estiloEstadoCita(cita.estadoTexto).badge
                                 }`}
                               >
                                 {enProgreso ? "● En curso" : completada ? "✓ Lista" : cita.estadoTexto}

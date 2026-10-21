@@ -16,6 +16,7 @@ import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
 import { useAuthStore } from "../../store/authStore";
 import { useToastStore } from "../../store/toastStore";
 import { NotificacionPerfilSection } from "../../components/ui/NotificacionBanner";
+import { hoy as hoyLocal } from "../../utils/fechas";
 
 const schemaPwd = z
   .object({
@@ -150,7 +151,7 @@ export default function MiPerfilPage() {
     if (!fecha) return null;
     const dia = new Date(fecha + "T12:00").getDay();
     const h   = horariosNegocio.find((x) => x.diaSemana === dia);
-    const hoy = new Date().toISOString().slice(0, 10);
+    const hoy = hoyLocal();
     const firstIv = h?.activo && h.intervalos.length > 0 ? h.intervalos[0] : null;
     const lastIv  = h?.activo && h.intervalos.length > 0 ? h.intervalos[h.intervalos.length - 1] : null;
     const minNeg = firstIv?.horaInicio ?? "00:00";
@@ -216,13 +217,16 @@ export default function MiPerfilPage() {
               type="button"
               onClick={() => fotoInputRef.current?.click()}
               disabled={subiendoFoto}
-              className="absolute bottom-0.5 right-0.5 w-7 h-7 rounded-full bg-slate-800 border-2 border-white flex items-center justify-center disabled:opacity-50 hover:bg-slate-700 transition"
+              className="absolute -bottom-1 -right-1 w-11 h-11 rounded-full flex items-center justify-center disabled:opacity-50 group"
               title="Cambiar foto"
+              aria-label="Cambiar foto de perfil"
             >
+              <span className="w-8 h-8 rounded-full bg-slate-800 border-2 border-white dark:border-slate-800 flex items-center justify-center group-hover:bg-slate-700 transition">
               {subiendoFoto
                 ? <Loader2 size={13} className="text-white animate-spin" />
                 : <Camera size={13} className="text-white" />
               }
+              </span>
             </button>
             <input
               ref={fotoInputRef}
@@ -260,7 +264,7 @@ export default function MiPerfilPage() {
                   <input
                     type={mostrarActual ? "text" : "password"}
                     {...register("passwordActual")}
-                    className={`w-full px-3 py-2 pr-10 rounded-lg border text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100 ${errors.passwordActual ? "border-red-400 bg-red-50" : "border-gray-200 dark:border-slate-600"}`}
+                    className={`w-full px-3 py-2 pr-10 rounded-lg border text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100 ${errors.passwordActual ? "border-red-400 bg-red-50 dark:bg-red-900/20" : "border-gray-200 dark:border-slate-600"}`}
                   />
                   <button type="button" onClick={() => setMostrarActual((v) => !v)} onMouseDown={(e) => e.preventDefault()}
                     className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400" tabIndex={-1}>
@@ -277,7 +281,7 @@ export default function MiPerfilPage() {
                     type={mostrarNueva ? "text" : "password"}
                     {...register("passwordNuevo")}
                     placeholder="Mínimo 6 caracteres"
-                    className={`w-full px-3 py-2 pr-10 rounded-lg border text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100 ${errors.passwordNuevo ? "border-red-400 bg-red-50" : "border-gray-200 dark:border-slate-600"}`}
+                    className={`w-full px-3 py-2 pr-10 rounded-lg border text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100 ${errors.passwordNuevo ? "border-red-400 bg-red-50 dark:bg-red-900/20" : "border-gray-200 dark:border-slate-600"}`}
                   />
                   <button type="button" onClick={() => setMostrarNueva((v) => !v)} onMouseDown={(e) => e.preventDefault()}
                     className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400" tabIndex={-1}>
@@ -294,7 +298,7 @@ export default function MiPerfilPage() {
                   <input
                     type={mostrarConfirmar ? "text" : "password"}
                     {...register("confirmar")}
-                    className={`w-full px-3 py-2 pr-10 rounded-lg border text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100 ${errors.confirmar ? "border-red-400 bg-red-50" : "border-gray-200 dark:border-slate-600"}`}
+                    className={`w-full px-3 py-2 pr-10 rounded-lg border text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100 ${errors.confirmar ? "border-red-400 bg-red-50 dark:bg-red-900/20" : "border-gray-200 dark:border-slate-600"}`}
                   />
                   <button type="button" onClick={() => setMostrarConfirmar((v) => !v)} onMouseDown={(e) => e.preventDefault()}
                     className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400" tabIndex={-1}>
@@ -306,7 +310,7 @@ export default function MiPerfilPage() {
             </div>
 
             {mensaje && (
-              <div className={`text-sm rounded-lg px-4 py-3 ${mensaje.tipo === "ok" ? "bg-green-50 border border-green-200 text-green-700" : "bg-red-50 border border-red-200 text-red-600"}`}>
+              <div className={`text-sm rounded-lg px-4 py-3 ${mensaje.tipo === "ok" ? "bg-emerald-50 border border-emerald-200 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-800 dark:text-emerald-300" : "bg-red-50 border border-red-200 text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300"}`}>
                 {mensaje.texto}
               </div>
             )}

@@ -56,6 +56,14 @@ export default {
             },
           ])
         ),
+        // ── Sidebar del sector salud: bg-sidebar-salud text-sidebar-salud-fg … ──
+        "sidebar-salud": {
+          DEFAULT: "var(--sidebar-salud-bg)",
+          fg:      "var(--sidebar-salud-fg)",
+          muted:   "var(--sidebar-salud-muted)",
+          active:  "var(--sidebar-salud-active)",
+          hover:   "var(--sidebar-salud-hover)",
+        },
         // ── Estrellas de reseñas (el dorado de marca es solo para el logo) ────
         rating: "var(--rating)",
       },

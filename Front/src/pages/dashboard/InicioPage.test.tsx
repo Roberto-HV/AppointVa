@@ -293,18 +293,68 @@ describe("InicioPage — wizard de onboarding", () => {
   });
 });
 
-// ── 5. Quick action links render ──────────────────────────────────────────────
-describe("InicioPage — accesos rápidos", () => {
-  it("renders navigation links for Citas, Servicios, Clientes, and Reportes", async () => {
+// ── 5. Today's agenda leads the owner home ────────────────────────────────────
+describe("InicioPage — agenda de hoy", () => {
+  it("el panel ya no repite el menú en una rejilla de accesos y enlaza a la lista de citas", async () => {
     renderConQuery();
+    expect(await screen.findByRole("link", { name: "Ver todas las citas" })).toHaveAttribute("href", "/dashboard/citas");
+    expect(screen.queryByRole("link", { name: /reportes/i })).toBeNull();
+  });
 
-    // Quick action links are rendered immediately with MemoryRouter
-    await waitFor(() => {
-      expect(screen.getByRole("link", { name: /citas/i })).toBeInTheDocument();
+  it("cada cita de la agenda trae sus acciones (confirmar y hoja con reagendar)", async () => {
+    vi.mocked(citasApi.obtenerTodas).mockResolvedValue({
+      ...emptyPage,
+      datos: [{
+        id: "c1", codigoConfirmacion: "X1", clienteId: "cl1", empleadoId: "e1", servicioId: "s1",
+        nombreCliente: "Ana López", telefonoCliente: "5511223344", nombreEmpleado: "María",
+        nombreServicio: "Corte", duracionMinutos: 30, precio: 200, pagada: false,
+        inicioEn: new Date(Date.now() + 3_600_000).toISOString(),
+        finEn: new Date(Date.now() + 5_400_000).toISOString(),
+        estado: 1, estadoTexto: "Pendiente",
+      }],
+      total: 1,
     });
-    expect(screen.getByRole("link", { name: /servicios/i })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /clientes/i })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /reportes/i })).toBeInTheDocument();
+    renderConQuery();
+    expect(await screen.findByRole("button", { name: "Confirmar cita de Ana López" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Acciones de la cita de Ana López" })).toBeInTheDocument();
+  });
+});
+
+// ── 5b. "Hoy" en hora local (DC-04) ───────────────────────────────────────────
+describe("InicioPage — 'hoy' se calcula en hora local", () => {
+  beforeEach(() => {
+    vi.stubEnv("TZ", "America/Mexico_City");
+    // 19:30 del 20 de octubre en CDMX = 01:30 UTC del 21: toISOString() ya diría "mañana".
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-21T01:30:00Z"));
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllEnvs();
+  });
+
+  it("la agenda del propietario pide las citas del día local, no del día UTC", async () => {
+    renderConQuery();
+    await waitFor(() =>
+      expect(citasApi.obtenerTodas).toHaveBeenCalledWith(
+        expect.objectContaining({ desde: "2026-10-20", hasta: "2026-10-20" })
+      )
+    );
+    expect(citasApi.obtenerTodas).not.toHaveBeenCalledWith(expect.objectContaining({ desde: "2026-10-21", hasta: "2026-10-21" }));
+  });
+
+  it("la agenda del empleado pide hoy, mañana y la semana en hora local", async () => {
+    vi.mocked(useAuthStore).mockImplementation(// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(selector: (s: any) => unknown) => selector({ usuario: empleadoUser }));
+    renderConQuery();
+    await waitFor(() =>
+      expect(citasApi.obtenerTodas).toHaveBeenCalledWith({ desde: "2026-10-20", hasta: "2026-10-20" })
+    );
+    expect(citasApi.obtenerTodas).toHaveBeenCalledWith({ desde: "2026-10-21" });
+    // Martes 20 → semana del lunes 19 al domingo 25.
+    expect(citasApi.obtenerTodas).toHaveBeenCalledWith(
+      expect.objectContaining({ desde: "2026-10-19", hasta: "2026-10-25" })
+    );
   });
 });
 

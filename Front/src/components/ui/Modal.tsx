@@ -22,7 +22,9 @@ export default function Modal({ abierto, onCerrar, titulo, children, ancho = "md
         <DialogHeader className="px-6 py-4 border-b border-gray-100 dark:border-slate-700">
           <DialogTitle className="text-base font-semibold text-gray-800 dark:text-gray-100">{titulo}</DialogTitle>
         </DialogHeader>
-        <div className="overflow-y-auto p-6">{children}</div>
+        {/* text-foreground por defecto: el contenido sin color propio no queda
+            negro sobre el fondo oscuro del modal en dark mode. */}
+        <div className="overflow-y-auto p-6 text-foreground">{children}</div>
       </DialogContent>
     </Dialog>
   );

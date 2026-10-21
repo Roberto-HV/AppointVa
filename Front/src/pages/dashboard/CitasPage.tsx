@@ -1,10 +1,8 @@
 ﻿import { useState } from "react";
-import { SiWhatsapp } from "react-icons/si";
 import { useSectorTerms } from "../../hooks/useSectorTerms";
 
 import { hoy, inicioSemana, finSemana, inicioMes, finMes } from "../../utils/fechas";
-import { Calendar, CheckCircle2, CheckCheck, CalendarClock, RotateCcw, MoreHorizontal, StickyNote, Receipt, Banknote, Star, MoreVertical, Pencil } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Calendar, CheckCircle2, RotateCcw, StickyNote, Receipt, Banknote, Star, Pencil, AlertTriangle } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { citasApi, ESTADOS } from "../../api/citas";
 import Tabs from "../../components/ui/Tabs";
@@ -16,6 +14,10 @@ import { negociosApi } from "../../api/negocios";
 import { api } from "../../api/axios";
 import EstadoBadge from "../../components/ui/EstadoBadge";
 import Modal from "../../components/ui/Modal";
+import ConfirmarAccion from "../../components/ui/ConfirmarAccion";
+import AccionesCita, { HojaAccionesCita, type AccionExtraCita } from "../../components/dashboard/AccionesCita";
+import { useReagendarCita } from "../../hooks/useMutacionesCita";
+import { urlResenaWhatsApp } from "../../utils/whatsapp";
 import { DatePicker } from "../../components/ui/DateTimePicker";
 import CalendarioCitas from "../../components/dashboard/CalendarioCitas";
 import GanttCitas from "../../components/dashboard/GanttCitas";
@@ -23,27 +25,13 @@ import PasoFechaHora from "../../components/booking/PasoFechaHora";
 import { useToastStore } from "../../store/toastStore";
 import type { CitaDto, SlotDisponible } from "../../types";
 import { SkeletonTableRows } from "../../components/ui/Skeleton";
-import { Tooltip } from "../../components/ui/Tooltip";
 import { reportesApi } from "../../api/reportes";
-import { intakeApi } from "../../api/intake";
 import { formatPrecio, formatFechaHoraCorta as formatFechaHora, formatFechaCorta, formatHora } from "../../utils/formatters";
 import Pagination from "../../components/ui/Pagination";
 import BotonAccion, { EnlaceAccion } from "../../components/ui/BotonAccion";
 import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
 import { TAMANO_PAGINA } from "../../hooks/usePaginacionLocal";
 
-
-const TRANSICIONES: Record<string, { label: string; estado: number; clase: string }[]> = {
-  Pendiente: [
-    { label: "Confirmar",    estado: ESTADOS.Confirmada,   clase: "bg-green-500 text-white" },
-    { label: "Cancelar",     estado: ESTADOS.Cancelada,    clase: "bg-red-500 text-white" },
-  ],
-  Confirmada: [
-    { label: "Completar",    estado: ESTADOS.Completada,   clase: "bg-blue-500 text-white" },
-    { label: "Inasistencia", estado: ESTADOS.Inasistencia, clase: "bg-gray-500 text-white" },
-    { label: "Cancelar",     estado: ESTADOS.Cancelada,    clase: "bg-red-500 text-white" },
-  ],
-};
 
 export default function CitasPage() {
   const qc = useQueryClient();
@@ -59,15 +47,11 @@ export default function CitasPage() {
   const [pagina, setPagina] = useState(1);
   const TAMANO = TAMANO_PAGINA;
 
-  // Modal cambiar estado
-  const [citaSel, setCitaSel] = useState<CitaDto | null>(null);
-  const [motivo, setMotivo] = useState("");
-  const [nuevoEstado, setNuevoEstado] = useState<number | null>(null);
+  // Hoja de acciones abierta desde el calendario o el Gantt (las filas abren la suya).
+  const [citaAcciones, setCitaAcciones] = useState<CitaDto | null>(null);
 
-  // Modal reagendar
-  const [citaReag, setCitaReag] = useState<CitaDto | null>(null);
-  const [fechaReag, setFechaReag] = useState("");
-  const [slotReag, setSlotReag] = useState("");
+  // Confirmación para anular un anticipo ya registrado
+  const [citaAnularAnticipo, setCitaAnularAnticipo] = useState<CitaDto | null>(null);
 
   // Modal notas
   const [citaNotas, setCitaNotas] = useState<CitaDto | null>(null);
@@ -102,11 +86,6 @@ export default function CitasPage() {
   // Issue 12 — drag-to-reschedule confirmation
   const [confirmDrag, setConfirmDrag] = useState<{id: string; nombre: string; nuevoInicio: string; label: string} | null>(null);
 
-  // Modal completar
-  const [citaACompletar, setCitaACompletar] = useState<CitaDto | null>(null);
-
-  // Track which row is being processed so only that button is disabled
-  const [citaEnProceso, setCitaEnProceso] = useState<string | null>(null);
   const validarEmailCliente = (v: string) =>
     v.trim() && !EMAIL_RE.test(v.trim()) ? "Correo no válido (ej: nombre@dominio.com)" : "";
 
@@ -169,42 +148,11 @@ export default function CitasPage() {
     enabled: !!svcSel && !!empSel && !!fechaNueva,
   });
 
-  const { data: slotsReag = [], isFetching: cargandoSlots, isError: errorSlotsReag } = useQuery({
-    queryKey: ["slots-reag", citaReag?.id, fechaReag],
-    queryFn: async (): Promise<SlotDisponible[]> => {
-      const { data } = await api.get("/publico/disponibilidad", {
-        params: { servicioId: citaReag!.servicioId, empleadoId: citaReag!.empleadoId, fecha: fechaReag },
-      });
-      return data;
-    },
-    enabled: !!citaReag && !!fechaReag,
-  });
 
-  const { data: respuestasIntake = [] } = useQuery({
-    queryKey: ["intake-respuestas", citaSel?.id],
-    queryFn: () => intakeApi.getRespuestas(citaSel!.id),
-    enabled: !!citaSel,
-  });
 
   // ── Mutations ────────────────────────────────────────────────────────────────
-  const { mutate: reagendar, isPending: reagendando } = useMutation({
-    mutationFn: ({ id, inicioEn }: { id: string; inicioEn: string }) =>
-      citasApi.reagendar(id, inicioEn),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["citas"] });
-      qc.invalidateQueries({ queryKey: ["citas-cal"] });
-      qc.invalidateQueries({ queryKey: ["citas-badge"] });
-      qc.invalidateQueries({ queryKey: ["citas-gantt"] });
-      qc.invalidateQueries({ queryKey: ["dashboard-resumen"] });
-      setCitaReag(null); setFechaReag(""); setSlotReag("");
-      toast(`${terms.cita} reagendada`);
-    },
-    onError: (err: unknown) => {
-      const msg = (err as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje
-        ?? `No se pudo reagendar la ${terms.cita.toLowerCase()}`;
-      toast(msg, "error");
-    },
-  });
+  // Solo para soltar una cita en el calendario: el resto de acciones vive en la hoja.
+  const { mutate: reagendar } = useReagendarCita();
 
   const { mutate: crearCita, isPending: creando } = useMutation({
     mutationFn: () => citasApi.crear({
@@ -328,30 +276,12 @@ export default function CitasPage() {
     },
   });
 
-  const { mutate: cambiarEstado, isPending } = useMutation({
-    mutationFn: ({ id, estado, mot }: { id: string; estado: number; mot: string }) =>
-      citasApi.cambiarEstado(id, { nuevoEstado: estado, motivo: mot || undefined }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["citas"] });
-      qc.invalidateQueries({ queryKey: ["citas-cal"] });
-      qc.invalidateQueries({ queryKey: ["citas-badge"] });
-      qc.invalidateQueries({ queryKey: ["citas-gantt"] });
-      qc.invalidateQueries({ queryKey: ["dashboard-resumen"] });
-      setCitaSel(null); setNuevoEstado(null); setMotivo("");
-      toast("Estado actualizado");
-    },
-    onError: (err: unknown) => {
-      const msg = (err as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje
-        ?? "No se pudo cambiar el estado";
-      toast(msg, "error");
-    },
-  });
-
   const mutAnticipo = useMutation({
     mutationFn: ({ id, recibido }: { id: string; recibido: boolean }) =>
       citasApi.registrarAnticipo(id, recibido),
     onSuccess: (_, { recibido }) => {
       qc.invalidateQueries({ queryKey: ["citas"] });
+      setCitaAnularAnticipo(null);
       toast(recibido ? "Anticipo registrado" : "Anticipo anulado");
     },
     onError: () => toast("No se pudo actualizar el anticipo", "error"),
@@ -407,52 +337,43 @@ export default function CitasPage() {
     Boolean(busqueda) || campos.some(campoActivo);
 
   // ── Helpers ──────────────────────────────────────────────────────────────────
-  const abrirReagendar = (c: CitaDto) => { setCitaReag(c); setFechaReag(""); setSlotReag(""); };
-  const abrirCambioEstado = (c: CitaDto) => { setCitaSel(c); setNuevoEstado(null); setMotivo(""); };
 
   const abrirNotas = (c: CitaDto) => {
     setCitaNotas(c);
     setNotasTexto(c.notas ?? "");
   };
 
-  const accionesCita = citaSel ? TRANSICIONES[citaSel.estadoTexto] ?? [] : [];
 
-  // ── WhatsApp ─────────────────────────────────────────────────────────────────
-  const formatWaPhone = (telefono: string) => {
-    const digits = telefono.replace(/\D/g, "");
-    if (digits.startsWith("52") && digits.length >= 12) return digits;
-    return `52${digits}`;
-  };
-
-  const resenaUrl = (c: CitaDto) => {
-    const tel = formatWaPhone(c.telefonoCliente);
-    const negocioTxt = nombreNegocio ? `*${nombreNegocio}*` : "nuestro negocio";
-    const link = perfil?.slug ? `${window.location.origin}/b/${perfil.slug}` : window.location.origin;
-    const nombre = c.nombreCliente.split(" ")[0];
-    const msg =
-      `Hola ${nombre} 😊, fue un placer atenderte en ${negocioTxt}.\n\n` +
-      `Tu opinión nos ayuda a mejorar y a que más personas conozcan nuestro trabajo. ` +
-      `¿Podrías dejarnos una reseña?\n\n` +
-      `👉 ${link}\n\n` +
-      `¡Muchas gracias! 🌟`;
-    return `https://wa.me/${tel}?text=${encodeURIComponent(msg)}`;
-  };
-
-  const whatsappUrl = (c: CitaDto) => {
-    const tel = formatWaPhone(c.telefonoCliente);
-    const negocio = nombreNegocio ? ` en *${nombreNegocio}*` : "";
-    const baseUrl = window.location.origin;
-    const msg =
-      `Hola ${c.nombreCliente} 👋, te recordamos tu cita${negocio}:\n\n` +
-      `📌 *Servicio:* ${c.nombreServicio}\n` +
-      `👤 *Con:* ${c.nombreEmpleado}\n` +
-      `📅 *Fecha:* ${formatFechaHora(c.inicioEn)}\n` +
-      `💰 *Total:* ${formatPrecio(c.precio)}\n` +
-      `🔖 *Código:* ${c.codigoConfirmacion}\n\n` +
-      `🔗 Ver tu cita: ${baseUrl}/cita/${c.codigoConfirmacion}\n\n` +
-      `¡Te esperamos!`;
-    return `https://wa.me/${tel}?text=${encodeURIComponent(msg)}`;
-  };
+  // ── Acciones extra de la hoja ────────────────────────────────────────────────
+  // Lo que antes eran nueve iconos por fila vive en la hoja de acciones, con
+  // texto. La fila solo deja WhatsApp, la acción principal y "Acciones".
+  const accionesExtra = (c: CitaDto): AccionExtraCita[] => [
+    {
+      id: "notas",
+      etiqueta: c.notas ? "Ver o editar nota interna" : "Agregar nota interna",
+      Icono: StickyNote,
+      marcador: !!c.notas,
+      onSelect: () => abrirNotas(c),
+    },
+    { id: "editar", etiqueta: `Editar datos del ${terms.cliente.toLowerCase()}`, Icono: Pencil, onSelect: () => abrirEditar(c) },
+    ...(c.anticipoRequerido && !c.pagada
+      ? [c.anticipoRecibido
+          ? { id: "anticipo", etiqueta: "Anular anticipo", Icono: Banknote, onSelect: () => setCitaAnularAnticipo(c) }
+          : {
+              id: "anticipo",
+              etiqueta: `Registrar anticipo de ${formatPrecio(c.montoAnticipo ?? 0)}`,
+              Icono: Banknote,
+              onSelect: () => mutAnticipo.mutate({ id: c.id, recibido: true }),
+            }]
+      : []),
+    ...(c.comprobanteUrl
+      ? [{ id: "comprobante", etiqueta: "Ver comprobante de anticipo", Icono: Receipt, onSelect: () => setUrlComprobante(c.comprobanteUrl!) }]
+      : []),
+    { id: "repetir", etiqueta: `Repetir ${terms.cita.toLowerCase()}`, Icono: RotateCcw, onSelect: () => abrirRepetirCita(c) },
+    ...(c.estadoTexto === "Completada" && c.telefonoCliente
+      ? [{ id: "resena", etiqueta: "Solicitar reseña por WhatsApp", Icono: Star, href: urlResenaWhatsApp(c, nombreNegocio, perfil?.slug) }]
+      : []),
+  ];
 
   // ── Excel export ─────────────────────────────────────────────────────────────
   const exportarCSV = () => {
@@ -540,7 +461,7 @@ export default function CitasPage() {
       {vista === "calendario" && (
         <CalendarioCitas
           empleadoId={empleadoId}
-          onCitaClick={abrirCambioEstado}
+          onCitaClick={setCitaAcciones}
           onReagendar={(cita, nuevoInicio) => {
             const nueva = new Date(nuevoInicio).toLocaleString("es-MX", {
               weekday: "short", day: "numeric", month: "short",
@@ -553,7 +474,7 @@ export default function CitasPage() {
 
       {/* Vista línea de tiempo (Gantt) */}
       {vista === "gantt" && (
-        <GanttCitas onCitaClick={abrirCambioEstado} />
+        <GanttCitas onCitaClick={setCitaAcciones} />
       )}
 
       {/* Vista lista */}
@@ -611,8 +532,8 @@ export default function CitasPage() {
                     {tienePagos && (
                       <td className="px-4 py-3 text-center hidden sm:table-cell">
                         {c.pagada ? (
-                          <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full bg-green-100 text-green-700">
-                            ✓ {c.metodoPago ?? "Pagado"}
+                          <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                            <CheckCircle2 size={11} aria-hidden="true" /> {c.metodoPago ?? "Pagado"}
                           </span>
                         ) : (
                           <span className="text-xs text-gray-400 dark:text-gray-500">Por pagar</span>
@@ -636,179 +557,16 @@ export default function CitasPage() {
                           </span>
                         )}
                         {c.comprobanteUrl && c.estadoTexto === "Pendiente" && (
-                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-600">
-                            🧾
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full border border-border text-muted-foreground">
+                            <Receipt size={11} aria-hidden="true" /> Comprobante
                           </span>
                         )}
                       </div>
                     </td>
 
-                    {/* Acciones */}
-                    <td className="px-4 py-3 text-right">
-                      {/* Botones móvil */}
-                      <div className="sm:hidden flex justify-end items-center gap-1.5">
-                        {c.telefonoCliente && (
-                          <a
-                            href={whatsappUrl(c)}
-                            target="_blank"
-                            rel="noreferrer"
-                            aria-label={`Enviar WhatsApp a ${c.nombreCliente}`}
-                            className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] transition"
-                          >
-                            <SiWhatsapp size={16} />
-                          </a>
-                        )}
-                        <button
-                          onClick={() => abrirEditar(c)}
-                          className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-yellow-100 text-yellow-600 hover:bg-yellow-200 transition"
-                          title="Editar cliente"
-                        >
-                          <Pencil size={13} />
-                        </button>
-                        {TRANSICIONES[c.estadoTexto] && (
-                          <button
-                            onClick={() => abrirCambioEstado(c)}
-                            className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 transition"
-                            title="Cambiar estado"
-                          >
-                            <MoreVertical size={14} />
-                          </button>
-                        )}
-                      </div>
-                      {/* Botones desktop */}
-                      <div className="hidden sm:flex justify-end items-center gap-1">
-                        {/* WhatsApp */}
-                        {c.telefonoCliente && (
-                          <Tooltip text="Enviar recordatorio por WhatsApp">
-                            <a
-                              href={whatsappUrl(c)}
-                              target="_blank"
-                              rel="noreferrer"
-                              aria-label={`Enviar WhatsApp a ${c.nombreCliente}`}
-                              className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] transition"
-                            >
-                              <SiWhatsapp size={15} />
-                            </a>
-                          </Tooltip>
-                        )}
-                        {/* Confirmar — Pendiente */}
-                        {c.estadoTexto === "Pendiente" && (
-                          <Tooltip text="Confirmar cita">
-                            <button
-                              onClick={() => { setCitaEnProceso(c.id); cambiarEstado({ id: c.id, estado: ESTADOS.Confirmada, mot: "" }, { onSettled: () => setCitaEnProceso(null) }); }}
-                              disabled={citaEnProceso === c.id}
-                              className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 disabled:opacity-40 transition"
-                            >
-                              <CheckCircle2 size={16} />
-                            </button>
-                          </Tooltip>
-                        )}
-                        {/* Completar — Confirmada */}
-                        {c.estadoTexto === "Confirmada" && (
-                          <Tooltip text="Marcar como completada">
-                            <button
-                              onClick={() => setCitaACompletar(c)}
-                              disabled={citaEnProceso === c.id}
-                              className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 disabled:opacity-40 transition"
-                            >
-                              <CheckCheck size={16} />
-                            </button>
-                          </Tooltip>
-                        )}
-                        {/* Reagendar */}
-                        {(c.estadoTexto === "Pendiente" || c.estadoTexto === "Confirmada") && (
-                          <Tooltip text="Reagendar">
-                            <button
-                              onClick={() => abrirReagendar(c)}
-                              className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-violet-100 text-violet-600 hover:bg-violet-200 dark:bg-violet-900/40 dark:text-violet-400 dark:hover:bg-violet-900/60 transition"
-                            >
-                              <CalendarClock size={16} />
-                            </button>
-                          </Tooltip>
-                        )}
-                        {/* Notas */}
-                        <Tooltip text={c.notas ? "Ver o editar notas internas" : "Agregar nota interna"}>
-                          <button
-                            onClick={() => abrirNotas(c)}
-                            className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600 transition relative"
-                          >
-                            <StickyNote size={15} />
-                            {c.notas && <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-amber-400" />}
-                          </button>
-                        </Tooltip>
-                        {/* Editar cliente */}
-                        <Tooltip text="Editar datos del cliente">
-                          <button
-                            onClick={() => abrirEditar(c)}
-                            className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-yellow-100 text-yellow-600 hover:bg-yellow-200 dark:bg-yellow-900/40 dark:text-yellow-400 dark:hover:bg-yellow-900/60 transition"
-                          >
-                            <Pencil size={14} />
-                          </button>
-                        </Tooltip>
-                        {/* Separador */}
-                        <div className="w-px h-5 bg-gray-200 dark:bg-slate-600 mx-0.5" />
-                        {/* Anticipo */}
-                        {c.anticipoRequerido && !c.pagada && (
-                          <Tooltip text={c.anticipoRecibido ? 'Anular anticipo' : `Registrar anticipo $${(c.montoAnticipo ?? 0).toFixed(2)}`}>
-                            <button
-                              onClick={() => mutAnticipo.mutate({ id: c.id, recibido: !c.anticipoRecibido })}
-                              disabled={mutAnticipo.isPending && mutAnticipo.variables?.id === c.id}
-                              className={`inline-flex items-center justify-center w-8 h-8 rounded-lg transition disabled:opacity-50 ${
-                                c.anticipoRecibido
-                                  ? 'bg-slate-100 text-slate-400 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-400'
-                                  : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-400 dark:hover:bg-emerald-900/60'
-                              }`}
-                            >
-                              <Banknote size={15} />
-                            </button>
-                          </Tooltip>
-                        )}
-                        {/* Comprobante */}
-                        {c.comprobanteUrl && (
-                          <Tooltip text="Ver comprobante de anticipo">
-                            <button
-                              onClick={() => setUrlComprobante(c.comprobanteUrl!)}
-                              className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 hover:bg-indigo-200 dark:bg-indigo-900/40 dark:text-indigo-400 dark:hover:bg-indigo-900/60 transition"
-                            >
-                              <Receipt size={15} />
-                            </button>
-                          </Tooltip>
-                        )}
-                        {/* Repetir */}
-                        <Tooltip text="Repetir cita">
-                          <button
-                            onClick={() => abrirRepetirCita(c)}
-                            className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-cyan-100 text-cyan-600 hover:bg-cyan-200 dark:bg-cyan-900/40 dark:text-cyan-400 dark:hover:bg-cyan-900/60 transition"
-                          >
-                            <RotateCcw size={15} />
-                          </button>
-                        </Tooltip>
-                        {/* Reseña — solo Completadas */}
-                        {c.estadoTexto === "Completada" && c.telefonoCliente && (
-                          <Tooltip text="Solicitar reseña al cliente">
-                            <a
-                              href={resenaUrl(c)}
-                              target="_blank"
-                              rel="noreferrer"
-                              aria-label={`Solicitar reseña a ${c.nombreCliente}`}
-                              className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-amber-100 text-amber-500 hover:bg-amber-200 transition"
-                            >
-                              <Star size={15} />
-                            </a>
-                          </Tooltip>
-                        )}
-                        {/* Más — Cancelar / Inasistencia */}
-                        {TRANSICIONES[c.estadoTexto] && (
-                          <Tooltip text="Más opciones">
-                            <button
-                              onClick={() => abrirCambioEstado(c)}
-                              className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 transition"
-                            >
-                              <MoreHorizontal size={16} />
-                            </button>
-                          </Tooltip>
-                        )}
-                      </div>
+                    {/* Acciones: las mismas en todas las anchuras; el resto vive en la hoja */}
+                    <td className="px-2 sm:px-4 py-2 text-right">
+                      <AccionesCita cita={c} accionesExtra={accionesExtra(c)} nombreNegocio={nombreNegocio} />
                     </td>
                   </tr>
                 ))}
@@ -875,7 +633,7 @@ export default function CitasPage() {
                   emailEditarError ? "border-red-400 bg-red-50 dark:bg-red-900/20" : "border-gray-200 dark:border-slate-600"
                 }`}
               />
-              {emailEditarError && <p className="text-red-500 text-xs mt-1">⚠ {emailEditarError}</p>}
+              {emailEditarError && <p className="text-red-600 dark:text-red-400 text-xs mt-1 flex items-center gap-1"><AlertTriangle size={12} aria-hidden="true" /> {emailEditarError}</p>}
             </div>
             <p className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded-lg px-3 py-2">
               Esto actualiza los datos de la cliente en todas sus citas.
@@ -899,63 +657,35 @@ export default function CitasPage() {
         )}
       </Modal>
 
-      {/* ── Modal: Completar cita ── */}
-      <Modal abierto={!!citaACompletar} onCerrar={() => setCitaACompletar(null)} titulo="Marcar como completada" ancho="sm">
-        {citaACompletar && (
-          <div className="space-y-4">
-            <div className="bg-gray-50 dark:bg-slate-700/50 rounded-xl p-4 text-sm space-y-1.5">
-              <p><span className="text-gray-500 dark:text-gray-400">Cliente:</span> <span className="font-medium text-gray-800 dark:text-gray-200">{citaACompletar.nombreCliente}</span></p>
-              <p><span className="text-gray-500 dark:text-gray-400">Servicio:</span> <span className="font-medium text-gray-800 dark:text-gray-200">{citaACompletar.nombreServicio}</span></p>
-              <p><span className="text-gray-500 dark:text-gray-400">Profesional:</span> <span className="font-medium text-gray-800 dark:text-gray-200">{citaACompletar.nombreEmpleado}</span></p>
-            </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400">¿Confirmas que esta cita fue atendida y deseas marcarla como completada?</p>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setCitaACompletar(null)}
-                className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-slate-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 rounded-xl text-sm transition"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={() => { cambiarEstado({ id: citaACompletar.id, estado: ESTADOS.Completada, mot: "" }); setCitaACompletar(null); }}
-                disabled={isPending}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white font-semibold py-2.5 rounded-xl text-sm transition"
-              >
-                Marcar como completada
-              </button>
-            </div>
-          </div>
-        )}
-      </Modal>
-
       {/* ── Modal: Notas internas ── */}
       <Modal abierto={!!citaNotas} onCerrar={() => setCitaNotas(null)} titulo="Nota interna" ancho="sm">
         {citaNotas && (
           <div className="space-y-4">
-            <div className="bg-gray-50 rounded-lg p-3 text-sm space-y-1">
-              <p><span className="text-gray-500">Cliente:</span> <span className="font-medium">{citaNotas.nombreCliente}</span></p>
-              <p><span className="text-gray-500">Servicio:</span> <span className="font-medium">{citaNotas.nombreServicio}</span></p>
+            <div className="bg-gray-50 dark:bg-slate-700 rounded-lg p-3 text-sm space-y-1">
+              <p><span className="text-gray-500 dark:text-gray-400">Cliente:</span> <span className="font-medium dark:text-gray-200">{citaNotas.nombreCliente}</span></p>
+              <p><span className="text-gray-500 dark:text-gray-400">Servicio:</span> <span className="font-medium dark:text-gray-200">{citaNotas.nombreServicio}</span></p>
             </div>
             <div>
-              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-                Nota interna <span className="text-gray-400">(solo visible para el negocio)</span>
+              <label htmlFor="nota-interna" className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+                Nota interna <span className="text-gray-400 dark:text-gray-500">(solo visible para el negocio)</span>
               </label>
               <textarea
+                id="nota-interna"
                 value={notasTexto}
                 onChange={(e) => setNotasTexto(e.target.value)}
                 rows={4}
                 maxLength={1000}
                 placeholder="Preferencias del cliente, indicaciones especiales, alergias..."
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700 resize-none"
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 text-sm outline-none focus:border-slate-700 resize-none"
               />
-              <p className="text-xs text-gray-400 text-right mt-1">{notasTexto.length}/1000</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 text-right mt-1">{notasTexto.length}/1000</p>
             </div>
             <div className="flex gap-2">
               {citaNotas.notas && (
                 <button
                   onClick={() => actualizarNotas({ id: citaNotas.id, notas: null })}
                   disabled={guardandoNotas}
-                  className="px-4 py-2.5 border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-40 rounded-xl text-sm transition"
+                  className="px-4 py-2.5 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-40 rounded-xl text-sm transition"
                 >
                   Eliminar nota
                 </button>
@@ -1034,7 +764,7 @@ export default function CitasPage() {
                 <DatePicker
                   label="Fecha"
                   value={fechaNueva}
-                  minDate={new Date().toISOString().split("T")[0]}
+                  minDate={hoy()}
                   onChange={(v) => { setFechaNueva(v); setSlotNuevo(""); }}
                 />
               </div>
@@ -1128,12 +858,12 @@ export default function CitasPage() {
                 onBlur={() => setEmailClienteError(validarEmailCliente(fCliente.email))}
                 placeholder="correo@ejemplo.com"
                 className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100 ${
-                  emailClienteError ? "border-red-400 bg-red-50" : "border-gray-200 dark:border-slate-600"
+                  emailClienteError ? "border-red-400 bg-red-50 dark:bg-red-900/20" : "border-gray-200 dark:border-slate-600"
                 }`}
               />
               {emailClienteError && (
-                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                  <span>⚠</span> {emailClienteError}
+                <p className="text-red-600 dark:text-red-400 text-xs mt-1 flex items-center gap-1">
+                  <AlertTriangle size={12} aria-hidden="true" /> {emailClienteError}
                 </p>
               )}
             </div>
@@ -1174,62 +904,6 @@ export default function CitasPage() {
         )}
       </Modal>
 
-      {/* ── Modal: Reagendar ── */}
-      <Modal abierto={!!citaReag} onCerrar={() => setCitaReag(null)} titulo={`Reagendar ${terms.cita.toLowerCase()}`} ancho="sm">
-        {citaReag && (
-          <div className="space-y-4">
-            <div className="bg-gray-50 dark:bg-slate-700 rounded-lg p-3 text-sm space-y-1">
-              <p><span className="text-gray-500 dark:text-gray-400">Cliente:</span> <span className="font-medium dark:text-gray-200">{citaReag.nombreCliente}</span></p>
-              <p><span className="text-gray-500 dark:text-gray-400">Servicio:</span> <span className="font-medium dark:text-gray-200">{citaReag.nombreServicio}</span></p>
-              <p><span className="text-gray-500 dark:text-gray-400">Actual:</span> <span className="font-medium dark:text-gray-200 capitalize">{formatFechaHora(citaReag.inicioEn)}</span></p>
-            </div>
-            <div>
-              <DatePicker
-                label="Nueva fecha"
-                value={fechaReag}
-                minDate={new Date().toISOString().split("T")[0]}
-                onChange={(v) => { setFechaReag(v); setSlotReag(""); }}
-              />
-            </div>
-            {fechaReag && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Nuevo horario</label>
-                {cargandoSlots ? (
-                  <p className="text-sm text-gray-400 dark:text-gray-500">Cargando horarios disponibles...</p>
-                ) : errorSlotsReag ? (
-                  <p className="text-xs text-red-500 text-center py-2">Error al cargar horarios. Intenta de nuevo.</p>
-                ) : slotsReag.length === 0 ? (
-                  <p className="text-xs text-slate-400 text-center py-2">Sin horarios disponibles para esta fecha</p>
-                ) : (
-                  <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto pr-1">
-                    {slotsReag.map((s) => (
-                      <button
-                        key={s.inicio}
-                        onClick={() => setSlotReag(s.inicio)}
-                        className={`py-2 text-sm rounded-lg border transition ${
-                          slotReag === s.inicio
-                            ? "bg-violet-600 text-white border-violet-600"
-                            : "border-gray-200 dark:border-slate-600 text-gray-700 dark:text-gray-300 hover:border-violet-400 dark:hover:border-violet-500"
-                        }`}
-                      >
-                        {s.horaTexto}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-            <button
-              onClick={() => slotReag && reagendar({ id: citaReag.id, inicioEn: slotReag })}
-              disabled={!slotReag || reagendando}
-              className="w-full bg-violet-600 hover:bg-violet-700 disabled:opacity-40 text-white font-semibold py-2.5 rounded-xl transition"
-            >
-              {reagendando ? "Reagendando..." : "Confirmar reagendado"}
-            </button>
-          </div>
-        )}
-      </Modal>
-
       {/* ── Modal: Ver comprobante ── */}
       <Modal abierto={!!urlComprobante} onCerrar={() => setUrlComprobante(null)} titulo="Comprobante de anticipo" ancho="sm">
         {urlComprobante && (
@@ -1251,88 +925,47 @@ export default function CitasPage() {
         )}
       </Modal>
 
-      {/* ── Modal: Cambiar estado ── */}
-      <Modal abierto={!!citaSel} onCerrar={() => setCitaSel(null)} titulo={`Cambiar estado de la ${terms.cita.toLowerCase()}`} ancho="sm">
-        {citaSel && (
-          <div>
-            <div className="bg-gray-50 dark:bg-slate-700 rounded-lg p-3 mb-5 text-sm space-y-1">
-              <div className="flex items-center justify-between">
-                <p><span className="text-gray-500 dark:text-gray-400">Cliente:</span> <span className="font-medium dark:text-gray-200">{citaSel.nombreCliente}</span></p>
-                <Link
-                  to={`/dashboard/clientes?clienteId=${citaSel.clienteId}`}
-                  className="text-xs text-slate-700 dark:text-slate-300 hover:underline font-medium shrink-0 ml-2"
-                  onClick={() => setCitaSel(null)}
-                >
-                  Ver historial
-                </Link>
-              </div>
-              <p><span className="text-gray-500 dark:text-gray-400">Servicio:</span> <span className="font-medium dark:text-gray-200">{citaSel.nombreServicio}</span></p>
-              <p><span className="text-gray-500 dark:text-gray-400">Hora:</span> <span className="font-medium dark:text-gray-200 capitalize">{formatFechaHora(citaSel.inicioEn)}</span></p>
-              <p><span className="text-gray-500 dark:text-gray-400">Estado actual:</span> <span className="font-medium dark:text-gray-200">{citaSel.estadoTexto}</span></p>
-              {respuestasIntake.length > 0 && (
-                <div className="mt-2 pt-2 border-t border-gray-200 dark:border-slate-600 space-y-1">
-                  <p className="text-gray-400 dark:text-gray-500 text-xs font-medium uppercase tracking-wide">Preguntas de intake</p>
-                  {respuestasIntake.map((r, i) => (
-                    <p key={i}>
-                      <span className="text-gray-500 dark:text-gray-400">{r.etiqueta}:</span>{" "}
-                      <span className="font-medium dark:text-gray-200">{r.valor ?? "—"}</span>
-                    </p>
-                  ))}
-                </div>
-              )}
-            </div>
-            {accionesCita.length === 0 ? (
-              <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-2">Esta cita no puede cambiar de estado.</p>
-            ) : (
-              <>
-                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Selecciona el nuevo estado:</p>
-                <div className="space-y-2 mb-4">
-                  {accionesCita.map((acc) => (
-                    <button key={acc.estado} onClick={() => setNuevoEstado(acc.estado)}
-                      className={`w-full py-2 rounded-lg text-sm font-medium transition border-2 ${
-                        nuevoEstado === acc.estado
-                          ? "border-gray-800 " + acc.clase
-                          : "border-transparent bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600"
-                      }`}>
-                      {acc.label}
-                    </button>
-                  ))}
-                </div>
-                {(nuevoEstado === ESTADOS.Cancelada || nuevoEstado === ESTADOS.Inasistencia) && (
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Motivo <span className="text-gray-400 dark:text-gray-500 font-normal">(opcional)</span>
-                    </label>
-                    <textarea value={motivo} onChange={(e) => setMotivo(e.target.value)}
-                      rows={2} placeholder="Motivo de la cancelación..."
-                      className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700 resize-none" />
-                  </div>
-                )}
-                <button
-                  onClick={() => nuevoEstado && cambiarEstado({ id: citaSel.id, estado: nuevoEstado, mot: motivo })}
-                  disabled={!nuevoEstado || isPending}
-                  className="w-full bg-slate-700 hover:bg-slate-800 disabled:opacity-40 text-white font-semibold py-2.5 rounded-xl transition">
-                  {isPending ? "Guardando..." : "Confirmar cambio"}
-                </button>
-              </>
-            )}
-          </div>
-        )}
-      </Modal>
+      {/* ── Hoja de acciones: calendario y Gantt ── */}
+      <HojaAccionesCita
+        cita={citaAcciones}
+        onCerrar={() => setCitaAcciones(null)}
+        accionesExtra={citaAcciones ? accionesExtra(citaAcciones) : []}
+        nombreNegocio={nombreNegocio}
+      />
 
-      {/* ── Confirm drag reagendar ── */}
-      {confirmDrag && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-800 rounded-xl p-6 max-w-sm w-full shadow-xl">
-            <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-1">{`Reagendar ${terms.cita.toLowerCase()}`}</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{`¿Mover la ${terms.cita.toLowerCase()} de `}<strong>{confirmDrag.nombre}</strong>{` para el ${confirmDrag.label}?`}</p>
-            <div className="flex gap-3 justify-end">
-              <button onClick={() => setConfirmDrag(null)} className="text-sm text-gray-500 px-4 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition">Cancelar</button>
-              <button onClick={() => { reagendar({ id: confirmDrag.id, inicioEn: confirmDrag.nuevoInicio }); setConfirmDrag(null); }} className="text-sm bg-violet-600 text-white px-4 py-2 rounded-lg hover:bg-violet-700 transition">Confirmar</button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* ── Anular anticipo: cambia lo que se cobra al final ── */}
+      <ConfirmarAccion
+        abierto={!!citaAnularAnticipo}
+        titulo="Anular anticipo"
+        mensaje={citaAnularAnticipo && (
+          <p>
+            {`¿Anular el anticipo de ${formatPrecio(citaAnularAnticipo.montoAnticipo ?? 0)} de `}
+            <strong className="text-foreground">{citaAnularAnticipo.nombreCliente}</strong>
+            {"? Al cobrar ya no se descontará del total."}
+          </p>
+        )}
+        etiquetaConfirmar="Anular anticipo"
+        destructiva
+        pendiente={mutAnticipo.isPending}
+        onConfirmar={() => citaAnularAnticipo && mutAnticipo.mutate({ id: citaAnularAnticipo.id, recibido: false })}
+        onCerrar={() => setCitaAnularAnticipo(null)}
+      />
+
+      {/* ── Confirmar reagendado por arrastre (solo escritorio) ── */}
+      <ConfirmarAccion
+        abierto={!!confirmDrag}
+        titulo={`Reagendar ${terms.cita.toLowerCase()}`}
+        mensaje={confirmDrag && (
+          <p>
+            {`¿Mover la ${terms.cita.toLowerCase()} de `}
+            <strong className="text-foreground">{confirmDrag.nombre}</strong>
+            {` para el ${confirmDrag.label}?`}
+          </p>
+        )}
+        etiquetaConfirmar="Mover"
+        onConfirmar={() => { if (confirmDrag) reagendar({ id: confirmDrag.id, inicioEn: confirmDrag.nuevoInicio }); setConfirmDrag(null); }}
+        onCerrar={() => setConfirmDrag(null)}
+      />
 
       {/* ── Modal: Repetir cita ── */}
       <Modal abierto={!!citaRepetir} onCerrar={() => setCitaRepetir(null)} titulo={`Repetir ${terms.cita.toLowerCase()}`} ancho="sm">
@@ -1402,12 +1035,12 @@ export default function CitasPage() {
                     }}
                     onBlur={() => setEmailRepetirError(validarEmailCliente(fClienteRepetir.email))}
                     className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100 ${
-                      emailRepetirError ? "border-red-400 bg-red-50" : "border-gray-200 dark:border-slate-600"
+                      emailRepetirError ? "border-red-400 bg-red-50 dark:bg-red-900/20" : "border-gray-200 dark:border-slate-600"
                     }`}
                   />
                   {emailRepetirError && (
-                    <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                      <span>⚠</span> {emailRepetirError}
+                    <p className="text-red-600 dark:text-red-400 text-xs mt-1 flex items-center gap-1">
+                      <AlertTriangle size={12} aria-hidden="true" /> {emailRepetirError}
                     </p>
                   )}
                 </div>

@@ -17,6 +17,7 @@ export default function DosFactoresPage() {
   const [llave, setLlave] = useState("");
   const [codigo, setCodigo] = useState("");
   const [errorCodigo, setErrorCodigo] = useState("");
+  const [errorConfig, setErrorConfig] = useState("");
 
   const { data: estado, isLoading } = useQuery({
     queryKey: ["2fa-estado"],
@@ -30,7 +31,16 @@ export default function DosFactoresPage() {
       setLlave(data.llave);
       setCodigo("");
       setErrorCodigo("");
+      setErrorConfig("");
       setPaso("configurando");
+    },
+    // Antes un fallo dejaba el botón en "Generando..." → "Activar" sin decir nada.
+    onMutate: () => setErrorConfig(""),
+    onError: (err: unknown) => {
+      const msg = (err as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje
+        ?? "No se pudo iniciar la configuración de 2FA. Intenta de nuevo.";
+      setErrorConfig(msg);
+      toast(msg, "error");
     },
   });
 
@@ -76,17 +86,21 @@ export default function DosFactoresPage() {
 
   const inputCodigo = (
     <div>
-      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Código de verificación</label>
+      <label htmlFor="codigo-2fa" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Código de verificación</label>
       <input
+        id="codigo-2fa"
         type="text"
         inputMode="numeric"
+        autoComplete="one-time-code"
+        aria-invalid={!!errorCodigo}
+        aria-describedby={errorCodigo ? "codigo-2fa-error" : undefined}
         maxLength={6}
         value={codigo}
         onChange={(e) => { setCodigo(e.target.value.replace(/\D/g, "")); setErrorCodigo(""); }}
         placeholder="000000"
         className="w-full px-4 py-2.5 text-center text-xl font-mono tracking-[0.5em] rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 outline-none focus:border-slate-700"
       />
-      {errorCodigo && <p className="text-red-500 text-xs mt-1 text-center">{errorCodigo}</p>}
+      {errorCodigo && <p id="codigo-2fa-error" role="alert" className="text-red-700 dark:text-red-400 text-xs mt-1 text-center">{errorCodigo}</p>}
     </div>
   );
 
@@ -97,10 +111,14 @@ export default function DosFactoresPage() {
 
       {/* Estado actual */}
       <div className={`rounded-xl border p-5 flex items-center gap-4 ${
-        estado?.habilitado ? "bg-green-50 border-green-200" : "bg-gray-50 dark:bg-slate-700 border-gray-100 dark:border-slate-700"
+        estado?.habilitado
+          ? "bg-emerald-50 border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-800"
+          : "bg-gray-50 dark:bg-slate-700 border-gray-100 dark:border-slate-700"
       }`}>
         <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
-          estado?.habilitado ? "bg-green-100 text-green-600" : "bg-gray-200 dark:bg-slate-600 text-gray-400 dark:text-gray-500"
+          estado?.habilitado
+            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+            : "bg-gray-200 dark:bg-slate-600 text-gray-500 dark:text-gray-300"
         }`}>
           {estado?.habilitado ? <ShieldCheck size={20} /> : <Shield size={20} />}
         </div>
@@ -133,6 +151,11 @@ export default function DosFactoresPage() {
           >
             {iniciando ? "Generando..." : "Activar autenticación en dos pasos"}
           </button>
+          {errorConfig && (
+            <p role="alert" className="text-sm text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2">
+              {errorConfig}
+            </p>
+          )}
         </div>
       )}
 
@@ -179,10 +202,10 @@ export default function DosFactoresPage() {
 
       {/* ── 2FA ya estaba activado, mostrar éxito ── */}
       {paso === "activado" && (
-        <div className="bg-green-50 border border-green-200 rounded-xl p-5 text-center">
-          <ShieldCheck size={32} className="text-green-500 mx-auto mb-2" />
-          <p className="font-semibold text-green-800">¡2FA activado correctamente!</p>
-          <p className="text-sm text-green-600 mt-1">Desde ahora necesitarás el código al iniciar sesión.</p>
+        <div role="status" className="bg-emerald-50 border border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-800 rounded-xl p-5 text-center">
+          <ShieldCheck size={32} className="text-emerald-600 dark:text-emerald-400 mx-auto mb-2" aria-hidden="true" />
+          <p className="font-semibold text-emerald-800 dark:text-emerald-200">¡2FA activado correctamente!</p>
+          <p className="text-sm text-emerald-700 dark:text-emerald-300 mt-1">Desde ahora necesitarás el código al iniciar sesión.</p>
         </div>
       )}
 

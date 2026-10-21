@@ -1,6 +1,7 @@
 import { Printer, Mail } from "lucide-react";
 import type { CitaDto } from "../../types";
 import { toUtcDate } from "../../utils/formatters";
+import { escapeHtml } from "../../utils/html";
 
 interface Props {
   cita: CitaDto;
@@ -20,10 +21,12 @@ export default function TicketRecibo({ cita, negocioNombre, negocioLogo, onClose
 
   const mostrarCambio = cita.metodoPago === "Efectivo" && cita.cambio != null && cita.cambio > 0;
 
+  // Se escribe en una ventana del mismo origen: todo valor pasa por escapeHtml
+  // (el nombre del cliente llega desde la reserva pública).
   const handlePrint = () => {
     const monto = (cita.montoCobrado ?? cita.precio).toFixed(2);
     const filaEmpleado = cita.nombreEmpleado
-      ? `<tr><td style="color:#6b7280;padding:3px 8px 3px 0">Atendió</td><td style="text-align:right;font-weight:500">${cita.nombreEmpleado}</td></tr>`
+      ? `<tr><td style="color:#6b7280;padding:3px 8px 3px 0">Atendió</td><td style="text-align:right;font-weight:500">${escapeHtml(cita.nombreEmpleado)}</td></tr>`
       : "";
     const filaRecibido = cita.montoRecibido != null
       ? `<tr><td style="color:#6b7280;padding:3px 8px 3px 0">Recibido</td><td style="text-align:right">$${cita.montoRecibido.toFixed(2)}</td></tr>`
@@ -46,19 +49,19 @@ export default function TicketRecibo({ cita, negocioNombre, negocioLogo, onClose
       </style>
     </head><body>
       <div style="text-align:center;padding-bottom:8px;border-bottom:1px dashed #d1d5db;margin-bottom:10px">
-        ${negocioLogo ? `<img src="${negocioLogo}" alt="${negocioNombre}" style="height:40px;width:auto;object-fit:contain;margin:0 auto 6px;display:block"/>` : ""}
-        <div style="font-weight:700;font-size:14px">${negocioNombre}</div>
+        ${negocioLogo ? `<img src="${escapeHtml(negocioLogo)}" alt="${escapeHtml(negocioNombre)}" style="height:40px;width:auto;object-fit:contain;margin:0 auto 6px;display:block"/>` : ""}
+        <div style="font-weight:700;font-size:14px">${escapeHtml(negocioNombre)}</div>
         <div style="color:#6b7280;font-size:10px;margin-top:2px">Comprobante de pago</div>
       </div>
       <table style="margin-bottom:10px">
-        <tr><td style="color:#6b7280;padding:3px 8px 3px 0">Cliente</td><td style="text-align:right;font-weight:500">${cita.nombreCliente}</td></tr>
-        <tr><td style="color:#6b7280;padding:3px 8px 3px 0">Servicio</td><td style="text-align:right">${cita.nombreServicio}</td></tr>
+        <tr><td style="color:#6b7280;padding:3px 8px 3px 0">Cliente</td><td style="text-align:right;font-weight:500">${escapeHtml(cita.nombreCliente)}</td></tr>
+        <tr><td style="color:#6b7280;padding:3px 8px 3px 0">Servicio</td><td style="text-align:right">${escapeHtml(cita.nombreServicio)}</td></tr>
         ${filaEmpleado}
-        <tr><td style="color:#6b7280;padding:3px 8px 3px 0">Fecha</td><td style="text-align:right">${fecha}</td></tr>
+        <tr><td style="color:#6b7280;padding:3px 8px 3px 0">Fecha</td><td style="text-align:right">${escapeHtml(fecha)}</td></tr>
       </table>
       <div style="border-top:1px dashed #d1d5db;padding-top:10px;margin-bottom:10px">
         <table>
-          <tr><td style="color:#6b7280;padding:3px 8px 3px 0">Método</td><td style="text-align:right">${cita.metodoPago ?? ""}</td></tr>
+          <tr><td style="color:#6b7280;padding:3px 8px 3px 0">Método</td><td style="text-align:right">${escapeHtml(cita.metodoPago)}</td></tr>
           <tr><td style="color:#6b7280;padding:3px 8px 3px 0">Total</td><td style="text-align:right;font-weight:700">$${monto}</td></tr>
           ${filaRecibido}
           ${filaCambio}

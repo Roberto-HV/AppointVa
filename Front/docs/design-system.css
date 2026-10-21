@@ -61,15 +61,27 @@
   --status-completed-dot:#2563EB;   /* blue-600 */
 
   --status-cancelled-bg: #FEF2F2;   /* red-50 */
-  --status-cancelled-fg: #DC2626;   /* red-600 */
+  --status-cancelled-fg: #B91C1C;   /* red-700 (red-600 was 4.4:1 on red-50) */
   --status-cancelled-dot:#DC2626;
 
   --status-absent-bg:    #F9FAFB;   /* gray-50 */
-  --status-absent-fg:    #6B7280;   /* gray-500 */
-  --status-absent-dot:   #9CA3AF;   /* gray-400 */
+  --status-absent-fg:    #475569;   /* slate-600 */
+  --status-absent-dot:   #94A3B8;   /* slate-400 */
   /* Wired in src/index.css + tailwind.config.js as
    *   bg-status-<estado>-bg  text-status-<estado>-fg  bg-status-<estado>-dot
-   * (estado: pending | confirmed | completed | cancelled | absent) */
+   * (estado: pending | confirmed | completed | cancelled | absent).
+   * Single source in code: src/lib/estadoCita.ts (label, icon, badge, block,
+   * dot classes). Filled blocks use bg + fg with a dot-colored left border;
+   * never white text on the dot color (fails 4.5:1). */
+
+  /* --- Sidebar, "salud" sector (owners whose business sector is salud) --- */
+  --sidebar-salud-bg:     #0F4C75;  /* white text 9.2:1 */
+  --sidebar-salud-fg:     #FFFFFF;
+  --sidebar-salud-muted:  #CFE3F2;  /* icons, secondary text: 6.9:1 */
+  --sidebar-salud-active: #1B6CA8;  /* active item / mobile header: 5.6:1 */
+  --sidebar-salud-hover:  rgba(255, 255, 255, 0.12);
+  /* Tailwind: bg-sidebar-salud text-sidebar-salud-fg text-sidebar-salud-muted
+   *           bg-sidebar-salud-active hover:bg-sidebar-salud-hover */
 
   /* --- Rating stars (reviews) — never brand gold --- */
   --rating:     #F59E0B;  /* amber-500 — Tailwind: text-rating fill-rating */
@@ -162,8 +174,15 @@
   --status-cancelled-dot:#EF4444;                  /* red-500 */
 
   --status-absent-bg:    #334155;                  /* slate-700 */
-  --status-absent-fg:    #9CA3AF;                  /* gray-400 */
-  --status-absent-dot:   #6B7280;                  /* gray-500 */
+  --status-absent-fg:    #CBD5E1;                  /* slate-300 (gray-400 was 4.1:1) */
+  --status-absent-dot:   #94A3B8;                  /* slate-400 */
+
+  /* --- Sidebar, "salud" sector (dark) --- */
+  --sidebar-salud-bg:     #0B2E47;
+  --sidebar-salud-fg:     #F1F5F9;
+  --sidebar-salud-muted:  #A9C7DE;
+  --sidebar-salud-active: #1B5A8A;
+  --sidebar-salud-hover:  rgba(255, 255, 255, 0.08);
 
   --rating: #FBBF24;                               /* amber-400 */
 

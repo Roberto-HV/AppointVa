@@ -12,6 +12,8 @@ import { useToastStore } from "../../store/toastStore";
 import { exportarExcel } from "../../utils/exportarExcel";
 import { hoy, inicioSemana, finSemana, inicioMes, finMes } from "../../utils/fechas";
 import Modal from "../../components/ui/Modal";
+import ConfirmarAccion from "../../components/ui/ConfirmarAccion";
+import { mensajeError } from "../../hooks/useMutacionesCita";
 import Tabs from "../../components/ui/Tabs";
 import EmptyState from "../../components/ui/EmptyState";
 import Pagination from "../../components/ui/Pagination";
@@ -21,6 +23,7 @@ import { usePaginacionLocal, TAMANO_PAGINA } from "../../hooks/usePaginacionLoca
 import { DatePicker } from "../../components/ui/DateTimePicker";
 import TicketRecibo from "../../components/dashboard/TicketRecibo";
 import { cierreCajaApi } from "../../api/cierreCaja";
+import { htmlCorteCaja } from "../../utils/impresionCorte";
 import type { CitaDto, CierreCajaDto, GuardarCierreCajaDto, RetiroItem } from "../../types";
 
 type FiltroEstadoPago = "todas" | "pendientes" | "pagadas";
@@ -87,6 +90,9 @@ export default function PagosPage() {
   const [montoCobradoInput, setMontoCobradoInput] = useState<string>('');
   const [citaPagada,    setCitaPagada]    = useState<CitaDto | null>(null);
   const [enviandoEmail, setEnviandoEmail] = useState(false);
+  const [errorPago,     setErrorPago]     = useState("");
+  // Revertir un pago cambia el corte del día: siempre pasa por confirmación.
+  const [pagoARevertir, setPagoARevertir] = useState<CitaDto | null>(null);
 
   // ── Historial tab state ───────────────────────────────────────────────────
   const [histDesde,     setHistDesde]     = useState(inicioMes);
@@ -102,6 +108,8 @@ export default function PagosPage() {
   const [retiros,         setRetiros]         = useState<RetiroItem[]>([]);
   const [retiroConcepto,  setRetiroConcepto]  = useState('');
   const [retiroMonto,     setRetiroMonto]     = useState('');
+  const [cierreGuardadoEn, setCierreGuardadoEn] = useState<string | null>(null);
+  const [errorCierre,     setErrorCierre]     = useState('');
 
   // ── Sync metodoPago2 when metodoPago changes ───────────────────────────────
   useEffect(() => {
@@ -179,6 +187,8 @@ export default function PagosPage() {
     setCierreInicio('');
     setCierreContado('');
     setRetiros([]);
+    setCierreGuardadoEn(null);
+    setErrorCierre('');
   }, [corteDate]);
 
   // Pre-populate from existing cierre when data loads
@@ -280,49 +290,17 @@ export default function PagosPage() {
     const fechaLegible = new Date(corteDate + "T12:00:00").toLocaleDateString("es-MX", {
       weekday: "long", year: "numeric", month: "long", day: "numeric",
     });
-    const filaMetodos = corteDesglose
-      .map(d => `<tr><td style="padding:3px 8px 3px 0">${d.metodo}</td><td style="text-align:right">${d.cantidad} cita${d.cantidad !== 1 ? "s" : ""}</td><td style="text-align:right;font-weight:600">$${d.monto.toFixed(2)}</td></tr>`)
-      .join("");
-    const filaEmpleados = cortePorEmpleado
-      .map(e => `<tr><td style="padding:3px 8px 3px 0">${e.nombre}</td><td style="text-align:right">${e.cantidad} cita${e.cantidad !== 1 ? "s" : ""}</td><td style="text-align:right;font-weight:600">$${e.monto.toFixed(2)}</td></tr>`)
-      .join("");
-
-    const html = `<!DOCTYPE html><html><head>
-      <meta charset="utf-8"/>
-      <style>
-        @page { size: 80mm auto; margin: 4mm; }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Courier New', Courier, monospace; font-size: 12px; width: 80mm; color: #111827; }
-        table { width: 100%; border-collapse: collapse; }
-        td { padding: 2px 0; vertical-align: top; }
-        .section { border-top: 1px dashed #d1d5db; margin-top: 10px; padding-top: 10px; }
-        .label { color: #6b7280; font-size: 10px; }
-      </style>
-    </head><body>
-      <div style="text-align:center;margin-bottom:10px">
-        <div style="font-weight:700;font-size:14px">${negocio?.nombre ?? "Negocio"}</div>
-        <div style="color:#6b7280;font-size:10px;margin-top:2px">CORTE DE CAJA</div>
-        <div style="font-size:10px;margin-top:2px;text-transform:capitalize">${fechaLegible}</div>
-      </div>
-      <div class="section">
-        <table>
-          <tr><td>Citas atendidas</td><td style="text-align:right;font-weight:700">${corteData.length}</td></tr>
-          <tr><td>Total cobrado</td><td style="text-align:right;font-weight:700">$${corteTotalCobrado.toFixed(2)}</td></tr>
-          ${corteTotalPropinas > 0 ? `<tr><td>Propinas</td><td style="text-align:right">$${corteTotalPropinas.toFixed(2)}</td></tr>` : ""}
-        </table>
-      </div>
-      ${corteDesglose.length > 0 ? `
-      <div class="section">
-        <div style="font-weight:700;margin-bottom:6px;font-size:10px;letter-spacing:.05em">DESGLOSE POR MÉTODO</div>
-        <table>${filaMetodos}</table>
-      </div>` : ""}
-      ${cortePorEmpleado.length > 0 ? `
-      <div class="section">
-        <div style="font-weight:700;margin-bottom:6px;font-size:10px;letter-spacing:.05em">POR EMPLEADO</div>
-        <table>${filaEmpleados}</table>
-      </div>` : ""}
-      <div style="text-align:center;font-size:10px;color:#9ca3af;border-top:1px dashed #d1d5db;margin-top:10px;padding-top:8px">AppointVa</div>
-    </body></html>`;
+    // Todo valor del documento se escapa dentro de `htmlCorteCaja`: se escribe
+    // en una ventana del mismo origen y los nombres los capturan los usuarios.
+    const html = htmlCorteCaja({
+      negocio: negocio?.nombre,
+      fechaLegible,
+      citasAtendidas: corteData.length,
+      totalCobrado: corteTotalCobrado,
+      totalPropinas: corteTotalPropinas,
+      porMetodo: corteDesglose.map((d) => ({ etiqueta: d.metodo, cantidad: d.cantidad, monto: d.monto })),
+      porEmpleado: cortePorEmpleado.map((e) => ({ etiqueta: e.nombre, cantidad: e.cantidad, monto: e.monto })),
+    });
 
     const w = window.open("", "_blank", "width=340,height=600");
     if (!w) {
@@ -391,7 +369,16 @@ export default function PagosPage() {
       setIsSplit(false);
       setMetodoPago2('Tarjeta');
       setMontoPago2Input('');
+      setErrorPago("");
       setCitaPagada(citaActualizada);
+    },
+    // Antes un fallo devolvía el botón a "Confirmar pago" sin decir nada: el
+    // cajero no sabía si el cobro había quedado registrado. Los datos se conservan.
+    onMutate: () => setErrorPago(""),
+    onError: (err) => {
+      const msg = mensajeError(err, "No se pudo registrar el pago. Revisa los datos e intenta de nuevo.");
+      setErrorPago(msg);
+      toast(msg, "error");
     },
   });
 
@@ -402,9 +389,11 @@ export default function PagosPage() {
       qc.invalidateQueries({ queryKey: ["resumen-cobros"] });
       qc.invalidateQueries({ queryKey: ["historial-pagos"] });
       qc.invalidateQueries({ queryKey: ["citas"] });
+      qc.invalidateQueries({ queryKey: ["historial-pagos-corte"] });
+      setPagoARevertir(null);
       toast("Pago revertido");
     },
-    onError: () => toast("No se pudo revertir el pago", "error"),
+    onError: (err) => toast(mensajeError(err, "No se pudo revertir el pago"), "error"),
   });
 
   const mutCierre = useMutation({
@@ -413,9 +402,21 @@ export default function PagosPage() {
       setCierreInicio(data.efectivoInicial.toFixed(2));
       setCierreContado(data.efectivoContado.toFixed(2));
       setRetiros(data.retiros);
+      setErrorCierre('');
+      setCierreGuardadoEn(data.cerradoEn ?? new Date().toISOString());
       qc.invalidateQueries({ queryKey: ['cierre-caja', corteDate] });
+      toast("Cierre de caja guardado");
+    },
+    onMutate: () => setErrorCierre(''),
+    onError: (err) => {
+      const msg = mensajeError(err, "No se pudo guardar el cierre de caja. Intenta de nuevo.");
+      setErrorCierre(msg);
+      toast(msg, "error");
     },
   });
+
+  // Hora del último guardado: la de esta sesión o la que ya traía el cierre.
+  const cierreGuardado = cierreGuardadoEn ?? cierreData?.cerradoEn ?? null;
 
   const handleConfirmar = () => {
     if (!citaSel) return;
@@ -602,6 +603,7 @@ export default function PagosPage() {
                     setIsSplit(false);
                     setMetodoPago2('Tarjeta');
                     setMontoPago2Input('');
+                    setErrorPago("");
                     if (cita.anticipoRecibido && cita.montoAnticipo) {
                       setMontoCobradoInput(
                         String(Math.max(0, cita.precio - cita.montoAnticipo))
@@ -610,7 +612,7 @@ export default function PagosPage() {
                       setMontoCobradoInput('');
                     }
                   }}
-                  onRevertir={() => mutRevertir.mutate(cita.id)}
+                  onRevertir={() => setPagoARevertir(cita)}
                   revertiendoId={mutRevertir.isPending && mutRevertir.variables === cita.id ? cita.id : null}
                 />
               ))}
@@ -738,7 +740,7 @@ export default function PagosPage() {
                       <HistorialRow
                         key={c.id}
                         cita={c}
-                        onRevertir={() => mutRevertir.mutate(c.id)}
+                        onRevertir={() => setPagoARevertir(c)}
                         revertiendoId={mutRevertir.isPending && mutRevertir.variables === c.id ? c.id : null}
                       />
                     ))}
@@ -871,52 +873,56 @@ export default function PagosPage() {
             {/* 3-column grid: inicio / cobrado / contado */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Efectivo inicial</label>
+                <label htmlFor="cierre-inicio" className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Efectivo inicial</label>
                 <input
+                  id="cierre-inicio"
                   type="number"
                   min="0"
                   step="0.01"
                   value={cierreInicio}
                   onChange={e => setCierreInicio(e.target.value)}
                   placeholder="0.00"
-                  className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                  className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm"
                 />
               </div>
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Cobrado en efectivo</label>
+                <label htmlFor="cierre-cobrado" className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Cobrado en efectivo</label>
                 <input
+                  id="cierre-cobrado"
                   readOnly
                   value={efectivoCobradoDia.toFixed(2)}
                   className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-3 py-2 text-sm text-gray-600 dark:text-gray-400"
                 />
               </div>
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Efectivo contado</label>
+                <label htmlFor="cierre-contado" className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Efectivo contado</label>
                 <input
+                  id="cierre-contado"
                   type="number"
                   min="0"
                   step="0.01"
                   value={cierreContado}
                   onChange={e => setCierreContado(e.target.value)}
                   placeholder="0.00"
-                  className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                  className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm"
                 />
               </div>
             </div>
 
             {/* Retiros */}
             <div>
-              <p className="text-xs font-medium text-gray-500 mb-2">Retiros de caja</p>
+              <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Retiros de caja</p>
               {retiros.map((r, i) => (
-                <div key={i} className="flex items-center gap-2 mb-1">
+                <div key={i} className="flex items-center gap-2 mb-1 text-gray-900 dark:text-gray-100">
                   <span className="flex-1 text-sm">{r.concepto}</span>
                   <span className="text-sm font-mono">${r.monto.toFixed(2)}</span>
                   <button
                     type="button"
                     onClick={() => setRetiros(prev => prev.filter((_, j) => j !== i))}
-                    className="text-gray-400 hover:text-red-500"
+                    aria-label={`Quitar retiro ${r.concepto}`}
+                    className="w-11 h-11 lg:w-9 lg:h-9 inline-flex items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 hover:text-red-700 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
                   >
-                    <X size={14} />
+                    <X size={14} aria-hidden="true" />
                   </button>
                 </div>
               ))}
@@ -926,7 +932,8 @@ export default function PagosPage() {
                   value={retiroConcepto}
                   onChange={e => setRetiroConcepto(e.target.value)}
                   placeholder="Concepto"
-                  className="flex-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                  aria-label="Concepto del retiro"
+                  className="flex-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm"
                 />
                 <input
                   type="number"
@@ -935,7 +942,8 @@ export default function PagosPage() {
                   value={retiroMonto}
                   onChange={e => setRetiroMonto(e.target.value)}
                   placeholder="Monto"
-                  className="w-24 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                  aria-label="Monto del retiro"
+                  className="w-24 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm"
                 />
                 <button
                   type="button"
@@ -947,7 +955,7 @@ export default function PagosPage() {
                       setRetiroMonto('');
                     }
                   }}
-                  className="px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-sm hover:bg-gray-200 dark:hover:bg-gray-600"
+                  className="px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm hover:bg-gray-200 dark:hover:bg-gray-600"
                 >
                   + Agregar
                 </button>
@@ -960,7 +968,7 @@ export default function PagosPage() {
                 ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700'
                 : 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-700'
             }`}>
-              <div className="space-y-1 text-sm">
+              <div className="space-y-1 text-sm text-gray-900 dark:text-gray-100">
                 <div className="flex justify-between">
                   <span className="text-gray-600 dark:text-gray-400">Inicio + Cobrado − Retiros</span>
                   <span className="font-mono">${efectivoEsperado.toFixed(2)}</span>
@@ -987,10 +995,20 @@ export default function PagosPage() {
                 efectivoContado: contadoDec,
                 retiros,
               })}
-              className="w-full py-2 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+              className="w-full min-h-[44px] rounded-xl bg-slate-700 text-white text-sm font-semibold hover:bg-slate-800 disabled:opacity-50"
             >
-              {mutCierre.isPending ? 'Guardando...' : 'Guardar cierre'}
+              {mutCierre.isPending ? 'Guardando...' : cierreGuardado ? 'Actualizar cierre' : 'Guardar cierre'}
             </button>
+            {errorCierre ? (
+              <p role="alert" className="text-sm text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2">
+                {errorCierre}
+              </p>
+            ) : cierreGuardado ? (
+              <p role="status" className="text-sm text-emerald-700 dark:text-emerald-300 flex items-center gap-1.5">
+                <CheckCircle2 size={14} aria-hidden="true" />
+                {`Cierre guardado · ${new Date(cierreGuardado).toLocaleTimeString("es-MX", { hour: "numeric", minute: "2-digit", hour12: true })}`}
+              </p>
+            ) : null}
           </div>
         </div>
       )}
@@ -998,7 +1016,7 @@ export default function PagosPage() {
       {/* Modal: registrar pago */}
       <Modal
         abierto={!!citaSel}
-        onCerrar={() => { setCitaSel(null); setMetodoPago(""); setMontoRecibido(""); setPropina(""); setIsSplit(false); setMetodoPago2('Tarjeta'); setMontoPago2Input(''); setMontoCobradoInput(''); }}
+        onCerrar={() => { setCitaSel(null); setMetodoPago(""); setMontoRecibido(""); setPropina(""); setIsSplit(false); setMetodoPago2('Tarjeta'); setMontoPago2Input(''); setMontoCobradoInput(''); setErrorPago(""); }}
         titulo="Registrar pago"
         ancho="sm"
       >
@@ -1087,7 +1105,7 @@ export default function PagosPage() {
                     <input
                       readOnly
                       value={montoPago1Dec.toFixed(2)}
-                      className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm"
+                      className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm"
                     />
                   </div>
                   <div className="flex-1">
@@ -1095,7 +1113,7 @@ export default function PagosPage() {
                     <select
                       value={metodoPago2}
                       onChange={e => setMetodoPago2(e.target.value)}
-                      className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                      className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm"
                     >
                       {['Efectivo','Tarjeta','Transferencia'].filter(m => m !== metodoPago).map(m => (
                         <option key={m} value={m}>{m}</option>
@@ -1112,7 +1130,7 @@ export default function PagosPage() {
                     value={montoPago2Input}
                     onChange={e => setMontoPago2Input(e.target.value)}
                     placeholder="0.00"
-                    className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                    className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm"
                   />
                 </div>
               </div>
@@ -1156,6 +1174,12 @@ export default function PagosPage() {
               </div>
             )}
 
+            {errorPago && (
+              <p role="alert" className="text-sm text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2">
+                {`El pago no se registró. ${errorPago}`}
+              </p>
+            )}
+
             <button
               onClick={handleConfirmar}
               disabled={!puedeConfirmar || mutPagar.isPending}
@@ -1166,6 +1190,24 @@ export default function PagosPage() {
           </div>
         )}
       </Modal>
+
+      {/* Confirmación: revertir un pago */}
+      <ConfirmarAccion
+        abierto={!!pagoARevertir}
+        titulo="Revertir pago"
+        mensaje={pagoARevertir && (
+          <p>
+            {`¿Revertir el pago de $${(pagoARevertir.montoCobrado ?? pagoARevertir.precio).toFixed(2)} de `}
+            <strong className="text-foreground">{pagoARevertir.nombreCliente}</strong>
+            {"? La cita volverá a quedar por cobrar y el corte del día cambiará."}
+          </p>
+        )}
+        etiquetaConfirmar="Revertir pago"
+        destructiva
+        pendiente={mutRevertir.isPending}
+        onConfirmar={() => pagoARevertir && mutRevertir.mutate(pagoARevertir.id)}
+        onCerrar={() => setPagoARevertir(null)}
+      />
 
       {/* Modal: ticket de recibo */}
       <Modal
@@ -1273,29 +1315,41 @@ function CitaCard({
       <div className="flex items-center justify-between pt-1">
         <span className="text-sm font-bold text-slate-700 dark:text-slate-300">${cita.precio.toFixed(2)}</span>
         {cita.pagada ? (
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-full font-medium">
-              {cita.metodoPago ?? "Pagada"}{cita.metodoPago2 ? ` + ${cita.metodoPago2}` : ''}
-            </span>
-            <button
-              onClick={onRevertir}
-              disabled={revertiendoId === cita.id}
-              title="Revertir pago"
-              className="p-1 text-gray-400 hover:text-red-500 disabled:opacity-40 transition rounded"
-            >
-              <RotateCcw size={13} />
-            </button>
-          </div>
+          <span className="text-xs bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-full font-medium">
+            {cita.metodoPago ?? "Pagada"}{cita.metodoPago2 ? ` + ${cita.metodoPago2}` : ''}
+          </span>
         ) : (
           <button
             onClick={onCobrar}
-            className="text-xs px-3 py-1.5 bg-slate-700 hover:bg-slate-800 text-white rounded-lg font-medium transition"
+            className="min-h-[44px] lg:min-h-[36px] text-sm lg:text-xs px-4 bg-slate-700 hover:bg-slate-800 text-white rounded-lg font-medium transition"
           >
             Cobrar
           </button>
         )}
       </div>
+      {/* Revertir va en su propia línea, con texto y 44px: junto al chip del
+          método era un icono de 21px que se tocaba sin querer. */}
+      {cita.pagada && (
+        <div className="flex justify-end border-t border-gray-100 dark:border-slate-700 pt-2">
+          <BotonRevertir onClick={onRevertir} deshabilitado={revertiendoId === cita.id} cliente={cita.nombreCliente} />
+        </div>
+      )}
     </div>
+  );
+}
+
+function BotonRevertir({ onClick, deshabilitado, cliente }: { onClick: () => void; deshabilitado: boolean; cliente: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={deshabilitado}
+      aria-label={`Revertir pago de ${cliente}`}
+      className="min-h-[44px] lg:min-h-[36px] inline-flex items-center gap-1.5 px-3 rounded-lg text-xs font-medium text-gray-600 dark:text-gray-300 hover:text-red-700 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-40 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40"
+    >
+      <RotateCcw size={13} aria-hidden="true" />
+      Revertir
+    </button>
   );
 }
 
@@ -1332,14 +1386,7 @@ function HistorialRow({
         {cita.propina && cita.propina > 0 ? `$${cita.propina.toFixed(2)}` : "—"}
       </td>
       <td className="px-4 py-3">
-        <button
-          onClick={onRevertir}
-          disabled={revertiendoId === cita.id}
-          title="Revertir pago"
-          className="p-1 text-gray-400 hover:text-red-500 disabled:opacity-40 transition rounded"
-        >
-          <RotateCcw size={13} />
-        </button>
+        <BotonRevertir onClick={onRevertir} deshabilitado={revertiendoId === cita.id} cliente={cita.nombreCliente} />
       </td>
     </tr>
   );

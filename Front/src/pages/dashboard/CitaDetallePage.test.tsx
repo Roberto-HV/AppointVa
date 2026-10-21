@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import CitaDetallePage from "./CitaDetallePage";
@@ -24,6 +24,14 @@ vi.mock("../../api/citas", () => ({
     Cancelada: 4,
     Inasistencia: 5,
   },
+}));
+
+vi.mock("../../api/negocios", () => ({
+  negociosApi: { obtenerPerfil: vi.fn().mockResolvedValue({ nombre: "Salón Test", sector: "belleza" }) },
+}));
+
+vi.mock("../../api/intake", () => ({
+  intakeApi: { getRespuestas: vi.fn().mockResolvedValue([]) },
 }));
 
 import { citasApi } from "../../api/citas";
@@ -134,5 +142,18 @@ describe("CitaDetallePage — datos de la cita", () => {
       expect(screen.getByText("Google Calendar")).toBeInTheDocument()
     );
     expect(screen.getByText("Guardar en calendario")).toBeInTheDocument();
+  });
+});
+
+describe("CitaDetallePage — acciones", () => {
+  it("ya no es un callejón sin salida: ofrece las acciones de la cita, incluido reagendar", async () => {
+    vi.mocked(citasApi.obtenerPorId).mockResolvedValue(mockCita as never);
+    renderConQuery();
+    const acciones = await screen.findByRole("button", { name: "Acciones de la cita de Juan Pérez" });
+    expect(screen.getByRole("button", { name: "Completar cita de Juan Pérez" })).toBeInTheDocument();
+    fireEvent.click(acciones);
+    expect(await screen.findByRole("button", { name: "Reagendar" })).toBeInTheDocument();
+    // Desde el detalle no se ofrece volver al detalle.
+    expect(screen.queryByRole("link", { name: "Ver detalle" })).toBeNull();
   });
 });

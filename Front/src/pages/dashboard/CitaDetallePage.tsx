@@ -2,16 +2,11 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Calendar, User, Clock, DollarSign, FileText } from "lucide-react";
 import { SiGooglecalendar } from "react-icons/si";
-import { citasApi, ESTADOS } from "../../api/citas";
+import { citasApi } from "../../api/citas";
+import { negociosApi } from "../../api/negocios";
 import { useSectorTerms } from "../../hooks/useSectorTerms";
-
-const ESTADO_ESTILOS: Record<number, { label: string; clase: string }> = {
-  [ESTADOS.Pendiente]:    { label: "Pendiente",    clase: "bg-yellow-100 text-yellow-800" },
-  [ESTADOS.Confirmada]:   { label: "Confirmada",   clase: "bg-blue-100 text-blue-800" },
-  [ESTADOS.Completada]:   { label: "Completada",   clase: "bg-green-100 text-green-800" },
-  [ESTADOS.Cancelada]:    { label: "Cancelada",    clase: "bg-red-100 text-red-800" },
-  [ESTADOS.Inasistencia]: { label: "Inasistencia", clase: "bg-gray-100 text-gray-600" },
-};
+import EstadoBadge from "../../components/ui/EstadoBadge";
+import AccionesCita from "../../components/dashboard/AccionesCita";
 
 function buildGoogleCalUrl(
   titulo: string,
@@ -37,6 +32,12 @@ export default function CitaDetallePage() {
     queryKey: ["cita", id],
     queryFn: () => citasApi.obtenerPorId(id!),
     enabled: !!id,
+  });
+
+  const { data: perfil } = useQuery({
+    queryKey: ["negocio-perfil"],
+    queryFn: negociosApi.obtenerPerfil,
+    staleTime: 5 * 60 * 1000,
   });
 
   if (isLoading) {
@@ -69,8 +70,6 @@ export default function CitaDetallePage() {
   });
   const horaStr = `${inicio.toLocaleTimeString("es-MX", { hour: "numeric", minute: "2-digit", hour12: true })} – ${fin.toLocaleTimeString("es-MX", { hour: "numeric", minute: "2-digit", hour12: true })}`;
 
-  const estado = ESTADO_ESTILOS[cita.estado] ?? { label: cita.estadoTexto, clase: "bg-gray-100 text-gray-600" };
-
   const icalUrl = `${import.meta.env.VITE_API_URL}/publico/citas/${cita.codigoConfirmacion}/ical`;
   const googleCalUrl = buildGoogleCalUrl(
     `${cita.nombreServicio} — ${cita.nombreEmpleado}`,
@@ -94,9 +93,15 @@ export default function CitaDetallePage() {
           <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{`Detalle de ${terms.cita.toLowerCase()}`}</h1>
           <p className="text-xs text-gray-400 dark:text-gray-500 font-mono">{cita.codigoConfirmacion}</p>
         </div>
-        <span className={`ml-auto text-xs font-semibold px-2.5 py-1 rounded-full ${estado.clase}`}>
-          {estado.label}
+        <span className="ml-auto">
+          <EstadoBadge estado={cita.estadoTexto} />
         </span>
+      </div>
+
+      {/* Acciones: la misma hoja que la lista, el calendario y el inicio */}
+      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm p-3 flex items-center justify-between gap-2">
+        <p className="text-sm font-medium text-gray-700 dark:text-gray-300 pl-2">{`Gestionar ${terms.cita.toLowerCase()}`}</p>
+        <AccionesCita cita={cita} nombreNegocio={perfil?.nombre} mostrarDetalle={false} conEtiqueta />
       </div>
 
       {/* Tarjeta principal */}
@@ -138,7 +143,7 @@ export default function CitaDetallePage() {
               {cita.precio.toLocaleString("es-MX", { style: "currency", currency: "MXN" })}
             </p>
             {cita.pagada && (
-              <span className="text-xs bg-green-100 text-green-700 font-medium px-2 py-0.5 rounded-full">
+              <span className="text-xs bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 font-medium px-2 py-0.5 rounded-full">
                 Pagada{cita.metodoPago ? ` · ${cita.metodoPago}` : ""}
               </span>
             )}

@@ -4,22 +4,15 @@ import { ChevronLeft, ChevronRight, CalendarDays, List } from "lucide-react";
 import { citasApi } from "../../api/citas";
 import type { CitaDto } from "../../types";
 import { toUtcDate } from "../../utils/formatters";
+import { fechaLocal } from "../../utils/fechas";
+import { ESTADO_CITA, ESTADOS_CITA, estiloEstadoCita } from "../../lib/estadoCita";
+import { asignarCarriles, rangoHoras, type Carril } from "../../lib/carrilesCitas";
 
-const HORA_INICIO = 7;
-const HORA_FIN = 21;
 const PX_POR_HORA = 64;
-const GRID_HEIGHT = (HORA_FIN - HORA_INICIO) * PX_POR_HORA;
 
 const DIAS_CORTOS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 const MESES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 
-const COLORES: Record<string, string> = {
-  Pendiente:   "bg-yellow-100 dark:bg-yellow-900/30 border-l-[3px] border-yellow-400 text-yellow-800 dark:text-yellow-300",
-  Confirmada:  "bg-green-100  dark:bg-green-900/30  border-l-[3px] border-green-500  text-green-800  dark:text-green-300",
-  Completada:  "bg-blue-100   dark:bg-blue-900/30   border-l-[3px] border-blue-400   text-blue-700   dark:text-blue-300",
-  Cancelada:   "bg-gray-100   dark:bg-slate-700/50  border-l-[3px] border-gray-300   dark:border-slate-500 text-gray-400 dark:text-slate-400",
-  Inasistencia:"bg-red-50     dark:bg-red-900/20    border-l-[3px] border-red-300    text-red-400    dark:text-red-400",
-};
 
 function getLunesDeEstaSemana(date: Date): Date {
   const d = new Date(date);
@@ -58,13 +51,16 @@ export default function CalendarioCitas({ empleadoId, onCitaClick, onReagendar }
   const { data: citas = [] } = useQuery({
     queryKey: ["citas-cal", lunes.toISOString(), empleadoId],
     queryFn: () => citasApi.obtenerTodas({
-      desde: lunes.toISOString().slice(0, 10),
-      hasta: hastaApi.toISOString().slice(0, 10),
+      desde: fechaLocal(lunes),
+      hasta: fechaLocal(hastaApi),
       empleadoId: empleadoId || undefined,
     }),
     select: (p) => p.datos,
   });
 
+  // Las horas visibles se amplían para que ninguna cita quede recortada.
+  const { inicio: HORA_INICIO, fin: HORA_FIN } = rangoHoras(citas);
+  const GRID_HEIGHT = (HORA_FIN - HORA_INICIO) * PX_POR_HORA;
   const dias = Array.from({ length: 7 }, (_, i) => addDias(lunes, i));
   const horas = Array.from({ length: HORA_FIN - HORA_INICIO }, (_, i) => HORA_INICIO + i);
   const hoy = new Date();
@@ -106,32 +102,41 @@ export default function CalendarioCitas({ empleadoId, onCitaClick, onReagendar }
 
   const NAV_BTN = "flex items-center gap-1.5 px-3 py-1.5 text-sm border border-gray-200 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-300 transition w-fit";
 
-  const renderGridCita = (c: CitaDto, _colIdx: number, totalCols = 1) => {
+  // Citas que se solapan se dibujan lado a lado; cada una se puede tocar.
+  const renderGridCita = (c: CitaDto, carriles: Map<string, Carril>) => {
     const top = calcTop(c);
     const height = calcAltura(c);
-    const color = COLORES[c.estadoTexto] ?? COLORES.Confirmada;
+    const { carril, carriles: totalCols } = carriles.get(c.id) ?? { carril: 0, carriles: 1 };
+    const estilo = estiloEstadoCita(c.estadoTexto);
     const hora = new Date(c.inicioEn).toLocaleTimeString("es-MX", { hour: "numeric", minute: "2-digit", hour12: true });
     const puedeMover = onReagendar && (c.estadoTexto === "Pendiente" || c.estadoTexto === "Confirmada");
     return (
       <button
         key={c.id}
+        type="button"
         onClick={() => !arrastrando && onCitaClick(c)}
+        aria-label={`${hora} ${c.nombreCliente}, ${c.nombreServicio}, ${estilo.etiqueta}. Abrir acciones`}
         title={puedeMover
           ? `Arrastra para reagendar · ${c.nombreCliente} — ${c.nombreServicio} (${hora})`
           : `${c.nombreCliente} — ${c.nombreServicio} (${hora})`}
         draggable={!!puedeMover}
         onDragStart={() => puedeMover && setArrastrando(c)}
         onDragEnd={() => { setArrastrando(null); setDropTarget(null); }}
-        className={`absolute inset-x-0.5 rounded text-left px-1.5 py-0.5 text-xs overflow-hidden transition
+        className={`absolute rounded text-left px-1.5 py-0.5 text-xs overflow-hidden transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
           ${puedeMover ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"}
           ${arrastrando?.id === c.id ? "opacity-40" : "hover:brightness-95"}
-          ${color}`}
-        style={{ top, height }}
+          ${estilo.bloque}`}
+        style={{
+          top,
+          height,
+          left: `calc(${(carril / totalCols) * 100}% + 2px)`,
+          width: `calc(${100 / totalCols}% - 4px)`,
+        }}
       >
         <p className="font-semibold truncate leading-tight">{hora} {c.nombreCliente}</p>
-        {height > 30 && <p className="truncate opacity-70 leading-tight">{c.nombreServicio}</p>}
+        {height > 30 && <p className="truncate leading-tight">{c.nombreServicio}</p>}
         {totalCols === 1 && height > 52 && (
-          <p className="truncate opacity-60 leading-tight">{c.duracionMinutos} min · {new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(c.precio)}</p>
+          <p className="truncate leading-tight">{c.duracionMinutos} min · {new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(c.precio)}</p>
         )}
       </button>
     );
@@ -208,12 +213,17 @@ export default function CalendarioCitas({ empleadoId, onCitaClick, onReagendar }
         </div>
       </div>
 
-      {/* Leyenda estados */}
-      <div className="flex gap-3 flex-wrap mb-3 text-xs">
-        {Object.entries(COLORES).map(([estado, clases]) => (
-          <span key={estado} className={`px-2 py-0.5 rounded font-medium ${clases}`}>{estado}</span>
-        ))}
-      </div>
+      {/* Leyenda estados: los mismos colores e iconos que la lista y el Gantt */}
+      <ul className="flex gap-2 flex-wrap mb-3 text-xs" aria-label="Leyenda de estados">
+        {ESTADOS_CITA.map((estado) => {
+          const { bloque, etiqueta, Icono } = ESTADO_CITA[estado];
+          return (
+            <li key={estado} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded font-medium ${bloque}`}>
+              <Icono size={12} aria-hidden="true" /> {etiqueta}
+            </li>
+          );
+        })}
+      </ul>
 
       {/* ── Vista Semana ── */}
       {vista === "semana" && (
@@ -299,7 +309,10 @@ export default function CalendarioCitas({ empleadoId, onCitaClick, onReagendar }
                     style={{ top: (dropTarget.hora - HORA_INICIO + dropTarget.minutos / 60) * PX_POR_HORA }}
                   />
                 )}
-                {citasDia.map((c) => renderGridCita(c, colIdx))}
+                {(() => {
+                  const carriles = asignarCarriles(citasDia);
+                  return citasDia.map((c) => renderGridCita(c, carriles));
+                })()}
               </div>
             );
           })}
@@ -345,7 +358,11 @@ export default function CalendarioCitas({ empleadoId, onCitaClick, onReagendar }
                   </div>
                 </div>
               )}
-              {citasDelDia(diaActivo).map((c) => renderGridCita(c, 0, 1))}
+              {(() => {
+                const citasDia = citasDelDia(diaActivo);
+                const carriles = asignarCarriles(citasDia);
+                return citasDia.map((c) => renderGridCita(c, carriles));
+              })()}
             </div>
           </div>
         </div>

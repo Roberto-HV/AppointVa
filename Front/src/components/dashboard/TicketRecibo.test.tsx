@@ -84,3 +84,30 @@ describe("TicketRecibo", () => {
     expect(screen.queryByText(/cambio/i)).not.toBeInTheDocument();
   });
 });
+
+describe("TicketRecibo — impresión", () => {
+  it("un nombre de cliente o negocio con marcado se imprime como texto", async () => {
+    let escrito = "";
+    const ventana = {
+      document: { write: (h: string) => { escrito += h; }, close: vi.fn() },
+      focus: vi.fn(), print: vi.fn(), close: vi.fn(),
+    };
+    const abrir = vi.spyOn(window, "open").mockReturnValue(ventana as unknown as Window);
+    const ataque = "<img src=x onerror=alert(1)>";
+    render(
+      <TicketRecibo
+        cita={{ ...cita, nombreCliente: ataque }}
+        negocioNombre={`"><script>alert(1)</script>`}
+        onClose={vi.fn()}
+        onEnviarEmail={vi.fn()}
+        enviandoEmail={false}
+      />
+    );
+    await userEvent.click(screen.getByRole("button", { name: /imprimir/i }));
+    const doc = new DOMParser().parseFromString(escrito, "text/html");
+    expect(doc.querySelector("img")).toBeNull();
+    expect(doc.querySelector("script")).toBeNull();
+    expect(doc.body.textContent).toContain(ataque);
+    abrir.mockRestore();
+  });
+});

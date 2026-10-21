@@ -6,59 +6,34 @@ import { useAuthStore } from "../../store/authStore";
 import type { CitaDto } from "../../types";
 import { toUtcDate } from "../../utils/formatters";
 import { DatePicker } from "../ui/DateTimePicker";
+import { hoy as hoyLocal } from "../../utils/fechas";
+import { ESTADO_CITA, ESTADOS_CITA, estiloEstadoCita } from "../../lib/estadoCita";
+import { rangoHoras } from "../../lib/carrilesCitas";
 
-const HORA_INICIO = 7;
-const HORA_FIN = 21;
 const PX_POR_HORA = 56;
-const GRID_H = (HORA_FIN - HORA_INICIO) * PX_POR_HORA;
 const COL_MIN_W = 148;
-
-const ESTADO_BG: Record<string, string> = {
-  Pendiente:    "bg-amber-400 hover:bg-amber-500",
-  Confirmada:   "bg-emerald-500 hover:bg-emerald-600",
-  Completada:   "bg-slate-300 dark:bg-slate-600 hover:bg-slate-400 dark:hover:bg-slate-500",
-  Cancelada:    "bg-red-100 dark:bg-red-900/40 hover:bg-red-200 dark:hover:bg-red-900/60 border border-red-300 dark:border-red-700",
-  Inasistencia: "bg-orange-100 dark:bg-orange-900/40 hover:bg-orange-200 dark:hover:bg-orange-900/60 border border-orange-300 dark:border-orange-700",
-};
-
-const ESTADO_TEXT: Record<string, string> = {
-  Pendiente:    "text-white",
-  Confirmada:   "text-white",
-  Completada:   "text-slate-500 dark:text-slate-300",
-  Cancelada:    "text-red-400 dark:text-red-400 line-through",
-  Inasistencia: "text-orange-500 dark:text-orange-400",
-};
 
 const EMP_COLORS = [
   "#4F46E5", "#7C3AED", "#0891B2", "#059669",
   "#D97706", "#DC2626", "#DB2777", "#0F766E",
 ];
 
-const LEYENDA = [
-  { label: "Confirmada", cls: "bg-emerald-500" },
-  { label: "Completada", cls: "bg-slate-300 dark:bg-slate-600" },
-  { label: "Cancelada",  cls: "bg-red-100 dark:bg-red-900/40 border border-red-300 dark:border-red-700" },
-];
 
 function horaLabel(h: number): string {
   if (h === 12) return "12 PM";
   return h > 12 ? `${h - 12} PM` : `${h} AM`;
 }
 
-function calcTop(iso: string): number {
+function calcTop(iso: string, horaInicio: number): number {
   const d = toUtcDate(iso);
   const h = d.getHours() + d.getMinutes() / 60;
-  return Math.max(0, (h - HORA_INICIO) * PX_POR_HORA);
+  return Math.max(0, (h - horaInicio) * PX_POR_HORA);
 }
 
 function calcAltura(min: number): number {
   return Math.max(22, (min / 60) * PX_POR_HORA);
 }
 
-function fechaLocal(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
 
 function navFecha(base: string, delta: number): string {
   const [y, m, d] = base.split("-").map(Number);
@@ -71,11 +46,23 @@ interface Props {
 }
 
 export default function GanttCitas({ onCitaClick }: Props) {
-  const hoy = fechaLocal();
+  const hoy = hoyLocal();
   const [fecha, setFecha] = useState(hoy);
   const [nowTop, setNowTop] = useState<number | null>(null);
   const usuario = useAuthStore((s) => s.usuario);
   const esEmpleado = usuario?.rol === "Empleado";
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["citas-gantt", fecha],
+    queryFn: () => citasApi.obtenerTodas({ desde: fecha, hasta: fecha, tamano: 200 }),
+    staleTime: 0,
+    refetchInterval: 30_000,
+  });
+  const citas = data?.datos ?? [];
+
+  // Las horas visibles se amplían para que ninguna cita quede fuera de la rejilla.
+  const { inicio: HORA_INICIO, fin: HORA_FIN } = rangoHoras(citas);
+  const GRID_H = (HORA_FIN - HORA_INICIO) * PX_POR_HORA;
 
   useEffect(() => {
     const calc = () => {
@@ -86,15 +73,7 @@ export default function GanttCitas({ onCitaClick }: Props) {
     calc();
     const id = setInterval(calc, 30_000);
     return () => clearInterval(id);
-  }, []);
-
-  const { data, isLoading } = useQuery({
-    queryKey: ["citas-gantt", fecha],
-    queryFn: () => citasApi.obtenerTodas({ desde: fecha, hasta: fecha, tamano: 200 }),
-    staleTime: 0,
-    refetchInterval: 30_000,
-  });
-  const citas = data?.datos ?? [];
+  }, [HORA_INICIO, HORA_FIN]);
 
   const { data: empleados = [] } = useQuery({
     queryKey: ["empleados"],
@@ -156,14 +135,14 @@ export default function GanttCitas({ onCitaClick }: Props) {
           <span className="text-xs text-gray-400 dark:text-slate-500">
             {isLoading ? "Cargando..." : `${citasActivas.length} cita${citasActivas.length !== 1 ? "s" : ""}`}
           </span>
-          <div className="hidden sm:flex items-center gap-3">
-            {LEYENDA.map(({ label, cls }) => (
-              <div key={label} className="flex items-center gap-1.5">
-                <div className={`w-2.5 h-2.5 rounded-sm ${cls}`} />
-                <span className="text-[11px] text-gray-400 dark:text-slate-500">{label}</span>
-              </div>
+          <ul className="hidden sm:flex items-center gap-3" aria-label="Leyenda de estados">
+            {ESTADOS_CITA.map((estado) => (
+              <li key={estado} className="flex items-center gap-1.5">
+                <span className={`w-2.5 h-2.5 rounded-sm ${ESTADO_CITA[estado].punto}`} aria-hidden="true" />
+                <span className="text-xs text-gray-600 dark:text-slate-300">{ESTADO_CITA[estado].etiqueta}</span>
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
       </div>
 
@@ -253,25 +232,28 @@ export default function GanttCitas({ onCitaClick }: Props) {
                   style={{ minWidth: COL_MIN_W }}
                 >
                   {(porEmp.get(emp.id) ?? []).map((cita) => {
-                    const top = calcTop(cita.inicioEn);
+                    const top = calcTop(cita.inicioEn, HORA_INICIO);
                     const height = calcAltura(cita.duracionMinutos);
-                    const bg = ESTADO_BG[cita.estadoTexto] ?? "bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600";
-                    const textCls = ESTADO_TEXT[cita.estadoTexto] ?? "text-gray-400 dark:text-slate-400";
-                    const esActiva =
-                      cita.estadoTexto === "Pendiente" || cita.estadoTexto === "Confirmada";
+                    // Mismo mapa que la lista y el calendario: fondo + texto del
+                    // token, nunca texto blanco sobre el color del estado.
+                    const estilo = estiloEstadoCita(cita.estadoTexto);
+                    const cerrada = cita.estadoTexto === "Cancelada" || cita.estadoTexto === "Inasistencia";
 
                     return (
                       <button
                         key={cita.id}
+                        type="button"
                         className={`absolute left-1 right-1 rounded-lg text-left transition-all cursor-pointer
                           hover:left-0.5 hover:right-0.5 hover:shadow-md active:scale-[0.99]
-                          ${bg} ${esActiva ? "" : "opacity-55"}`}
+                          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
+                          ${estilo.bloque}`}
                         style={{ top: top + 2, height: height - 4 }}
                         onClick={() => onCitaClick(cita)}
-                        title={`${cita.nombreCliente} — ${cita.nombreServicio} (${cita.estadoTexto})`}
+                        aria-label={`${cita.nombreCliente}, ${cita.nombreServicio}, ${estilo.etiqueta}. Abrir acciones`}
+                        title={`${cita.nombreCliente} — ${cita.nombreServicio} (${estilo.etiqueta})`}
                       >
-                        <div className={`px-2 py-1 overflow-hidden h-full flex flex-col gap-0.5 ${textCls}`}>
-                          <span className="text-[10px] font-bold leading-none opacity-90">
+                        <div className={`px-2 py-1 overflow-hidden h-full flex flex-col gap-0.5 ${cerrada ? "line-through" : ""}`}>
+                          <span className="text-[10px] font-bold leading-none">
                             {toUtcDate(cita.inicioEn).toLocaleTimeString("es-MX", {
                               hour: "2-digit",
                               minute: "2-digit",
@@ -284,7 +266,7 @@ export default function GanttCitas({ onCitaClick }: Props) {
                             </span>
                           )}
                           {height > 48 && (
-                            <span className="text-[10px] leading-tight truncate opacity-80">
+                            <span className="text-[10px] leading-tight truncate">
                               {cita.nombreServicio}
                             </span>
                           )}

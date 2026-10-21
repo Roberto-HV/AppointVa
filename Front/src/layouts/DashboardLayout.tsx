@@ -16,8 +16,25 @@ import { toUtcDate } from '../utils/formatters';
 import { useInactividadTimeout } from '../hooks/useInactividadTimeout';
 import { useSectorTerms, getSectorTerms } from "../hooks/useSectorTerms";
 import { useSectorFeatures } from "../hooks/useSectorFeatures";
+import { hoy as hoyLocal } from "../utils/fechas";
 
-function FechaHoraActual() {
+/** true desde `xl` (1280px): ahí el sidebar es fijo y no un cajón. */
+function useEsEscritorio() {
+  const consulta = "(min-width: 1280px)";
+  const [es, setEs] = useState(() =>
+    typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia(consulta).matches
+  );
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") return;
+    const mq = window.matchMedia(consulta);
+    const onChange = () => setEs(mq.matches);
+    mq.addEventListener?.("change", onChange);
+    return () => mq.removeEventListener?.("change", onChange);
+  }, []);
+  return es;
+}
+
+function FechaHoraActual({ className = "text-slate-500 dark:text-slate-400" }: { className?: string }) {
   const [ahora, setAhora] = useState(new Date());
   useEffect(() => {
     const id = setInterval(() => setAhora(new Date()), 60_000);
@@ -34,7 +51,7 @@ function FechaHoraActual() {
     hour12: true,
   });
   return (
-    <span className="hidden sm:block select-none text-sm capitalize text-slate-500 dark:text-slate-400">
+    <span className={`hidden sm:block select-none text-sm capitalize ${className}`}>
       {fecha} · {hora}
     </span>
   );
@@ -107,7 +124,7 @@ function UserMenuContent({ usuario, perfil, iniciales, rolChip, rol, onProfile, 
       <div className="h-px bg-slate-100 dark:bg-slate-700 mx-3 my-1" />
       <button
         onClick={onLogout}
-        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition"
+        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition"
       >
         <LogOut size={15} className="shrink-0" />
         Cerrar sesión
@@ -178,6 +195,12 @@ export default function DashboardLayout() {
   const prevPendientesRef = useRef<number | null>(null);
   const headerUserRef = useRef<HTMLDivElement>(null);
   const desktopUserRef = useRef<HTMLDivElement>(null);
+  const sidebarRef = useRef<HTMLElement>(null);
+  const botonMenuRef = useRef<HTMLButtonElement>(null);
+  const botonCerrarRef = useRef<HTMLButtonElement>(null);
+  const botonUsuarioMovilRef = useRef<HTMLButtonElement>(null);
+  const botonUsuarioEscritorioRef = useRef<HTMLButtonElement>(null);
+  const esEscritorio = useEsEscritorio();
 
   const location = useLocation();
   const esEmpleado = usuario?.rol === "Empleado";
@@ -229,7 +252,8 @@ export default function DashboardLayout() {
     }
   }, [perfil?.sector, location.pathname, navigate]);
 
-  const hoy = new Date().toISOString().split("T")[0];
+  // Fecha local: con `toISOString()` el contador cambiaba a mañana desde las 18:00 (UTC-6).
+  const hoy = hoyLocal();
   const { data: citasHoy = [] } = useQuery({
     queryKey: ["citas-badge", hoy],
     queryFn: () => citasApi.obtenerTodas({ desde: hoy, hasta: hoy }),
@@ -278,22 +302,82 @@ export default function DashboardLayout() {
 
   useInactividadTimeout(handleLogout);
 
+  // El cajón es modal por debajo de `xl`: al cerrarlo, el foco vuelve al botón
+  // que lo abrió (antes se perdía en <body>).
   const cerrarSidebar = () => {
-    (document.activeElement as HTMLElement)?.blur();
+    const estabaAbierto = sidebarOpen;
     setSidebarOpen(false);
+    if (estabaAbierto && !esEscritorio) botonMenuRef.current?.focus();
   };
 
+  // Cajón abierto: foco al botón de cerrar, Escape lo cierra y Tab no sale de él.
+  useEffect(() => {
+    if (!sidebarOpen || esEscritorio) return;
+    botonCerrarRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setSidebarOpen(false);
+        botonMenuRef.current?.focus();
+        return;
+      }
+      if (e.key !== "Tab" || !sidebarRef.current) return;
+      const enfocables = sidebarRef.current.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+      if (enfocables.length === 0) return;
+      const primero = enfocables[0];
+      const ultimo = enfocables[enfocables.length - 1];
+      if (e.shiftKey && document.activeElement === primero) { e.preventDefault(); ultimo.focus(); }
+      else if (!e.shiftKey && document.activeElement === ultimo) { e.preventDefault(); primero.focus(); }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [sidebarOpen, esEscritorio]);
+
+  // Menú de usuario: se cierra al tocar o enfocar fuera, y con Escape (el foco
+  // vuelve al avatar). `pointerdown` cubre ratón y toque.
   useEffect(() => {
     if (!headerMenuOpen) return;
-    const handler = (e: MouseEvent) => {
-      const target = e.target as Node;
-      const fueraHeader = !headerUserRef.current?.contains(target);
-      const fueraDesktop = !desktopUserRef.current?.contains(target);
-      if (fueraHeader && fueraDesktop) setHeaderMenuOpen(false);
+    const fuera = (target: Node) =>
+      !headerUserRef.current?.contains(target) && !desktopUserRef.current?.contains(target);
+    const onPointer = (e: PointerEvent) => { if (fuera(e.target as Node)) setHeaderMenuOpen(false); };
+    const onFocus = (e: FocusEvent) => { if (fuera(e.target as Node)) setHeaderMenuOpen(false); };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      setHeaderMenuOpen(false);
+      (esEscritorio ? botonUsuarioEscritorioRef : botonUsuarioMovilRef).current?.focus();
     };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [headerMenuOpen]);
+    document.addEventListener("pointerdown", onPointer);
+    document.addEventListener("focusin", onFocus);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onPointer);
+      document.removeEventListener("focusin", onFocus);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [headerMenuOpen, esEscritorio]);
+
+  // Sector salud: el esquema azul se conserva, pero sale de tokens con
+  // contraste en ambos temas (antes: estilos en línea con texto slate a 1.2:1).
+  const salud = perfil?.sector === "salud";
+  const temaNav = salud
+    ? {
+        aside: "bg-sidebar-salud border-white/10",
+        activo: "bg-sidebar-salud-active text-white font-semibold shadow-md",
+        inactivo: "text-sidebar-salud-fg hover:bg-sidebar-salud-hover",
+        icono: "text-sidebar-salud-muted",
+        pie: "text-sidebar-salud-fg hover:bg-sidebar-salud-hover",
+        borde: "border-white/10",
+      }
+    : {
+        aside: "bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-700/50",
+        activo: "bg-slate-900 dark:bg-slate-600 text-white font-semibold shadow-md",
+        inactivo: "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white",
+        icono: "text-slate-500 dark:text-slate-400",
+        pie: "text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white",
+        borde: "border-slate-100 dark:border-slate-700/50",
+      };
+  const etiquetaPendientes = `${pendientesCnt} cita${pendientesCnt !== 1 ? "s" : ""} pendiente${pendientesCnt !== 1 ? "s" : ""} por confirmar`;
 
   const rolChip = usuario?.rol === "Empleado"
     ? { label: "Empleado",    cls: "bg-transparent border-[1.5px] border-blue-600/40 text-blue-700 dark:border-blue-300/40 dark:text-blue-300" }
@@ -345,14 +429,20 @@ export default function DashboardLayout() {
 
       {/* ── Sidebar ── */}
       <aside
+        id="menu-principal"
+        ref={sidebarRef}
+        aria-label="Menú principal"
+        // Cerrado por debajo de `xl`, el cajón está fuera de pantalla: `inert`
+        // saca sus enlaces del orden de tabulación y del lector de pantalla.
+        inert={!esEscritorio && !sidebarOpen}
+        {...(!esEscritorio && sidebarOpen ? { role: "dialog", "aria-modal": true } : {})}
         className={`
-          fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-slate-900 border-r border-slate-100 dark:border-slate-700/50 flex flex-col
+          fixed inset-y-0 left-0 z-50 w-64 border-r ${temaNav.aside} flex flex-col
           transition-all duration-200 ease-in-out
           xl:static xl:z-auto xl:translate-x-0 xl:h-full xl:shrink-0
           ${sidebarCollapsed ? "xl:w-16" : "xl:w-60"}
           ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
         `}
-        style={perfil?.sector === "salud" ? { backgroundColor: "#0F4C75" } : undefined}
       >
         {/* Logo + cerrar móvil */}
         <div className="relative px-5 py-3 flex items-center justify-center shrink-0">
@@ -363,21 +453,26 @@ export default function DashboardLayout() {
                   <img src="/icons/LogoApp.png" alt="AppointVa" className="h-7 object-contain transition-all duration-200 block dark:hidden" />
                   <img src="/icons/LogoAppOscuro.png" alt="AppointVa" className="h-7 object-contain transition-all duration-200 hidden dark:block" />
                 </>
-              ) : theme === "dark" ? (
+              ) : theme === "dark" || salud ? (
                 <img src="/MaterLogoOscuro.png" alt="AppointVa" className="h-10 object-contain transition-all duration-200" style={{ mixBlendMode: "screen" }} />
               ) : (
                 <img src="/icons/Banner.png" alt="AppointVa" className="h-10 object-contain transition-all duration-200" />
               )}
             </NavLink>
             {!sidebarCollapsed && esEmpleado && (
-              <span className="text-[10px] font-bold bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full uppercase tracking-wide">
+              <span className="text-[10px] font-bold bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-200 px-2 py-0.5 rounded-full uppercase tracking-wide">
                 Empleado
               </span>
             )}
           </div>
           {/* Cerrar — solo móvil */}
-          <button onClick={cerrarSidebar} className="absolute right-3 xl:hidden text-slate-400 hover:text-slate-600">
-            <X size={20} />
+          <button
+            ref={botonCerrarRef}
+            onClick={cerrarSidebar}
+            aria-label="Cerrar menú"
+            className={`absolute right-1 xl:hidden w-11 h-11 inline-flex items-center justify-center rounded-lg ${temaNav.pie}`}
+          >
+            <X size={20} aria-hidden="true" />
           </button>
         </div>
 
@@ -396,15 +491,8 @@ export default function DashboardLayout() {
                   `flex items-center rounded-xl text-sm font-medium transition-all ${
                     sidebarCollapsed ? "justify-center px-0 py-1" : "gap-3 px-3 py-2.5"
                   } ${
-                    isActive
-                      ? "bg-slate-900 dark:bg-slate-600 text-white font-semibold shadow-md"
-                      : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white"
+                    isActive ? temaNav.activo : temaNav.inactivo
                   }`
-                }
-                style={({ isActive }) =>
-                  isActive && perfil?.sector === "salud"
-                    ? { backgroundColor: "#1B6CA8" }
-                    : undefined
                 }
               >
                 {({ isActive }) => (
@@ -412,7 +500,7 @@ export default function DashboardLayout() {
                     <div className={`rounded-xl flex items-center justify-center shrink-0 transition-colors ${
                       sidebarCollapsed ? "w-11 h-11" : "w-7 h-7"
                     } ${isActive && !sidebarCollapsed ? "bg-white/20" : "bg-transparent"}`}>
-                      <Icon size={sidebarCollapsed ? 22 : 15} className={isActive ? "text-white" : "text-slate-500 dark:text-slate-400"} />
+                      <Icon size={sidebarCollapsed ? 22 : 15} className={isActive ? "text-white" : temaNav.icono} />
                     </div>
                     {!sidebarCollapsed && (
                       <>
@@ -420,8 +508,8 @@ export default function DashboardLayout() {
                         {esCitas && hoyCnt > 0 && (
                           <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center leading-none ${
                             pendientesCnt > 0
-                              ? "bg-amber-100 text-amber-700 border border-amber-200"
-                              : "bg-slate-100 text-slate-500"
+                              ? "bg-status-pending-bg text-status-pending-fg border border-status-pending-dot"
+                              : "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-200"
                           }`}>
                             {hoyCnt > 9 ? "9+" : hoyCnt}
                           </span>
@@ -443,13 +531,14 @@ export default function DashboardLayout() {
 
         {/* Enlace de reservas */}
         {!esEmpleado && bookingUrl && (
-          <div className={`p-3 border-t border-slate-100 dark:border-slate-700/50 shrink-0 ${sidebarCollapsed ? "flex justify-center" : ""}`}>
+          <div className={`p-3 border-t ${temaNav.borde} shrink-0 ${sidebarCollapsed ? "flex justify-center" : ""}`}>
             {sidebarCollapsed ? (
               <Tooltip text="Enlace de reservas" side="right">
                 <span className="block">
                   <button
                     onClick={copiarEnlace}
-                    className="w-11 h-11 flex items-center justify-center rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white transition"
+                    aria-label={copiado ? "Enlace de reservas copiado" : "Copiar enlace de reservas"}
+                    className={`w-11 h-11 flex items-center justify-center rounded-xl transition ${temaNav.pie}`}
                   >
                     {copiado ? <Check size={20} className="text-emerald-500" /> : <Link size={20} />}
                   </button>
@@ -474,14 +563,14 @@ export default function DashboardLayout() {
 
         {/* Colapsar — vive en el pie porque su padding es constante: a diferencia del borde
             derecho del sidebar, este punto no se desplaza al cambiar el ancho. */}
-        <div className={`hidden xl:block p-3 border-t border-slate-100 dark:border-slate-700/50 shrink-0 ${sidebarCollapsed ? "flex justify-center" : ""}`}>
+        <div className={`hidden xl:block p-3 border-t ${temaNav.borde} shrink-0 ${sidebarCollapsed ? "flex justify-center" : ""}`}>
           {sidebarCollapsed ? (
             <Tooltip text="Expandir menú" side="right">
               <span className="block">
                 <button
                   onClick={toggleCollapsed}
                   aria-label="Expandir menú"
-                  className="w-11 h-11 flex items-center justify-center rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white transition"
+                  className={`w-11 h-11 flex items-center justify-center rounded-xl transition ${temaNav.pie}`}
                 >
                   <ChevronRight size={20} />
                 </button>
@@ -491,7 +580,7 @@ export default function DashboardLayout() {
             <button
               onClick={toggleCollapsed}
               aria-label="Colapsar menú"
-              className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-medium text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white transition"
+              className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-medium transition ${temaNav.pie}`}
             >
               <div className="w-6 h-6 flex items-center justify-center shrink-0">
                 <ChevronLeft size={14} />
@@ -507,14 +596,19 @@ export default function DashboardLayout() {
 
         {/* ── Barra superior móvil ── */}
         <header
-          className="xl:hidden bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-700/50 px-4 py-3 flex items-center gap-3 shrink-0 z-30"
-          style={perfil?.sector === "salud" ? { backgroundColor: "#1B6CA8" } : undefined}
+          className={`xl:hidden border-b px-4 py-2 flex items-center gap-3 shrink-0 z-30 ${
+            salud ? "bg-sidebar-salud-active border-white/10" : "bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-700/50"
+          }`}
         >
           <button
+            ref={botonMenuRef}
             onClick={() => setSidebarOpen(true)}
-            className="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition"
+            aria-label="Abrir menú"
+            aria-expanded={sidebarOpen}
+            aria-controls="menu-principal"
+            className="w-11 h-11 flex items-center justify-center rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition"
           >
-            <Menu size={18} />
+            <Menu size={18} aria-hidden="true" />
           </button>
           <NavLink to="/dashboard" end>
             <img src="/icons/LogoApp.png" alt="AppointVa" className="h-7 object-contain rounded-lg block dark:hidden" />
@@ -526,26 +620,35 @@ export default function DashboardLayout() {
             </span>
           )}
           <div ref={headerUserRef} className="ml-auto flex items-center gap-2 relative">
-            <FechaHoraActual />
+            <FechaHoraActual className={salud ? "text-sidebar-salud-fg" : undefined} />
             {!esEmpleado && <NotificacionesBell />}
             {pendientesCnt > 0 && (
-              <Tooltip text={`${pendientesCnt} cita${pendientesCnt !== 1 ? "s" : ""} pendiente${pendientesCnt !== 1 ? "s" : ""} por confirmar`}>
-                <span className="flex items-center gap-1 bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-700 text-[10px] font-bold px-2 py-0.5 rounded-full cursor-default">
+              <Tooltip text={etiquetaPendientes}>
+                <span
+                  aria-label={etiquetaPendientes}
+                  className="flex items-center gap-1 bg-status-pending-bg text-status-pending-fg border border-status-pending-dot text-[10px] font-bold px-2 py-0.5 rounded-full cursor-default"
+                >
                   {pendientesCnt > 9 ? "9+" : pendientesCnt} pendiente{pendientesCnt !== 1 ? "s" : ""}
                 </span>
               </Tooltip>
             )}
             <button
+              ref={botonUsuarioMovilRef}
               onClick={() => setHeaderMenuOpen((o) => !o)}
-              className="w-8 h-8 rounded-full bg-slate-900 flex items-center justify-center overflow-hidden"
+              aria-label="Menú de usuario"
+              aria-expanded={headerMenuOpen}
+              aria-controls="menu-usuario-movil"
+              className="w-11 h-11 rounded-full flex items-center justify-center"
             >
-              {usuario?.fotoUrl
-                ? <img src={usuario.fotoUrl} alt="Avatar" className="w-full h-full object-cover" />
-                : <span className="text-[10px] font-bold text-white">{iniciales}</span>
-              }
+              <span className="w-8 h-8 rounded-full bg-slate-900 flex items-center justify-center overflow-hidden">
+                {usuario?.fotoUrl
+                  ? <img src={usuario.fotoUrl} alt="" className="w-full h-full object-cover" />
+                  : <span className="text-[10px] font-bold text-white">{iniciales}</span>
+                }
+              </span>
             </button>
             {headerMenuOpen && (
-              <div className="absolute top-full right-0 mt-2 w-64 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-2xl overflow-hidden z-50">
+              <div id="menu-usuario-movil" className="absolute top-full right-0 mt-2 w-64 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-2xl overflow-hidden z-50">
                 <UserMenuContent {...menuProps} />
               </div>
             )}
@@ -554,13 +657,13 @@ export default function DashboardLayout() {
 
         {/* ── Banner cuenta inactiva ── */}
         {!esEmpleado && perfil && !perfil.activo && (
-          <div className="shrink-0 bg-amber-50 border-b border-amber-200 px-4 py-2.5 flex items-center gap-2.5">
-            <div className="w-5 h-5 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
-              <Mail size={11} className="text-amber-600" />
+          <div className="shrink-0 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800 px-4 py-2.5 flex items-center gap-2.5">
+            <div className="w-5 h-5 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center shrink-0">
+              <Mail size={11} className="text-amber-700 dark:text-amber-300" aria-hidden="true" />
             </div>
-            <p className="text-xs text-amber-800 font-medium">
+            <p className="text-xs text-amber-800 dark:text-amber-200 font-medium">
               Tu negocio está pendiente de activación.{" "}
-              <a href="mailto:hola@appointva.com" className="underline font-semibold hover:text-amber-900 transition-colors">
+              <a href="mailto:hola@appointva.com" className="underline font-semibold hover:text-amber-900 dark:hover:text-amber-100 transition-colors">
                 Escríbenos a hola@appointva.com
               </a>{" "}
               para habilitarlo.
@@ -582,16 +685,20 @@ export default function DashboardLayout() {
             {!esEmpleado && <NotificacionesBell />}
             <div ref={desktopUserRef} className="relative flex items-center">
               <button
+                ref={botonUsuarioEscritorioRef}
                 onClick={() => setHeaderMenuOpen((o) => !o)}
-                className="w-8 h-8 rounded-full bg-slate-900 flex items-center justify-center overflow-hidden"
+                aria-label="Menú de usuario"
+                aria-expanded={headerMenuOpen}
+                aria-controls="menu-usuario-escritorio"
+                className="w-9 h-9 rounded-full bg-slate-900 flex items-center justify-center overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 {usuario?.fotoUrl
-                  ? <img src={usuario.fotoUrl} alt="Avatar" className="w-full h-full object-cover" />
+                  ? <img src={usuario.fotoUrl} alt="" className="w-full h-full object-cover" />
                   : <span className="text-[10px] font-bold text-white">{iniciales}</span>
                 }
               </button>
               {headerMenuOpen && (
-                <div className="absolute top-full right-0 mt-2 w-64 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-2xl overflow-hidden z-50">
+                <div id="menu-usuario-escritorio" className="absolute top-full right-0 mt-2 w-64 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-2xl overflow-hidden z-50">
                   <UserMenuContent {...menuProps} />
                 </div>
               )}

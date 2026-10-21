@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import CitasPage from "./CitasPage";
@@ -287,7 +287,7 @@ describe("CitasPage — filtros de estado", () => {
 });
 
 describe("CitasPage — botones de acción en filas", () => {
-  it("muestra el botón Confirmar para citas Pendientes", async () => {
+  it("muestra el botón Confirmar, con nombre accesible, para citas Pendientes", async () => {
     vi.mocked(citasApi.obtenerTodas).mockResolvedValue({
       datos: [makeCita({ estadoTexto: "Pendiente" })],
       total: 1,
@@ -295,12 +295,12 @@ describe("CitasPage — botones de acción en filas", () => {
       tamano: 15,
     });
     renderConQuery();
-    await waitFor(() =>
-      expect(screen.getByTitle("Confirmar cita")).toBeInTheDocument()
-    );
+    expect(
+      await screen.findByRole("button", { name: "Confirmar cita de Juan Pérez" })
+    ).toBeInTheDocument();
   });
 
-  it("muestra el botón Reagendar para citas Pendientes y Confirmadas", async () => {
+  it("Reagendar está en la hoja de acciones de la fila, también en pantallas pequeñas", async () => {
     vi.mocked(citasApi.obtenerTodas).mockResolvedValue({
       datos: [makeCita({ estadoTexto: "Pendiente" })],
       total: 1,
@@ -308,9 +308,26 @@ describe("CitasPage — botones de acción en filas", () => {
       tamano: 15,
     });
     renderConQuery();
-    await waitFor(() =>
-      expect(screen.getByTitle("Reagendar")).toBeInTheDocument()
-    );
+    const acciones = await screen.findByRole("button", { name: "Acciones de la cita de Juan Pérez" });
+    // El botón no depende de `sm:` para existir: es el mismo a 375px.
+    expect(acciones.className).not.toMatch(/(^|\s)hidden(\s|$)/);
+    fireEvent.click(acciones);
+    expect(await screen.findByRole("button", { name: "Reagendar" })).toBeInTheDocument();
+  });
+
+  it("las demás acciones de la fila viven en la hoja con texto", async () => {
+    vi.mocked(citasApi.obtenerTodas).mockResolvedValue({
+      datos: [makeCita({ estadoTexto: "Confirmada", estado: 2 })],
+      total: 1,
+      pagina: 1,
+      tamano: 15,
+    });
+    renderConQuery();
+    fireEvent.click(await screen.findByRole("button", { name: "Acciones de la cita de Juan Pérez" }));
+    expect(await screen.findByRole("button", { name: "Agregar nota interna" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Editar datos del cliente" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Repetir cita" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Marcar inasistencia" })).toBeInTheDocument();
   });
 });
 
@@ -511,14 +528,38 @@ describe("anticipo badge y botón", () => {
     expect(badge.querySelector("svg")?.getAttribute("class")).toContain("check");
   });
 
-  it("muestra botón $ Anticipo cuando pendiente y no pagada", async () => {
+  it("ofrece registrar el anticipo, con su monto, cuando está pendiente y no pagada", async () => {
     renderWithCitas([{
       ...baseCita,
       anticipoRequerido: true,
       anticipoRecibido: false,
       montoAnticipo: 50,
     }]);
-    await waitFor(() => screen.getByText("Luis Pérez"));
-    expect(screen.getByTitle(/Registrar anticipo/)).toBeInTheDocument();
+    fireEvent.click(await screen.findByRole("button", { name: "Acciones de la cita de Luis Pérez" }));
+    fireEvent.click(await screen.findByRole("button", { name: /Registrar anticipo de \$50/ }));
+    await waitFor(() =>
+      expect(citasApi.registrarAnticipo).toHaveBeenCalledWith("cita-anticipo", true)
+    );
+  });
+
+  it("anular un anticipo pide confirmación con el monto antes de cambiarlo", async () => {
+    renderWithCitas([{
+      ...baseCita,
+      anticipoRequerido: true,
+      anticipoRecibido: true,
+      montoAnticipo: 50,
+    }]);
+    fireEvent.click(await screen.findByRole("button", { name: "Acciones de la cita de Luis Pérez" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Anular anticipo" }));
+
+    const confirmacion = await screen.findByRole("dialog", { name: "Anular anticipo" });
+    expect(confirmacion).toHaveTextContent(/\$50/);
+    expect(confirmacion).toHaveTextContent("Luis Pérez");
+    expect(citasApi.registrarAnticipo).not.toHaveBeenCalled();
+
+    fireEvent.click(within(confirmacion).getByRole("button", { name: "Anular anticipo" }));
+    await waitFor(() =>
+      expect(citasApi.registrarAnticipo).toHaveBeenCalledWith("cita-anticipo", false)
+    );
   });
 });
