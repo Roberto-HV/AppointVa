@@ -9,6 +9,24 @@ import PasswordStrengthBar from "../../components/PasswordStrengthBar";
 import ReglasContrasena from "../../components/ReglasContrasena";
 import LogoMarca from "../../components/LogoMarca";
 import { esquemaContrasena } from "../../utils/contrasena";
+import { mensajeError } from "../../utils/errores";
+import { useTituloPagina } from "../../hooks/useTituloPagina";
+
+/**
+ * Enlace a /recuperar-contrasena con el correo ya escrito (AP-14). El correo
+ * viaja en el estado de navegación, no en la URL.
+ */
+function NuevoEnlace({ email }: { email: string }) {
+  return (
+    <Link
+      to="/recuperar-contrasena"
+      state={email ? { email } : undefined}
+      className="inline-flex items-center justify-center min-h-[44px] text-sm font-medium text-slate-700 hover:underline"
+    >
+      Solicitar un nuevo enlace
+    </Link>
+  );
+}
 
 const schema = z
   .object({
@@ -22,6 +40,7 @@ const schema = z
 type FormData = z.infer<typeof schema>;
 
 export default function RestablecerContrasenaPage() {
+  useTituloPagina("Nueva contraseña");
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token") ?? "";
   const email = searchParams.get("email") ?? "";
@@ -46,10 +65,7 @@ export default function RestablecerContrasenaPage() {
       await authApi.restablecerContrasena(email, token, data.nuevaContrasena);
       setExito(true);
     } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje ??
-        "No se pudo restablecer la contraseña. El enlace puede haber expirado.";
-      setError(msg);
+      setError(mensajeError(err, "No se pudo restablecer la contraseña. El enlace puede haber expirado."));
     }
   };
 
@@ -57,8 +73,12 @@ export default function RestablecerContrasenaPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="w-full max-w-md bg-white rounded-2xl border border-gray-100 p-8 text-center">
-          <p className="text-red-500 font-medium mb-4">Enlace inválido o incompleto.</p>
-          <Link to="/login" className="text-sm text-slate-700 hover:underline">Volver al inicio</Link>
+          <h1 className="text-lg font-semibold text-gray-800 mb-2">Enlace inválido o incompleto</h1>
+          <p className="text-sm text-gray-500 mb-4">Los enlaces para restablecer la contraseña vencen. Pide uno nuevo con tu correo.</p>
+          <div className="flex flex-col items-center gap-1">
+            <NuevoEnlace email={email} />
+            <Link to="/login" className="inline-flex items-center min-h-[44px] text-sm text-gray-600 hover:underline">Volver al inicio de sesión</Link>
+          </div>
         </div>
       </div>
     );
@@ -161,8 +181,9 @@ export default function RestablecerContrasenaPage() {
                 </div>
 
                 {error && (
-                  <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-4 py-3">
-                    {error}
+                  <div role="alert" className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">
+                    <p>{error}</p>
+                    <NuevoEnlace email={email} />
                   </div>
                 )}
 

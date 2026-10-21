@@ -23,6 +23,14 @@ describe("reglas de contraseña alineadas con Identity (Program.cs)", () => {
     expect(esquemaContrasena.safeParse("Clave1").success).toBe(true);
   });
 
+  it("el esquema y el checklist salen de la misma lista de reglas", () => {
+    const r = esquemaContrasena.safeParse("abc");
+    expect(r.success).toBe(false);
+    const mensajes = r.success ? [] : r.error.issues.map((i) => i.message);
+    const fallidas = REGLAS_CONTRASENA.filter((regla) => !regla.cumple("abc")).map((regla) => regla.error);
+    expect(mensajes).toEqual(fallidas);
+  });
+
   it("expone las cuatro reglas que se muestran al usuario", () => {
     expect(REGLAS_CONTRASENA.map((r) => r.id)).toEqual(["longitud", "mayuscula", "minuscula", "numero"]);
     const cumplidas = REGLAS_CONTRASENA.filter((r) => r.cumple("abc1")).map((r) => r.id);
@@ -54,6 +62,16 @@ describe("traducirErroresIdentity", () => {
         "Something unexpected",
       ])
     ).toEqual(["La contraseña debe tener al menos una minúscula."]);
+  });
+
+  it("traduce la longitud mínima y no confunde 'unique chars' con ella", () => {
+    expect(
+      traducirErroresIdentity([
+        "Passwords must be at least 6 characters.",
+        "Passwords must use at least 2 different characters.",
+        "Passwords must have at least one non alphanumeric character.",
+      ])
+    ).toEqual(["La contraseña debe tener al menos 6 caracteres."]);
   });
 
   it("devuelve vacío si no hay errores", () => {

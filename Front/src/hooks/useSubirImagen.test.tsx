@@ -26,7 +26,7 @@ describe("useSubirImagen", () => {
 
   it("informa avance y destino mientras sube, y llama a onExito", async () => {
     let terminar: (v: string) => void = () => {};
-    const subir = vi.fn((_a: File, _d: string | undefined, onProgreso: (n: number) => void) => {
+    const subir = vi.fn((_a: File, _d: string | undefined, onProgreso: (n: number | null) => void) => {
       onProgreso(40);
       return new Promise<string>((r) => { terminar = r; });
     });
@@ -35,13 +35,47 @@ describe("useSubirImagen", () => {
 
     act(() => { result.current.subirArchivo(imagen(), "emp-1"); });
     await waitFor(() => expect(result.current.subiendo).toBe(true));
-    expect(result.current.destino).toBe("emp-1");
-    await waitFor(() => expect(result.current.progreso).toBe(40));
+    expect(result.current.subiendoEn("emp-1")).toBe(true);
+    await waitFor(() => expect(result.current.progresoDe("emp-1")).toBe(40));
 
     await act(async () => { terminar("ok"); });
     await waitFor(() => expect(result.current.subiendo).toBe(false));
     expect(onExito).toHaveBeenCalledWith("ok", "emp-1");
+    expect(result.current.progresoDe("emp-1")).toBeUndefined();
+  });
+
+  it("empieza indeterminado hasta conocer el total", async () => {
+    const subir = vi.fn(() => new Promise<void>(() => {}));
+    const { result } = renderHook(() => useSubirImagen({ subir, mensajeFallo: "x" }), { wrapper: envoltorio });
+    act(() => { result.current.subirArchivo(imagen()); });
+    expect(result.current.subiendo).toBe(true);
     expect(result.current.progreso).toBeNull();
+  });
+
+  it("dos subidas a la vez: terminar una no borra la otra, y no se duplica la misma fila", async () => {
+    const terminar: Record<string, () => void> = {};
+    const subir = vi.fn((_a: File, d: string | undefined, onProgreso: (n: number | null) => void) => {
+      onProgreso(d === "emp-1" ? 30 : 70);
+      return new Promise<void>((r) => { terminar[d!] = r; });
+    });
+    const { result } = renderHook(() => useSubirImagen({ subir, mensajeFallo: "x" }), { wrapper: envoltorio });
+
+    act(() => { result.current.subirArchivo(imagen(), "emp-1"); });
+    act(() => { result.current.subirArchivo(imagen(), "emp-2"); });
+    let repetida = true;
+    act(() => { repetida = result.current.subirArchivo(imagen(), "emp-1"); });
+    expect(repetida).toBe(false);
+    await waitFor(() => expect(subir).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(result.current.progresoDe("emp-2")).toBe(70));
+
+    await act(async () => { terminar["emp-2"](); });
+    await waitFor(() => expect(result.current.subiendoEn("emp-2")).toBe(false));
+    expect(result.current.subiendoEn("emp-1")).toBe(true);
+    expect(result.current.progresoDe("emp-1")).toBe(30);
+    expect(result.current.subiendo).toBe(true);
+
+    await act(async () => { terminar["emp-1"](); });
+    await waitFor(() => expect(result.current.subiendo).toBe(false));
   });
 
   it("muestra el mensaje del servidor si la subida falla", async () => {

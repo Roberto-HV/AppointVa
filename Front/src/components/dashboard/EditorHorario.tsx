@@ -1,9 +1,10 @@
+import { useState } from "react";
 import { X, Copy } from "lucide-react";
 import Switch from "../ui/Switch";
 import { TimePicker, HORAS } from "../ui/DateTimePicker";
 import type { HorarioDiaDto } from "../../types";
 import {
-  DIAS_SEMANA, HORA_MAXIMA, aplicarATodosLosAbiertos, errorDelDia, horaLegible, siguienteIntervalo,
+  DIAS_SEMANA, HORA_MAXIMA, aplicarATodosLosAbiertos, avisoAplicar, errorDelDia, horaLegible, siguienteIntervalo,
   type Intervalo,
 } from "../../lib/horario";
 
@@ -41,8 +42,20 @@ function horasFuera(intervalos: Intervalo[], paraFin: boolean): string[] {
 export default function EditorHorario({
   horarios, onCambiar, idBase, intervaloInicial, etiquetaCerrado, horarioPermitido,
 }: Props) {
+  // Qué pasó al copiar un día a los demás, cuando no fue una copia exacta.
+  const [aviso, setAviso] = useState<string | null>(null);
+
   const cambiarDia = (diaSemana: number, cambio: (h: HorarioDiaDto) => HorarioDiaDto) =>
     onCambiar(horarios.map((h) => (h.diaSemana === diaSemana ? cambio(h) : h)));
+
+  // En el editor de un empleado la copia se recorta al horario del negocio de
+  // cada día, y se omite donde no cabe; se avisa en vez de dejar horas que el
+  // negocio no tiene abiertas.
+  const aplicarALosDemas = (diaSemana: number) => {
+    const resultado = aplicarATodosLosAbiertos(horarios, diaSemana, horarioPermitido);
+    onCambiar(resultado.horarios);
+    setAviso(avisoAplicar(resultado));
+  };
 
   const alternarDia = (diaSemana: number) =>
     cambiarDia(diaSemana, (h) => ({
@@ -55,6 +68,12 @@ export default function EditorHorario({
 
   return (
     <div className="space-y-2">
+      <p
+        role="status"
+        className={aviso ? "rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200" : "sr-only"}
+      >
+        {aviso ?? ""}
+      </p>
       {horarios.map((h) => {
         const dia = DIAS_SEMANA[h.diaSemana];
         const idDia = `${idBase}-dia-${h.diaSemana}`;
@@ -157,7 +176,7 @@ export default function EditorHorario({
                   {abiertos > 1 && (
                     <button
                       type="button"
-                      onClick={() => onCambiar(aplicarATodosLosAbiertos(horarios, h.diaSemana))}
+                      onClick={() => aplicarALosDemas(h.diaSemana)}
                       aria-label={`Aplicar el horario del ${dia.toLowerCase()} a los demás días abiertos`}
                       className="min-h-[44px] inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-foreground hover:underline transition
                         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"

@@ -3,27 +3,42 @@ import { Link, useSearchParams } from "react-router-dom";
 import { api } from "../../api/axios";
 import { reenviarVerificacion } from "../../api/auth";
 import LogoMarca from "../../components/LogoMarca";
-import { mensajeError } from "../../utils/errores";
+import { esErrorTemporal, estadoHttp, mensajeError } from "../../utils/errores";
 import { CORREO_SOPORTE } from "../../lib/activacion";
+import { useTituloPagina } from "../../hooks/useTituloPagina";
 
 /**
  * - `error`: el servidor rechazó el enlace (inválido o vencido).
- * - `sin-conexion`: no hubo respuesta; el enlace puede ser válido (AP-03).
+ * - `temporal`: sin respuesta, 5xx, 408 o 429; el enlace puede ser válido (AP-03).
  */
-type Estado = "cargando" | "ok" | "error" | "sin-conexion";
+type Estado = "cargando" | "ok" | "error" | "temporal";
 
 const MENSAJE_INVALIDO = "El enlace de verificación es inválido o ha expirado.";
 
+/** Segundos de espera antes de permitir otro reenvío desde esta pantalla. */
+export const ESPERA_REENVIO_SEGUNDOS = 60;
+
 export default function VerificarEmailPage() {
+  useTituloPagina("Verificar correo");
   const [searchParams] = useSearchParams();
   const [estado, setEstado] = useState<Estado>("cargando");
   const [mensaje, setMensaje] = useState("");
+  const [sinRespuesta, setSinRespuesta] = useState(false);
   const [intento, setIntento] = useState(0);
 
   const [email, setEmail] = useState("");
   const [reenviando, setReenviando] = useState(false);
   const [reenvioMensaje, setReenvioMensaje] = useState("");
   const [reenvioError, setReenvioError] = useState("");
+  const [espera, setEspera] = useState(0);
+
+  // Cuenta atrás del reenvío: evita pedir enlaces en ráfaga, pero no deja al
+  // usuario sin salida si el primero no llega.
+  useEffect(() => {
+    if (espera <= 0) return;
+    const t = setTimeout(() => setEspera((s) => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [espera]);
 
   useEffect(() => {
     const userId = searchParams.get("userId");
@@ -43,8 +58,9 @@ export default function VerificarEmailPage() {
         setEstado("ok");
       })
       .catch((err) => {
-        if (!err?.response) {
-          setEstado("sin-conexion");
+        if (esErrorTemporal(err)) {
+          setSinRespuesta(estadoHttp(err) === undefined);
+          setEstado("temporal");
           return;
         }
         setMensaje(mensajeError(err, MENSAJE_INVALIDO));
@@ -54,8 +70,9 @@ export default function VerificarEmailPage() {
 
   const reintentar = useCallback(() => setIntento((n) => n + 1), []);
 
-  const onReenviar = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onReenviar = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (reenviando || espera > 0) return;
     const correo = email.trim();
     if (!/^\S+@\S+\.\S+$/.test(correo)) {
       setReenvioError("Escribe un correo válido.");
@@ -68,6 +85,7 @@ export default function VerificarEmailPage() {
       setReenvioMensaje(
         respuesta || "Si el correo está registrado y pendiente de verificación, recibirás un email."
       );
+      setEspera(ESPERA_REENVIO_SEGUNDOS);
     } catch (err) {
       setReenvioError(mensajeError(err, "No se pudo enviar el enlace. Revisa tu conexión e intenta de nuevo."));
     } finally {
@@ -106,11 +124,13 @@ export default function VerificarEmailPage() {
             </>
           )}
 
-          {estado === "sin-conexion" && (
+          {estado === "temporal" && (
             <div role="alert">
               <h1 className="text-xl font-semibold text-gray-800 mb-2">No pudimos comprobar el enlace</h1>
               <p className="text-gray-500 text-sm mb-6">
-                No hubo respuesta del servidor. Revisa tu conexión: tu enlace puede seguir siendo válido.
+                {sinRespuesta
+                  ? "No hubo respuesta del servidor. Revisa tu conexión: tu enlace puede seguir siendo válido."
+                  : "El servidor no pudo responder en este momento. Tu enlace puede seguir siendo válido; intenta de nuevo en unos minutos."}
               </p>
               <button
                 type="button"
@@ -133,7 +153,30 @@ export default function VerificarEmailPage() {
               <p className="text-gray-500 text-sm mb-6">{mensaje} Los enlaces vencen a las 24 horas; puedes pedir uno nuevo.</p>
 
               {reenvioMensaje ? (
-                <p role="status" className="text-sm text-green-700 font-medium mb-6">{reenvioMensaje}</p>
+                <div className="mb-6 space-y-3">
+                  <p role="status" className="text-sm text-green-700 font-medium">{reenvioMensaje}</p>
+                  <p className="text-xs text-gray-500">
+                    Enviado a <span className="font-medium text-gray-700 break-all">{email.trim()}</span>.
+                  </p>
+                  {reenvioError && <p role="alert" className="text-red-600 text-xs">{reenvioError}</p>}
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <button
+                      type="button"
+                      onClick={() => void onReenviar()}
+                      disabled={reenviando || espera > 0}
+                      className="flex-1 min-h-[44px] px-4 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60 transition"
+                    >
+                      {reenviando ? "Enviando..." : espera > 0 ? `Reenviar de nuevo en ${espera} s` : "Reenviar de nuevo"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setReenvioMensaje(""); setReenvioError(""); }}
+                      className="flex-1 min-h-[44px] px-4 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
+                    >
+                      Usar otro correo
+                    </button>
+                  </div>
+                </div>
               ) : (
                 <form onSubmit={onReenviar} noValidate className="text-left space-y-3 mb-6">
                   <label htmlFor="email-reenvio" className="block text-sm font-medium text-gray-700">
@@ -155,10 +198,10 @@ export default function VerificarEmailPage() {
                   )}
                   <button
                     type="submit"
-                    disabled={reenviando}
+                    disabled={reenviando || espera > 0}
                     className="w-full bg-slate-700 hover:bg-slate-800 disabled:opacity-60 text-white font-semibold py-2.5 rounded-lg transition text-sm"
                   >
-                    {reenviando ? "Enviando..." : "Reenviar enlace"}
+                    {reenviando ? "Enviando..." : espera > 0 ? `Reenviar enlace en ${espera} s` : "Reenviar enlace"}
                   </button>
                 </form>
               )}

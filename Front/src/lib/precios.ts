@@ -9,6 +9,11 @@ export interface PrecioPlan {
   mensual: number;
   /** Precio por mes con facturación anual. Sin valor = el plan no tiene precio anual. */
   anual?: number;
+  /**
+   * `false` para un plan "Próximamente": no se puede contratar, así que no se
+   * le pone ninguna nota de facturación ("Sin descuento anual…").
+   */
+  disponible?: boolean;
 }
 
 export interface PrecioVisible {
@@ -35,7 +40,7 @@ export function precioVisible(plan: PrecioPlan, anualSeleccionado: boolean): Pre
   return {
     porMes: plan.mensual,
     facturaAnual: false,
-    sinPrecioAnual: anualSeleccionado && !tieneAnual,
+    sinPrecioAnual: anualSeleccionado && !tieneAnual && plan.disponible !== false,
     ahorroAnual: 0,
   };
 }

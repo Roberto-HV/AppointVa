@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { Fragment, useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { adminApi, type AuditLogDto } from "../../api/admin";
 import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
@@ -7,6 +8,7 @@ import Pagination from "../../components/ui/Pagination";
 import { FiltroBarra } from "../../components/ui/filtros";
 import { TAMANO_PAGINA } from "../../hooks/usePaginacionLocal";
 import { toUtcDate } from "../../utils/formatters";
+import { useTituloPagina } from "../../hooks/useTituloPagina";
 
 /**
  * Acciones que `AuditService` llega a escribir.
@@ -24,13 +26,31 @@ const ACCIONES = [
   "EliminarCuenta",
 ];
 
+/**
+ * Nombre legible de cada acción (AP-24). El filtro sigue enviando el valor
+ * interno; solo cambia lo que se muestra.
+ */
+const ETIQUETA_ACCION: Record<string, string> = {
+  Login: "Inicio de sesión",
+  LoginFallido: "Inicio de sesión fallido",
+  Logout: "Cierre de sesión",
+  CambiarPassword: "Cambio de contraseña",
+  EliminarCuenta: "Eliminación de cuenta",
+};
+
+const etiquetaAccion = (accion: string) => ETIQUETA_ACCION[accion] ?? accion;
+
 /** El backend recibe `usuarioId` como `Guid?`: cualquier otra cosa es un 400. */
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export default function AuditLogPage() {
+  useTituloPagina("Registro de auditoría · Admin");
   const [pagina, setPagina] = useState(1);
   const [accion, setAccion] = useState("");
   const [usuarioId, setUsuarioId] = useState("");
+  // Fila con los detalles completos abierta. Antes solo se leían en `title`
+  // (hover), que en una pantalla táctil no existe.
+  const [abierto, setAbierto] = useState<string | null>(null);
 
   const usuarioIdValido = usuarioId === "" || UUID.test(usuarioId);
 
@@ -107,7 +127,7 @@ export default function AuditLogPage() {
             valor: accion,
             onChange: (v) => { setAccion(v); setPagina(1); },
             etiquetaNeutra: "Todas las acciones",
-            opciones: ACCIONES.map((a) => ({ valor: a, etiqueta: a })),
+            opciones: ACCIONES.map((a) => ({ valor: a, etiqueta: etiquetaAccion(a) })),
           },
         ]}
         onLimpiar={limpiarFiltros}
@@ -173,30 +193,75 @@ export default function AuditLogPage() {
                   </td>
                 </tr>
               )}
-              {!isError && data?.datos.map((log: AuditLogDto) => (
-                <tr key={log.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/50 transition">
-                  <td className="px-4 py-3 text-xs text-gray-500 dark:text-slate-400 whitespace-nowrap tabular-nums">
-                    {formatFecha(log.fechaEn)}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${badgeColor(log.accion)}`}>
-                      {log.accion}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-xs text-gray-700 dark:text-slate-200">
-                    <div className="truncate max-w-[180px]" title={log.usuarioEmail ?? log.usuarioId ?? ""}>
-                      {log.usuarioEmail ?? <span className="text-gray-400 dark:text-slate-500">{log.usuarioId?.slice(0, 8) ?? "—"}</span>}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-xs text-gray-500 dark:text-slate-400">
-                    {log.entidad ? `${log.entidad}${log.entidadId ? ` (${log.entidadId.slice(0, 8)})` : ""}` : "—"}
-                  </td>
-                  <td className="px-4 py-3 text-xs text-gray-500 dark:text-slate-400 max-w-[200px] truncate" title={log.detalles ?? ""}>
-                    {log.detalles ?? "—"}
-                  </td>
-                  <td className="px-4 py-3 text-xs text-gray-400 dark:text-slate-500 font-mono">{log.ipAddress ?? "—"}</td>
-                </tr>
-              ))}
+              {!isError && data?.datos.map((log: AuditLogDto) => {
+                const expandido = abierto === log.id;
+                const idDetalle = `detalle-${log.id}`;
+                return (
+                  <Fragment key={log.id}>
+                    <tr className="hover:bg-gray-50 dark:hover:bg-slate-800/50 transition">
+                      <td className="px-4 py-3 text-xs text-gray-500 dark:text-slate-400 whitespace-nowrap tabular-nums">
+                        {formatFecha(log.fechaEn)}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${badgeColor(log.accion)}`}>
+                          {etiquetaAccion(log.accion)}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-xs text-gray-700 dark:text-slate-200">
+                        <div className="truncate max-w-[180px]">
+                          {log.usuarioEmail ?? <span className="text-gray-500 dark:text-slate-400">{log.usuarioId ? "Usuario sin correo" : "—"}</span>}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-xs text-gray-500 dark:text-slate-400">
+                        {log.entidad ?? "—"}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-gray-500 dark:text-slate-400">
+                        <div className="flex items-center gap-2">
+                          <span className="max-w-[160px] truncate">{log.detalles ?? "—"}</span>
+                          <button
+                            type="button"
+                            onClick={() => setAbierto(expandido ? null : log.id)}
+                            aria-expanded={expandido}
+                            aria-controls={idDetalle}
+                            className="inline-flex items-center gap-1 min-h-[44px] lg:min-h-[36px] px-2 rounded-lg font-medium text-slate-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40"
+                          >
+                            {expandido ? "Ocultar" : "Ver detalle"}
+                            <ChevronDown size={14} aria-hidden="true" className={expandido ? "rotate-180" : ""} />
+                          </button>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-xs text-gray-500 dark:text-slate-400 font-mono">{log.ipAddress ?? "—"}</td>
+                    </tr>
+                    {expandido && (
+                      <tr id={idDetalle} className="bg-gray-50 dark:bg-slate-800/60">
+                        <td colSpan={6} className="px-4 py-3 text-xs text-gray-700 dark:text-slate-200">
+                          <dl className="grid sm:grid-cols-[max-content_1fr] gap-x-4 gap-y-1.5">
+                            <dt className="font-semibold text-gray-500 dark:text-slate-400">Detalles</dt>
+                            <dd className="whitespace-pre-wrap break-words">{log.detalles ?? "—"}</dd>
+                            <dt className="font-semibold text-gray-500 dark:text-slate-400">ID de usuario</dt>
+                            <dd className="font-mono break-all">{log.usuarioId ?? "—"}</dd>
+                            {log.entidad && (
+                              <>
+                                <dt className="font-semibold text-gray-500 dark:text-slate-400">Entidad</dt>
+                                <dd className="font-mono break-all">{log.entidad}{log.entidadId ? ` · ${log.entidadId}` : ""}</dd>
+                              </>
+                            )}
+                          </dl>
+                          {log.usuarioId && log.usuarioId !== usuarioId && (
+                            <button
+                              type="button"
+                              onClick={() => { setUsuarioId(log.usuarioId!); setPagina(1); setAbierto(null); }}
+                              className="mt-3 min-h-[44px] lg:min-h-[36px] px-3 rounded-lg border border-gray-200 dark:border-slate-600 font-medium text-gray-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40"
+                            >
+                              Ver solo los eventos de este usuario
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                );
+              })}
             </tbody>
           </table>
         </div>

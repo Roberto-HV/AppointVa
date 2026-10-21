@@ -1,14 +1,28 @@
 import { useState } from "react";
-import { useParams, useSearchParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { publicoApi } from "../../api/publico";
 import { listaEsperaPublicoApi } from "../../api/listaEspera";
 import type { NegocioPublico } from "../../types";
-import { CheckCircle2, Clock, AlertCircle } from "lucide-react";
+import { CheckCircle2, Clock, AlertCircle, ChevronLeft } from "lucide-react";
 import PublicFooter from "../../components/PublicFooter";
-import { hexToChannels, DEFAULT_COLOR } from "../../lib/colorUtils";
+import { hexToChannels, DEFAULT_COLOR, brandSolid } from "../../lib/colorUtils";
+import { mensajeError } from "../../utils/errores";
+import { useTituloPagina } from "../../hooks/useTituloPagina";
 
 type FormState = "idle" | "submitting" | "success";
+
+function VolverAlNegocio({ slug, nombre }: { slug: string; nombre: string }) {
+  return (
+    <Link
+      to={`/b/${slug}`}
+      className="inline-flex items-center gap-1 min-h-[44px] text-sm font-medium text-slate-700 hover:underline"
+    >
+      <ChevronLeft size={16} aria-hidden="true" />
+      Volver a {nombre}
+    </Link>
+  );
+}
 
 function NegocioHeader({ negocio, color }: { negocio: NegocioPublico; color: string }) {
   return (
@@ -90,11 +104,12 @@ export default function ListaEsperaPublicaPage() {
       });
       setFormState("success");
     } catch (err) {
-      const msg = (err as any)?.response?.data?.mensaje || "No se pudo unirte a la lista de espera. Intenta de nuevo.";
-      setError(msg);
+      setError(mensajeError(err, "No se pudo unirte a la lista de espera. Intenta de nuevo."));
       setFormState("idle");
     }
   };
+
+  useTituloPagina(negocio ? `Lista de espera · ${negocio.nombre}` : "Lista de espera");
 
   if (isLoading) {
     return (
@@ -129,6 +144,10 @@ export default function ListaEsperaPublicaPage() {
   }
 
   const color = negocio.colorPrimario ?? DEFAULT_COLOR;
+  // Mismo criterio que la reserva: un color de marca claro se oscurece hasta
+  // que el texto blanco del botón tenga contraste suficiente (AP-19).
+  const colorBoton = brandSolid(color);
+  const servicio = servicioId ? negocio.servicios?.find((s) => s.id === servicioId) : undefined;
 
   if (!negocio.listaEsperaActiva) {
     return (
@@ -158,9 +177,11 @@ export default function ListaEsperaPublicaPage() {
               <CheckCircle2 size={26} className="text-emerald-500" />
             </div>
             <h2 className="text-slate-900 font-bold text-lg mb-2">¡Estás en la lista!</h2>
-            <p className="text-slate-500 text-sm">
-              Te avisaremos cuando haya un lugar disponible.
+            {servicio && <p className="text-slate-700 text-sm font-medium mb-1">{servicio.nombre}</p>}
+            <p className="text-slate-500 text-sm mb-4">
+              Si se libera un lugar, {negocio.nombre} se pondrá en contacto contigo.
             </p>
+            <VolverAlNegocio slug={negocio.slug ?? slug!} nombre={negocio.nombre} />
           </div>
           <PublicFooter />
         </div>
@@ -173,9 +194,11 @@ export default function ListaEsperaPublicaPage() {
       <NegocioHeader negocio={negocio} color={color} />
       <div className="max-w-lg mx-auto px-4 pt-5 pb-10">
         <div className="bg-white rounded-2xl shadow-md p-5">
-          <h2 className="text-xl font-bold text-slate-900 mb-1">Lista de espera</h2>
-          <p className="text-sm text-slate-400 mb-5">
-            Déjanos tus datos y te avisamos cuando haya disponibilidad.
+          <h2 className="text-xl font-bold text-slate-900 mb-1">
+            {servicio ? `Lista de espera para ${servicio.nombre}` : "Lista de espera"}
+          </h2>
+          <p className="text-sm text-slate-500 mb-5">
+            Déjanos tus datos. Si se libera un lugar, {negocio.nombre} se pondrá en contacto contigo.
           </p>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -217,7 +240,7 @@ export default function ListaEsperaPublicaPage() {
               />
             </div>
             {error && (
-              <div className="flex items-start gap-2.5 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+              <div role="alert" className="flex items-start gap-2.5 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
                 <AlertCircle size={15} className="text-red-400 shrink-0 mt-0.5" />
                 <p className="text-sm text-red-600">{error}</p>
               </div>
@@ -226,11 +249,14 @@ export default function ListaEsperaPublicaPage() {
               type="submit"
               disabled={formState === "submitting"}
               className="w-full disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-2xl transition text-sm tracking-wide hover:opacity-90"
-              style={{ background: color }}
+              style={{ background: colorBoton }}
             >
               {formState === "submitting" ? "Uniéndome…" : "Unirme a la lista de espera"}
             </button>
           </form>
+          <div className="mt-3 text-center">
+            <VolverAlNegocio slug={negocio.slug ?? slug!} nombre={negocio.nombre} />
+          </div>
         </div>
         <PublicFooter />
       </div>

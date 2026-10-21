@@ -22,7 +22,7 @@ export function generarHTMLComprobante(pago: PagoSuscripcionDto): string {
   .row:last-child{border-bottom:none;}
   .row .label{color:#6b7280;}
   .row .value{font-weight:600;color:#111;}
-  .monto{font-size:22px;font-weight:800;color:#C8A961;text-align:center;margin:24px 0 8px;}
+  .monto{font-size:22px;font-weight:800;color:#0F172A;text-align:center;margin:24px 0 8px;}
   .footer{margin-top:40px;font-size:11px;color:#9ca3af;text-align:center;border-top:1px solid #f3f4f6;padding-top:16px;}
   @media print{body{padding:24px;}}
 </style></head><body>

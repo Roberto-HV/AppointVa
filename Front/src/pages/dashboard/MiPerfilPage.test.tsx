@@ -106,3 +106,20 @@ describe("MiPerfilPage — eliminar un bloqueo se puede deshacer (DC-33)", () =>
     );
   });
 });
+
+describe("MiPerfilPage — foto de perfil", () => {
+  it("valida tipo y tamaño antes de subir, como los demás subidores", async () => {
+    const { authApi } = await import("../../api/auth");
+    renderizar();
+    const input = document.querySelector<HTMLInputElement>('input[type="file"]')!;
+    expect(input.accept).toContain("image/webp");
+
+    fireEvent.change(input, { target: { files: [new File(["x"], "foto.heic", { type: "image/heic" })] } });
+    expect(authApi.subirFotoPerfil).not.toHaveBeenCalled();
+    expect(useToastStore.getState().toasts[0]).toMatchObject({ tipo: "error", mensaje: '"foto.heic" no es JPG, PNG, WebP o GIF.' });
+
+    vi.mocked(authApi.subirFotoPerfil).mockResolvedValue({ fotoUrl: "https://x/f.png" });
+    fireEvent.change(input, { target: { files: [new File(["x"], "foto.png", { type: "image/png" })] } });
+    await waitFor(() => expect(authApi.subirFotoPerfil).toHaveBeenCalled());
+  });
+});

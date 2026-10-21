@@ -428,7 +428,7 @@ export default function EmpleadosPage() {
                   className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center shrink-0 relative group dark:bg-slate-700 disabled:opacity-60
                     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                   onClick={() => { empleadoFotoIdRef.current = emp.id; fotoInputRef.current?.click(); }}
-                  disabled={fotoEmpleado.destino === emp.id}
+                  disabled={fotoEmpleado.subiendoEn(emp.id)}
                   aria-label={`Cambiar foto de ${emp.nombre}`}
                   title="Cambiar foto"
                 >
@@ -442,8 +442,8 @@ export default function EmpleadosPage() {
                     <Camera size={13} />
                   </span>
                 </button>
-                {fotoEmpleado.destino === emp.id && (
-                  <ProgresoSubida porcentaje={fotoEmpleado.progreso ?? 0} etiqueta={`Subiendo foto de ${emp.nombre}`} />
+                {fotoEmpleado.subiendoEn(emp.id) && (
+                  <ProgresoSubida porcentaje={fotoEmpleado.progresoDe(emp.id) ?? null} etiqueta={`Subiendo foto de ${emp.nombre}`} />
                 )}
               </div>
               <div className="flex-1 min-w-0">

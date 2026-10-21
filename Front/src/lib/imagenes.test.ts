@@ -31,6 +31,12 @@ describe("configSubida", () => {
     expect(onProgreso).toHaveBeenCalledWith(25);
   });
 
+  it("sin total informa null (indeterminado) en vez de 0 %", () => {
+    const onProgreso = vi.fn();
+    configSubida(onProgreso).onUploadProgress?.({ loaded: 50, total: undefined, bytes: 50, lengthComputable: false });
+    expect(onProgreso).toHaveBeenCalledWith(null);
+  });
+
   it("sin callback no registra avance", () => {
     expect(configSubida().onUploadProgress).toBeUndefined();
   });

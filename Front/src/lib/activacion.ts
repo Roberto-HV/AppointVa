@@ -20,11 +20,14 @@ export const CORREO_SOPORTE = "hola@appointva.com";
 export const ACTIVACION_RESUMEN =
   "Nuestro equipo revisa y activa cada negocio de forma manual. Hasta entonces tu página de reservas no recibe citas, pero ya puedes configurar servicios y horarios desde tu panel.";
 
-/** Pasos de la pantalla "Revisa tu correo". */
+/**
+ * Pasos de la pantalla "Revisa tu correo". El paso 3 ya cuenta la activación
+ * manual, así que esa pantalla no repite `ACTIVACION_RESUMEN` debajo.
+ */
 export const ACTIVACION_PASOS = [
   "Confirma tu correo con el enlace que te enviamos. Vence en 24 horas.",
   "Inicia sesión y configura tus servicios, horarios y equipo.",
-  "Activamos tu negocio de forma manual. Mientras siga pendiente verás un aviso en tu panel.",
+  "Activamos tu negocio de forma manual. Mientras siga pendiente, tu página de reservas no recibe citas y verás un aviso en tu panel.",
 ] as const;
 
 export const ACTIVACION_FAQ = `Primero confirma tu correo con el enlace que te enviamos. ${ACTIVACION_RESUMEN} Mientras tu negocio esté pendiente verás un aviso en tu panel; si tienes dudas, escríbenos a ${CORREO_SOPORTE}. No se requiere tarjeta de crédito.`;

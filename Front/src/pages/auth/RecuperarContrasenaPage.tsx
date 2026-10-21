@@ -2,9 +2,10 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import LogoMarca from "../../components/LogoMarca";
 import { authApi } from "../../api/auth";
+import { useTituloPagina } from "../../hooks/useTituloPagina";
 
 const schema = z.object({
   email: z.string().email("Correo inválido"),
@@ -12,14 +13,20 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>;
 
 export default function RecuperarContrasenaPage() {
+  useTituloPagina("Recuperar contraseña");
   const [enviado, setEnviado] = useState(false);
   const [errorGeneral, setErrorGeneral] = useState<string | null>(null);
+  // Viene de un enlace de restablecimiento vencido (AP-14): el correo ya se conoce.
+  const emailPrevio = (useLocation().state as { email?: unknown } | null)?.email;
 
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<FormData>({ resolver: zodResolver(schema) });
+  } = useForm<FormData>({
+    resolver: zodResolver(schema),
+    defaultValues: { email: typeof emailPrevio === "string" ? emailPrevio : "" },
+  });
 
   const onSubmit = async (data: FormData) => {
     setErrorGeneral(null);
@@ -63,10 +70,11 @@ export default function RecuperarContrasenaPage() {
 
               <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-5">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="recuperar-email" className="block text-sm font-medium text-gray-700 mb-1">
                     Correo electrónico
                   </label>
                   <input
+                    id="recuperar-email"
                     type="email"
                     autoComplete="email"
                     {...register("email")}

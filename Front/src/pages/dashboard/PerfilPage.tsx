@@ -714,7 +714,7 @@ export default function PerfilPage() {
                   className="text-xs text-slate-700 dark:text-slate-300 hover:underline disabled:opacity-50">
                   {logo.subiendo ? "Subiendo…" : "Cambiar logo"}
                 </button>
-                {logo.progreso !== null && <ProgresoSubida className="mt-1" porcentaje={logo.progreso} etiqueta="Subiendo logo" />}
+                {logo.subiendo && <ProgresoSubida className="mt-1" porcentaje={logo.progreso ?? null} etiqueta="Subiendo logo" />}
                 <div className="mt-auto pt-1 min-h-[1.25rem]">
                   {negocio?.logoUrl && (
                     <button type="button" onClick={() => setAccionPublica({ tipo: "logo" })} disabled={eliminandoLogo}
@@ -754,7 +754,7 @@ export default function PerfilPage() {
                   className="text-xs text-slate-700 dark:text-slate-300 hover:underline disabled:opacity-50">
                   {portada.subiendo ? "Subiendo…" : "Cambiar portada"}
                 </button>
-                {portada.progreso !== null && <ProgresoSubida className="mt-1" porcentaje={portada.progreso} etiqueta="Subiendo portada" />}
+                {portada.subiendo && <ProgresoSubida className="mt-1" porcentaje={portada.progreso ?? null} etiqueta="Subiendo portada" />}
                 {/* La posición viaja con "Guardar cambios" (el backend no tiene una
                     ruta para guardarla sola): se avisa igual que con el color. */}
                 {posicionSinGuardar && (
@@ -796,7 +796,7 @@ export default function PerfilPage() {
                   className="text-xs text-slate-700 dark:text-slate-300 hover:underline disabled:opacity-50">
                   {politicas.subiendo ? "Subiendo…" : "Cambiar políticas"}
                 </button>
-                {politicas.progreso !== null && <ProgresoSubida className="mt-1" porcentaje={politicas.progreso} etiqueta="Subiendo imagen de políticas" />}
+                {politicas.subiendo && <ProgresoSubida className="mt-1" porcentaje={politicas.progreso ?? null} etiqueta="Subiendo imagen de políticas" />}
                 <div className="mt-auto pt-1 min-h-[1.25rem]">
                   {negocio?.politicasUrl && (
                     <button type="button" onClick={() => setAccionPublica({ tipo: "politicas" })} disabled={eliminandoPoliticas}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { aplicarATodosLosAbiertos, errorDelDia, horaLegible, siguienteIntervalo } from "./horario";
+import { aplicarATodosLosAbiertos, avisoAplicar, errorDelDia, horaLegible, recortarAIntervalos, siguienteIntervalo } from "./horario";
 
 describe("siguienteIntervalo", () => {
   it("empieza donde terminó el anterior y dura una hora", () => {
@@ -47,10 +47,50 @@ describe("aplicarATodosLosAbiertos", () => {
       { diaSemana: 1, activo: true, intervalos: [{ horaInicio: "09:00", horaFin: "14:00" }, { horaInicio: "15:00", horaFin: "19:00" }] },
       { diaSemana: 2, activo: true, intervalos: [{ horaInicio: "10:00", horaFin: "12:00" }] },
     ];
-    const r = aplicarATodosLosAbiertos(horarios, 1);
+    const { horarios: r, copiados } = aplicarATodosLosAbiertos(horarios, 1);
     expect(r[0].intervalos).toEqual([]);
     expect(r[2].intervalos).toEqual(horarios[1].intervalos);
     expect(r[2].intervalos).not.toBe(horarios[1].intervalos);
+    expect(copiados).toEqual([2]);
+  });
+
+  it("con horario del negocio recorta la copia a cada día y omite los días donde no cabe", () => {
+    const horarios = [
+      { diaSemana: 1, activo: true, intervalos: [{ horaInicio: "09:00", horaFin: "19:00" }] },
+      { diaSemana: 2, activo: true, intervalos: [{ horaInicio: "10:00", horaFin: "12:00" }] },
+      { diaSemana: 6, activo: true, intervalos: [{ horaInicio: "10:00", horaFin: "12:00" }] },
+      { diaSemana: 0, activo: true, intervalos: [{ horaInicio: "10:00", horaFin: "11:00" }] },
+    ];
+    const negocio: Record<number, { horaInicio: string; horaFin: string }[] | null> = {
+      2: [{ horaInicio: "09:00", horaFin: "19:00" }],
+      6: [{ horaInicio: "10:00", horaFin: "14:00" }],
+      0: null,
+    };
+    const r = aplicarATodosLosAbiertos(horarios, 1, (d) => negocio[d] ?? null);
+    expect(r.horarios[1].intervalos).toEqual([{ horaInicio: "09:00", horaFin: "19:00" }]);
+    expect(r.horarios[2].intervalos).toEqual([{ horaInicio: "10:00", horaFin: "14:00" }]);
+    expect(r.horarios[3]).toBe(horarios[3]);
+    expect(r).toMatchObject({ copiados: [2], recortados: [6], omitidos: [0] });
+    expect(avisoAplicar(r)).toBe(
+      "Copiado a Martes. Ajustado al horario del negocio en Sábado. Sin cambios en Domingo: el horario copiado queda fuera del horario del negocio.",
+    );
+  });
+
+  it("sin recortes ni omisiones no hay aviso", () => {
+    const horarios = [
+      { diaSemana: 1, activo: true, intervalos: [{ horaInicio: "09:00", horaFin: "12:00" }] },
+      { diaSemana: 2, activo: true, intervalos: [] },
+    ];
+    expect(avisoAplicar(aplicarATodosLosAbiertos(horarios, 1, () => [{ horaInicio: "08:00", horaFin: "20:00" }]))).toBeNull();
+  });
+
+  it("recortarAIntervalos parte un intervalo que cruza la pausa del negocio", () => {
+    expect(
+      recortarAIntervalos(
+        [{ horaInicio: "09:00", horaFin: "18:00" }],
+        [{ horaInicio: "09:00", horaFin: "13:00" }, { horaInicio: "15:00", horaFin: "19:00" }],
+      ),
+    ).toEqual([{ horaInicio: "09:00", horaFin: "13:00" }, { horaInicio: "15:00", horaFin: "18:00" }]);
   });
 });
 

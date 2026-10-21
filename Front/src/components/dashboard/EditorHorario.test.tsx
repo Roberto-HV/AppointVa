@@ -87,4 +87,19 @@ describe("EditorHorario (OM-22)", () => {
     fireEvent.click(screen.getByRole("switch", { name: "Domingo" }));
     expect(onCambiar).toHaveBeenCalledWith([{ diaSemana: 0, activo: true, intervalos: [{ horaInicio: "09:00", horaFin: "18:00" }] }]);
   });
+
+  it("en el editor de un empleado, aplicar a los demás días recorta al horario del negocio y lo avisa", () => {
+    render(
+      <Envoltorio
+        inicial={[
+          { diaSemana: 1, activo: true, intervalos: [{ horaInicio: "09:00", horaFin: "19:00" }] },
+          { diaSemana: 6, activo: true, intervalos: [{ horaInicio: "10:00", horaFin: "12:00" }] },
+        ]}
+        permitido={(d) => (d === 6 ? [{ horaInicio: "10:00", horaFin: "14:00" }] : [{ horaInicio: "09:00", horaFin: "19:00" }])}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Aplicar el horario del lunes a los demás días abiertos" }));
+    expect(estado()[1].intervalos).toEqual([{ horaInicio: "10:00", horaFin: "14:00" }]);
+    expect(screen.getByText(/Ajustado al horario del negocio en Sábado/)).toHaveAttribute("role", "status");
+  });
 });

@@ -3,7 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import RegistroNegocioPage from "./RegistroNegocioPage";
-import { ACTIVACION_RESUMEN } from "../../lib/activacion";
+import { ACTIVACION_PASOS } from "../../lib/activacion";
 
 vi.mock("../../api/axios", () => ({
   api: { post: vi.fn(), get: vi.fn() },
@@ -93,6 +93,31 @@ describe("RegistroNegocioPage — giro del negocio (AP-01)", () => {
   });
 });
 
+describe("RegistroNegocioPage — detalles del formulario (AP-13)", () => {
+  it("el error del nombre desaparece al corregirlo", async () => {
+    const user = userEvent.setup();
+    renderEn();
+    const nombre = screen.getByLabelText("Nombre del negocio");
+    await user.type(nombre, "A");
+    await user.click(screen.getByRole("button", { name: "Crear cuenta" }));
+    const campo = nombre.parentElement!;
+    await waitFor(() => expect(campo).toHaveTextContent("Mínimo 2 caracteres"));
+
+    await user.type(nombre, "na");
+    expect(nombre).toHaveValue("Ana");
+    await waitFor(() => expect(campo).not.toHaveTextContent("Mínimo 2 caracteres"));
+  });
+
+  it("los campos tienen etiqueta y el autocompletado correcto", () => {
+    renderEn();
+    expect(screen.getByLabelText("Nombre del negocio")).toHaveAttribute("autocomplete", "organization");
+    expect(screen.getByLabelText(/Teléfono/)).toHaveAttribute("autocomplete", "tel");
+    expect(screen.getByLabelText("Tu nombre completo")).toHaveAttribute("autocomplete", "name");
+    expect(screen.getByLabelText("Correo electrónico")).toHaveAttribute("autocomplete", "email");
+    expect(screen.queryByText("*")).not.toBeInTheDocument();
+  });
+});
+
 describe("RegistroNegocioPage — reglas de contraseña (AP-12)", () => {
   it("muestra las reglas siempre y las marca al cumplirse", async () => {
     const user = userEvent.setup();
@@ -144,11 +169,13 @@ describe("RegistroNegocioPage — pantalla de éxito (AP-02, AP-03)", () => {
     return user;
   }
 
-  it("explica qué sigue con el mismo mensaje de activación que la FAQ y el panel", async () => {
+  it("explica qué sigue y menciona la activación manual una sola vez", async () => {
     await registrar();
     expect(screen.getByRole("heading", { name: "Qué sigue" })).toBeInTheDocument();
-    expect(screen.getByText(ACTIVACION_RESUMEN)).toBeInTheDocument();
+    for (const paso of ACTIVACION_PASOS) expect(screen.getByText(paso)).toBeInTheDocument();
     expect(screen.getByText(/Vence en 24 horas/)).toBeInTheDocument();
+    expect(document.body.textContent?.match(/de forma manual/g)).toHaveLength(1);
+    expect(screen.getByText(/no recibe citas/)).toBeInTheDocument();
   });
 
   it("da una salida si el correo se escribió mal", async () => {

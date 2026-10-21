@@ -5,13 +5,17 @@ import { api } from "../../api/axios";
 import PasoFechaHora from "../../components/booking/PasoFechaHora";
 import type { SlotDisponible } from "../../types";
 import { CalendarDays, ChevronLeft, ChevronRight, X, CheckCircle2, LogOut } from "lucide-react";
-import { SiGooglecalendar, SiApple } from "react-icons/si";
 import { formatPrecio, formatFechaHoraResumen as formatFecha } from "../../utils/formatters";
 import PublicFooter from "../../components/PublicFooter";
+import { useTituloPagina } from "../../hooks/useTituloPagina";
+import { esErrorTemporal, mensajeError } from "../../utils/errores";
+
+// Acciones secundarias de cada cita: botones de 44px, no enlaces de 12px (AP-25).
+const BOTON_SECUNDARIO =
+  "min-h-[44px] px-3.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-40 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40";
 
 const TAMANO = 10;
 const SESSION_KEY = "mcs_session";
-const API_URL = import.meta.env.VITE_API_URL as string;
 
 interface MiCita {
   id: string;
@@ -51,17 +55,6 @@ function EstadoBadge({ estado }: { estado: string }) {
       {estado}
     </span>
   );
-}
-
-function buildGoogleCalUrl(cita: MiCita): string {
-  const fmt = (d: Date) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
-  const titulo = encodeURIComponent(`${cita.nombreServicio} — ${cita.nombreEmpleado}`);
-  const detalles = encodeURIComponent(`Negocio: ${cita.nombreNegocio}\nCódigo: ${cita.codigoConfirmacion}`);
-  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${titulo}&dates=${fmt(new Date(cita.inicioEn))}/${fmt(new Date(cita.finEn))}&details=${detalles}`;
-}
-
-function getIcalUrl(cita: MiCita): string {
-  return `${API_URL}/publico/citas/${cita.codigoConfirmacion}/ical`;
 }
 
 export default function MisCitasPage() {
@@ -106,7 +99,7 @@ export default function MisCitasPage() {
     }
   }, [reagendando]);
 
-  const { data: queryData, isLoading, error } = useQuery<{ citas: MiCita[]; total: number }>({
+  const { data: queryData, isLoading, error, refetch, isFetching } = useQuery<{ citas: MiCita[]; total: number }>({
     queryKey: ["mis-citas", slug, buscado?.email, buscado?.telefono, pagina],
     queryFn: async () => {
       const { data, headers } = await api.get("/publico/mis-citas", {
@@ -119,6 +112,8 @@ export default function MisCitasPage() {
   });
 
   const citas = queryData?.citas;
+  const nombreNegocio = citas?.[0]?.nombreNegocio;
+  useTituloPagina(nombreNegocio ? `Mis citas · ${nombreNegocio}` : "Mis citas");
   const total = queryData?.total ?? 0;
   const totalPaginas = Math.max(1, Math.ceil(total / TAMANO));
 
@@ -150,8 +145,7 @@ export default function MisCitasPage() {
       await api.delete(`/publico/citas/${codigo}`, { params: { email: buscado.email } });
       qc.invalidateQueries({ queryKey: ["mis-citas", slug, buscado.email, buscado.telefono] });
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje ?? "No se pudo cancelar. Intenta de nuevo.";
-      setErrorCancelacion({ id, msg });
+      setErrorCancelacion({ id, msg: mensajeError(err, "No se pudo cancelar. Intenta de nuevo.") });
     } finally {
       setCancelando(null);
     }
@@ -171,8 +165,7 @@ export default function MisCitasPage() {
       qc.invalidateQueries({ queryKey: ["mis-citas", slug, buscado.email, buscado.telefono] });
       reagendaTimerRef.current = setTimeout(() => { setReagendando(null); setSlotNuevo(null); setExitoReagenda(""); }, 5000);
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje ?? "No se pudo reagendar la cita.";
-      setErrorReagenda(msg);
+      setErrorReagenda(mensajeError(err, "No se pudo reagendar la cita."));
     } finally {
       setGuardandoReagenda(false);
     }
@@ -274,10 +267,24 @@ export default function MisCitasPage() {
               </div>
             )}
 
-            {error && (
-              <div className="bg-red-50 border border-red-100 rounded-2xl p-4 text-center text-sm text-red-600">
-                No se pudo buscar las citas. Verifica tu información e intenta de nuevo.
-                <button onClick={() => { setBuscado(null); }} className="mt-3 block mx-auto text-sm font-medium text-slate-700 dark:text-slate-300 underline">Corregir mis datos</button>
+            {/* Un fallo de red o del servidor no es culpa de los datos (AP-25). */}
+            {error && esErrorTemporal(error) && (
+              <div role="alert" className="bg-red-50 border border-red-100 rounded-2xl p-4 text-center text-sm text-red-700">
+                No pudimos cargar tus citas. Revisa tu conexión e intenta de nuevo.
+                <button
+                  type="button"
+                  onClick={() => void refetch()}
+                  disabled={isFetching}
+                  className={`${BOTON_SECUNDARIO} mt-3 mx-auto block bg-white`}
+                >
+                  {isFetching ? "Reintentando…" : "Reintentar"}
+                </button>
+              </div>
+            )}
+            {error && !esErrorTemporal(error) && (
+              <div role="alert" className="bg-red-50 border border-red-100 rounded-2xl p-4 text-center text-sm text-red-700">
+                {mensajeError(error, "No se pudo buscar las citas. Verifica tu información e intenta de nuevo.")}
+                <button type="button" onClick={() => { setBuscado(null); }} className={`${BOTON_SECUNDARIO} mt-3 mx-auto block bg-white`}>Corregir mis datos</button>
               </div>
             )}
 
@@ -335,47 +342,54 @@ export default function MisCitasPage() {
                           <p className="text-sm font-bold text-slate-800">{formatPrecio(c.precio)}</p>
                         </div>
 
-                        <div className="mt-3 pt-3 border-t border-slate-50 flex items-center justify-between gap-2">
-                          <span className="font-mono text-xs text-slate-400 bg-slate-50 px-2 py-1 rounded-lg tracking-wider">
+                        <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                          <span className="font-mono text-xs text-slate-500 bg-slate-50 px-2 py-1 rounded-lg tracking-wider">
                             {c.codigoConfirmacion}
                           </span>
-                          <div className="flex items-center gap-3">
-                            {(c.estadoTexto === "Pendiente" || c.estadoTexto === "Confirmada") && puedeModificar && tieneEmail && (
-                              <>
-                                <button
-                                  onClick={() => { setReagendando(c); setSlotNuevo(null); setErrorReagenda(""); }}
-                                  className="text-xs font-semibold text-slate-500 hover:text-slate-800 transition"
-                                >
-                                  Reagendar
-                                </button>
-                                <button
-                                  onClick={() => setCancelandoId(c.id)}
-                                  disabled={cancelando === c.codigoConfirmacion}
-                                  className="text-xs font-semibold text-red-400 hover:text-red-600 disabled:opacity-40 transition"
-                                >
-                                  {cancelando === c.codigoConfirmacion ? "Cancelando…" : "Cancelar"}
-                                </button>
-                              </>
-                            )}
-                            {(c.estadoTexto === "Pendiente" || c.estadoTexto === "Confirmada") && !puedeModificar && (
-                              <span className="text-xs text-slate-400">Sin cambios permitidos</span>
-                            )}
-                            <button
-                              onClick={() =>
-                                navigate(`/b/${c.negocioSlug}?servicioId=${c.servicioId}&empleadoId=${c.empleadoId}`)
-                              }
-                              className="text-xs font-semibold text-sky-600 hover:text-sky-800 transition"
-                            >
-                              Repetir
-                            </button>
-                            <button
-                              onClick={() => navigate(`/cita/${c.codigoConfirmacion}`)}
-                              className="text-xs font-bold text-slate-700 hover:underline"
-                            >
-                              Ver →
-                            </button>
-                          </div>
+                          <button
+                            type="button"
+                            onClick={() => navigate(`/cita/${c.codigoConfirmacion}`)}
+                            className="min-h-[44px] px-4 rounded-xl bg-slate-700 hover:bg-slate-800 text-white text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40"
+                          >
+                            Ver cita
+                          </button>
                         </div>
+
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {(c.estadoTexto === "Pendiente" || c.estadoTexto === "Confirmada") && puedeModificar && tieneEmail && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => { setReagendando(c); setSlotNuevo(null); setErrorReagenda(""); }}
+                                className={BOTON_SECUNDARIO}
+                              >
+                                Reagendar
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setCancelandoId(c.id)}
+                                disabled={cancelando === c.codigoConfirmacion}
+                                className={`${BOTON_SECUNDARIO} text-red-700 border-red-200 hover:bg-red-50`}
+                              >
+                                {cancelando === c.codigoConfirmacion ? "Cancelando…" : "Cancelar"}
+                              </button>
+                            </>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              navigate(`/b/${c.negocioSlug}?servicioId=${c.servicioId}&empleadoId=${c.empleadoId}`)
+                            }
+                            className={BOTON_SECUNDARIO}
+                          >
+                            Repetir
+                          </button>
+                        </div>
+                        {(c.estadoTexto === "Pendiente" || c.estadoTexto === "Confirmada") && !puedeModificar && (
+                          <p className="mt-2 text-xs text-slate-500">
+                            Sin cambios permitidos: ya pasó el plazo para reagendar o cancelar.
+                          </p>
+                        )}
 
                         {/* AP-04: sin correo el servidor no permite cambios; decirlo en vez de ocultar las acciones. */}
                         {(c.estadoTexto === "Pendiente" || c.estadoTexto === "Confirmada") && puedeModificar && !tieneEmail && (
@@ -392,36 +406,17 @@ export default function MisCitasPage() {
                           </p>
                         )}
 
-                        <div className="mt-2 flex items-center gap-3">
-                          <a
-                            href={buildGoogleCalUrl(c)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-700 transition"
-                          >
-                            <SiGooglecalendar size={12} />
-                            Google Calendar
-                          </a>
-                          <a
-                            href={getIcalUrl(c)}
-                            download
-                            className="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-700 transition"
-                          >
-                            <SiApple size={12} />
-                            iCal / Apple
-                          </a>
-                        </div>
                         {cancelandoId === c.id && (
-                          <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-                            <p className="text-xs text-red-700 dark:text-red-300 mb-2">¿Confirmas la cancelación? Esta acción no se puede deshacer.</p>
+                          <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                            <p className="text-xs text-red-700 mb-2">¿Confirmas la cancelación? Esta acción no se puede deshacer.</p>
                             <div className="flex gap-2">
-                              <button onClick={() => { cancelarCita(c.id, c.codigoConfirmacion); setCancelandoId(null); }} className="text-xs bg-red-600 text-white px-3 py-1.5 rounded-lg hover:bg-red-700 transition">Sí, cancelar</button>
-                              <button onClick={() => setCancelandoId(null)} className="text-xs text-slate-500 dark:text-slate-400 px-3 py-1.5 hover:text-slate-700 transition">No, volver</button>
+                              <button type="button" onClick={() => { cancelarCita(c.id, c.codigoConfirmacion); setCancelandoId(null); }} className="min-h-[44px] text-sm bg-red-600 text-white px-4 rounded-lg hover:bg-red-700 transition">Sí, cancelar</button>
+                              <button type="button" onClick={() => setCancelandoId(null)} className="min-h-[44px] text-sm text-slate-600 px-4 hover:text-slate-800 transition">No, volver</button>
                             </div>
                           </div>
                         )}
                         {errorCancelacion?.id === c.id && (
-                          <div className="mt-2 text-xs text-red-600 bg-red-50 border border-red-100 px-3 py-2 rounded-lg">
+                          <div role="alert" className="mt-2 text-xs text-red-700 bg-red-50 border border-red-100 px-3 py-2 rounded-lg">
                             {errorCancelacion.msg}
                           </div>
                         )}
@@ -458,63 +453,34 @@ export default function MisCitasPage() {
                           <p className="text-sm font-bold text-slate-800">{formatPrecio(c.precio)}</p>
                         </div>
 
-                        <div className="mt-3 pt-3 border-t border-slate-50 flex items-center justify-between gap-2">
-                          <span className="font-mono text-xs text-slate-400 bg-slate-50 px-2 py-1 rounded-lg tracking-wider">
+                        <div className="mt-3 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
+                          <span className="font-mono text-xs text-slate-500 bg-slate-50 px-2 py-1 rounded-lg tracking-wider">
                             {c.codigoConfirmacion}
                           </span>
-                          <div className="flex items-center gap-3">
-                            {(c.estadoTexto === "Pendiente" || c.estadoTexto === "Confirmada") && new Date(c.inicioEn) >= now && (
-                              <>
-                                <button
-                                  onClick={() => { setReagendando(c); setSlotNuevo(null); setErrorReagenda(""); }}
-                                  className="text-xs font-semibold text-slate-500 hover:text-slate-800 transition"
-                                >
-                                  Reagendar
-                                </button>
-                                <button
-                                  onClick={() => setCancelandoId(c.id)}
-                                  disabled={cancelando === c.codigoConfirmacion}
-                                  className="text-xs font-semibold text-red-400 hover:text-red-600 disabled:opacity-40 transition"
-                                >
-                                  {cancelando === c.codigoConfirmacion ? "Cancelando…" : "Cancelar"}
-                                </button>
-                              </>
-                            )}
-                            <button
-                              onClick={() =>
-                                navigate(`/b/${c.negocioSlug}?servicioId=${c.servicioId}&empleadoId=${c.empleadoId}`)
-                              }
-                              className="text-xs font-semibold text-sky-600 hover:text-sky-800 transition"
-                            >
-                              Repetir
-                            </button>
+                          <div className="flex flex-wrap items-center gap-2">
                             {c.estadoTexto === "Completada" && (
-                              <span className="text-xs text-slate-400 italic">
+                              <span className="text-xs text-slate-500 italic">
                                 Reseña por correo
                               </span>
                             )}
                             <button
-                              onClick={() => navigate(`/cita/${c.codigoConfirmacion}`)}
-                              className="text-xs font-bold text-slate-700 hover:underline"
+                              type="button"
+                              onClick={() =>
+                                navigate(`/b/${c.negocioSlug}?servicioId=${c.servicioId}&empleadoId=${c.empleadoId}`)
+                              }
+                              className={BOTON_SECUNDARIO}
                             >
-                              Ver →
+                              Repetir
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => navigate(`/cita/${c.codigoConfirmacion}`)}
+                              className={BOTON_SECUNDARIO}
+                            >
+                              Ver cita
                             </button>
                           </div>
                         </div>
-                        {cancelandoId === c.id && (
-                          <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-                            <p className="text-xs text-red-700 dark:text-red-300 mb-2">¿Confirmas la cancelación? Esta acción no se puede deshacer.</p>
-                            <div className="flex gap-2">
-                              <button onClick={() => { cancelarCita(c.id, c.codigoConfirmacion); setCancelandoId(null); }} className="text-xs bg-red-600 text-white px-3 py-1.5 rounded-lg hover:bg-red-700 transition">Sí, cancelar</button>
-                              <button onClick={() => setCancelandoId(null)} className="text-xs text-slate-500 dark:text-slate-400 px-3 py-1.5 hover:text-slate-700 transition">No, volver</button>
-                            </div>
-                          </div>
-                        )}
-                        {errorCancelacion?.id === c.id && (
-                          <div className="mt-2 text-xs text-red-600 bg-red-50 border border-red-100 px-3 py-2 rounded-lg">
-                            {errorCancelacion.msg}
-                          </div>
-                        )}
                       </div>
                     ))}
                   </>
@@ -598,7 +564,7 @@ export default function MisCitasPage() {
                 <div className="flex flex-col items-center gap-3 py-10 text-center">
                   <CheckCircle2 size={48} className="text-emerald-500" />
                   <p className="text-slate-800 font-semibold">{exitoReagenda}</p>
-                  <button onClick={() => { setExitoReagenda(""); setReagendando(null); setSlotNuevo(null); }} className="mt-2 text-xs underline text-emerald-600 dark:text-emerald-400">Cerrar</button>
+                  <button onClick={() => { setExitoReagenda(""); setReagendando(null); setSlotNuevo(null); }} className="mt-2 text-xs underline text-emerald-700">Cerrar</button>
                 </div>
               ) : (
                 <>

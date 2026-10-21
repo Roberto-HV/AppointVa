@@ -115,3 +115,42 @@ describe("CancelarCitaPage", () => {
     );
   });
 });
+
+describe("CancelarCitaPage — estados que no se pueden cancelar (AP-18)", () => {
+  it("una cita completada (estado 3) no ofrece cancelar", async () => {
+    vi.mocked(api.get).mockResolvedValue({ data: { ...mockCita, estado: 3, negocioSlug: "salon-test" } });
+    renderConQuery();
+    expect(await screen.findByText("Esta cita ya se realizó")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Cancelar mi cita/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Reservar una nueva cita" })).toHaveAttribute("href", "/b/salon-test");
+  });
+
+  it("una cita cancelada (estado 4) lo dice", async () => {
+    vi.mocked(api.get).mockResolvedValue({ data: { ...mockCita, estado: 4 } });
+    renderConQuery();
+    expect(await screen.findByText("Esta cita ya está cancelada")).toBeInTheDocument();
+  });
+
+  it("una cita cuya hora ya pasó no ofrece cancelar", async () => {
+    vi.mocked(api.get).mockResolvedValue({
+      data: { ...mockCita, estado: 2, inicioEn: new Date(Date.now() - 3_600_000).toISOString() },
+    });
+    renderConQuery();
+    expect(await screen.findByText("Esta cita ya se realizó")).toBeInTheDocument();
+  });
+
+  it("ofrece reagendar antes de cancelar", async () => {
+    vi.mocked(api.get).mockResolvedValue({ data: mockCita });
+    renderConQuery();
+    expect(await screen.findByRole("link", { name: "Reagendar" })).toHaveAttribute("href", "/cita/ABC123");
+  });
+
+  it("un fallo de red no dice 'no encontrada' y permite reintentar", async () => {
+    vi.mocked(api.get).mockRejectedValueOnce(new Error("Network Error")).mockResolvedValueOnce({ data: mockCita });
+    renderConQuery();
+    expect(await screen.findByText("No pudimos cargar tu cita")).toBeInTheDocument();
+    expect(screen.queryByText(/Cita no encontrada/i)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Reintentar" }));
+    expect(await screen.findByText("Salón Test")).toBeInTheDocument();
+  });
+});

@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+﻿import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { publicoApi } from "../../api/publico";
@@ -6,6 +6,7 @@ import PublicFooter from "../../components/PublicFooter";
 import EstrellasCalificacion from "../../components/EstrellasCalificacion";
 import { ETIQUETAS_CALIFICACION } from "../../lib/calificacion";
 import { mensajeError } from "../../utils/errores";
+import { useTituloPagina } from "../../hooks/useTituloPagina";
 
 const MAX_COMENTARIO = 1000;
 
@@ -31,21 +32,9 @@ export default function ResenaPage() {
 
   const errorMsg = (error as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje;
 
-  // OG meta tags dinámicos
-  useEffect(() => {
-    if (!info) return;
-    const title = `Califica tu cita en ${info.negocioNombre} — AppointVa`;
-    const desc = `Cuéntanos cómo fue tu experiencia con ${info.negocioNombre}. Tu opinión ayuda a otros clientes.`;
-    document.title = title;
-    const setMeta = (prop: string, val: string) => {
-      let el = document.querySelector(`meta[property="${prop}"]`);
-      if (!el) { el = document.createElement("meta"); el.setAttribute("property", prop); document.head.appendChild(el); }
-      el.setAttribute("content", val);
-    };
-    setMeta("og:title", title);
-    setMeta("og:description", desc);
-    return () => { document.title = "AppointVa — Tu agenda online. Sin llamadas."; };
-  }, [info]);
+  // Solo el título de la pestaña (AP-17). Las etiquetas og:* que se escribían
+  // aquí no las leen los rastreadores (no ejecutan JS) y quedaban en el <head>.
+  useTituloPagina(info ? `Califica tu cita en ${info.negocioNombre}` : "Califica tu cita");
 
   if (isLoading) {
     return (

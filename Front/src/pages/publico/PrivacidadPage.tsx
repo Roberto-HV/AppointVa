@@ -1,20 +1,17 @@
 import { Link } from "react-router-dom";
 import LogoMarca from "../../components/LogoMarca";
-import { ChevronLeft, Shield } from "lucide-react";
+import { Shield } from "lucide-react";
+import VolverAtras from "../../components/VolverAtras";
+import { useTituloPagina } from "../../hooks/useTituloPagina";
 
 export default function PrivacidadPage() {
+  useTituloPagina("Política de privacidad");
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Header */}
       <div className="bg-white border-b border-slate-100 sticky top-0 z-10">
         <div className="max-w-2xl mx-auto px-5 py-3 flex items-center gap-3">
-          <Link
-            to="/"
-            className="text-slate-400 hover:text-slate-700 transition"
-            onClick={(e) => { e.preventDefault(); window.history.back(); }}
-          >
-            <ChevronLeft size={20} />
-          </Link>
+          <VolverAtras />
           <LogoMarca prioridad variante="pequeno" className="h-7" />
         </div>
       </div>
@@ -31,12 +28,12 @@ export default function PrivacidadPage() {
           </div>
         </div>
 
-        <div className="prose prose-slate prose-sm max-w-none space-y-8">
+        <div className="max-w-prose space-y-8">
 
           {/* 1 */}
           <section>
             <h2 className="text-base font-bold text-slate-800 mb-2">1. ¿Quiénes somos?</h2>
-            <p className="text-sm text-slate-600 leading-relaxed">
+            <p className="text-base text-slate-600 leading-relaxed">
               AppointVa es una plataforma de gestión de citas que conecta a negocios locales con sus clientes.
               Al utilizar nuestros servicios —ya sea como propietario de un negocio o como cliente que reserva
               una cita— confías en nosotros con tu información personal. Esta política explica qué datos
@@ -47,7 +44,7 @@ export default function PrivacidadPage() {
           {/* 2 */}
           <section>
             <h2 className="text-base font-bold text-slate-800 mb-2">2. Información que recopilamos</h2>
-            <ul className="text-sm text-slate-600 leading-relaxed space-y-2 list-none pl-0">
+            <ul className="text-base text-slate-600 leading-relaxed space-y-2 list-none pl-0">
               {[
                 ["Datos de registro", "Nombre completo, correo electrónico y contraseña cuando creas una cuenta de negocio."],
                 ["Datos del negocio", "Nombre comercial, teléfono, dirección, descripción, logo y horarios de atención."],
@@ -67,7 +64,7 @@ export default function PrivacidadPage() {
           {/* 3 */}
           <section>
             <h2 className="text-base font-bold text-slate-800 mb-2">3. Cómo usamos tu información</h2>
-            <ul className="text-sm text-slate-600 leading-relaxed space-y-2 list-none pl-0">
+            <ul className="text-base text-slate-600 leading-relaxed space-y-2 list-none pl-0">
               {[
                 "Gestionar citas, recordatorios y notificaciones.",
                 "Permitir a los negocios identificar y atender a sus clientes.",
@@ -86,13 +83,13 @@ export default function PrivacidadPage() {
           {/* 4 */}
           <section>
             <h2 className="text-base font-bold text-slate-800 mb-2">4. Compartir información con terceros</h2>
-            <p className="text-sm text-slate-600 leading-relaxed mb-3">
+            <p className="text-base text-slate-600 leading-relaxed mb-3">
               Tus datos de cliente (nombre, teléfono, correo y detalle de la cita) se comparten
               exclusivamente con el <strong className="text-slate-700">negocio con el que agendaste</strong>.
               Dicho negocio es responsable del uso que le dé a tu información en el marco de la prestación
               del servicio contratado.
             </p>
-            <p className="text-sm text-slate-600 leading-relaxed">
+            <p className="text-base text-slate-600 leading-relaxed">
               No vendemos, alquilamos ni cedemos tu información a anunciantes ni a terceros con fines
               comerciales propios. Únicamente compartimos datos con proveedores de infraestructura
               (hosting, almacenamiento de archivos, servicio de correo) bajo estrictos acuerdos de
@@ -103,7 +100,7 @@ export default function PrivacidadPage() {
           {/* 5 */}
           <section>
             <h2 className="text-base font-bold text-slate-800 mb-2">5. Seguridad de la información</h2>
-            <p className="text-sm text-slate-600 leading-relaxed">
+            <p className="text-base text-slate-600 leading-relaxed">
               Implementamos medidas técnicas y organizativas para proteger tu información:
               transmisión cifrada mediante TLS/HTTPS, contraseñas almacenadas con hash seguro (bcrypt),
               autenticación de dos factores opcional y control de acceso por roles.
@@ -115,7 +112,7 @@ export default function PrivacidadPage() {
           {/* 6 */}
           <section>
             <h2 className="text-base font-bold text-slate-800 mb-2">6. Retención de datos</h2>
-            <p className="text-sm text-slate-600 leading-relaxed">
+            <p className="text-base text-slate-600 leading-relaxed">
               Conservamos tu información mientras tu cuenta esté activa o sea necesario para prestarte
               el servicio. Si solicitas la eliminación de tu cuenta, procederemos a borrar o anonimizar
               tus datos personales en un plazo máximo de 30 días hábiles, salvo obligación legal de
@@ -126,7 +123,7 @@ export default function PrivacidadPage() {
           {/* 7 */}
           <section>
             <h2 className="text-base font-bold text-slate-800 mb-2">7. Cookies y tecnologías similares</h2>
-            <p className="text-sm text-slate-600 leading-relaxed">
+            <p className="text-base text-slate-600 leading-relaxed">
               Usamos cookies de sesión estrictamente necesarias para mantener tu inicio de sesión activo.
               No utilizamos cookies de seguimiento publicitario ni herramientas de análisis de comportamiento
               de terceros (como Google Analytics).
@@ -136,10 +133,10 @@ export default function PrivacidadPage() {
           {/* 8 */}
           <section>
             <h2 className="text-base font-bold text-slate-800 mb-2">8. Tus derechos</h2>
-            <p className="text-sm text-slate-600 leading-relaxed mb-3">
+            <p className="text-base text-slate-600 leading-relaxed mb-3">
               De acuerdo con la legislación aplicable, tienes derecho a:
             </p>
-            <ul className="text-sm text-slate-600 leading-relaxed space-y-2 list-none pl-0">
+            <ul className="text-base text-slate-600 leading-relaxed space-y-2 list-none pl-0">
               {[
                 ["Acceso", "Conocer qué datos tenemos sobre ti."],
                 ["Rectificación", "Corregir datos inexactos o incompletos."],
@@ -153,7 +150,7 @@ export default function PrivacidadPage() {
                 </li>
               ))}
             </ul>
-            <p className="text-sm text-slate-600 leading-relaxed mt-3">
+            <p className="text-base text-slate-600 leading-relaxed mt-3">
               Para ejercer cualquiera de estos derechos, escríbenos a{" "}
               <a href="mailto:privacidad@appointva.com" className="text-slate-700 hover:underline font-medium">
                 privacidad@appointva.com
@@ -164,7 +161,7 @@ export default function PrivacidadPage() {
           {/* 9 */}
           <section>
             <h2 className="text-base font-bold text-slate-800 mb-2">9. Cambios a esta política</h2>
-            <p className="text-sm text-slate-600 leading-relaxed">
+            <p className="text-base text-slate-600 leading-relaxed">
               Podemos actualizar esta política para reflejar cambios en la plataforma o en la legislación
               aplicable. Te notificaremos por correo electrónico o mediante un aviso en la plataforma con
               al menos 15 días de anticipación antes de que los cambios entren en vigor.
@@ -174,7 +171,7 @@ export default function PrivacidadPage() {
           {/* 10 */}
           <section>
             <h2 className="text-base font-bold text-slate-800 mb-2">10. Contacto</h2>
-            <p className="text-sm text-slate-600 leading-relaxed">
+            <p className="text-base text-slate-600 leading-relaxed">
               Si tienes preguntas o inquietudes sobre esta política, puedes contactarnos en{" "}
               <a href="mailto:soporte@appointva.com" className="text-slate-700 hover:underline font-medium">
                 soporte@appointva.com

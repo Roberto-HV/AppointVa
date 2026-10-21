@@ -130,20 +130,39 @@ describe("MisCitasPage", () => {
     expect(screen.getByText("Tinte")).toBeInTheDocument();
   });
 
-  it("muestra enlaces de calendario solo en citas próximas", async () => {
+  it("cada cita tiene una acción principal y los enlaces de calendario quedan en el detalle (AP-25)", async () => {
     localStorage.setItem(SESSION_KEY, JSON.stringify(mockSession));
     vi.mocked(api.get).mockResolvedValue({
       data: [futureCita, pastCita],
       headers: { "x-total-count": "2" },
     });
     renderConQuery();
-    await waitFor(() =>
-      expect(screen.getByText("Google Calendar")).toBeInTheDocument()
-    );
-    expect(screen.getByText("iCal / Apple")).toBeInTheDocument();
-    // Solo una cita próxima → exactamente un enlace de cada tipo
-    expect(screen.getAllByText("Google Calendar")).toHaveLength(1);
-    expect(screen.getAllByText("iCal / Apple")).toHaveLength(1);
+    await waitFor(() => expect(screen.getByText("Próximas")).toBeInTheDocument());
+    expect(screen.getAllByRole("button", { name: "Ver cita" })).toHaveLength(2);
+    expect(screen.getAllByRole("button", { name: "Repetir" })).toHaveLength(2);
+    expect(screen.queryByText("Google Calendar")).not.toBeInTheDocument();
+    // El historial no ofrece reagendar ni cancelar (solo hay una cita próxima).
+    expect(screen.getAllByRole("button", { name: "Reagendar" })).toHaveLength(1);
+  });
+
+  it("un fallo de red ofrece Reintentar en vez de culpar a los datos (AP-25)", async () => {
+    localStorage.setItem(SESSION_KEY, JSON.stringify(mockSession));
+    vi.mocked(api.get)
+      .mockRejectedValueOnce(new Error("Network Error"))
+      .mockResolvedValueOnce({ data: [futureCita], headers: { "x-total-count": "1" } });
+    renderConQuery();
+    const alerta = await screen.findByRole("alert");
+    expect(alerta).toHaveTextContent("No pudimos cargar tus citas");
+    expect(alerta).not.toHaveTextContent(/Verifica tu información/);
+    screen.getByRole("button", { name: "Reintentar" }).click();
+    expect(await screen.findByText("Corte de cabello")).toBeInTheDocument();
+  });
+
+  it("un rechazo del servidor sigue ofreciendo corregir los datos", async () => {
+    localStorage.setItem(SESSION_KEY, JSON.stringify(mockSession));
+    vi.mocked(api.get).mockRejectedValue({ response: { status: 400, data: {} } });
+    renderConQuery();
+    expect(await screen.findByRole("button", { name: "Corregir mis datos" })).toBeInTheDocument();
   });
 
   it("muestra texto Reseña por correo solo en citas Completadas", async () => {

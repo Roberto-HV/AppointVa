@@ -22,3 +22,29 @@ function rango(n: NegocioMetricasDto): number {
 export function ordenarNegociosAdmin(a: NegocioMetricasDto, b: NegocioMetricasDto): number {
   return rango(a) - rango(b);
 }
+
+// ── Edición de un pago de suscripción (AP-23) ─────────────────────────────────
+//
+// Antes se guardaba `parseFloat(monto) || 0`: un error al teclear registraba
+// $0, y un período "desde" posterior al "hasta" se aceptaba.
+
+export interface EdicionPago {
+  monto: string;
+  desde: string;
+  hasta: string;
+}
+
+/** Mensaje del primer problema, o `null` si se puede guardar. */
+export function validarEdicionPago({ monto, desde, hasta }: EdicionPago): string | null {
+  const valor = Number(monto.trim().replace(",", "."));
+  if (!monto.trim() || !Number.isFinite(valor) || valor <= 0) return "El monto debe ser mayor que 0.";
+  if (!desde || !hasta) return "Indica el período completo.";
+  // Fechas de calendario "AAAA-MM-DD": se comparan como texto, sin zonas horarias.
+  if (desde > hasta) return "La fecha \"desde\" no puede ser posterior a \"hasta\".";
+  return null;
+}
+
+/** Color con el formato que guarda el backend: #RRGGBB. */
+export function esColorHexValido(valor: string): boolean {
+  return /^#[0-9a-f]{6}$/i.test(valor.trim());
+}

@@ -1,7 +1,9 @@
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
+import { useTituloPagina } from "../hooks/useTituloPagina";
 
 export default function NotFoundPage() {
+  useTituloPagina("Página no encontrada");
   const navigate = useNavigate();
   const token = useAuthStore((s) => s.token);
   const usuario = useAuthStore((s) => s.usuario);

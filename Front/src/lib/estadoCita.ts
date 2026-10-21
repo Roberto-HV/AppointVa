@@ -89,3 +89,15 @@ export function citaAbierta(estado: string): boolean {
 export function citaPorCerrar(cita: { estadoTexto: string; finEn: string }, ahora: Date = new Date()): boolean {
   return citaAbierta(cita.estadoTexto) && new Date(cita.finEn) < ahora;
 }
+
+/**
+ * Códigos numéricos que envían los endpoints públicos (`estado`), copiados de
+ * `Constants/EstadosCitas.cs` del backend. Ojo: 3 es Completada y 4 Cancelada.
+ */
+export const CODIGO_ESTADO_CITA = {
+  Pendiente: 1,
+  Confirmada: 2,
+  Completada: 3,
+  Cancelada: 4,
+  Inasistencia: 5,
+} as const satisfies Record<EstadoCita, number>;

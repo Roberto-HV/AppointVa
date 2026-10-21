@@ -23,6 +23,8 @@ import { useAuthStore } from "../../store/authStore";
 import { useToastStore } from "../../store/toastStore";
 import { NotificacionPerfilSection } from "../../components/ui/NotificacionBanner";
 import { hoy as hoyLocal } from "../../utils/fechas";
+import { useSubirImagen } from "../../hooks/useSubirImagen";
+import { ACCEPT_IMAGEN } from "../../lib/imagenes";
 
 const schemaPwd = z
   .object({
@@ -134,11 +136,14 @@ export default function MiPerfilPage() {
     },
   });
 
-  const { mutate: subirFoto, isPending: subiendoFoto } = useMutation({
-    mutationFn: (file: File) => authApi.subirFotoPerfil(file),
-    onSuccess: ({ fotoUrl }) => { actualizarFoto(fotoUrl); toast("Foto actualizada"); },
-    onError: () => toast("No se pudo subir la foto", "error"),
+  // Misma regla que los demás subidores (tipo y tamaño antes de subir, error
+  // del servidor si lo hay): antes cualquier archivo llegaba al backend.
+  const foto = useSubirImagen({
+    subir: (archivo) => authApi.subirFotoPerfil(archivo),
+    onExito: ({ fotoUrl }) => { actualizarFoto(fotoUrl); toast("Foto actualizada"); },
+    mensajeFallo: "No se pudo subir la foto. Intenta de nuevo.",
   });
+  const subiendoFoto = foto.subiendo;
 
   // ── Bloqueos (solo empleados) ───────────────────────────────────────────────
   // Valores por defecto vacíos: sin ellos `watch()` da `undefined` y `.length` fallaba
@@ -300,9 +305,9 @@ export default function MiPerfilPage() {
             <input
               ref={fotoInputRef}
               type="file"
-              accept="image/jpeg,image/png,image/webp"
+              accept={ACCEPT_IMAGEN}
               className="hidden"
-              onChange={(e) => { const f = e.target.files?.[0]; if (f) subirFoto(f); e.target.value = ""; }}
+              onChange={(e) => foto.alElegir(e)}
             />
           </div>
           <div>

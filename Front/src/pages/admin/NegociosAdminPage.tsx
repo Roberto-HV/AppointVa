@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useMutationState, useQueryClient } from "@tanstack/react-query";
 import Select from "../../components/ui/Select";
 import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -15,7 +15,7 @@ import {
 } from "../../api/admin";
 import Modal from "../../components/ui/Modal";
 import ConfirmarAccion from "../../components/ui/ConfirmarAccion";
-import { esPendienteActivacion, ordenarNegociosAdmin } from "../../utils/negociosAdmin";
+import { esPendienteActivacion, ordenarNegociosAdmin, validarEdicionPago, esColorHexValido } from "../../utils/negociosAdmin";
 import BarraProgreso from "../../components/ui/BarraProgreso";
 import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
 import BotonAccion from "../../components/ui/BotonAccion";
@@ -28,6 +28,7 @@ import { useToastStore } from "../../store/toastStore";
 import { formatFechaMx, formatPrecio } from "../../utils/formatters";
 import { generarHTMLComprobante } from "../../utils/comprobanteSuscripcion";
 import { mensajeError } from "../../utils/errores";
+import { useTituloPagina } from "../../hooks/useTituloPagina";
 
 // ── Constants ──────────────────────────────────────────────────────────────
 const ESTADO_ORDER: Record<string, number> = {
@@ -79,6 +80,8 @@ const CAMPO_MODAL =
   "placeholder:text-gray-400 dark:placeholder:text-slate-500 " +
   "focus:border-slate-700 dark:focus:border-slate-400";
 const CAMPO_OK = "border-gray-200 dark:border-slate-600";
+/** Clave compartida por activar/desactivar, para saber qué tarjetas están en curso. */
+const CLAVE_ESTADO_NEGOCIO = ["admin", "estado-negocio"] as const;
 const CAMPO_ERROR = "border-red-400 bg-red-50 dark:bg-red-950/30";
 
 /** Par de botones al pie de los modales. El primario es el mismo `slate-700`
@@ -245,10 +248,20 @@ function ModalSuscripcion({
 
   const mutarEmpleadosExtra = useMutation({
     mutationFn: (val: number) => adminApi.setEmpleadosExtra(negocio.id, val),
-    onSuccess: () => {
+    onSuccess: (_, val) => {
       qc.invalidateQueries({ queryKey: ['admin-suscripciones'] });
+      toast(`Empleados extra actualizados: ${val}`);
+    },
+    onError: (err: unknown) => {
+      toast(mensajeError(err, "No se pudieron actualizar los empleados extra."), "error");
     },
   });
+
+  // Solo se guarda al salir del campo si el valor cambió (antes se guardaba siempre, en silencio).
+  const guardarEmpleadosExtra = (val: number) => {
+    if (val === (suscripcion?.empleadosExtra ?? 0)) return;
+    mutarEmpleadosExtra.mutate(val);
+  };
 
   const mutarEditar = useMutation({
     mutationFn: ({ pagoId, dto }: { pagoId: string; dto: EditarPagoRequestDto }) =>
@@ -259,8 +272,11 @@ function ModalSuscripcion({
         setEditandoId(null);
         toast("Pago actualizado");
     },
-    onError: () => toast("No se pudo actualizar el pago", "error"),
+    onError: (err: unknown) => toast(mensajeError(err, "No se pudo actualizar el pago"), "error"),
   });
+
+  // Monto > 0 y período en orden, antes de enviar (AP-23).
+  const errorEdicion = editandoId ? validarEdicionPago(editForm) : null;
 
   const mutarEliminar = useMutation({
     mutationFn: (pagoId: string) => adminApi.eliminarPago(pagoId),
@@ -287,24 +303,38 @@ function ModalSuscripcion({
     });
   };
 
-  const handleSetSector = async (sector: string) => {
+  // El sector cambia el vocabulario y los módulos del panel: se confirma (AP-23).
+  const [sectorPorConfirmar, setSectorPorConfirmar] = useState<'belleza' | 'salud' | null>(null);
+  const [guardandoSector, setGuardandoSector] = useState(false);
+  const [guardandoPlan, setGuardandoPlan] = useState(false);
+
+  const handleSetSector = async (sector: 'belleza' | 'salud') => {
+    setGuardandoSector(true);
     try {
       await adminApi.setSector(negocio.id, sector);
       await qc.invalidateQueries({ queryKey: ['admin-suscripciones'] });
+      toast(`Sector actualizado: ${sector === 'salud' ? 'Salud' : 'Belleza'}`);
+      setSectorPorConfirmar(null);
     } catch (err) {
-      console.error('Error al cambiar sector:', err);
-      toast("No se pudo actualizar el sector. Intenta de nuevo.", "error");
+      toast(mensajeError(err, "No se pudo actualizar el sector. Intenta de nuevo."), "error");
+    } finally {
+      setGuardandoSector(false);
     }
   };
 
   const handleSetPlan = async (planId: string | null) => {
+    if (guardandoPlan || planId === negocio.planId) return;
+    setGuardandoPlan(true);
     try {
       await adminApi.setPlan(negocio.id, planId);
       await qc.invalidateQueries({ queryKey: ['admin-suscripciones'] });
       await qc.invalidateQueries({ queryKey: ['admin-negocios-metricas'] });
+      const nombre = planes.find(p => p.id === planId)?.nombre;
+      toast(nombre ? `Plan actualizado: ${nombre}` : "Plan actualizado");
     } catch (err) {
-      console.error('Error al cambiar plan:', err);
-      toast("No se pudo actualizar el plan. Intenta de nuevo.", "error");
+      toast(mensajeError(err, "No se pudo actualizar el plan. Intenta de nuevo."), "error");
+    } finally {
+      setGuardandoPlan(false);
     }
   };
 
@@ -367,6 +397,7 @@ function ModalSuscripcion({
                   key={p.id}
                   type="button"
                   onClick={() => handleSetPlan(p.id)}
+                  disabled={guardandoPlan}
                   aria-pressed={negocio.planId === p.id}
                   className={`min-h-[44px] lg:min-h-[36px] px-3.5 rounded-full text-xs font-medium border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40 ${
                     negocio.planId === p.id
@@ -391,7 +422,8 @@ function ModalSuscripcion({
                 <button
                   key={s}
                   type="button"
-                  onClick={() => handleSetSector(s)}
+                  onClick={() => { if (suscripcion?.sector !== s) setSectorPorConfirmar(s); }}
+                  disabled={guardandoSector}
                   aria-pressed={suscripcion?.sector === s}
                   className={`min-h-[44px] lg:min-h-[36px] px-3.5 rounded-full text-xs font-medium border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40 ${
                     suscripcion?.sector === s
@@ -403,6 +435,32 @@ function ModalSuscripcion({
                 </button>
               ))}
             </div>
+            {sectorPorConfirmar && (
+              <div role="alert" className="mt-2 rounded-xl border border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40 p-3 text-xs text-amber-900 dark:text-amber-200">
+                <p>
+                  Cambiar {negocio.nombre} a {sectorPorConfirmar === 'salud' ? 'Salud' : 'Belleza'} cambia el vocabulario
+                  y los módulos de su panel.
+                </p>
+                <div className="mt-2 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleSetSector(sectorPorConfirmar)}
+                    disabled={guardandoSector}
+                    className="min-h-[44px] lg:min-h-[36px] px-3.5 rounded-lg bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900 font-semibold disabled:opacity-50"
+                  >
+                    {guardandoSector ? 'Guardando…' : 'Cambiar sector'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSectorPorConfirmar(null)}
+                    disabled={guardandoSector}
+                    className="min-h-[44px] lg:min-h-[36px] px-3.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300"
+                  >
+                    Volver
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Billing summary */}
@@ -434,7 +492,8 @@ function ModalSuscripcion({
                       setMonto(String((precioBase + val * PRECIO_EXTRA_EMP) * meses));
                     }
                   }}
-                  onBlur={e => mutarEmpleadosExtra.mutate(Math.max(0, Number(e.target.value)))}
+                  onBlur={e => guardarEmpleadosExtra(Math.max(0, Number(e.target.value)))}
+                  disabled={mutarEmpleadosExtra.isPending}
                   className="w-16 text-right rounded-lg border border-gray-300 dark:border-gray-600 px-2 py-0.5 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"
                 />
                 {empleadosExtra > 0 && (
@@ -444,7 +503,7 @@ function ModalSuscripcion({
             </div>
             <div className="border-t border-gray-200 dark:border-gray-700 pt-2 flex justify-between font-semibold">
               <span className="text-gray-700 dark:text-gray-300">Total mensual</span>
-              <span className="text-[#C8A961]">{formatPrecio(totalMensual)}/mes</span>
+              <span className="text-gray-900 dark:text-gray-100">{formatPrecio(totalMensual)}/mes</span>
             </div>
           </div>
         </div>
@@ -584,18 +643,21 @@ function ModalSuscripcion({
                             />
                           </div>
                         </div>
+                        {errorEdicion && (
+                          <p role="alert" className="text-xs text-red-700 dark:text-red-400">{errorEdicion}</p>
+                        )}
                         <div className="flex gap-2 pt-1">
                           <button
-                            onClick={() => mutarEditar.mutate({
+                            onClick={() => !errorEdicion && mutarEditar.mutate({
                               pagoId: pago.id,
                               dto: {
-                                monto: parseFloat(editForm.monto) || 0,
+                                monto: Number(editForm.monto.replace(",", ".")),
                                 notas: editForm.notas.trim() || undefined,
                                 periodoDesde: editForm.desde,
                                 periodoHasta: editForm.hasta,
                               },
                             })}
-                            disabled={mutarEditar.isPending}
+                            disabled={mutarEditar.isPending || !!errorEdicion}
                             className="flex-1 py-1.5 rounded-lg bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-xs font-semibold hover:bg-gray-700 dark:hover:bg-gray-200 disabled:opacity-50 transition"
                           >
                             {mutarEditar.isPending ? "Guardando…" : "Guardar cambios"}
@@ -951,6 +1013,7 @@ function InterruptorTarjeta({
 
 // ── Page principal ─────────────────────────────────────────────────────────
 export default function NegociosAdminPage() {
+  useTituloPagina("Negocios · Admin");
   const qc = useQueryClient();
   const { toast } = useToastStore();
   const [modalNegocio, setModalNegocio] = useState(false);
@@ -1045,10 +1108,21 @@ export default function NegociosAdminPage() {
       formNegocio.reset();
       toast("Negocio creado correctamente");
     },
-    onError: () => toast("Error al crear el negocio. Intenta de nuevo.", "error"),
+    // El servidor explica el motivo (p. ej. un identificador ya en uso).
+    onError: (err: unknown) => toast(mensajeError(err, "Error al crear el negocio. Intenta de nuevo."), "error"),
   });
 
-  const { mutate: activar, isPending: activando, variables: idActivando } = useMutation({
+  // Cada tarjeta sabe si SU cambio de estado sigue en curso, aunque haya varios
+  // a la vez: `variables` de useMutation solo guarda el último (AP-06, OM-30).
+  const idsCambiandoEstado = new Set(
+    useMutationState({
+      filters: { mutationKey: CLAVE_ESTADO_NEGOCIO, status: "pending" },
+      select: (m) => m.state.variables as string,
+    })
+  );
+
+  const { mutate: mutarActivar } = useMutation({
+    mutationKey: CLAVE_ESTADO_NEGOCIO,
     mutationFn: (id: string) => adminApi.activar(id),
     onSuccess: () => {
       invalidar();
@@ -1059,15 +1133,21 @@ export default function NegociosAdminPage() {
 
   // Desactivar saca de línea la página pública: se confirma antes (AP-06).
   const [negocioADesactivar, setNegocioADesactivar] = useState<NegocioMetricasDto | null>(null);
-  const { mutate: desactivar, isPending: desactivando, variables: idDesactivando } = useMutation({
+  const { mutate: mutarDesactivar } = useMutation({
+    mutationKey: CLAVE_ESTADO_NEGOCIO,
     mutationFn: (id: string) => adminApi.desactivar(id),
-    onSuccess: () => {
+    onSuccess: (_, id) => {
       invalidar();
-      setNegocioADesactivar(null);
+      setNegocioADesactivar((n) => (n?.id === id ? null : n));
       toast("Negocio desactivado");
     },
     onError: () => toast("Error al desactivar el negocio. Intenta de nuevo.", "error"),
   });
+
+  // Un segundo clic mientras la petición sigue en curso no envía otra.
+  const activar = (id: string) => { if (!idsCambiandoEstado.has(id)) mutarActivar(id); };
+  const desactivar = (id: string) => { if (!idsCambiandoEstado.has(id)) mutarDesactivar(id); };
+  const desactivandoSeleccionado = !!negocioADesactivar && idsCambiandoEstado.has(negocioADesactivar.id);
 
   const { mutate: confirmarEmail } = useMutation({
     mutationFn: (id: string) => adminApi.confirmarEmail(id),
@@ -1096,9 +1176,10 @@ export default function NegociosAdminPage() {
         nombre: d.nombre,
         apellido: d.apellido ?? "",
       }),
-    onSuccess: () => {
+    onSuccess: (_, d) => {
       setModalPropietario(false);
       formPropietario.reset();
+      toast(`Propietario creado: ${d.email}`);
     },
     onError: (err: unknown) => {
       setErrorPropietario(mensajeError(err, "No se pudo crear el propietario."));
@@ -1257,7 +1338,7 @@ export default function NegociosAdminPage() {
             { label: "Total", value: String(metricas.length), color: "text-gray-700 dark:text-gray-200" },
             { label: "Activos", value: String(metricas.filter(n => n.activo === 1).length), color: "text-emerald-600 dark:text-emerald-400" },
             { label: "Con plan", value: String(conPlan), color: "text-amber-600 dark:text-amber-400" },
-            { label: "Ingresos est.", value: formatPrecio(totalEstimado) + "/mes", color: "text-[#C8A961]" },
+            { label: "Ingresos est.", value: formatPrecio(totalEstimado) + "/mes", color: "text-gray-900 dark:text-gray-100" },
           ].map(({ label, value, color }) => (
             <div key={label} className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 px-4 py-3 min-w-0">
               <p className="text-xs text-gray-400 dark:text-slate-400 mb-0.5 truncate">{label}</p>
@@ -1363,7 +1444,7 @@ export default function NegociosAdminPage() {
                     onToggleTester={() => toggleTester(neg.id)}
                     onEliminar={() => abrirEliminar(neg)}
                     // Solo la tarjeta cuyo estado está cambiando queda en espera (AP-06).
-                    isToggling={(activando && idActivando === neg.id) || (desactivando && idDesactivando === neg.id)}
+                    isToggling={idsCambiandoEstado.has(neg.id)}
                   />
                 ))}
               </div>
@@ -1439,9 +1520,11 @@ export default function NegociosAdminPage() {
                             defaultValue={s.empleadosExtra}
                             onBlur={e => {
                               const val = Math.max(0, Number(e.target.value));
+                              if (val === s.empleadosExtra) return;
                               adminApi.setEmpleadosExtra(s.negocioId, val)
                                 .then(() => {
                                   queryClient.invalidateQueries({ queryKey: ['admin-suscripciones'] });
+                                  toast(`Empleados extra de ${s.negocioNombre}: ${val}`);
                                 })
                                 .catch(() => {
                                   toast('No se pudo actualizar los empleados extra', 'error');
@@ -1450,7 +1533,7 @@ export default function NegociosAdminPage() {
                             className="w-14 text-center rounded-lg border border-gray-200 dark:border-gray-600 px-1.5 py-0.5 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-sm"
                           />
                         </td>
-                        <td className="px-4 py-3 text-right font-semibold text-[#C8A961]">
+                        <td className="px-4 py-3 text-right font-semibold text-gray-900 dark:text-gray-100">
                           {formatPrecio(s.totalMensual)}
                         </td>
                         <td className="px-4 py-3 text-center text-gray-500 dark:text-gray-400 whitespace-nowrap">
@@ -1473,7 +1556,7 @@ export default function NegociosAdminPage() {
                               const neg = metricas?.find(m => m.id === s.negocioId);
                               if (neg) abrirSuscripcion(neg);
                             }}
-                            className="min-h-[44px] lg:min-h-[36px] px-2 -mx-2 rounded-lg text-xs text-[#C8A961] hover:underline whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40"
+                            className="min-h-[44px] lg:min-h-[36px] px-2 -mx-2 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300 underline underline-offset-2 hover:text-slate-900 dark:hover:text-white whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40"
                           >
                             Ver suscripción
                           </button>
@@ -1492,7 +1575,7 @@ export default function NegociosAdminPage() {
                     <td colSpan={4} className="px-4 py-3 text-right text-xs uppercase tracking-wide text-gray-400 dark:text-slate-500">
                       Total estimado · {negociosConPlan} negocio{negociosConPlan !== 1 ? 's' : ''} con suscripción
                     </td>
-                    <td className="px-4 py-3 text-right text-[#C8A961] whitespace-nowrap">{formatPrecio(totalEstimado)}</td>
+                    <td className="px-4 py-3 text-right text-gray-900 dark:text-gray-100 whitespace-nowrap">{formatPrecio(totalEstimado)}</td>
                     <td colSpan={3}></td>
                   </tr>
                 </tfoot>
@@ -1529,9 +1612,9 @@ export default function NegociosAdminPage() {
         }
         etiquetaConfirmar="Desactivar negocio"
         destructiva
-        pendiente={desactivando}
+        pendiente={desactivandoSeleccionado}
         onConfirmar={() => negocioADesactivar && desactivar(negocioADesactivar.id)}
-        onCerrar={() => { if (!desactivando) setNegocioADesactivar(null); }}
+        onCerrar={() => { if (!desactivandoSeleccionado) setNegocioADesactivar(null); }}
       />
 
       {/* Modal: suscripción */}
@@ -1888,10 +1971,17 @@ export default function NegociosAdminPage() {
                   className="w-12 h-12 shrink-0 rounded-lg cursor-pointer border border-gray-200 dark:border-slate-600 p-0.5 bg-white dark:bg-slate-800" />
                 <input type="text" value={colorPrimario} onChange={(e) => setColorPrimario(e.target.value)}
                   aria-label="Color primario en hexadecimal"
-                  className={`${CAMPO_MODAL} ${CAMPO_OK} flex-1 min-w-0 font-mono uppercase`}
+                  aria-invalid={!esColorHexValido(colorPrimario) || undefined}
+                  aria-describedby={!esColorHexValido(colorPrimario) ? "color-primario-error" : undefined}
+                  className={`${CAMPO_MODAL} ${esColorHexValido(colorPrimario) ? CAMPO_OK : CAMPO_ERROR} flex-1 min-w-0 font-mono uppercase`}
                   maxLength={7} placeholder="#334155" />
                 <div aria-hidden="true" className="w-10 h-10 rounded-lg border border-gray-200 dark:border-slate-600 shrink-0" style={{ backgroundColor: colorPrimario }} />
               </div>
+              {!esColorHexValido(colorPrimario) && (
+                <p id="color-primario-error" role="alert" className="mt-1.5 text-xs text-red-700 dark:text-red-400">
+                  Escribe un color con el formato #RRGGBB, por ejemplo #334155.
+                </p>
+              )}
             </div>
             <div className="rounded-xl border border-gray-100 dark:border-slate-700 p-3 bg-gray-50 dark:bg-slate-800/60">
               <p className="text-xs text-gray-400 dark:text-slate-500 mb-2">Vista previa</p>
@@ -1909,7 +1999,7 @@ export default function NegociosAdminPage() {
               <button onClick={() => setModalColores(false)} className={BOTON_PIE_SECUNDARIO}>
                 Cancelar
               </button>
-              <button onClick={() => actualizarColores()} disabled={guardandoColores} className={BOTON_PIE_PRIMARIO}>
+              <button onClick={() => actualizarColores()} disabled={guardandoColores || !esColorHexValido(colorPrimario)} className={BOTON_PIE_PRIMARIO}>
                 {guardandoColores ? "Guardando..." : "Guardar colores"}
               </button>
             </div>

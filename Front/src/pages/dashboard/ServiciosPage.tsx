@@ -329,7 +329,7 @@ export default function ServiciosPage() {
                         className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center shrink-0 relative group dark:bg-slate-700
                           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                         onClick={() => { servicioImagenIdRef.current = s.id; imagenInputRef.current?.click(); }}
-                        disabled={imagenServicio.destino === s.id}
+                        disabled={imagenServicio.subiendoEn(s.id)}
                         aria-label={`Cambiar imagen de ${s.nombre}`}
                         title="Cambiar imagen"
                       >
@@ -345,8 +345,8 @@ export default function ServiciosPage() {
                           <Camera size={11} />
                         </span>
                       </button>
-                      {imagenServicio.destino === s.id && (
-                        <ProgresoSubida className="w-16 shrink-0" porcentaje={imagenServicio.progreso ?? 0} etiqueta={`Subiendo imagen de ${s.nombre}`} />
+                      {imagenServicio.subiendoEn(s.id) && (
+                        <ProgresoSubida className="w-16 shrink-0" porcentaje={imagenServicio.progresoDe(s.id) ?? null} etiqueta={`Subiendo imagen de ${s.nombre}`} />
                       )}
 
                       <div className="flex-1 min-w-0">

@@ -57,15 +57,76 @@ export function errorDelDia(dia: HorarioDiaDto): string | null {
   return null;
 }
 
-/** Copia los intervalos de un día a todos los demás días abiertos. */
-export function aplicarATodosLosAbiertos(horarios: HorarioDiaDto[], diaOrigen: number): HorarioDiaDto[] {
+/** Parte de `intervalos` que cae dentro de `permitidos`, ordenada. */
+export function recortarAIntervalos(intervalos: Intervalo[], permitidos: Intervalo[]): Intervalo[] {
+  const resultado: Intervalo[] = [];
+  for (const iv of intervalos) {
+    for (const p of permitidos) {
+      const inicio = iv.horaInicio > p.horaInicio ? iv.horaInicio : p.horaInicio;
+      const fin = iv.horaFin < p.horaFin ? iv.horaFin : p.horaFin;
+      if (inicio < fin) resultado.push({ horaInicio: inicio, horaFin: fin });
+    }
+  }
+  return resultado.sort((x, y) => x.horaInicio.localeCompare(y.horaInicio));
+}
+
+export interface ResultadoAplicar {
+  horarios: HorarioDiaDto[];
+  /** Días que recibieron la copia completa. */
+  copiados: number[];
+  /** Días donde la copia se recortó al horario del negocio. */
+  recortados: number[];
+  /** Días que no cambiaron porque nada de la copia cabe en el horario del negocio. */
+  omitidos: number[];
+}
+
+/**
+ * Copia los intervalos de un día a todos los demás días abiertos.
+ *
+ * Con `horarioPermitido` (editor de un empleado), cada copia se recorta al
+ * horario del negocio de ese día; si no cabe nada (o el negocio cierra), el día
+ * se deja como estaba. El resultado dice qué pasó en cada día para avisarlo.
+ */
+export function aplicarATodosLosAbiertos(
+  horarios: HorarioDiaDto[],
+  diaOrigen: number,
+  horarioPermitido?: (diaSemana: number) => Intervalo[] | null,
+): ResultadoAplicar {
+  const resultado: ResultadoAplicar = { horarios, copiados: [], recortados: [], omitidos: [] };
   const origen = horarios.find((h) => h.diaSemana === diaOrigen);
-  if (!origen) return horarios;
-  return horarios.map((h) =>
-    h.diaSemana === diaOrigen || !h.activo
-      ? h
-      : { ...h, intervalos: origen.intervalos.map((iv) => ({ ...iv })) },
-  );
+  if (!origen) return resultado;
+
+  resultado.horarios = horarios.map((h) => {
+    if (h.diaSemana === diaOrigen || !h.activo) return h;
+    const copia = origen.intervalos.map((iv) => ({ ...iv }));
+    if (!horarioPermitido) {
+      resultado.copiados.push(h.diaSemana);
+      return { ...h, intervalos: copia };
+    }
+    const permitidos = horarioPermitido(h.diaSemana);
+    const ajustada = permitidos ? recortarAIntervalos(copia, permitidos) : [];
+    if (ajustada.length === 0) {
+      resultado.omitidos.push(h.diaSemana);
+      return h;
+    }
+    const igual =
+      ajustada.length === copia.length &&
+      ajustada.every((iv, i) => iv.horaInicio === copia[i].horaInicio && iv.horaFin === copia[i].horaFin);
+    (igual ? resultado.copiados : resultado.recortados).push(h.diaSemana);
+    return { ...h, intervalos: ajustada };
+  });
+  return resultado;
+}
+
+/** Aviso para el usuario después de aplicar; `null` si todo se copió tal cual. */
+export function avisoAplicar({ copiados, recortados, omitidos }: ResultadoAplicar): string | null {
+  if (recortados.length === 0 && omitidos.length === 0) return null;
+  const nombres = (dias: number[]) => dias.map((d) => DIAS_SEMANA[d]).join(", ");
+  const partes: string[] = [];
+  if (copiados.length) partes.push(`Copiado a ${nombres(copiados)}.`);
+  if (recortados.length) partes.push(`Ajustado al horario del negocio en ${nombres(recortados)}.`);
+  if (omitidos.length) partes.push(`Sin cambios en ${nombres(omitidos)}: el horario copiado queda fuera del horario del negocio.`);
+  return partes.join(" ");
 }
 
 /** "09:00" → "9:00 a.m." */

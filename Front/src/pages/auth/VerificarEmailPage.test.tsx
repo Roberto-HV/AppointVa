@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
-import VerificarEmailPage from "./VerificarEmailPage";
+import VerificarEmailPage, { ESPERA_REENVIO_SEGUNDOS } from "./VerificarEmailPage";
 
 vi.mock("../../api/axios", () => ({
   api: { get: vi.fn() },
@@ -24,6 +24,7 @@ function renderEn(url = "/verificar-email?userId=u1&token=t1") {
 }
 
 beforeEach(() => {
+  vi.useRealTimers();
   vi.mocked(api.get).mockReset();
   vi.mocked(reenviarVerificacion).mockReset();
 });
@@ -79,5 +80,43 @@ describe("VerificarEmailPage (AP-03)", () => {
     renderEn("/verificar-email");
     expect(await screen.findByRole("button", { name: "Reenviar enlace" })).toBeInTheDocument();
     expect(api.get).not.toHaveBeenCalled();
+  });
+
+  it.each([500, 503, 408, 429])("un %i es un error temporal con Reintentar, no un enlace inválido", async (status) => {
+    vi.mocked(api.get).mockRejectedValue({ response: { status, data: { mensaje: "Error interno" } } });
+    renderEn();
+    expect(await screen.findByRole("heading", { name: "No pudimos comprobar el enlace" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Reintentar" })).toBeInTheDocument();
+    expect(screen.queryByText(/inválido/i)).not.toBeInTheDocument();
+  });
+
+  it("tras reenviar permite volver a reenviar después de la espera o usar otro correo", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    vi.mocked(api.get).mockRejectedValue({ response: { status: 400, data: {} } });
+    vi.mocked(reenviarVerificacion).mockResolvedValue({ mensaje: "Si el correo está registrado, recibirás un email." });
+    renderEn();
+
+    await user.type(await screen.findByLabelText("Correo con el que te registraste"), "ana@ejemplo.com");
+    await user.click(screen.getByRole("button", { name: "Reenviar enlace" }));
+    await screen.findByRole("status");
+
+    const otraVez = screen.getByRole("button", { name: /Reenviar de nuevo en \d+ s/ });
+    expect(otraVez).toBeDisabled();
+
+    for (let i = 0; i <= ESPERA_REENVIO_SEGUNDOS; i++) {
+      await act(async () => { vi.advanceTimersByTime(1000); });
+    }
+    const habilitado = await screen.findByRole("button", { name: "Reenviar de nuevo" });
+    expect(habilitado).toBeEnabled();
+    await user.click(habilitado);
+    await waitFor(() => expect(reenviarVerificacion).toHaveBeenCalledTimes(2));
+
+    await user.click(screen.getByRole("button", { name: "Usar otro correo" }));
+    const campo = screen.getByLabelText("Correo con el que te registraste");
+    expect(campo).toHaveValue("ana@ejemplo.com");
+    // La espera sigue vigente para cualquier correo.
+    expect(screen.getByRole("button", { name: /Reenviar enlace en \d+ s/ })).toBeDisabled();
+    vi.useRealTimers();
   });
 });

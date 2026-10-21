@@ -3,6 +3,9 @@ import { useParams, Link } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { api } from "../../api/axios";
 import PublicFooter from "../../components/PublicFooter";
+import { useTituloPagina } from "../../hooks/useTituloPagina";
+import { CODIGO_ESTADO_CITA } from "../../lib/estadoCita";
+import { esErrorTemporal, mensajeError } from "../../utils/errores";
 
 interface CitaResumen {
   codigoConfirmacion: string;
@@ -32,14 +35,34 @@ function formatPrecio(n: number) {
   return n.toLocaleString("es-MX", { style: "currency", currency: "MXN" });
 }
 
+function EstadoFinal({ titulo, texto, slug }: { titulo: string; texto: string; slug?: string }) {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
+      <div className="bg-white rounded-2xl border border-slate-100 p-8 max-w-sm w-full text-center shadow-sm">
+        <p className="font-semibold text-gray-700 mb-1">{titulo}</p>
+        <p className="text-sm text-gray-500 mb-4">{texto}</p>
+        {slug && (
+          <Link
+            to={`/b/${slug}`}
+            className="inline-flex items-center min-h-[44px] text-sm font-semibold text-white bg-slate-700 hover:bg-slate-800 px-5 rounded-xl transition"
+          >
+            Reservar una nueva cita
+          </Link>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function CancelarCitaPage() {
+  useTituloPagina("Cancelar cita");
   const { codigo } = useParams<{ codigo: string }>();
   const [email, setEmail] = useState("");
   const [confirmado, setConfirmado] = useState(false);
   const [cancelada, setCancelada] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const { data: cita, isLoading, isError } = useQuery<CitaResumen>({
+  const { data: cita, isLoading, isError, error, refetch, isFetching } = useQuery<CitaResumen>({
     queryKey: ["cita-cancelar", codigo],
     queryFn: async () => {
       const r = await api.get(`/publico/citas/${codigo}`);
@@ -54,9 +77,8 @@ export default function CancelarCitaPage() {
       await api.delete(`/publico/citas/${codigo}`, { params: { email: email.trim() } });
     },
     onSuccess: () => setCancelada(true),
-    onError: (err: any) => {
-      const msg = err?.response?.data?.mensaje ?? "No se pudo cancelar la cita. Verifica tu correo e intenta de nuevo.";
-      setErrorMsg(msg);
+    onError: (err) => {
+      setErrorMsg(mensajeError(err, "No se pudo cancelar la cita. Verifica tu correo e intenta de nuevo."));
     },
   });
 
@@ -68,7 +90,26 @@ export default function CancelarCitaPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <p className="text-gray-400 text-sm">Cargando...</p>
+        <p role="status" className="text-gray-500 text-sm">Cargando...</p>
+      </div>
+    );
+  }
+
+  if (isError && esErrorTemporal(error)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
+        <div role="alert" className="bg-white rounded-2xl border border-slate-100 p-8 max-w-sm w-full text-center shadow-sm">
+          <p className="font-semibold text-gray-800 mb-1">No pudimos cargar tu cita</p>
+          <p className="text-sm text-gray-500 mb-4">Revisa tu conexión e intenta de nuevo. Tu enlace puede seguir siendo válido.</p>
+          <button
+            type="button"
+            onClick={() => void refetch()}
+            disabled={isFetching}
+            className="min-h-[44px] px-5 rounded-xl border border-gray-200 text-sm font-medium text-gray-700 hover:bg-slate-50 disabled:opacity-50 transition"
+          >
+            {isFetching ? "Reintentando…" : "Reintentar"}
+          </button>
+        </div>
       </div>
     );
   }
@@ -83,7 +124,7 @@ export default function CancelarCitaPage() {
             </svg>
           </div>
           <p className="font-semibold text-gray-800 mb-1">Cita no encontrada</p>
-          <p className="text-sm text-gray-400">El enlace puede haber expirado o no es válido.</p>
+          <p className="text-sm text-gray-500">El enlace puede haber expirado o no es válido.</p>
         </div>
       </div>
     );
@@ -113,18 +154,32 @@ export default function CancelarCitaPage() {
     );
   }
 
-  if (cita.estado === 3) {
+  // Antes se comparaba con 3 (que en el backend es Completada) como si fuera
+  // Cancelada. Ahora se usan los códigos reales (AP-18).
+  if (cita.estado === CODIGO_ESTADO_CITA.Cancelada) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
-        <div className="bg-white rounded-2xl border border-slate-100 p-8 max-w-sm w-full text-center shadow-sm">
-          <p className="font-semibold text-gray-700 mb-1">Esta cita ya está cancelada</p>
-          <p className="text-sm text-gray-400">No es necesario hacer nada más.</p>
-        </div>
-      </div>
+      <EstadoFinal titulo="Esta cita ya está cancelada" texto="No es necesario hacer nada más." slug={cita.negocioSlug} />
     );
   }
 
+  // Una cita completada, marcada como inasistencia o cuya hora ya pasó no se
+  // puede cancelar: se dice antes de pedir el correo, no después.
   const minutosRestantes = (new Date(cita.inicioEn).getTime() - Date.now()) / 60000;
+  const yaPaso = minutosRestantes <= 0;
+  if (
+    cita.estado === CODIGO_ESTADO_CITA.Completada ||
+    cita.estado === CODIGO_ESTADO_CITA.Inasistencia ||
+    yaPaso
+  ) {
+    return (
+      <EstadoFinal
+        titulo="Esta cita ya se realizó"
+        texto="La fecha de esta cita ya pasó, así que no se puede cancelar."
+        slug={cita.negocioSlug}
+      />
+    );
+  }
+
   const ventanaCancelacionVencida = cita.horasCancelacion > 0 && minutosRestantes <= cita.horasCancelacion * 60;
 
   return (
@@ -182,14 +237,21 @@ export default function CancelarCitaPage() {
                 />
               </div>
               {ventanaCancelacionVencida && (
-                <p className="text-xs text-red-500 text-center">
+                <p className="text-xs text-red-700 text-center">
                   El período de cancelación ha vencido ({cita.horasCancelacion} hora{cita.horasCancelacion === 1 ? "" : "s"} mínimo de anticipación).
                 </p>
               )}
               {errorMsg && (
-                <p className="text-xs text-red-500">{errorMsg}</p>
+                <p role="alert" className="text-xs text-red-700">{errorMsg}</p>
               )}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-700">
+                ¿Prefieres cambiar el horario?{" "}
+                <Link to={`/cita/${cita.codigoConfirmacion}`} className="font-semibold underline hover:text-slate-900">
+                  Reagendar
+                </Link>
+              </div>
               <button
+                type="button"
                 onClick={() => {
                   const emailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
                   if (!emailValido) { setErrorMsg("Ingresa un correo electrónico válido."); return; }
@@ -197,7 +259,7 @@ export default function CancelarCitaPage() {
                   setConfirmado(true);
                 }}
                 disabled={!email.trim() || ventanaCancelacionVencida}
-                className="w-full py-2.5 rounded-xl bg-red-500 hover:bg-red-600 disabled:opacity-40 text-white text-sm font-semibold transition"
+                className="w-full min-h-[44px] py-2.5 rounded-xl bg-red-600 hover:bg-red-700 disabled:opacity-40 text-white text-sm font-semibold transition"
               >
                 Cancelar mi cita
               </button>
@@ -208,7 +270,7 @@ export default function CancelarCitaPage() {
                 ¿Confirmas que deseas cancelar esta cita? Esta acción no se puede deshacer.
               </div>
               {errorMsg && (
-                <p className="text-xs text-red-500">{errorMsg}</p>
+                <p role="alert" className="text-xs text-red-700">{errorMsg}</p>
               )}
               <div className="flex gap-3">
                 <button
@@ -218,9 +280,10 @@ export default function CancelarCitaPage() {
                   Volver
                 </button>
                 <button
+                  type="button"
                   onClick={handleCancelar}
                   disabled={isPending}
-                  className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 disabled:opacity-40 text-white text-sm font-semibold transition"
+                  className="flex-1 min-h-[44px] py-2.5 rounded-xl bg-red-600 hover:bg-red-700 disabled:opacity-40 text-white text-sm font-semibold transition"
                 >
                   {isPending ? "Cancelando..." : "Sí, cancelar"}
                 </button>

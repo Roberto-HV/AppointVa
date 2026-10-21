@@ -11,7 +11,8 @@ import ReglasContrasena from "../../components/ReglasContrasena";
 import LogoMarca from "../../components/LogoMarca";
 import { esquemaContrasena, traducirErroresIdentity } from "../../utils/contrasena";
 import { mensajeError } from "../../utils/errores";
-import { ACTIVACION_PASOS, ACTIVACION_RESUMEN, CORREO_SOPORTE } from "../../lib/activacion";
+import { ACTIVACION_PASOS, CORREO_SOPORTE } from "../../lib/activacion";
+import { useTituloPagina } from "../../hooks/useTituloPagina";
 
 type Sector = "belleza" | "salud";
 
@@ -41,6 +42,10 @@ const schema = z
 
 type FormData = z.infer<typeof schema>;
 
+// Prefijo del enlace público tal como lo verá el cliente. Se toma del origen
+// actual en vez de escribir "appointva.com" (AP-13).
+const PREFIJO_ENLACE = `${typeof window !== "undefined" ? window.location.host : "appointva.com"}/b/`;
+
 function derivarSlug(nombre: string) {
   return nombre
     .toLowerCase()
@@ -54,6 +59,7 @@ function derivarSlug(nombre: string) {
 }
 
 export default function RegistroNegocioPage() {
+  useTituloPagina("Registra tu negocio");
   const [errorGeneral, setErrorGeneral] = useState("");
   const [erroresServidor, setErroresServidor] = useState<string[]>([]);
   const [reenvioError, setReenvioError] = useState("");
@@ -87,7 +93,7 @@ export default function RegistroNegocioPage() {
     handleSubmit,
     setValue,
     watch,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isSubmitted },
   } = useForm<FormData>({ resolver: zodResolver(schema) });
 
   const contrasenaValor = watch("contrasena", "");
@@ -115,11 +121,15 @@ export default function RegistroNegocioPage() {
     return () => clearTimeout(timer);
   }, [slugValue]);
 
+  // Se encadena el `onChange` de react-hook-form en vez de reemplazarlo, para
+  // que el error "Mínimo 2 caracteres" desaparezca al corregir (AP-13).
+  const nombreRegistro = register("nombreNegocio");
+  const slugRegistro = register("slug");
+
   const onNombreChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const valor = e.target.value;
-    setValue("nombreNegocio", valor);
+    void nombreRegistro.onChange(e);
     if (!slugEditado) {
-      setValue("slug", derivarSlug(valor), { shouldValidate: true });
+      setValue("slug", derivarSlug(e.target.value), { shouldValidate: isSubmitted });
       setSlugEstado('idle');
     }
   };
@@ -184,7 +194,6 @@ export default function RegistroNegocioPage() {
               <ol className="list-decimal pl-5 space-y-1.5 text-sm text-slate-600">
                 {ACTIVACION_PASOS.map((paso) => <li key={paso}>{paso}</li>)}
               </ol>
-              <p className="text-xs text-slate-600 mt-3">{ACTIVACION_RESUMEN}</p>
             </div>
 
             {reenvioEnviado ? (
@@ -232,14 +241,17 @@ export default function RegistroNegocioPage() {
           <p className="text-sm text-gray-400 mb-6">Completa los datos para registrar tu negocio</p>
 
           <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-5">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Tu negocio</p>
+            <p className="text-xs text-gray-500">Todos los campos son obligatorios salvo los marcados como opcionales.</p>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Tu negocio</p>
 
             {/* Nombre del negocio */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nombre del negocio *</label>
+              <label htmlFor="registro-nombre-negocio" className="block text-sm font-medium text-gray-700 mb-1">Nombre del negocio</label>
               <input
+                id="registro-nombre-negocio"
                 type="text"
-                {...register("nombreNegocio")}
+                autoComplete="organization"
+                {...nombreRegistro}
                 onChange={onNombreChange}
                 placeholder="Ej. Salón Belleza Luna"
                 className={`w-full px-4 py-3 rounded-xl border text-sm outline-none transition focus:ring-2 focus:ring-slate-700/30 focus:border-slate-700 ${errors.nombreNegocio ? "border-red-400 bg-red-50" : "border-gray-200"}`}
@@ -249,16 +261,18 @@ export default function RegistroNegocioPage() {
 
             {/* Slug */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Identificador (URL) *
-                <span className="text-gray-400 font-normal ml-1">— tu link de reservas</span>
+              <label htmlFor="registro-slug" className="block text-sm font-medium text-gray-700 mb-1">
+                Identificador (URL)
+                <span className="text-gray-500 font-normal ml-1">— tu link de reservas</span>
               </label>
               <div className="flex items-center border rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-slate-700/30 focus-within:border-slate-700 border-gray-200">
-                <span className="px-3 py-2.5 bg-gray-50 text-gray-400 text-sm border-r border-gray-200 whitespace-nowrap">appointva.com/b/</span>
+                <span className="px-3 py-2.5 bg-gray-50 text-gray-400 text-sm border-r border-gray-200 whitespace-nowrap">{PREFIJO_ENLACE}</span>
                 <input
+                  id="registro-slug"
                   type="text"
-                  {...register("slug")}
-                  onChange={(e) => { setSlugEditado(true); setValue("slug", e.target.value, { shouldValidate: true }); setSlugEstado('idle'); }}
+                  autoComplete="off"
+                  {...slugRegistro}
+                  onChange={(e) => { setSlugEditado(true); void slugRegistro.onChange(e); setSlugEstado('idle'); }}
                   className={`flex-1 px-3 py-2.5 text-sm outline-none bg-white ${errors.slug ? "bg-red-50" : ""}`}
                   placeholder="salon-belleza-luna"
                 />
@@ -287,7 +301,7 @@ export default function RegistroNegocioPage() {
             {/* Giro del negocio */}
             <div>
               <p id="etiqueta-sector" className="block text-sm font-medium text-gray-700 mb-2">
-                Giro del negocio <span className="text-red-400">*</span>
+                Giro del negocio
               </p>
               <div role="radiogroup" aria-labelledby="etiqueta-sector" aria-describedby="ayuda-sector" className="grid grid-cols-2 gap-3">
                 {SECTORES.map(({ value, Icon, label }) => {
@@ -321,11 +335,13 @@ export default function RegistroNegocioPage() {
 
             {/* Teléfono */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Teléfono <span className="text-gray-400 font-normal">(opcional)</span>
+              <label htmlFor="registro-telefono" className="block text-sm font-medium text-gray-700 mb-1">
+                Teléfono <span className="text-gray-500 font-normal">(opcional)</span>
               </label>
               <input
+                id="registro-telefono"
                 type="tel"
+                autoComplete="tel"
                 {...register("telefono")}
                 placeholder="+52 55 1234 5678"
                 className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm outline-none transition focus:ring-2 focus:ring-slate-700/30 focus:border-slate-700"
@@ -336,9 +352,11 @@ export default function RegistroNegocioPage() {
 
             {/* Nombre del propietario */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Tu nombre completo *</label>
+              <label htmlFor="registro-propietario" className="block text-sm font-medium text-gray-700 mb-1">Tu nombre completo</label>
               <input
+                id="registro-propietario"
                 type="text"
+                autoComplete="name"
                 {...register("nombrePropietario")}
                 placeholder="Nombre y apellido"
                 className={`w-full px-4 py-3 rounded-xl border text-sm outline-none transition focus:ring-2 focus:ring-slate-700/30 focus:border-slate-700 ${errors.nombrePropietario ? "border-red-400 bg-red-50" : "border-gray-200"}`}
@@ -348,9 +366,11 @@ export default function RegistroNegocioPage() {
 
             {/* Email */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Correo electrónico *</label>
+              <label htmlFor="registro-email" className="block text-sm font-medium text-gray-700 mb-1">Correo electrónico</label>
               <input
+                id="registro-email"
                 type="email"
+                autoComplete="email"
                 {...register("email")}
                 placeholder="correo@ejemplo.com"
                 className={`w-full px-4 py-3 rounded-xl border text-sm outline-none transition focus:ring-2 focus:ring-slate-700/30 focus:border-slate-700 ${errors.email ? "border-red-400 bg-red-50" : "border-gray-200"}`}
@@ -360,9 +380,10 @@ export default function RegistroNegocioPage() {
 
             {/* Contraseña */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña *</label>
+              <label htmlFor="registro-contrasena" className="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
               <div className="relative">
                 <input
+                  id="registro-contrasena"
                   type={mostrarContrasena ? "text" : "password"}
                   autoComplete="new-password"
                   {...register("contrasena")}
@@ -386,9 +407,10 @@ export default function RegistroNegocioPage() {
 
             {/* Confirmar contraseña */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Confirmar contraseña *</label>
+              <label htmlFor="registro-confirmar" className="block text-sm font-medium text-gray-700 mb-1">Confirmar contraseña</label>
               <div className="relative">
                 <input
+                  id="registro-confirmar"
                   type={mostrarConfirmar ? "text" : "password"}
                   autoComplete="new-password"
                   {...register("confirmarContrasena")}

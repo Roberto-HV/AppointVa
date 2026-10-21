@@ -1,19 +1,17 @@
 import { Link } from "react-router-dom";
 import LogoMarca from "../../components/LogoMarca";
-import { FileText, ChevronLeft } from "lucide-react";
+import { FileText } from "lucide-react";
+import VolverAtras from "../../components/VolverAtras";
+import { useTituloPagina } from "../../hooks/useTituloPagina";
 
 export default function TerminosPage() {
+  useTituloPagina("Términos de uso");
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Header */}
       <div className="bg-white border-b border-slate-100 sticky top-0 z-10">
         <div className="max-w-2xl mx-auto px-5 py-3 flex items-center gap-3">
-          <button
-            onClick={() => window.history.back()}
-            className="text-slate-400 hover:text-slate-700 transition"
-          >
-            <ChevronLeft size={20} />
-          </button>
+          <VolverAtras />
           <LogoMarca prioridad variante="pequeno" className="h-7" />
         </div>
       </div>
@@ -30,12 +28,12 @@ export default function TerminosPage() {
           </div>
         </div>
 
-        <div className="space-y-8">
+        <div className="max-w-prose space-y-8">
 
           {/* 1 */}
           <section>
             <h2 className="text-base font-bold text-slate-800 mb-2">1. Aceptación de los términos</h2>
-            <p className="text-sm text-slate-600 leading-relaxed">
+            <p className="text-base text-slate-600 leading-relaxed">
               Al acceder o utilizar la plataforma AppointVa —ya sea como negocio registrado o como cliente
               que agenda una cita— aceptas quedar vinculado por estos Términos de uso. Si no estás de acuerdo
               con alguna disposición, no utilices el servicio.
@@ -45,7 +43,7 @@ export default function TerminosPage() {
           {/* 2 */}
           <section>
             <h2 className="text-base font-bold text-slate-800 mb-2">2. Descripción del servicio</h2>
-            <p className="text-sm text-slate-600 leading-relaxed">
+            <p className="text-base text-slate-600 leading-relaxed">
               AppointVa es una plataforma de software como servicio (SaaS) que permite a negocios locales
               gestionar su agenda de citas en línea y a sus clientes reservar citas de forma autónoma.
               AppointVa actúa como intermediario tecnológico y no es parte de la relación contractual entre
@@ -56,7 +54,7 @@ export default function TerminosPage() {
           {/* 3 */}
           <section>
             <h2 className="text-base font-bold text-slate-800 mb-2">3. Cuentas de negocio</h2>
-            <ul className="text-sm text-slate-600 leading-relaxed space-y-2 list-none pl-0">
+            <ul className="text-base text-slate-600 leading-relaxed space-y-2 list-none pl-0">
               {[
                 "Debes proporcionar información veraz, completa y actualizada al registrarte.",
                 "Eres responsable de mantener la confidencialidad de tus credenciales de acceso.",
@@ -75,10 +73,10 @@ export default function TerminosPage() {
           {/* 4 */}
           <section>
             <h2 className="text-base font-bold text-slate-800 mb-2">4. Uso por parte de clientes</h2>
-            <p className="text-sm text-slate-600 leading-relaxed mb-3">
+            <p className="text-base text-slate-600 leading-relaxed mb-3">
               Los clientes que reservan citas a través de la plataforma se comprometen a:
             </p>
-            <ul className="text-sm text-slate-600 leading-relaxed space-y-2 list-none pl-0">
+            <ul className="text-base text-slate-600 leading-relaxed space-y-2 list-none pl-0">
               {[
                 "Proporcionar datos verídicos (nombre, teléfono, correo) al agendar.",
                 "Respetar las políticas de cancelación y anticipo definidas por cada negocio.",
@@ -95,7 +93,7 @@ export default function TerminosPage() {
           {/* 5 */}
           <section>
             <h2 className="text-base font-bold text-slate-800 mb-2">5. Pagos y anticipos</h2>
-            <p className="text-sm text-slate-600 leading-relaxed">
+            <p className="text-base text-slate-600 leading-relaxed">
               Cuando un negocio requiera un anticipo para confirmar tu cita, el pago se realiza directamente
               al negocio mediante los métodos que éste indique (transferencia bancaria, depósito, etc.).
               AppointVa <strong className="text-slate-700">no procesa ni retiene pagos</strong> en nombre de
@@ -107,7 +105,7 @@ export default function TerminosPage() {
           {/* 6 */}
           <section>
             <h2 className="text-base font-bold text-slate-800 mb-2">6. Propiedad intelectual</h2>
-            <p className="text-sm text-slate-600 leading-relaxed">
+            <p className="text-base text-slate-600 leading-relaxed">
               Todo el software, diseño, logotipos y contenidos de AppointVa son propiedad de AppointVa
               o sus licenciantes. El uso de la plataforma no te otorga ningún derecho sobre dicha propiedad
               intelectual. Los negocios conservan la propiedad de su contenido (logo, fotos, descripciones)
@@ -118,10 +116,10 @@ export default function TerminosPage() {
           {/* 7 */}
           <section>
             <h2 className="text-base font-bold text-slate-800 mb-2">7. Limitación de responsabilidad</h2>
-            <p className="text-sm text-slate-600 leading-relaxed">
+            <p className="text-base text-slate-600 leading-relaxed">
               AppointVa no es responsable por:
             </p>
-            <ul className="text-sm text-slate-600 leading-relaxed space-y-2 list-none pl-0 mt-3">
+            <ul className="text-base text-slate-600 leading-relaxed space-y-2 list-none pl-0 mt-3">
               {[
                 "La calidad o cumplimiento de los servicios ofrecidos por los negocios.",
                 "Daños derivados del incumplimiento de citas por parte del negocio o del cliente.",
@@ -139,7 +137,7 @@ export default function TerminosPage() {
           {/* 8 */}
           <section>
             <h2 className="text-base font-bold text-slate-800 mb-2">8. Disponibilidad del servicio</h2>
-            <p className="text-sm text-slate-600 leading-relaxed">
+            <p className="text-base text-slate-600 leading-relaxed">
               Nos esforzamos por mantener la plataforma disponible de forma continua, pero no garantizamos
               una disponibilidad del 100%. Realizamos mantenimientos periódicos que pueden generar
               interrupciones breves. Notificaremos con anticipación las ventanas de mantenimiento programadas.
@@ -149,7 +147,7 @@ export default function TerminosPage() {
           {/* 9 */}
           <section>
             <h2 className="text-base font-bold text-slate-800 mb-2">9. Modificaciones a los términos</h2>
-            <p className="text-sm text-slate-600 leading-relaxed">
+            <p className="text-base text-slate-600 leading-relaxed">
               Podemos modificar estos términos en cualquier momento. Los cambios significativos serán
               notificados por correo electrónico o mediante un aviso en la plataforma con al menos
               15 días de anticipación. El uso continuado del servicio después de la fecha de efectividad
@@ -160,7 +158,7 @@ export default function TerminosPage() {
           {/* 10 */}
           <section>
             <h2 className="text-base font-bold text-slate-800 mb-2">10. Legislación aplicable</h2>
-            <p className="text-sm text-slate-600 leading-relaxed">
+            <p className="text-base text-slate-600 leading-relaxed">
               Estos términos se rigen por las leyes de los Estados Unidos Mexicanos. Cualquier controversia
               se someterá a los tribunales competentes de la Ciudad de México, renunciando las partes a
               cualquier otro fuero que pudiera corresponderles.
@@ -170,7 +168,7 @@ export default function TerminosPage() {
           {/* 11 */}
           <section>
             <h2 className="text-base font-bold text-slate-800 mb-2">11. Contacto</h2>
-            <p className="text-sm text-slate-600 leading-relaxed">
+            <p className="text-base text-slate-600 leading-relaxed">
               Para cualquier consulta sobre estos términos, escríbenos a{" "}
               <a href="mailto:soporte@appointva.com" className="text-slate-700 hover:underline font-medium">
                 soporte@appointva.com

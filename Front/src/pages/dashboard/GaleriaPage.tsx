@@ -17,7 +17,8 @@ const MAX_FOTOS = 20;
 interface Subida {
   id: string;
   nombre: string;
-  progreso: number;
+  /** `null` mientras no se conoce el total (barra indeterminada). */
+  progreso: number | null;
 }
 
 /** Cuántas fotos de una selección entran sin pasar el límite, y cuántas sobran. */
@@ -46,7 +47,7 @@ export default function GaleriaPage() {
 
   const subir = async (archivo: File) => {
     const id = crypto.randomUUID();
-    setSubidas((s) => [...s, { id, nombre: archivo.name, progreso: 0 }]);
+    setSubidas((s) => [...s, { id, nombre: archivo.name, progreso: null }]);
     try {
       await negociosApi.subirImagenGaleria(archivo, undefined, (progreso) =>
         setSubidas((s) => s.map((x) => (x.id === id ? { ...x, progreso } : x))));

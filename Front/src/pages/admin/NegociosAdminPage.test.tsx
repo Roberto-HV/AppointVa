@@ -14,6 +14,8 @@ vi.mock('../../api/admin', () => ({
     setEmpleadosExtra: vi.fn(),
     activar: vi.fn(),
     desactivar: vi.fn(),
+    setSector: vi.fn(),
+    setPlan: vi.fn(),
   },
 }));
 
@@ -393,6 +395,88 @@ describe('NegociosAdminPage — desactivar negocio', () => {
     expect(await within(tarjetaDe('Inactivo Uno')).findByRole('button', { name: /Guardando/ })).toBeDisabled();
     const otra = within(tarjetaDe('Inactivo Dos')).getByRole('button', { name: /^Activar/ });
     expect(otra).toBeEnabled();
+  });
+
+  it('con dos cambios en curso, terminar uno no libera la otra tarjeta ni permite duplicados', async () => {
+    const user = userEvent.setup();
+    vi.mocked(adminModule.adminApi.obtenerMetricas).mockResolvedValue([
+      negocio(1, { nombre: 'Inactivo Uno', activo: 0 }),
+      negocio(2, { nombre: 'Inactivo Dos', activo: 0 }),
+    ]);
+    const resolvers: Record<string, () => void> = {};
+    vi.mocked(adminModule.adminApi.activar).mockImplementation(
+      (id: string) => new Promise<void>((r) => { resolvers[id] = r; }) as never
+    );
+    renderPage();
+
+    await screen.findByText('Inactivo Uno');
+    await user.click(within(tarjetaDe('Inactivo Uno')).getByRole('button', { name: /^Activar/ }));
+    await user.click(within(tarjetaDe('Inactivo Dos')).getByRole('button', { name: /^Activar/ }));
+
+    expect(await within(tarjetaDe('Inactivo Uno')).findByRole('button', { name: /Guardando/ })).toBeDisabled();
+    expect(await within(tarjetaDe('Inactivo Dos')).findByRole('button', { name: /Guardando/ })).toBeDisabled();
+
+    // Termina el segundo: el primero sigue en espera.
+    resolvers['neg-2']();
+    await waitFor(() => expect(toastMock).toHaveBeenCalledWith('Negocio activado'));
+    expect(within(tarjetaDe('Inactivo Uno')).getByRole('button', { name: /Guardando/ })).toBeDisabled();
+    expect(adminModule.adminApi.activar).toHaveBeenCalledTimes(2);
+  });
+});
+
+// ── Feedback de facturación (AP-23) ─────────────────────────────────────────
+
+describe('ModalSuscripcion — cambios con confirmación y aviso', () => {
+  beforeEach(() => {
+    vi.mocked(adminModule.adminApi.obtenerMetricas).mockResolvedValue([mockNegocio]);
+    vi.mocked(adminModule.adminApi.obtenerSuscripciones).mockResolvedValue([mockSuscripcion]);
+    vi.mocked(adminModule.adminApi.obtenerPagos).mockResolvedValue([]);
+    vi.mocked(adminModule.adminApi.setEmpleadosExtra).mockReset().mockResolvedValue(undefined);
+    vi.mocked(adminModule.adminApi.setSector).mockReset().mockResolvedValue(undefined as never);
+    toastMock.mockReset();
+  });
+
+  async function abrirSuscripcion() {
+    renderPage();
+    await waitFor(() => screen.getByText('Peluquería Test'));
+    const btn = screen.getAllByRole('button').find(b => /suscripci/i.test(b.textContent ?? ''));
+    fireEvent.click(btn!);
+    return screen.findByTestId('billing-summary');
+  }
+
+  it('cambiar el sector pide confirmación y avisa al terminar', async () => {
+    const user = userEvent.setup();
+    await abrirSuscripcion();
+    await user.click(screen.getByRole('button', { name: 'Salud' }));
+    expect(adminModule.adminApi.setSector).not.toHaveBeenCalled();
+    expect(screen.getByRole('alert')).toHaveTextContent('cambia el vocabulario');
+
+    await user.click(screen.getByRole('button', { name: 'Cambiar sector' }));
+    await waitFor(() => expect(adminModule.adminApi.setSector).toHaveBeenCalledWith('neg-1', 'salud'));
+    await waitFor(() => expect(toastMock).toHaveBeenCalledWith('Sector actualizado: Salud'));
+  });
+
+  it('los empleados extra avisan al guardar y no se guardan si no cambiaron', async () => {
+    await abrirSuscripcion();
+    const input = screen.getByRole('spinbutton');
+    fireEvent.blur(input, { target: { value: '0' } });
+    expect(adminModule.adminApi.setEmpleadosExtra).not.toHaveBeenCalled();
+
+    fireEvent.change(input, { target: { value: '2' } });
+    fireEvent.blur(input, { target: { value: '2' } });
+    await waitFor(() => expect(adminModule.adminApi.setEmpleadosExtra).toHaveBeenCalledWith('neg-1', 2));
+    await waitFor(() => expect(toastMock).toHaveBeenCalledWith('Empleados extra actualizados: 2'));
+  });
+
+  it('un error al guardar empleados extra se muestra', async () => {
+    vi.mocked(adminModule.adminApi.setEmpleadosExtra).mockRejectedValue(new Error('red'));
+    await abrirSuscripcion();
+    const input = screen.getByRole('spinbutton');
+    fireEvent.change(input, { target: { value: '3' } });
+    fireEvent.blur(input, { target: { value: '3' } });
+    await waitFor(() =>
+      expect(toastMock).toHaveBeenCalledWith('No se pudieron actualizar los empleados extra.', 'error')
+    );
   });
 });
 

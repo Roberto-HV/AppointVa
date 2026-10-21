@@ -21,6 +21,13 @@ describe("precioVisible", () => {
     expect(r.sinPrecioAnual).toBe(true);
   });
 
+  it("un plan que no se puede contratar no lleva nota de facturación anual", () => {
+    const r = precioVisible({ mensual: 799, disponible: false }, true);
+    expect(r.sinPrecioAnual).toBe(false);
+    expect(r.facturaAnual).toBe(false);
+    expect(r.porMes).toBe(799);
+  });
+
   it("no marca nada en Mensual aunque el plan no tenga precio anual", () => {
     expect(precioVisible({ mensual: 449 }, false).sinPrecioAnual).toBe(false);
   });

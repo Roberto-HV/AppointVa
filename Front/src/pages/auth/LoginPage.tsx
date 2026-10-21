@@ -8,6 +8,7 @@ import { Eye, EyeOff, CalendarCheck, Star, Users } from "lucide-react";
 import { authApi } from "../../api/auth";
 import { useAuthStore } from "../../store/authStore";
 import { api } from "../../api/axios";
+import { useTituloPagina } from "../../hooks/useTituloPagina";
 
 const schema = z.object({
   email: z.string().email("Correo inválido"),
@@ -16,6 +17,7 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>;
 
 export default function LoginPage() {
+  useTituloPagina("Iniciar sesión");
   const navigate = useNavigate();
   const location = useLocation();
   const iniciarSesion = useAuthStore((s) => s.iniciarSesion);

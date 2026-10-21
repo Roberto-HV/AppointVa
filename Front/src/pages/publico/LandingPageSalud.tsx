@@ -1,33 +1,12 @@
 import { Link } from "react-router-dom";
-import { useState, useEffect, useRef, type ReactNode, type CSSProperties } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { precioVisible, formatMonto } from "../../lib/precios";
+import { useFadeInUp } from "../../components/landing/useFadeInUp";
+import { ACTIVACION_RESUMEN } from "../../lib/activacion";
 
 const GOLD = "#C8A961";
 const SLATE_700 = "#334155";
 const DARK = "#0F172A";
-
-function useFadeInUp(delay = 0) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [vis, setVis] = useState(false);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(
-      ([e]) => { if (e.isIntersecting) { setVis(true); obs.disconnect(); } },
-      { threshold: 0.08 }
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, []);
-  return {
-    ref,
-    style: {
-      transition: `opacity .65s ease ${delay}ms, transform .65s ease ${delay}ms`,
-      opacity: vis ? 1 : 0,
-      transform: vis ? "translateY(0)" : "translateY(24px)",
-    } as CSSProperties,
-  };
-}
 
 const Ico = ({ d, className = "w-5 h-5" }: { d: string; className?: string }) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className={className}>
@@ -58,7 +37,7 @@ function Navbar() {
   return (
     <nav
       className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${
-        scrolled || open ? "bg-white/96 backdrop-blur-lg shadow-sm" : "bg-transparent"
+        scrolled || open ? "bg-white/95 backdrop-blur-lg shadow-sm" : "bg-transparent"
       }`}
     >
       <div className="max-w-6xl mx-auto px-6 h-[68px] flex items-center justify-between">
@@ -91,16 +70,19 @@ function Navbar() {
         </div>
 
         <button
+          type="button"
           className="md:hidden p-2 -mr-2 text-slate-600 hover:text-slate-900 transition-colors"
           onClick={() => setOpen(v => !v)}
           aria-label={open ? "Cerrar menú" : "Abrir menú"}
+          aria-expanded={open}
+          aria-controls="menu-movil-landing"
         >
           <Ico d={open ? dClose : dMenu} />
         </button>
       </div>
 
       {open && (
-        <div className="md:hidden bg-white border-t border-slate-100 px-6 py-4 flex flex-col gap-3 shadow-lg">
+        <div id="menu-movil-landing" className="md:hidden bg-white border-t border-slate-100 px-6 py-4 flex flex-col gap-3 shadow-lg">
           <a href="#caracteristicas" className="py-2 text-sm font-medium text-slate-700" onClick={() => setOpen(false)}>Características</a>
           <a href="#negocios" className="py-2 text-sm font-medium text-slate-700" onClick={() => setOpen(false)}>Negocios reales</a>
           <a href="#precios" className="py-2 text-sm font-medium text-slate-700" onClick={() => setOpen(false)}>Precios</a>
@@ -170,7 +152,8 @@ function PricingCard({
   features: string[]; highlighted?: boolean; delay?: number; comingSoon?: boolean; billedAnnually?: boolean;
 }) {
   const fade = useFadeInUp(delay);
-  const precio = precioVisible({ mensual: price, anual: annualPrice }, billedAnnually);
+  // Un plan que aún no se puede contratar no lleva nota de facturación anual.
+  const precio = precioVisible({ mensual: price, anual: annualPrice, disponible: !comingSoon }, billedAnnually);
   return (
     <div
       ref={fade.ref}
@@ -241,7 +224,12 @@ export function LandingPageSalud() {
           66% { transform: translateY(-8px) rotate(-0.5deg); }
         }
         .av-float { animation: av-float 8s ease-in-out infinite; }
-        html { scroll-behavior: smooth; }
+        @media (prefers-reduced-motion: reduce) {
+          .av-float { animation: none; }
+        }
+        @media (prefers-reduced-motion: no-preference) {
+          html { scroll-behavior: smooth; }
+        }
         ::selection { background: #C8A96133; }
       `}</style>
 
@@ -396,12 +384,16 @@ export function LandingPageSalud() {
             <div className="flex items-center justify-center mb-12">
               <div className="inline-flex items-center gap-1 bg-white border border-slate-200 rounded-2xl p-1.5 shadow-sm">
                 <button
+                  type="button"
+                  aria-pressed={!billedAnnually}
                   onClick={() => setBilledAnnually(false)}
                   className={`px-5 py-2 rounded-xl text-sm font-bold transition-all duration-200 ${!billedAnnually ? "bg-slate-900 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
                 >
                   Mensual
                 </button>
                 <button
+                  type="button"
+                  aria-pressed={billedAnnually}
                   onClick={() => setBilledAnnually(true)}
                   className={`flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-bold transition-all duration-200 ${billedAnnually ? "bg-slate-900 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
                 >
@@ -438,7 +430,10 @@ export function LandingPageSalud() {
               />
             </div>
 
-            <p className="text-center text-sm text-slate-400 mt-10">
+            {/* Misma explicación de la activación manual que la landing principal (AP-02, AP-22). */}
+            <p className="text-center text-sm text-slate-600 mt-10 max-w-2xl mx-auto">{ACTIVACION_RESUMEN}</p>
+
+            <p className="text-center text-sm text-slate-500 mt-4">
               ¿Necesitas algo personalizado?{" "}
               <a href="mailto:hola@appointva.com" className="font-semibold text-slate-600 hover:text-slate-900 transition-colors underline underline-offset-2">
                 hola@appointva.com

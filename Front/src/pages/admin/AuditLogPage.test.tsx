@@ -127,7 +127,7 @@ describe("AuditLogPage — estado vacío", () => {
     renderAuditLog();
     await screen.findByText("Sin registros");
 
-    await elegirAccion("Logout");
+    await elegirAccion("Cierre de sesión");
 
     expect(await screen.findByRole("button", { name: "Ver todos los eventos" })).toBeInTheDocument();
   });
@@ -152,7 +152,7 @@ describe("AuditLogPage — filtro de acción", () => {
     renderAuditLog();
     await screen.findByText("Sin registros");
 
-    await elegirAccion("Login");
+    await elegirAccion("Inicio de sesión");
 
     await waitFor(() => {
       expect(adminApi.obtenerAuditLogs).toHaveBeenCalledWith(
@@ -170,7 +170,41 @@ describe("AuditLogPage — filtro de acción", () => {
     // "SubirFoto" es el nombre de dos endpoints, no un valor de AuditLog.Accion:
     // filtrar por ella devolvía siempre cero registros.
     expect(screen.queryByRole("option", { name: "SubirFoto" })).not.toBeInTheDocument();
-    expect(screen.getByRole("option", { name: "Login" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Inicio de sesión" })).toBeInTheDocument();
+  });
+});
+
+describe("AuditLogPage — lectura de los eventos (AP-24)", () => {
+  const uuid = "3f2b8c1e-1d2a-4c3b-9e8f-0a1b2c3d4e5f";
+
+  it("muestra las acciones con nombre legible, no el interno", async () => {
+    vi.mocked(adminApi.obtenerAuditLogs).mockResolvedValue({
+      datos: [makeLog({ accion: "LoginFallido" })], total: 1, pagina: 1, tamano: 15,
+    });
+    renderAuditLog();
+    expect(await screen.findByText("Inicio de sesión fallido")).toBeInTheDocument();
+    expect(screen.queryByText("LoginFallido")).not.toBeInTheDocument();
+  });
+
+  it("los detalles completos se abren sin depender del hover y permiten filtrar por el usuario", async () => {
+    const user = userEvent.setup();
+    const largo = "Intento con contraseña incorrecta desde un dispositivo nuevo, tercer intento seguido";
+    vi.mocked(adminApi.obtenerAuditLogs).mockResolvedValue({
+      datos: [makeLog({ usuarioId: uuid, detalles: largo })], total: 1, pagina: 1, tamano: 15,
+    });
+    renderAuditLog();
+    const boton = await screen.findByRole("button", { name: /Ver detalle/ });
+    expect(boton).toHaveAttribute("aria-expanded", "false");
+    await user.click(boton);
+    expect(boton).toHaveAttribute("aria-expanded", "true");
+    const detalle = document.getElementById(boton.getAttribute("aria-controls")!)!;
+    expect(detalle).toHaveTextContent(largo);
+    expect(detalle).toHaveTextContent(uuid);
+
+    await user.click(screen.getByRole("button", { name: "Ver solo los eventos de este usuario" }));
+    await waitFor(() =>
+      expect(adminApi.obtenerAuditLogs).toHaveBeenCalledWith(expect.objectContaining({ usuarioId: uuid }))
+    );
   });
 });
 

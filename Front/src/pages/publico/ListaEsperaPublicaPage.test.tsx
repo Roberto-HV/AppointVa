@@ -1,7 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { MemoryRouter } from "react-router-dom";
 import ListaEsperaPublicaPage from "./ListaEsperaPublicaPage";
+import { brandSolid } from "../../lib/colorUtils";
 
 vi.mock("react-router-dom", async (importOriginal) => {
   const mod = await importOriginal<typeof import("react-router-dom")>();
@@ -22,11 +24,6 @@ vi.mock("../../api/listaEspera", () => ({
 
 vi.mock("../../components/PublicFooter", () => ({
   default: () => <div data-testid="public-footer" />,
-}));
-
-vi.mock("../../lib/colorUtils", () => ({
-  hexToChannels: () => "99 102 241",
-  DEFAULT_COLOR: "#6366f1",
 }));
 
 import { publicoApi } from "../../api/publico";
@@ -63,9 +60,11 @@ function renderConQuery() {
     defaultOptions: { queries: { retry: false } },
   });
   return render(
-    <QueryClientProvider client={qc}>
-      <ListaEsperaPublicaPage />
-    </QueryClientProvider>
+    <MemoryRouter>
+      <QueryClientProvider client={qc}>
+        <ListaEsperaPublicaPage />
+      </QueryClientProvider>
+    </MemoryRouter>
   );
 }
 
@@ -195,5 +194,43 @@ describe("ListaEsperaPublicaPage", () => {
     renderConQuery();
     await waitFor(() => screen.getByTestId("public-footer"));
     expect(screen.getByTestId("public-footer")).toBeInTheDocument();
+  });
+});
+
+describe("ListaEsperaPublicaPage — contraste, servicio y salida (AP-19)", () => {
+  const conServicio = {
+    ...mockNegocio,
+    servicios: [{ id: "servicio-abc", nombre: "Corte de cabello", duracionMinutos: 30, precio: 150 }],
+  };
+
+  it("un color de marca claro se oscurece para que el botón se lea", async () => {
+    vi.mocked(publicoApi.obtenerNegocio).mockResolvedValue({ ...mockNegocio, colorPrimario: "#FBCFE8" } as never);
+    renderConQuery();
+    const boton = await screen.findByRole("button", { name: /unirme/i });
+    const esperado = brandSolid("#FBCFE8");
+    expect(esperado.toLowerCase()).not.toBe("#fbcfe8");
+    // jsdom normaliza el color a rgb(); se compara contra el mismo valor.
+    const probe = document.createElement("div");
+    probe.style.background = esperado;
+    expect(boton.style.background).toBe(probe.style.background);
+  });
+
+  it("nombra el servicio y ofrece volver al negocio", async () => {
+    vi.mocked(publicoApi.obtenerNegocio).mockResolvedValue(conServicio as never);
+    vi.mocked(listaEsperaPublicoApi.unirse).mockResolvedValue(undefined as never);
+    renderConQuery();
+
+    expect(await screen.findByRole("heading", { name: "Lista de espera para Corte de cabello" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Volver a Salón Test/ })).toHaveAttribute("href", "/b/salon-test");
+
+    fireEvent.change(screen.getByPlaceholderText(/tu nombre completo/i), { target: { value: "Ana López" } });
+    fireEvent.change(screen.getByPlaceholderText(/5512345678/i), { target: { value: "5599887766" } });
+    fireEvent.click(screen.getByRole("button", { name: /unirme/i }));
+
+    await screen.findByText(/estás en la lista/i);
+    expect(screen.getByText("Corte de cabello")).toBeInTheDocument();
+    expect(screen.getByText(/Salón Test se pondrá en contacto contigo/)).toBeInTheDocument();
+    expect(screen.queryByText(/Te avisaremos/)).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Volver a Salón Test/ })).toBeInTheDocument();
   });
 });

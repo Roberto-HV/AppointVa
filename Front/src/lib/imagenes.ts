@@ -25,8 +25,15 @@ export function validarImagen(archivo: File): string | null {
   return null;
 }
 
-/** Recibe el avance de una subida, de 0 a 100. */
-export type OnProgreso = (porcentaje: number) => void;
+/**
+ * Avance de una subida, de 0 a 100, o `null` si no se conoce el total (algunos
+ * navegadores y proxies no lo informan). Con `null` la barra se muestra
+ * indeterminada en vez de quedarse en un 0 % engañoso.
+ */
+export type PorcentajeSubida = number | null;
+
+/** Recibe el avance de una subida. */
+export type OnProgreso = (porcentaje: PorcentajeSubida) => void;
 
 /** Config de axios para un multipart que informa su avance. */
 export function configSubida(onProgreso?: OnProgreso): AxiosRequestConfig {
@@ -34,7 +41,7 @@ export function configSubida(onProgreso?: OnProgreso): AxiosRequestConfig {
     headers: { "Content-Type": "multipart/form-data" },
     onUploadProgress: onProgreso
       ? (e: AxiosProgressEvent) => {
-          if (e.total) onProgreso(Math.min(100, Math.round((e.loaded / e.total) * 100)));
+          onProgreso(e.total ? Math.min(100, Math.round((e.loaded / e.total) * 100)) : null);
         }
       : undefined,
   };
