@@ -1,17 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor, fireEvent, within } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { MemoryRouter, useLocation, useNavigate } from "react-router-dom";
 import BookingPage from "./BookingPage";
 import type { NegocioPublico } from "../../types";
 
 // ── Router ────────────────────────────────────────────────────────────────────
+// El paso vive en la URL, así que el wizard corre sobre un MemoryRouter real;
+// solo el slug se fija.
 vi.mock("react-router-dom", async (importOriginal) => {
   const mod = await importOriginal<typeof import("react-router-dom")>();
   return {
     ...mod,
     useParams: () => ({ slug: "salon-test" }),
-    useNavigate: () => vi.fn(),
-    useSearchParams: () => [new URLSearchParams()],
   };
 });
 
@@ -63,6 +64,7 @@ vi.mock("../../components/booking/PasoServicio", () => ({
 vi.mock("../../components/booking/PasoEmpleado", () => ({
   default: ({ empleados, onSeleccionar }: { empleados: Opcion[]; onSeleccionar: (e: Opcion) => void }) => (
     <div data-testid="paso-empleado">
+      <h2 tabIndex={-1}>¿Con quién?</h2>
       {empleados.map((e) => (
         <button key={e.id} type="button" onClick={() => onSeleccionar(e)}>{e.nombre}</button>
       ))}
@@ -85,10 +87,12 @@ vi.mock("../../components/booking/PasoFechaHora", () => ({
 }));
 
 vi.mock("../../components/booking/PasoDatosCliente", () => ({
-  default: ({ formId, onEnviar, onClienteReconocidoChange }: {
+  default: ({ formId, onEnviar, onClienteReconocidoChange, valoresIniciales, onValoresChange }: {
     formId: string;
     onEnviar: (d: { nombreCliente: string; telefonoCliente: string }) => void;
     onClienteReconocidoChange?: (reconocido: boolean) => void;
+    valoresIniciales?: { nombreCliente?: string };
+    onValoresChange?: (v: { nombreCliente?: string }) => void;
   }) => (
     <form
       id={formId}
@@ -99,6 +103,11 @@ vi.mock("../../components/booking/PasoDatosCliente", () => ({
       }}
     >
       <input name="telefonoCliente" aria-label="Teléfono" defaultValue="5512345678" />
+      <input
+        aria-label="Nombre"
+        defaultValue={valoresIniciales?.nombreCliente ?? ""}
+        onChange={(e) => onValoresChange?.({ nombreCliente: e.target.value })}
+      />
       {/* Sustituyen al «Sí, soy yo» / «No, no soy yo» del paso real. */}
       <button type="button" onClick={() => onClienteReconocidoChange?.(true)}>stub-reconocer</button>
       <button type="button" onClick={() => onClienteReconocidoChange?.(false)}>stub-rechazar</button>
@@ -138,6 +147,7 @@ vi.mock("../../lib/colorUtils", async (importOriginal) => ({
 
 // ── Test data ─────────────────────────────────────────────────────────────────
 import { publicoApi } from "../../api/publico";
+import { intakePublicoApi } from "../../api/intake";
 import { fondoPortada } from "../../lib/portadaPresets";
 
 const mockNegocio: NegocioPublico = {
@@ -178,14 +188,29 @@ const mockNegocio: NegocioPublico = {
   resenas: [],
 };
 
-function renderConQuery() {
+/** Expone la URL actual del MemoryRouter y un «atrás» de navegador. */
+function UbicacionActual() {
+  const { pathname, search } = useLocation();
+  const navigate = useNavigate();
+  return (
+    <>
+      <span data-testid="ubicacion">{`${pathname}${search}`}</span>
+      <button type="button" onClick={() => navigate(-1)}>atras-navegador</button>
+    </>
+  );
+}
+
+function renderConQuery(rutaInicial = "/b/salon-test") {
   const qc = new QueryClient({
     defaultOptions: { queries: { retryDelay: 0 } },
   });
   return render(
-    <QueryClientProvider client={qc}>
-      <BookingPage />
-    </QueryClientProvider>
+    <MemoryRouter initialEntries={[rutaInicial]}>
+      <QueryClientProvider client={qc}>
+        <BookingPage />
+        <UbicacionActual />
+      </QueryClientProvider>
+    </MemoryRouter>
   );
 }
 
@@ -460,5 +485,177 @@ describe("BookingPage — portada", () => {
 
     const portada = await screen.findByTestId("portada-negocio");
     expect(portada.style.background).toBe(fondoNormalizado(null));
+  });
+});
+
+// ── BF-01/02/03: paso en la URL, estado conservado, foco ──────────────────────
+const ubicacion = () => screen.getByTestId("ubicacion").textContent;
+const continuar = () => fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+const atras = () => fireEvent.click(screen.getByRole("button", { name: "Atrás" }));
+
+describe("BookingPage — navegación entre pasos", () => {
+  it("refleja cada paso en ?paso= para que el historial lo recorra", async () => {
+    await avanzarHastaPaso4();
+    expect(ubicacion()).toBe("/b/salon-test?paso=4");
+  });
+
+  it("el atrás del navegador vuelve al paso anterior sin salir del wizard", async () => {
+    vi.mocked(publicoApi.obtenerNegocio).mockResolvedValue(mockNegocio);
+    renderConQuery();
+    fireEvent.click(await screen.findByRole("button", { name: "Corte de cabello" }));
+    continuar();
+    fireEvent.click(await screen.findByRole("button", { name: "Ana García" }));
+    continuar();
+    await screen.findByTestId("paso-fecha-hora");
+
+    fireEvent.click(screen.getByRole("button", { name: "atras-navegador" }));
+
+    expect(await screen.findByTestId("paso-empleado")).toBeInTheDocument();
+    expect(ubicacion()).toBe("/b/salon-test?paso=2");
+    // La elección sigue en pie: se puede continuar sin volver a elegir.
+    expect(screen.getByRole("button", { name: "Continuar" })).toBeEnabled();
+  });
+
+  it("el Atrás de pantalla reutiliza la entrada del historial en lugar de apilar otra", async () => {
+    await avanzarHastaPaso4();
+    atras();
+    await screen.findByTestId("paso-fecha-hora");
+    expect(ubicacion()).toBe("/b/salon-test?paso=3");
+
+    fireEvent.click(screen.getByRole("button", { name: "atras-navegador" }));
+    expect(await screen.findByTestId("paso-empleado")).toBeInTheDocument();
+  });
+
+  it("volver atrás conserva servicio, profesional, horario y datos del cliente", async () => {
+    await avanzarHastaPaso4();
+    fireEvent.change(screen.getByLabelText("Nombre"), { target: { value: "Ana Ruiz" } });
+
+    atras(); // → 3
+    await screen.findByTestId("paso-fecha-hora");
+    expect(screen.getByRole("button", { name: "Continuar" })).toBeEnabled(); // horario conservado
+    atras(); // → 2
+    await screen.findByTestId("paso-empleado");
+    expect(screen.getByRole("button", { name: "Continuar" })).toBeEnabled();
+    atras(); // → 1
+    await screen.findByTestId("paso-servicio");
+    expect(screen.getByRole("button", { name: "Continuar" })).toBeEnabled();
+
+    continuar();
+    await screen.findByTestId("paso-empleado");
+    continuar();
+    await screen.findByTestId("paso-fecha-hora");
+    continuar();
+    await screen.findByTestId("paso-datos-cliente");
+    expect(screen.getByLabelText("Nombre")).toHaveValue("Ana Ruiz");
+  });
+
+  it("cambiar de servicio invalida el profesional elegido", async () => {
+    vi.mocked(publicoApi.obtenerNegocio).mockResolvedValue({
+      ...mockNegocio,
+      servicios: [
+        ...mockNegocio.servicios,
+        { id: "srv-2", nombre: "Tinte", duracionMinutos: 60, bufferMinutos: 0, precio: 400, orden: 2 },
+      ],
+    });
+    renderConQuery();
+    fireEvent.click(await screen.findByRole("button", { name: "Corte de cabello" }));
+    continuar();
+    fireEvent.click(await screen.findByRole("button", { name: "Ana García" }));
+    atras();
+
+    fireEvent.click(await screen.findByRole("button", { name: "Tinte" }));
+    continuar();
+
+    await screen.findByTestId("paso-empleado");
+    expect(screen.getByRole("button", { name: "Continuar" })).toBeDisabled();
+  });
+
+  it("conserva las respuestas de las preguntas al volver desde el paso 4", async () => {
+    vi.mocked(intakePublicoApi.getCampos).mockResolvedValue([
+      { id: "c1", etiqueta: "¿Alergias?", tipo: "Texto", requerido: true, orden: 1 },
+    ]);
+    try {
+      vi.mocked(publicoApi.obtenerNegocio).mockResolvedValue(mockNegocio);
+      renderConQuery();
+      fireEvent.click(await screen.findByRole("button", { name: "Corte de cabello" }));
+      continuar();
+      fireEvent.click(await screen.findByRole("button", { name: "Ana García" }));
+      continuar();
+      fireEvent.click(await screen.findByRole("button", { name: "10:00" }));
+      await waitFor(() => expect(screen.getByRole("button", { name: "Continuar" })).toBeEnabled());
+      continuar();
+
+      const campo = await screen.findByLabelText(/¿Alergias\?/);
+      expect(ubicacion()).toBe("/b/salon-test?paso=preguntas");
+      expect(campo).toHaveAttribute("aria-required", "true");
+      fireEvent.change(campo, { target: { value: "Ninguna" } });
+      continuar();
+      await screen.findByTestId("paso-datos-cliente");
+
+      atras();
+      expect(await screen.findByLabelText(/¿Alergias\?/)).toHaveValue("Ninguna");
+    } finally {
+      vi.mocked(intakePublicoApi.getCampos).mockResolvedValue([]);
+    }
+  });
+
+  it("marca una pregunta obligatoria vacía como inválida y la liga a su mensaje", async () => {
+    vi.mocked(intakePublicoApi.getCampos).mockResolvedValue([
+      { id: "c1", etiqueta: "¿Alergias?", tipo: "Texto", requerido: true, orden: 1 },
+    ]);
+    try {
+      vi.mocked(publicoApi.obtenerNegocio).mockResolvedValue(mockNegocio);
+      renderConQuery();
+      fireEvent.click(await screen.findByRole("button", { name: "Corte de cabello" }));
+      continuar();
+      fireEvent.click(await screen.findByRole("button", { name: "Ana García" }));
+      continuar();
+      fireEvent.click(await screen.findByRole("button", { name: "10:00" }));
+      await waitFor(() => expect(screen.getByRole("button", { name: "Continuar" })).toBeEnabled());
+      continuar();
+      const campo = await screen.findByLabelText(/¿Alergias\?/);
+
+      continuar(); // sin responder
+
+      expect(campo).toHaveAttribute("aria-invalid", "true");
+      expect(campo).toHaveAccessibleDescription("Este campo es obligatorio");
+    } finally {
+      vi.mocked(intakePublicoApi.getCampos).mockResolvedValue([]);
+    }
+  });
+
+  it("un enlace directo a un paso posterior sin datos cae en el primer paso incompleto", async () => {
+    vi.mocked(publicoApi.obtenerNegocio).mockResolvedValue(mockNegocio);
+    renderConQuery("/b/salon-test?paso=4");
+
+    expect(await screen.findByTestId("paso-servicio")).toBeInTheDocument();
+    await waitFor(() => expect(ubicacion()).toBe("/b/salon-test"));
+  });
+
+  it("al cambiar de paso mueve el foco al encabezado y anuncia el paso", async () => {
+    vi.mocked(publicoApi.obtenerNegocio).mockResolvedValue(mockNegocio);
+    renderConQuery();
+    fireEvent.click(await screen.findByRole("button", { name: "Corte de cabello" }));
+    continuar();
+
+    const encabezado = await screen.findByRole("heading", { name: "¿Con quién?" });
+    expect(document.activeElement).toBe(encabezado);
+    expect(screen.getByRole("status")).toHaveTextContent("Paso 2 de 4: Empleado");
+  });
+
+  it("no roba el foco en la carga inicial", async () => {
+    vi.mocked(publicoApi.obtenerNegocio).mockResolvedValue(mockNegocio);
+    renderConQuery();
+    await screen.findByTestId("paso-servicio");
+    expect(document.activeElement).toBe(document.body);
+    expect(screen.getByRole("status")).toHaveTextContent("");
+  });
+});
+
+describe("BookingPage — código de descuento", () => {
+  it("el campo del código tiene nombre accesible", async () => {
+    await avanzarHastaPaso4();
+    fireEvent.click(screen.getByRole("button", { name: /tienes un código de descuento/i }));
+    expect(screen.getByLabelText("Código de descuento")).toHaveAttribute("placeholder", "PROMO20");
   });
 });

@@ -253,3 +253,54 @@ describe("PasoDatosCliente — cliente que ya reservó", () => {
     expect(onEnviar.mock.calls[0][0]).toMatchObject({ nombreCliente: "Ana Martínez", telefonoCliente: "55 1234 5678" });
   });
 });
+
+// ── BF-08: etiquetas ligadas y errores anunciados ─────────────────────────────
+describe("PasoDatosCliente — accesibilidad del formulario", () => {
+  it("cada campo se encuentra por su etiqueta visible", () => {
+    renderComponente();
+    expect(screen.getByLabelText(/teléfono/i)).toBe(inputTelefono());
+    expect(screen.getByLabelText(/nombre completo/i)).toBe(inputNombre());
+    expect(screen.getByLabelText(/correo electrónico/i)).toBe(inputEmail());
+    expect(screen.getByLabelText("Notas (opcional)").tagName).toBe("TEXTAREA");
+  });
+
+  it("marca los obligatorios con aria-required", () => {
+    renderComponente();
+    expect(inputTelefono()).toHaveAttribute("aria-required", "true");
+    expect(inputNombre()).toHaveAttribute("aria-required", "true");
+    expect(inputEmail()).not.toHaveAttribute("aria-required");
+  });
+
+  it("marca el campo inválido y lo liga a su mensaje de error", async () => {
+    renderComponente();
+    expect(inputNombre()).toHaveAttribute("aria-invalid", "false");
+
+    fireEvent.change(inputNombre(), { target: { value: "A" } });
+    fireEvent.blur(inputNombre());
+
+    await waitFor(() => expect(inputNombre()).toHaveAttribute("aria-invalid", "true"));
+    expect(inputNombre()).toHaveAccessibleDescription("Ingresa tu nombre completo");
+  });
+});
+
+// ── BF-02: lo escrito sobrevive a ir y volver ─────────────────────────────────
+describe("PasoDatosCliente — valores conservados", () => {
+  it("arranca con los valores que el padre ya tenía", () => {
+    renderComponente({
+      valoresIniciales: { telefonoCliente: "5512345678", nombreCliente: "Ana Ruiz", emailCliente: "ana@test.com", notas: "Sin prisa" },
+    });
+    expect((inputTelefono() as HTMLInputElement).value).toBe("5512345678");
+    expect(inputNombre().value).toBe("Ana Ruiz");
+    expect(inputEmail().value).toBe("ana@test.com");
+    expect((screen.getByLabelText("Notas (opcional)") as HTMLTextAreaElement).value).toBe("Sin prisa");
+  });
+
+  it("avisa al padre de cada cambio", async () => {
+    const onValoresChange = vi.fn();
+    renderComponente({ onValoresChange });
+    fireEvent.change(inputNombre(), { target: { value: "Ana" } });
+    await waitFor(() =>
+      expect(onValoresChange).toHaveBeenLastCalledWith(expect.objectContaining({ nombreCliente: "Ana" }))
+    );
+  });
+});

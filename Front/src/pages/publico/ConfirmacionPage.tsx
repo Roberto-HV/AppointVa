@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { publicoApi } from "../../api/publico";
 import { comprobantesApi } from "../../api/comprobantes";
-import { Copy, Check, Calendar, ChevronDown, CalendarClock, Printer, CheckCircle2, XCircle, Star, Bell, Scissors, Upload, Info } from "lucide-react";
+import { Copy, Check, Calendar, ChevronDown, CalendarClock, Printer, CheckCircle2, XCircle, Star, Bell, Scissors, Upload, Info, Clock } from "lucide-react";
 import { SiWhatsapp, SiApple, SiGooglecalendar } from "react-icons/si";
 import PublicFooter from "../../components/PublicFooter";
 import { formatPrecio, formatFechaHoraCompleta as formatFechaHora } from "../../utils/formatters";
@@ -11,7 +11,53 @@ import { formatPrecio, formatFechaHoraCompleta as formatFechaHora } from "../../
 import { hexToChannels, DEFAULT_COLOR } from "../../lib/colorUtils";
 import SocialLinks from "../../components/icons/SocialLinks";
 import PasoFechaHora from "../../components/booking/PasoFechaHora";
-import type { SlotDisponible } from "../../types";
+import type { ConfirmacionCita, SlotDisponible } from "../../types";
+
+/** Lo que la página promete según el estado real de la cita activa. */
+type EstadoVisibleCita = "confirmada" | "falta-anticipo" | "revisando-anticipo" | "pendiente";
+
+function estadoVisibleCita(
+  cita: Pick<ConfirmacionCita, "estadoTexto" | "requiereAnticipo" | "comprobanteUrl">,
+  comprobanteSubido = false
+): EstadoVisibleCita {
+  if (cita.estadoTexto === "Confirmada") return "confirmada";
+  if (cita.requiereAnticipo) {
+    return cita.comprobanteUrl || comprobanteSubido ? "revisando-anticipo" : "falta-anticipo";
+  }
+  return "pendiente";
+}
+
+const TEXTOS_ESTADO: Record<EstadoVisibleCita, {
+  titulo: string;
+  subtitulo: string;
+  paso: string;
+  detallePaso: string;
+}> = {
+  confirmada: {
+    titulo: "¡Cita confirmada!",
+    subtitulo: "Guarda tu código o comparte por WhatsApp",
+    paso: "Cita confirmada",
+    detallePaso: "Guarda tu código, lo necesitarás el día de tu cita",
+  },
+  "falta-anticipo": {
+    titulo: "¡Cita agendada!",
+    subtitulo: "Falta tu anticipo para confirmarla",
+    paso: "Falta tu anticipo",
+    detallePaso: "Realiza el pago y sube tu comprobante para que el negocio confirme tu cita",
+  },
+  "revisando-anticipo": {
+    titulo: "¡Cita agendada!",
+    subtitulo: "El negocio revisará tu pago y confirmará tu cita",
+    paso: "Pendiente de confirmación",
+    detallePaso: "Recibimos tu comprobante; el negocio confirmará tu cita al revisarlo",
+  },
+  pendiente: {
+    titulo: "¡Cita agendada!",
+    subtitulo: "Pendiente de confirmación del negocio",
+    paso: "Pendiente de confirmación",
+    detallePaso: "El negocio confirmará tu cita. Guarda tu código para consultarla",
+  },
+};
 
 export default function ConfirmacionPage() {
   const { slug, codigo } = useParams<{ slug?: string; codigo: string }>();
@@ -73,7 +119,7 @@ export default function ConfirmacionPage() {
   useEffect(() => {
     if (!cita) return;
     const title = `Tu cita en ${cita.nombreNegocio} — AppointVa`;
-    const desc = `Cita confirmada: ${cita.nombreServicio} con ${cita.nombreEmpleado}. Gestiona tu reserva en línea.`;
+    const desc = `${cita.estadoTexto === "Confirmada" ? "Cita confirmada" : "Cita agendada"}: ${cita.nombreServicio} con ${cita.nombreEmpleado}. Gestiona tu reserva en línea.`;
     document.title = title;
     const setMeta = (prop: string, val: string) => {
       let el = document.querySelector(`meta[property="${prop}"]`);
@@ -188,6 +234,10 @@ export default function ConfirmacionPage() {
 
   // ── Cita activa (Pendiente / Confirmada) ────────────────────────────────────
   const color = cita.colorPrimario ?? DEFAULT_COLOR;
+  const estadoVisible = estadoVisibleCita(cita, comprobanteSubido);
+  const textosEstado = TEXTOS_ESTADO[estadoVisible];
+  const confirmada = estadoVisible === "confirmada";
+  const IconoEstado = confirmada ? CheckCircle2 : Clock;
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] print:bg-white">
@@ -213,11 +263,11 @@ export default function ConfirmacionPage() {
         <div className="relative z-10 flex flex-col items-center gap-3 text-center">
           <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
             style={{ background: `rgb(${hexToChannels(color)} / 0.18)`, border: `1.5px solid rgb(${hexToChannels(color)} / 0.35)` }}>
-            <CheckCircle2 size={32} style={{ color }} />
+            <IconoEstado size={32} style={{ color }} aria-hidden="true" />
           </div>
-          <h1 className="text-2xl font-bold text-white">¡Cita confirmada!</h1>
-          <p className="text-sm" style={{ color: "rgba(255,255,255,0.45)" }}>
-            Guarda tu código o comparte por WhatsApp
+          <h1 className="text-2xl font-bold text-white">{textosEstado.titulo}</h1>
+          <p className="text-sm" style={{ color: "rgba(255,255,255,0.7)" }}>
+            {textosEstado.subtitulo}
           </p>
         </div>
       </div>
@@ -269,7 +319,7 @@ export default function ConfirmacionPage() {
           {/* Código de confirmación */}
           <div className="flex flex-col items-center py-5" style={{ background: "#0C0C0F" }}>
             <p className="text-xs font-semibold uppercase tracking-widest mb-2"
-              style={{ color: "rgba(255,255,255,0.35)" }}>Código de confirmación</p>
+              style={{ color: "rgba(255,255,255,0.7)" }}>Código de confirmación</p>
             <span className="font-mono text-2xl font-black text-white tracking-[0.2em]">
               {cita.codigoConfirmacion}
             </span>
@@ -344,17 +394,19 @@ export default function ConfirmacionPage() {
         <div className="mt-5 mb-1 bg-white rounded-3xl border border-slate-100 shadow-sm px-5 py-4 print:hidden">
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">¿Qué sigue?</p>
           <div>
-            {/* Paso 1: Confirmado ✓ */}
+            {/* Paso 1: estado real de la cita */}
             <div className="flex gap-3 items-start">
               <div className="flex flex-col items-center shrink-0">
-                <div className={`w-7 h-7 rounded-full flex items-center justify-center ${cita.estadoTexto === "Confirmada" ? "bg-emerald-500" : "bg-amber-400"}`}>
-                  <Check size={13} className="text-white" strokeWidth={2.5} />
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center ${confirmada ? "bg-emerald-500" : "bg-amber-400"}`}>
+                  {confirmada
+                    ? <Check size={13} className="text-white" strokeWidth={2.5} />
+                    : <Clock size={13} className="text-white" strokeWidth={2.5} />}
                 </div>
                 <div className="w-px h-6 bg-slate-200 mt-1" />
               </div>
               <div className="pb-5 pt-0.5">
-                <p className="text-sm font-semibold text-slate-800">Cita confirmada</p>
-                <p className="text-xs text-slate-400 mt-0.5">Guarda tu código, lo necesitarás el día de tu cita</p>
+                <p className="text-sm font-semibold text-slate-800">{textosEstado.paso}</p>
+                <p className="text-xs text-slate-500 mt-0.5">{textosEstado.detallePaso}</p>
               </div>
             </div>
             {/* Paso 2: Recordatorio */}
@@ -366,8 +418,13 @@ export default function ConfirmacionPage() {
                 <div className="w-px h-6 bg-slate-100 mt-1" />
               </div>
               <div className="pb-5 pt-0.5">
-                <p className="text-sm font-semibold text-slate-400">Recordatorio</p>
-                <p className="text-xs text-slate-300 mt-0.5">Te avisamos 24h antes por WhatsApp o correo</p>
+                <p className="text-sm font-semibold text-slate-700">Recordatorio</p>
+                {/* Solo se promete el canal que existe: sin correo no hay recordatorio por email. */}
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {cita.emailCliente
+                    ? "Te enviaremos un recordatorio por correo antes de tu cita"
+                    : "Guarda el enlace de tu cita: sin correo no podemos enviarte recordatorios por email"}
+                </p>
               </div>
             </div>
             {/* Paso 3: Día de cita */}
@@ -378,8 +435,8 @@ export default function ConfirmacionPage() {
                 </div>
               </div>
               <div className="pt-0.5">
-                <p className="text-sm font-semibold text-slate-400">¡Tu cita!</p>
-                <p className="text-xs text-slate-300 mt-0.5">{formatFechaHora(cita.inicioEn)}</p>
+                <p className="text-sm font-semibold text-slate-700">¡Tu cita!</p>
+                <p className="text-xs text-slate-600 mt-0.5">{formatFechaHora(cita.inicioEn)}</p>
               </div>
             </div>
           </div>
@@ -454,7 +511,7 @@ export default function ConfirmacionPage() {
           {/* WhatsApp — acción principal */}
           <a
             href={`https://wa.me/?text=${encodeURIComponent(
-              `*Cita confirmada en ${cita.nombreNegocio}*\n\n` +
+              `*${confirmada ? "Cita confirmada" : "Cita agendada"} en ${cita.nombreNegocio}*\n\n` +
               `Servicio: ${cita.nombreServicio}\n` +
               `Con: ${cita.nombreEmpleado}\n` +
               `Fecha: ${formatFechaHora(cita.inicioEn)}\n\n` +
@@ -540,7 +597,7 @@ export default function ConfirmacionPage() {
             {cancelable && !confirmandoCancelar && !reagendando && puedeCancel && (
               <button
                 onClick={() => setConfirmandoCancelar(true)}
-                className="text-sm text-red-400 hover:text-red-600 hover:underline"
+                className="text-sm text-red-600 hover:text-red-700 hover:underline"
               >
                 Cancelar cita
               </button>
@@ -553,7 +610,7 @@ export default function ConfirmacionPage() {
             </p>
           )}
           {cancelable && !puedeCancel && horasCancelacion > 0 && (
-            <p className="text-xs text-center text-red-400 font-medium">
+            <p className="text-xs text-center text-red-600 font-medium">
               Este negocio no permite cambios con menos de {horasCancelacion} hora{horasCancelacion === 1 ? "" : "s"} de anticipación.
             </p>
           )}

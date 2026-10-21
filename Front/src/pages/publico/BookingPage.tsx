@@ -1,7 +1,7 @@
-﻿import { useState, useEffect, useRef, useCallback } from "react";
+﻿import { useState, useEffect, useRef, useCallback, useId } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import { useParams, useNavigate, useSearchParams, Link } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { publicoApi } from "../../api/publico";
 import { intakePublicoApi, type CampoIntake } from "../../api/intake";
@@ -26,6 +26,35 @@ const ID_HOJA_CONFLICTO = "hoja-cliente-existente";
 const ID_TITULO_CONFLICTO = "hoja-cliente-existente-titulo";
 
 const CODIGO_CLIENTE_DISTINTO = "CLIENTE_NOMBRE_DISTINTO";
+
+// El paso vive en la URL (?paso=…) para que el «atrás» del navegador o del sistema
+// recorra el wizard en lugar de salir de la página y perder lo elegido.
+type ClavePaso = "1" | "2" | "3" | "preguntas" | "4";
+const PARAM_PASO = "paso";
+const CLAVES_PASO: readonly ClavePaso[] = ["1", "2", "3", "preguntas", "4"];
+/** Estado de cada entrada del historial: de qué paso se llegó a ella. */
+type EstadoHistorialPaso = { pasoPrevio?: ClavePaso } | null;
+
+function leerPaso(valor: string | null): ClavePaso {
+  return CLAVES_PASO.includes(valor as ClavePaso) ? (valor as ClavePaso) : "1";
+}
+
+function paramsConPaso(actuales: URLSearchParams, destino: ClavePaso): URLSearchParams {
+  const params = new URLSearchParams(actuales);
+  if (destino === "1") params.delete(PARAM_PASO);
+  else params.set(PARAM_PASO, destino);
+  return params;
+}
+
+/** Avisa cuando el contenido de un paso ya está en el DOM (tras la animación de salida). */
+function AlMontarPaso({ onMontado }: { onMontado: () => void }) {
+  useEffect(() => {
+    onMontado();
+    // Solo al montar: cada paso nuevo monta su propia instancia.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return null;
+}
 const CODIGO_HORARIO_NO_DISPONIBLE = "HORARIO_NO_DISPONIBLE";
 
 // Piso de legibilidad del texto de la portada: el velo sostiene el contraste en
@@ -481,11 +510,22 @@ function IntakeCampoInput({
   onChange: (v: string) => void;
   mostrarError?: boolean;
 }) {
+  const idCampo = useId();
+  const idError = `${idCampo}-error`;
   const label = (
-    <label className="block text-sm font-medium text-gray-700 mb-1">
+    <label htmlFor={idCampo} className="block text-sm font-medium text-gray-700 mb-1">
       {campo.etiqueta}
-      {campo.requerido && <span className="text-red-500 ml-1">*</span>}
+      {campo.requerido && <span className="text-red-500 ml-1" aria-hidden="true">*</span>}
     </label>
+  );
+  const ariaCampo = {
+    id: idCampo,
+    "aria-required": campo.requerido || undefined,
+    "aria-invalid": mostrarError || undefined,
+    "aria-describedby": mostrarError ? idError : undefined,
+  };
+  const mensajeError = mostrarError && (
+    <p id={idError} className="text-xs text-red-600 mt-1">Este campo es obligatorio</p>
   );
 
   if (campo.tipo === "Checkbox") {
@@ -493,6 +533,7 @@ function IntakeCampoInput({
       <div>
         <label className={`flex items-center gap-2 cursor-pointer ${mostrarError ? "text-red-600" : ""}`}>
           <input
+            {...ariaCampo}
             type="checkbox"
             checked={valor === "true"}
             onChange={(e) => onChange(e.target.checked ? "true" : "")}
@@ -500,12 +541,10 @@ function IntakeCampoInput({
           />
           <span className={`text-sm ${mostrarError ? "text-red-600" : "text-gray-700"}`}>
             {campo.etiqueta}
-            {campo.requerido && <span className="text-red-500 ml-1">*</span>}
+            {campo.requerido && <span className="text-red-500 ml-1" aria-hidden="true">*</span>}
           </span>
         </label>
-        {mostrarError && (
-          <p className="text-xs text-red-500 mt-1">Este campo es obligatorio</p>
-        )}
+        {mensajeError}
       </div>
     );
   }
@@ -522,6 +561,7 @@ function IntakeCampoInput({
       <div>
         {label}
         <select
+          {...ariaCampo}
           value={valor}
           onChange={(e) => onChange(e.target.value)}
           className={`w-full px-4 py-2.5 rounded-lg border text-sm outline-none focus:ring-2 focus:ring-slate-700/40 focus:border-slate-700 transition ${mostrarError ? "border-red-500" : "border-gray-300"}`}
@@ -531,6 +571,7 @@ function IntakeCampoInput({
             <option key={op} value={op}>{op}</option>
           ))}
         </select>
+        {mensajeError}
       </div>
     );
   }
@@ -540,11 +581,13 @@ function IntakeCampoInput({
       <div>
         {label}
         <textarea
+          {...ariaCampo}
           value={valor}
           onChange={(e) => onChange(e.target.value)}
           rows={3}
           className={`w-full px-4 py-2.5 rounded-lg border text-sm outline-none focus:ring-2 focus:ring-slate-700/40 focus:border-slate-700 transition resize-none ${mostrarError ? "border-red-500" : "border-gray-300"}`}
         />
+        {mensajeError}
       </div>
     );
   }
@@ -553,11 +596,13 @@ function IntakeCampoInput({
     <div>
       {label}
       <input
+        {...ariaCampo}
         type="text"
         value={valor}
         onChange={(e) => onChange(e.target.value)}
         className={`w-full px-4 py-2.5 rounded-lg border text-sm outline-none focus:ring-2 focus:ring-slate-700/40 focus:border-slate-700 transition ${mostrarError ? "border-red-500" : "border-gray-300"}`}
       />
+      {mensajeError}
     </div>
   );
 }
@@ -565,9 +610,11 @@ function IntakeCampoInput({
 export default function BookingPage() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const reducirMovimiento = useReducedMotion();
+  const idCupon = useId();
 
-  const [paso, setPaso] = useState(1);
   const [servicio, setServicio] = useState<ServicioPublico | null>(null);
   const [empleado, setEmpleado] = useState<EmpleadoPublico | null>(null);
   const [slot, setSlot] = useState<SlotDisponible | null>(null);
@@ -577,10 +624,10 @@ export default function BookingPage() {
   const [galeriaViewerIdx, setGaleriaViewerIdx] = useState<number | null>(null);
   const [galeriaVisible, setGaleriaVisible] = useState(false);
 
-  // Intake sub-step (between paso 3 and paso 4)
-  const [mostrarIntake, setMostrarIntake] = useState(false);
+  // Respuestas del sub-paso de preguntas (entre paso 3 y paso 4)
   const [respuestasIntake, setRespuestasIntake] = useState<Record<string, string>>({});
-  const [direction, setDirection] = useState(1);
+  // Lo escrito en el paso 4 vive aquí para sobrevivir a ir y volver entre pasos.
+  const [datosCliente, setDatosCliente] = useState<Partial<DatosClienteForm>>({});
 
   // Promo code
   const [mostrarCupon, setMostrarCupon] = useState(false);
@@ -638,6 +685,59 @@ export default function BookingPage() {
     enabled: !!slug && !!servicio,
   });
 
+  const hayIntake = camposIntake.length > 0;
+  const faltanCamposIntake = camposIntake
+    .filter((c) => c.requerido)
+    .some((c) => !respuestasIntake[c.id]?.trim());
+
+  // Un enlace directo o una recarga en un paso posterior, sin los datos que ese paso
+  // necesita, cae en el primer paso incompleto.
+  const pasoSolicitado = leerPaso(searchParams.get(PARAM_PASO));
+  const pasoActual: ClavePaso = (() => {
+    if (pasoSolicitado === "1" || !servicio) return "1";
+    if (pasoSolicitado === "2" || !empleado) return "2";
+    if (pasoSolicitado === "3" || !slot) return "3";
+    if (pasoSolicitado === "preguntas") return hayIntake ? "preguntas" : "3";
+    return hayIntake && faltanCamposIntake ? "preguntas" : "4";
+  })();
+  const paso = pasoActual === "preguntas" ? 3 : Number(pasoActual);
+  const mostrarIntake = pasoActual === "preguntas";
+
+  // Dirección de la animación y limpieza al cambiar de paso, también cuando el cambio
+  // llega por el «atrás» del navegador. Se ajusta durante el render, no en un efecto.
+  const indicePaso = CLAVES_PASO.indexOf(pasoActual);
+  const [indicePrevio, setIndicePrevio] = useState(indicePaso);
+  const [direction, setDirection] = useState(1);
+  if (indicePaso !== indicePrevio) {
+    setIndicePrevio(indicePaso);
+    setDirection(indicePaso > indicePrevio ? 1 : -1);
+    if (pasoActual !== "preguntas") setIntentoContinuar(false);
+    // La confirmación de «Sí, soy yo» vive en el formulario del paso 4; al salir de él
+    // se pierde, así que el padre tampoco debe darla por buena.
+    if (pasoActual !== "4") setClienteReconocido(false);
+  }
+
+  // Corrige la URL cuando pide un paso que todavía no se puede mostrar.
+  useEffect(() => {
+    if (!negocio || cargandoIntake) return;
+    if (searchParams.get("servicioId") && !yaPreseleccionado) return;
+    if (pasoActual !== pasoSolicitado) {
+      setSearchParams(paramsConPaso(searchParams, pasoActual), { replace: true });
+    }
+  }, [negocio, cargandoIntake, yaPreseleccionado, pasoActual, pasoSolicitado, searchParams, setSearchParams]);
+
+  const irAPaso = (destino: ClavePaso) => {
+    const estado: EstadoHistorialPaso = { pasoPrevio: pasoActual };
+    setSearchParams(paramsConPaso(searchParams, destino), { state: estado });
+  };
+
+  // Si la entrada anterior del historial es justo ese paso, se vuelve a ella: así el
+  // «Atrás» de pantalla y el del navegador recorren la misma pila.
+  const volverAPaso = (destino: ClavePaso) => {
+    if ((location.state as EstadoHistorialPaso)?.pasoPrevio === destino) navigate(-1);
+    else setSearchParams(paramsConPaso(searchParams, destino), { replace: true });
+  };
+
   // SEO + Open Graph dinámico
   useEffect(() => {
     if (!negocio) return;
@@ -673,51 +773,65 @@ export default function BookingPage() {
     if (!paramServicioId) return;
 
     const svc = negocio.servicios.find((s) => s.id === paramServicioId);
+    setYaPreseleccionado(true);
     if (!svc) return;
 
     setServicio(svc);
-    setYaPreseleccionado(true);
 
     if (paramEmpleadoId) {
       const emp = negocio.empleados.find((e) => e.id === paramEmpleadoId);
       if (emp) {
         setEmpleado(emp);
-        setDirection(1);
-        setPaso(3);
+        setSearchParams(paramsConPaso(searchParams, "3"), { replace: true });
         return;
       }
     }
-    setDirection(1);
-    setPaso(2);
-  }, [negocio, searchParams, yaPreseleccionado]);
+    setSearchParams(paramsConPaso(searchParams, "2"), { replace: true });
+  }, [negocio, searchParams, setSearchParams, yaPreseleccionado]);
 
   const irSiguiente = () => {
-    (document.activeElement as HTMLElement)?.blur();
-    if (paso === 3 && slot && camposIntake.length > 0 && !mostrarIntake) {
-      setDirection(1);
-      setMostrarIntake(true);
-
-      return;
-    }
-    setDirection(1);
-    setMostrarIntake(false);
-    setPaso((p) => Math.min(p + 1, 4));
+    const siguiente: Record<ClavePaso, ClavePaso> = {
+      "1": "2",
+      "2": "3",
+      "3": hayIntake ? "preguntas" : "4",
+      preguntas: "4",
+      "4": "4",
+    };
+    irAPaso(siguiente[pasoActual]);
   };
 
+  // Moverse entre pasos no borra nada; solo cambiar una elección invalida las que
+  // dependen de ella (ver seleccionarServicio / seleccionarEmpleado).
   const irAtras = () => {
-    (document.activeElement as HTMLElement)?.blur();
-    if (mostrarIntake) {
-      setDirection(-1);
-      setMostrarIntake(false);
-      setRespuestasIntake({});
-      setIntentoContinuar(false);
-      return;
-    }
-    setDirection(-1);
-    setPaso((p) => p - 1);
-    if (paso === 3) setSlot(null);
-    if (paso === 2) { setEmpleado(null); setRespuestasIntake({}); }
+    const anterior: Record<ClavePaso, ClavePaso> = {
+      "1": "1",
+      "2": "1",
+      "3": "2",
+      preguntas: "3",
+      "4": hayIntake ? "preguntas" : "3",
+    };
+    volverAPaso(anterior[pasoActual]);
   };
+
+  const seleccionarServicio = (nuevo: ServicioPublico) => {
+    if (nuevo.id === servicio?.id) return;
+    setServicio(nuevo);
+    setEmpleado(null);
+    setSlot(null);
+    setRespuestasIntake({});
+  };
+
+  const seleccionarEmpleado = (nuevo: EmpleadoPublico) => {
+    if (nuevo.id === empleado?.id) return;
+    setEmpleado(nuevo);
+    setSlot(null);
+  };
+
+  // Foco y scroll al cambiar de paso (no en la carga inicial).
+  const columnaReservaRef = useRef<HTMLDivElement>(null);
+  const contenedorPasoRef = useRef<HTMLDivElement>(null);
+  const ultimoPasoMostradoRef = useRef<ClavePaso | null>(null);
+  const [anuncioPaso, setAnuncioPaso] = useState("");
 
   const sinPreferencia = empleado?.id === SIN_PREFERENCIA_ID;
 
@@ -782,10 +896,8 @@ export default function BookingPage() {
         msg?.toLowerCase().includes("ocupado")
       ) {
         setErrorSlotTomado("Ese horario ya no está disponible, elige otro.");
-        setDirection(-1);
-        setPaso(3);
         setSlot(null);
-        setMostrarIntake(false);
+        volverAPaso("3");
       } else if (status === 402) {
         setErrorEnvio(msg ?? "Este negocio ha alcanzado su límite de citas para este mes. Por favor contáctalo directamente para más información.");
       } else {
@@ -895,9 +1007,20 @@ export default function BookingPage() {
     ? { cta: 'Agenda tu consulta', cita: 'consulta' }
     : { cta: 'Reserva tu cita',    cita: 'cita'     };
 
-  const faltanCamposIntake = camposIntake
-    .filter((c) => c.requerido)
-    .some((c) => !respuestasIntake[c.id]?.trim());
+  const alMostrarPaso = (clave: ClavePaso) => {
+    const anterior = ultimoPasoMostradoRef.current;
+    ultimoPasoMostradoRef.current = clave;
+    // La carga inicial (y el doble montaje de StrictMode) no mueve el foco.
+    if (anterior === null || anterior === clave) return;
+
+    const columna = columnaReservaRef.current;
+    const arriba = columna?.getBoundingClientRect().top ?? 0;
+    if (arriba < 0) {
+      window.scrollTo({ top: window.scrollY + arriba, behavior: reducirMovimiento ? "auto" : "smooth" });
+    }
+    contenedorPasoRef.current?.querySelector<HTMLElement>("h2")?.focus({ preventScroll: true });
+    setAnuncioPaso(`Paso ${pasoIndicador} de ${pasos.length}: ${pasos[pasoIndicador - 1]}`);
+  };
 
   const continuarDesdeIntake = () => {
     setIntentoContinuar(true);
@@ -1141,7 +1264,10 @@ export default function BookingPage() {
 
         {/* Right column — flujo de reserva */}
         {/* pb-32: deja aire bajo el contenido para que la barra fija no tape el final */}
-        <div className="px-4 pt-5 pb-32 lg:flex-1 lg:px-0 lg:pt-0 lg:pb-0">
+        <div ref={columnaReservaRef} className="px-4 pt-5 pb-32 lg:flex-1 lg:px-0 lg:pt-0 lg:pb-0">
+
+        {/* Anuncia el paso nuevo a lectores de pantalla */}
+        <p role="status" aria-live="polite" className="sr-only">{anuncioPaso}</p>
 
         {/* Mini-resumen breadcrumb */}
         {paso >= 2 && (servicio || empleado) && (
@@ -1161,9 +1287,10 @@ export default function BookingPage() {
         )}
 
         {/* Pasos — wrapper con animación de transición */}
+        <div ref={contenedorPasoRef}>
         <AnimatePresence mode="wait" custom={direction} initial={false}>
         <motion.div
-          key={`${paso}${mostrarIntake ? "-intake" : ""}`}
+          key={pasoActual}
           custom={direction}
           variants={{
             enter: (dir: number) => ({ opacity: 0, x: dir * 30 }),
@@ -1174,6 +1301,7 @@ export default function BookingPage() {
           animate="center"
           exit="exit"
         >
+        <AlMontarPaso onMontado={() => alMostrarPaso(pasoActual)} />
 
         {/* Paso 1 */}
         {paso === 1 && (
@@ -1183,7 +1311,7 @@ export default function BookingPage() {
             <PasoServicio
               servicios={negocio.servicios}
               seleccionado={servicio}
-              onSeleccionar={setServicio}
+              onSeleccionar={seleccionarServicio}
               color={color}
               sector={negocio.sector}
             />
@@ -1226,7 +1354,7 @@ export default function BookingPage() {
               empleados={negocio.empleados}
               servicioId={servicio.id}
               seleccionado={empleado}
-              onSeleccionar={setEmpleado}
+              onSeleccionar={seleccionarEmpleado}
               color={color}
               sector={negocio.sector}
             />
@@ -1252,6 +1380,11 @@ export default function BookingPage() {
               onLimpiarSlot={() => setSlot(null)}
               color={color}
               diasAnticipacionMinima={negocio.diasAnticipacionMinima}
+              enlaceListaEspera={
+                negocio.listaEsperaActiva === true
+                  ? `/b/${negocio.slug}/espera?servicioId=${servicio.id}`
+                  : undefined
+              }
             />
             {slot && (negocio.horasCancelacion ?? 0) > 0 && (
               <div className="mt-4 flex items-center gap-2 text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5">
@@ -1278,16 +1411,6 @@ export default function BookingPage() {
                 </button>
               </div>
             )}
-            {negocio.listaEsperaActiva === true && (
-              <div className="mt-4 text-center">
-                <Link
-                  to={`/b/${negocio.slug}/espera?servicioId=${servicio.id}`}
-                  className="text-xs text-slate-400 hover:text-slate-600 underline underline-offset-2 transition"
-                >
-                  ¿Sin disponibilidad? Únete a la lista de espera
-                </Link>
-              </div>
-            )}
           </>
         )}
 
@@ -1295,7 +1418,7 @@ export default function BookingPage() {
         {paso === 3 && mostrarIntake && camposIntake.length > 0 && (
           <>
             <div className="mb-5">
-              <h2 className="text-xl font-bold text-slate-900">Antes de continuar…</h2>
+              <h2 tabIndex={-1} className="text-xl font-bold text-slate-900 outline-none">Antes de continuar…</h2>
               <p className="text-sm text-slate-500 mt-1">
                 Por favor responde estas preguntas adicionales para tu cita.
               </p>
@@ -1324,9 +1447,9 @@ export default function BookingPage() {
           <>
             {/* Confirmación pendiente */}
             {negocio && !negocio.autoConfirmar && (
-              <p className="mb-4 text-xs text-slate-400 flex items-center gap-1.5">
+              <p className="mb-4 text-xs text-slate-600 flex items-center gap-1.5">
                 <AlertCircle size={12} className="shrink-0" />
-                Tu {textos.cita} quedará <strong className="text-slate-500">pendiente de confirmación</strong>.
+                Tu {textos.cita} quedará <strong className="text-slate-700">pendiente de confirmación</strong>.
               </p>
             )}
 
@@ -1341,6 +1464,8 @@ export default function BookingPage() {
               onPoliticasAceptadasChange={setPoliticasAceptadas}
               onEnviar={(datos) => confirmarCita(datos, clienteReconocido)}
               onClienteReconocidoChange={setClienteReconocido}
+              valoresIniciales={datosCliente}
+              onValoresChange={setDatosCliente}
               notasLabel={negocio.sector === 'salud' ? 'Motivo de consulta' : undefined}
               error={errorEnvio || undefined}
               politicasUrl={negocio.politicasUrl || undefined}
@@ -1381,8 +1506,12 @@ export default function BookingPage() {
                 </div>
               ) : mostrarCupon ? (
                 <div className="space-y-2">
+                  <label htmlFor={idCupon} className="sr-only">Código de descuento</label>
                   <div className="flex gap-2">
                     <input
+                      id={idCupon}
+                      aria-invalid={!!errorCupon || undefined}
+                      aria-describedby={errorCupon ? `${idCupon}-error` : undefined}
                       type="text"
                       value={codigoInput}
                       onChange={(e) => { setCodigoInput(e.target.value.toUpperCase()); setErrorCupon(""); }}
@@ -1400,7 +1529,7 @@ export default function BookingPage() {
                       {validandoCupon ? "Aplicando…" : "Aplicar"}
                     </button>
                   </div>
-                  {errorCupon && <p className="text-red-500 text-xs">{errorCupon}</p>}
+                  {errorCupon && <p id={`${idCupon}-error`} className="text-red-500 text-xs">{errorCupon}</p>}
                   <button
                     onClick={() => { setMostrarCupon(false); setCodigoInput(""); setErrorCupon(""); }}
                     className="text-xs text-slate-400 hover:text-slate-600 transition"
@@ -1422,6 +1551,7 @@ export default function BookingPage() {
 
         </motion.div>
         </AnimatePresence>
+        </div>
 
         {accionesPaso && <div className={BARRA_ACCION}>{accionesPaso}</div>}
 

@@ -4,9 +4,16 @@
     <script>
       (function() {
         try {
+          // Solo el panel admite tema oscuro; las páginas públicas son solo claras.
+          // Misma regla que src/lib/temaPorRuta.ts.
+          var root = document.documentElement;
+          if (!/^\/(dashboard|admin)(\/|$)/.test(location.pathname)) {
+            root.style.colorScheme = 'light';
+            return;
+          }
           var t = localStorage.getItem('appointva-theme');
           if (t === 'dark' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.documentElement.classList.add('dark');
+            root.classList.add('dark');
           }
         } catch(e) {}
       })();

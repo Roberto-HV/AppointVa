@@ -196,3 +196,76 @@ describe("ConfirmacionPage — banner sin email", () => {
     expect(enlace).toHaveAttribute("href", "/b/salon-test/mis-citas");
   });
 });
+
+// ── BF-04: el encabezado y el «¿Qué sigue?» reflejan el estado real ───────────
+describe("ConfirmacionPage — estado de la cita", () => {
+  async function renderCita(cambios: Record<string, unknown>) {
+    vi.mocked(publicoApi.obtenerCita).mockResolvedValue({
+      ...mockCitaBase,
+      emailCliente: "juan@test.com",
+      ...cambios,
+    } as never);
+    renderConQuery();
+    return screen.findByRole("heading", { level: 1 });
+  }
+
+  it("confirmada: dice «¡Cita confirmada!»", async () => {
+    const titulo = await renderCita({ estadoTexto: "Confirmada" });
+    expect(titulo).toHaveTextContent("¡Cita confirmada!");
+    expect(screen.getByText("Cita confirmada")).toBeInTheDocument();
+  });
+
+  it("pendiente sin anticipo: no la da por confirmada", async () => {
+    const titulo = await renderCita({ estadoTexto: "Pendiente", estado: 0 });
+    expect(titulo).toHaveTextContent("¡Cita agendada!");
+    expect(screen.getByText("Pendiente de confirmación del negocio")).toBeInTheDocument();
+    expect(screen.getByText("Pendiente de confirmación")).toBeInTheDocument();
+    expect(screen.queryByText(/cita confirmada/i)).not.toBeInTheDocument();
+  });
+
+  it("pendiente con anticipo sin pagar: pide el anticipo", async () => {
+    const titulo = await renderCita({ estadoTexto: "Pendiente", requiereAnticipo: true, montoAnticipo: 100 });
+    expect(titulo).toHaveTextContent("¡Cita agendada!");
+    expect(screen.getByText("Falta tu anticipo para confirmarla")).toBeInTheDocument();
+    expect(screen.getByText("Falta tu anticipo")).toBeInTheDocument();
+    expect(screen.queryByText(/cita confirmada/i)).not.toBeInTheDocument();
+  });
+
+  it("pendiente con comprobante enviado: espera la revisión del negocio", async () => {
+    const titulo = await renderCita({
+      estadoTexto: "Pendiente",
+      requiereAnticipo: true,
+      montoAnticipo: 100,
+      comprobanteUrl: "https://cdn.test/comprobante.jpg",
+    });
+    expect(titulo).toHaveTextContent("¡Cita agendada!");
+    expect(screen.getByText("El negocio revisará tu pago y confirmará tu cita")).toBeInTheDocument();
+    expect(screen.queryByText("Falta tu anticipo")).not.toBeInTheDocument();
+  });
+
+  it("confirmada con anticipo: manda el estado del negocio", async () => {
+    const titulo = await renderCita({ estadoTexto: "Confirmada", requiereAnticipo: true, montoAnticipo: 100 });
+    expect(titulo).toHaveTextContent("¡Cita confirmada!");
+  });
+
+  it("cancelada: dice «Cita cancelada»", async () => {
+    const titulo = await renderCita({ estadoTexto: "Cancelada" });
+    expect(titulo).toHaveTextContent("Cita cancelada");
+  });
+
+  it("completada: dice «¡Servicio completado!»", async () => {
+    const titulo = await renderCita({ estadoTexto: "Completada" });
+    expect(titulo).toHaveTextContent("¡Servicio completado!");
+  });
+
+  it("promete recordatorio por correo solo cuando hay correo", async () => {
+    await renderCita({ estadoTexto: "Confirmada" });
+    expect(screen.getByText(/recordatorio por correo/i)).toBeInTheDocument();
+  });
+
+  it("sin correo no promete recordatorio por correo", async () => {
+    await renderCita({ estadoTexto: "Confirmada", emailCliente: undefined });
+    expect(screen.queryByText(/recordatorio por correo/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/whatsapp o correo/i)).not.toBeInTheDocument();
+  });
+});

@@ -1,18 +1,8 @@
 import { useEffect, useState } from "react";
-
-type Theme = "light" | "dark";
-
-function getInitialTheme(): Theme {
-  try {
-    const stored = localStorage.getItem("appointva-theme");
-    if (stored === "dark" || stored === "light") return stored;
-    if (window.matchMedia?.("(prefers-color-scheme: dark)").matches) return "dark";
-  } catch {}
-  return "light";
-}
+import { CLAVE_TEMA, temaPreferido, type Tema } from "../lib/temaPorRuta";
 
 export function useTheme() {
-  const [theme, setTheme] = useState<Theme>(getInitialTheme);
+  const [theme, setTheme] = useState<Tema>(temaPreferido);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -22,7 +12,7 @@ export function useTheme() {
       root.classList.remove("dark");
     }
     try {
-      localStorage.setItem("appointva-theme", theme);
+      localStorage.setItem(CLAVE_TEMA, theme);
     } catch {}
     window.dispatchEvent(new CustomEvent("appointva-theme-changed", { detail: theme }));
   }, [theme]);

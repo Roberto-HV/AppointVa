@@ -1,4 +1,4 @@
-﻿import { useState, useRef, useEffect } from "react";
+﻿import { useState, useRef, useEffect, useId } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -38,18 +38,42 @@ interface Props {
    * `confirmarClienteExistente` y evitar el 409 de nombre distinto.
    */
   onClienteReconocidoChange?: (reconocido: boolean) => void;
+  /** Valores ya capturados: al volver a este paso el formulario no se vacía. */
+  valoresIniciales?: Partial<DatosClienteForm>;
+  /** Avisa cada cambio para que el padre conserve lo escrito entre pasos. */
+  onValoresChange?: (valores: Partial<DatosClienteForm>) => void;
   notasLabel?: string;
   error?: string;
   politicasUrl?: string;
   color?: string;
 }
 
-export default function PasoDatosCliente({ servicio, empleado, slot, formId, slug, politicasAceptadas, onPoliticasAceptadasChange, onEnviar, onClienteReconocidoChange, notasLabel = 'Notas (opcional)', error, politicasUrl, color = "#334155" }: Props) {
+export default function PasoDatosCliente({ servicio, empleado, slot, formId, slug, politicasAceptadas, onPoliticasAceptadasChange, onEnviar, onClienteReconocidoChange, valoresIniciales, onValoresChange, notasLabel = 'Notas (opcional)', error, politicasUrl, color = "#334155" }: Props) {
   const [politicasAbiertas, setPoliticasAbiertas] = useState(false);
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<DatosClienteForm>({
     resolver: zodResolver(schema),
     mode: "onBlur",
+    defaultValues: valoresIniciales,
   });
+
+  // Ids para ligar cada etiqueta y su mensaje de error con su campo.
+  const idBase = useId();
+  const ids = {
+    telefono: `${idBase}-telefono`,
+    telefonoError: `${idBase}-telefono-error`,
+    nombre: `${idBase}-nombre`,
+    nombreError: `${idBase}-nombre-error`,
+    email: `${idBase}-email`,
+    emailMensaje: `${idBase}-email-mensaje`,
+    notas: `${idBase}-notas`,
+  };
+
+  useEffect(() => {
+    if (!onValoresChange) return;
+    // Copia: el objeto que entrega watch es el estado interno del formulario.
+    const sub = watch((valores) => onValoresChange({ ...valores }));
+    return () => sub.unsubscribe();
+  }, [watch, onValoresChange]);
   const [emailTocado, setEmailTocado] = useState(false);
   const emailValue = watch("emailCliente");
   const emailReg = register("emailCliente");
@@ -126,18 +150,22 @@ export default function PasoDatosCliente({ servicio, empleado, slot, formId, slu
 
   return (
     <div>
-      <h2 className="text-xl font-bold text-slate-900 mb-5">Tus datos</h2>
+      <h2 tabIndex={-1} className="text-xl font-bold text-slate-900 mb-5 outline-none">Tus datos</h2>
 
       {/* handleSubmit pasa el evento como 2º argumento; se descarta para no filtrarlo al padre. */}
       <form id={formId} onSubmit={handleSubmit((datos) => onEnviar(datos))} className="space-y-4">
         {/* El teléfono va primero: es la llave con la que reconocemos al cliente, y
             preguntarlo después del nombre haría inútil el autocompletado. */}
         <div>
-          <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">
-            Teléfono *
+          <label htmlFor={ids.telefono} className="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">
+            Teléfono <span aria-hidden="true">*</span>
           </label>
           <input
             {...telefonoReg}
+            id={ids.telefono}
+            aria-required="true"
+            aria-invalid={!!errors.telefonoCliente}
+            aria-describedby={errors.telefonoCliente ? ids.telefonoError : undefined}
             onBlur={(e) => {
               telefonoReg.onBlur(e);
               void buscarCliente(e.target.value);
@@ -149,7 +177,7 @@ export default function PasoDatosCliente({ servicio, empleado, slot, formId, slu
               ${errors.telefonoCliente ? "border-red-300 bg-red-50" : "border-slate-200"}`}
           />
           {errors.telefonoCliente && (
-            <p className="text-red-500 text-xs mt-1.5">{errors.telefonoCliente.message}</p>
+            <p id={ids.telefonoError} className="text-red-600 text-xs mt-1.5">{errors.telefonoCliente.message}</p>
           )}
 
           <div role="status" aria-live="polite">
@@ -195,27 +223,34 @@ export default function PasoDatosCliente({ servicio, empleado, slot, formId, slu
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">
-            Nombre completo *
+          <label htmlFor={ids.nombre} className="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">
+            Nombre completo <span aria-hidden="true">*</span>
           </label>
           <input
             {...register("nombreCliente")}
+            id={ids.nombre}
+            aria-required="true"
+            aria-invalid={!!errors.nombreCliente}
+            aria-describedby={errors.nombreCliente ? ids.nombreError : undefined}
             placeholder="Tu nombre completo"
             className={`w-full px-4 py-3 rounded-xl border text-sm outline-none transition bg-white
               focus:ring-2 focus:ring-slate-700/20 focus:border-slate-700
               ${errors.nombreCliente ? "border-red-300 bg-red-50" : "border-slate-200"}`}
           />
           {errors.nombreCliente && (
-            <p className="text-red-500 text-xs mt-1.5">{errors.nombreCliente.message}</p>
+            <p id={ids.nombreError} className="text-red-600 text-xs mt-1.5">{errors.nombreCliente.message}</p>
           )}
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">
-            Correo electrónico <span className="text-slate-400 font-normal normal-case">(opcional)</span>
+          <label htmlFor={ids.email} className="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">
+            Correo electrónico <span className="text-slate-500 font-normal normal-case">(opcional)</span>
           </label>
           <input
             {...emailReg}
+            id={ids.email}
+            aria-invalid={!!errors.emailCliente}
+            aria-describedby={errors.emailCliente || (emailTocado && !emailValue) ? ids.emailMensaje : undefined}
             onBlur={(e) => {
               emailReg.onBlur(e);
               setEmailTocado(true);
@@ -226,9 +261,9 @@ export default function PasoDatosCliente({ servicio, empleado, slot, formId, slu
               ${errors.emailCliente ? "border-red-300 bg-red-50" : "border-slate-200"}`}
           />
           {errors.emailCliente ? (
-            <p className="text-red-500 text-xs mt-1.5">{errors.emailCliente.message}</p>
+            <p id={ids.emailMensaje} className="text-red-600 text-xs mt-1.5">{errors.emailCliente.message}</p>
           ) : emailTocado && !emailValue ? (
-            <p className="text-amber-600 text-xs mt-1.5 flex items-center gap-1">
+            <p id={ids.emailMensaje} className="text-amber-700 text-xs mt-1.5 flex items-center gap-1">
               <Info size={16} className="shrink-0" />
               Sin correo no recibirás confirmación por email. Guarda el enlace de tu cita al finalizar.
             </p>
@@ -236,11 +271,12 @@ export default function PasoDatosCliente({ servicio, empleado, slot, formId, slu
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">
+          <label htmlFor={ids.notas} className="block text-xs font-medium text-gray-600 mb-1">
             {notasLabel}
           </label>
           <textarea
             {...register("notas")}
+            id={ids.notas}
             rows={2}
             placeholder="Alguna indicación especial..."
             className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-slate-700/20 focus:border-slate-700 transition resize-none bg-white"

@@ -9,6 +9,7 @@ import RutaPublica from "./components/RutaPublica";
 import ToastContainer from "./components/ui/ToastContainer";
 import { TooltipProvider } from "./components/ui/Tooltip";
 import ErrorBoundary from "./components/ErrorBoundary";
+import TemaPorRuta from "./components/TemaPorRuta";
 import { PageLoader } from "./components/ui/Skeleton";
 
 // ── Layouts (eager — pequeños, siempre necesarios tras login) ─────────────
@@ -79,6 +80,7 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <BrowserRouter>
+          <TemaPorRuta />
           <ErrorBoundary>
             <Suspense fallback={<PageLoader />}>
               <Routes>

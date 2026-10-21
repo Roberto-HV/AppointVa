@@ -67,7 +67,7 @@ export default function FilaSeleccion({
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-slate-900">{titulo}</p>
         {/* Clamp fijo: si creciera al seleccionar empujaría todo lo de abajo justo al tocar. */}
-        {descripcion && <p className="mt-0.5 text-xs text-slate-400 line-clamp-2">{descripcion}</p>}
+        {descripcion && <p className="mt-0.5 text-xs text-slate-500 line-clamp-2">{descripcion}</p>}
         {meta && <div className="mt-1.5">{meta}</div>}
       </div>
 

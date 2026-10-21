@@ -68,7 +68,7 @@ export default function PasoServicio({ servicios, seleccionado, onSeleccionar, c
 
   return (
     <div>
-      <h2 className="text-xl font-bold text-slate-900 mb-1">{`¿Qué ${terms.servicio.toLowerCase()} necesitas?`}</h2>
+      <h2 tabIndex={-1} className="text-xl font-bold text-slate-900 mb-1 outline-none">{`¿Qué ${terms.servicio.toLowerCase()} necesitas?`}</h2>
       <p className="text-sm text-slate-500 mb-5">{`Selecciona un ${terms.servicio.toLowerCase()} para continuar`}</p>
 
       <div className="space-y-5">

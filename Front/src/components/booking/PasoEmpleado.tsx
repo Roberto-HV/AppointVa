@@ -39,7 +39,7 @@ export default function PasoEmpleado({ empleados, servicioId, seleccionado, onSe
 
   return (
     <div>
-      <h2 className="text-xl font-bold text-slate-900 mb-1">¿Con quién?</h2>
+      <h2 tabIndex={-1} className="text-xl font-bold text-slate-900 mb-1 outline-none">¿Con quién?</h2>
       <p className="text-sm text-slate-500 mb-5">{`Elige un ${terms.empleado.toLowerCase()} o deja que asignemos el más disponible`}</p>
 
       {/* Opción sin preferencia — solo cuando hay empleados disponibles */}

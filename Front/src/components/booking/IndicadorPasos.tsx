@@ -32,7 +32,7 @@ export default function IndicadorPasos({ pasoActual, pasos, color = "#334155", s
         })}
         <span
           className="ml-2 text-xs"
-          style={{ color: "rgba(255,255,255,0.35)" }}
+          style={{ color: "rgba(255,255,255,0.7)" }}
         >
           {pasoActual} de {pasos.length}
         </span>

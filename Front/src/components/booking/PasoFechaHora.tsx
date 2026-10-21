@@ -1,8 +1,10 @@
 ﻿import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import { publicoApi } from "../../api/publico";
 import type { SlotDisponible } from "../../types";
 import { brandAccent } from "../../lib/colorUtils";
+import { fechaLocal } from "../../utils/fechas";
 import { ChevronLeft, ChevronRight, Sun, Sunrise, Moon } from "lucide-react";
 
 interface Props {
@@ -13,20 +15,21 @@ interface Props {
   onLimpiarSlot?: () => void;
   color?: string;
   diasAnticipacionMinima?: number;
+  /** Ruta de la lista de espera; si llega, se ofrece cuando no hay horarios. */
+  enlaceListaEspera?: string;
 }
 
 const DIAS_CORTOS = ["Do", "Lu", "Ma", "Mi", "Ju", "Vi", "Sá"];
+const DIAS_LARGOS = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
 const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 const MESES_CORTOS = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+
+const OPCIONES_CONSULTA = { retry: 2, retryDelay: 1000 } as const;
 
 function hoy(): Date {
   const d = new Date();
   d.setHours(0, 0, 0, 0);
   return d;
-}
-
-function fechaISO(d: Date) {
-  return d.toISOString().slice(0, 10);
 }
 
 function lunesDeSemanaDe(d: Date): Date {
@@ -45,9 +48,14 @@ function textoMesSemana(dias: Date[]): string {
   return `${MESES[mes0]} ${anio}`;
 }
 
-export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, onSeleccionar, onLimpiarSlot, color = "#334155", diasAnticipacionMinima = 0 }: Props) {
-  const [semanaRef, setSemanaRef] = useState(() => lunesDeSemanaDe(new Date()));
-  const [fechaSel, setFechaSel] = useState<string | null>(null);
+export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, onSeleccionar, onLimpiarSlot, color = "#334155", diasAnticipacionMinima = 0, enlaceListaEspera }: Props) {
+  // Al volver a este paso con un horario ya elegido, su día sigue a la vista.
+  const [semanaRef, setSemanaRef] = useState(() =>
+    lunesDeSemanaDe(seleccionado ? new Date(seleccionado.inicio) : new Date())
+  );
+  const [fechaElegida, setFechaElegida] = useState<string | null>(() =>
+    seleccionado ? seleccionado.inicio.slice(0, 10) : null
+  );
   // Las píldoras activas llevan texto blanco: el hex de marca crudo no garantiza
   // contraste (un dorado deja el horario ilegible), el acento derivado sí.
   const acento = useMemo(() => brandAccent(color), [color]);
@@ -64,6 +72,41 @@ export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, on
     return d;
   });
 
+  // Disponibilidad de toda la semana visible: cada día muestra si tiene horarios
+  // sin que el visitante tenga que tocarlos uno por uno. Comparte caché con la
+  // consulta del día elegido, así que tocar un día ya cargado no vuelve a pedirlo.
+  const fechasReservables = diasSemana.filter((d) => d >= fechaMinima).map(fechaLocal);
+  const disponibilidadSemana = useQueries({
+    queries: fechasReservables.map((fecha) => ({
+      queryKey: ["slots", servicioId, empleadoId, fecha],
+      queryFn: () => publicoApi.obtenerDisponibilidad(servicioId, empleadoId, fecha),
+      ...OPCIONES_CONSULTA,
+    })),
+  });
+  const estadoDia = (fecha: string): "con-horarios" | "sin-horarios" | "desconocido" => {
+    const i = fechasReservables.indexOf(fecha);
+    const consulta = i >= 0 ? disponibilidadSemana[i] : undefined;
+    if (!consulta?.isSuccess) return "desconocido";
+    return consulta.data.length > 0 ? "con-horarios" : "sin-horarios";
+  };
+
+  // Sin elección explícita se abre el primer día con horarios, en orden: no salta a
+  // un día posterior mientras uno anterior sigue cargando.
+  const primeraConHorarios = (() => {
+    for (const fecha of fechasReservables) {
+      const estado = estadoDia(fecha);
+      if (estado === "con-horarios") return fecha;
+      if (estado === "desconocido") return null;
+    }
+    return null;
+  })();
+  const fechaSel = fechaElegida ?? primeraConHorarios;
+  const semanaSinHorarios =
+    fechasReservables.length > 0 && fechasReservables.every((f) => estadoDia(f) === "sin-horarios");
+  const siguienteConHorarios = fechaSel
+    ? fechasReservables.find((f) => f > fechaSel && estadoDia(f) === "con-horarios") ?? null
+    : null;
+
   const semanaFechaMinima = lunesDeSemanaDe(fechaMinima);
   const puedeIrAtras = semanaRef > semanaFechaMinima;
 
@@ -72,28 +115,31 @@ export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, on
     const s = new Date(semanaRef);
     s.setDate(s.getDate() - 7);
     setSemanaRef(s);
-    setFechaSel(null);
+    setFechaElegida(null);
   };
 
   const semanaSiguiente = () => {
     const s = new Date(semanaRef);
     s.setDate(s.getDate() + 7);
     setSemanaRef(s);
-    setFechaSel(null);
+    setFechaElegida(null);
+  };
+
+  const elegirFecha = (fecha: string) => {
+    setFechaElegida(fecha);
+    if (fecha !== fechaSel) onLimpiarSlot?.();
   };
 
   const seleccionarFecha = (dia: Date) => {
     if (dia < fechaMinima) return;
-    setFechaSel(fechaISO(dia));
-    onLimpiarSlot?.();
+    elegirFecha(fechaLocal(dia));
   };
 
   const { data: slots = [], isFetching, isError, refetch } = useQuery({
     queryKey: ["slots", servicioId, empleadoId, fechaSel],
     queryFn: () => publicoApi.obtenerDisponibilidad(servicioId, empleadoId, fechaSel!),
     enabled: !!fechaSel,
-    retry: 2,
-    retryDelay: 1000,
+    ...OPCIONES_CONSULTA,
   });
 
   const franjas = fechaSel && !isFetching && !isError && slots.length > 0
@@ -104,9 +150,49 @@ export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, on
       ].filter(f => f.slots.length > 0)
     : [];
 
+  const textoDia = (fecha: string) => {
+    const [a, m, d] = fecha.split("-").map(Number);
+    const dia = new Date(a, m - 1, d);
+    return `${DIAS_LARGOS[dia.getDay()]} ${dia.getDate()}`;
+  };
+
+  // Salidas del estado vacío: el siguiente día con horarios, la semana siguiente y,
+  // si el negocio la tiene, la lista de espera.
+  const salidasSinHorarios = (
+    <div className="mt-4 flex flex-col items-center gap-2">
+      {siguienteConHorarios ? (
+        <button
+          type="button"
+          onClick={() => elegirFecha(siguienteConHorarios)}
+          className="min-h-[44px] rounded-xl border-2 px-4 text-sm font-semibold transition hover:opacity-90"
+          style={{ borderColor: acento, color: acento }}
+        >
+          {`Próximo disponible: ${textoDia(siguienteConHorarios)}`}
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={semanaSiguiente}
+          className="min-h-[44px] rounded-xl border-2 px-4 text-sm font-semibold transition hover:opacity-90"
+          style={{ borderColor: acento, color: acento }}
+        >
+          Ver la semana siguiente
+        </button>
+      )}
+      {enlaceListaEspera && (
+        <Link
+          to={enlaceListaEspera}
+          className="text-sm text-slate-600 hover:text-slate-800 underline underline-offset-2 transition"
+        >
+          Únete a la lista de espera
+        </Link>
+      )}
+    </div>
+  );
+
   return (
     <div>
-      <h2 className="text-xl font-bold text-slate-900 mb-1">Elige fecha y hora</h2>
+      <h2 tabIndex={-1} className="text-xl font-bold text-slate-900 mb-1 outline-none">Elige fecha y hora</h2>
       <p className="text-sm text-slate-500 mb-5">Selecciona el día y horario que prefieras</p>
 
       {/* Encabezado de semana */}
@@ -136,16 +222,21 @@ export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, on
       {/* Tarjetas de días — 7 columnas */}
       <div className="grid grid-cols-7 gap-1 mb-5">
         {diasSemana.map((dia) => {
-          const iso = fechaISO(dia);
+          const iso = fechaLocal(dia);
           const pasado = dia < fechaMinima;
-          const esHoy = iso === fechaISO(new Date());
+          const esHoy = iso === fechaLocal(new Date());
           const seleccionada = iso === fechaSel;
+          const disponibilidad = pasado ? "desconocido" : estadoDia(iso);
+          // Atenuado, no deshabilitado: el visitante aún puede abrirlo y ver por qué.
+          const sinHorarios = disponibilidad === "sin-horarios" && !seleccionada;
 
           return (
             <button
               key={iso}
               onClick={() => seleccionarFecha(dia)}
               disabled={pasado}
+              aria-current={esHoy ? "date" : undefined}
+              data-disponibilidad={disponibilidad}
               className={`flex flex-col items-center py-2.5 rounded-2xl transition-all duration-150
                 ${pasado
                   ? "opacity-30 cursor-not-allowed bg-white border border-slate-100"
@@ -154,7 +245,8 @@ export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, on
                   : !seleccionada
                   ? "bg-white border border-slate-100 text-slate-700 hover:border-slate-300 hover:shadow-sm"
                   : ""
-                }`}
+                }
+                ${sinHorarios ? "opacity-50" : ""}`}
               style={
                 seleccionada
                   ? { background: acento, color: "#fff", boxShadow: `0 4px 12px ${acento}40` }
@@ -163,18 +255,36 @@ export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, on
                   : undefined
               }
             >
-              <span className={`text-[9px] font-semibold uppercase mb-1 tracking-wide
-                ${seleccionada ? "text-white/70" : "text-slate-400"}`}>
+              <span className={`text-xs font-semibold uppercase mb-1
+                ${seleccionada ? "text-white/90" : "text-slate-500"}`}>
                 {DIAS_CORTOS[dia.getDay()]}
               </span>
               <span className={`text-sm font-bold leading-none
                 ${seleccionada ? "text-white" : esHoy ? "text-slate-700" : "text-slate-800"}`}>
                 {dia.getDate()}
               </span>
+              {/* Punto de disponibilidad; el hueco se reserva siempre para no mover la fila. */}
+              <span
+                aria-hidden="true"
+                className="mt-1 h-1 w-1 rounded-full"
+                style={{
+                  background: disponibilidad === "con-horarios"
+                    ? (seleccionada ? "#fff" : acento)
+                    : "transparent",
+                }}
+              />
             </button>
           );
         })}
       </div>
+
+      {/* Semana completa sin horarios: no hay día que abrir */}
+      {!fechaSel && semanaSinHorarios && (
+        <div className="text-center py-6">
+          <p className="text-sm font-medium text-slate-600">Sin disponibilidad esta semana</p>
+          {salidasSinHorarios}
+        </div>
+      )}
 
       {/* Slots de horario */}
       {fechaSel && (
@@ -201,8 +311,8 @@ export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, on
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
                 </svg>
               </div>
-              <p className="text-sm font-medium text-slate-600">Sin disponibilidad</p>
-              <p className="text-xs text-slate-400 mt-0.5">Prueba con otro día de la semana</p>
+              <p className="text-sm font-medium text-slate-600">Sin disponibilidad este día</p>
+              {salidasSinHorarios}
             </div>
           ) : (
             <div className="space-y-4">
