@@ -15,7 +15,7 @@ import { api } from "../../api/axios";
 import EstadoBadge from "../../components/ui/EstadoBadge";
 import Modal from "../../components/ui/Modal";
 import ConfirmarAccion from "../../components/ui/ConfirmarAccion";
-import AccionesCita, { HojaAccionesCita, type AccionExtraCita } from "../../components/dashboard/AccionesCita";
+import AccionesCita, { HojaAccionesCita, type AccionExtraCita, type VistaHoja } from "../../components/dashboard/AccionesCita";
 import TarjetaCita, { InsigniasCita } from "../../components/dashboard/TarjetaCita";
 import { useMediaQuery, CONSULTA_MOVIL } from "../../hooks/useMediaQuery";
 import { invalidarCitas, useReagendarCita } from "../../hooks/useMutacionesCita";
@@ -50,8 +50,15 @@ export default function CitasPage() {
   const [pagina, setPagina] = useState(1);
   const TAMANO = TAMANO_PAGINA;
 
-  // Hoja de acciones abierta desde el calendario o el Gantt (las filas abren la suya).
+  // Única hoja de acciones de la página: la abren el calendario, el Gantt, las
+  // filas de la tabla y las tarjetas. Vive fuera del cambio tabla/tarjetas, así
+  // que no se pierde (ni lo escrito en ella) al cruzar los 640px.
   const [citaAcciones, setCitaAcciones] = useState<CitaDto | null>(null);
+  const [vistaAcciones, setVistaAcciones] = useState<VistaHoja>("menu");
+  const abrirAcciones = (cita: CitaDto, vistaHoja: VistaHoja = "menu") => {
+    setCitaAcciones(cita);
+    setVistaAcciones(vistaHoja);
+  };
 
   // Confirmación para anular un anticipo ya registrado
   const [citaAnularAnticipo, setCitaAnularAnticipo] = useState<CitaDto | null>(null);
@@ -115,6 +122,9 @@ export default function CitasPage() {
     refetchInterval: 30_000,
   });
   const citas = pagCitas?.datos ?? [];
+  // La hoja muestra la versión más reciente de la cita si está en la página actual
+  // (misma clave → no se reinicia lo que se esté escribiendo).
+  const citaHoja = citaAcciones ? (citas.find((c) => c.id === citaAcciones.id) ?? citaAcciones) : null;
   const totalCitas = pagCitas?.total ?? 0;
   const totalPaginas = Math.ceil(totalCitas / TAMANO) || 1;
 
@@ -475,7 +485,7 @@ export default function CitasPage() {
       {vista === "calendario" && (
         <CalendarioCitas
           empleadoId={empleadoId}
-          onCitaClick={setCitaAcciones}
+          onCitaClick={(c: CitaDto) => abrirAcciones(c)}
           onReagendar={(cita, nuevoInicio) => {
             const nueva = new Date(nuevoInicio).toLocaleString("es-MX", {
               weekday: "short", day: "numeric", month: "short",
@@ -488,7 +498,7 @@ export default function CitasPage() {
 
       {/* Vista línea de tiempo (Gantt) */}
       {vista === "gantt" && (
-        <GanttCitas onCitaClick={setCitaAcciones} />
+        <GanttCitas onCitaClick={(c: CitaDto) => abrirAcciones(c)} />
       )}
 
       {/* Vista lista */}
@@ -519,7 +529,13 @@ export default function CitasPage() {
             <ul className="divide-y divide-gray-100 dark:divide-slate-700" aria-label={terms.citas}>
               {citas.map((c) => (
                 <li key={c.id}>
-                  <TarjetaCita cita={c} accionesExtra={accionesExtra(c)} nombreNegocio={nombreNegocio} mostrarPago={tienePagos} />
+                  <TarjetaCita
+                    cita={c}
+                    accionesExtra={accionesExtra(c)}
+                    nombreNegocio={nombreNegocio}
+                    mostrarPago={tienePagos}
+                    onAbrirHoja={(v) => abrirAcciones(c, v)}
+                  />
                 </li>
               ))}
             </ul>
@@ -585,7 +601,12 @@ export default function CitasPage() {
 
                     {/* Acciones: las mismas en todas las anchuras; el resto vive en la hoja */}
                     <td className="px-2 sm:px-4 py-2 text-right">
-                      <AccionesCita cita={c} accionesExtra={accionesExtra(c)} nombreNegocio={nombreNegocio} />
+                      <AccionesCita
+                        cita={c}
+                        accionesExtra={accionesExtra(c)}
+                        nombreNegocio={nombreNegocio}
+                        onAbrirHoja={(v) => abrirAcciones(c, v)}
+                      />
                     </td>
                   </tr>
                 ))}
@@ -944,11 +965,12 @@ export default function CitasPage() {
         )}
       </Modal>
 
-      {/* ── Hoja de acciones: calendario y Gantt ── */}
+      {/* ── Hoja de acciones: calendario, Gantt, filas y tarjetas ── */}
       <HojaAccionesCita
-        cita={citaAcciones}
+        cita={citaHoja}
+        vistaInicial={vistaAcciones}
         onCerrar={() => setCitaAcciones(null)}
-        accionesExtra={citaAcciones ? accionesExtra(citaAcciones) : []}
+        accionesExtra={citaHoja ? accionesExtra(citaHoja) : []}
         nombreNegocio={nombreNegocio}
       />
 

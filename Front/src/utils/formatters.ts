@@ -47,7 +47,7 @@ export function formatFechaLarga(iso: string): string {
   const s = d.toLocaleDateString("es-MX", {
     weekday: "long", day: "numeric", month: "long", year: "numeric",
   }).replace(/\bDe\b/g, "de");
-  return s.charAt(0).toUpperCase() + s.slice(1);
+  return capitalizarPrimera(s);
 }
 
 // ── Fecha y hora ───────────────────────────────────────────────────────────────
@@ -94,7 +94,7 @@ export function formatFechaHoraResumen(iso: string): string {
     weekday: "short", day: "numeric", month: "long", year: "numeric",
     hour: "2-digit", minute: "2-digit", hour12: true,
   }).replace(/\bDe\b/g, "de");
-  return s.charAt(0).toUpperCase() + s.slice(1);
+  return capitalizarPrimera(s);
 }
 
 /** Fecha + hora completa para comprobantes: "Martes, 15 de junio de 2026..." */
@@ -105,5 +105,5 @@ export function formatFechaHoraCompleta(iso: string): string {
     weekday: "long", day: "numeric", month: "long", year: "numeric",
     hour: "2-digit", minute: "2-digit", hour12: true,
   }).replace(/\bDe\b/g, "de");
-  return s.charAt(0).toUpperCase() + s.slice(1);
+  return capitalizarPrimera(s);
 }

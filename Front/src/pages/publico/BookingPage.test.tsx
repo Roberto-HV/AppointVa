@@ -360,7 +360,8 @@ describe("BookingPage — hoja «¿eres tú?»", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Corregir mi teléfono" }));
 
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
-    expect(document.activeElement).toBe(screen.getByLabelText("Teléfono"));
+    // Focus is restored after the close finishes, not in the same tick.
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByLabelText("Teléfono")));
     expect(publicoApi.crearCita).toHaveBeenCalledTimes(1);
   });
 
@@ -368,9 +369,12 @@ describe("BookingPage — hoja «¿eres tú?»", () => {
     const form = await avanzarHastaPaso4();
     rechazarPorNombreDistinto();
     fireEvent.submit(form);
-    await screen.findByRole("dialog");
+    const dialogo = await screen.findByRole("dialog");
+    // Radix registers its Escape listener in an effect after mount; focus moving
+    // into the dialog means it is ready. Pressing earlier races under load.
+    await waitFor(() => expect(dialogo).toContainElement(document.activeElement as HTMLElement));
 
-    fireEvent.keyDown(document, { key: "Escape" });
+    fireEvent.keyDown(document.activeElement ?? document, { key: "Escape" });
 
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
     expect(publicoApi.crearCita).toHaveBeenCalledTimes(1);

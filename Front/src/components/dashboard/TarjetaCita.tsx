@@ -1,6 +1,6 @@
 import { Banknote, CheckCircle2, Receipt } from "lucide-react";
 import EstadoBadge from "../ui/EstadoBadge";
-import AccionesCita, { type AccionExtraCita } from "./AccionesCita";
+import AccionesCita, { type AccionExtraCita, type VistaHoja } from "./AccionesCita";
 import { formatFechaCorta, formatHora, formatPrecio } from "../../utils/formatters";
 import { useSectorTerms } from "../../hooks/useSectorTerms";
 import type { CitaDto } from "../../types";
@@ -43,9 +43,11 @@ interface Props {
   nombreNegocio?: string | null;
   /** Muestra si la cita ya está pagada (módulo de pagos activo). */
   mostrarPago?: boolean;
+  /** Ver `AccionesCita`: el padre renderiza la hoja para que sobreviva a cambios de diseño. */
+  onAbrirHoja?: (vista: VistaHoja) => void;
 }
 
-export default function TarjetaCita({ cita, accionesExtra, nombreNegocio, mostrarPago = false }: Props) {
+export default function TarjetaCita({ cita, accionesExtra, nombreNegocio, mostrarPago = false, onAbrirHoja }: Props) {
   const terms = useSectorTerms();
   return (
     <article aria-label={`${terms.cita} de ${cita.nombreCliente}`} className="px-4 py-3 space-y-2">
@@ -76,7 +78,7 @@ export default function TarjetaCita({ cita, accionesExtra, nombreNegocio, mostra
         <div className="flex flex-wrap items-center gap-1">
           <InsigniasCita cita={cita} />
         </div>
-        <AccionesCita cita={cita} accionesExtra={accionesExtra} nombreNegocio={nombreNegocio} className="ml-auto" />
+        <AccionesCita cita={cita} accionesExtra={accionesExtra} nombreNegocio={nombreNegocio} className="ml-auto" onAbrirHoja={onAbrirHoja} />
       </div>
     </article>
   );

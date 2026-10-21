@@ -379,6 +379,13 @@ interface Props {
   /** Muestra el texto "Acciones" junto al icono (p. ej. en la página de detalle). */
   conEtiqueta?: boolean;
   className?: string;
+  /**
+   * Si se indica, la fila no monta su propia hoja: avisa qué vista abrir y el
+   * padre renderiza una sola `HojaAccionesCita`. Así la hoja (y lo que se esté
+   * escribiendo en ella) sobrevive aunque la fila se desmonte, p. ej. al pasar
+   * de tabla a tarjetas cuando la pantalla cruza los 640px.
+   */
+  onAbrirHoja?: (vista: VistaHoja) => void;
 }
 
 const BOTON_ICONO =
@@ -387,12 +394,13 @@ const BOTON_ICONO =
 
 export default function AccionesCita({
   cita, accionesExtra, nombreNegocio, mostrarDetalle = true, whatsapp = true, primaria = true,
-  conEtiqueta = false, className = "",
+  conEtiqueta = false, className = "", onAbrirHoja,
 }: Props) {
   const terms = useSectorTerms();
   const cita1 = terms.cita.toLowerCase();
   const [vistaAbierta, setVistaAbierta] = useState<VistaHoja | null>(null);
   const cambiarEstado = useCambiarEstadoCita();
+  const abrirHoja = (vista: VistaHoja) => (onAbrirHoja ? onAbrirHoja(vista) : setVistaAbierta(vista));
 
   return (
     <div className={`flex items-center justify-end gap-1 ${className}`}>
@@ -425,7 +433,7 @@ export default function AccionesCita({
         <button
           type="button"
           aria-label={`Completar ${cita1} de ${cita.nombreCliente}`}
-          onClick={() => setVistaAbierta("completar")}
+          onClick={() => abrirHoja("completar")}
           className={`${BOTON_ICONO} sm:px-2.5 bg-status-completed-bg text-status-completed-fg hover:opacity-80`}
         >
           <CheckCheck size={16} aria-hidden="true" />
@@ -437,7 +445,7 @@ export default function AccionesCita({
         type="button"
         aria-label={`Acciones de la ${cita1} de ${cita.nombreCliente}`}
         aria-haspopup="dialog"
-        onClick={() => setVistaAbierta("menu")}
+        onClick={() => abrirHoja("menu")}
         className={`${BOTON_ICONO} text-muted-foreground hover:bg-muted hover:text-foreground ${
           conEtiqueta ? "px-3 border border-border text-foreground" : ""
         }`}
@@ -446,14 +454,16 @@ export default function AccionesCita({
         {conEtiqueta && <span>Acciones</span>}
       </button>
 
-      <HojaAccionesCita
-        cita={vistaAbierta ? cita : null}
-        vistaInicial={vistaAbierta ?? "menu"}
-        onCerrar={() => setVistaAbierta(null)}
-        accionesExtra={accionesExtra}
-        nombreNegocio={nombreNegocio}
-        mostrarDetalle={mostrarDetalle}
-      />
+      {!onAbrirHoja && (
+        <HojaAccionesCita
+          cita={vistaAbierta ? cita : null}
+          vistaInicial={vistaAbierta ?? "menu"}
+          onCerrar={() => setVistaAbierta(null)}
+          accionesExtra={accionesExtra}
+          nombreNegocio={nombreNegocio}
+          mostrarDetalle={mostrarDetalle}
+        />
+      )}
     </div>
   );
 }

@@ -25,6 +25,16 @@ describe("capitalizarPrimera", () => {
     expect(capitalizarPrimera("01 oct 2026, 10:00 a. m.")).toBe("01 oct 2026, 10:00 a. m.");
     expect(capitalizarPrimera("")).toBe("");
   });
+
+  it.each([
+    ["formatFechaLarga", formatFechaLarga],
+    ["formatFechaHoraResumen", formatFechaHoraResumen],
+    ["formatFechaHoraCompleta", formatFechaHoraCompleta],
+  ])("%s empieza en mayúscula (día de la semana capitalizado)", (_nombre, formatear) => {
+    const s = formatear("2026-06-16T10:00:00");
+    expect(s.charAt(0)).toBe(s.charAt(0).toLocaleUpperCase("es-MX"));
+    expect(s.charAt(0)).not.toBe(s.charAt(0).toLocaleLowerCase("es-MX"));
+  });
 });
 
 describe("formatPrecio", () => {

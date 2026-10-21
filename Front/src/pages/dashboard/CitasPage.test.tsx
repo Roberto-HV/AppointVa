@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, waitFor, fireEvent, within } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent, within, act } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import CitasPage from "./CitasPage";
@@ -328,6 +328,77 @@ describe("CitasPage — botones de acción en filas", () => {
     expect(screen.getByRole("button", { name: "Editar datos del cliente" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Repetir cita" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Marcar inasistencia" })).toBeInTheDocument();
+  });
+});
+
+describe("CitasPage — la hoja de acciones sobrevive al cambio tabla/tarjetas", () => {
+  // matchMedia controlable: `cambiarAMovil(true|false)` dispara "change" como lo
+  // haría el navegador al rotar el teléfono o redimensionar por debajo de 640px.
+  let movil = false;
+  const oyentes = new Set<() => void>();
+  const matchMediaOriginal = window.matchMedia;
+
+  const cambiarAMovil = (valor: boolean) => {
+    movil = valor;
+    act(() => { oyentes.forEach((fn) => fn()); });
+  };
+
+  beforeEach(() => {
+    oyentes.clear();
+    window.matchMedia = ((query: string) => ({
+      get matches() { return movil; },
+      media: query,
+      onchange: null,
+      addEventListener: (_: string, fn: () => void) => { oyentes.add(fn); },
+      removeEventListener: (_: string, fn: () => void) => { oyentes.delete(fn); },
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false,
+    })) as unknown as typeof window.matchMedia;
+    vi.mocked(citasApi.obtenerTodas).mockResolvedValue({
+      datos: [makeCita({ estadoTexto: "Confirmada", estado: 2 })],
+      total: 1,
+      pagina: 1,
+      tamano: 15,
+    });
+  });
+
+  afterEach(() => {
+    window.matchMedia = matchMediaOriginal;
+  });
+
+  it("tabla → tarjetas: conserva la hoja abierta y el motivo escrito", async () => {
+    movil = false;
+    renderConQuery();
+    fireEvent.click(await screen.findByRole("button", { name: "Acciones de la cita de Juan Pérez" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Cancelar cita" }));
+    const hoja = screen.getByRole("dialog", { name: "Cancelar cita" });
+    fireEvent.change(within(hoja).getByRole("textbox"), { target: { value: "El cliente avisó" } });
+    expect(screen.getByRole("table")).toBeInTheDocument();
+
+    cambiarAMovil(true);
+
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+    expect(screen.getByRole("article", { name: "Cita de Juan Pérez" })).toBeInTheDocument();
+    const hojaTrasCambio = screen.getByRole("dialog", { name: "Cancelar cita" });
+    expect(within(hojaTrasCambio).getByRole("textbox")).toHaveValue("El cliente avisó");
+  });
+
+  it("tarjetas → tabla: conserva la vista Reagendar y la fecha elegida", async () => {
+    movil = true;
+    renderConQuery();
+    await screen.findByRole("article", { name: "Cita de Juan Pérez" });
+    fireEvent.click(screen.getByRole("button", { name: "Acciones de la cita de Juan Pérez" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Reagendar" }));
+    const hoja = screen.getByRole("dialog", { name: "Reagendar cita" });
+    const fecha = hoja.querySelector('input[type="date"]') as HTMLInputElement;
+    fireEvent.change(fecha, { target: { value: "2026-12-01" } });
+
+    cambiarAMovil(false);
+
+    expect(screen.getByRole("table")).toBeInTheDocument();
+    const hojaTrasCambio = screen.getByRole("dialog", { name: "Reagendar cita" });
+    expect(hojaTrasCambio.querySelector('input[type="date"]')).toHaveValue("2026-12-01");
   });
 });
 
