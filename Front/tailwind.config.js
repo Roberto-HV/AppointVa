@@ -45,6 +45,19 @@ export default {
           DEFAULT:    "hsl(var(--destructive))",
           foreground: "hsl(var(--destructive-foreground))",
         },
+        // ── Estados de cita: bg-status-pending-bg text-status-pending-fg … ──────
+        status: Object.fromEntries(
+          ["pending", "confirmed", "completed", "cancelled", "absent"].map((estado) => [
+            estado,
+            {
+              bg:  `var(--status-${estado}-bg)`,
+              fg:  `var(--status-${estado}-fg)`,
+              dot: `var(--status-${estado}-dot)`,
+            },
+          ])
+        ),
+        // ── Estrellas de reseñas (el dorado de marca es solo para el logo) ────
+        rating: "var(--rating)",
       },
       borderRadius: {
         lg: "var(--radius)",

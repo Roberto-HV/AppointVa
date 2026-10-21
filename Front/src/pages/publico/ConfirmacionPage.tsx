@@ -1,9 +1,9 @@
 ﻿import { useRef, useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { publicoApi } from "../../api/publico";
 import { comprobantesApi } from "../../api/comprobantes";
-import { Copy, Check, Calendar, ChevronDown, CalendarClock, Printer, CheckCircle2, XCircle, Star, Bell, Scissors, Upload, Info, Clock } from "lucide-react";
+import { Copy, Check, CalendarClock, Printer, CheckCircle2, XCircle, Star, Bell, Scissors, Upload, Info, Clock, WifiOff, AlertCircle } from "lucide-react";
 import { SiWhatsapp, SiApple, SiGooglecalendar } from "react-icons/si";
 import PublicFooter from "../../components/PublicFooter";
 import { formatPrecio, formatFechaHoraCompleta as formatFechaHora } from "../../utils/formatters";
@@ -12,6 +12,8 @@ import { hexToChannels, DEFAULT_COLOR } from "../../lib/colorUtils";
 import SocialLinks from "../../components/icons/SocialLinks";
 import PasoFechaHora from "../../components/booking/PasoFechaHora";
 import type { ConfirmacionCita, SlotDisponible } from "../../types";
+
+const estadoHttp = (err: unknown) => (err as { response?: { status?: number } })?.response?.status;
 
 /** Lo que la página promete según el estado real de la cita activa. */
 type EstadoVisibleCita = "confirmada" | "falta-anticipo" | "revisando-anticipo" | "pendiente";
@@ -69,7 +71,6 @@ export default function ConfirmacionPage() {
   const [slotReag, setSlotReag] = useState<SlotDisponible | null>(null);
   const [linkCopiado, setLinkCopiado] = useState(false);
   const [bannerCopiado, setBannerCopiado] = useState(false);
-  const [calAbierto, setCalAbierto] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [errorComprobante, setErrorComprobante] = useState("");
   const [exitoReagenda, setExitoReagenda] = useState(false);
@@ -83,10 +84,12 @@ export default function ConfirmacionPage() {
     },
   });
 
-  const { data: cita, isLoading, isError } = useQuery({
+  const { data: cita, isLoading, isError, error, refetch, isFetching } = useQuery({
     queryKey: ["cita", codigo],
     queryFn: () => publicoApi.obtenerCita(codigo!),
     enabled: !!codigo,
+    // Un 404 es definitivo; un fallo de red merece un reintento antes de rendirse.
+    retry: (intentos, err) => estadoHttp(err) !== 404 && intentos < 1,
   });
 
   const { mutate: cancelar, isPending: cancelando } = useMutation({
@@ -152,23 +155,58 @@ export default function ConfirmacionPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="w-6 h-6 border-2 border-slate-200 border-t-slate-700 rounded-full animate-spin" />
+      <div role="status" className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div aria-hidden="true" className="w-6 h-6 border-2 border-slate-200 border-t-slate-700 rounded-full animate-spin" />
+        <span className="sr-only">Cargando tu cita…</span>
       </div>
     );
   }
 
   if (isError || !cita) {
+    // Un fallo de red no significa que la cita no exista: decirlo así llevaría a
+    // reservar de nuevo. Solo un 404 es «no encontrada».
+    const noExiste = !isError || estadoHttp(error) === 404;
+    const BTN_ERROR = "min-h-[44px] inline-flex items-center justify-center rounded-xl px-5 text-sm font-semibold transition";
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-        <div className="text-center">
-          <XCircle size={40} className="text-slate-300 mx-auto mb-4" />
-          <p className="text-slate-700 font-semibold mb-1">Cita no encontrada</p>
-          {slug && (
-            <button onClick={irAlNegocio} className="text-slate-700 text-sm font-semibold hover:underline mt-3">
-              Hacer una reserva →
-            </button>
-          )}
+        <div className="text-center max-w-xs">
+          {noExiste
+            ? <XCircle size={40} className="text-slate-400 mx-auto mb-4" aria-hidden="true" />
+            : <WifiOff size={40} className="text-slate-400 mx-auto mb-4" aria-hidden="true" />}
+          <h1 className="text-slate-800 font-semibold mb-1">
+            {noExiste ? "Cita no encontrada" : "No pudimos cargar tu cita"}
+          </h1>
+          <p className="text-slate-600 text-sm">
+            {noExiste
+              ? "Revisa que el enlace o el código estén completos."
+              : "Verifica tu conexión e intenta de nuevo. Tu cita no se ha perdido."}
+          </p>
+          <div className="mt-5 flex flex-col items-center gap-2">
+            {!noExiste && (
+              <button
+                type="button"
+                onClick={() => refetch()}
+                disabled={isFetching}
+                className={`${BTN_ERROR} bg-slate-700 hover:bg-slate-800 text-white disabled:opacity-60`}
+              >
+                {isFetching ? "Reintentando…" : "Reintentar"}
+              </button>
+            )}
+            {slug ? (
+              <>
+                <Link to={`/b/${slug}/mis-citas`} className={`${BTN_ERROR} border border-slate-200 bg-white text-slate-700 hover:bg-slate-50`}>
+                  Ver mis citas
+                </Link>
+                <button type="button" onClick={irAlNegocio} className={`${BTN_ERROR} text-slate-700 hover:underline`}>
+                  Hacer una reserva
+                </button>
+              </>
+            ) : (
+              <Link to="/" className={`${BTN_ERROR} text-slate-700 hover:underline`}>
+                Ir al inicio
+              </Link>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -331,8 +369,8 @@ export default function ConfirmacionPage() {
             <div className="flex justify-between items-center">
               <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Estado</span>
               <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
-                cita.estadoTexto === "Confirmada" ? "bg-emerald-50 text-emerald-600" :
-                cita.estadoTexto === "Pendiente"  ? "bg-amber-50 text-amber-600" :
+                cita.estadoTexto === "Confirmada" ? "bg-status-confirmed-bg text-status-confirmed-fg" :
+                cita.estadoTexto === "Pendiente"  ? "bg-status-pending-bg text-status-pending-fg" :
                 "bg-slate-100 text-slate-600"
               }`}>
                 {cita.estadoTexto === "Confirmada" ? "✓ Confirmada" :
@@ -397,7 +435,7 @@ export default function ConfirmacionPage() {
             {/* Paso 1: estado real de la cita */}
             <div className="flex gap-3 items-start">
               <div className="flex flex-col items-center shrink-0">
-                <div className={`w-7 h-7 rounded-full flex items-center justify-center ${confirmada ? "bg-emerald-500" : "bg-amber-400"}`}>
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center ${confirmada ? "bg-status-confirmed-dot" : "bg-status-pending-dot"}`}>
                   {confirmada
                     ? <Check size={13} className="text-white" strokeWidth={2.5} />
                     : <Clock size={13} className="text-white" strokeWidth={2.5} />}
@@ -508,7 +546,36 @@ export default function ConfirmacionPage() {
 
         {/* Acciones */}
         <div className="mt-4 space-y-2.5 print:hidden">
-          {/* WhatsApp — acción principal */}
+          {/* Agregar al calendario — acción principal: es lo que el visitante necesita guardar */}
+          {(cita.icalUrl || cita.webcalUrl || cita.googleCalUrl) && (
+            <div>
+              <p className="text-xs font-semibold text-slate-600 text-center mb-2">Agrégala a tu calendario</p>
+              <div className="flex gap-2">
+                {(cita.webcalUrl ?? cita.icalUrl) && (
+                  <a
+                    href={cita.webcalUrl ?? cita.icalUrl}
+                    className="flex-1 min-h-[48px] flex items-center justify-center gap-2 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold transition"
+                  >
+                    <SiApple size={18} aria-hidden="true" />
+                    Apple Calendar
+                  </a>
+                )}
+                {cita.googleCalUrl && (
+                  <a
+                    href={cita.googleCalUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex-1 min-h-[48px] flex items-center justify-center gap-2 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold transition"
+                  >
+                    <SiGooglecalendar size={18} aria-hidden="true" />
+                    Google Calendar
+                  </a>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* WhatsApp — secundaria; texto oscuro sobre blanco en lugar de blanco sobre #25D366 (~2:1) */}
           <a
             href={`https://wa.me/?text=${encodeURIComponent(
               `*${confirmada ? "Cita confirmada" : "Cita agendada"} en ${cita.nombreNegocio}*\n\n` +
@@ -519,49 +586,11 @@ export default function ConfirmacionPage() {
             )}`}
             target="_blank"
             rel="noreferrer"
-            className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-2xl bg-[#25D366] hover:bg-[#1ebe5d] text-white text-sm font-bold transition"
+            className="w-full min-h-[48px] flex items-center justify-center gap-2.5 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-sm font-semibold transition"
           >
-            <SiWhatsapp size={20} />
+            <SiWhatsapp size={20} style={{ color: "#128C7E" }} aria-hidden="true" />
             Compartir por WhatsApp
           </a>
-
-          {/* Agregar al calendario */}
-          {(cita.icalUrl || cita.googleCalUrl) && (
-            <div>
-              <button
-                onClick={() => setCalAbierto((v) => !v)}
-                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-sm font-medium transition"
-              >
-                <Calendar size={14} />
-                Agregar al calendario
-                <ChevronDown size={13} className={`transition-transform ${calAbierto ? "rotate-180" : ""}`} />
-              </button>
-              {calAbierto && (
-                <div className="flex gap-2 mt-2">
-                  {(cita.webcalUrl ?? cita.icalUrl) && (
-                    <a
-                      href={cita.webcalUrl ?? cita.icalUrl}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition"
-                    >
-                      <SiApple size={18} />
-                      Apple Calendar
-                    </a>
-                  )}
-                  {cita.googleCalUrl && (
-                    <a
-                      href={cita.googleCalUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition"
-                    >
-                      <SiGooglecalendar size={18} />
-                      Google Calendar
-                    </a>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
 
           {/* Enlace y acciones secundarias */}
           <div className="flex items-center justify-center gap-4 pt-1 flex-wrap">
@@ -582,26 +611,33 @@ export default function ConfirmacionPage() {
             </button>
           </div>
 
-          <div className="border-t border-slate-100 pt-3 flex items-center justify-center gap-5 flex-wrap">
-            <button onClick={irAlNegocio} className="text-sm text-slate-700 hover:underline font-semibold">
-              Hacer otra reserva
-            </button>
-            {cancelable && !confirmandoCancelar && !reagendando && puedeCancel && (
+          {cancelable && !confirmandoCancelar && !reagendando && puedeCancel && (
+            <div className="flex gap-2">
               <button
+                type="button"
                 onClick={() => setReagendando(true)}
-                className="text-sm text-slate-500 hover:text-slate-700 hover:underline"
+                className="flex-1 min-h-[44px] rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-sm font-medium text-slate-700 transition"
               >
                 Reagendar
               </button>
-            )}
-            {cancelable && !confirmandoCancelar && !reagendando && puedeCancel && (
               <button
+                type="button"
                 onClick={() => setConfirmandoCancelar(true)}
-                className="text-sm text-red-600 hover:text-red-700 hover:underline"
+                className="flex-1 min-h-[44px] rounded-xl border border-red-200 bg-white hover:bg-red-50 text-sm font-medium text-red-600 transition"
               >
                 Cancelar cita
               </button>
-            )}
+            </div>
+          )}
+
+          <div className="border-t border-slate-100 pt-3 flex items-center justify-center">
+            <button
+              type="button"
+              onClick={irAlNegocio}
+              className="min-h-[44px] px-3 text-sm text-slate-700 hover:underline font-semibold"
+            >
+              Hacer otra reserva
+            </button>
           </div>
 
           {cancelable && horasCancelacion > 0 && !reagendando && !confirmandoCancelar && (
@@ -629,7 +665,18 @@ export default function ConfirmacionPage() {
                 onSeleccionar={setSlotReag}
                 onLimpiarSlot={() => setSlotReag(null)}
                 color={color}
+                diasAnticipacionMinima={cita.diasAnticipacionMinima}
               />
+              {horasCancelacion > 0 && (
+                <p className="flex items-center gap-2 text-xs text-slate-600 bg-white border border-slate-200 rounded-xl px-3 py-2.5">
+                  <AlertCircle size={13} className="shrink-0 text-slate-500" aria-hidden="true" />
+                  <span>
+                    Cancelación gratuita hasta{" "}
+                    <strong>{horasCancelacion} hora{horasCancelacion === 1 ? "" : "s"}</strong>{" "}
+                    antes de la cita.
+                  </span>
+                </p>
+              )}
               {slotReag && new Date(slotReag.inicio).getTime() === new Date(cita.inicioEn).getTime() && (
                 <p className="text-xs text-amber-600 text-center bg-amber-50 border border-amber-100 rounded-lg py-2 px-3">
                   Este ya es el horario actual de tu cita. Elige una fecha u hora diferente.

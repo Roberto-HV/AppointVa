@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { MemoryRouter } from "react-router-dom";
 import ConfirmacionPage from "./ConfirmacionPage";
 
 vi.mock("react-router-dom", async (importOriginal) => {
@@ -42,7 +43,9 @@ vi.mock("../../components/icons/SocialLinks", () => ({
 }));
 
 vi.mock("../../components/booking/PasoFechaHora", () => ({
-  default: () => <div data-testid="paso-fecha-hora" />,
+  default: ({ diasAnticipacionMinima }: { diasAnticipacionMinima?: number }) => (
+    <div data-testid="paso-fecha-hora" data-dias-minimos={String(diasAnticipacionMinima)} />
+  ),
 }));
 
 vi.mock("../../utils/formatters", () => ({
@@ -75,12 +78,14 @@ const mockCitaBase = {
 
 function renderConQuery() {
   const qc = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
+    defaultOptions: { queries: { retry: false, retryDelay: 0 } },
   });
   return render(
-    <QueryClientProvider client={qc}>
-      <ConfirmacionPage />
-    </QueryClientProvider>
+    <MemoryRouter>
+      <QueryClientProvider client={qc}>
+        <ConfirmacionPage />
+      </QueryClientProvider>
+    </MemoryRouter>
   );
 }
 
@@ -267,5 +272,101 @@ describe("ConfirmacionPage — estado de la cita", () => {
     await renderCita({ estadoTexto: "Confirmada", emailCliente: undefined });
     expect(screen.queryByText(/recordatorio por correo/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/whatsapp o correo/i)).not.toBeInTheDocument();
+  });
+});
+
+// ── BF-16: el estado usa los tokens semánticos ────────────────────────────────
+describe("ConfirmacionPage — badge de estado", () => {
+  it("confirmada usa los tokens de estado confirmado", async () => {
+    vi.mocked(publicoApi.obtenerCita).mockResolvedValue({ ...mockCitaBase, emailCliente: "juan@test.com" } as never);
+    renderConQuery();
+    const badge = await screen.findByText("✓ Confirmada");
+    expect(badge).toHaveClass("bg-status-confirmed-bg", "text-status-confirmed-fg");
+  });
+
+  it("pendiente usa los tokens de estado pendiente", async () => {
+    vi.mocked(publicoApi.obtenerCita).mockResolvedValue({
+      ...mockCitaBase, emailCliente: "juan@test.com", estadoTexto: "Pendiente", estado: 0,
+    } as never);
+    renderConQuery();
+    const badge = await screen.findByText("⏳ Pendiente confirmación");
+    expect(badge).toHaveClass("bg-status-pending-bg", "text-status-pending-fg");
+  });
+});
+
+// ── BF-17: guardar en el calendario es la acción principal ────────────────────
+describe("ConfirmacionPage — acciones", () => {
+  const conCalendario = {
+    ...mockCitaBase,
+    emailCliente: "juan@test.com",
+    icalUrl: "https://api.test/cita.ics",
+    googleCalUrl: "https://calendar.google.com/x",
+  };
+
+  it("muestra Apple y Google Calendar sin un paso intermedio, antes de WhatsApp", async () => {
+    vi.mocked(publicoApi.obtenerCita).mockResolvedValue(conCalendario as never);
+    renderConQuery();
+
+    const apple = await screen.findByRole("link", { name: /Apple Calendar/ });
+    const google = screen.getByRole("link", { name: /Google Calendar/ });
+    const whatsapp = screen.getByRole("link", { name: /Compartir por WhatsApp/ });
+    expect(apple).toHaveAttribute("href", "https://api.test/cita.ics");
+    expect(google).toHaveAttribute("href", "https://calendar.google.com/x");
+    expect(apple.compareDocumentPosition(whatsapp) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("Reagendar y Cancelar son botones de 44px", async () => {
+    vi.mocked(publicoApi.obtenerCita).mockResolvedValue(conCalendario as never);
+    renderConQuery();
+
+    expect(await screen.findByRole("button", { name: "Reagendar" })).toHaveClass("min-h-[44px]");
+    expect(screen.getByRole("button", { name: "Cancelar cita" })).toHaveClass("min-h-[44px]");
+  });
+});
+
+// ── BF-19: reagendar respeta la anticipación mínima ───────────────────────────
+describe("ConfirmacionPage — reagendar", () => {
+  it("pasa la anticipación mínima al selector y muestra la política de cancelación", async () => {
+    vi.mocked(publicoApi.obtenerCita).mockResolvedValue({
+      ...mockCitaBase, emailCliente: "juan@test.com", diasAnticipacionMinima: 2, horasCancelacion: 24,
+    } as never);
+    renderConQuery();
+
+    fireEvent.click(await screen.findByRole("button", { name: "Reagendar" }));
+
+    expect(screen.getByTestId("paso-fecha-hora")).toHaveAttribute("data-dias-minimos", "2");
+    expect(screen.getByText(/Cancelación gratuita hasta/)).toHaveTextContent("Cancelación gratuita hasta 24 horas antes de la cita.");
+  });
+});
+
+// ── BF-18: carga y errores con salida ─────────────────────────────────────────
+describe("ConfirmacionPage — carga y errores", () => {
+  it("anuncia la carga", () => {
+    vi.mocked(publicoApi.obtenerCita).mockReturnValue(new Promise(() => {}));
+    renderConQuery();
+    expect(screen.getByRole("status")).toHaveTextContent("Cargando tu cita…");
+  });
+
+  it("un 404 dice que la cita no existe y no reintenta", async () => {
+    vi.mocked(publicoApi.obtenerCita).mockRejectedValue({ response: { status: 404 } });
+    renderConQuery();
+
+    expect(await screen.findByRole("heading", { name: "Cita no encontrada" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Reintentar" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Ver mis citas" })).toHaveAttribute("href", "/b/salon-test/mis-citas");
+    expect(publicoApi.obtenerCita).toHaveBeenCalledTimes(1);
+  });
+
+  it("un fallo de red no dice «no encontrada» y ofrece reintentar", async () => {
+    vi.mocked(publicoApi.obtenerCita).mockRejectedValue(new Error("Network Error"));
+    renderConQuery();
+
+    expect(await screen.findByRole("heading", { name: "No pudimos cargar tu cita" })).toBeInTheDocument();
+    expect(screen.queryByText("Cita no encontrada")).not.toBeInTheDocument();
+
+    vi.mocked(publicoApi.obtenerCita).mockResolvedValue({ ...mockCitaBase, emailCliente: "juan@test.com" } as never);
+    fireEvent.click(screen.getByRole("button", { name: "Reintentar" }));
+
+    expect(await screen.findByText("ABC123")).toBeInTheDocument();
   });
 });

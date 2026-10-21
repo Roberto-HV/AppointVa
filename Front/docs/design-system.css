@@ -1,7 +1,7 @@
 /* ============================================================
  * AppointVa Design System — Token Reference
  * Source: src/index.css + tailwind.config.js
- * Updated: 2026-08-28
+ * Updated: 2026-10-20
  *
  * Usage for AI assistants:
  *   - Light mode tokens are defined on :root
@@ -67,6 +67,12 @@
   --status-absent-bg:    #F9FAFB;   /* gray-50 */
   --status-absent-fg:    #6B7280;   /* gray-500 */
   --status-absent-dot:   #9CA3AF;   /* gray-400 */
+  /* Wired in src/index.css + tailwind.config.js as
+   *   bg-status-<estado>-bg  text-status-<estado>-fg  bg-status-<estado>-dot
+   * (estado: pending | confirmed | completed | cancelled | absent) */
+
+  /* --- Rating stars (reviews) — never brand gold --- */
+  --rating:     #F59E0B;  /* amber-500 — Tailwind: text-rating fill-rating */
 
   /* --- Role chips (user menu) --- */
   --chip-employee-bg:    #DBEAFE;   /* blue-100 */
@@ -158,6 +164,8 @@
   --status-absent-bg:    #334155;                  /* slate-700 */
   --status-absent-fg:    #9CA3AF;                  /* gray-400 */
   --status-absent-dot:   #6B7280;                  /* gray-500 */
+
+  --rating: #FBBF24;                               /* amber-400 */
 
   /* --- Role chips (dark) --- */
   --chip-employee-bg:    rgba(37, 99, 235, 0.2);

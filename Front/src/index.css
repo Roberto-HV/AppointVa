@@ -29,6 +29,26 @@
   --input:                214 32% 91%;
   --ring:                 215 25% 27%;  /* slate ring */
   --radius:               0.5rem;
+
+  /* ── Estados de cita (badges) — referencia en docs/design-system.css ───── */
+  --status-pending-bg:    #FEFCE8;  /* yellow-50 */
+  --status-pending-fg:    #A16207;  /* yellow-700 */
+  --status-pending-dot:   #CA8A04;  /* yellow-600 */
+  --status-confirmed-bg:  #F0FDF4;  /* green-50 */
+  --status-confirmed-fg:  #15803D;  /* green-700 */
+  --status-confirmed-dot: #16A34A;  /* green-600 */
+  --status-completed-bg:  #EFF6FF;  /* blue-50 */
+  --status-completed-fg:  #1D4ED8;  /* blue-700 */
+  --status-completed-dot: #2563EB;  /* blue-600 */
+  --status-cancelled-bg:  #FEF2F2;  /* red-50 */
+  --status-cancelled-fg:  #DC2626;  /* red-600 */
+  --status-cancelled-dot: #DC2626;
+  --status-absent-bg:     #F9FAFB;  /* gray-50 */
+  --status-absent-fg:     #6B7280;  /* gray-500 */
+  --status-absent-dot:    #9CA3AF;  /* gray-400 */
+
+  /* ── Calificaciones (estrellas de reseñas): nunca el dorado de marca ───── */
+  --rating:               #F59E0B;  /* amber-500 */
 }
 
 .dark {
@@ -57,6 +77,25 @@
   --border:               217 33% 17%;
   --input:                217 33% 17%;
   --ring:                 213 27% 84%;
+
+  /* Estados de cita (dark) */
+  --status-pending-bg:    rgba(161, 98, 7, 0.2);
+  --status-pending-fg:    #FACC15;
+  --status-pending-dot:   #EAB308;
+  --status-confirmed-bg:  rgba(6, 78, 59, 0.4);
+  --status-confirmed-fg:  #4ADE80;
+  --status-confirmed-dot: #22C55E;
+  --status-completed-bg:  rgba(30, 64, 175, 0.2);
+  --status-completed-fg:  #60A5FA;
+  --status-completed-dot: #3B82F6;
+  --status-cancelled-bg:  rgba(127, 29, 29, 0.2);
+  --status-cancelled-fg:  #F87171;
+  --status-cancelled-dot: #EF4444;
+  --status-absent-bg:     #334155;
+  --status-absent-fg:     #9CA3AF;
+  --status-absent-dot:    #6B7280;
+
+  --rating:               #FBBF24;  /* amber-400 */
 }
 
 @keyframes stepIn {

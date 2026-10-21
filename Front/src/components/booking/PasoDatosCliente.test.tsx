@@ -304,3 +304,110 @@ describe("PasoDatosCliente — valores conservados", () => {
     );
   });
 });
+
+// ── BF-11: el total del resumen descuenta el código aplicado ──────────────────
+describe("PasoDatosCliente — total con descuento", () => {
+  const totalAPagar = () => screen.getByText("Total a pagar").nextElementSibling as HTMLElement;
+
+  it("sin código muestra el precio del servicio", () => {
+    renderComponente();
+    expect(totalAPagar()).toHaveTextContent(/^\$150$/);
+  });
+
+  it("con un porcentaje tacha el precio original y muestra el final", () => {
+    renderComponente({ descuento: { id: "d1", codigo: "PROMO20", tipo: "Porcentaje", valor: 20 } });
+    expect(totalAPagar().querySelector("s")).toHaveTextContent("Precio original $150");
+    expect(totalAPagar()).toHaveTextContent(/\$120$/);
+  });
+
+  it("un monto fijo mayor al precio deja el total en cero, nunca negativo", () => {
+    renderComponente({ descuento: { id: "d1", codigo: "REGALO", tipo: "MontoFijo", valor: 500 } });
+    expect(totalAPagar()).toHaveTextContent(/\$0$/);
+  });
+
+  it("coloca el bloque del código justo antes del resumen", () => {
+    renderComponente({ bloqueDescuento: <div data-testid="bloque-descuento" /> });
+    const bloque = screen.getByTestId("bloque-descuento");
+    const resumen = screen.getByText("Resumen de tu cita");
+    expect(bloque.compareDocumentPosition(resumen) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+});
+
+// ── BF-14: sin aceptar las políticas, el envío explica por qué no avanza ──────
+describe("PasoDatosCliente — políticas sin aceptar", () => {
+  function llenarValido() {
+    fireEvent.change(inputTelefono(), { target: { value: "5512345678" } });
+    fireEvent.change(inputNombre(), { target: { value: "Ana Martínez" } });
+  }
+
+  it("no envía y marca la casilla con un mensaje", async () => {
+    const onEnviar = vi.fn();
+    const { container } = renderComponente({ onEnviar, politicasUrl: "https://ejemplo.test/politicas.png" });
+    llenarValido();
+
+    fireEvent.submit(container.querySelector("#form-datos-cliente")!);
+
+    const casilla = screen.getByRole("checkbox");
+    await waitFor(() => expect(casilla).toHaveAttribute("aria-invalid", "true"));
+    expect(casilla).toHaveAccessibleDescription("Acepta las políticas del negocio para confirmar tu cita");
+    expect(document.activeElement).toBe(casilla);
+    expect(onEnviar).not.toHaveBeenCalled();
+  });
+
+  it("con las políticas aceptadas envía normalmente", async () => {
+    const onEnviar = vi.fn();
+    const { container } = renderComponente({
+      onEnviar,
+      politicasUrl: "https://ejemplo.test/politicas.png",
+      politicasAceptadas: true,
+    });
+    llenarValido();
+
+    fireEvent.submit(container.querySelector("#form-datos-cliente")!);
+
+    await waitFor(() => expect(onEnviar).toHaveBeenCalled());
+    expect(screen.queryByText(/Acepta las políticas/)).not.toBeInTheDocument();
+  });
+});
+
+// ── BF-15: mensajes de validación en español y teléfono por dígitos ───────────
+describe("PasoDatosCliente — validación", () => {
+  beforeEach(() => {
+    renderComponente();
+  });
+
+  async function mensajeDe(input: HTMLElement, valor: string) {
+    fireEvent.change(input, { target: { value: valor } });
+    fireEvent.blur(input);
+    await waitFor(() => expect(input).toHaveAttribute("aria-invalid", "true"));
+    return input;
+  }
+
+  it("cuenta dígitos, no caracteres: «12 34 56 7» no es un teléfono válido", async () => {
+    const input = await mensajeDe(inputTelefono(), "12 34 56 7");
+    expect(input).toHaveAccessibleDescription("Ingresa un teléfono válido de 10 dígitos");
+  });
+
+  it("explica el límite de largo del teléfono en español", async () => {
+    const input = await mensajeDe(inputTelefono(), "55 1234 5678 9012");
+    expect(input).toHaveAccessibleDescription("Máximo 15 caracteres");
+  });
+
+  it("dice cómo corregir un correo mal escrito", async () => {
+    const input = await mensajeDe(inputEmail(), "ana@");
+    expect(input).toHaveAccessibleDescription("Revisa el formato del correo (ej. nombre@correo.com)");
+  });
+
+  it("explica el límite de las notas en español", async () => {
+    const input = await mensajeDe(screen.getByLabelText("Notas (opcional)"), "a".repeat(301));
+    expect(input).toHaveAccessibleDescription("Máximo 300 caracteres");
+  });
+});
+
+// ── BF-12: el error de envío se anuncia ───────────────────────────────────────
+describe("PasoDatosCliente — error de envío", () => {
+  it("se anuncia como alerta", () => {
+    renderComponente({ error: "No se pudo confirmar la cita. Intenta de nuevo." });
+    expect(screen.getByRole("alert")).toHaveTextContent("No se pudo agendar la cita");
+  });
+});

@@ -22,9 +22,33 @@ interface Props {
 const DIAS_CORTOS = ["Do", "Lu", "Ma", "Mi", "Ju", "Vi", "Sá"];
 const DIAS_LARGOS = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
 const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+/** Lo que el lector de pantalla oye tras la fecha; el punto de color no le llega. */
+const DETALLE_DISPONIBILIDAD: Record<EstadoDia, string> = {
+  "con-horarios": ", con horarios",
+  "sin-horarios": ", sin horarios",
+  cargando: "",
+  error: ", no se pudo cargar; toca para reintentar",
+};
 const MESES_CORTOS = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 
-const OPCIONES_CONSULTA = { retry: 2, retryDelay: 1000 } as const;
+/** Un minuto de caché: volver a una semana ya vista no repite sus 7 consultas. */
+const VIGENCIA_DISPONIBILIDAD = 60_000;
+/** El día elegido reintenta: es el que el visitante está esperando ver. */
+const OPCIONES_CONSULTA = { retry: 2, retryDelay: 1000, staleTime: VIGENCIA_DISPONIBILIDAD } as const;
+/**
+ * La precarga del resto de la semana es especulativa: sin reintentos, para que un
+ * backend degradado no reciba hasta 21 peticiones por semana. Un día que falla se
+ * reintenta al tocarlo, ya con la consulta del día elegido.
+ */
+const OPCIONES_PRECARGA = { retry: 0, staleTime: VIGENCIA_DISPONIBILIDAD } as const;
+
+type EstadoDia = "con-horarios" | "sin-horarios" | "cargando" | "error";
+
+function estadoDeConsulta(consulta?: { data?: SlotDisponible[]; isError: boolean }): EstadoDia {
+  if (consulta?.data) return consulta.data.length > 0 ? "con-horarios" : "sin-horarios";
+  if (consulta?.isError) return "error";
+  return "cargando";
+}
 
 function hoy(): Date {
   const d = new Date();
@@ -75,34 +99,45 @@ export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, on
   // Disponibilidad de toda la semana visible: cada día muestra si tiene horarios
   // sin que el visitante tenga que tocarlos uno por uno. Comparte caché con la
   // consulta del día elegido, así que tocar un día ya cargado no vuelve a pedirlo.
+  // El día elegido explícitamente queda fuera: lo lleva su propia consulta, con reintentos.
   const fechasReservables = diasSemana.filter((d) => d >= fechaMinima).map(fechaLocal);
+  const fechasPrecarga = fechasReservables.filter((f) => f !== fechaElegida);
   const disponibilidadSemana = useQueries({
-    queries: fechasReservables.map((fecha) => ({
+    queries: fechasPrecarga.map((fecha) => ({
       queryKey: ["slots", servicioId, empleadoId, fecha],
       queryFn: () => publicoApi.obtenerDisponibilidad(servicioId, empleadoId, fecha),
-      ...OPCIONES_CONSULTA,
+      ...OPCIONES_PRECARGA,
     })),
   });
-  const estadoDia = (fecha: string): "con-horarios" | "sin-horarios" | "desconocido" => {
-    const i = fechasReservables.indexOf(fecha);
-    const consulta = i >= 0 ? disponibilidadSemana[i] : undefined;
-    if (!consulta?.isSuccess) return "desconocido";
-    return consulta.data.length > 0 ? "con-horarios" : "sin-horarios";
-  };
+  const estadoPrecarga = (fecha: string) =>
+    estadoDeConsulta(disponibilidadSemana[fechasPrecarga.indexOf(fecha)]);
 
   // Sin elección explícita se abre el primer día con horarios, en orden: no salta a
-  // un día posterior mientras uno anterior sigue cargando.
-  const primeraConHorarios = (() => {
+  // un día posterior mientras uno anterior sigue cargando. Un día que falló no
+  // bloquea a los siguientes: se salta y queda marcado para reintentarlo.
+  const primeraConHorarios = fechaElegida ? null : (() => {
     for (const fecha of fechasReservables) {
-      const estado = estadoDia(fecha);
+      const estado = estadoPrecarga(fecha);
       if (estado === "con-horarios") return fecha;
-      if (estado === "desconocido") return null;
+      if (estado === "cargando") return null;
     }
     return null;
   })();
   const fechaSel = fechaElegida ?? primeraConHorarios;
+
+  const consultaDia = useQuery({
+    queryKey: ["slots", servicioId, empleadoId, fechaSel],
+    queryFn: () => publicoApi.obtenerDisponibilidad(servicioId, empleadoId, fechaSel!),
+    enabled: !!fechaSel,
+    ...OPCIONES_CONSULTA,
+  });
+  const { data: slots = [], isFetching, isError, refetch } = consultaDia;
+
+  const estadoDia = (fecha: string): EstadoDia =>
+    fecha === fechaSel ? estadoDeConsulta(consultaDia) : estadoPrecarga(fecha);
   const semanaSinHorarios =
     fechasReservables.length > 0 && fechasReservables.every((f) => estadoDia(f) === "sin-horarios");
+  const hayDiasConError = fechasReservables.some((f) => estadoDia(f) === "error");
   const siguienteConHorarios = fechaSel
     ? fechasReservables.find((f) => f > fechaSel && estadoDia(f) === "con-horarios") ?? null
     : null;
@@ -110,22 +145,26 @@ export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, on
   const semanaFechaMinima = lunesDeSemanaDe(fechaMinima);
   const puedeIrAtras = semanaRef > semanaFechaMinima;
 
+  // Cambiar de semana suelta el horario elegido: si siguiera activo, «Continuar»
+  // avanzaría con un horario que ya no está a la vista.
+  const cambiarSemana = (dias: number) => {
+    const s = new Date(semanaRef);
+    s.setDate(s.getDate() + dias);
+    setSemanaRef(s);
+    setFechaElegida(null);
+    if (seleccionado) onLimpiarSlot?.();
+  };
+
   const semanaAnterior = () => {
     if (!puedeIrAtras) return;
-    const s = new Date(semanaRef);
-    s.setDate(s.getDate() - 7);
-    setSemanaRef(s);
-    setFechaElegida(null);
+    cambiarSemana(-7);
   };
 
-  const semanaSiguiente = () => {
-    const s = new Date(semanaRef);
-    s.setDate(s.getDate() + 7);
-    setSemanaRef(s);
-    setFechaElegida(null);
-  };
+  const semanaSiguiente = () => cambiarSemana(7);
 
   const elegirFecha = (fecha: string) => {
+    // Tocar de nuevo un día que no cargó lo reintenta.
+    if (fecha === fechaSel && isError) void refetch();
     setFechaElegida(fecha);
     if (fecha !== fechaSel) onLimpiarSlot?.();
   };
@@ -134,13 +173,6 @@ export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, on
     if (dia < fechaMinima) return;
     elegirFecha(fechaLocal(dia));
   };
-
-  const { data: slots = [], isFetching, isError, refetch } = useQuery({
-    queryKey: ["slots", servicioId, empleadoId, fechaSel],
-    queryFn: () => publicoApi.obtenerDisponibilidad(servicioId, empleadoId, fechaSel!),
-    enabled: !!fechaSel,
-    ...OPCIONES_CONSULTA,
-  });
 
   const franjas = fechaSel && !isFetching && !isError && slots.length > 0
     ? [
@@ -226,16 +258,24 @@ export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, on
           const pasado = dia < fechaMinima;
           const esHoy = iso === fechaLocal(new Date());
           const seleccionada = iso === fechaSel;
-          const disponibilidad = pasado ? "desconocido" : estadoDia(iso);
+          const disponibilidad = pasado ? "cargando" : estadoDia(iso);
           // Atenuado, no deshabilitado: el visitante aún puede abrirlo y ver por qué.
           const sinHorarios = disponibilidad === "sin-horarios" && !seleccionada;
+          const etiqueta =
+            `${DIAS_LARGOS[dia.getDay()]} ${dia.getDate()} de ${MESES[dia.getMonth()].toLowerCase()}` +
+            (esHoy ? ", hoy" : "") +
+            (pasado ? "" : DETALLE_DISPONIBILIDAD[disponibilidad]);
 
           return (
             <button
               key={iso}
+              type="button"
               onClick={() => seleccionarFecha(dia)}
               disabled={pasado}
+              aria-label={etiqueta}
+              aria-pressed={seleccionada}
               aria-current={esHoy ? "date" : undefined}
+              data-fecha={iso}
               data-disponibilidad={disponibilidad}
               className={`flex flex-col items-center py-2.5 rounded-2xl transition-all duration-150
                 ${pasado
@@ -263,11 +303,12 @@ export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, on
                 ${seleccionada ? "text-white" : esHoy ? "text-slate-700" : "text-slate-800"}`}>
                 {dia.getDate()}
               </span>
-              {/* Punto de disponibilidad; el hueco se reserva siempre para no mover la fila. */}
+              {/* Punto de disponibilidad; el hueco se reserva siempre para no mover la fila.
+                  Un día que no cargó lleva un punto rojo: tocarlo lo reintenta. */}
               <span
                 aria-hidden="true"
-                className="mt-1 h-1 w-1 rounded-full"
-                style={{
+                className={`mt-1 h-1 w-1 rounded-full ${disponibilidad === "error" ? (seleccionada ? "bg-white" : "bg-red-600") : ""}`}
+                style={disponibilidad === "error" ? undefined : {
                   background: disponibilidad === "con-horarios"
                     ? (seleccionada ? "#fff" : acento)
                     : "transparent",
@@ -277,6 +318,13 @@ export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, on
           );
         })}
       </div>
+
+      {hayDiasConError && (
+        <p className="-mt-3 mb-4 flex items-center gap-1.5 text-xs text-slate-600">
+          <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rounded-full bg-red-600" />
+          No pudimos revisar algunos días. Toca uno marcado para intentarlo de nuevo.
+        </p>
+      )}
 
       {/* Semana completa sin horarios: no hay día que abrir */}
       {!fechaSel && semanaSinHorarios && (
@@ -317,7 +365,7 @@ export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, on
           ) : (
             <div className="space-y-4">
               {franjas.map(({ label, Icon, slots: slotsFranja }) => (
-                <div key={label}>
+                <div key={label} role="group" aria-label={label}>
                   <div className="flex items-center gap-1.5 mb-2">
                     <Icon size={12} className="text-slate-400" />
                     <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">{label}</p>
@@ -328,7 +376,9 @@ export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, on
                       return (
                         <button
                           key={slot.inicio}
+                          type="button"
                           onClick={() => onSeleccionar(slot)}
+                          aria-pressed={activo}
                           className="min-h-[44px] px-1 rounded-xl text-xs font-semibold border-2 transition-all flex items-center justify-center"
                           style={activo
                             ? { borderColor: acento, background: acento, color: "#fff", boxShadow: `0 2px 8px ${acento}40` }

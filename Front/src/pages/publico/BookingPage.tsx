@@ -1,5 +1,6 @@
-﻿import { useState, useEffect, useRef, useCallback, useId } from "react";
+﻿import { useState, useEffect, useRef, useCallback, useId, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { useParams, useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -8,7 +9,8 @@ import { intakePublicoApi, type CampoIntake } from "../../api/intake";
 import { descuentosPublicoApi, type DescuentoValidado } from "../../api/descuentos";
 import type { ServicioPublico, EmpleadoPublico, SlotDisponible, ImagenGaleria, ResenaPublica } from "../../types";
 import { getSectorTerms } from "../../hooks/useSectorTerms";
-import { formatPrecio } from "../../utils/formatters";
+import { formatPrecio, formatFechaCorta } from "../../utils/formatters";
+import { precioConDescuento } from "../../utils/descuentos";
 import IndicadorPasos from "../../components/booking/IndicadorPasos";
 import PasoServicio from "../../components/booking/PasoServicio";
 import PasoEmpleado, { SIN_PREFERENCIA_ID } from "../../components/booking/PasoEmpleado";
@@ -168,6 +170,35 @@ function HojaClienteExistente({
   );
 }
 
+/**
+ * Visor de imagen a pantalla completa. Radix aporta el rol de diálogo, la trampa
+ * de foco, el cierre con Escape y la devolución del foco a quien lo abrió.
+ */
+function VisorImagen({ titulo, onClose, children }: { titulo: string; onClose: () => void; children: ReactNode }) {
+  return (
+    <DialogPrimitive.Root open onOpenChange={(abierto) => { if (!abierto) onClose(); }}>
+      <DialogPrimitive.Portal>
+        <DialogPrimitive.Overlay className="fixed inset-0 z-[9999] bg-black/95" />
+        <DialogPrimitive.Content
+          aria-describedby={undefined}
+          onClick={onClose}
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 outline-none"
+        >
+          <DialogPrimitive.Title className="sr-only">{titulo}</DialogPrimitive.Title>
+          {children}
+          <DialogPrimitive.Close
+            aria-label="Cerrar"
+            onClick={(e) => e.stopPropagation()}
+            className="absolute top-4 right-4 w-11 h-11 rounded-full flex items-center justify-center text-white/80 hover:text-white transition"
+          >
+            <X size={26} />
+          </DialogPrimitive.Close>
+        </DialogPrimitive.Content>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
+  );
+}
+
 function GaleriaSection({ imagenes }: { imagenes: ImagenGaleria[] }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [lightbox, setLightbox] = useState<string | null>(null);
@@ -255,17 +286,26 @@ function GaleriaSection({ imagenes }: { imagenes: ImagenGaleria[] }) {
       const isActive = i === activeIndex;
       const isEdge = total > MAX_DOTS && (j === 0 || j === dots - 1) && !isActive;
       return (
+        // El punto se ve pequeño, pero el área táctil es de 44px.
         <button
           key={i}
+          type="button"
           onClick={() => scrollTo(i)}
-          className="rounded-full transition-all"
-          style={{
-            width: isActive ? 16 : 6,
-            height: isEdge ? 4 : 6,
-            background: isActive ? "#334155" : "#cbd5e1",
-            opacity: isEdge ? 0.45 : 1,
-          }}
-        />
+          aria-label={`Ir a la imagen ${i + 1}`}
+          aria-current={isActive ? "true" : undefined}
+          className="min-w-[44px] min-h-[44px] -mx-2 flex items-center justify-center"
+        >
+          <span
+            aria-hidden="true"
+            className="rounded-full transition-all"
+            style={{
+              width: isActive ? 16 : 6,
+              height: isEdge ? 4 : 6,
+              background: isActive ? "#334155" : "#cbd5e1",
+              opacity: isEdge ? 0.45 : 1,
+            }}
+          />
+        </button>
       );
     });
   };
@@ -283,6 +323,7 @@ function GaleriaSection({ imagenes }: { imagenes: ImagenGaleria[] }) {
             <button
               key={i}
               onClick={() => setLightbox(img.url)}
+              aria-label={img.descripcion || `Ver imagen ${loop ? ((i - 1 + total) % total) + 1 : i + 1} en pantalla completa`}
               className="snap-center shrink-0 rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-shadow aspect-[4/5]"
               style={{ width: "calc(100% - 40px)" }}
             >
@@ -296,14 +337,14 @@ function GaleriaSection({ imagenes }: { imagenes: ImagenGaleria[] }) {
             <button
               aria-label="Imagen anterior"
               onClick={() => scrollTo((activeIndex - 1 + total) % total)}
-              className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-white/90 shadow-md flex items-center justify-center text-gray-600 transition hover:bg-white"
+              className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-11 h-11 rounded-full bg-white/90 shadow-md flex items-center justify-center text-gray-600 transition hover:bg-white"
             >
               <ChevronLeft size={18} />
             </button>
             <button
               aria-label="Imagen siguiente"
               onClick={() => scrollTo((activeIndex + 1) % total)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-white/90 shadow-md flex items-center justify-center text-gray-600 transition hover:bg-white"
+              className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-11 h-11 rounded-full bg-white/90 shadow-md flex items-center justify-center text-gray-600 transition hover:bg-white"
             >
               <ChevronRight size={18} />
             </button>
@@ -312,22 +353,15 @@ function GaleriaSection({ imagenes }: { imagenes: ImagenGaleria[] }) {
       </div>
 
       {total > 1 && (
-        <div className="flex justify-center items-center gap-1.5 mt-2 mb-4">
+        <div className="flex justify-center items-center gap-1.5 mt-1 mb-2">
           {renderDots()}
         </div>
       )}
 
-      {lightbox && createPortal(
-        <div
-          className="fixed inset-0 bg-black/95 z-[9999] flex items-center justify-center p-4"
-          onClick={() => setLightbox(null)}
-        >
-          <button className="absolute top-4 right-4 text-white/80 hover:text-white" onClick={() => setLightbox(null)}>
-            <X size={28} />
-          </button>
+      {lightbox && (
+        <VisorImagen titulo="Imagen de la galería" onClose={() => setLightbox(null)}>
           <img src={lightbox} alt="" className="max-w-full max-h-[85vh] rounded-xl object-contain shadow-2xl" />
-        </div>,
-        document.body
+        </VisorImagen>
       )}
     </>
   );
@@ -350,7 +384,11 @@ function GaleriaDesktop({ imagenes, onOpen }: { imagenes: ImagenGaleria[]; onOpe
     <div className="space-y-2">
       <div className="relative">
         <div className="rounded-2xl overflow-hidden shadow-sm">
-          <button onClick={() => onOpen(idx)} className="block w-full focus:outline-none">
+          <button
+            onClick={() => onOpen(idx)}
+            aria-label={`Ver imagen ${idx + 1} en pantalla completa`}
+            className="block w-full focus:outline-none"
+          >
             <img
               src={imagenes[idx].url}
               alt={imagenes[idx].descripcion ?? ""}
@@ -366,7 +404,7 @@ function GaleriaDesktop({ imagenes, onOpen }: { imagenes: ImagenGaleria[]; onOpe
               onPointerDown={e => e.stopPropagation()}
               onClick={goPrev}
               style={{ touchAction: "manipulation" }}
-              className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-white/90 shadow-md flex items-center justify-center text-gray-600 hover:bg-white transition select-none"
+              className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-11 h-11 rounded-full bg-white/90 shadow-md flex items-center justify-center text-gray-600 hover:bg-white transition select-none"
             >
               <ChevronLeft size={18} />
             </button>
@@ -375,7 +413,7 @@ function GaleriaDesktop({ imagenes, onOpen }: { imagenes: ImagenGaleria[]; onOpe
               onPointerDown={e => e.stopPropagation()}
               onClick={goNext}
               style={{ touchAction: "manipulation" }}
-              className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-white/90 shadow-md flex items-center justify-center text-gray-600 hover:bg-white transition select-none"
+              className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-11 h-11 rounded-full bg-white/90 shadow-md flex items-center justify-center text-gray-600 hover:bg-white transition select-none"
             >
               <ChevronRight size={18} />
             </button>
@@ -395,6 +433,8 @@ function GaleriaDesktop({ imagenes, onOpen }: { imagenes: ImagenGaleria[]; onOpe
             <button
               key={i}
               onClick={() => setIdx(i)}
+              aria-label={`Mostrar imagen ${i + 1}`}
+              aria-current={i === idx ? "true" : undefined}
               className={`shrink-0 rounded-lg overflow-hidden transition-opacity ${
                 i === idx ? "ring-2 ring-slate-700 opacity-100" : "opacity-50 hover:opacity-80"
               }`}
@@ -419,24 +459,21 @@ function GaleriaViewer({ imagenes, idx, onChange, onClose }: {
   const goPrev = () => onChange((idx - 1 + total) % total);
   const goNext = () => onChange((idx + 1) % total);
 
+  // Escape lo resuelve el diálogo; aquí solo las flechas.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "ArrowLeft") goPrev();
       else if (e.key === "ArrowRight") goNext();
-      else if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [idx]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  return createPortal(
-    <div className="fixed inset-0 bg-black/95 z-[9999] flex items-center justify-center" onClick={onClose}>
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 text-white/60 text-sm tabular-nums select-none">
+  return (
+    <VisorImagen titulo={`Galería: imagen ${idx + 1} de ${total}`} onClose={onClose}>
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 text-white/70 text-sm tabular-nums select-none">
         {idx + 1} de {total}
       </div>
-      <button className="absolute top-4 right-4 text-white/70 hover:text-white transition" onClick={onClose}>
-        <X size={26} />
-      </button>
       <img
         src={imagenes[idx].url}
         alt={imagenes[idx].descripcion ?? ""}
@@ -447,22 +484,21 @@ function GaleriaViewer({ imagenes, idx, onChange, onClose }: {
         <>
           <button
             aria-label="Imagen anterior"
-            className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center text-white transition"
+            className="absolute left-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center text-white transition"
             onClick={e => { e.stopPropagation(); goPrev(); }}
           >
             <ChevronLeft size={20} />
           </button>
           <button
             aria-label="Imagen siguiente"
-            className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center text-white transition"
+            className="absolute right-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center text-white transition"
             onClick={e => { e.stopPropagation(); goNext(); }}
           >
             <ChevronRight size={20} />
           </button>
         </>
       )}
-    </div>,
-    document.body
+    </VisorImagen>
   );
 }
 
@@ -473,7 +509,7 @@ function ResenasSection({ resenas, promedio, total }: { resenas: ResenaPublica[]
       <div className="flex items-center gap-2 mb-3">
         <div className="flex gap-0.5">
           {[1,2,3,4,5].map((s) => (
-            <Star key={s} size={14} fill={promedio >= s ? "#C8A961" : "none"} stroke="#C8A961" strokeWidth={1.5} />
+            <Star key={s} size={14} strokeWidth={1.5} className={`text-rating ${promedio >= s ? "fill-rating" : "fill-none"}`} />
           ))}
         </div>
         <span className="text-sm font-semibold text-gray-700">{promedio.toFixed(1)}</span>
@@ -486,7 +522,7 @@ function ResenasSection({ resenas, promedio, total }: { resenas: ResenaPublica[]
               <span className="text-sm font-medium text-gray-800">{r.nombreCliente}</span>
               <div className="flex gap-0.5">
                 {[1,2,3,4,5].map((s) => (
-                  <Star key={s} size={11} fill={r.rating >= s ? "#C8A961" : "none"} stroke="#C8A961" strokeWidth={1.5} />
+                  <Star key={s} size={11} strokeWidth={1.5} className={`text-rating ${r.rating >= s ? "fill-rating" : "fill-none"}`} />
                 ))}
               </div>
             </div>
@@ -660,13 +696,6 @@ export default function BookingPage() {
     return () => { mountedRef.current = false; };
   }, []);
 
-  useEffect(() => {
-    if (!lightboxUrl) return;
-    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") setLightboxUrl(null); };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, [lightboxUrl]);
-
   const { data: negocio, isLoading, isError, error } = useQuery({
     queryKey: ["negocio", slug],
     queryFn: () => publicoApi.obtenerNegocio(slug!),
@@ -683,6 +712,15 @@ export default function BookingPage() {
     queryKey: ["intake-publico", slug, servicio?.id],
     queryFn: () => intakePublicoApi.getCampos(slug!, servicio?.id),
     enabled: !!slug && !!servicio,
+  });
+
+  // Las preguntas generales (sin servicio) se conocen desde el paso 1: así el total
+  // del indicador no salta de «1 de 4» a «1 de 5» al elegir un servicio. Solo puede
+  // cambiar si el negocio tiene preguntas exclusivas de algunos servicios.
+  const { data: camposIntakeGenerales = [] } = useQuery<CampoIntake[]>({
+    queryKey: ["intake-publico", slug, null],
+    queryFn: () => intakePublicoApi.getCampos(slug!),
+    enabled: !!slug && !servicio,
   });
 
   const hayIntake = camposIntake.length > 0;
@@ -715,6 +753,8 @@ export default function BookingPage() {
     // La confirmación de «Sí, soy yo» vive en el formulario del paso 4; al salir de él
     // se pierde, así que el padre tampoco debe darla por buena.
     if (pasoActual !== "4") setClienteReconocido(false);
+    // El aviso de «horario ya no disponible» solo vale en el paso 3 que lo provocó.
+    if (pasoActual !== "3") setErrorSlotTomado("");
   }
 
   // Corrige la URL cuando pide un paso que todavía no se puede mostrar.
@@ -996,16 +1036,99 @@ export default function BookingPage() {
   const mostrarFoto = !presetPortada && !!negocio.portadaUrl;
   const fondoDePortada = fondoPortada(presetPortada, color);
   const terms = getSectorTerms(negocio.sector);
-  const pasos = camposIntake.length > 0
+  // Mientras carga la consulta del servicio se mantiene el total que ya se mostraba.
+  const intakeEnIndicador = servicio && !cargandoIntake ? hayIntake : camposIntakeGenerales.length > 0;
+  const pasos = intakeEnIndicador
     ? ["Servicio", terms.empleado, "Fecha y hora", "Sobre ti", "Tus datos"]
     : ["Servicio", terms.empleado, "Fecha y hora", "Tus datos"];
-  const pasoIndicador = camposIntake.length > 0
+  const pasoIndicador = intakeEnIndicador
     ? mostrarIntake ? 4 : paso === 4 ? 5 : paso
     : paso;
 
   const textos = negocio.sector === 'salud'
     ? { cta: 'Agenda tu consulta', cita: 'consulta' }
     : { cta: 'Reserva tu cita',    cita: 'cita'     };
+
+  // Código de descuento: vive dentro del formulario del paso 4, justo antes del
+  // resumen, para que el total que se ve ya sea el que se paga. Sus botones son
+  // type="button" y Enter se intercepta para no enviar la cita por accidente.
+  const bloqueDescuento = (
+    <div>
+      {descuentoAplicado ? (
+        <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-xl pl-4 pr-1 py-1.5">
+          <div className="flex items-center gap-2 min-w-0">
+            <Tag size={15} className="text-green-600 shrink-0" />
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-green-700">
+                Código <span className="font-mono">{descuentoAplicado.codigo}</span> aplicado
+              </p>
+              <p className="text-xs text-green-700">
+                {descuentoAplicado.tipo === "Porcentaje"
+                  ? `${descuentoAplicado.valor}% de descuento`
+                  : `${formatPrecio(descuentoAplicado.valor)} de descuento`}
+                {servicio && ` — precio final: ${formatPrecio(precioConDescuento(servicio.precio, descuentoAplicado))}`}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setDescuentoAplicado(null)}
+            aria-label="Quitar código"
+            className="min-w-[44px] min-h-[44px] ml-1 shrink-0 rounded-lg flex items-center justify-center text-green-600 hover:text-green-800 transition"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      ) : mostrarCupon ? (
+        <div className="space-y-2">
+          <label htmlFor={idCupon} className="sr-only">Código de descuento</label>
+          <div className="flex gap-2">
+            <input
+              id={idCupon}
+              aria-invalid={!!errorCupon || undefined}
+              aria-describedby={errorCupon ? `${idCupon}-error` : undefined}
+              type="text"
+              value={codigoInput}
+              onChange={(e) => { setCodigoInput(e.target.value.toUpperCase()); setErrorCupon(""); }}
+              onKeyDown={(e) => {
+                if (e.key !== "Enter") return;
+                e.preventDefault();
+                validarCupon();
+              }}
+              placeholder="PROMO20"
+              maxLength={50}
+              className="flex-1 px-3 py-2 rounded-xl border border-slate-200 text-sm font-mono uppercase focus:outline-none focus:ring-2 focus:ring-slate-700/40 focus:border-slate-700 transition"
+            />
+            <button
+              type="button"
+              onClick={validarCupon}
+              disabled={validandoCupon || !codigoInput.trim()}
+              className="min-h-[44px] px-4 py-2 text-white text-sm font-semibold rounded-xl disabled:opacity-50 hover:opacity-90 transition"
+              style={{ background: colorCta }}
+            >
+              {validandoCupon ? "Aplicando…" : "Aplicar"}
+            </button>
+          </div>
+          {errorCupon && <p id={`${idCupon}-error`} className="text-red-600 text-xs">{errorCupon}</p>}
+          <button
+            type="button"
+            onClick={() => { setMostrarCupon(false); setCodigoInput(""); setErrorCupon(""); }}
+            className="min-h-[44px] px-1 text-sm text-slate-600 hover:text-slate-800 transition"
+          >
+            Cancelar
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setMostrarCupon(true)}
+          className="min-h-[44px] text-sm text-slate-600 font-medium hover:underline"
+        >
+          ¿Tienes un código de descuento?
+        </button>
+      )}
+    </div>
+  );
 
   const alMostrarPaso = (clave: ClavePaso) => {
     const anterior = ultimoPasoMostradoRef.current;
@@ -1113,7 +1236,8 @@ export default function BookingPage() {
           <button
             type="submit"
             form={ID_FORM_DATOS}
-            disabled={enviando || (!!negocio.politicasUrl && !politicasAceptadas)}
+            // Sin aceptar las políticas el botón sigue activo: el formulario explica qué falta.
+            disabled={enviando}
             className={`${BTN_PRIMARIO} flex-1`}
             style={{ background: colorCta }}
           >
@@ -1211,7 +1335,7 @@ export default function BookingPage() {
                   className="flex items-center gap-1 rounded-full px-2 py-0.5"
                   style={{ background: "rgba(12,12,15,0.38)" }}
                 >
-                  <Star size={9} fill="#F59E0B" stroke="#F59E0B" strokeWidth={0} />
+                  <Star size={9} strokeWidth={0} className="fill-rating text-rating" />
                   <span className="text-[10px] sm:text-xs" style={{ color: "rgba(255,255,255,0.86)" }}>
                     {(negocio.totalResenas ?? 0) > 0
                       ? (negocio.promedioResenas ?? 0).toFixed(1)
@@ -1241,7 +1365,7 @@ export default function BookingPage() {
       </div>
 
       {/* Tira de pasos — full width, fondo oscuro */}
-      <IndicadorPasos pasoActual={pasoIndicador} pasos={pasos} color={color} slug={negocio.slug} />
+      <IndicadorPasos pasoActual={pasoIndicador} pasos={pasos} slug={negocio.slug} />
 
       {/* Contenido */}
       <div className="lg:max-w-6xl lg:mx-auto lg:px-8 lg:flex lg:gap-8 lg:items-start lg:pt-8 lg:pb-12">
@@ -1282,6 +1406,12 @@ export default function BookingPage() {
                   ? (slot?.empleadoNombre ?? "Cualquier disponible")
                   : empleado.nombre}
               </span>
+            )}
+            {slot && paso >= 3 && (
+              <>
+                <span className="text-slate-300">›</span>
+                <span className="text-slate-600">{`${formatFechaCorta(slot.inicio)} · ${slot.horaTexto}`}</span>
+              </>
             )}
           </div>
         )}
@@ -1365,7 +1495,7 @@ export default function BookingPage() {
         {paso === 3 && servicio && empleado && !mostrarIntake && (
           <>
             {errorSlotTomado && (
-              <div className="mb-4 flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+              <div role="alert" className="mb-4 flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
                 <svg className="w-5 h-5 text-red-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
                 </svg>
@@ -1376,7 +1506,10 @@ export default function BookingPage() {
               servicioId={servicio.id}
               empleadoId={sinPreferencia ? null : empleado.id}
               seleccionado={slot}
-              onSeleccionar={setSlot}
+              onSeleccionar={(nuevo) => {
+                setSlot(nuevo);
+                setErrorSlotTomado("");
+              }}
               onLimpiarSlot={() => setSlot(null)}
               color={color}
               diasAnticipacionMinima={negocio.diasAnticipacionMinima}
@@ -1470,82 +1603,9 @@ export default function BookingPage() {
               error={errorEnvio || undefined}
               politicasUrl={negocio.politicasUrl || undefined}
               color={colorCta}
+              descuento={descuentoAplicado}
+              bloqueDescuento={bloqueDescuento}
             />
-
-            {/* Código de descuento — después del resumen para que el usuario vea el precio primero */}
-            <div className="mt-4">
-              {descuentoAplicado ? (
-                <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-xl px-4 py-3">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <Tag size={15} className="text-green-500 shrink-0" />
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-green-700">
-                        Código <span className="font-mono">{descuentoAplicado.codigo}</span> aplicado
-                      </p>
-                      <p className="text-xs text-green-600">
-                        {descuentoAplicado.tipo === "Porcentaje"
-                          ? `${descuentoAplicado.valor}% de descuento`
-                          : `$${descuentoAplicado.valor} de descuento`}
-                        {servicio && (
-                          <span>
-                            {" — precio final: $"}
-                            {descuentoAplicado.tipo === "Porcentaje"
-                              ? (servicio.precio * (1 - descuentoAplicado.valor / 100)).toFixed(2)
-                              : Math.max(0, servicio.precio - descuentoAplicado.valor).toFixed(2)}
-                          </span>
-                        )}
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setDescuentoAplicado(null)}
-                    className="text-green-500 hover:text-green-700 ml-3 shrink-0"
-                  >
-                    <X size={15} />
-                  </button>
-                </div>
-              ) : mostrarCupon ? (
-                <div className="space-y-2">
-                  <label htmlFor={idCupon} className="sr-only">Código de descuento</label>
-                  <div className="flex gap-2">
-                    <input
-                      id={idCupon}
-                      aria-invalid={!!errorCupon || undefined}
-                      aria-describedby={errorCupon ? `${idCupon}-error` : undefined}
-                      type="text"
-                      value={codigoInput}
-                      onChange={(e) => { setCodigoInput(e.target.value.toUpperCase()); setErrorCupon(""); }}
-                      onKeyDown={(e) => e.key === "Enter" && validarCupon()}
-                      placeholder="PROMO20"
-                      maxLength={50}
-                      className="flex-1 px-3 py-2 rounded-xl border border-slate-200 text-sm font-mono uppercase focus:outline-none focus:ring-2 focus:ring-slate-700/40 focus:border-slate-700 transition"
-                    />
-                    <button
-                      onClick={validarCupon}
-                      disabled={validandoCupon || !codigoInput.trim()}
-                      className="px-4 py-2 text-white text-sm font-semibold rounded-xl disabled:opacity-50 hover:opacity-90 transition"
-                      style={{ background: colorCta }}
-                    >
-                      {validandoCupon ? "Aplicando…" : "Aplicar"}
-                    </button>
-                  </div>
-                  {errorCupon && <p id={`${idCupon}-error`} className="text-red-500 text-xs">{errorCupon}</p>}
-                  <button
-                    onClick={() => { setMostrarCupon(false); setCodigoInput(""); setErrorCupon(""); }}
-                    className="text-xs text-slate-400 hover:text-slate-600 transition"
-                  >
-                    Cancelar
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => setMostrarCupon(true)}
-                  className="text-sm text-slate-500 font-medium hover:underline"
-                >
-                  ¿Tienes un código de descuento?
-                </button>
-              )}
-            </div>
           </>
         )}
 
@@ -1580,24 +1640,14 @@ export default function BookingPage() {
 
       {/* Lightbox logo */}
       {lightboxUrl && (
-        <div
-          className="fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-6"
-          onClick={() => setLightboxUrl(null)}
-        >
-          <button
-            className="absolute top-4 right-4 text-white/70 hover:text-white transition"
-            onClick={() => setLightboxUrl(null)}
-            aria-label="Cerrar"
-          >
-            <X size={28} />
-          </button>
+        <VisorImagen titulo={`Logo de ${negocio.nombre}`} onClose={() => setLightboxUrl(null)}>
           <img
             src={lightboxUrl}
             alt=""
             className="max-w-full max-h-[88vh] rounded-2xl object-contain shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           />
-        </div>
+        </VisorImagen>
       )}
     </div>
   );

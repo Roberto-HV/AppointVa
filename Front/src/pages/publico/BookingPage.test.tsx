@@ -87,8 +87,9 @@ vi.mock("../../components/booking/PasoFechaHora", () => ({
 }));
 
 vi.mock("../../components/booking/PasoDatosCliente", () => ({
-  default: ({ formId, onEnviar, onClienteReconocidoChange, valoresIniciales, onValoresChange }: {
+  default: ({ formId, onEnviar, onClienteReconocidoChange, valoresIniciales, onValoresChange, bloqueDescuento }: {
     formId: string;
+    bloqueDescuento?: React.ReactNode;
     onEnviar: (d: { nombreCliente: string; telefonoCliente: string }) => void;
     onClienteReconocidoChange?: (reconocido: boolean) => void;
     valoresIniciales?: { nombreCliente?: string };
@@ -111,13 +112,14 @@ vi.mock("../../components/booking/PasoDatosCliente", () => ({
       {/* Sustituyen al «Sí, soy yo» / «No, no soy yo» del paso real. */}
       <button type="button" onClick={() => onClienteReconocidoChange?.(true)}>stub-reconocer</button>
       <button type="button" onClick={() => onClienteReconocidoChange?.(false)}>stub-rechazar</button>
+      {bloqueDescuento}
     </form>
   ),
 }));
 
 vi.mock("../../components/booking/IndicadorPasos", () => ({
-  default: ({ pasoActual }: { pasoActual: number; pasos: string[] }) => (
-    <div data-testid="indicador-pasos" data-paso={String(pasoActual)} />
+  default: ({ pasoActual, pasos }: { pasoActual: number; pasos: string[] }) => (
+    <div data-testid="indicador-pasos" data-paso={String(pasoActual)} data-total={String(pasos.length)} />
   ),
 }));
 
@@ -148,6 +150,7 @@ vi.mock("../../lib/colorUtils", async (importOriginal) => ({
 // ── Test data ─────────────────────────────────────────────────────────────────
 import { publicoApi } from "../../api/publico";
 import { intakePublicoApi } from "../../api/intake";
+import { descuentosPublicoApi } from "../../api/descuentos";
 import { fondoPortada } from "../../lib/portadaPresets";
 
 const mockNegocio: NegocioPublico = {
@@ -657,5 +660,103 @@ describe("BookingPage — código de descuento", () => {
     await avanzarHastaPaso4();
     fireEvent.click(screen.getByRole("button", { name: /tienes un código de descuento/i }));
     expect(screen.getByLabelText("Código de descuento")).toHaveAttribute("placeholder", "PROMO20");
+  });
+
+  // BF-11: el código viaja al resumen del paso 4 y los montos usan el mismo formato.
+  it("aplica el código dentro del formulario, sin enviarlo, y formatea el precio final", async () => {
+    vi.mocked(descuentosPublicoApi.validar).mockResolvedValueOnce({
+      id: "d1", codigo: "PROMO20", tipo: "Porcentaje", valor: 20,
+    });
+    const form = await avanzarHastaPaso4();
+    fireEvent.click(screen.getByRole("button", { name: /tienes un código de descuento/i }));
+    const campo = screen.getByLabelText("Código de descuento");
+    expect(form.contains(campo)).toBe(true);
+    fireEvent.change(campo, { target: { value: "promo20" } });
+
+    fireEvent.keyDown(campo, { key: "Enter" });
+
+    expect(await screen.findByText(/precio final: \$120\.00/)).toBeInTheDocument();
+    expect(publicoApi.crearCita).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Quitar código" }));
+    expect(screen.queryByText(/precio final/)).not.toBeInTheDocument();
+  });
+});
+
+// ── BF-13: el aviso de horario tomado no se queda pegado ──────────────────────
+describe("BookingPage — aviso de horario ya no disponible", () => {
+  async function provocarHorarioTomado() {
+    const form = await avanzarHastaPaso4();
+    vi.mocked(publicoApi.crearCita).mockRejectedValueOnce({
+      response: { status: 409, data: { codigo: "HORARIO_NO_DISPONIBLE", mensaje: "Horario no disponible" } },
+    });
+    fireEvent.submit(form);
+    return screen.findByRole("alert");
+  }
+
+  it("se anuncia como alerta y desaparece al elegir otro horario", async () => {
+    expect(await provocarHorarioTomado()).toHaveTextContent(/ya no está disponible/i);
+
+    fireEvent.click(screen.getByRole("button", { name: "10:00" }));
+
+    expect(screen.queryByText(/ya no está disponible/i)).not.toBeInTheDocument();
+  });
+
+  it("desaparece al salir del paso 3", async () => {
+    await provocarHorarioTomado();
+
+    atras();
+    await screen.findByTestId("paso-empleado");
+    continuar();
+    await screen.findByTestId("paso-fecha-hora");
+
+    expect(screen.queryByText(/ya no está disponible/i)).not.toBeInTheDocument();
+  });
+});
+
+// ── BF-14: el botón de confirmar no se apaga sin explicar por qué ─────────────
+describe("BookingPage — políticas del negocio", () => {
+  it("deja «Confirmar cita» activo aunque falte aceptar las políticas", async () => {
+    vi.mocked(publicoApi.obtenerNegocio).mockResolvedValue({
+      ...mockNegocio,
+      politicasUrl: "https://cdn.test/politicas.png",
+    });
+    renderConQuery();
+    fireEvent.click(await screen.findByRole("button", { name: "Corte de cabello" }));
+    continuar();
+    fireEvent.click(await screen.findByRole("button", { name: "Ana García" }));
+    continuar();
+    fireEvent.click(await screen.findByRole("button", { name: "10:00" }));
+    continuar();
+    await screen.findByTestId("paso-datos-cliente");
+
+    expect(screen.getByRole("button", { name: "Confirmar cita" })).toBeEnabled();
+  });
+});
+
+// ── BF-10: el total de pasos no cambia a mitad del flujo ──────────────────────
+describe("BookingPage — total del indicador", () => {
+  it("con preguntas generales, el total ya es 5 desde el paso 1", async () => {
+    vi.mocked(intakePublicoApi.getCampos).mockResolvedValue([
+      { id: "c1", etiqueta: "¿Alergias?", tipo: "Texto", requerido: true, orden: 1 },
+    ]);
+    try {
+      vi.mocked(publicoApi.obtenerNegocio).mockResolvedValue(mockNegocio);
+      renderConQuery();
+      await waitFor(() => expect(screen.getByTestId("indicador-pasos")).toHaveAttribute("data-total", "5"));
+      expect(intakePublicoApi.getCampos).toHaveBeenCalledWith("salon-test");
+
+      fireEvent.click(screen.getByRole("button", { name: "Corte de cabello" }));
+      expect(screen.getByTestId("indicador-pasos")).toHaveAttribute("data-total", "5");
+    } finally {
+      vi.mocked(intakePublicoApi.getCampos).mockResolvedValue([]);
+    }
+  });
+});
+
+// ── BF-21: el horario elegido se ve en el resumen superior ────────────────────
+describe("BookingPage — resumen de la elección", () => {
+  it("muestra la fecha y hora elegidas en el paso 3 y siguientes", async () => {
+    await avanzarHastaPaso4();
+    expect(screen.getByText(/· 10:00$/)).toBeInTheDocument();
   });
 });

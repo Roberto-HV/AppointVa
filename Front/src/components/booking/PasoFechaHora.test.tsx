@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import PasoFechaHora from "./PasoFechaHora";
@@ -55,9 +55,8 @@ describe("PasoFechaHora", () => {
     vi.mocked(publicoApi.obtenerDisponibilidad).mockReturnValue(new Promise(() => {}));
     renderConQuery();
 
-    // Day buttons have no aria-label; nav buttons do. Enabled day buttons are not disabled.
     const dayButtons = screen.getAllByRole("button").filter(
-      (b) => !b.hasAttribute("disabled") && !b.getAttribute("aria-label")
+      (b) => b.hasAttribute("data-fecha") && !b.hasAttribute("disabled")
     );
     expect(dayButtons.length).toBeGreaterThan(0);
 
@@ -75,9 +74,9 @@ describe("PasoFechaHora — fecha local", () => {
     vi.unstubAllEnvs();
   });
 
-  /** Botón de día por su número visible (los de navegación llevan aria-label). */
+  /** Botón de día por su número de día del mes. */
   const botonDia = (numero: number) =>
-    screen.getAllByRole("button").find((b) => !b.getAttribute("aria-label") && b.textContent?.endsWith(String(numero)))!;
+    screen.getAllByRole("button").find((b) => b.getAttribute("data-fecha")?.endsWith(`-${numero}`))!;
 
   it("en México a las 19:00 marca y consulta el día de hoy, no el de mañana", () => {
     vi.stubEnv("TZ", "America/Mexico_City");
@@ -143,7 +142,7 @@ describe("PasoFechaHora — disponibilidad de la semana", () => {
   }
 
   const diaPorNumero = (n: number) =>
-    screen.getAllByRole("button").find((b) => !b.getAttribute("aria-label") && b.textContent === `${["Do","Lu","Ma","Mi","Ju","Vi","Sá"][new Date(2026, 9, n).getDay()]}${n}`)!;
+    screen.getAllByRole("button").find((b) => b.getAttribute("data-fecha") === `2026-10-${String(n).padStart(2, "0")}`)!;
 
   beforeEach(() => {
     // Martes 20 de octubre de 2026, 12:00 locales: la semana visible es lun 19 – dom 25.
@@ -203,5 +202,162 @@ describe("PasoFechaHora — disponibilidad de la semana", () => {
     renderConQuery();
     await screen.findByText("Sin disponibilidad esta semana");
     expect(screen.queryByRole("link")).not.toBeInTheDocument();
+  });
+});
+
+// ── Revisión: precarga sin reintentos, días con error y cambio de semana ──────
+describe("PasoFechaHora — precarga y errores por día", () => {
+  const slot = (fecha: string, hora = "10:00") => ({
+    inicio: `${fecha}T${hora}:00`,
+    fin: `${fecha}T${hora.slice(0, 2)}:30:00`,
+    horaTexto: hora,
+  });
+  const dia = (n: number) =>
+    screen.getAllByRole("button").find((b) => b.getAttribute("data-fecha") === `2026-10-${String(n).padStart(2, "0")}`)!;
+  const llamadasPara = (fecha: string) =>
+    vi.mocked(publicoApi.obtenerDisponibilidad).mock.calls.filter((c) => c[2] === fecha).length;
+  const errorDeRed = () => new Error("Network Error");
+  const RESERVABLES = [20, 21, 22, 23, 24, 25];
+
+  beforeEach(() => {
+    // Martes 20 de octubre de 2026: la semana visible es lun 19 – dom 25 (reservables 20 – 25).
+    vi.useFakeTimers({ toFake: ["Date"], now: new Date(2026, 9, 20, 12) });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("la precarga de la semana no reintenta: una sola petición por día que falla", async () => {
+    vi.mocked(publicoApi.obtenerDisponibilidad).mockRejectedValue(errorDeRed());
+    renderConQuery();
+
+    // Con los reintentos heredados (2 × 1 s) ningún día llegaría a «error» a tiempo.
+    await waitFor(() => {
+      for (const n of RESERVABLES) expect(dia(n)).toHaveAttribute("data-disponibilidad", "error");
+    });
+    for (const n of RESERVABLES) expect(llamadasPara(`2026-10-${n}`)).toBe(1);
+  });
+
+  it("el día elegido sí reintenta antes de darse por fallido", async () => {
+    let intentos = 0;
+    vi.mocked(publicoApi.obtenerDisponibilidad).mockImplementation(async (_s, _e, fecha) => {
+      if (fecha !== "2026-10-22") return [];
+      intentos += 1;
+      if (intentos === 1) throw errorDeRed();
+      return [slot(fecha)];
+    });
+    renderConQuery({ seleccionado: slot("2026-10-22") });
+
+    expect(await screen.findByRole("button", { name: "10:00" }, { timeout: 3000 })).toBeInTheDocument();
+    expect(intentos).toBe(2);
+  });
+
+  it("volver a una semana ya vista reutiliza la caché", async () => {
+    vi.mocked(publicoApi.obtenerDisponibilidad).mockResolvedValue([]);
+    renderConQuery();
+    await waitFor(() => expect(dia(22)).toHaveAttribute("data-disponibilidad", "sin-horarios"));
+
+    fireEvent.click(screen.getByRole("button", { name: "Semana siguiente" }));
+    await waitFor(() => expect(llamadasPara("2026-10-26")).toBe(1));
+    fireEvent.click(screen.getByRole("button", { name: "Semana anterior" }));
+
+    await waitFor(() => expect(dia(22)).toHaveAttribute("data-disponibilidad", "sin-horarios"));
+    expect(llamadasPara("2026-10-22")).toBe(1);
+  });
+
+  it("un día que falla no frena la apertura automática de los siguientes y se marca", async () => {
+    vi.mocked(publicoApi.obtenerDisponibilidad).mockImplementation(async (_s, _e, fecha) => {
+      if (fecha === "2026-10-21") throw errorDeRed();
+      return fecha === "2026-10-23" ? [slot(fecha)] : [];
+    });
+    renderConQuery();
+
+    expect(await screen.findByRole("button", { name: "10:00" })).toBeInTheDocument();
+    expect(dia(23)).toHaveAttribute("aria-pressed", "true");
+    expect(dia(21)).toHaveAttribute("data-disponibilidad", "error");
+    expect(dia(21)).toHaveAccessibleName(/no se pudo cargar; toca para reintentar/);
+    expect(screen.getByText(/No pudimos revisar algunos días/)).toBeInTheDocument();
+  });
+
+  it("espera a un día anterior que sigue cargando antes de abrir uno posterior", async () => {
+    vi.mocked(publicoApi.obtenerDisponibilidad).mockImplementation((_s, _e, fecha) =>
+      fecha === "2026-10-21" ? new Promise(() => {}) : Promise.resolve(fecha === "2026-10-23" ? [slot(fecha)] : [])
+    );
+    renderConQuery();
+
+    await waitFor(() => expect(dia(23)).toHaveAttribute("data-disponibilidad", "con-horarios"));
+    expect(dia(23)).toHaveAttribute("aria-pressed", "false");
+    expect(screen.queryByRole("button", { name: "10:00" })).not.toBeInTheDocument();
+  });
+
+  it("tocar un día que falló lo vuelve a pedir", async () => {
+    let fallar = true;
+    vi.mocked(publicoApi.obtenerDisponibilidad).mockImplementation(async (_s, _e, fecha) => {
+      if (fecha === "2026-10-21" && fallar) throw errorDeRed();
+      return fecha === "2026-10-21" ? [slot(fecha, "11:00")] : [];
+    });
+    renderConQuery();
+    await waitFor(() => expect(dia(21)).toHaveAttribute("data-disponibilidad", "error"));
+
+    fallar = false;
+    fireEvent.click(dia(21));
+
+    expect(await screen.findByRole("button", { name: "11:00" })).toBeInTheDocument();
+    expect(llamadasPara("2026-10-21")).toBe(2);
+  });
+});
+
+describe("PasoFechaHora — cambio de semana con un horario elegido", () => {
+  const elegido = { inicio: "2026-10-22T10:00:00", fin: "2026-10-22T10:30:00", horaTexto: "10:00" };
+
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"], now: new Date(2026, 9, 20, 12) });
+    vi.mocked(publicoApi.obtenerDisponibilidad).mockResolvedValue([elegido]);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("suelta el horario al pasar a otra semana para no continuar con uno invisible", () => {
+    const onLimpiarSlot = vi.fn();
+    renderConQuery({ seleccionado: elegido, onLimpiarSlot });
+
+    fireEvent.click(screen.getByRole("button", { name: "Semana siguiente" }));
+
+    expect(onLimpiarSlot).toHaveBeenCalledTimes(1);
+  });
+
+  it("sin horario elegido, cambiar de semana no avisa al padre", () => {
+    const onLimpiarSlot = vi.fn();
+    renderConQuery({ onLimpiarSlot });
+
+    fireEvent.click(screen.getByRole("button", { name: "Semana siguiente" }));
+
+    expect(onLimpiarSlot).not.toHaveBeenCalled();
+  });
+});
+
+// ── BF-22: estado y fecha completa para lectores de pantalla ──────────────────
+describe("PasoFechaHora — accesibilidad", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"], now: new Date(2026, 9, 20, 12) });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("cada día dice su fecha completa, si es hoy y si está elegido", async () => {
+    const elegido = { inicio: "2026-10-22T10:00:00", fin: "2026-10-22T10:30:00", horaTexto: "10:00" };
+    vi.mocked(publicoApi.obtenerDisponibilidad).mockResolvedValue([elegido]);
+    renderConQuery({ seleccionado: elegido });
+
+    expect(screen.getByRole("button", { name: /^martes 20 de octubre, hoy/ })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("button", { name: /^jueves 22 de octubre/ })).toHaveAttribute("aria-pressed", "true");
+
+    const grupo = await screen.findByRole("group", { name: "Mañana" });
+    expect(within(grupo).getByRole("button", { name: "10:00" })).toHaveAttribute("aria-pressed", "true");
   });
 });

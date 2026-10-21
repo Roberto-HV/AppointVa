@@ -1,26 +1,33 @@
-﻿import { useState, useRef, useEffect, useId } from "react";
+﻿import { useState, useRef, useEffect, useId, type ReactNode } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import type { ServicioPublico, EmpleadoPublico, SlotDisponible } from "../../types";
+import type { DescuentoValidado } from "../../api/descuentos";
 import { SIN_PREFERENCIA_ID } from "./PasoEmpleado";
 import { publicoApi } from "../../api/publico";
 import { formatPrecio, formatFechaLarga as formatFecha } from "../../utils/formatters";
+import { precioConDescuento } from "../../utils/descuentos";
 import { CalendarDays, User, Clock, Tag, Info, ChevronDown, ChevronUp, UserCheck, Check } from "lucide-react";
+
+/** Mínimo de dígitos de un teléfono; también es el mínimo con el que vale la pena consultar. */
+const DIGITOS_MINIMOS = 10;
+const MAX_NOTAS = 300;
+
+const soloDigitos = (valor: string) => valor.replace(/\D/g, "");
 
 const schema = z.object({
   nombreCliente: z.string().min(2, "Ingresa tu nombre completo"),
-  telefonoCliente: z.string().min(10, "Ingresa un teléfono válido de 10 dígitos").max(15).regex(/^\+?[\d\s\-().]+$/, "Solo dígitos, +, - o espacios"),
-  emailCliente: z.string().email("Correo inválido").optional().or(z.literal("")),
-  notas: z.string().max(300).optional(),
+  // Se cuentan dígitos, no caracteres: «12 34 56 7» tiene 10 caracteres pero solo 7 dígitos.
+  telefonoCliente: z.string()
+    .regex(/^\+?[\d\s\-().]+$/, "Solo dígitos, +, - o espacios")
+    .refine((v) => soloDigitos(v).length >= DIGITOS_MINIMOS, "Ingresa un teléfono válido de 10 dígitos")
+    .refine((v) => v.length <= 15, "Máximo 15 caracteres"),
+  emailCliente: z.string().email("Revisa el formato del correo (ej. nombre@correo.com)").optional().or(z.literal("")),
+  notas: z.string().max(MAX_NOTAS, `Máximo ${MAX_NOTAS} caracteres`).optional(),
 });
 
 export type DatosClienteForm = z.infer<typeof schema>;
-
-/** Mínimo de dígitos con el que vale la pena consultar; coincide con el mínimo del esquema. */
-const DIGITOS_MINIMOS = 10;
-
-const soloDigitos = (valor: string) => valor.replace(/\D/g, "");
 
 interface Props {
   servicio: ServicioPublico;
@@ -46,10 +53,24 @@ interface Props {
   error?: string;
   politicasUrl?: string;
   color?: string;
+  /** Código aplicado: el total del resumen ya lo descuenta. */
+  descuento?: DescuentoValidado | null;
+  /** Bloque del código de descuento; va justo antes del resumen, junto al total. */
+  bloqueDescuento?: ReactNode;
 }
 
-export default function PasoDatosCliente({ servicio, empleado, slot, formId, slug, politicasAceptadas, onPoliticasAceptadasChange, onEnviar, onClienteReconocidoChange, valoresIniciales, onValoresChange, notasLabel = 'Notas (opcional)', error, politicasUrl, color = "#334155" }: Props) {
+export default function PasoDatosCliente({ servicio, empleado, slot, formId, slug, politicasAceptadas, onPoliticasAceptadasChange, onEnviar, onClienteReconocidoChange, valoresIniciales, onValoresChange, notasLabel = 'Notas (opcional)', error, politicasUrl, color = "#334155", descuento, bloqueDescuento }: Props) {
   const [politicasAbiertas, setPoliticasAbiertas] = useState(false);
+  // El botón de envío vive en la barra fija; sin aceptar las políticas el envío se
+  // detiene aquí y explica por qué, en lugar de dejar un botón apagado sin motivo.
+  const [faltanPoliticas, setFaltanPoliticas] = useState(false);
+  const politicasRef = useRef<HTMLInputElement>(null);
+  const errorRef = useRef<HTMLDivElement>(null);
+
+  // Un error de envío aparece lejos del botón (que está en la barra de abajo): se trae a la vista.
+  useEffect(() => {
+    if (error) errorRef.current?.scrollIntoView?.({ block: "center", behavior: "smooth" });
+  }, [error]);
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<DatosClienteForm>({
     resolver: zodResolver(schema),
     mode: "onBlur",
@@ -66,7 +87,29 @@ export default function PasoDatosCliente({ servicio, empleado, slot, formId, slu
     email: `${idBase}-email`,
     emailMensaje: `${idBase}-email-mensaje`,
     notas: `${idBase}-notas`,
+    notasError: `${idBase}-notas-error`,
+    politicasError: `${idBase}-politicas-error`,
   };
+
+  const politicasPendientes = !!politicasUrl && !politicasAceptadas;
+  const avisarPoliticas = () => {
+    setFaltanPoliticas(true);
+    politicasRef.current?.scrollIntoView?.({ block: "center", behavior: "smooth" });
+    politicasRef.current?.focus({ preventScroll: true });
+  };
+  const enviar = handleSubmit(
+    (datos) => {
+      if (politicasPendientes) {
+        avisarPoliticas();
+        return;
+      }
+      onEnviar(datos);
+    },
+    // Con campos inválidos el foco va al primero; el aviso de políticas se marca igual.
+    () => { if (politicasPendientes) setFaltanPoliticas(true); }
+  );
+
+  const precioFinal = descuento ? precioConDescuento(servicio.precio, descuento) : servicio.precio;
 
   useEffect(() => {
     if (!onValoresChange) return;
@@ -153,7 +196,7 @@ export default function PasoDatosCliente({ servicio, empleado, slot, formId, slu
       <h2 tabIndex={-1} className="text-xl font-bold text-slate-900 mb-5 outline-none">Tus datos</h2>
 
       {/* handleSubmit pasa el evento como 2º argumento; se descarta para no filtrarlo al padre. */}
-      <form id={formId} onSubmit={handleSubmit((datos) => onEnviar(datos))} className="space-y-4">
+      <form id={formId} onSubmit={enviar} className="space-y-4">
         {/* El teléfono va primero: es la llave con la que reconocemos al cliente, y
             preguntarlo después del nombre haría inútil el autocompletado. */}
         <div>
@@ -196,7 +239,7 @@ export default function PasoDatosCliente({ servicio, empleado, slot, formId, slu
                   <button
                     type="button"
                     onClick={aceptarSugerencia}
-                    className="min-h-[40px] flex-1 rounded-xl px-3 text-sm font-semibold text-white transition hover:opacity-90"
+                    className="min-h-[44px] flex-1 rounded-xl px-3 text-sm font-semibold text-white transition hover:opacity-90"
                     style={{ background: color }}
                   >
                     Sí, soy yo
@@ -204,7 +247,7 @@ export default function PasoDatosCliente({ servicio, empleado, slot, formId, slu
                   <button
                     type="button"
                     onClick={rechazarSugerencia}
-                    className="min-h-[40px] flex-1 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-600 transition hover:border-slate-300"
+                    className="min-h-[44px] flex-1 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-600 transition hover:border-slate-300"
                   >
                     No, no soy yo
                   </button>
@@ -278,13 +321,19 @@ export default function PasoDatosCliente({ servicio, empleado, slot, formId, slu
             {...register("notas")}
             id={ids.notas}
             rows={2}
+            aria-invalid={!!errors.notas}
+            aria-describedby={errors.notas ? ids.notasError : undefined}
             placeholder="Alguna indicación especial..."
-            className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-slate-700/20 focus:border-slate-700 transition resize-none bg-white"
+            className={`w-full px-4 py-3 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-slate-700/20 focus:border-slate-700 transition resize-none bg-white
+              ${errors.notas ? "border-red-300 bg-red-50" : "border-slate-200"}`}
           />
+          {errors.notas && (
+            <p id={ids.notasError} className="text-red-600 text-xs mt-1.5">{errors.notas.message}</p>
+          )}
         </div>
 
         {error && (
-          <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+          <div ref={errorRef} role="alert" className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
             <svg className="w-5 h-5 text-red-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
             </svg>
@@ -316,17 +365,30 @@ export default function PasoDatosCliente({ servicio, empleado, slot, formId, slu
             )}
             <label className="flex items-start gap-3 px-4 py-3 border-t border-slate-100 cursor-pointer hover:bg-slate-50 transition">
               <input
+                ref={politicasRef}
                 type="checkbox"
                 checked={politicasAceptadas}
-                onChange={(e) => onPoliticasAceptadasChange(e.target.checked)}
+                aria-invalid={faltanPoliticas && !politicasAceptadas}
+                aria-describedby={faltanPoliticas && !politicasAceptadas ? ids.politicasError : undefined}
+                onChange={(e) => {
+                  onPoliticasAceptadasChange(e.target.checked);
+                  if (e.target.checked) setFaltanPoliticas(false);
+                }}
                 className="mt-0.5 accent-slate-700 w-4 h-4 shrink-0"
               />
               <span className="text-xs text-slate-600 leading-relaxed">
                 He leído y acepto las políticas del negocio
               </span>
             </label>
+            {faltanPoliticas && !politicasAceptadas && (
+              <p id={ids.politicasError} role="alert" className="px-4 pb-3 text-xs text-red-600">
+                Acepta las políticas del negocio para confirmar tu cita
+              </p>
+            )}
           </div>
         )}
+
+        {bloqueDescuento}
 
         {/* Resumen visual de la cita */}
         <div className="bg-slate-900 text-white rounded-2xl p-4">
@@ -361,7 +423,15 @@ export default function PasoDatosCliente({ servicio, empleado, slot, formId, slu
             </div>
             <div className="border-t border-white/10 pt-2.5 flex justify-between items-center">
               <span className="text-sm text-slate-400">Total a pagar</span>
-              <span className="text-lg font-bold text-white">{formatPrecio(servicio.precio)}</span>
+              <span className="flex items-baseline gap-2">
+                {descuento && (
+                  <s className="text-sm text-slate-400">
+                    <span className="sr-only">Precio original </span>
+                    {formatPrecio(servicio.precio)}
+                  </s>
+                )}
+                <span className="text-lg font-bold text-white">{formatPrecio(precioFinal)}</span>
+              </span>
             </div>
           </div>
         </div>
