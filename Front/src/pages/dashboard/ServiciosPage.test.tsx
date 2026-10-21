@@ -240,3 +240,64 @@ describe("ServiciosPage — tab Categorías", () => {
     );
   });
 });
+
+describe("ServiciosPage — precio y campos numéricos (OM-05)", () => {
+  function llenarNombre() {
+    const nombre = document.querySelector<HTMLInputElement>('input[name="nombre"]')!;
+    fireEvent.change(nombre, { target: { value: "Manicure" } });
+  }
+
+  it("acepta un precio con centavos ($149.90)", async () => {
+    vi.mocked(serviciosApi.obtenerTodos).mockResolvedValue([]);
+    vi.mocked(serviciosApi.crear).mockResolvedValue({} as never);
+    renderConQuery();
+    fireEvent.click(await screen.findByRole("button", { name: "+ Nuevo servicio" }));
+    await screen.findByRole("dialog", { name: "Nuevo servicio" });
+    llenarNombre();
+
+    const precio = screen.getByLabelText("Precio (MXN) *");
+    expect(precio).toHaveAttribute("step", "0.01");
+    fireEvent.change(precio, { target: { value: "149.90" } });
+    fireEvent.click(screen.getByRole("button", { name: "Crear servicio" }));
+
+    await waitFor(() => expect(serviciosApi.crear).toHaveBeenCalledTimes(1));
+    expect(vi.mocked(serviciosApi.crear).mock.calls[0][0]).toMatchObject({ nombre: "Manicure", precio: 149.9 });
+  });
+
+  it("muestra el mensaje de cada campo numérico inválido y no guarda", async () => {
+    vi.mocked(serviciosApi.obtenerTodos).mockResolvedValue([]);
+    renderConQuery();
+    fireEvent.click(await screen.findByRole("button", { name: "+ Nuevo servicio" }));
+    await screen.findByRole("dialog", { name: "Nuevo servicio" });
+    llenarNombre();
+
+    fireEvent.change(screen.getByLabelText("Duración (min) *"), { target: { value: "2" } });
+    fireEvent.change(screen.getByLabelText(/Buffer/), { target: { value: "500" } });
+    fireEvent.change(screen.getByLabelText("Precio (MXN) *"), { target: { value: "10.555" } });
+    fireEvent.change(screen.getByLabelText("Orden"), { target: { value: "0" } });
+    fireEvent.click(screen.getByRole("button", { name: "Crear servicio" }));
+
+    expect(await screen.findByText("Mínimo 5 minutos")).toBeInTheDocument();
+    expect(screen.getByText("Máximo 120 minutos")).toBeInTheDocument();
+    expect(screen.getByText("Usa como máximo dos decimales (centavos)")).toBeInTheDocument();
+    expect(screen.getByText("El orden empieza en 1")).toBeInTheDocument();
+    expect(screen.getByLabelText("Precio (MXN) *")).toHaveAttribute("aria-invalid", "true");
+    expect(serviciosApi.crear).not.toHaveBeenCalled();
+  });
+
+  it("el formulario no usa la validación nativa del navegador", async () => {
+    vi.mocked(serviciosApi.obtenerTodos).mockResolvedValue([]);
+    renderConQuery();
+    fireEvent.click(await screen.findByRole("button", { name: "+ Nuevo servicio" }));
+    const dialogo = await screen.findByRole("dialog", { name: "Nuevo servicio" });
+    expect(dialogo.querySelector("form")).toHaveAttribute("novalidate");
+  });
+});
+
+describe("ServiciosPage — imagen del servicio (OM-07)", () => {
+  it("cambiar la imagen es un botón con el nombre del servicio", async () => {
+    vi.mocked(serviciosApi.obtenerTodos).mockResolvedValue([mockServicio]);
+    renderConQuery();
+    expect(await screen.findByRole("button", { name: "Cambiar imagen de Corte de cabello" })).toBeInTheDocument();
+  });
+});

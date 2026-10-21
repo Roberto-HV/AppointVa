@@ -13,7 +13,7 @@ import { exportarExcel } from "../../utils/exportarExcel";
 import { hoy, inicioSemana, finSemana, inicioMes, finMes } from "../../utils/fechas";
 import Modal from "../../components/ui/Modal";
 import ConfirmarAccion from "../../components/ui/ConfirmarAccion";
-import { mensajeError } from "../../hooks/useMutacionesCita";
+import { mensajeError } from "../../utils/errores";
 import Tabs from "../../components/ui/Tabs";
 import EmptyState from "../../components/ui/EmptyState";
 import Pagination from "../../components/ui/Pagination";
@@ -109,6 +109,8 @@ export default function PagosPage() {
   const [retiroConcepto,  setRetiroConcepto]  = useState('');
   const [retiroMonto,     setRetiroMonto]     = useState('');
   const [cierreGuardadoEn, setCierreGuardadoEn] = useState<string | null>(null);
+  // Se editó algo después del último guardado: "Cierre guardado" ya no es verdad.
+  const [cierreEditado, setCierreEditado] = useState(false);
   const [errorCierre,     setErrorCierre]     = useState('');
 
   // ── Sync metodoPago2 when metodoPago changes ───────────────────────────────
@@ -188,6 +190,7 @@ export default function PagosPage() {
     setCierreContado('');
     setRetiros([]);
     setCierreGuardadoEn(null);
+    setCierreEditado(false);
     setErrorCierre('');
   }, [corteDate]);
 
@@ -197,6 +200,7 @@ export default function PagosPage() {
       setCierreInicio(cierreData.efectivoInicial > 0 ? cierreData.efectivoInicial.toFixed(2) : '');
       setCierreContado(cierreData.efectivoContado > 0 ? cierreData.efectivoContado.toFixed(2) : '');
       setRetiros(cierreData.retiros ?? []);
+      setCierreEditado(false);
     }
   }, [cierreData]);
 
@@ -403,6 +407,7 @@ export default function PagosPage() {
       setCierreContado(data.efectivoContado.toFixed(2));
       setRetiros(data.retiros);
       setErrorCierre('');
+      setCierreEditado(false);
       setCierreGuardadoEn(data.cerradoEn ?? new Date().toISOString());
       qc.invalidateQueries({ queryKey: ['cierre-caja', corteDate] });
       toast("Cierre de caja guardado");
@@ -434,8 +439,7 @@ export default function PagosPage() {
       await pagosApi.enviarTicketEmail(citaPagada.id);
       toast("Ticket enviado al correo del cliente");
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje;
-      toast(msg ?? "El cliente no tiene correo registrado", "error");
+      toast(mensajeError(err, "El cliente no tiene correo registrado"), "error");
     } finally {
       setEnviandoEmail(false);
     }
@@ -880,7 +884,7 @@ export default function PagosPage() {
                   min="0"
                   step="0.01"
                   value={cierreInicio}
-                  onChange={e => setCierreInicio(e.target.value)}
+                  onChange={e => { setCierreInicio(e.target.value); setCierreEditado(true); }}
                   placeholder="0.00"
                   className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm"
                 />
@@ -902,7 +906,7 @@ export default function PagosPage() {
                   min="0"
                   step="0.01"
                   value={cierreContado}
-                  onChange={e => setCierreContado(e.target.value)}
+                  onChange={e => { setCierreContado(e.target.value); setCierreEditado(true); }}
                   placeholder="0.00"
                   className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm"
                 />
@@ -918,7 +922,7 @@ export default function PagosPage() {
                   <span className="text-sm font-mono">${r.monto.toFixed(2)}</span>
                   <button
                     type="button"
-                    onClick={() => setRetiros(prev => prev.filter((_, j) => j !== i))}
+                    onClick={() => { setRetiros(prev => prev.filter((_, j) => j !== i)); setCierreEditado(true); }}
                     aria-label={`Quitar retiro ${r.concepto}`}
                     className="w-11 h-11 lg:w-9 lg:h-9 inline-flex items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 hover:text-red-700 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
                   >
@@ -951,6 +955,7 @@ export default function PagosPage() {
                     const monto = parseFloat(retiroMonto);
                     if (retiroConcepto.trim() && monto > 0) {
                       setRetiros(prev => [...prev, { concepto: retiroConcepto.trim(), monto }]);
+                      setCierreEditado(true);
                       setRetiroConcepto('');
                       setRetiroMonto('');
                     }
@@ -1002,6 +1007,10 @@ export default function PagosPage() {
             {errorCierre ? (
               <p role="alert" className="text-sm text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2">
                 {errorCierre}
+              </p>
+            ) : cierreEditado ? (
+              <p role="status" className="text-sm text-amber-700 dark:text-amber-400">
+                {cierreGuardado ? "Cambios sin guardar en el cierre." : "Cierre sin guardar."}
               </p>
             ) : cierreGuardado ? (
               <p role="status" className="text-sm text-emerald-700 dark:text-emerald-300 flex items-center gap-1.5">

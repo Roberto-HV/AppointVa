@@ -562,4 +562,42 @@ describe("anticipo badge y botón", () => {
       expect(citasApi.registrarAnticipo).toHaveBeenCalledWith("cita-anticipo", false)
     );
   });
+
+  // B1: registrar desde la hoja refresca todas las vistas y no se puede enviar dos veces.
+  it("registrar el anticipo invalida calendario y Gantt, y queda deshabilitado mientras se envía", async () => {
+    let resolver: (v: unknown) => void = () => {};
+    vi.mocked(citasApi.registrarAnticipo).mockReturnValue(new Promise((r) => { resolver = r; }) as never);
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const invalidar = vi.spyOn(qc, "invalidateQueries");
+    vi.mocked(citasApi.obtenerTodas).mockResolvedValue({
+      datos: [{ ...baseCita, anticipoRequerido: true, anticipoRecibido: false, montoAnticipo: 50 }],
+      total: 1, pagina: 1, tamano: 200,
+    });
+    render(
+      <MemoryRouter>
+        <QueryClientProvider client={qc}>
+          <CitasPage />
+        </QueryClientProvider>
+      </MemoryRouter>
+    );
+
+    const abrirHoja = () => fireEvent.click(screen.getByRole("button", { name: "Acciones de la cita de Luis Pérez" }));
+    await screen.findByRole("button", { name: "Acciones de la cita de Luis Pérez" });
+    abrirHoja();
+    fireEvent.click(await screen.findByRole("button", { name: /Registrar anticipo de \$50/ }));
+    await waitFor(() => expect(citasApi.registrarAnticipo).toHaveBeenCalledTimes(1));
+
+    // Con la petición en curso, la hoja reabierta muestra la acción deshabilitada.
+    abrirHoja();
+    const enCurso = await screen.findByRole("button", { name: "Registrando anticipo…" });
+    expect(enCurso).toBeDisabled();
+    fireEvent.click(enCurso);
+    expect(citasApi.registrarAnticipo).toHaveBeenCalledTimes(1);
+
+    resolver({});
+    await waitFor(() => {
+      const claves = invalidar.mock.calls.map(([f]) => (f as { queryKey?: unknown[] })?.queryKey?.[0]);
+      expect(claves).toEqual(expect.arrayContaining(["citas", "citas-cal", "citas-gantt", "dashboard-resumen"]));
+    });
+  });
 });

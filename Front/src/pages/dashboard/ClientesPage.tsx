@@ -19,6 +19,7 @@ import BotonAccion from "../../components/ui/BotonAccion";
 import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
 import { FiltroBarra } from "../../components/ui/filtros";
 import { TAMANO_PAGINA } from "../../hooks/usePaginacionLocal";
+import { useConfirmarDescarte } from "../../hooks/useCambiosSinGuardar";
 
 type TabClientes = "todos" | "activos" | "inactivos";
 const TAMANO = TAMANO_PAGINA;
@@ -141,6 +142,10 @@ export default function ClientesPage() {
     onError: () => toast("No se pudieron guardar las notas. Intenta de nuevo.", "error"),
   });
 
+  // Notas sin guardar (alergias, preferencias): se pregunta antes de cerrar.
+  const descarte = useConfirmarDescarte();
+  const notasSinGuardar = !!clienteSel && notas !== (clienteSel.notas ?? "");
+
   const abrirCliente = (c: ClienteDto) => {
     setClienteSel(c);
     setNotas(c.notas ?? "");
@@ -184,7 +189,7 @@ export default function ClientesPage() {
               >
                 Exportar Excel
               </BotonAccion>
-              <span className="text-[10px] text-amber-500 dark:text-amber-400">
+              <span className="text-xs font-medium text-amber-800 dark:text-amber-300">
                 Solo esta página: {clientes.length} de {totalClientes}
               </span>
             </div>
@@ -393,7 +398,37 @@ export default function ClientesPage() {
       ) : (
         <>
           <p className="text-xs text-gray-400 mb-3 dark:text-gray-500">{totalClientes} {totalClientes !== 1 ? terms.clientes.toLowerCase() : terms.cliente.toLowerCase()}</p>
-          <div className="bg-white rounded-xl border border-gray-100 overflow-x-auto dark:bg-slate-800 dark:border-slate-700">
+          {/* Teléfono: tarjetas apiladas; toda la tarjeta abre el detalle. La tabla
+              de abajo dejaba "Ver detalle" fuera de la pantalla a 375 px. */}
+          <ul className="sm:hidden bg-white rounded-xl border border-gray-100 divide-y divide-gray-100 dark:bg-slate-800 dark:border-slate-700 dark:divide-slate-700" aria-label={terms.clientes}>
+            {clientes.map((c) => (
+              <li key={c.id}>
+                <button
+                  type="button"
+                  onClick={() => abrirCliente(c)}
+                  aria-label={`Ver detalle de ${c.nombreCompleto}`}
+                  className="w-full min-h-[44px] flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-slate-700 transition
+                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+                >
+                  <span aria-hidden="true" className="w-9 h-9 rounded-full bg-muted flex items-center justify-center shrink-0 text-xs font-bold text-foreground">
+                    {c.nombreCompleto.charAt(0).toUpperCase()}
+                  </span>
+                  <span className="flex-1 min-w-0">
+                    <span className="block font-medium text-gray-800 dark:text-gray-200 truncate">{c.nombreCompleto}</span>
+                    <span className="block text-xs text-gray-500 dark:text-gray-400">{c.telefono}</span>
+                    <span className="block text-xs text-gray-500 dark:text-gray-400">
+                      {c.ultimaCitaEn ? `Última visita: ${formatFecha(c.ultimaCitaEn)}` : "Sin visitas"}
+                      {c.cantidadInasistencias > 0 && (
+                        <span className="text-red-600 dark:text-red-400">{` · ${c.cantidadInasistencias} inasistencia${c.cantidadInasistencias === 1 ? "" : "s"}`}</span>
+                      )}
+                    </span>
+                  </span>
+                  <Eye size={16} className="text-muted-foreground shrink-0" aria-hidden="true" />
+                </button>
+              </li>
+            ))}
+          </ul>
+          <div className="hidden sm:block bg-white rounded-xl border border-gray-100 overflow-x-auto dark:bg-slate-800 dark:border-slate-700">
             <table className="w-full text-sm min-w-[560px]">
               <thead>
                 <tr className="border-b border-gray-100 text-xs text-gray-400 uppercase tracking-wide dark:border-slate-700 dark:text-gray-500">
@@ -407,11 +442,17 @@ export default function ClientesPage() {
               </thead>
               <tbody>
                 {clientes.map((c) => (
-                  <tr key={c.id} className="border-b border-gray-50 hover:bg-gray-50 transition dark:border-slate-700 dark:hover:bg-slate-700">
+                  // Toda la fila abre el detalle con el ratón; el botón de la
+                  // última columna sigue siendo el camino para el teclado.
+                  <tr
+                    key={c.id}
+                    onClick={() => abrirCliente(c)}
+                    className="border-b border-gray-50 hover:bg-gray-50 transition cursor-pointer dark:border-slate-700 dark:hover:bg-slate-700"
+                  >
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-slate-700/10 flex items-center justify-center shrink-0">
-                          <span className="text-xs font-bold text-slate-700">
+                        <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0">
+                          <span className="text-xs font-bold text-foreground">
                             {c.nombreCompleto.charAt(0).toUpperCase()}
                           </span>
                         </div>
@@ -437,7 +478,7 @@ export default function ClientesPage() {
                     </td>
                     <td className="px-5 py-3 text-right">
                       <button
-                        onClick={() => abrirCliente(c)}
+                        onClick={(e) => { e.stopPropagation(); abrirCliente(c); }}
                         className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg bg-slate-700/10 text-slate-700 hover:bg-slate-700/20 dark:bg-slate-600/30 dark:text-slate-300 dark:hover:bg-slate-600/50 dark:border dark:border-slate-500 transition"
                       >
                         <Eye size={13} />
@@ -448,14 +489,17 @@ export default function ClientesPage() {
                 ))}
               </tbody>
             </table>
-          <Pagination
-            pagina={pagina}
-            totalPaginas={totalPaginas}
-            total={totalClientes}
-            labelTotal="clientes"
-            onCambiar={setPagina}
-            cargando={isLoading}
-          />
+          </div>
+          {/* Un solo paginador para las dos vistas (tarjetas y tabla). */}
+          <div className="mt-2 bg-white rounded-xl border border-gray-100 dark:bg-slate-800 dark:border-slate-700">
+            <Pagination
+              pagina={pagina}
+              totalPaginas={totalPaginas}
+              total={totalClientes}
+              labelTotal="clientes"
+              onCambiar={setPagina}
+              cargando={isLoading}
+            />
           </div>
         </>
       )}
@@ -465,7 +509,7 @@ export default function ClientesPage() {
       {/* Modal detalle cliente */}
       <Modal
         abierto={!!clienteSel}
-        onCerrar={() => setClienteSel(null)}
+        onCerrar={() => descarte.pedirCierre(notasSinGuardar, () => setClienteSel(null))}
         titulo={clienteSel?.nombreCompleto ?? ""}
       >
         {clienteSel && (
@@ -554,6 +598,7 @@ export default function ClientesPage() {
           </div>
         )}
       </Modal>
+      {descarte.dialogo}
     </div>
   );
 }

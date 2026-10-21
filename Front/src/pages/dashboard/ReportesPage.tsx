@@ -682,9 +682,12 @@ export default function ReportesPage() {
                               key={dia}
                               title={val > 0 ? `${val} ${val === 1 ? terms.cita.toLowerCase() : terms.citas.toLowerCase()}` : `Sin ${terms.citas.toLowerCase()}`}
                               className="h-7 rounded-md flex items-center justify-center text-xs font-medium cursor-default"
+                              // Escala sobre el color del texto del tema (oscuro en claro,
+                              // claro en oscuro): en dark mode el slate-700 fijo se perdía
+                              // sobre la tarjeta y las celdas vacías eran cuadros blancos.
                               style={{
-                                backgroundColor: val === 0 ? "#f1f5f9" : `rgba(51, 65, 85, ${alpha})`,
-                                color: intensity > 0.55 ? "#ffffff" : intensity > 0.2 ? "#1e293b" : "#94a3b8",
+                                backgroundColor: val === 0 ? "hsl(var(--muted))" : `hsl(var(--foreground) / ${alpha})`,
+                                color: intensity > 0.5 ? "hsl(var(--background))" : "hsl(var(--foreground))",
                               }}
                             >
                               {val > 0 ? val : ""}

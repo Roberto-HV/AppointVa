@@ -14,6 +14,7 @@ import { intakeApi } from "../../api/intake";
 import { useAuthStore } from "../../store/authStore";
 import { useSectorTerms } from "../../hooks/useSectorTerms";
 import { useCambiarEstadoCita, useReagendarCita } from "../../hooks/useMutacionesCita";
+import { citaAbierta } from "../../lib/estadoCita";
 import { hoy } from "../../utils/fechas";
 import { formatFechaHoraCorta } from "../../utils/formatters";
 import { urlRecordatorioWhatsApp } from "../../utils/whatsapp";
@@ -42,6 +43,8 @@ export interface AccionExtraCita {
   href?: string;
   /** Punto junto al icono (p. ej. "ya tiene nota"). */
   marcador?: boolean;
+  /** La acción no se puede usar ahora (p. ej. su petición sigue en curso). */
+  deshabilitada?: boolean;
 }
 
 export type VistaHoja = "menu" | "reagendar" | "completar" | "cancelar" | "inasistencia";
@@ -136,7 +139,7 @@ function HojaAbierta({
 
   const pendiente = cita.estadoTexto === "Pendiente";
   const confirmada = cita.estadoTexto === "Confirmada";
-  const abierta = pendiente || confirmada;
+  const abierta = citaAbierta(cita.estadoTexto);
 
   return (
     <Modal abierto onCerrar={onCerrar} titulo={titulos[vista]} ancho="sm">
@@ -220,7 +223,9 @@ function HojaAbierta({
                   key={a.id}
                   type="button"
                   className={ITEM_NORMAL}
-                  onClick={() => { onCerrar(); a.onSelect?.(); }}
+                  disabled={a.deshabilitada}
+                  aria-busy={a.deshabilitada || undefined}
+                  onClick={() => { if (a.deshabilitada) return; onCerrar(); a.onSelect?.(); }}
                 >
                   <span className="relative shrink-0">
                     <a.Icono size={17} className="text-muted-foreground" />

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -112,8 +112,9 @@ describe("ClientesPage — lista de clientes", () => {
       paginaCon([makeCliente()])
     );
     renderConQuery();
+    // Tarjeta (teléfono) y fila (desde sm): se muestra una u otra por CSS.
     await waitFor(() =>
-      expect(screen.getByText("Juan Pérez")).toBeInTheDocument()
+      expect(within(screen.getByRole("table")).getByText("Juan Pérez")).toBeInTheDocument()
     );
   });
 
@@ -123,7 +124,7 @@ describe("ClientesPage — lista de clientes", () => {
     );
     renderConQuery();
     await waitFor(() =>
-      expect(screen.getByText("5511223344")).toBeInTheDocument()
+      expect(within(screen.getByRole("table")).getByText("5511223344")).toBeInTheDocument()
     );
   });
 
@@ -534,5 +535,22 @@ describe("ClientesPage — error de API", () => {
     await waitFor(() =>
       expect(screen.getByText("Aún no hay clientes")).toBeInTheDocument()
     );
+  });
+});
+
+describe("ClientesPage — detalle desde el teléfono y la fila (OM-10)", () => {
+  it("en teléfono cada cliente es una tarjeta que abre el detalle", async () => {
+    vi.mocked(clientesApi.obtenerTodos).mockResolvedValue(paginaCon([makeCliente()]));
+    renderConQuery();
+    fireEvent.click(await screen.findByRole("button", { name: "Ver detalle de Juan Pérez" }));
+    expect(await screen.findByRole("dialog", { name: "Juan Pérez" })).toBeInTheDocument();
+  });
+
+  it("en escritorio toda la fila abre el detalle", async () => {
+    vi.mocked(clientesApi.obtenerTodos).mockResolvedValue(paginaCon([makeCliente()]));
+    renderConQuery();
+    const tabla = await screen.findByRole("table");
+    fireEvent.click(await within(tabla).findByText("juan@test.com"));
+    expect(await screen.findByRole("dialog", { name: "Juan Pérez" })).toBeInTheDocument();
   });
 });

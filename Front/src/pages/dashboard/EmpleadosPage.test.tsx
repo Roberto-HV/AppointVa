@@ -56,6 +56,7 @@ vi.mock("../../components/ui/Modal", () => ({
     abierto,
     titulo,
     children,
+    onCerrar,
   }: {
     abierto: boolean;
     titulo: string;
@@ -65,6 +66,11 @@ vi.mock("../../components/ui/Modal", () => ({
   }) =>
     abierto ? (
       <div role="dialog" aria-label={titulo}>
+        {onCerrar && (
+          <button type="button" onClick={onCerrar}>
+            Cerrar modal
+          </button>
+        )}
         {children}
       </div>
     ) : null,
@@ -91,6 +97,7 @@ vi.mock("../../components/ui/DateTimePicker", () => ({
 }));
 
 vi.mock("../../components/ui/Skeleton", () => ({
+  Skeleton: () => <div data-testid="skeleton" className="animate-pulse" />,
   SkeletonCards: ({ cantidad }: { cantidad: number }) => (
     <div data-testid="skeleton-cards">
       {Array.from({ length: cantidad }).map((_, i) => (
@@ -268,5 +275,117 @@ describe("EmpleadosPage — eliminar empleado", () => {
     await waitFor(() =>
       expect(vi.mocked(empleadosApi.eliminar)).toHaveBeenCalledWith("emp-1")
     );
+  });
+});
+
+describe("EmpleadosPage — horario del empleado (OM-01)", () => {
+  it("si el horario no carga, avisa, no muestra un horario por defecto y no deja guardar", async () => {
+    vi.mocked(empleadosApi.obtenerTodos).mockResolvedValue([mockEmpleado]);
+    vi.mocked(empleadosApi.obtenerHorario).mockRejectedValueOnce(new Error("red"));
+    renderConQuery();
+    await screen.findByText("María García");
+
+    fireEvent.click(screen.getByRole("button", { name: /Horarios/ }));
+    // El modal abre al instante, antes de que responda el servidor.
+    expect(screen.getByRole("dialog", { name: "Horarios — María García" })).toBeInTheDocument();
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("No se pudo cargar el horario");
+    expect(screen.queryByRole("switch")).not.toBeInTheDocument();
+    expect(screen.queryByText("Lunes")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Guardar horario" })).toBeDisabled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Guardar horario" }));
+    expect(empleadosApi.actualizarHorario).not.toHaveBeenCalled();
+  });
+
+  it("al reintentar con éxito muestra el horario real y permite guardarlo", async () => {
+    vi.mocked(empleadosApi.obtenerTodos).mockResolvedValue([mockEmpleado]);
+    vi.mocked(empleadosApi.obtenerHorario)
+      .mockRejectedValueOnce(new Error("red"))
+      .mockResolvedValueOnce([
+        { diaSemana: 1, activo: false, intervalos: [] },
+        { diaSemana: 2, activo: true, intervalos: [{ horaInicio: "10:00", horaFin: "14:00" }] },
+      ]);
+    vi.mocked(empleadosApi.actualizarHorario).mockResolvedValue(undefined as never);
+    renderConQuery();
+    await screen.findByText("María García");
+    fireEvent.click(screen.getByRole("button", { name: /Horarios/ }));
+
+    fireEvent.click(await screen.findByRole("button", { name: "Reintentar" }));
+
+    const lunes = await screen.findByRole("switch", { name: "Lunes" });
+    expect(lunes).toHaveAttribute("aria-checked", "false");
+    expect(screen.getByRole("switch", { name: "Martes" })).toHaveAttribute("aria-checked", "true");
+
+    const guardar = screen.getByRole("button", { name: "Guardar horario" });
+    expect(guardar).toBeEnabled();
+    fireEvent.click(guardar);
+    await waitFor(() => expect(empleadosApi.actualizarHorario).toHaveBeenCalledTimes(1));
+    const enviado = vi.mocked(empleadosApi.actualizarHorario).mock.calls[0][1];
+    expect(enviado.find((d) => d.diaSemana === 1)?.activo).toBe(false);
+    expect(enviado.find((d) => d.diaSemana === 2)?.intervalos).toEqual([{ horaInicio: "10:00", horaFin: "14:00" }]);
+  });
+
+  it("al cerrar sin cambios y reabrir el mismo empleado, vuelve a pedir el horario y deja editar", async () => {
+    vi.mocked(empleadosApi.obtenerTodos).mockResolvedValue([mockEmpleado]);
+    vi.mocked(empleadosApi.obtenerHorario).mockResolvedValue([
+      { diaSemana: 1, activo: true, intervalos: [{ horaInicio: "09:00", horaFin: "19:00" }] },
+    ]);
+    renderConQuery();
+    await screen.findByText("María García");
+
+    fireEvent.click(screen.getByRole("button", { name: /Horarios/ }));
+    await screen.findByRole("switch", { name: "Lunes" });
+    fireEvent.click(screen.getByRole("button", { name: "Cerrar modal" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole("button", { name: /Horarios/ }));
+    expect(await screen.findByRole("switch", { name: "Lunes" })).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByRole("button", { name: "Guardar horario" })).toBeEnabled();
+    expect(empleadosApi.obtenerHorario).toHaveBeenCalledTimes(2);
+  });
+
+  it("tras guardar y reabrir el mismo empleado con los mismos datos, deja editar", async () => {
+    vi.mocked(empleadosApi.obtenerTodos).mockResolvedValue([mockEmpleado]);
+    vi.mocked(empleadosApi.obtenerHorario).mockResolvedValue([
+      { diaSemana: 1, activo: true, intervalos: [{ horaInicio: "09:00", horaFin: "19:00" }] },
+    ]);
+    vi.mocked(empleadosApi.actualizarHorario).mockResolvedValue(undefined as never);
+    renderConQuery();
+    await screen.findByText("María García");
+
+    fireEvent.click(screen.getByRole("button", { name: /Horarios/ }));
+    await screen.findByRole("switch", { name: "Lunes" });
+    fireEvent.click(screen.getByRole("button", { name: "Guardar horario" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(empleadosApi.actualizarHorario).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole("button", { name: /Horarios/ }));
+    expect(await screen.findByRole("switch", { name: "Lunes" })).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByRole("button", { name: "Guardar horario" })).toBeEnabled();
+    expect(empleadosApi.obtenerHorario).toHaveBeenCalledTimes(2);
+  });
+
+  it("el día se abre y se cierra con el teclado", async () => {
+    vi.mocked(empleadosApi.obtenerTodos).mockResolvedValue([mockEmpleado]);
+    vi.mocked(empleadosApi.obtenerHorario).mockResolvedValue([
+      { diaSemana: 1, activo: true, intervalos: [{ horaInicio: "09:00", horaFin: "19:00" }] },
+    ]);
+    renderConQuery();
+    await screen.findByText("María García");
+    fireEvent.click(screen.getByRole("button", { name: /Horarios/ }));
+
+    const lunes = await screen.findByRole("switch", { name: "Lunes" });
+    lunes.focus();
+    await userEvent.keyboard(" ");
+    expect(lunes).toHaveAttribute("aria-checked", "false");
+  });
+});
+
+describe("EmpleadosPage — foto del empleado (OM-07)", () => {
+  it("el cambio de foto es un botón con nombre", async () => {
+    vi.mocked(empleadosApi.obtenerTodos).mockResolvedValue([mockEmpleado]);
+    renderConQuery();
+    expect(await screen.findByRole("button", { name: "Cambiar foto de María García" })).toBeInTheDocument();
   });
 });

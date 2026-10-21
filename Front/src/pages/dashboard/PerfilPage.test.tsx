@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor, within, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Link } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import PerfilPage from "./PerfilPage";
 import { negociosApi } from "../../api/negocios";
@@ -70,6 +70,9 @@ vi.mock("../../api/negocios", () => ({
     bloquearDia: vi.fn().mockResolvedValue({}),
     desbloquearDia: vi.fn().mockResolvedValue({}),
     actualizarHorarios: vi.fn().mockResolvedValue([]),
+    eliminarLogo: vi.fn().mockResolvedValue(undefined),
+    eliminarPortada: vi.fn().mockResolvedValue(undefined),
+    eliminarPoliticas: vi.fn().mockResolvedValue(undefined),
   },
 }));
 
@@ -335,5 +338,166 @@ describe("PerfilPage — 5 tabs", () => {
     await waitFor(() =>
       expect(screen.getByText(/zona de peligro/i)).toBeInTheDocument()
     );
+  });
+});
+
+function renderConEnlace(searchParams = "") {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(
+    <MemoryRouter initialEntries={[`/perfil${searchParams}`]}>
+      <QueryClientProvider client={qc}>
+        <Link to="/dashboard/citas">Ir a citas</Link>
+        <PerfilPage />
+      </QueryClientProvider>
+    </MemoryRouter>
+  );
+}
+
+describe("PerfilPage — interruptores accesibles (OM-02)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(negociosApi.obtenerPerfil).mockResolvedValue({ ...PERFIL_BASE } as never);
+  });
+
+  it("la confirmación automática es un switch con nombre que se cambia con el teclado y se guarda", async () => {
+    const user = userEvent.setup();
+    renderPerfilPage("?tab=citas");
+    const sw = await screen.findByRole("switch", { name: "Confirmación automática de citas" });
+    await waitFor(() => expect(sw).toHaveAttribute("aria-checked", "false"));
+
+    sw.focus();
+    await user.keyboard(" ");
+    expect(sw).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByRole("switch", { name: "Lista de espera" })).toHaveAttribute("aria-checked", "false");
+
+    await user.click(screen.getByRole("button", { name: "Guardar cambios" }));
+    await waitFor(() => expect(negociosApi.actualizarPerfil).toHaveBeenCalled());
+    expect(vi.mocked(negociosApi.actualizarPerfil).mock.calls[0][0]).toMatchObject({ autoConfirmar: true });
+  });
+
+  it("cada día del horario del negocio es un switch con el nombre del día", async () => {
+    const user = userEvent.setup();
+    vi.mocked(negociosApi.obtenerHorarios).mockResolvedValue([
+      { diaSemana: 1, activo: true, intervalos: [{ horaInicio: "09:00", horaFin: "18:00" }] },
+      { diaSemana: 0, activo: false, intervalos: [] },
+    ]);
+    renderPerfilPage("?tab=horarios");
+    const lunes = await screen.findByRole("switch", { name: "Lunes" });
+    expect(lunes).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByRole("button", { name: "Guardar horarios" })).toBeDisabled();
+
+    lunes.focus();
+    await user.keyboard("{Enter}");
+    expect(lunes).toHaveAttribute("aria-checked", "false");
+    expect(screen.getByRole("button", { name: "Guardar horarios" })).toBeEnabled();
+  });
+});
+
+describe("PerfilPage — cambios sin guardar (OM-03)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(negociosApi.obtenerPerfil).mockResolvedValue({ ...PERFIL_BASE } as never);
+    vi.mocked(negociosApi.obtenerHorarios).mockResolvedValue([]);
+  });
+
+  it("sin cambios, un enlace del menú no pregunta", async () => {
+    const user = userEvent.setup();
+    renderConEnlace();
+    await screen.findByDisplayValue("Salón Test");
+    await user.click(screen.getByRole("link", { name: "Ir a citas" }));
+    expect(screen.queryByText("¿Descartar cambios?")).not.toBeInTheDocument();
+  });
+
+  it("con un campo editado, un enlace del menú pide confirmar antes de salir", async () => {
+    const user = userEvent.setup();
+    renderConEnlace();
+    const nombre = await screen.findByDisplayValue("Salón Test");
+    await user.type(nombre, " Centro");
+    await user.click(screen.getByRole("link", { name: "Ir a citas" }));
+    expect(await screen.findByText("¿Descartar cambios?")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Seguir editando" }));
+    expect(screen.getByDisplayValue("Salón Test Centro")).toBeInTheDocument();
+  });
+
+  it("el color de marca sin guardar también cuenta como cambio", async () => {
+    const user = userEvent.setup();
+    renderConEnlace();
+    await screen.findByDisplayValue("Salón Test");
+    const hex = screen.getByLabelText("Color en hexadecimal");
+    await user.clear(hex);
+    await user.type(hex, "#123456");
+    await user.click(screen.getByRole("link", { name: "Ir a citas" }));
+    expect(await screen.findByText("¿Descartar cambios?")).toBeInTheDocument();
+  });
+});
+
+describe("PerfilPage — posición de la portada (OM-04)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(negociosApi.obtenerPerfil).mockResolvedValue({
+      ...PERFIL_BASE, portadaUrl: "https://cdn.test/portada.jpg", portadaObjectPosition: "50% 50%",
+    } as never);
+    HTMLElement.prototype.setPointerCapture = vi.fn();
+  });
+
+  it("al confirmar una nueva posición avisa que falta guardar y la envía con 'Guardar cambios'", async () => {
+    const user = userEvent.setup();
+    renderPerfilPage();
+    await user.click(await screen.findByRole("button", { name: "Posicionar" }));
+    const arrastre = screen.getByText("Arrastra para ajustar la posición").closest("div")!.previousElementSibling as HTMLElement;
+    fireEvent.pointerDown(arrastre, { clientX: 0, clientY: 0, pointerId: 1 });
+    fireEvent.pointerMove(arrastre, { clientX: 10, clientY: 10, pointerId: 1 });
+    fireEvent.pointerUp(arrastre, { pointerId: 1 });
+    await user.click(screen.getByRole("button", { name: "Confirmar" }));
+
+    expect(await screen.findByText(/Posición sin guardar/)).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Guardar cambios" }));
+    await waitFor(() => expect(negociosApi.actualizarPerfil).toHaveBeenCalled());
+    const enviado = vi.mocked(negociosApi.actualizarPerfil).mock.calls[0][0];
+    expect(enviado.portadaObjectPosition).not.toBe("50% 50%");
+    expect(enviado.portadaObjectPosition).toMatch(/^\d+(\.\d)?% \d+(\.\d)?%$/);
+  });
+});
+
+describe("PerfilPage — acciones públicas con confirmación (OM-11)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(negociosApi.obtenerPerfil).mockResolvedValue({
+      ...PERFIL_BASE, logoUrl: "https://cdn.test/logo.png",
+    } as never);
+  });
+
+  it("eliminar el logo pide confirmación y solo borra al confirmar", async () => {
+    const user = userEvent.setup();
+    renderPerfilPage();
+    await screen.findByAltText("Logo");
+    await user.click(screen.getByRole("button", { name: "Eliminar" }));
+    expect(await screen.findByRole("dialog", { name: "Eliminar logo" })).toBeInTheDocument();
+    expect(negociosApi.eliminarLogo).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole("button", { name: "Eliminar logo" }));
+    await waitFor(() => expect(negociosApi.eliminarLogo).toHaveBeenCalledTimes(1));
+  });
+});
+
+describe("PerfilPage — días sin atención usan la fecha local (DC-04 / B7)", () => {
+  afterEach(() => { vi.useRealTimers(); });
+
+  it("de noche hoy sigue siendo seleccionable y ayer no", async () => {
+    // Un instante en que la fecha local y la UTC no coinciden en la zona del runner.
+    const offset = new Date(2026, 9, 20).getTimezoneOffset();
+    const instante = new Date(2026, 9, 20, offset > 0 ? 22 : 1, 30);
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(instante);
+    vi.mocked(negociosApi.obtenerPerfil).mockResolvedValue({ ...PERFIL_BASE } as never);
+    vi.mocked(negociosApi.obtenerHorarios).mockResolvedValue([]);
+    vi.mocked(negociosApi.obtenerDiasBloqueados).mockResolvedValue([]);
+
+    renderPerfilPage("?tab=horarios");
+    fireEvent.click(await screen.findByRole("button", { name: "Fecha" }));
+    const calendario = await screen.findByRole("dialog", { name: /Calendario/ });
+    expect(within(calendario).getByRole("button", { name: "20" })).toBeEnabled();
+    expect(within(calendario).getByRole("button", { name: "19" })).toBeDisabled();
   });
 });

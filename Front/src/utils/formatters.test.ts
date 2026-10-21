@@ -7,6 +7,7 @@ import {
   formatFechaHora,
   formatFechaHoraResumen,
   formatFechaHoraCompleta,
+  formatFechaMx,
 } from "./formatters";
 
 describe("formatPrecio", () => {
@@ -129,5 +130,15 @@ describe("formatFechaHoraCompleta", () => {
 
   it("contiene el año", () => {
     expect(formatFechaHoraCompleta("2026-06-15T09:00:00")).toContain("2026");
+  });
+});
+
+describe("formatFechaMx", () => {
+  it("da día/mes/año con ceros, en hora local", () => {
+    expect(formatFechaMx("2026-06-05T23:30:00")).toBe("05/06/2026");
+  });
+
+  it("devuelve un guion con una fecha inválida", () => {
+    expect(formatFechaMx("no-es-fecha")).toBe("—");
   });
 });

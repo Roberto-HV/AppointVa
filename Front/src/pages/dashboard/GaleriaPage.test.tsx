@@ -160,9 +160,7 @@ describe("GaleriaPage — confirmar eliminación", () => {
     fireEvent.click(trashBtn);
 
     // Modal confirm button identified by its text content (not the icon-only trash btn)
-    const confirmBtn = await screen.findByText("Eliminar", {
-      selector: "button",
-    });
+    const confirmBtn = await screen.findByRole("button", { name: "Eliminar foto" });
     fireEvent.click(confirmBtn);
 
     await waitFor(() =>
@@ -179,9 +177,21 @@ describe("GaleriaPage — cancelar eliminación", () => {
     const trashBtn = await screen.findByTitle("Eliminar");
     fireEvent.click(trashBtn);
 
-    const cancelBtn = await screen.findByRole("button", { name: "Cancelar" });
+    const cancelBtn = await screen.findByRole("button", { name: "Volver" });
     fireEvent.click(cancelBtn);
 
     expect(negociosApi.eliminarImagenGaleria).not.toHaveBeenCalled();
+  });
+});
+
+describe("GaleriaPage — acciones sin hover (OM-07)", () => {
+  it("cada foto tiene botones con nombre para ampliar y eliminar", async () => {
+    vi.mocked(negociosApi.obtenerGaleria).mockResolvedValue([makeImagen()]);
+    renderConQuery();
+    expect(await screen.findByRole("button", { name: "Ver foto 1 ampliada" })).toBeInTheDocument();
+    const eliminar = screen.getByRole("button", { name: "Eliminar foto 1" });
+    // Visible por defecto: solo se oculta donde hay hover real.
+    expect(eliminar.className).toMatch(/(^|\s)opacity-100(\s|$)/);
+    expect(eliminar.className).toContain("focus-visible:opacity-100");
   });
 });

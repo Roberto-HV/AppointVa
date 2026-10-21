@@ -159,7 +159,6 @@ describe("IntakePage — lista de campos", () => {
 
 describe("IntakePage — eliminar campo", () => {
   it("llama a intakeApi.eliminarCampo cuando el usuario confirma", async () => {
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     vi.mocked(intakeApi.getCampos).mockResolvedValue([makeCampo()]);
 
     renderConQuery();
@@ -168,6 +167,8 @@ describe("IntakePage — eliminar campo", () => {
     // Buttons: [0] Nueva pregunta, [1] Editar, [2] Eliminar
     const buttons = screen.getAllByRole("button");
     fireEvent.click(buttons[buttons.length - 1]);
+    expect(intakeApi.eliminarCampo).not.toHaveBeenCalled();
+    fireEvent.click(await screen.findByRole("button", { name: "Eliminar pregunta" }));
 
     await waitFor(() => {
       expect(intakeApi.eliminarCampo).toHaveBeenCalledWith("1");

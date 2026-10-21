@@ -23,7 +23,7 @@ import Pagination from "../../components/ui/Pagination";
 import { FiltroBarra } from "../../components/ui/filtros";
 import { usePaginacionLocal } from "../../hooks/usePaginacionLocal";
 import { useToastStore } from "../../store/toastStore";
-import { formatPrecio, toUtcDate } from "../../utils/formatters";
+import { formatFechaMx, formatPrecio } from "../../utils/formatters";
 import { generarHTMLComprobante } from "../../utils/comprobanteSuscripcion";
 
 // ── Constants ──────────────────────────────────────────────────────────────
@@ -125,12 +125,6 @@ const schemaPropietario = z.object({
 type PropietarioForm = z.infer<typeof schemaPropietario>;
 
 // ── Helpers ────────────────────────────────────────────────────────────────
-function formatFechaMx(iso: string) {
-  return toUtcDate(iso).toLocaleDateString("es-MX", {
-    day: "2-digit", month: "2-digit", year: "numeric",
-  });
-}
-
 function imprimirComprobante(pago: PagoSuscripcionDto) {
   const w = window.open("", "_blank", "width=640,height=820");
   if (!w) return;
@@ -1453,7 +1447,7 @@ export default function NegociosAdminPage() {
                           {(s.diasRestantes ?? 0) >= DIAS_DE_POR_VIDA
                             ? 'De por vida'
                             : s.fechaVencimiento
-                            ? toUtcDate(s.fechaVencimiento).toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' })
+                            ? formatFechaMx(s.fechaVencimiento)
                             : '—'}
                         </td>
                         <td className="px-4 py-3 text-center">

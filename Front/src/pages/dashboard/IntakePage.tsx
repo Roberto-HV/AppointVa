@@ -7,6 +7,8 @@ import { useToastStore } from "../../store/toastStore";
 import Modal from "../../components/ui/Modal";
 import BotonAccion from "../../components/ui/BotonAccion";
 import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
+import ConfirmarAccion from "../../components/ui/ConfirmarAccion";
+import { useConfirmarDescarte } from "../../hooks/useCambiosSinGuardar";
 
 const TIPOS = [
   { value: "Texto", label: "Texto corto" },
@@ -89,10 +91,19 @@ export default function IntakePage() {
     mutationFn: (id: string) => intakeApi.eliminarCampo(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["intake-campos"] });
+      setCampoEliminar(null);
       toast("Campo eliminado");
     },
     onError: () => toast("No se pudo eliminar el campo. Intenta de nuevo.", "error"),
   });
+
+  const [campoEliminar, setCampoEliminar] = useState<CampoIntake | null>(null);
+  const descarte = useConfirmarDescarte();
+  // Lo que había al abrir el modal, para preguntar antes de perder lo escrito.
+  const formularioInicial: FormState = editando
+    ? { etiqueta: editando.etiqueta, tipo: editando.tipo, opciones: editando.opciones ?? "", requerido: editando.requerido, servicioIds: editando.servicioIds ?? [] }
+    : EMPTY;
+  const formularioSucio = showForm && JSON.stringify(form) !== JSON.stringify(formularioInicial);
 
   function abrirCrear() {
     setEditando(null);
@@ -140,7 +151,7 @@ export default function IntakePage() {
       {/* Form modal */}
       <Modal
         abierto={showForm}
-        onCerrar={() => { setShowForm(false); setEditando(null); }}
+        onCerrar={() => descarte.pedirCierre(formularioSucio, () => { setShowForm(false); setEditando(null); })}
         titulo={editando ? "Editar pregunta" : "Nueva pregunta"}
       >
         <div className="space-y-4">
@@ -262,10 +273,7 @@ export default function IntakePage() {
               campo={campo}
               orden={idx + 1}
               onEditar={() => abrirEditar(campo)}
-              onEliminar={() => {
-                if (confirm("¿Eliminar esta pregunta?"))
-                  mutEliminar.mutate(campo.id);
-              }}
+              onEliminar={() => setCampoEliminar(campo)}
             />
           ))}
         </div>
@@ -276,6 +284,20 @@ export default function IntakePage() {
           {campos.length} pregunta{campos.length !== 1 ? "s" : ""} — aparecen en el formulario de reserva en orden mostrado
         </p>
       )}
+
+      <ConfirmarAccion
+        abierto={!!campoEliminar}
+        titulo="Eliminar pregunta"
+        mensaje={campoEliminar && (
+          <p>{`"${campoEliminar.etiqueta}" dejará de mostrarse en el formulario de reserva.`}</p>
+        )}
+        etiquetaConfirmar="Eliminar pregunta"
+        destructiva
+        pendiente={mutEliminar.isPending}
+        onConfirmar={() => campoEliminar && mutEliminar.mutate(campoEliminar.id)}
+        onCerrar={() => setCampoEliminar(null)}
+      />
+      {descarte.dialogo}
     </div>
   );
 }

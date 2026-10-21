@@ -98,22 +98,22 @@ describe("ListaEsperaPage — filtro de estado", () => {
 });
 
 describe("ListaEsperaPage — visibilidad de acciones", () => {
-  it("muestra 'Notificar' cuando estado es Esperando", async () => {
+  it("muestra 'Marcar como avisado' cuando estado es Esperando", async () => {
     vi.mocked(listaEsperaApi.obtener).mockResolvedValue([
       makeEntrada({ estado: "Esperando" }),
     ]);
     renderConQuery();
-    await screen.findByTitle("Marcar como notificado");
+    await screen.findByRole("button", { name: /Marcar como avisado/ });
   });
 
-  it("no muestra 'Notificar' cuando estado es Notificado", async () => {
+  it("no muestra 'Marcar como avisado' cuando estado es Notificado", async () => {
     vi.mocked(listaEsperaApi.obtener).mockResolvedValue([
       makeEntrada({ estado: "Notificado" }),
     ]);
     renderConQuery();
     // wait for the card to render (Confirmar is present for Notificado)
     await screen.findByTitle("Marcar como confirmado");
-    expect(screen.queryByTitle("Marcar como notificado")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Marcar como avisado/ })).not.toBeInTheDocument();
   });
 
   it("muestra 'Confirmar' cuando estado es Notificado", async () => {
@@ -126,12 +126,12 @@ describe("ListaEsperaPage — visibilidad de acciones", () => {
 });
 
 describe("ListaEsperaPage — cambio de estado", () => {
-  it("llama a cambiarEstado con 'Notificado' al hacer clic en Notificar", async () => {
+  it("llama a cambiarEstado con 'Notificado' al hacer clic en 'Marcar como avisado'", async () => {
     vi.mocked(listaEsperaApi.obtener).mockResolvedValue([
       makeEntrada({ id: "ent-1", estado: "Esperando" }),
     ]);
     renderConQuery();
-    fireEvent.click(await screen.findByTitle("Marcar como notificado"));
+    fireEvent.click(await screen.findByRole("button", { name: /Marcar como avisado/ }));
     await waitFor(() => {
       expect(listaEsperaApi.cambiarEstado).toHaveBeenCalledWith("ent-1", "Notificado");
     });
@@ -140,26 +140,36 @@ describe("ListaEsperaPage — cambio de estado", () => {
 
 describe("ListaEsperaPage — eliminar entrada", () => {
   it("llama a eliminar cuando el usuario confirma", async () => {
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     vi.mocked(listaEsperaApi.obtener).mockResolvedValue([
       makeEntrada({ id: "ent-1" }),
     ]);
     renderConQuery();
     fireEvent.click(await screen.findByTitle("Eliminar"));
+    fireEvent.click(await screen.findByRole("button", { name: "Eliminar entrada" }));
     await waitFor(() => {
       expect(listaEsperaApi.eliminar).toHaveBeenCalledWith("ent-1");
     });
   });
 
   it("no llama a eliminar cuando el usuario cancela", async () => {
-    vi.spyOn(window, "confirm").mockReturnValue(false);
     vi.mocked(listaEsperaApi.obtener).mockResolvedValue([
       makeEntrada({ id: "ent-1" }),
     ]);
     renderConQuery();
     fireEvent.click(await screen.findByTitle("Eliminar"));
+    fireEvent.click(await screen.findByRole("button", { name: "Volver" }));
     await waitFor(() => {
       expect(listaEsperaApi.eliminar).not.toHaveBeenCalled();
     });
+  });
+});
+
+describe("ListaEsperaPage — el botón dice lo que hace (OM-06)", () => {
+  it("aclara que solo registra el aviso y no envía mensajes", async () => {
+    vi.mocked(listaEsperaApi.obtener).mockResolvedValue([makeEntrada({ estado: "Esperando" })]);
+    renderConQuery();
+    const boton = await screen.findByRole("button", { name: /Marcar como avisado/ });
+    expect(boton).toHaveAttribute("title", expect.stringContaining("No envía ningún mensaje"));
+    expect(screen.queryByRole("button", { name: /^Notificar$/ })).not.toBeInTheDocument();
   });
 });

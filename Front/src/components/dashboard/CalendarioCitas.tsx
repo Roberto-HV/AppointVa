@@ -5,8 +5,8 @@ import { citasApi } from "../../api/citas";
 import type { CitaDto } from "../../types";
 import { toUtcDate } from "../../utils/formatters";
 import { fechaLocal } from "../../utils/fechas";
-import { ESTADO_CITA, ESTADOS_CITA, estiloEstadoCita } from "../../lib/estadoCita";
-import { asignarCarriles, rangoHoras, type Carril } from "../../lib/carrilesCitas";
+import { ESTADO_CITA, ESTADOS_CITA, citaAbierta, estiloEstadoCita } from "../../lib/estadoCita";
+import { asignarCarriles, dentroDelRango, rangoHoras, type Carril } from "../../lib/carrilesCitas";
 
 const PX_POR_HORA = 64;
 
@@ -103,13 +103,16 @@ export default function CalendarioCitas({ empleadoId, onCitaClick, onReagendar }
   const NAV_BTN = "flex items-center gap-1.5 px-3 py-1.5 text-sm border border-gray-200 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-300 transition w-fit";
 
   // Citas que se solapan se dibujan lado a lado; cada una se puede tocar.
+  // Las canceladas e inasistencias no ocupan carril: van detrás (z-0) a todo el
+  // ancho y atenuadas; si caen fuera de las horas visibles no se dibujan.
   const renderGridCita = (c: CitaDto, carriles: Map<string, Carril>) => {
+    const { carril, carriles: totalCols, deFondo } = carriles.get(c.id) ?? { carril: 0, carriles: 1 };
+    if (deFondo && !dentroDelRango(c, { inicio: HORA_INICIO, fin: HORA_FIN })) return null;
     const top = calcTop(c);
     const height = calcAltura(c);
-    const { carril, carriles: totalCols } = carriles.get(c.id) ?? { carril: 0, carriles: 1 };
     const estilo = estiloEstadoCita(c.estadoTexto);
     const hora = new Date(c.inicioEn).toLocaleTimeString("es-MX", { hour: "numeric", minute: "2-digit", hour12: true });
-    const puedeMover = onReagendar && (c.estadoTexto === "Pendiente" || c.estadoTexto === "Confirmada");
+    const puedeMover = onReagendar && citaAbierta(c.estadoTexto);
     return (
       <button
         key={c.id}
@@ -125,6 +128,7 @@ export default function CalendarioCitas({ empleadoId, onCitaClick, onReagendar }
         className={`absolute rounded text-left px-1.5 py-0.5 text-xs overflow-hidden transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
           ${puedeMover ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"}
           ${arrastrando?.id === c.id ? "opacity-40" : "hover:brightness-95"}
+          ${deFondo ? "z-0 opacity-60 hover:opacity-100 focus-visible:opacity-100" : "z-10"}
           ${estilo.bloque}`}
         style={{
           top,

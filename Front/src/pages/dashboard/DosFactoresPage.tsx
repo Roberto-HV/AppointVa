@@ -5,6 +5,7 @@ import { Shield, ShieldCheck, ShieldOff } from "lucide-react";
 import { authApi } from "../../api/auth";
 import { useToastStore } from "../../store/toastStore";
 import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
+import { mensajeError } from "../../utils/errores";
 
 type Paso = "idle" | "configurando" | "activado";
 
@@ -37,8 +38,7 @@ export default function DosFactoresPage() {
     // Antes un fallo dejaba el botón en "Generando..." → "Activar" sin decir nada.
     onMutate: () => setErrorConfig(""),
     onError: (err: unknown) => {
-      const msg = (err as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje
-        ?? "No se pudo iniciar la configuración de 2FA. Intenta de nuevo.";
+      const msg = mensajeError(err, "No se pudo iniciar la configuración de 2FA. Intenta de nuevo.");
       setErrorConfig(msg);
       toast(msg, "error");
     },
@@ -52,8 +52,7 @@ export default function DosFactoresPage() {
       toast("Autenticación de dos factores activada");
     },
     onError: (err: unknown) => {
-      const msg = (err as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje ?? "Código incorrecto";
-      setErrorCodigo(msg);
+      setErrorCodigo(mensajeError(err, "Código incorrecto"));
     },
   });
 
@@ -68,8 +67,7 @@ export default function DosFactoresPage() {
       toast("Autenticación de dos factores desactivada");
     },
     onError: (err: unknown) => {
-      const msg = (err as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje ?? "Código incorrecto";
-      setErrorCodigo(msg);
+      setErrorCodigo(mensajeError(err, "Código incorrecto"));
     },
   });
 

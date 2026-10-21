@@ -1,7 +1,7 @@
 # Audit: Owner Management Screens (Propietario only)
 
 - **Date:** 2026-10-20
-- **Status:** Findings only. No code has been changed. Fixes wait for approval (see `CLAUDE.md` > Screen Audits).
+- **Status:** Severity-3 batch applied in the working tree (pending commit, **not verified in a rendered build**). OM-01, OM-02, OM-05, OM-07, OM-08, OM-10 fixed; OM-03, OM-04, OM-11 partially fixed; OM-06 and OM-09 open pending a decision (copy made honest). A few severity-2 items were partly fixed as a side effect. Each touched finding carries its own **Status** line. New shared pieces: `src/components/ui/Switch.tsx`, `src/components/ui/DialogoDescartarCambios.tsx`, `src/hooks/useCambiosSinGuardar.tsx`, `src/utils/errores.ts`.
 - **Type:** Code-based audit. **Nothing was rendered.** No browser, screenshots, emulated viewports or assistive technology were used. Contrast ratios are calculated from the Tailwind/hex values in the source. Layout, touch and dark-mode behavior are inferred from class names and the token definitions in `src/index.css` / `tailwind.config.js`. Two behaviors were confirmed against the backend source (`Back/AppointVaAPI`), noted where used. Verify visual findings in a running build, in light and dark mode, before fixing them.
 - **Companion audit:** `docs/audits/dashboard-core.md` (DC-xx). Shared root causes already reported there are referenced by ID, not re-reported. New locations of those issues are listed once in [New occurrences of Dashboard Core findings](#new-occurrences-of-dashboard-core-findings).
 
@@ -57,6 +57,7 @@ None found in code. The worst issues here lose data or block a subset of users (
 ## Severity 3: Major
 
 ### OM-01: Opening an employee's schedule can silently replace it with a default and overwrite it on save
+- **Status:** Fixed (pending commit) — the schedule modal opens at once and loads through `useQuery` (`horario-empleado`, `gcTime: 0`). While loading it shows skeletons; on error it shows "No se pudo cargar el horario" with "Reintentar", no days, and "Guardar horario" stays disabled. `HORARIO_BASE` is only used to fill days missing from a successful response (new employees). Save failures now use the error toast. Tests in `EmpleadosPage.test.tsx`.
 - **Heuristic:** H5 Error prevention; H1 Visibility of system status; H9 Error recovery
 - **Location:** `src/pages/dashboard/EmpleadosPage.tsx:206-219` (`abrirHorario`), `:38-42` (`HORARIO_BASE`), `:470-475` (Horarios button), `:255-259` (save)
 - **Evidence:** `abrirHorario` awaits `empleadosApi.obtenerHorario` before opening the modal, with no pending state on the button. If the request fails, the `catch` loads `HORARIO_BASE` (Mon–Sat 09:00–19:00) and opens the modal as if it were the employee's real schedule. Nothing says the load failed.
@@ -64,6 +65,7 @@ None found in code. The worst issues here lose data or block a subset of users (
 - **Fix:** Open the modal immediately with a skeleton; fetch with `useQuery` keyed by employee. On error show "No se pudo cargar el horario" with "Reintentar" and keep the save button disabled. Never fall back to defaults for an existing employee.
 
 ### OM-02: Toggle switches are clickable `div`s: business, employee-day, auto-confirm and waitlist settings cannot be changed by keyboard or screen reader
+- **Status:** Fixed (pending commit) — new `src/components/ui/Switch.tsx` (`<button role="switch" aria-checked>`, Space/Enter/arrows, 44px hit area, focus ring, `aria-labelledby`/`aria-describedby`); Radix Switch is not installed. Replaces the four `div` switches (auto-confirm, waitlist, business day, employee day); the day name still toggles. Tests in `Switch.test.tsx`, `PerfilPage.test.tsx`, `EmpleadosPage.test.tsx`.
 - **Heuristic:** WCAG 2.1.1 Keyboard, 4.1.2 Name/Role/Value; H7 Flexibility
 - **Location:** `src/pages/dashboard/PerfilPage.tsx:980-989` (Confirmación automática), `:1000-1009` (Lista de espera), `:1201-1211` (business day on/off); `src/pages/dashboard/EmpleadosPage.tsx:586-596` (employee day on/off)
 - **Evidence:** Each switch is a `div` with `onClick`: no `tabIndex`, no `role="switch"`, no `aria-checked`, no key handler. In the schedule editors the `div` sits inside a `<label>` that has no associated control, so clicking the day name does nothing either; only the 36×20px track responds. The auto-confirm and waitlist switches have no accessible name at all.
@@ -71,6 +73,7 @@ None found in code. The worst issues here lose data or block a subset of users (
 - **Fix:** Add one `Switch` primitive (Radix Switch or `<button role="switch" aria-checked>`) with a visible label wired via `htmlFor`/`aria-labelledby`, a 44px hit area, and focus ring; replace all four usages.
 
 ### OM-03: Unsaved changes are lost without warning in every modal form and on in-app navigation from Mi negocio
+- **Status:** Partially fixed (pending commit) — `useConfirmarDescarte` (`src/hooks/useCambiosSinGuardar.tsx`) asks "¿Descartar cambios?" before closing a dirty modal: Empleados (employee, schedule, time block, invite), Servicios (service, category), Clientes notes, Intake question, Descuentos inline panel. Perfil has one dirty flag (form + colour + cover preset + cover position + business hours) and `useProtegerNavegacion` (beforeunload + capture-phase guard on internal links, e.g. the sidebar); the ad-hoc `window.onbeforeunload` was removed. Uploads no longer wipe unsaved Perfil edits (reset with `keepDirtyValues`). Still open: programmatic navigation (`navigate()` from the user menu and notifications) is not intercepted, because the app uses `BrowserRouter` without `useBlocker`. Tests in `useCambiosSinGuardar.test.tsx`, `PerfilPage.test.tsx`.
 - **Heuristic:** H3 User control and freedom; H5 Error prevention
 - **Location:** `src/hooks/useUnsavedChanges.ts:3-13` (only `beforeunload`); `src/pages/dashboard/PerfilPage.tsx:166`, `:362-369` (Horarios uses a second, separate `window.onbeforeunload`), `:311-322` (colour, cover preset and cover position live outside `isDirty`); modals: `EmpleadosPage.tsx:520-522`, `:570-573` (schedule), `ServiciosPage.tsx:453-456`, `:596-600`, `ClientesPage.tsx:466-469` (notes), `IntakePage.tsx:141-144`, `DescuentosPage.tsx:126`
 - **Evidence:** `Modal` closes on Escape, overlay click and the X with no dirty check. `useUnsavedChanges` warns only when the browser tab is closed or reloaded; clicking a sidebar link from `/dashboard/perfil` discards edits across three tabs silently. Business-hours edits and colour/cover edits are not covered by `isDirty`.
@@ -78,6 +81,7 @@ None found in code. The worst issues here lose data or block a subset of users (
 - **Fix:** Add a `dirty` prop to `Modal` that asks "¿Descartar cambios?" before closing. For Perfil, include colour/preset/position/horarios in one dirty flag and block in-app navigation (React Router `useBlocker` if the app moves to a data router; otherwise intercept `DashboardLayout` nav links). Remove the ad-hoc `window.onbeforeunload` so there is one mechanism.
 
 ### OM-04: The cover position the owner just confirmed is not saved, and nothing says so
+- **Status:** Partially fixed (pending commit) — backend gap: `PUT /negocios/perfil` is a full update (requires `Nombre` and every field) and there is no endpoint to save `PortadaObjectPosition` alone, so "Confirmar" cannot persist it safely. The UI is now honest: a confirmed position shows "Posición sin guardar — se guardará con 'Guardar cambios'", counts as an unsaved change (OM-03) and survives the profile reload after a cover upload (that reload used to reset it to the saved value). A backend `PATCH` for the position is needed to fully fix it. Test in `PerfilPage.test.tsx`.
 - **Heuristic:** H1 Visibility of system status; H4 Consistency
 - **Location:** `src/pages/dashboard/PerfilPage.tsx:232-237` (`confirmarPortadaModal`), `:714-717` (Posicionar), `:269-275` (position only sent by "Guardar cambios"), `:834-838`, `:856-860` (unsaved hints exist for colour and preset only)
 - **Evidence:** Choosing a new cover opens the positioning overlay; "Confirmar" uploads the photo immediately (toast "Portada actualizada") but only stores the position in local state. "Posicionar" on an existing photo also only changes local state. There is no "sin guardar" hint for position, and position is not part of `isDirty` (OM-03).
@@ -85,6 +89,7 @@ None found in code. The worst issues here lose data or block a subset of users (
 - **Fix:** Persist position on "Confirmar" together with the upload (or immediately for "Posicionar"), or show the same amber "Posición sin guardar — se guardará con 'Guardar cambios'" hint and include it in the dirty state. Prefer the first: the overlay already has its own confirm.
 
 ### OM-05: The service price field rejects common prices, and numeric errors show no message
+- **Status:** Fixed (pending commit) — price uses `step="0.01"` + `inputMode="decimal"`; the form has `noValidate`; zod messages for duration (5–480, integer, matching the API range), buffer (0–120), price (≥0, at most two decimals) and order (≥1) render under each field with `aria-invalid`/`aria-describedby`; error borders now win in dark mode on these fields. Tests in `ServiciosPage.test.tsx`.
 - **Heuristic:** H5 Error prevention; H9 Error recovery; WCAG 3.3.1
 - **Location:** `src/pages/dashboard/ServiciosPage.tsx:511-516` (`step="0.5"`), `:486-506`, `:518-525` (duration, buffer, orden), `:458` (form without `noValidate`), schema `:22-30`
 - **Evidence:** With `min="0" step="0.5"` the browser's constraint validation blocks submission of $149.90 or $99.99 with a native tooltip (in the browser's language). For duration and price, zod errors only turn the border red (`:493`, `:515`); `errors.*.message` is never rendered. Buffer and orden errors have no visual at all.
@@ -92,6 +97,7 @@ None found in code. The worst issues here lose data or block a subset of users (
 - **Fix:** Use `step="0.01"` (or `inputMode="decimal"` text with zod), add `noValidate` so zod owns validation, and render the message under every field through the shared field primitive (see DC-19).
 
 ### OM-06: "Notificar" in the waitlist notifies nobody — DECISION NEEDED
+- **Status:** Open – DECISION NEEDED — no messages are sent (unchanged). Copy only: the button reads "Marcar como avisado" with a title saying it sends nothing; the state, filter and KPI read "Avisado(s)". Contact links on the card not added.
 - **Heuristic:** H2 Match between system and real world; H1 Visibility
 - **Location:** `src/pages/dashboard/ListaEsperaPage.tsx:214-221`; backend `Back/AppointVaAPI/AppointVaAPI/Controllers/V1/ListaEsperaController.cs:85-89` (verified: sets `Estado` and `FechaNotificacion`, sends nothing)
 - **Evidence:** The button reads "Notificar" with a bell icon; only its hover `title` says "Marcar como notificado". The entry shows phone and email as plain text, with no call, WhatsApp or email shortcut (the Clientes page has a WhatsApp action for the same need).
@@ -99,6 +105,7 @@ None found in code. The worst issues here lose data or block a subset of users (
 - **Fix:** **DECISION NEEDED** — should the button send a message (email via the existing `NotificarListaEsperaAsync` job, or WhatsApp deep link) or only record a manual contact? Then label it truthfully ("Avisar por WhatsApp" that opens the link and records the state, or "Marcar como avisado"), and add tel/WhatsApp/email links on the card.
 
 ### OM-07: Image actions depend on hover and on non-focusable `div`s
+- **Status:** Fixed (pending commit) — gallery delete is visible by default and hidden only where hover exists (`[@media(hover:hover)]`), visible on focus, 36px, `aria-label="Eliminar foto N"`; opening the lightbox is a labelled button; delete confirmation uses `ConfirmarAccion`. Employee photo and service image triggers are `<button aria-label="Cambiar foto de …">` with a permanent camera badge. The lightbox overlay itself is still custom (DC-18).
 - **Heuristic:** impeccable Responsive (broken touch interaction); WCAG 2.1.1, 4.1.2; Krug "Does it work without hover?"
 - **Location:** `src/pages/dashboard/GaleriaPage.tsx:135-141` (delete `opacity-0 group-hover:opacity-100`, `title` only), `:128-133` (open lightbox: `onClick` on `<img>`); `src/pages/dashboard/EmpleadosPage.tsx:435-450` (change photo: `div` with `onClick`, hover-only overlay); `src/pages/dashboard/ServiciosPage.tsx:279-296` (change image: same)
 - **Evidence:** The gallery delete button has no `focus-visible:opacity-100`, so it is invisible on touch screens and when focused by keyboard. Photo/image upload on employee and service rows is a `div` that cannot be focused; the camera overlay appears only on hover.
@@ -106,6 +113,7 @@ None found in code. The worst issues here lose data or block a subset of users (
 - **Fix:** Show gallery actions persistently on touch (`@media (hover: none)`) and on `focus-within`; give them `aria-label`. Make thumbnails `<button aria-label="Cambiar foto de Ana López">` with a visible camera badge, or move upload into the edit modal. See the shared uploader in Cross-screen patterns.
 
 ### OM-08: Several owner surfaces are unreadable or flash light in dark mode
+- **Status:** Fixed (pending commit, not rendered) — tokens on every listed surface: time-block rows (`bg-muted` + pending-dot border), employee/category pills and waitlist states/actions/KPIs (`--status-*`), coupon value pill (`bg-muted text-foreground`), "Agotado" (cancelled tokens), Clientes avatar, category warning, Perfil danger zone (dark pairs) and blocked days (cancelled tokens). Heatmap cells scale `hsl(var(--foreground) / α)` over `bg-muted`; the label switches to `--background` above 50%. Verify in dark mode.
 - **Heuristic:** Project rule (dashboard works in light AND dark); WCAG 1.4.3; same root cause as **DC-11** (blocks without `dark:` pairs instead of shadcn tokens)
 - **Location:**
   - `EmpleadosPage.tsx:697` — time-block rows `bg-orange-50 border-orange-100` (no dark) under `dark:text-gray-300`: gray-300 on orange-50, about 1.4:1
@@ -117,6 +125,7 @@ None found in code. The worst issues here lose data or block a subset of users (
 - **Fix:** Fold into the DC-11 theming pass. Heatmap: scale on a token (`--primary` / `hsl(var(--foreground))` alpha) over `bg-muted` for zero, and pick label colour by computed contrast. Use the status tokens from DC-06 for waitlist states.
 
 ### OM-09: "Exportar Excel" in Clientes exports only the visible page (15 rows) — DECISION NEEDED
+- **Status:** Open – DECISION NEEDED — still exports only the visible page. The disclosure is now readable (12px, amber-800 / amber-300) instead of 10px amber-500.
 - **Heuristic:** H2 Match with the real world; H1 Visibility
 - **Location:** `src/pages/dashboard/ClientesPage.tsx:153-165`, `:178-191` (warning `text-[10px] text-amber-500`, about 2.1:1 on white)
 - **Evidence:** `exportarClientes` maps `clientes`, the current server page. The only disclosure is a 10px amber line and a hover `title`.
@@ -124,6 +133,7 @@ None found in code. The worst issues here lose data or block a subset of users (
 - **Fix:** **DECISION NEEDED** — whether full client export is allowed (privacy/plan limits). If yes, add a server endpoint (or fetch all pages) and export the whole filtered directory, with a count in the button ("Exportar 482 clientes"). If not, say so plainly in readable text.
 
 ### OM-10: On phones, the only action of a client row sits off-screen
+- **Status:** Fixed (pending commit) — below `sm` clients render as stacked cards; each card is a button ("Ver detalle de …") that opens the detail. From `sm` the table rows are clickable and keep the "Ver detalle" button for keyboard users. One paginator serves both views. Tests in `ClientesPage.test.tsx`.
 - **Heuristic:** impeccable Responsive; H6 Recognition
 - **Location:** `src/pages/dashboard/ClientesPage.tsx:396-446` (`min-w-[560px]` table, "Ver detalle" in the last column, row not clickable)
 - **Evidence:** At 375px the table scrolls horizontally and the "Ver detalle" button starts beyond the right edge. Rows have hover styling but no click handler.
@@ -131,6 +141,7 @@ None found in code. The worst issues here lose data or block a subset of users (
 - **Fix:** Below `sm`, render clients as stacked cards (name, phone, last visit) where the whole card opens the detail; keep the table from `sm` up. Make desktop rows clickable too, keeping the button for keyboard users.
 
 ### OM-11: Public assets and booking visibility change with one click, without confirmation or undo
+- **Status:** Partially fixed (pending commit) — confirmation (`ConfirmarAccion`, stating the public effect) before deleting the logo, cover photo or policies image, unblocking a day, deleting an employee time block, and hiding a service from booking ("Ocultar de reservas"; activating stays one click). Undo toasts are not implemented: they need DC-17 (toast action) and server-side retention of deleted files.
 - **Heuristic:** H3 User control; H5 Error prevention; extends **DC-33** to higher-stakes actions
 - **Location:** `src/pages/dashboard/PerfilPage.tsx:672-675` (delete logo), `:718-721` (delete cover photo), `:741-744` (delete policies image), `:1301` (unblock day); `src/pages/dashboard/ServiciosPage.tsx:320-331` (Activo/Inactivo hides the service from booking); `src/pages/dashboard/EmpleadosPage.tsx:704-709` (delete time block)
 - **Evidence:** Each is a small text button that fires the mutation immediately. The cover "Eliminar" sits next to "Posicionar"; deleting a logo or cover removes the uploaded file from the public page with no way back except re-uploading the original file.
@@ -142,6 +153,7 @@ None found in code. The worst issues here lose data or block a subset of users (
 ## Severity 2: Minor
 
 ### OM-12: Two error messages are shown as success toasts
+- **Status:** Fixed (pending commit) as a side effect — both toasts now pass `"error"`. `tipo` is still optional in `toast()`.
 - **Heuristic:** H1 Visibility; H9 Error recovery
 - **Location:** `src/pages/dashboard/EmpleadosPage.tsx:258` ("Error al guardar el horario…"), `src/pages/dashboard/GaleriaPage.tsx:31` (upload failure); default `tipo = "exito"` in `src/store/toastStore.ts:19`
 - **User impact:** A failed schedule save or photo upload appears in the success style, so the owner reads "it worked".
@@ -208,6 +220,7 @@ None found in code. The worst issues here lose data or block a subset of users (
 - **Fix:** Extract one `EditorHorario` component (used by business and employee), with the +1h rule clamped to the allowed range, specific errors, 44px remove targets, `ariaLabel="Lunes, inicio del intervalo 1"`, and "Aplicar a todos los días laborales".
 
 ### OM-23: Error styling disappears in dark mode on several forms
+- **Status:** Partially fixed — the Servicios service form uses an error-aware class helper; Empleados forms unchanged.
 - **Heuristic:** WCAG 1.4.1, 3.3.1; H9
 - **Location:** `src/pages/dashboard/EmpleadosPage.tsx:538-540`, `:852-854`, `:862-866`; `src/pages/dashboard/ServiciosPage.tsx:461-465`, `:491-493`, `:513-515` — `dark:border-slate-600` is applied unconditionally, and `.dark .dark\:border-slate-600` outranks `border-red-400`. `PerfilPage.tsx:624-625` uses the correct pattern (dark border only in the non-error branch). `PerfilPage.tsx:635-637` never renders the email error message.
 - **User impact:** In dark mode an invalid field looks normal; only the small red text below (when present) signals the problem.
@@ -249,12 +262,14 @@ None found in code. The worst issues here lose data or block a subset of users (
 - **Fix:** Use `Modal`. **DECISION NEEDED** — exact consequences (are future appointments cancelled and clients notified? is there a grace period?). State them, require typing the business name, and offer data export first.
 
 ### OM-30: Service toggles read as status, not action, and one pending toggle freezes every row
+- **Status:** Partially fixed — hiding a service is confirmed and its title names the action; the global pending state and the "Activo" label are unchanged.
 - **Heuristic:** H4 Consistency; H1 Visibility; WCAG 4.1.2
 - **Location:** `src/pages/dashboard/ServiciosPage.tsx:307-331` (`disabled={togglendoActivo}` / `togglendoDestacado` are global), `:318` (Destacado is icon-only on mobile, `title` only), `:332-338` (Editar uses the same amber as an active Destacado)
 - **User impact:** "Activo" looks like a badge; clicking it takes the service off the booking page. While one request is pending all other rows' toggles are disabled. On a phone the star has no name.
 - **Fix:** A labeled `Switch` (OM-02) "Visible en reservas" with per-row pending state; `aria-pressed` and `aria-label` on Destacado; neutral styling for Editar.
 
 ### OM-31: Waitlist: "Expirado" is a one-way, unlabeled action, and the filtered empty state is wrong
+- **Status:** Partially fixed — delete uses `ConfirmarAccion` instead of `window.confirm`; Expirar, labels and the filtered empty state are unchanged.
 - **Heuristic:** H3 User control; H6; H4
 - **Location:** `src/pages/dashboard/ListaEsperaPage.tsx:232-240` (icon-only, no confirm; an expired entry offers no way back, only delete), `:241-247`, `:121` (title "No hay entradas en la lista de espera" even when a filter is active), `:134` (`window.confirm`), `:190` (scissors icon for any sector)
 - **Fix:** Labeled actions, undo toast for Expirar, "Ningún registro con estado X" for filtered empties, sector-neutral icon.
@@ -302,7 +317,7 @@ Not re-counted above; fix with the DC item.
 
 | DC finding | New locations in owner screens |
 | --- | --- |
-| DC-04 UTC "today" | `EmpleadosPage.tsx:167` (time-block min hour), `PerfilPage.tsx:1274` (blocked-day `minDate`) |
+| DC-04 UTC "today" | Fixed (pending commit): `EmpleadosPage` time-block min hour and `PerfilPage` blocked-day `minDate` now use `hoy()` |
 | DC-09 Icon buttons without names | `GaleriaPage.tsx:135-141`, `:170-175` (lightbox close); `IntakePage.tsx:318-329`; `DescuentosPage.tsx:126`, `:308-321`; `ListaEsperaPage.tsx:233-247`; `ServiciosPage.tsx:307-345` (labels hidden below `sm`) |
 | DC-11 Dark mode gaps | See OM-08 |
 | DC-17 Toasts not announced / no undo | Undo needed by OM-11, OM-31; Clientes "¡Guardado!" (`ClientesPage.tsx:522-524`) and Descuentos copy feedback (`:313`) are not announced |

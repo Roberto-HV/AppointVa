@@ -2,6 +2,7 @@ import { useMutation, useQueryClient, type QueryClient } from "@tanstack/react-q
 import { citasApi } from "../api/citas";
 import { useToastStore } from "../store/toastStore";
 import { useSectorTerms } from "./useSectorTerms";
+import { mensajeError } from "../utils/errores";
 
 // Mutaciones de una cita compartidas por la lista, el calendario, el Gantt, el
 // inicio y el detalle. Invalida todas las vistas que muestran citas, para que
@@ -23,11 +24,6 @@ const CLAVES_CITAS = [
 
 export function invalidarCitas(qc: QueryClient) {
   for (const clave of CLAVES_CITAS) qc.invalidateQueries({ queryKey: [clave] });
-}
-
-/** Mensaje que manda el backend, o el texto por defecto. */
-export function mensajeError(err: unknown, porDefecto: string): string {
-  return (err as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje ?? porDefecto;
 }
 
 export function useCambiarEstadoCita() {

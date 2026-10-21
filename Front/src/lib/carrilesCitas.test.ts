@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { asignarCarriles, rangoHoras } from "./carrilesCitas";
+import { asignarCarriles, dentroDelRango, ocupaAgenda, rangoHoras } from "./carrilesCitas";
 
 // Horas locales: la rejilla se dibuja en la zona horaria del navegador.
 const local = (h: number, m = 0) => new Date(2026, 9, 20, h, m).toISOString();
@@ -39,5 +39,46 @@ describe("rangoHoras", () => {
 
   it("se amplía para incluir una cita de 6:30 y otra que termina a las 22:15", () => {
     expect(rangoHoras([cita("a", 6, 30, 30), cita("b", 21, 30, 45)])).toEqual({ inicio: 6, fin: 23 });
+  });
+});
+
+describe("citas que ya no ocupan la agenda (Cancelada, Inasistencia)", () => {
+  const conEstado = (id: string, h: number, m: number, dur: number, estadoTexto: string) =>
+    ({ ...cita(id, h, m, dur), estadoTexto });
+
+  it("una cancelada que se solapa con una activa no le quita ancho", () => {
+    const r = asignarCarriles([
+      conEstado("cancelada", 10, 0, 60, "Cancelada"),
+      conEstado("activa", 10, 0, 60, "Confirmada"),
+    ]);
+    expect(r.get("activa")).toEqual({ carril: 0, carriles: 1 });
+    expect(r.get("cancelada")).toEqual({ carril: 0, carriles: 1, deFondo: true });
+  });
+
+  it("una inasistencia tampoco toma carril; dos activas siguen lado a lado", () => {
+    const r = asignarCarriles([
+      conEstado("a", 10, 0, 60, "Pendiente"),
+      conEstado("x", 10, 0, 60, "Inasistencia"),
+      conEstado("b", 10, 30, 30, "Confirmada"),
+    ]);
+    expect(r.get("a")?.carriles).toBe(2);
+    expect(r.get("b")?.carriles).toBe(2);
+    expect(r.get("x")?.deFondo).toBe(true);
+  });
+
+  it("no amplían las horas visibles", () => {
+    expect(rangoHoras([
+      conEstado("temprano", 5, 0, 30, "Cancelada"),
+      conEstado("tarde", 22, 0, 60, "Inasistencia"),
+      conEstado("activa", 10, 0, 30, "Completada"),
+    ])).toEqual({ inicio: 7, fin: 21 });
+  });
+
+  it("ocupaAgenda y dentroDelRango", () => {
+    expect(ocupaAgenda({ estadoTexto: "Cancelada" })).toBe(false);
+    expect(ocupaAgenda({ estadoTexto: "Completada" })).toBe(true);
+    expect(ocupaAgenda({})).toBe(true);
+    expect(dentroDelRango(cita("a", 5, 0, 30), { inicio: 7, fin: 21 })).toBe(false);
+    expect(dentroDelRango(cita("b", 6, 30, 60), { inicio: 7, fin: 21 })).toBe(true);
   });
 });

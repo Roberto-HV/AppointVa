@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
+import { useProtegerNavegacion } from "../../hooks/useCambiosSinGuardar";
 import Select from "../../components/ui/Select";
 import Tabs from "../../components/ui/Tabs";
 import { useForm, type FieldErrors, type Resolver } from "react-hook-form";
@@ -16,10 +16,14 @@ import { useAuthStore } from "../../store/authStore";
 import { useToastStore } from "../../store/toastStore";
 import { Skeleton } from "../../components/ui/Skeleton";
 import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
+import ConfirmarAccion from "../../components/ui/ConfirmarAccion";
+import Switch from "../../components/ui/Switch";
 import SelectorFondoPortada from "../../components/dashboard/SelectorFondoPortada";
 import { fondoPortada } from "../../lib/portadaPresets";
 import { TimePicker, DatePicker } from "../../components/ui/DateTimePicker";
-import type { ActualizarNegocioDto, HorarioDiaDto } from "../../types";
+import { hoy } from "../../utils/fechas";
+import { mensajeError } from "../../utils/errores";
+import type { ActualizarNegocioDto, HorarioDiaDto, NegocioDto } from "../../types";
 
 const ZONAS_HORARIAS = [
   { valor: "America/Mexico_City",     texto: "Ciudad de México (CST/CDT)" },
@@ -111,6 +115,21 @@ type PerfilForm = z.infer<typeof schema>;
 
 type Tab = "perfil" | "citas" | "anticipos" | "horarios" | "cuenta";
 
+/** Posición guardada ("top", "center", "50% 20%"…) en el formato del arrastre. */
+function normalizarPosicion(raw: string | null | undefined): string {
+  if (!raw || raw === "center") return "50% 50%";
+  if (raw === "top") return "50% 0%";
+  if (raw === "bottom") return "50% 100%";
+  return raw;
+}
+
+/** Acciones que cambian la página pública al instante y se confirman antes. */
+type AccionPublica =
+  | { tipo: "logo" }
+  | { tipo: "portada" }
+  | { tipo: "politicas" }
+  | { tipo: "desbloquear"; id: string; fecha: string };
+
 /** Pestaña donde vive cada campo, para poder mostrar el error que lo rechazó. */
 const TAB_DEL_CAMPO: Record<keyof PerfilForm, Tab> = {
   nombre: "perfil",
@@ -153,6 +172,7 @@ export default function PerfilPage() {
   const setTab = (t: Tab) => setSearchParams({ tab: t }, { replace: true });
   const [modalEliminar, setModalEliminar] = useState(false);
   const [contrasenaEliminar, setContrasenaEliminar] = useState("");
+  const [accionPublica, setAccionPublica] = useState<AccionPublica | null>(null);
 
   const { data: negocio, isLoading } = useQuery({
     queryKey: ["negocio-perfil"],
@@ -163,10 +183,15 @@ export default function PerfilPage() {
     resolver: zodResolver(schema) as Resolver<PerfilForm>,
   });
 
-  useUnsavedChanges(isDirty);
+  // Lo último que llegó del servidor. Cada subida de logo o portada vuelve a
+  // pedir el perfil; sin esto, esa recarga borraba lo que el dueño estaba
+  // editando (campos, color, fondo y posición de la portada).
+  const negocioPrevio = useRef<NegocioDto | null>(null);
 
   useEffect(() => {
     if (negocio) {
+      const previo = negocioPrevio.current;
+      negocioPrevio.current = negocio;
       reset({
         nombre: negocio.nombre, telefono: negocio.telefono ?? "",
         email: negocio.email || usuario?.email || "", direccion: negocio.direccion ?? "",
@@ -190,23 +215,26 @@ export default function PerfilPage() {
         instagramUrl: negocio.instagramUrl ?? "",
         facebookUrl: negocio.facebookUrl ?? "",
         tiktokUrl: negocio.tiktokUrl ?? "",
-      });
+      }, { keepDirtyValues: true });
+      // Lo local solo se pisa si no tenía cambios (seguía igual a lo guardado).
       const c = negocio.colorPrimario ?? "#334155";
-      setColorPrimario(c);
+      setColorPrimario((actual) => (!previo || actual === (previo.colorPrimario ?? "#334155") ? c : actual));
       setColorGuardado(c);
-      const raw = negocio.portadaObjectPosition ?? "center";
-      if (raw === "top") setPortadaObjectPosition("50% 0%");
-      else if (raw === "bottom") setPortadaObjectPosition("50% 100%");
-      else if (raw === "center") setPortadaObjectPosition("50% 50%");
-      else setPortadaObjectPosition(raw);
-      setPortadaPreset(negocio.portadaPreset ?? null);
+      const pos = normalizarPosicion(negocio.portadaObjectPosition);
+      setPortadaObjectPosition((actual) =>
+        !previo || actual === normalizarPosicion(previo.portadaObjectPosition) ? pos : actual);
+      const preset = negocio.portadaPreset ?? null;
+      setPortadaPreset((actual) => (!previo || actual === (previo.portadaPreset ?? null) ? preset : actual));
     }
   }, [negocio, reset]);
 
   const { mutate: guardar } = useMutation({
     mutationFn: (dto: ActualizarNegocioDto) => negociosApi.actualizarPerfil(dto),
-    onSuccess: (_, variables) => {
+    onSuccess: (actualizado, variables) => {
       reset(variables as unknown as PerfilForm);
+      // La respuesta ya es el perfil guardado: los avisos de "sin guardar"
+      // (posición, fondo) se apagan sin esperar a la recarga.
+      if (actualizado?.id) qc.setQueryData(["negocio-perfil"], actualizado);
       qc.invalidateQueries({ queryKey: ["negocio-perfil"] });
       toast("Cambios guardados");
     },
@@ -248,19 +276,19 @@ export default function PerfilPage() {
 
   const { mutate: eliminarLogo, isPending: eliminandoLogo } = useMutation({
     mutationFn: () => negociosApi.eliminarLogo(),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["negocio-perfil"] }); toast("Logo eliminado"); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["negocio-perfil"] }); setAccionPublica(null); toast("Logo eliminado"); },
     onError: () => toast("No se pudo eliminar el logo. Intenta de nuevo.", "error"),
   });
 
   const { mutate: eliminarPortada, isPending: eliminandoPortada } = useMutation({
     mutationFn: () => negociosApi.eliminarPortada(),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["negocio-perfil"] }); setPortadaObjectPosition("50% 50%"); toast("Portada eliminada"); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["negocio-perfil"] }); setPortadaObjectPosition("50% 50%"); setAccionPublica(null); toast("Portada eliminada"); },
     onError: () => toast("No se pudo eliminar la portada. Intenta de nuevo.", "error"),
   });
 
   const { mutate: eliminarPoliticas, isPending: eliminandoPoliticas } = useMutation({
     mutationFn: () => negociosApi.eliminarPoliticas(),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["negocio-perfil"] }); toast("Imagen de políticas eliminada"); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["negocio-perfil"] }); setAccionPublica(null); toast("Imagen de políticas eliminada"); },
     onError: () => toast("No se pudo eliminar la imagen. Intenta de nuevo.", "error"),
   });
 
@@ -359,15 +387,6 @@ export default function PerfilPage() {
     if (horariosData) { setHorarios(horariosData); setHorariosDirty(false); }
   }, [horariosData]);
 
-  useEffect(() => {
-    if (horariosDirty) {
-      window.onbeforeunload = () => "Tienes cambios sin guardar en el horario.";
-    } else {
-      window.onbeforeunload = null;
-    }
-    return () => { window.onbeforeunload = null; };
-  }, [horariosDirty]);
-
   const { mutate: guardarHorarios, isPending: guardandoHorarios } = useMutation({
     mutationFn: () => negociosApi.actualizarHorarios(horarios),
     onSuccess: (data) => {
@@ -461,17 +480,56 @@ export default function PerfilPage() {
       qc.invalidateQueries({ queryKey: ["dias-bloqueados"] });
       setNuevaFecha(""); setNuevoMotivo(""); toast("Día bloqueado");
     },
-    onError: (err: any) => {
-      const msg = err?.response?.data?.mensaje ?? "No se pudo bloquear el día. Intenta de nuevo.";
-      toast(msg, "error");
-    },
+    onError: (err) => toast(mensajeError(err, "No se pudo bloquear el día. Intenta de nuevo."), "error"),
   });
 
-  const { mutate: desbloquear } = useMutation({
+  const { mutate: desbloquear, isPending: desbloqueando } = useMutation({
     mutationFn: (id: string) => negociosApi.desbloquearDia(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["dias-bloqueados"] }); toast("Día desbloqueado"); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["dias-bloqueados"] }); setAccionPublica(null); toast("Día desbloqueado"); },
     onError: () => toast("No se pudo desbloquear el día. Intenta de nuevo.", "error"),
   });
+
+  // ── Cambios sin guardar ───────────────────────────────────────────────────
+  // Una sola regla para toda la página: campos del formulario, color, fondo,
+  // posición de la portada y horarios. Avisa al cerrar la pestaña y al seguir
+  // un enlace interno (antes un clic en el menú lateral lo perdía todo).
+  const colorSinGuardar = colorPrimario !== colorGuardado;
+  const presetSinGuardar = !!negocio && portadaPreset !== (negocio.portadaPreset ?? null);
+  const posicionSinGuardar = !!negocio?.portadaUrl
+    && portadaObjectPosition !== normalizarPosicion(negocio.portadaObjectPosition);
+  const hayCambiosSinGuardar = isDirty || colorSinGuardar || presetSinGuardar || posicionSinGuardar || horariosDirty;
+  const dialogoNavegacion = useProtegerNavegacion(hayCambiosSinGuardar);
+
+  const confirmarAccionPublica = () => {
+    if (!accionPublica) return;
+    if (accionPublica.tipo === "logo") eliminarLogo();
+    else if (accionPublica.tipo === "portada") eliminarPortada();
+    else if (accionPublica.tipo === "politicas") eliminarPoliticas();
+    else desbloquear(accionPublica.id);
+  };
+
+  const textoAccionPublica: Record<AccionPublica["tipo"], { titulo: string; confirmar: string }> = {
+    logo: { titulo: "Eliminar logo", confirmar: "Eliminar logo" },
+    portada: { titulo: "Eliminar foto de portada", confirmar: "Eliminar portada" },
+    politicas: { titulo: "Eliminar imagen de políticas", confirmar: "Eliminar imagen" },
+    desbloquear: { titulo: "Quitar día sin atención", confirmar: "Abrir el día a reservas" },
+  };
+
+  const mensajeAccionPublica = (accion: AccionPublica) => {
+    switch (accion.tipo) {
+      case "logo":
+        return "El logo deja de verse en tu página de reservas al instante. Para recuperarlo tendrás que volver a subir el archivo.";
+      case "portada":
+        return "La foto de portada deja de verse en tu página de reservas al instante. Para recuperarla tendrás que volver a subir el archivo.";
+      case "politicas":
+        return "La imagen de políticas deja de verse en tu página de reservas al instante. Para recuperarla tendrás que volver a subir el archivo.";
+      case "desbloquear":
+        return `El ${accion.fecha} vuelve a estar disponible y los clientes podrán reservar ese día.`;
+    }
+  };
+
+  const pendienteAccionPublica =
+    eliminandoLogo || eliminandoPortada || eliminandoPoliticas || desbloqueando;
 
   // ── URL de reservas ───────────────────────────────────────────────────────
   const bookingUrl = negocio ? `${window.location.origin}/b/${negocio.slug}` : "";
@@ -662,14 +720,14 @@ export default function PerfilPage() {
                     : <span className="text-2xl font-bold text-gray-300 dark:text-gray-600">{negocio?.nombre?.charAt(0)}</span>}
                 </div>
                 <input ref={logoRef} type="file" accept="image/*" className="hidden"
-                  onChange={(e) => { const f = e.target.files?.[0]; if (f) subirLogo(f); }} />
+                  onChange={(e) => { const f = e.target.files?.[0]; if (f) subirLogo(f); e.target.value = ""; }} />
                 <button type="button" onClick={() => logoRef.current?.click()} disabled={subiendoLogo}
                   className="text-xs text-slate-700 dark:text-slate-300 hover:underline disabled:opacity-50">
                   {subiendoLogo ? "Subiendo..." : "Cambiar logo"}
                 </button>
                 <div className="mt-auto pt-1 min-h-[1.25rem]">
                   {negocio?.logoUrl && (
-                    <button type="button" onClick={() => eliminarLogo()} disabled={eliminandoLogo}
+                    <button type="button" onClick={() => setAccionPublica({ tipo: "logo" })} disabled={eliminandoLogo}
                       className="text-xs text-red-500 hover:underline disabled:opacity-50">
                       {eliminandoLogo ? "Eliminando..." : "Eliminar"}
                     </button>
@@ -702,6 +760,13 @@ export default function PerfilPage() {
                   className="text-xs text-slate-700 dark:text-slate-300 hover:underline disabled:opacity-50">
                   {subiendoPortada ? "Subiendo..." : "Cambiar portada"}
                 </button>
+                {/* La posición viaja con "Guardar cambios" (el backend no tiene una
+                    ruta para guardarla sola): se avisa igual que con el color. */}
+                {posicionSinGuardar && (
+                  <p role="status" className="text-xs text-amber-700 dark:text-amber-400 text-center mt-1">
+                    Posición sin guardar — se guardará con "Guardar cambios"
+                  </p>
+                )}
                 {/* Sin este aviso, "Eliminar" borraría una foto que la miniatura no muestra. */}
                 {fotoOcultaPorFondo && (
                   <p className="text-[11px] text-gray-400 dark:text-gray-500 text-center mt-1">
@@ -715,7 +780,7 @@ export default function PerfilPage() {
                         className="text-xs text-indigo-500 hover:underline">
                         Posicionar
                       </button>
-                      <button type="button" onClick={() => eliminarPortada()} disabled={eliminandoPortada}
+                      <button type="button" onClick={() => setAccionPublica({ tipo: "portada" })} disabled={eliminandoPortada}
                         className="text-xs text-red-500 hover:underline disabled:opacity-50">
                         {eliminandoPortada ? "Eliminando..." : "Eliminar"}
                       </button>
@@ -731,14 +796,14 @@ export default function PerfilPage() {
                     : <span className="text-xs text-gray-400 dark:text-gray-500">Sin políticas</span>}
                 </div>
                 <input ref={politicasRef} type="file" accept="image/*" className="hidden"
-                  onChange={(e) => { const f = e.target.files?.[0]; if (f) subirPoliticas(f); }} />
+                  onChange={(e) => { const f = e.target.files?.[0]; if (f) subirPoliticas(f); e.target.value = ""; }} />
                 <button type="button" onClick={() => politicasRef.current?.click()} disabled={subiendoPoliticas}
                   className="text-xs text-slate-700 dark:text-slate-300 hover:underline disabled:opacity-50">
                   {subiendoPoliticas ? "Subiendo..." : "Cambiar políticas"}
                 </button>
                 <div className="mt-auto pt-1 min-h-[1.25rem]">
                   {negocio?.politicasUrl && (
-                    <button type="button" onClick={() => eliminarPoliticas()} disabled={eliminandoPoliticas}
+                    <button type="button" onClick={() => setAccionPublica({ tipo: "politicas" })} disabled={eliminandoPoliticas}
                       className="text-xs text-red-500 hover:underline disabled:opacity-50">
                       {eliminandoPoliticas ? "Eliminando..." : "Eliminar"}
                     </button>
@@ -831,8 +896,8 @@ export default function PerfilPage() {
                 </div>
               </div>
             </div>
-            {colorPrimario !== colorGuardado && (
-              <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+            {colorSinGuardar && (
+              <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">
                 Color sin guardar — se guardará con "Guardar cambios"
               </p>
             )}
@@ -853,8 +918,8 @@ export default function PerfilPage() {
               portadaUrl={negocio?.portadaUrl}
               portadaObjectPosition={portadaObjectPosition}
             />
-            {portadaPreset !== (negocio?.portadaPreset ?? null) && (
-              <p className="text-xs text-amber-600 dark:text-amber-400 mt-3">
+            {presetSinGuardar && (
+              <p className="text-xs text-amber-700 dark:text-amber-400 mt-3">
                 Fondo sin guardar — se guardará con "Guardar cambios"
               </p>
             )}
@@ -971,42 +1036,36 @@ export default function PerfilPage() {
 
               <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-slate-700 rounded-lg border border-gray-100 dark:border-slate-600">
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Confirmación automática de citas</p>
-                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                  <p id="ajuste-autoconfirmar" className="text-sm font-medium text-gray-700 dark:text-gray-300">Confirmación automática de citas</p>
+                  <p id="ajuste-autoconfirmar-desc" className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                     Activado: las reservas quedan confirmadas de inmediato.<br />
                     Desactivado: quedan pendientes y debes confirmarlas manualmente.
                   </p>
                 </div>
-                <div
-                  onClick={() => setValue("autoConfirmar", !(watch("autoConfirmar") ?? true), { shouldDirty: true })}
-                  className={`shrink-0 w-11 h-6 rounded-full transition relative cursor-pointer ${
-                    watch("autoConfirmar") ?? true ? "bg-slate-700" : "bg-gray-300"
-                  }`}
-                >
-                  <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${
-                    watch("autoConfirmar") ?? true ? "left-6" : "left-1"
-                  }`} />
-                </div>
+                <Switch
+                  activo={watch("autoConfirmar") ?? true}
+                  onCambiar={(v) => setValue("autoConfirmar", v, { shouldDirty: true })}
+                  idEtiqueta="ajuste-autoconfirmar"
+                  idDescripcion="ajuste-autoconfirmar-desc"
+                  className="-my-2.5"
+                />
               </div>
 
               <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-slate-700 rounded-lg border border-gray-100 dark:border-slate-600">
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Lista de espera</p>
-                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                  <p id="ajuste-lista-espera" className="text-sm font-medium text-gray-700 dark:text-gray-300">Lista de espera</p>
+                  <p id="ajuste-lista-espera-desc" className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                     Activado: cuando canceles una cita se notificará automáticamente al primer cliente en espera.<br />
                     Desactivado: la lista de espera no genera notificaciones automáticas.
                   </p>
                 </div>
-                <div
-                  onClick={() => setValue("listaEsperaActiva", !(watch("listaEsperaActiva") ?? false), { shouldDirty: true })}
-                  className={`shrink-0 w-11 h-6 rounded-full transition relative cursor-pointer ${
-                    watch("listaEsperaActiva") ? "bg-slate-700" : "bg-gray-300"
-                  }`}
-                >
-                  <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${
-                    watch("listaEsperaActiva") ? "left-6" : "left-1"
-                  }`} />
-                </div>
+                <Switch
+                  activo={!!watch("listaEsperaActiva")}
+                  onCambiar={(v) => setValue("listaEsperaActiva", v, { shouldDirty: true })}
+                  idEtiqueta="ajuste-lista-espera"
+                  idDescripcion="ajuste-lista-espera-desc"
+                  className="-my-2.5"
+                />
               </div>
 
               <div className="p-3 bg-gray-50 dark:bg-slate-700 rounded-lg border border-gray-100 dark:border-slate-600">
@@ -1171,8 +1230,8 @@ export default function PerfilPage() {
             </p>
           </div>
 
-          <div className="border border-red-200 rounded-xl p-5">
-            <h2 className="text-sm font-semibold text-red-600 mb-1 flex items-center gap-2">
+          <div className="border border-red-200 dark:border-red-900/60 rounded-xl p-5">
+            <h2 className="text-sm font-semibold text-red-700 dark:text-red-400 mb-1 flex items-center gap-2">
               <Trash2 size={15} /> Zona de peligro
             </h2>
             <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
@@ -1181,7 +1240,8 @@ export default function PerfilPage() {
             <button
               type="button"
               onClick={() => { setContrasenaEliminar(""); setModalEliminar(true); }}
-              className="px-4 py-2 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm font-medium hover:bg-red-100 transition"
+              className="px-4 py-2 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm font-medium hover:bg-red-100 transition
+                dark:bg-red-950/40 dark:border-red-900/60 dark:text-red-300 dark:hover:bg-red-950/70"
             >
               Eliminar mi cuenta
             </button>
@@ -1197,20 +1257,21 @@ export default function PerfilPage() {
             <div className="space-y-1">
               {horarios.map((h) => (
                 <div key={h.diaSemana} className="py-2 border-b border-gray-50 dark:border-slate-700 last:border-0">
-                  {/* Day toggle + name */}
-                  <label className="flex items-center gap-2 cursor-pointer select-none mb-2">
-                    <div
+                  {/* Interruptor del día + nombre (el nombre también lo cambia) */}
+                  <div className="flex items-center gap-1 -ml-2 mb-1">
+                    <Switch
+                      activo={h.activo}
+                      onCambiar={() => toggleDia(h.diaSemana)}
+                      idEtiqueta={`horario-negocio-dia-${h.diaSemana}`}
+                    />
+                    <span
+                      id={`horario-negocio-dia-${h.diaSemana}`}
                       onClick={() => toggleDia(h.diaSemana)}
-                      className={`w-9 h-5 rounded-full transition relative cursor-pointer shrink-0 ${
-                        h.activo ? "bg-slate-700" : "bg-gray-300"
-                      }`}
+                      className="text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none"
                     >
-                      <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${
-                        h.activo ? "left-4" : "left-0.5"
-                      }`} />
-                    </div>
-                    <span className="text-sm text-gray-700 dark:text-gray-300">{DIAS[h.diaSemana]}</span>
-                  </label>
+                      {DIAS[h.diaSemana]}
+                    </span>
+                  </div>
 
                   {h.activo ? (
                     <div className="pl-11 space-y-1.5">
@@ -1271,7 +1332,7 @@ export default function PerfilPage() {
             <div className="flex gap-2 mb-4 flex-wrap items-end">
               <div className="w-48">
                 <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Fecha</label>
-                <DatePicker value={nuevaFecha} onChange={(v) => setNuevaFecha(v)} minDate={new Date().toISOString().split("T")[0]} />
+                <DatePicker value={nuevaFecha} onChange={(v) => setNuevaFecha(v)} minDate={hoy()} />
               </div>
               <div className="flex-1 min-w-[180px]">
                 <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Motivo <span className="text-gray-400 dark:text-gray-500">(opcional)</span></label>
@@ -1290,15 +1351,20 @@ export default function PerfilPage() {
               <div className="space-y-2">
                 {diasBloqueados.map((b) => {
                   const fecha = new Date(b.fecha + "T12:00:00");
+                  const fechaTexto = fecha.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).replace(/\bDe\b/g, "de");
                   return (
-                    <div key={b.id} className="flex items-center justify-between px-3 py-2 bg-red-50 border border-red-100 rounded-lg">
+                    <div key={b.id} className="flex items-center justify-between px-3 py-2 bg-status-cancelled-bg border border-status-cancelled-dot rounded-lg">
                       <div>
-                        <span className="text-sm font-medium text-red-700 capitalize">
-                          {fecha.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).replace(/\bDe\b/g, "de")}
+                        <span className="text-sm font-medium text-status-cancelled-fg capitalize">
+                          {fechaTexto}
                         </span>
-                        {b.motivo && <span className="text-xs text-red-500 ml-2">— {b.motivo}</span>}
+                        {b.motivo && <span className="text-xs text-status-cancelled-fg ml-2">— {b.motivo}</span>}
                       </div>
-                      <button onClick={() => desbloquear(b.id)} className="text-xs text-red-400 hover:text-red-600 transition">
+                      <button
+                        type="button"
+                        onClick={() => setAccionPublica({ tipo: "desbloquear", id: b.id, fecha: fechaTexto })}
+                        className="text-xs font-medium text-status-cancelled-fg hover:underline px-2 min-h-[32px] rounded transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      >
                         Quitar
                       </button>
                     </div>
@@ -1311,6 +1377,19 @@ export default function PerfilPage() {
       )}
 
     </div>
+
+    <ConfirmarAccion
+      abierto={!!accionPublica}
+      titulo={accionPublica ? textoAccionPublica[accionPublica.tipo].titulo : ""}
+      mensaje={accionPublica ? <p>{mensajeAccionPublica(accionPublica)}</p> : null}
+      etiquetaConfirmar={accionPublica ? textoAccionPublica[accionPublica.tipo].confirmar : ""}
+      destructiva={accionPublica?.tipo !== "desbloquear"}
+      pendiente={pendienteAccionPublica}
+      onConfirmar={confirmarAccionPublica}
+      onCerrar={() => setAccionPublica(null)}
+    />
+
+    {dialogoNavegacion}
 
     {/* ── Modal de posicionamiento de portada ─────────────────────────────── */}
     {portadaModal && (

@@ -8,12 +8,14 @@ import Pagination from "../../components/ui/Pagination";
 import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
 import { FiltroBarra } from "../../components/ui/filtros";
 import { usePaginacionLocal } from "../../hooks/usePaginacionLocal";
+import ConfirmarAccion from "../../components/ui/ConfirmarAccion";
 
+// Tokens de estado (`--status-*`), que ya cambian con el tema.
 const ESTADOS_CONFIG: Record<string, { label: string; color: string }> = {
-  Esperando: { label: "Esperando", color: "bg-yellow-100 text-yellow-700" },
-  Notificado: { label: "Notificado", color: "bg-blue-100 text-blue-700" },
-  Confirmado: { label: "Confirmado", color: "bg-green-100 text-green-700" },
-  Expirado: { label: "Expirado", color: "bg-gray-100 text-gray-500" },
+  Esperando: { label: "Esperando", color: "bg-status-pending-bg text-status-pending-fg" },
+  Notificado: { label: "Avisado", color: "bg-status-completed-bg text-status-completed-fg" },
+  Confirmado: { label: "Confirmado", color: "bg-status-confirmed-bg text-status-confirmed-fg" },
+  Expirado: { label: "Expirado", color: "bg-status-absent-bg text-status-absent-fg" },
 };
 
 function formatFecha(iso: string) {
@@ -26,6 +28,7 @@ export default function ListaEsperaPage() {
   const [filtroEstado, setFiltroEstado] = useState<string>("");
   const qc = useQueryClient();
   const { toast } = useToastStore();
+  const [entradaEliminar, setEntradaEliminar] = useState<EntradaListaEspera | null>(null);
 
   const { data: lista = [], isLoading, isError } = useQuery({
     queryKey: ["lista-espera", filtroEstado],
@@ -55,6 +58,7 @@ export default function ListaEsperaPage() {
     mutationFn: (id: string) => listaEsperaApi.eliminar(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["lista-espera"] });
+      setEntradaEliminar(null);
       toast("Entrada eliminada");
     },
     onError: () => toast("No se pudo eliminar la entrada. Intenta de nuevo.", "error"),
@@ -78,9 +82,9 @@ export default function ListaEsperaPage() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
           { label: "Total", value: listaCompleta.length, color: "text-gray-700 dark:text-gray-300" },
-          { label: "Esperando", value: cuantos("Esperando"), color: "text-yellow-600" },
-          { label: "Notificados", value: cuantos("Notificado"), color: "text-blue-600" },
-          { label: "Confirmados", value: cuantos("Confirmado"), color: "text-green-600" },
+          { label: "Esperando", value: cuantos("Esperando"), color: "text-status-pending-fg" },
+          { label: "Avisados", value: cuantos("Notificado"), color: "text-status-completed-fg" },
+          { label: "Confirmados", value: cuantos("Confirmado"), color: "text-status-confirmed-fg" },
         ].map((k) => (
           <div key={k.label} className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4">
             <p className="text-xs text-gray-500 dark:text-gray-400">{k.label}</p>
@@ -103,7 +107,7 @@ export default function ListaEsperaPage() {
             onChange: setFiltroEstado,
             etiquetaNeutra: "Todos",
             opciones: ["Esperando", "Notificado", "Confirmado", "Expirado"]
-              .map((e) => ({ valor: e, etiqueta: e })),
+              .map((e) => ({ valor: e, etiqueta: ESTADOS_CONFIG[e]?.label ?? e })),
           },
         ]}
       />
@@ -113,7 +117,7 @@ export default function ListaEsperaPage() {
       {isLoading ? (
         <div className="text-center py-16 text-gray-400 dark:text-gray-500">Cargando...</div>
       ) : isError ? (
-        <div className="text-center py-16 text-red-400">No se pudo cargar la lista de espera.</div>
+        <div role="alert" className="text-center py-16 text-red-700 dark:text-red-400">No se pudo cargar la lista de espera.</div>
       ) : lista.length === 0 ? (
         <EmptyState
           variante={filtroEstado ? "sinResultados" : "vacio"}
@@ -130,10 +134,7 @@ export default function ListaEsperaPage() {
               onCambiarEstado={(estado) =>
                 mutCambiarEstado.mutate({ id: entrada.id, estado })
               }
-              onEliminar={() => {
-                if (confirm("¿Eliminar esta entrada de la lista?"))
-                  mutEliminar.mutate(entrada.id);
-              }}
+              onEliminar={() => setEntradaEliminar(entrada)}
             />
           ))}
           {paginada.totalPaginas > 1 && (
@@ -150,6 +151,19 @@ export default function ListaEsperaPage() {
           )}
         </div>
       )}
+
+      <ConfirmarAccion
+        abierto={!!entradaEliminar}
+        titulo="Eliminar de la lista de espera"
+        mensaje={entradaEliminar && (
+          <p>{`${entradaEliminar.nombreCliente} saldrá de la lista de espera.`}</p>
+        )}
+        etiquetaConfirmar="Eliminar entrada"
+        destructiva
+        pendiente={mutEliminar.isPending}
+        onConfirmar={() => entradaEliminar && mutEliminar.mutate(entradaEliminar.id)}
+        onCerrar={() => setEntradaEliminar(null)}
+      />
     </div>
   );
 }
@@ -205,26 +219,29 @@ function EntradaCard({
         <p className="text-xs text-gray-400 dark:text-gray-500">
           Registrado: {formatFecha(entrada.fechaCreacion)}
           {entrada.fechaNotificacion &&
-            ` · Notificado: ${formatFecha(entrada.fechaNotificacion)}`}
+            ` · Avisado: ${formatFecha(entrada.fechaNotificacion)}`}
         </p>
       </div>
 
       {/* Acciones */}
       <div className="flex items-center gap-2 shrink-0">
+        {/* OM-06 (pendiente de decisión): este botón solo registra que el
+            negocio ya avisó al cliente; no envía ningún mensaje. */}
         {entrada.estado === "Esperando" && (
           <button
+            type="button"
             onClick={() => onCambiarEstado("Notificado")}
-            title="Marcar como notificado"
-            className="flex items-center gap-1 px-3 py-1.5 text-sm bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition font-medium"
+            title="Registra que ya avisaste al cliente. No envía ningún mensaje."
+            className="flex items-center gap-1 px-3 py-1.5 text-sm bg-status-completed-bg text-status-completed-fg hover:opacity-90 rounded-lg transition font-medium"
           >
-            <Bell size={14} /> Notificar
+            <Bell size={14} aria-hidden="true" /> Marcar como avisado
           </button>
         )}
         {entrada.estado === "Notificado" && (
           <button
             onClick={() => onCambiarEstado("Confirmado")}
             title="Marcar como confirmado"
-            className="flex items-center gap-1 px-3 py-1.5 text-sm bg-green-50 text-green-700 hover:bg-green-100 rounded-lg transition font-medium"
+            className="flex items-center gap-1 px-3 py-1.5 text-sm bg-status-confirmed-bg text-status-confirmed-fg hover:opacity-90 rounded-lg transition font-medium"
           >
             <CheckCircle size={14} /> Confirmar
           </button>

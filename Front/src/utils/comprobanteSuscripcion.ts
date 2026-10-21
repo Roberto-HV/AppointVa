@@ -1,16 +1,10 @@
 import type { PagoSuscripcionDto } from "../api/admin";
 import { escapeHtml } from "./html";
-import { toUtcDate } from "./formatters";
+import { formatFechaMx } from "./formatters";
 
 // Comprobante imprimible de un pago de suscripción (panel de SuperAdmin).
 // Se escribe con document.write en una ventana del mismo origen y el nombre del
 // negocio viene del registro público, así que TODO valor interpolado se escapa.
-
-function formatFechaMx(iso: string) {
-  return toUtcDate(iso).toLocaleDateString("es-MX", {
-    day: "2-digit", month: "2-digit", year: "numeric",
-  });
-}
 
 export function generarHTMLComprobante(pago: PagoSuscripcionDto): string {
   const mesesLabel = pago.mesesPagados >= 600 ? "De por vida" : pago.mesesPagados === 1 ? "1 mes" : `${pago.mesesPagados} meses`;

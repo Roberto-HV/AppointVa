@@ -16,7 +16,7 @@ import EstadoBadge from "../../components/ui/EstadoBadge";
 import Modal from "../../components/ui/Modal";
 import ConfirmarAccion from "../../components/ui/ConfirmarAccion";
 import AccionesCita, { HojaAccionesCita, type AccionExtraCita } from "../../components/dashboard/AccionesCita";
-import { useReagendarCita } from "../../hooks/useMutacionesCita";
+import { invalidarCitas, useReagendarCita } from "../../hooks/useMutacionesCita";
 import { urlResenaWhatsApp } from "../../utils/whatsapp";
 import { DatePicker } from "../../components/ui/DateTimePicker";
 import CalendarioCitas from "../../components/dashboard/CalendarioCitas";
@@ -280,7 +280,8 @@ export default function CitasPage() {
     mutationFn: ({ id, recibido }: { id: string; recibido: boolean }) =>
       citasApi.registrarAnticipo(id, recibido),
     onSuccess: (_, { recibido }) => {
-      qc.invalidateQueries({ queryKey: ["citas"] });
+      // Todas las vistas de citas: lista, calendario, Gantt, inicio y cobro.
+      invalidarCitas(qc);
       setCitaAnularAnticipo(null);
       toast(recibido ? "Anticipo registrado" : "Anticipo anulado");
     },
@@ -347,6 +348,8 @@ export default function CitasPage() {
   // ── Acciones extra de la hoja ────────────────────────────────────────────────
   // Lo que antes eran nueve iconos por fila vive en la hoja de acciones, con
   // texto. La fila solo deja WhatsApp, la acción principal y "Acciones".
+  const anticipoEnCurso = (id: string) => mutAnticipo.isPending && mutAnticipo.variables?.id === id;
+
   const accionesExtra = (c: CitaDto): AccionExtraCita[] => [
     {
       id: "notas",
@@ -361,9 +364,17 @@ export default function CitasPage() {
           ? { id: "anticipo", etiqueta: "Anular anticipo", Icono: Banknote, onSelect: () => setCitaAnularAnticipo(c) }
           : {
               id: "anticipo",
-              etiqueta: `Registrar anticipo de ${formatPrecio(c.montoAnticipo ?? 0)}`,
+              etiqueta: anticipoEnCurso(c.id)
+                ? "Registrando anticipo…"
+                : `Registrar anticipo de ${formatPrecio(c.montoAnticipo ?? 0)}`,
               Icono: Banknote,
-              onSelect: () => mutAnticipo.mutate({ id: c.id, recibido: true }),
+              // Mientras el registro de esta cita está en curso no se puede volver
+              // a enviar: la hoja se reabre con la acción deshabilitada.
+              deshabilitada: anticipoEnCurso(c.id),
+              onSelect: () => {
+                if (mutAnticipo.isPending) return;
+                mutAnticipo.mutate({ id: c.id, recibido: true });
+              },
             }]
       : []),
     ...(c.comprobanteUrl

@@ -443,3 +443,32 @@ describe("corte: cierre de caja", () => {
     expect(screen.queryByRole("alert")).toBeNull();
   });
 });
+
+describe("corte: el estado guardado no miente tras editar (B3)", () => {
+  beforeEach(() => {
+    vi.mocked(citasApi.obtenerHistorialPagos).mockResolvedValue([]);
+  });
+
+  it("al editar efectivo inicial, contado o retiros después de guardar, deja de decir 'Cierre guardado'", async () => {
+    vi.mocked(cierreCajaApi.guardar).mockResolvedValue({
+      fecha: "2026-07-31", efectivoInicial: 100, efectivoContado: 100, efectivoCobrado: 0,
+      totalRetiros: 0, efectivoEsperado: 100, diferencia: 0, retiros: [], cerradoEn: "2026-07-31T23:00:00Z",
+    });
+    renderPage();
+    await userEvent.click(await screen.findByRole("button", { name: "Corte del día" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Guardar cierre" }));
+    expect(await screen.findByRole("status")).toHaveTextContent(/Cierre guardado ·/);
+
+    await userEvent.type(screen.getByLabelText("Efectivo contado"), "5");
+    expect(screen.getByRole("status")).toHaveTextContent("Cambios sin guardar en el cierre.");
+    expect(screen.getByRole("status")).not.toHaveTextContent(/Cierre guardado/);
+
+    await userEvent.click(screen.getByRole("button", { name: "Actualizar cierre" }));
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent(/Cierre guardado ·/));
+
+    await userEvent.type(screen.getByLabelText("Concepto del retiro"), "Cambio");
+    await userEvent.type(screen.getByLabelText("Monto del retiro"), "20");
+    await userEvent.click(screen.getByRole("button", { name: "+ Agregar" }));
+    expect(screen.getByRole("status")).toHaveTextContent("Cambios sin guardar en el cierre.");
+  });
+});

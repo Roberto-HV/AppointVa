@@ -8,7 +8,7 @@ import { toUtcDate } from "../../utils/formatters";
 import { DatePicker } from "../ui/DateTimePicker";
 import { hoy as hoyLocal } from "../../utils/fechas";
 import { ESTADO_CITA, ESTADOS_CITA, estiloEstadoCita } from "../../lib/estadoCita";
-import { rangoHoras } from "../../lib/carrilesCitas";
+import { dentroDelRango, ocupaAgenda, rangoHoras } from "../../lib/carrilesCitas";
 
 const PX_POR_HORA = 56;
 const COL_MIN_W = 148;
@@ -232,6 +232,9 @@ export default function GanttCitas({ onCitaClick }: Props) {
                   style={{ minWidth: COL_MIN_W }}
                 >
                   {(porEmp.get(emp.id) ?? []).map((cita) => {
+                    // Las canceladas e inasistencias no amplían las horas visibles;
+                    // si quedan fuera de ellas no se dibujan (no ocupan la agenda).
+                    if (!ocupaAgenda(cita) && !dentroDelRango(cita, { inicio: HORA_INICIO, fin: HORA_FIN })) return null;
                     const top = calcTop(cita.inicioEn, HORA_INICIO);
                     const height = calcAltura(cita.duracionMinutos);
                     // Mismo mapa que la lista y el calendario: fondo + texto del

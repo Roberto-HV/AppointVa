@@ -7,6 +7,9 @@ import Pagination from "../../components/ui/Pagination";
 import BotonAccion from "../../components/ui/BotonAccion";
 import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
 import { usePaginacionLocal } from "../../hooks/usePaginacionLocal";
+import ConfirmarAccion from "../../components/ui/ConfirmarAccion";
+import { useConfirmarDescarte } from "../../hooks/useCambiosSinGuardar";
+import { mensajeError } from "../../utils/errores";
 
 const TIPOS = [
   { value: "Porcentaje", label: "Porcentaje (%)" },
@@ -40,6 +43,10 @@ export default function DescuentosPage() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<FormState>(EMPTY);
   const [copiado, setCopiado] = useState<string | null>(null);
+  const [cuponEliminar, setCuponEliminar] = useState<{ descuento: Descuento; vigente: boolean } | null>(null);
+  const descarte = useConfirmarDescarte();
+  const formularioSucio = JSON.stringify(form) !== JSON.stringify(EMPTY);
+  const cerrarFormulario = () => descarte.pedirCierre(formularioSucio, () => { setShowForm(false); setForm(EMPTY); });
   const qc = useQueryClient();
   const { toast } = useToastStore();
 
@@ -64,17 +71,14 @@ export default function DescuentosPage() {
       setForm(EMPTY);
       toast("Cupón creado");
     },
-    onError: (err: unknown) => {
-      const msg = (err as { response?: { data?: { mensaje?: string } } })
-        ?.response?.data?.mensaje ?? "Error al crear el cupón";
-      toast(msg, "error");
-    },
+    onError: (err: unknown) => toast(mensajeError(err, "No se pudo crear el cupón"), "error"),
   });
 
   const mutEliminar = useMutation({
     mutationFn: (id: string) => descuentosApi.eliminar(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["descuentos"] });
+      setCuponEliminar(null);
       toast("Cupón eliminado");
     },
     onError: () => toast("No se pudo eliminar el cupón. Intenta de nuevo.", "error"),
@@ -123,7 +127,7 @@ export default function DescuentosPage() {
         <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-2xl p-5 shadow-sm space-y-4 max-w-3xl">
           <div className="flex items-center justify-between">
             <h2 className="font-semibold text-gray-800 dark:text-gray-200">Nuevo cupón</h2>
-            <button onClick={() => { setShowForm(false); setForm(EMPTY); }} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400">
+            <button type="button" aria-label="Cerrar formulario" onClick={cerrarFormulario} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400">
               <X size={18} />
             </button>
           </div>
@@ -196,7 +200,7 @@ export default function DescuentosPage() {
           </div>
 
           <div className="flex justify-end gap-2 pt-1">
-            <button onClick={() => { setShowForm(false); setForm(EMPTY); }} className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition">
+            <button type="button" onClick={cerrarFormulario} className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition">
               Cancelar
             </button>
             <button
@@ -230,10 +234,7 @@ export default function DescuentosPage() {
                   descuento={d}
                   copiado={copiado === d.codigo}
                   onCopiar={() => copiarCodigo(d.codigo)}
-                  onEliminar={() => {
-                    if (confirm(`¿Desactivar el cupón ${d.codigo}?`))
-                      mutEliminar.mutate(d.id);
-                  }}
+                  onEliminar={() => setCuponEliminar({ descuento: d, vigente: true })}
                 />
               ))}
             </div>
@@ -247,10 +248,7 @@ export default function DescuentosPage() {
                   descuento={d}
                   copiado={false}
                   onCopiar={() => copiarCodigo(d.codigo)}
-                  onEliminar={() => {
-                    if (confirm(`¿Eliminar el cupón ${d.codigo}?`))
-                      mutEliminar.mutate(d.id);
-                  }}
+                  onEliminar={() => setCuponEliminar({ descuento: d, vigente: false })}
                 />
               ))}
             </div>
@@ -269,6 +267,21 @@ export default function DescuentosPage() {
           )}
         </>
       )}
+
+      {/* OM-17 (DECISION NEEDED): el backend desactiva el cupón y ya no lo lista. */}
+      <ConfirmarAccion
+        abierto={!!cuponEliminar}
+        titulo={cuponEliminar?.vigente ? "Desactivar cupón" : "Eliminar cupón"}
+        mensaje={cuponEliminar && (
+          <p>{`El cupón ${cuponEliminar.descuento.codigo} dejará de aceptarse al reservar y desaparecerá de esta lista.`}</p>
+        )}
+        etiquetaConfirmar={cuponEliminar?.vigente ? "Desactivar cupón" : "Eliminar cupón"}
+        destructiva
+        pendiente={mutEliminar.isPending}
+        onConfirmar={() => cuponEliminar && mutEliminar.mutate(cuponEliminar.descuento.id)}
+        onCerrar={() => setCuponEliminar(null)}
+      />
+      {descarte.dialogo}
     </div>
   );
 }
@@ -290,10 +303,10 @@ function DescuentoRow({
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="font-mono font-bold text-gray-900 dark:text-gray-100 text-sm">{d.codigo}</span>
-          <span className="text-xs bg-slate-700/10 text-slate-700 px-2 py-0.5 rounded-full font-medium">
+          <span className="text-xs bg-muted text-foreground px-2 py-0.5 rounded-full font-medium">
             {formatDescuento(d)}
           </span>
-          {d.agotado && <span className="text-xs bg-red-50 text-red-500 px-2 py-0.5 rounded-full">Agotado</span>}
+          {d.agotado && <span className="text-xs bg-status-cancelled-bg text-status-cancelled-fg px-2 py-0.5 rounded-full">Agotado</span>}
           {d.expirado && <span className="text-xs bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400 px-2 py-0.5 rounded-full">Expirado</span>}
         </div>
         {d.descripcion && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{d.descripcion}</p>}

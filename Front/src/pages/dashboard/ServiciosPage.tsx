@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import { Pencil, Star, Trash2 } from "lucide-react";
+import { Camera, Pencil, Star, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Select from "../../components/ui/Select";
@@ -9,24 +9,36 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { serviciosApi, categoriasApi } from "../../api/servicios";
 import Modal from "../../components/ui/Modal";
+import ConfirmarAccion from "../../components/ui/ConfirmarAccion";
 import Pagination from "../../components/ui/Pagination";
 import BotonAccion from "../../components/ui/BotonAccion";
 import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
 import { useToastStore } from "../../store/toastStore";
 import { useSectorTerms } from "../../hooks/useSectorTerms";
 import { usePaginacionLocal } from "../../hooks/usePaginacionLocal";
+import { useConfirmarDescarte } from "../../hooks/useCambiosSinGuardar";
 import type { CategoriaDto, ServicioDto } from "../../types";
 import { formatPrecio } from "../../utils/formatters";
 
 // ── Schemas ───────────────────────────────────────────────────────────────────
+// `noValidate` en el formulario: estos mensajes son los únicos que ve el dueño.
+// Antes el `step="0.5"` del navegador rechazaba $149.90 con un globo en inglés.
+const numero = (mensaje: string) => z.coerce.number({ error: mensaje });
+
 const schemaServicio = z.object({
   nombre: z.string().min(2, "Nombre requerido"),
   categoriaId: z.string().optional(),
-  descripcion: z.string().max(300).optional(),
-  duracionMinutos: z.coerce.number().min(5, "Mínimo 5 minutos"),
-  bufferMinutos: z.coerce.number().min(0).max(120),
-  precio: z.coerce.number().min(0, "Precio inválido"),
-  orden: z.coerce.number().min(1),
+  descripcion: z.string().max(300, "Máximo 300 caracteres").optional(),
+  duracionMinutos: numero("Escribe la duración en minutos")
+    .pipe(z.number().int("Usa minutos enteros").min(5, "Mínimo 5 minutos").max(480, "Máximo 480 minutos (8 horas)")),
+  bufferMinutos: numero("Escribe los minutos de descanso")
+    .pipe(z.number().int("Usa minutos enteros").min(0, "No puede ser negativo").max(120, "Máximo 120 minutos")),
+  precio: numero("Escribe el precio")
+    .pipe(z.number().min(0, "El precio no puede ser negativo")
+      .max(9999999, "El precio es demasiado alto")
+      .refine((n) => Math.abs(n * 100 - Math.round(n * 100)) < 1e-6, "Usa como máximo dos decimales (centavos)")),
+  orden: numero("Escribe un número de orden")
+    .pipe(z.number().int("Usa un número entero").min(1, "El orden empieza en 1")),
 });
 type ServicioForm = z.infer<typeof schemaServicio>;
 
@@ -35,6 +47,13 @@ const schemaCategoria = z.object({
   orden: z.coerce.number().min(1),
 });
 type CategoriaForm = z.infer<typeof schemaCategoria>;
+
+/** Clases de un campo: el borde de error gana también en dark mode. */
+function claseCampo(conError: boolean) {
+  return `w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100 ${
+    conError ? "border-red-500 dark:border-red-400" : "border-gray-200 dark:border-slate-600"
+  }`;
+}
 
 function agruparPorCategoria(items: ServicioDto[]) {
   return items.reduce<Record<string, ServicioDto[]>>((acc, s) => {
@@ -75,7 +94,11 @@ export default function ServiciosPage() {
   });
 
   // ── Forms servicios ───────────────────────────────────────────────────────
-  const { register, handleSubmit, reset, watch, formState: { errors } } = useForm<ServicioForm>({
+  const descarte = useConfirmarDescarte();
+  // Ocultar un servicio lo quita de la página de reservas: se confirma antes.
+  const [servicioOcultar, setServicioOcultar] = useState<ServicioDto | null>(null);
+
+  const { register, handleSubmit, reset, watch, formState: { errors, isDirty } } = useForm<ServicioForm>({
     resolver: zodResolver(schemaServicio) as Resolver<ServicioForm>,
     defaultValues: { orden: 1, duracionMinutos: 30, bufferMinutos: 0, precio: 0 },
   });
@@ -137,7 +160,11 @@ export default function ServiciosPage() {
 
   const { mutate: mutToggleActivo, isPending: togglendoActivo } = useMutation({
     mutationFn: (s: ServicioDto) => serviciosApi.toggleActivo(s),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["servicios"] }); },
+    onSuccess: (_, s) => {
+      qc.invalidateQueries({ queryKey: ["servicios"] });
+      setServicioOcultar(null);
+      toast(s.activo ? `${terms.servicio} oculto de la página de reservas` : `${terms.servicio} visible en la página de reservas`);
+    },
     onError: () => toast("No se pudo cambiar el estado del servicio. Intenta de nuevo.", "error"),
   });
 
@@ -275,25 +302,28 @@ export default function ServiciosPage() {
                       variants={{ hidden: { opacity: 0, x: -10 }, show: { opacity: 1, x: 0, transition: { duration: 0.25 } } }}
                       className={`flex items-center gap-3 px-4 py-3 ${i < items.length - 1 ? "border-b border-gray-50 dark:border-slate-700" : ""}`}
                     >
-                      {/* Thumbnail imagen */}
-                      <div
-                        className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center shrink-0 overflow-hidden relative group cursor-pointer dark:bg-slate-700"
+                      {/* Botón con nombre y la cámara siempre visible: sin hover (táctil)
+                          y con teclado también se descubre que aquí se cambia la imagen. */}
+                      <button
+                        type="button"
+                        className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center shrink-0 relative group dark:bg-slate-700
+                          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                         onClick={() => { servicioImagenIdRef.current = s.id; imagenInputRef.current?.click(); }}
-                        title="Haz clic para cambiar la imagen del servicio"
+                        aria-label={`Cambiar imagen de ${s.nombre}`}
+                        title="Cambiar imagen"
                       >
-                        {s.imagenUrl
-                          ? <img src={s.imagenUrl} alt={s.nombre} className="w-full h-full object-cover" />
-                          : <svg className="w-5 h-5 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                        }
-                        <div className="absolute inset-0 rounded-lg bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition">
-                          <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                          </svg>
-                        </div>
-                      </div>
+                        <span className="w-full h-full rounded-lg overflow-hidden flex items-center justify-center">
+                          {s.imagenUrl
+                            ? <img src={s.imagenUrl} alt="" className="w-full h-full object-cover" />
+                            : <svg aria-hidden="true" className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                          }
+                        </span>
+                        <span aria-hidden="true" className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-card border border-border text-muted-foreground flex items-center justify-center shadow-sm group-hover:text-foreground transition">
+                          <Camera size={11} />
+                        </span>
+                      </button>
 
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-gray-800 dark:text-gray-200 line-clamp-2">{s.nombre}</p>
@@ -318,9 +348,9 @@ export default function ServiciosPage() {
                             <span className="hidden sm:inline">Destacado</span>
                           </button>
                           <button
-                            onClick={() => mutToggleActivo(s)}
+                            onClick={() => (s.activo ? setServicioOcultar(s) : mutToggleActivo(s))}
                             disabled={togglendoActivo}
-                            title={s.activo ? "Desactivar servicio" : "Activar servicio"}
+                            title={s.activo ? "Ocultar de la página de reservas" : "Mostrar en la página de reservas"}
                             className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg transition disabled:opacity-50 ${
                               s.activo
                                 ? "bg-green-50 text-green-600 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50"
@@ -396,7 +426,7 @@ export default function ServiciosPage() {
                     <div className="w-2 h-2 rounded-full bg-slate-700/40 shrink-0" />
                     <span className="font-medium text-gray-800 dark:text-gray-200 flex-1 min-w-0">{c.nombre}</span>
                     <span className={`text-xs font-medium px-2 py-0.5 rounded-full shrink-0 ${
-                      count > 0 ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-400 dark:bg-slate-700 dark:text-gray-500"
+                      count > 0 ? "bg-status-confirmed-bg text-status-confirmed-fg" : "bg-status-absent-bg text-status-absent-fg"
                     }`}>
                       {count} {count === 1 ? terms.servicio : terms.servicios}
                     </span>
@@ -452,16 +482,16 @@ export default function ServiciosPage() {
       {/* Modal servicio */}
       <Modal
         abierto={modal}
-        onCerrar={() => setModal(false)}
+        onCerrar={() => descarte.pedirCierre(isDirty, () => setModal(false))}
         titulo={servicioEdit ? `Editar ${terms.servicio.toLowerCase()}` : `Nuevo ${terms.servicio.toLowerCase()}`}
       >
-        <form onSubmit={handleSubmit((d) => guardarServicio(d))} className="space-y-4">
+        <form noValidate onSubmit={handleSubmit((d) => guardarServicio(d))} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Nombre *</label>
             <input
               {...register("nombre")}
-              className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100 dark:border-slate-600
-                ${errors.nombre ? "border-red-400 bg-red-50" : "border-gray-200"}`}
+              aria-invalid={!!errors.nombre}
+              className={claseCampo(!!errors.nombre)}
             />
             {errors.nombre && <p className="text-red-500 text-xs mt-1">{errors.nombre.message}</p>}
           </div>
@@ -485,43 +515,58 @@ export default function ServiciosPage() {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Duración (min) *</label>
+              <label htmlFor="servicio-duracion" className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Duración (min) *</label>
               <input
-                type="number" min="5" step="5"
+                id="servicio-duracion"
+                type="number" min="5" step="5" inputMode="numeric"
                 {...register("duracionMinutos")}
-                className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100 dark:border-slate-600
-                  ${errors.duracionMinutos ? "border-red-400" : "border-gray-200"}`}
+                aria-invalid={!!errors.duracionMinutos}
+                aria-describedby={errors.duracionMinutos ? "servicio-duracion-error" : undefined}
+                className={claseCampo(!!errors.duracionMinutos)}
               />
+              {errors.duracionMinutos && <p id="servicio-duracion-error" className="text-red-600 dark:text-red-400 text-xs mt-1">{errors.duracionMinutos.message}</p>}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">
+              <label htmlFor="servicio-buffer" className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">
                 Buffer (min)
-                <span className="ml-1 text-xs text-gray-400 font-normal dark:text-gray-500">tiempo extra tras la cita</span>
+                <span className="ml-1 text-xs text-gray-500 font-normal dark:text-gray-400">tiempo extra tras la cita</span>
               </label>
               <input
-                type="number" min="0" max="120" step="5"
+                id="servicio-buffer"
+                type="number" min="0" max="120" step="5" inputMode="numeric"
                 {...register("bufferMinutos")}
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100 dark:border-slate-600"
+                aria-invalid={!!errors.bufferMinutos}
+                aria-describedby={errors.bufferMinutos ? "servicio-buffer-error" : undefined}
+                className={claseCampo(!!errors.bufferMinutos)}
               />
+              {errors.bufferMinutos && <p id="servicio-buffer-error" className="text-red-600 dark:text-red-400 text-xs mt-1">{errors.bufferMinutos.message}</p>}
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Precio (MXN) *</label>
+              <label htmlFor="servicio-precio" className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Precio (MXN) *</label>
+              {/* `step="0.01"`: acepta centavos ($149.90, $99.99). */}
               <input
-                type="number" min="0" step="0.5"
+                id="servicio-precio"
+                type="number" min="0" step="0.01" inputMode="decimal"
                 {...register("precio")}
-                className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100 dark:border-slate-600
-                  ${errors.precio ? "border-red-400" : "border-gray-200"}`}
+                aria-invalid={!!errors.precio}
+                aria-describedby={errors.precio ? "servicio-precio-error" : undefined}
+                className={claseCampo(!!errors.precio)}
               />
+              {errors.precio && <p id="servicio-precio-error" className="text-red-600 dark:text-red-400 text-xs mt-1">{errors.precio.message}</p>}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Orden</label>
+              <label htmlFor="servicio-orden" className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Orden</label>
               <input
-                type="number" min="1"
+                id="servicio-orden"
+                type="number" min="1" inputMode="numeric"
                 {...register("orden")}
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100 dark:border-slate-600"
+                aria-invalid={!!errors.orden}
+                aria-describedby={errors.orden ? "servicio-orden-error" : undefined}
+                className={claseCampo(!!errors.orden)}
               />
+              {errors.orden && <p id="servicio-orden-error" className="text-red-600 dark:text-red-400 text-xs mt-1">{errors.orden.message}</p>}
             </div>
           </div>
 
@@ -569,7 +614,7 @@ export default function ServiciosPage() {
               ¿Seguro que deseas eliminar <span className="font-semibold text-gray-900 dark:text-gray-100">"{categoriaEliminar.nombre}"</span>?
             </p>
             {serviciosPorCategoria(categoriaEliminar.id) > 0 && (
-              <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-3">
+              <p className="text-xs text-status-pending-fg bg-status-pending-bg border border-status-pending-dot rounded-lg px-3 py-2 mb-3">
                 Esta categoría tiene {serviciosPorCategoria(categoriaEliminar.id)} servicio(s). Los servicios quedarán sin categoría.
               </p>
             )}
@@ -595,7 +640,7 @@ export default function ServiciosPage() {
       {/* Modal categoría */}
       <Modal
         abierto={modalCategoria}
-        onCerrar={() => setModalCategoria(false)}
+        onCerrar={() => descarte.pedirCierre(formCat.formState.isDirty, () => setModalCategoria(false))}
         titulo={categoriaEdit ? "Editar categoría" : "Nueva categoría"}
         ancho="sm"
       >
@@ -630,6 +675,22 @@ export default function ServiciosPage() {
           </button>
         </form>
       </Modal>
+
+      <ConfirmarAccion
+        abierto={!!servicioOcultar}
+        titulo={`Ocultar ${terms.servicio.toLowerCase()}`}
+        mensaje={servicioOcultar && (
+          <p>
+            {`"${servicioOcultar.nombre}" dejará de aparecer en tu página de reservas y nadie podrá reservarlo hasta que lo vuelvas a activar. Las ${terms.citas.toLowerCase()} ya agendadas no cambian.`}
+          </p>
+        )}
+        etiquetaConfirmar="Ocultar de reservas"
+        pendiente={togglendoActivo}
+        onConfirmar={() => servicioOcultar && mutToggleActivo(servicioOcultar)}
+        onCerrar={() => setServicioOcultar(null)}
+      />
+
+      {descarte.dialogo}
     </div>
   );
 }

@@ -66,6 +66,7 @@ Line numbers point to the current working tree. Findings marked **DECISION NEEDE
 
 ### DC-01: On phones, an appointment cannot be rescheduled (or annotated, repeated, or have its deposit registered)
 - **Status:** Fixed (pending commit) — shared `src/components/dashboard/AccionesCita.tsx` (`AccionesCita` row buttons + `HojaAccionesCita` sheet: confirm, complete, reschedule, no-show, cancel with reason, WhatsApp, extras, detail, client history). Used by list rows at every width, calendar, Gantt, InicioPage (owner agenda + next appointment, employee agenda + next appointment) and CitaDetallePage. Reschedule reuses `/publico/disponibilidad` + `citasApi.reagendar`. Drag-to-reschedule kept as a desktop shortcut.
+  - **Follow-up (owner-management batch, pending commit):** "Registrar anticipo" from the sheet now uses `invalidarCitas` (list, calendar, Gantt, home and cobro refresh), shows "Registrando anticipo…" disabled while its request is pending (new `deshabilitada` field on `AccionExtraCita`) and ignores a second submit. The sheet and `CalendarioCitas` `puedeMover` use `citaAbierta()`.
 - **Heuristic:** H7 Flexibility and efficiency; H3 User control and freedom; impeccable Responsive (broken touch interaction)
 - **Location:** `src/pages/dashboard/CitasPage.tsx:649-677` (mobile actions), `:679-811` (desktop actions, `hidden sm:flex`), `:1254-1321` (status modal); `src/components/dashboard/CalendarioCitas.tsx:122-124`, `:264-283`; `src/pages/dashboard/CitaDetallePage.tsx:82-184`
 - **Evidence:** Below 640px each row shows only WhatsApp, "Editar cliente" and the `MoreVertical` button. That button opens the status modal, whose options come from `TRANSICIONES` (Confirmar, Cancelar, Completar, Inasistencia): there is no Reagendar. Reagendar, Notas, Repetir, Anticipo, Comprobante and Reseña exist only in the `sm:flex` block. The calendar's reschedule is HTML5 drag-and-drop (`draggable`, `onDragStart`, `onDrop`), which does not fire on touch. Calendar and Gantt clicks also open the same status modal. `CitaDetallePage` has no actions at all.
@@ -93,7 +94,7 @@ Line numbers point to the current working tree. Findings marked **DECISION NEEDE
 ## Severity 3: Major
 
 ### DC-04: "Today" is computed in UTC, so after 18:00 in Mexico the home screen and badges show tomorrow
-- **Status:** Fixed (pending commit) — `hoy()`/`fechaLocal()`/`inicioSemana()`/`finSemana()` in DashboardLayout, InicioPage (both views), CitasPage, MiPerfilPage, CalendarioCitas, GanttCitas and the reschedule sheet; `no-restricted-syntax` rule in `eslint.config.js` for the audited files; TZ test (19:30 CDMX) in `InicioPage.test.tsx`. Out of scope, still using `toISOString().slice`: `EmpleadosPage.tsx:167`, `PerfilPage.tsx:1274`.
+- **Status:** Fixed (pending commit) — `hoy()`/`fechaLocal()`/`inicioSemana()`/`finSemana()` in DashboardLayout, InicioPage (both views), CitasPage, MiPerfilPage, CalendarioCitas, GanttCitas and the reschedule sheet; `no-restricted-syntax` rule in `eslint.config.js` for the audited files; TZ test (19:30 CDMX) in `InicioPage.test.tsx`. Follow-up (pending commit): `EmpleadosPage` time-block minimum and `PerfilPage` blocked-day `minDate` now use `hoy()`; TZ test in `PerfilPage.test.tsx`.
 - **Heuristic:** H1 Visibility of system status; H2 Match with the real world
 - **Location:** `src/layouts/DashboardLayout.tsx:232` (sidebar/header badge); `src/pages/dashboard/InicioPage.tsx:259` (owner "Agenda de hoy"), `:670-671`, `:678-679` (employee today, tomorrow, week range); `src/pages/dashboard/CitasPage.tsx:1037`, `:1190` (`minDate` of new/reschedule pickers); `src/pages/dashboard/MiPerfilPage.tsx:153`
 - **Evidence:** All use `new Date().toISOString().slice(0, 10)` or `.split("T")[0]`. `src/utils/fechas.ts:6-8` documents exactly this bug and provides `hoy()` / `fechaLocal()`; `CitasPage` filters and `PagosPage` already use it.
@@ -127,6 +128,7 @@ Line numbers point to the current working tree. Findings marked **DECISION NEEDE
 
 ### DC-07: Financial records change with one click and no confirmation or undo
 - **Status:** Fixed (pending commit) — "Revertir pago" (cards and history) is a text button with 44px target on its own line and opens `ConfirmarAccion` stating amount, client and that the cash report changes; "Anular anticipo" also confirms with amount. Undo toast not implemented (needs DC-17).
+  - **Follow-up (pending commit):** `mensajeError` moved to `src/utils/errores.ts` (used by PagosPage, DosFactoresPage, the cita mutations and the owner screens); `formatFechaMx` is a single export in `src/utils/formatters.ts` used by NegociosAdminPage and `comprobanteSuscripcion.ts`.
 - **Heuristic:** H3 User control and freedom; H5 Error prevention; microinteractions (feedback scaled to significance)
 - **Location:** `src/pages/dashboard/PagosPage.tsx:1280-1287` (card "Revertir pago"), `:1335-1342` (history row), `:398-408` (mutation); `src/pages/dashboard/CitasPage.tsx:751-765` (deposit register/annul toggle)
 - **Evidence:** "Revertir pago" is a `p-1` button with a 13px icon (about 21px target), placed right next to the method chip, with only a `title`. It fires `pagosApi.registrar(id, { pagada: false })` immediately. The deposit button flips between "Registrar" and "Anular" on the same icon, again with no confirmation.
@@ -135,6 +137,7 @@ Line numbers point to the current working tree. Findings marked **DECISION NEEDE
 
 ### DC-08: Payment registration, cash closing and 2FA setup fail silently
 - **Status:** Fixed (pending commit) — payment modal shows the server error inline (`role="alert"`) plus toast and keeps the entered values; cash closing shows inline error or "Cierre guardado · hh:mm" (also from `cierreData.cerradoEn`), button reads "Actualizar cierre" once saved; 2FA setup shows inline error + toast.
+  - **Follow-up (pending commit):** editing efectivo inicial, contado or retiros after saving replaces "Cierre guardado · hh:mm" with "Cambios sin guardar en el cierre." until the next save (test in `PagosPage.test.tsx`).
 - **Heuristic:** H9 Help users recognize, diagnose and recover from errors; H1 Visibility of system status
 - **Location:** `src/pages/dashboard/PagosPage.tsx:369-396` (`mutPagar`, no `onError`), `:410-418` (`mutCierre`, no `onError` and no success message), `:981-993` (Guardar cierre); `src/pages/dashboard/DosFactoresPage.tsx:26-35` (`configurar2FA`, no `onError`)
 - **Evidence:** When `mutPagar` fails, the button goes from "Procesando…" back to "Confirmar pago" and nothing else happens. When `mutCierre` succeeds, the fields are rewritten but no confirmation appears; when it fails, nothing appears.
@@ -173,6 +176,7 @@ Line numbers point to the current working tree. Findings marked **DECISION NEEDE
 
 ### DC-12: Overlapping appointments hide each other in the calendar; out-of-hours appointments are clipped
 - **Status:** Fixed (pending commit) — `src/lib/carrilesCitas.ts`: overlapping appointments laid out in side-by-side lanes; visible hours widen to fit the earliest/latest appointment (calendar and Gantt). Business hours are not used as the base range (still 7–21).
+  - **Follow-up (pending commit):** Cancelada and Inasistencia no longer take a lane or widen the visible hours (`ocupaAgenda`); the calendar draws them behind active appointments, full width at 60% opacity, and skips them when they fall outside the visible hours (the Gantt applies the same range rule; it had no lanes). Tests cover a cancelled appointment overlapping an active one.
 - **Heuristic:** H1 Visibility of system status
 - **Location:** `src/components/dashboard/CalendarioCitas.tsx:109-136` (`renderGridCita`, `totalCols` unused, every block `absolute inset-x-0.5`), `:302`, `:348`; `:8-9`, `:79-82` (`HORA_INICIO = 7`, `HORA_FIN = 21`, `Math.max(0, …)`)
 - **Evidence:** Two appointments at the same time (two employees, no employee filter: the default for owners) render in the same box and only the top one can be clicked. An 06:30 appointment is drawn at 07:00; one at 21:30 falls below the grid.

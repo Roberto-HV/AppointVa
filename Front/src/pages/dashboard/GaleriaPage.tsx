@@ -5,6 +5,8 @@ import { useToastStore } from "../../store/toastStore";
 import { Upload, Trash2, X, ImageIcon } from "lucide-react";
 import BotonAccion from "../../components/ui/BotonAccion";
 import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
+import ConfirmarAccion from "../../components/ui/ConfirmarAccion";
+import { mensajeError } from "../../utils/errores";
 
 const MAX_FOTOS = 20;
 
@@ -26,13 +28,10 @@ export default function GaleriaPage() {
       qc.invalidateQueries({ queryKey: ["galeria"] });
       toast("Foto agregada a la galería");
     },
-    onError: (err: unknown) => {
-      const msg = (err as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje;
-      toast(msg ?? "No se pudo subir la imagen");
-    },
+    onError: (err: unknown) => toast(mensajeError(err, "No se pudo subir la imagen"), "error"),
   });
 
-  const { mutate: eliminar } = useMutation({
+  const { mutate: eliminar, isPending: eliminandoFoto } = useMutation({
     mutationFn: (id: string) => negociosApi.eliminarImagenGaleria(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["galeria"] });
@@ -123,21 +122,32 @@ export default function GaleriaPage() {
             onDrop={handleDrop}
             onDragOver={(e) => e.preventDefault()}
           >
-            {imagenes.map((img) => (
+            {imagenes.map((img, i) => (
               <div key={img.id} className="group relative aspect-square rounded-xl overflow-hidden bg-gray-100 dark:bg-slate-700">
-                <img
-                  src={img.url}
-                  alt={img.descripcion ?? ""}
-                  className="w-full h-full object-cover cursor-pointer transition group-hover:brightness-90"
-                  onClick={() => setLightbox(img.url)}
-                />
-                {/* Botón eliminar */}
                 <button
-                  onClick={() => setEliminando(img.id)}
-                  className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 hover:bg-red-600 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
-                  title="Eliminar"
+                  type="button"
+                  onClick={() => setLightbox(img.url)}
+                  aria-label={`Ver foto ${i + 1} ampliada`}
+                  className="block w-full h-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
                 >
-                  <Trash2 size={13} />
+                  <img
+                    src={img.url}
+                    alt={img.descripcion ?? ""}
+                    className="w-full h-full object-cover transition group-hover:brightness-90"
+                  />
+                </button>
+                {/* Eliminar: siempre visible donde no hay hover (táctil) y al
+                    enfocar con el teclado; con ratón aparece al pasar por encima. */}
+                <button
+                  type="button"
+                  onClick={() => setEliminando(img.id)}
+                  aria-label={`Eliminar foto ${i + 1}`}
+                  title="Eliminar"
+                  className="absolute top-1.5 right-1.5 w-9 h-9 rounded-full bg-black/60 hover:bg-red-700 text-white flex items-center justify-center transition
+                    opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100
+                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                >
+                  <Trash2 size={15} aria-hidden="true" />
                 </button>
               </div>
             ))}
@@ -168,6 +178,8 @@ export default function GaleriaPage() {
           onClick={() => setLightbox(null)}
         >
           <button
+            type="button"
+            aria-label="Cerrar foto ampliada"
             className="absolute top-4 right-4 text-white/70 hover:text-white transition"
             onClick={() => setLightbox(null)}
           >
@@ -182,29 +194,17 @@ export default function GaleriaPage() {
         </div>
       )}
 
-      {/* Confirmar eliminar */}
-      {eliminando && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-xs w-full shadow-xl">
-            <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-1">¿Eliminar foto?</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">Esta acción no se puede deshacer.</p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setEliminando(null)}
-                className="flex-1 py-2.5 rounded-xl border-2 border-gray-200 dark:border-slate-600 text-sm font-medium text-gray-600 dark:text-gray-400 hover:border-gray-300 transition"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={() => eliminar(eliminando)}
-                className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-semibold transition"
-              >
-                Eliminar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Confirmar eliminar: diálogo accesible (foco atrapado, Escape). */}
+      <ConfirmarAccion
+        abierto={!!eliminando}
+        titulo="¿Eliminar foto?"
+        mensaje="La foto deja de mostrarse en tu página de reservas. Esta acción no se puede deshacer."
+        etiquetaConfirmar="Eliminar foto"
+        destructiva
+        pendiente={eliminandoFoto}
+        onConfirmar={() => eliminando && eliminar(eliminando)}
+        onCerrar={() => setEliminando(null)}
+      />
     </div>
   );
 }

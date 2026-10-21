@@ -146,11 +146,11 @@ describe("DescuentosPage — formulario", () => {
 
 describe("DescuentosPage — eliminar cupón", () => {
   it("llama a descuentosApi.eliminar cuando el usuario confirma", async () => {
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     vi.mocked(descuentosApi.getDescuentos).mockResolvedValue([makeDescuento()]);
 
     renderConQuery();
     fireEvent.click(await screen.findByTitle("Desactivar"));
+    fireEvent.click(await screen.findByRole("button", { name: "Desactivar cupón" }));
 
     await waitFor(() => {
       expect(descuentosApi.eliminar).toHaveBeenCalledWith("1");
@@ -158,11 +158,11 @@ describe("DescuentosPage — eliminar cupón", () => {
   });
 
   it("no llama a descuentosApi.eliminar cuando el usuario cancela", async () => {
-    vi.spyOn(window, "confirm").mockReturnValue(false);
     vi.mocked(descuentosApi.getDescuentos).mockResolvedValue([makeDescuento()]);
 
     renderConQuery();
     fireEvent.click(await screen.findByTitle("Desactivar"));
+    fireEvent.click(await screen.findByRole("button", { name: "Volver" }));
 
     await waitFor(() => {
       expect(descuentosApi.eliminar).not.toHaveBeenCalled();

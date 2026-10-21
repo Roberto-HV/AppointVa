@@ -1,17 +1,19 @@
-import { useRef, useState, useMemo } from "react";
+import { useEffect, useId, useRef, useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Eye, EyeOff, Pencil, Clock, CalendarX, Mail, Trash2 } from "lucide-react";
+import { Camera, Eye, EyeOff, Pencil, Clock, CalendarX, Mail, Trash2, AlertCircle } from "lucide-react";
 import { empleadosApi } from "../../api/empleados";
 import { serviciosApi } from "../../api/servicios";
 import { negociosApi } from "../../api/negocios";
 import { citasApi } from "../../api/citas";
 import Modal from "../../components/ui/Modal";
+import ConfirmarAccion from "../../components/ui/ConfirmarAccion";
+import Switch from "../../components/ui/Switch";
 import { DatePicker, TimePicker, citasABusySlots, HORAS } from "../../components/ui/DateTimePicker";
-import { SkeletonCards } from "../../components/ui/Skeleton";
+import { Skeleton, SkeletonCards } from "../../components/ui/Skeleton";
 import EmptyState from "../../components/ui/EmptyState";
 import { FiltroBarra } from "../../components/ui/filtros";
 import Pagination from "../../components/ui/Pagination";
@@ -20,6 +22,9 @@ import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
 import { useToastStore } from "../../store/toastStore";
 import { useSectorTerms } from "../../hooks/useSectorTerms";
 import { usePaginacionLocal } from "../../hooks/usePaginacionLocal";
+import { useConfirmarDescarte } from "../../hooks/useCambiosSinGuardar";
+import { mensajeError } from "../../utils/errores";
+import { hoy } from "../../utils/fechas";
 import type { EmpleadoDto, HorarioDiaDto } from "../../types";
 
 const DIAS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
@@ -40,6 +45,21 @@ const HORARIO_BASE: HorarioDiaDto[] = Array.from({ length: 7 }, (_, i) => ({
   activo: i >= 1 && i <= 6,
   intervalos: i >= 1 && i <= 6 ? [{ horaInicio: "09:00", horaFin: "19:00" }] : [],
 }));
+
+/**
+ * Completa con el horario base los días que el servidor no devuelve (un
+ * empleado recién creado aún no tiene ninguno).
+ *
+ * Solo se usa con una respuesta real: si la carga falla, el modal muestra el
+ * error y no deja guardar. Antes el fallo cargaba HORARIO_BASE como si fuera el
+ * horario del empleado, y un "Guardar" lo sobrescribía entero.
+ */
+function completarHorario(guardado: HorarioDiaDto[]): HorarioDiaDto[] {
+  return HORARIO_BASE.map((base) => {
+    const existente = guardado.find((x) => x.diaSemana === base.diaSemana);
+    return existente ?? { ...base, intervalos: base.intervalos.map((iv) => ({ ...iv })) };
+  });
+}
 
 const schemaEmpleado = z.object({
   nombre: z.string().min(2, "Nombre requerido"),
@@ -84,6 +104,13 @@ export default function EmpleadosPage() {
   const [empleadoHorario, setEmpleadoHorario] = useState<EmpleadoDto | null>(null);
   const [empleadoBloqueo, setEmpleadoBloqueo] = useState<EmpleadoDto | null>(null);
   const [horarioLocal, setHorarioLocal] = useState<HorarioDiaDto[]>([]);
+  // Lo cargado del servidor, para saber si el dueño cambió algo antes de cerrar.
+  const [horarioOriginal, setHorarioOriginal] = useState<HorarioDiaDto[] | null>(null);
+  // Sube en cada apertura del modal de horario; forma parte de la clave de la query.
+  const [aperturaHorario, setAperturaHorario] = useState(0);
+  const [bloqueoEliminar, setBloqueoEliminar] = useState<{ id: string; texto: string } | null>(null);
+  const descarte = useConfirmarDescarte();
+  const idDia = useId();
   const [errorInvitar, setErrorInvitar] = useState("");
   const [mostrarPasswordInvitar, setMostrarPasswordInvitar] = useState(false);
   const [empleadoEliminar, setEmpleadoEliminar] = useState<EmpleadoDto | null>(null);
@@ -115,6 +142,29 @@ export default function EmpleadosPage() {
     queryFn: () => empleadosApi.obtenerBloqueos(empleadoBloqueo!.id),
     enabled: modalBloqueo && !!empleadoBloqueo,
   });
+
+  // El horario se carga con el modal ya abierto y su propio estado de carga y
+  // error. Cada apertura usa su propia clave (`aperturaHorario`): al reabrir,
+  // incluso para el mismo empleado, se pide de nuevo y llega un `data` nuevo,
+  // así el efecto de abajo siempre inicializa el estado local y nunca se edita
+  // una copia vieja. `gcTime: 0` descarta las aperturas anteriores.
+  const horarioQuery = useQuery({
+    queryKey: ["horario-empleado", empleadoHorario?.id, aperturaHorario],
+    queryFn: () => empleadosApi.obtenerHorario(empleadoHorario!.id),
+    enabled: modalHorario && !!empleadoHorario,
+    gcTime: 0,
+    refetchOnWindowFocus: false,
+  });
+
+  useEffect(() => {
+    if (!horarioQuery.data) return;
+    const completo = completarHorario(horarioQuery.data);
+    setHorarioLocal(completo);
+    setHorarioOriginal(completo);
+  }, [horarioQuery.data]);
+
+  const horarioCargado = horarioOriginal !== null && horarioQuery.isSuccess;
+  const horarioSucio = horarioCargado && JSON.stringify(horarioLocal) !== JSON.stringify(horarioOriginal);
 
   const { data: horariosNegocio = [] } = useQuery({
     queryKey: ["horarios-negocio"],
@@ -164,11 +214,13 @@ export default function EmpleadosPage() {
     if (!fecha) return null;
     const dia = new Date(fecha + "T12:00").getDay();
     const h = horariosNegocio.find((x) => x.diaSemana === dia);
-    const hoy = new Date().toISOString().slice(0, 10);
+    // Fecha local: con `toISOString()` desde las 18:00 en México "hoy" ya era
+    // mañana y el mínimo de la hora de hoy dejaba de aplicarse.
+    const fechaHoy = hoy();
     const activeIntervals = h?.activo ? h.intervalos : [];
     const minNegocio = activeIntervals[0]?.horaInicio ?? "00:00";
     const maxNegocio = activeIntervals[activeIntervals.length - 1]?.horaFin ?? "23:30";
-    const minEfectivo = fecha === hoy
+    const minEfectivo = fecha === fechaHoy
       ? (ahoraMin() > minNegocio ? ahoraMin() : minNegocio)
       : minNegocio;
     return { min: minEfectivo, max: maxNegocio };
@@ -203,18 +255,12 @@ export default function EmpleadosPage() {
     setModalInvitar(true);
   };
 
-  const abrirHorario = async (emp: EmpleadoDto) => {
+  // Abre al instante; el horario llega por `horarioQuery`.
+  const abrirHorario = (emp: EmpleadoDto) => {
     setEmpleadoHorario(emp);
-    try {
-      const h = await empleadosApi.obtenerHorario(emp.id);
-      const merged = HORARIO_BASE.map((base) => {
-        const existente = h.find((x) => x.diaSemana === base.diaSemana);
-        return existente ?? base;
-      });
-      setHorarioLocal(merged);
-    } catch {
-      setHorarioLocal(HORARIO_BASE.map((h) => ({ ...h })));
-    }
+    setHorarioLocal([]);
+    setHorarioOriginal(null);
+    setAperturaHorario((n) => n + 1);
     setModalHorario(true);
   };
 
@@ -241,8 +287,7 @@ export default function EmpleadosPage() {
       toast(`${terms.empleado} guardado`);
     },
     onError: (err: unknown) => {
-      const msg = (err as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje;
-      toast(msg ?? `No se pudo guardar el ${terms.empleado.toLowerCase()}. Intenta de nuevo.`, "error");
+      toast(mensajeError(err, `No se pudo guardar el ${terms.empleado.toLowerCase()}. Intenta de nuevo.`), "error");
     },
   });
 
@@ -254,8 +299,8 @@ export default function EmpleadosPage() {
 
   const { mutate: guardarHorario, isPending: guardandoHorario } = useMutation({
     mutationFn: () => empleadosApi.actualizarHorario(empleadoHorario!.id, horarioLocal),
-    onSuccess: () => { setModalHorario(false); toast("Horario guardado"); },
-    onError: () => toast("Error al guardar el horario. Intenta de nuevo."),
+    onSuccess: () => { setModalHorario(false); setHorarioOriginal(null); toast("Horario guardado"); },
+    onError: (err) => toast(mensajeError(err, "No se pudo guardar el horario. Intenta de nuevo."), "error"),
   });
 
   const { mutate: invitar, isPending: invitando } = useMutation({
@@ -263,8 +308,7 @@ export default function EmpleadosPage() {
       empleadosApi.invitar(empleadoInvitar!.id, email, password),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["empleados"] }); setModalInvitar(false); toast("Cuenta creada exitosamente"); },
     onError: (err: unknown) => {
-      const msg = (err as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje;
-      setErrorInvitar(msg ?? "No se pudo crear la cuenta. Intenta de nuevo.");
+      setErrorInvitar(mensajeError(err, "No se pudo crear la cuenta. Intenta de nuevo."));
     },
   });
 
@@ -283,10 +327,14 @@ export default function EmpleadosPage() {
     onError: () => toast("No se pudo agregar el bloqueo. Intenta de nuevo.", "error"),
   });
 
-  const { mutate: eliminarBloqueo } = useMutation({
+  const { mutate: eliminarBloqueo, isPending: eliminandoBloqueo } = useMutation({
     mutationFn: (bloqueoId: string) =>
       empleadosApi.eliminarBloqueo(empleadoBloqueo!.id, bloqueoId),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["bloqueos", empleadoBloqueo?.id] }); toast("Bloqueo eliminado"); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["bloqueos", empleadoBloqueo?.id] });
+      setBloqueoEliminar(null);
+      toast("Bloqueo eliminado");
+    },
     onError: () => toast("No se pudo eliminar el bloqueo. Intenta de nuevo.", "error"),
   });
 
@@ -432,26 +480,30 @@ export default function EmpleadosPage() {
               variants={{ hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0, transition: { duration: 0.35 } } }}
               className="bg-white rounded-xl border border-gray-100 p-5 flex gap-4 hover:-translate-y-0.5 hover:shadow-md transition-all dark:bg-slate-800 dark:border-slate-700"
             >
-              <div
-                className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center shrink-0 overflow-hidden relative group cursor-pointer dark:bg-slate-700"
+              {/* Un botón, no un div: se enfoca con Tab, y la insignia de la cámara
+                  está siempre a la vista, también en pantallas táctiles sin hover. */}
+              <button
+                type="button"
+                className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center shrink-0 relative group dark:bg-slate-700
+                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 onClick={() => { empleadoFotoIdRef.current = emp.id; fotoInputRef.current?.click(); }}
+                aria-label={`Cambiar foto de ${emp.nombre}`}
                 title="Cambiar foto"
               >
-                {emp.fotoUrl
-                  ? <img src={emp.fotoUrl} alt={emp.nombre} className="w-full h-full object-cover" />
-                  : <span className="text-xl font-bold text-gray-300">{emp.nombre.charAt(0)}</span>
-                }
-                <div className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition">
-                  <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                </div>
-              </div>
+                <span className="w-full h-full rounded-full overflow-hidden flex items-center justify-center">
+                  {emp.fotoUrl
+                    ? <img src={emp.fotoUrl} alt="" className="w-full h-full object-cover" />
+                    : <span className="text-xl font-bold text-gray-400">{emp.nombre.charAt(0)}</span>
+                  }
+                </span>
+                <span aria-hidden="true" className="absolute -bottom-0.5 -right-0.5 w-6 h-6 rounded-full bg-card border border-border text-muted-foreground flex items-center justify-center shadow-sm group-hover:text-foreground transition">
+                  <Camera size={13} />
+                </span>
+              </button>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-0.5">
                   <p className="font-semibold text-gray-800 truncate dark:text-gray-200">{emp.nombre}</p>
-                  <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${emp.activo ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-400 dark:bg-slate-700 dark:text-gray-500"}`}>
+                  <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${emp.activo ? "bg-status-confirmed-bg text-status-confirmed-fg" : "bg-status-absent-bg text-status-absent-fg"}`}>
                     {emp.activo ? "Activo" : "Inactivo"}
                   </span>
                 </div>
@@ -519,7 +571,7 @@ export default function EmpleadosPage() {
       {/* Modal crear/editar empleado */}
       <Modal
         abierto={modalEmpleado}
-        onCerrar={() => setModalEmpleado(false)}
+        onCerrar={() => descarte.pedirCierre(formEmpleado.formState.isDirty, () => setModalEmpleado(false))}
         titulo={empleadoEdit ? `Editar ${terms.empleado.toLowerCase()}` : `Nuevo ${terms.empleado.toLowerCase()}`}
       >
         <form onSubmit={formEmpleado.handleSubmit((d) => guardarEmpleado(d))} className="space-y-4">
@@ -569,11 +621,34 @@ export default function EmpleadosPage() {
       {/* Modal horarios */}
       <Modal
         abierto={modalHorario}
-        onCerrar={() => setModalHorario(false)}
+        onCerrar={() => descarte.pedirCierre(horarioSucio, () => { setModalHorario(false); setHorarioOriginal(null); })}
         titulo={`Horarios — ${empleadoHorario?.nombre}`}
       >
         <div className="space-y-3">
-          {horarioLocal.map((h, i) => (
+          {horarioQuery.isError ? (
+            <div role="alert" className="rounded-lg border border-border bg-muted p-4 text-sm text-foreground">
+              <p className="flex items-center gap-2 font-medium">
+                <AlertCircle size={16} className="text-destructive shrink-0" aria-hidden="true" />
+                No se pudo cargar el horario
+              </p>
+              <p className="mt-1 text-muted-foreground">
+                Para no sobrescribir el horario actual, no se puede editar hasta que cargue.
+              </p>
+              <button
+                type="button"
+                onClick={() => horarioQuery.refetch()}
+                disabled={horarioQuery.isFetching}
+                className="mt-3 min-h-[44px] lg:min-h-[36px] px-4 rounded-lg border border-border bg-card text-sm font-medium text-foreground hover:bg-muted transition disabled:opacity-50
+                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                {horarioQuery.isFetching ? "Reintentando..." : "Reintentar"}
+              </button>
+            </div>
+          ) : !horarioCargado ? (
+            <div aria-busy="true" aria-label="Cargando horario" className="space-y-3">
+              {Array.from({ length: 7 }).map((_, i) => <Skeleton key={i} className="h-12 rounded-lg" />)}
+            </div>
+          ) : horarioLocal.map((h, i) => (
             <div
               key={h.diaSemana}
               className={`rounded-lg border p-3 transition ${
@@ -583,23 +658,23 @@ export default function EmpleadosPage() {
               }`}
             >
               <div className="flex items-center justify-between mb-2">
-                <label className="flex items-center gap-2 cursor-pointer select-none">
-                  <div
+                <div className="flex items-center gap-1 -ml-2">
+                  <Switch
+                    activo={h.activo}
+                    onCambiar={() => toggleDiaEmpleado(i)}
+                    idEtiqueta={`${idDia}-dia-${h.diaSemana}`}
+                  />
+                  {/* El nombre del día también cambia el interruptor, como hacía la etiqueta. */}
+                  <span
+                    id={`${idDia}-dia-${h.diaSemana}`}
                     onClick={() => toggleDiaEmpleado(i)}
-                    className={`w-9 h-5 rounded-full transition relative cursor-pointer shrink-0 ${
-                      h.activo ? "bg-slate-700" : "bg-gray-300"
+                    className={`text-sm font-medium cursor-pointer select-none ${
+                      h.activo ? "text-gray-800 dark:text-gray-200" : "text-gray-500 dark:text-gray-400"
                     }`}
                   >
-                    <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${
-                      h.activo ? "left-4" : "left-0.5"
-                    }`} />
-                  </div>
-                  <span className={`text-sm font-medium ${
-                    h.activo ? "text-gray-800 dark:text-gray-200" : "text-gray-400 dark:text-gray-500"
-                  }`}>
                     {DIAS[h.diaSemana]}
                   </span>
-                </label>
+                </div>
                 {!h.activo && (
                   <span className="text-xs text-gray-400 dark:text-gray-500">Descanso</span>
                 )}
@@ -669,7 +744,7 @@ export default function EmpleadosPage() {
 
           <button
             onClick={() => guardarHorario()}
-            disabled={guardandoHorario || horarioLocal.some(h => !!intervaloInvalidoEmpleado(h))}
+            disabled={!horarioCargado || guardandoHorario || horarioLocal.some(h => !!intervaloInvalidoEmpleado(h))}
             className="w-full bg-slate-700 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-xl transition mt-2"
           >
             {guardandoHorario ? "Guardando..." : "Guardar horario"}
@@ -680,7 +755,7 @@ export default function EmpleadosPage() {
       {/* Modal bloqueos */}
       <Modal
         abierto={modalBloqueo}
-        onCerrar={() => setModalBloqueo(false)}
+        onCerrar={() => descarte.pedirCierre(formBloqueo.formState.isDirty, () => setModalBloqueo(false))}
         titulo={`Bloqueos — ${empleadoBloqueo?.nombre}`}
       >
         <div>
@@ -694,16 +769,17 @@ export default function EmpleadosPage() {
             ) : (
               <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                 {bloqueos.map((b) => (
-                  <div key={b.id} className="flex items-start justify-between gap-3 bg-orange-50 border border-orange-100 rounded-lg px-3 py-2">
+                  <div key={b.id} className="flex items-start justify-between gap-3 bg-muted border border-border border-l-[3px] border-l-status-pending-dot rounded-lg px-3 py-2">
                     <div className="min-w-0">
-                      <p className="text-xs font-medium text-gray-700 capitalize dark:text-gray-300">
+                      <p className="text-xs font-medium text-foreground capitalize">
                         {formatBloqueo(b.inicioEn)} → {formatBloqueo(b.finEn)}
                       </p>
-                      {b.motivo && <p className="text-xs text-gray-500 mt-0.5 truncate dark:text-gray-400">{b.motivo}</p>}
+                      {b.motivo && <p className="text-xs text-muted-foreground mt-0.5 truncate">{b.motivo}</p>}
                     </div>
                     <button
-                      onClick={() => b.id && eliminarBloqueo(b.id)}
-                      className="text-red-400 hover:text-red-600 text-xs shrink-0 mt-0.5"
+                      type="button"
+                      onClick={() => b.id && setBloqueoEliminar({ id: b.id, texto: `${formatBloqueo(b.inicioEn)} → ${formatBloqueo(b.finEn)}` })}
+                      className="text-red-700 dark:text-red-400 hover:underline text-xs shrink-0 mt-0.5 px-1 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       Eliminar
                     </button>
@@ -842,7 +918,7 @@ export default function EmpleadosPage() {
       />
 
       {/* Modal invitar */}
-      <Modal abierto={modalInvitar} onCerrar={() => setModalInvitar(false)} titulo="Invitar acceso al sistema" ancho="sm">
+      <Modal abierto={modalInvitar} onCerrar={() => descarte.pedirCierre(formInvitar.formState.isDirty, () => setModalInvitar(false))} titulo="Invitar acceso al sistema" ancho="sm">
         <p className="text-sm text-gray-500 mb-4 dark:text-gray-400">
           Crea una cuenta para que <strong>{empleadoInvitar?.nombre}</strong> pueda iniciar sesión.
         </p>
@@ -888,6 +964,24 @@ export default function EmpleadosPage() {
           </button>
         </form>
       </Modal>
+
+      {/* Quitar un bloqueo reabre esas horas a reservas en línea. */}
+      <ConfirmarAccion
+        abierto={!!bloqueoEliminar}
+        titulo="Eliminar bloqueo"
+        mensaje={bloqueoEliminar && (
+          <p>
+            {`Se quitará el bloqueo del ${bloqueoEliminar.texto}. Esas horas volverán a estar disponibles para reservar con ${empleadoBloqueo?.nombre ?? `este ${terms.empleado.toLowerCase()}`}.`}
+          </p>
+        )}
+        etiquetaConfirmar="Eliminar bloqueo"
+        destructiva
+        pendiente={eliminandoBloqueo}
+        onConfirmar={() => bloqueoEliminar && eliminarBloqueo(bloqueoEliminar.id)}
+        onCerrar={() => setBloqueoEliminar(null)}
+      />
+
+      {descarte.dialogo}
     </div>
   );
 }

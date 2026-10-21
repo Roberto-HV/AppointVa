@@ -22,6 +22,13 @@ export function formatFecha(iso: string): string {
   }).replace(/\bDe\b/g, "de");
 }
 
+/** Fecha numérica para comprobantes y tablas de admin: "15/06/2026" */
+export function formatFechaMx(iso: string): string {
+  const d = toUtcDate(iso);
+  if (isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString("es-MX", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
+
 /** Fecha con día de semana completo, sin hora: "Martes, 15 de junio de 2026" */
 export function formatFechaLarga(iso: string): string {
   const d = toUtcDate(iso);
