@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
-import { CheckCircle2, Circle, X, Scissors, Users, CalendarDays, Clock, TrendingUp, Store, Images, ExternalLink, History } from "lucide-react";
+import { CheckCircle2, ChevronDown, Circle, X, Scissors, Users, CalendarDays, Clock, TrendingUp, Store, Images, ExternalLink, History } from "lucide-react";
 import { clientesApi } from "../../api/clientes";
 import type { ClienteCitaDto } from "../../types";
 import { NotificacionBanner } from "../../components/ui/NotificacionBanner";
@@ -23,7 +23,7 @@ import AccionesCita from "../../components/dashboard/AccionesCita";
 import { useTheme } from "../../hooks/useTheme";
 import { citaAbierta, estiloEstadoCita } from "../../lib/estadoCita";
 import { hoy as hoyLocal, inicioSemana as inicioSemanaLocal, finSemana as finSemanaLocal, fechaLocal } from "../../utils/fechas";
-import { formatPrecio, formatFechaHoraResumen as formatFechaHora } from "../../utils/formatters";
+import { formatPrecio, formatFechaHoraResumen as formatFechaHora, capitalizarPrimera } from "../../utils/formatters";
 
 interface TarjetaProps { label: string; valor?: string | number; rawValue?: number; valorCorto?: string; color?: string; accent?: boolean }
 function Tarjeta({ label, valor, rawValue, color = "text-slate-900 dark:text-gray-100", accent = false }: TarjetaProps) {
@@ -67,6 +67,7 @@ interface OnboardingProps {
 function WizardOnboarding({ negocioId, slug, tieneServicios, tieneHorarios, tieneEmpleados, tieneDescripcion, tieneGaleria, cargando, visible, onClose }: OnboardingProps) {
   const keyEnlace = `enlace-visto-${negocioId}`;
   const [enlaceVisto, setEnlaceVisto] = useState(() => !!localStorage.getItem(keyEnlace));
+  const [expandida, setExpandida] = useState(false);
 
   if (!visible || cargando) return null;
 
@@ -82,52 +83,88 @@ function WizardOnboarding({ negocioId, slug, tieneServicios, tieneHorarios, tien
 
   const hechos = pasos.filter((p) => p.hecho).length;
   const pct = Math.round((hechos / pasos.length) * 100);
+  const siguiente = pasos.find((p) => !p.hecho);
+  const idLista = `pasos-onboarding-${negocioId}`;
 
+  const enlacePaso = (p: (typeof pasos)[number]) => {
+    if (!p.accion) return null;
+    const cls = "shrink-0 min-h-[44px] lg:min-h-[36px] inline-flex items-center text-xs font-semibold text-slate-700 dark:text-slate-100 bg-slate-700/10 dark:bg-slate-600 hover:bg-slate-700/20 dark:hover:bg-slate-500 px-3 rounded-lg transition";
+    return p.accion.externo ? (
+      <a href={p.accion.href} target="_blank" rel="noopener noreferrer" onClick={p.accion.onClick} className={cls}>
+        {p.accion.texto}
+      </a>
+    ) : (
+      <Link to={p.accion.href} className={cls}>{p.accion.texto}</Link>
+    );
+  };
+
+  // Va debajo de la agenda y empieza plegada: un resumen con el progreso y el
+  // siguiente paso. Antes ocupaba la parte alta y empujaba la agenda del día
+  // fuera de la pantalla.
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-700/20 p-5 mb-6 relative">
-      <button onClick={onClose} aria-label="Cerrar la guía de inicio" className="absolute top-2 right-2 w-11 h-11 inline-flex items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition">
+    <section aria-label="Configura tu negocio" className="bg-white dark:bg-slate-800 rounded-xl border border-slate-700/20 dark:border-slate-700 p-4 mb-6 relative">
+      <button type="button" onClick={onClose} aria-label="Cerrar la guía de inicio" className="absolute top-1 right-1 w-11 h-11 inline-flex items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition">
         <X size={16} />
       </button>
 
-      <div className="flex items-center justify-between mb-1 pr-6">
+      <div className="flex items-center justify-between gap-3 mb-2 pr-10">
         <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200">Configura tu negocio</h3>
-        <span className="text-xs font-semibold text-slate-700 dark:text-gray-300">{hechos}/{pasos.length} completados</span>
+        <span className="text-xs font-semibold text-slate-700 dark:text-gray-300 whitespace-nowrap">{hechos}/{pasos.length} completados</span>
       </div>
-      <div className="w-full bg-gray-100 dark:bg-slate-700 rounded-full h-1.5 mb-5">
-        <div className="bg-slate-700 h-1.5 rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+      <div
+        className="w-full bg-gray-100 dark:bg-slate-700 rounded-full h-1.5 mb-3"
+        role="progressbar"
+        aria-label="Progreso de la configuración"
+        aria-valuemin={0}
+        aria-valuemax={pasos.length}
+        aria-valuenow={hechos}
+      >
+        <div className="bg-slate-700 dark:bg-slate-300 h-1.5 rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
       </div>
 
-      <div className="space-y-3">
-        {pasos.map((p, i) => (
-          <div key={i} className={`flex items-start gap-3 p-3 rounded-lg ${p.hecho ? "bg-gray-50 dark:bg-slate-700" : "bg-slate-700/5 dark:bg-slate-700/40 border border-slate-700/10 dark:border-slate-600"}`}>
-            <div className={`mt-0.5 shrink-0 ${p.hecho ? "text-emerald-500" : "text-slate-700 dark:text-slate-300"}`}>
-              {p.hecho ? <CheckCircle2 size={18} /> : <Circle size={18} />}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className={`text-sm font-medium ${p.hecho ? "text-gray-400 dark:text-gray-500 line-through" : "text-gray-800 dark:text-gray-200"}`}>{p.label}</p>
-              {!p.hecho && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{p.desc}</p>}
-            </div>
-            {!p.hecho && p.accion && (
-              p.accion.externo ? (
-                <a
-                  href={p.accion.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={p.accion.onClick}
-                  className="shrink-0 text-xs font-semibold text-slate-700 dark:text-slate-100 bg-slate-700/10 dark:bg-slate-600 hover:bg-slate-700/20 dark:hover:bg-slate-500 px-3 py-1.5 rounded-lg transition"
-                >
-                  {p.accion.texto}
-                </a>
-              ) : (
-                <Link to={p.accion.href} className="shrink-0 text-xs font-semibold text-slate-700 dark:text-slate-100 bg-slate-700/10 dark:bg-slate-600 hover:bg-slate-700/20 dark:hover:bg-slate-500 px-3 py-1.5 rounded-lg transition">
-                  {p.accion.texto}
-                </Link>
-              )
-            )}
+      {siguiente ? (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <div className="flex-1 min-w-[10rem]">
+            <p className="text-xs text-gray-500 dark:text-gray-400">Siguiente paso</p>
+            <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{siguiente.label}</p>
           </div>
-        ))}
-      </div>
-    </div>
+          {enlacePaso(siguiente)}
+        </div>
+      ) : (
+        <p className="text-sm text-gray-600 dark:text-gray-300">Tu negocio está listo para recibir reservas.</p>
+      )}
+
+      <button
+        type="button"
+        aria-expanded={expandida}
+        aria-controls={idLista}
+        onClick={() => setExpandida((v) => !v)}
+        className="mt-2 -ml-2 min-h-[44px] lg:min-h-[36px] inline-flex items-center gap-1 px-2 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition"
+      >
+        {expandida ? "Ocultar pasos" : "Ver todos los pasos"}
+        <ChevronDown size={14} aria-hidden="true" className={`transition-transform ${expandida ? "rotate-180" : ""}`} />
+      </button>
+
+      {expandida && (
+        <ul id={idLista} className="mt-2 space-y-2">
+          {pasos.map((p, i) => (
+            <li key={i} className={`flex items-start gap-3 p-3 rounded-lg ${p.hecho ? "bg-gray-50 dark:bg-slate-700" : "bg-slate-700/5 dark:bg-slate-700/40 border border-slate-700/10 dark:border-slate-600"}`}>
+              <div className={`mt-0.5 shrink-0 ${p.hecho ? "text-emerald-500" : "text-slate-700 dark:text-slate-300"}`}>
+                {p.hecho ? <CheckCircle2 size={18} aria-hidden="true" /> : <Circle size={18} aria-hidden="true" />}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className={`text-sm font-medium ${p.hecho ? "text-gray-400 dark:text-gray-500 line-through" : "text-gray-800 dark:text-gray-200"}`}>
+                  {p.label}
+                  {p.hecho && <span className="sr-only"> (completado)</span>}
+                </p>
+                {!p.hecho && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{p.desc}</p>}
+              </div>
+              {!p.hecho && enlacePaso(p)}
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }
 
@@ -312,6 +349,22 @@ function VistaPropietario({ nombre }: { nombre: string }) {
     refetchInterval: 30_000,
   });
 
+  // La guía de inicio va después de la agenda de hoy, no encima.
+  const guiaInicio = negocio && usuario?.negocioId ? (
+    <WizardOnboarding
+      negocioId={usuario.negocioId}
+      slug={negocio.slug ?? ""}
+      tieneServicios={tieneServicios}
+      tieneHorarios={tieneHorarios}
+      tieneEmpleados={empleados.length > 0}
+      tieneDescripcion={!!negocio.descripcion}
+      tieneGaleria={galeria.length > 0}
+      cargando={isLoading}
+      visible={mostrarWizard}
+      onClose={() => { localStorage.setItem(keyOnboarding, "1"); setMostrarWizard(false); }}
+    />
+  ) : null;
+
   return (
     <div className="p-4 sm:p-8">
       <NotificacionBanner />
@@ -347,21 +400,6 @@ function VistaPropietario({ nombre }: { nombre: string }) {
         />
       ) : (
         <>
-          {negocio && usuario?.negocioId && (
-            <WizardOnboarding
-              negocioId={usuario.negocioId}
-              slug={negocio.slug ?? ""}
-              tieneServicios={tieneServicios}
-              tieneHorarios={tieneHorarios}
-              tieneEmpleados={empleados.length > 0}
-              tieneDescripcion={!!negocio.descripcion}
-              tieneGaleria={galeria.length > 0}
-              cargando={isLoading}
-              visible={mostrarWizard}
-              onClose={() => { localStorage.setItem(keyOnboarding, "1"); setMostrarWizard(false); }}
-            />
-          )}
-
           {isLoading ? (
         <>
           <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-6">
@@ -425,8 +463,8 @@ function VistaPropietario({ nombre }: { nombre: string }) {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="text-sm font-bold text-slate-800 dark:text-gray-200">Agenda de hoy</h2>
-                <span className="text-xs text-muted-foreground capitalize">
-                  {new Date().toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" })}
+                <span className="text-xs text-muted-foreground">
+                  {capitalizarPrimera(new Date().toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" }))}
                 </span>
               </div>
               <Link
@@ -474,6 +512,8 @@ function VistaPropietario({ nombre }: { nombre: string }) {
               </div>
             )}
           </div>
+
+          {guiaInicio}
 
           <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2.5">Citas</p>
           <motion.div
@@ -627,7 +667,7 @@ function VistaPropietario({ nombre }: { nombre: string }) {
             </div>
           </div>
         </>
-          ) : null}
+          ) : guiaInicio}
         </>
       )}
     </div>

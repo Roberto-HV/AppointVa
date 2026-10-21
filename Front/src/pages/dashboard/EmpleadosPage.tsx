@@ -771,7 +771,7 @@ export default function EmpleadosPage() {
                 {bloqueos.map((b) => (
                   <div key={b.id} className="flex items-start justify-between gap-3 bg-muted border border-border border-l-[3px] border-l-status-pending-dot rounded-lg px-3 py-2">
                     <div className="min-w-0">
-                      <p className="text-xs font-medium text-foreground capitalize">
+                      <p className="text-xs font-medium text-foreground">
                         {formatBloqueo(b.inicioEn)} → {formatBloqueo(b.finEn)}
                       </p>
                       {b.motivo && <p className="text-xs text-muted-foreground mt-0.5 truncate">{b.motivo}</p>}

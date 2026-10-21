@@ -133,7 +133,7 @@ function HojaAbierta({
         <EstadoBadge estado={cita.estadoTexto} />
       </div>
       <p className="text-muted-foreground">{cita.nombreServicio} · {cita.nombreEmpleado}</p>
-      <p className="text-muted-foreground capitalize">{formatFechaHoraCorta(cita.inicioEn)}</p>
+      <p className="text-muted-foreground">{formatFechaHoraCorta(cita.inicioEn)}</p>
     </div>
   );
 

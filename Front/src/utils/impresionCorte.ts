@@ -52,7 +52,7 @@ export function htmlCorteCaja(d: DatosImpresionCorte): string {
       <div style="text-align:center;margin-bottom:10px">
         <div style="font-weight:700;font-size:14px">${escapeHtml(d.negocio || "Negocio")}</div>
         <div style="color:#6b7280;font-size:10px;margin-top:2px">CORTE DE CAJA</div>
-        <div style="font-size:10px;margin-top:2px;text-transform:capitalize">${escapeHtml(d.fechaLegible)}</div>
+        <div style="font-size:10px;margin-top:2px">${escapeHtml(d.fechaLegible)}</div>
       </div>
       <div class="section">
         <table>

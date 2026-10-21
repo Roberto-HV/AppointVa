@@ -12,7 +12,7 @@ import { Tooltip } from "../components/ui/Tooltip";
 import { NotificacionesBell } from '../components/dashboard/NotificacionesBell';
 import { EncuestaSatisfaccionModal } from '../components/dashboard/EncuestaSatisfaccionModal';
 import { encuestaApi } from '../api/encuesta';
-import { toUtcDate } from '../utils/formatters';
+import { toUtcDate, capitalizarPrimera } from '../utils/formatters';
 import { useInactividadTimeout } from '../hooks/useInactividadTimeout';
 import { useSectorTerms, getSectorTerms } from "../hooks/useSectorTerms";
 import { useSectorFeatures } from "../hooks/useSectorFeatures";
@@ -51,8 +51,8 @@ function FechaHoraActual({ className = "text-slate-500 dark:text-slate-400" }: {
     hour12: true,
   });
   return (
-    <span className={`hidden sm:block select-none text-sm capitalize ${className}`}>
-      {fecha} · {hora}
+    <span className={`hidden sm:block select-none text-sm ${className}`}>
+      {capitalizarPrimera(fecha)} · {hora}
     </span>
   );
 }

@@ -23,6 +23,7 @@ import { fondoPortada } from "../../lib/portadaPresets";
 import { TimePicker, DatePicker } from "../../components/ui/DateTimePicker";
 import { hoy } from "../../utils/fechas";
 import { mensajeError } from "../../utils/errores";
+import { capitalizarPrimera } from "../../utils/formatters";
 import type { ActualizarNegocioDto, HorarioDiaDto, NegocioDto } from "../../types";
 
 const ZONAS_HORARIAS = [
@@ -1351,11 +1352,11 @@ export default function PerfilPage() {
               <div className="space-y-2">
                 {diasBloqueados.map((b) => {
                   const fecha = new Date(b.fecha + "T12:00:00");
-                  const fechaTexto = fecha.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).replace(/\bDe\b/g, "de");
+                  const fechaTexto = capitalizarPrimera(fecha.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).replace(/\bDe\b/g, "de"));
                   return (
                     <div key={b.id} className="flex items-center justify-between px-3 py-2 bg-status-cancelled-bg border border-status-cancelled-dot rounded-lg">
                       <div>
-                        <span className="text-sm font-medium text-status-cancelled-fg capitalize">
+                        <span className="text-sm font-medium text-status-cancelled-fg">
                           {fechaTexto}
                         </span>
                         {b.motivo && <span className="text-xs text-status-cancelled-fg ml-2">— {b.motivo}</span>}

@@ -17,8 +17,9 @@ export default function IndicadorPasos({ pasoActual, pasos, slug }: Props) {
       className="flex items-center justify-between gap-3 px-4 py-3"
       style={{ background: "#18181B", borderBottom: "1px solid rgba(255,255,255,0.05)" }}
     >
-      {/* Barras de progreso + paso actual con su nombre */}
-      <div className="flex min-w-0 items-center gap-1.5">
+      {/* Barras de progreso y, debajo, el paso actual con su nombre. En una sola
+          fila junto a "Mis citas" el nombre se cortaba a 375px ("Fecha y h…"). */}
+      <div className="flex min-w-0 flex-col gap-1.5">
         <ol className="flex shrink-0 items-center gap-1.5" aria-label="Progreso de la reserva">
           {pasos.map((nombre, i) => {
             const idx = i + 1;
@@ -43,7 +44,7 @@ export default function IndicadorPasos({ pasoActual, pasos, slug }: Props) {
             );
           })}
         </ol>
-        <p className="ml-2 truncate text-xs" style={{ color: "rgba(255,255,255,0.7)" }}>
+        <p className="text-xs leading-snug" style={{ color: "rgba(255,255,255,0.7)" }}>
           {`Paso ${pasoActual} de ${pasos.length}`}
           {nombrePaso && <span className="font-semibold text-white/90">{` · ${nombrePaso}`}</span>}
         </p>

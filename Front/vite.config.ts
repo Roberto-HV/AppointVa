@@ -56,6 +56,9 @@ export default defineConfig({
     globals: true,
     setupFiles: ["./src/test/setup.ts"],
     exclude: ["node_modules/**", "e2e/**"],
+    // Under parallel jsdom load a test that runs in ~300ms alone can exceed the
+    // 5s default; the higher limit tolerates slowness without hiding failures.
+    testTimeout: 15000,
     coverage: {
       provider: "v8",
       reporter: ["text", "html"],

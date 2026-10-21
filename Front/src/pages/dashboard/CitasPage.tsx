@@ -16,6 +16,8 @@ import EstadoBadge from "../../components/ui/EstadoBadge";
 import Modal from "../../components/ui/Modal";
 import ConfirmarAccion from "../../components/ui/ConfirmarAccion";
 import AccionesCita, { HojaAccionesCita, type AccionExtraCita } from "../../components/dashboard/AccionesCita";
+import TarjetaCita, { InsigniasCita } from "../../components/dashboard/TarjetaCita";
+import { useMediaQuery, CONSULTA_MOVIL } from "../../hooks/useMediaQuery";
 import { invalidarCitas, useReagendarCita } from "../../hooks/useMutacionesCita";
 import { urlResenaWhatsApp } from "../../utils/whatsapp";
 import { DatePicker } from "../../components/ui/DateTimePicker";
@@ -37,6 +39,7 @@ export default function CitasPage() {
   const qc = useQueryClient();
   const { toast } = useToastStore();
   const terms = useSectorTerms();
+  const esMovil = useMediaQuery(CONSULTA_MOVIL);
 
   const [vista, setVista] = useState<"lista" | "calendario" | "gantt">("lista");
   const [desde, setDesde] = useState(() => hoy());
@@ -509,6 +512,27 @@ export default function CitasPage() {
               onLimpiarFiltros={hayFiltrosActivos ? limpiarFiltros : undefined}
             />
           </div>
+        ) : esMovil ? (
+          // Teléfono: tarjetas apiladas con las acciones a la vista. La tabla medía
+          // 482px a 375px y dejaba WhatsApp y "Acciones" fuera de la pantalla.
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700">
+            <ul className="divide-y divide-gray-100 dark:divide-slate-700" aria-label={terms.citas}>
+              {citas.map((c) => (
+                <li key={c.id}>
+                  <TarjetaCita cita={c} accionesExtra={accionesExtra(c)} nombreNegocio={nombreNegocio} mostrarPago={tienePagos} />
+                </li>
+              ))}
+            </ul>
+
+            <Pagination
+              pagina={pagina}
+              totalPaginas={totalPaginas}
+              total={totalCitas}
+              labelTotal="citas"
+              onCambiar={setPagina}
+              cargando={isLoading}
+            />
+          </div>
         ) : (
           <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 overflow-x-auto">
             <table className="w-full text-sm">
@@ -555,23 +579,7 @@ export default function CitasPage() {
                     <td className="px-4 py-3 text-center">
                       <div className="flex items-center justify-center gap-1 flex-wrap">
                         <EstadoBadge estado={c.estadoTexto} />
-                        {c.anticipoRequerido && (
-                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border-[1.5px] bg-transparent ${
-                            c.anticipoRecibido
-                              ? 'border-emerald-400 text-emerald-700 dark:border-emerald-500 dark:text-emerald-400'
-                              : 'border-amber-400 text-amber-700 dark:border-amber-500 dark:text-amber-500'
-                          }`}>
-                            {c.anticipoRecibido
-                              ? <><CheckCircle2 size={11} /> Anticipo</>
-                              : <><Banknote size={11} /> Anticipo</>
-                            }
-                          </span>
-                        )}
-                        {c.comprobanteUrl && c.estadoTexto === "Pendiente" && (
-                          <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full border border-border text-muted-foreground">
-                            <Receipt size={11} aria-hidden="true" /> Comprobante
-                          </span>
-                        )}
+                        <InsigniasCita cita={c} />
                       </div>
                     </td>
 
@@ -828,7 +836,7 @@ export default function CitasPage() {
             <div className="bg-gray-50 dark:bg-slate-700 rounded-lg p-3 text-sm space-y-1">
               <p><span className="text-gray-500 dark:text-gray-400">Servicio:</span> <span className="font-medium dark:text-gray-200">{servicios.find((s) => s.id === svcSel)?.nombre}</span></p>
               <p><span className="text-gray-500 dark:text-gray-400">Profesional:</span> <span className="font-medium dark:text-gray-200">{empleados.find((e) => e.id === empSel)?.nombre}</span></p>
-              <p><span className="text-gray-500 dark:text-gray-400">Hora:</span> <span className="font-medium dark:text-gray-200 capitalize">{slotNuevo ? formatFechaHora(slotNuevo) : ""}</span></p>
+              <p><span className="text-gray-500 dark:text-gray-400">Hora:</span> <span className="font-medium dark:text-gray-200">{slotNuevo ? formatFechaHora(slotNuevo) : ""}</span></p>
             </div>
 
             <div>
@@ -1013,7 +1021,7 @@ export default function CitasPage() {
                 <div className="bg-gray-50 dark:bg-slate-700 rounded-lg p-3 text-sm space-y-1">
                   <p><span className="text-gray-500 dark:text-gray-400">Servicio:</span> <span className="font-medium dark:text-gray-200">{citaRepetir.nombreServicio}</span></p>
                   <p><span className="text-gray-500 dark:text-gray-400">Profesional:</span> <span className="font-medium dark:text-gray-200">{citaRepetir.nombreEmpleado}</span></p>
-                  <p><span className="text-gray-500 dark:text-gray-400">Hora:</span> <span className="font-medium dark:text-gray-200 capitalize">{slotRepetir ? formatFechaHora(slotRepetir.inicio) : ""}</span></p>
+                  <p><span className="text-gray-500 dark:text-gray-400">Hora:</span> <span className="font-medium dark:text-gray-200">{slotRepetir ? formatFechaHora(slotRepetir.inicio) : ""}</span></p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre del cliente <span className="text-red-400">*</span></label>

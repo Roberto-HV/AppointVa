@@ -7,6 +7,7 @@ import { negociosApi } from "../../api/negocios";
 import { useSectorTerms } from "../../hooks/useSectorTerms";
 import EstadoBadge from "../../components/ui/EstadoBadge";
 import AccionesCita from "../../components/dashboard/AccionesCita";
+import { capitalizarPrimera } from "../../utils/formatters";
 
 function buildGoogleCalUrl(
   titulo: string,
@@ -65,9 +66,9 @@ export default function CitaDetallePage() {
   const inicio = new Date(cita.inicioEn);
   const fin    = new Date(cita.finEn);
 
-  const fechaStr = inicio.toLocaleDateString("es-MX", {
+  const fechaStr = capitalizarPrimera(inicio.toLocaleDateString("es-MX", {
     weekday: "long", day: "numeric", month: "long", year: "numeric",
-  });
+  }));
   const horaStr = `${inicio.toLocaleTimeString("es-MX", { hour: "numeric", minute: "2-digit", hour12: true })} – ${fin.toLocaleTimeString("es-MX", { hour: "numeric", minute: "2-digit", hour12: true })}`;
 
   const icalUrl = `${import.meta.env.VITE_API_URL}/publico/citas/${cita.codigoConfirmacion}/ical`;
@@ -120,7 +121,7 @@ export default function CitaDetallePage() {
         <div className="p-5 flex gap-3">
           <Clock size={18} className="text-gray-400 dark:text-gray-500 mt-0.5 shrink-0" />
           <div>
-            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 capitalize">{fechaStr}</p>
+            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{fechaStr}</p>
             <p className="text-sm text-gray-500 dark:text-gray-400">{horaStr} · {cita.duracionMinutos} min</p>
           </div>
         </div>

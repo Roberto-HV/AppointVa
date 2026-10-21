@@ -8,7 +8,24 @@ import {
   formatFechaHoraResumen,
   formatFechaHoraCompleta,
   formatFechaMx,
+  capitalizarPrimera,
 } from "./formatters";
+
+// Español: solo la primera letra va en mayúscula; días, meses y "de" no.
+describe("capitalizarPrimera", () => {
+  it("pone en mayúscula solo la primera letra", () => {
+    expect(capitalizarPrimera("miércoles, 21 de octubre")).toBe("Miércoles, 21 de octubre");
+  });
+
+  it("no toca el resto de la cadena (no es title case)", () => {
+    expect(capitalizarPrimera("sábado, 3 de enero de 2026")).not.toMatch(/De|Enero/);
+  });
+
+  it("deja igual una cadena que empieza con número y tolera la cadena vacía", () => {
+    expect(capitalizarPrimera("01 oct 2026, 10:00 a. m.")).toBe("01 oct 2026, 10:00 a. m.");
+    expect(capitalizarPrimera("")).toBe("");
+  });
+});
 
 describe("formatPrecio", () => {
   it("formatea un número entero como MXN", () => {

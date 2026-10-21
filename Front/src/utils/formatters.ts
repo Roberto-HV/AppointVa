@@ -3,6 +3,17 @@ export function formatPrecio(n: number): string {
   return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(n);
 }
 
+// ── Texto ──────────────────────────────────────────────────────────────────────
+
+/**
+ * Mayúscula solo en la primera letra: "miércoles, 21 de octubre" → "Miércoles, 21 de octubre".
+ * En español los meses, los días y "de" van en minúscula, así que las fechas
+ * no deben pasar por `capitalize` de CSS (que pondría "21 De Octubre").
+ */
+export function capitalizarPrimera(texto: string): string {
+  return texto.charAt(0).toLocaleUpperCase("es-MX") + texto.slice(1);
+}
+
 // ── Date parsing ───────────────────────────────────────────────────────────────
 // The backend sends naive local datetimes without timezone suffix.
 // JS parses strings without a timezone qualifier as local time (ES2015+),

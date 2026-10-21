@@ -261,17 +261,35 @@ describe("InicioPage — wizard de onboarding", () => {
 
     renderConQuery();
 
-    const heading = await screen.findByText("Configura tu negocio");
-    // The close <button> is the only button element inside the wizard container
-    const wizardDiv = heading.closest(".rounded-xl") as HTMLElement;
-    const closeBtn = within(wizardDiv).getByRole("button");
-
-    fireEvent.click(closeBtn);
+    const guia = await screen.findByRole("region", { name: "Configura tu negocio" });
+    fireEvent.click(within(guia).getByRole("button", { name: "Cerrar la guía de inicio" }));
 
     await waitFor(() =>
       expect(screen.queryByText("Configura tu negocio")).not.toBeInTheDocument()
     );
     expect(setItemSpy).toHaveBeenCalledWith("onboarding-ok-neg-1", "1");
+  });
+
+  it("la guía va después de 'Agenda de hoy' y empieza plegada con el siguiente paso", async () => {
+    vi.spyOn(Storage.prototype, "getItem").mockReturnValue(null);
+
+    renderConQuery();
+
+    const guia = await screen.findByRole("region", { name: "Configura tu negocio" });
+    const agenda = screen.getByRole("heading", { name: "Agenda de hoy" });
+    // La agenda del día precede a la guía en el documento.
+    expect(agenda.compareDocumentPosition(guia) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    // Plegada: progreso y siguiente paso pendiente, sin la lista completa.
+    expect(within(guia).getByText("3/7 completados")).toBeInTheDocument();
+    expect(within(guia).getByText("Agrega tu equipo")).toBeInTheDocument();
+    expect(within(guia).queryByText("Sube fotos a tu galería")).toBeNull();
+
+    const alternar = within(guia).getByRole("button", { name: "Ver todos los pasos" });
+    expect(alternar).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(alternar);
+    expect(within(guia).getByRole("button", { name: "Ocultar pasos" })).toHaveAttribute("aria-expanded", "true");
+    expect(within(guia).getByText("Sube fotos a tu galería")).toBeInTheDocument();
   });
 
   // ── 4. "Ver guía de inicio" reopens wizard ───────────────────────────────────

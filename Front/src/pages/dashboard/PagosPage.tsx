@@ -24,6 +24,7 @@ import { DatePicker } from "../../components/ui/DateTimePicker";
 import TicketRecibo from "../../components/dashboard/TicketRecibo";
 import { cierreCajaApi } from "../../api/cierreCaja";
 import { htmlCorteCaja } from "../../utils/impresionCorte";
+import { capitalizarPrimera } from "../../utils/formatters";
 import type { CitaDto, CierreCajaDto, GuardarCierreCajaDto, RetiroItem } from "../../types";
 
 type FiltroEstadoPago = "todas" | "pendientes" | "pagadas";
@@ -291,9 +292,9 @@ export default function PagosPage() {
   const cuadrado           = Math.abs(diferencia) < 0.01;
 
   const handleImprimirCorte = () => {
-    const fechaLegible = new Date(corteDate + "T12:00:00").toLocaleDateString("es-MX", {
+    const fechaLegible = capitalizarPrimera(new Date(corteDate + "T12:00:00").toLocaleDateString("es-MX", {
       weekday: "long", year: "numeric", month: "long", day: "numeric",
-    });
+    }));
     // Todo valor del documento se escapa dentro de `htmlCorteCaja`: se escribe
     // en una ventana del mismo origen y los nombres los capturan los usuarios.
     const html = htmlCorteCaja({

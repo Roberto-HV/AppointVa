@@ -8,6 +8,7 @@ import { useSectorTerms } from "../../hooks/useSectorTerms";
 import { useAuthStore } from "../../store/authStore";
 import type { CitaDto } from "../../types";
 import { estiloEstadoCita } from "../../lib/estadoCita";
+import { capitalizarPrimera } from "../../utils/formatters";
 
 const EMP_COLORS = [
   "#4F46E5", "#7C3AED", "#0891B2", "#059669",
@@ -82,7 +83,7 @@ export default function KioskPage() {
   const revenue = citas.filter((c) => c.pagada).reduce((s, c) => s + c.precio, 0);
 
   const horaStr = ahora.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", hour12: true });
-  const fechaStr = ahora.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" });
+  const fechaStr = capitalizarPrimera(ahora.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" }));
 
   return (
     // `dark` en la raíz: el modo recepción siempre es oscuro, así que los tokens
@@ -103,7 +104,7 @@ export default function KioskPage() {
           <div className="text-3xl font-black tracking-tighter tabular-nums leading-none">
             {horaStr}
           </div>
-          <div className="text-xs text-white/30 mt-1 capitalize">{fechaStr}</div>
+          <div className="text-xs text-white/30 mt-1">{fechaStr}</div>
         </div>
       </div>
 

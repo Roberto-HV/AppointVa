@@ -11,7 +11,8 @@ import { asignarCarriles, dentroDelRango, rangoHoras, type Carril } from "../../
 const PX_POR_HORA = 64;
 
 const DIAS_CORTOS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
-const MESES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+// En minúscula: en español los meses no llevan mayúscula ("21 de oct 2026").
+const MESES = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
 
 
 function getLunesDeEstaSemana(date: Date): Date {
@@ -176,7 +177,7 @@ export default function CalendarioCitas({ empleadoId, onCitaClick, onReagendar }
               <ChevronLeft size={15} />
             </button>
             <div className="flex flex-col items-center gap-0.5">
-              <span className="text-sm font-semibold text-gray-800 dark:text-slate-200 text-center capitalize">{diaActivoLabel}</span>
+              <span className="text-sm font-semibold text-gray-800 dark:text-slate-200 text-center">{diaActivoLabel}</span>
               <button onClick={() => abrirDia(new Date())} className="text-xs text-slate-700 dark:text-slate-400 hover:underline font-medium">Hoy</button>
             </div>
             <div className="flex justify-end">
@@ -331,7 +332,7 @@ export default function CalendarioCitas({ empleadoId, onCitaClick, onReagendar }
           <div className="flex border-b border-gray-100 dark:border-slate-700 sticky top-0 bg-white dark:bg-slate-900 z-10">
             <div className="w-12 shrink-0" />
             <div className="flex-1 py-3 text-center border-l border-gray-100 dark:border-slate-700">
-              <p className={`text-sm font-semibold capitalize ${diaActivo.toDateString() === hoy.toDateString() ? "text-slate-700 dark:text-slate-300" : "text-gray-800 dark:text-slate-200"}`}>
+              <p className={`text-sm font-semibold ${diaActivo.toDateString() === hoy.toDateString() ? "text-slate-700 dark:text-slate-300" : "text-gray-800 dark:text-slate-200"}`}>
                 {diaActivoLabel}
               </p>
               {(() => {

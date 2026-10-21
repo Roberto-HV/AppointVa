@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor, fireEvent, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -599,5 +599,55 @@ describe("anticipo badge y botón", () => {
       const claves = invalidar.mock.calls.map(([f]) => (f as { queryKey?: unknown[] })?.queryKey?.[0]);
       expect(claves).toEqual(expect.arrayContaining(["citas", "citas-cal", "citas-gantt", "dashboard-resumen"]));
     });
+  });
+});
+
+// A 375px la tabla medía 482px y las acciones de cada fila quedaban fuera de la
+// pantalla. Por debajo de `sm` la lista se muestra como tarjetas.
+describe("CitasPage — tarjetas en pantallas angostas", () => {
+  const matchMediaOriginal = window.matchMedia;
+
+  beforeEach(() => {
+    Object.defineProperty(window, "matchMedia", {
+      writable: true,
+      configurable: true,
+      value: vi.fn().mockImplementation((query: string) => ({
+        matches: query.includes("max-width"),
+        media: query,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
+    });
+  });
+
+  afterEach(() => {
+    Object.defineProperty(window, "matchMedia", { writable: true, configurable: true, value: matchMediaOriginal });
+  });
+
+  it("muestra cada cita como tarjeta, sin tabla, con sus datos y acciones a la vista", async () => {
+    vi.mocked(citasApi.obtenerTodas).mockResolvedValue({
+      datos: [makeCita({ estadoTexto: "Pendiente" })],
+      total: 1,
+      pagina: 1,
+      tamano: 15,
+    });
+    renderConQuery();
+
+    const tarjeta = await screen.findByRole("article", { name: "Cita de Juan Pérez" });
+    expect(screen.queryByRole("table")).toBeNull();
+
+    expect(within(tarjeta).getByText("Corte de cabello · María García")).toBeInTheDocument();
+    expect(within(tarjeta).getByTestId("estado-badge")).toHaveTextContent("Pendiente");
+    expect(within(tarjeta).getByText(/\$200/)).toBeInTheDocument();
+
+    expect(within(tarjeta).getByRole("link", { name: "Enviar recordatorio por WhatsApp a Juan Pérez" })).toBeInTheDocument();
+    expect(within(tarjeta).getByRole("button", { name: "Confirmar cita de Juan Pérez" })).toBeInTheDocument();
+    const acciones = within(tarjeta).getByRole("button", { name: "Acciones de la cita de Juan Pérez" });
+    // Objetivo táctil de 44px en el teléfono.
+    expect(acciones.className).toContain("min-h-[44px]");
+    expect(acciones.className).toContain("min-w-[44px]");
+
+    fireEvent.click(acciones);
+    expect(await screen.findByRole("button", { name: "Reagendar" })).toBeInTheDocument();
   });
 });
