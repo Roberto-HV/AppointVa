@@ -5,6 +5,7 @@ import { citasApi } from "../../api/citas";
 import type { CitaDto } from "../../types";
 import { toUtcDate } from "../../utils/formatters";
 import { fechaLocal } from "../../utils/fechas";
+import { CONSULTA_MOVIL } from "../../hooks/useMediaQuery";
 import { ESTADO_CITA, ESTADOS_CITA, citaAbierta, estiloEstadoCita } from "../../lib/estadoCita";
 import { asignarCarriles, dentroDelRango, rangoHoras, type Carril } from "../../lib/carrilesCitas";
 
@@ -29,6 +30,23 @@ function addDias(date: Date, n: number): Date {
   return d;
 }
 
+type VistaCalendario = "semana" | "dia";
+const CLAVE_VISTA = "calendario-vista";
+
+/**
+ * La elección se recuerda por dispositivo. Sin elección previa, el teléfono abre
+ * en "día": siete columnas a 375px dejaban ~46px por día con bloques ilegibles.
+ */
+function vistaInicial(): VistaCalendario {
+  try {
+    const guardada = localStorage.getItem(CLAVE_VISTA);
+    if (guardada === "semana" || guardada === "dia") return guardada;
+  } catch { /* almacenamiento no disponible */ }
+  const movil = typeof window !== "undefined" && typeof window.matchMedia === "function"
+    && window.matchMedia(CONSULTA_MOVIL).matches;
+  return movil ? "dia" : "semana";
+}
+
 interface Props {
   empleadoId: string;
   onCitaClick: (cita: CitaDto) => void;
@@ -36,7 +54,11 @@ interface Props {
 }
 
 export default function CalendarioCitas({ empleadoId, onCitaClick, onReagendar }: Props) {
-  const [vista, setVista] = useState<"semana" | "dia">("semana");
+  const [vista, setVistaEstado] = useState<VistaCalendario>(vistaInicial);
+  const setVista = (v: VistaCalendario) => {
+    setVistaEstado(v);
+    try { localStorage.setItem(CLAVE_VISTA, v); } catch { /* almacenamiento no disponible */ }
+  };
   const [lunes, setLunes] = useState(() => getLunesDeEstaSemana(new Date()));
   const [diaActivo, setDiaActivo] = useState(() => new Date());
   const [arrastrando, setArrastrando] = useState<CitaDto | null>(null);
@@ -49,7 +71,7 @@ export default function CalendarioCitas({ empleadoId, onCitaClick, onReagendar }
   const domingo = addDias(lunes, 6);
   const hastaApi = addDias(domingo, 1);
 
-  const { data: citas = [] } = useQuery({
+  const { data: citas = [], isError, refetch, isFetching } = useQuery({
     queryKey: ["citas-cal", lunes.toISOString(), empleadoId],
     queryFn: () => citasApi.obtenerTodas({
       desde: fechaLocal(lunes),
@@ -101,7 +123,7 @@ export default function CalendarioCitas({ empleadoId, onCitaClick, onReagendar }
     return <span className={`text-[10px] font-semibold mt-0.5 ${color}`}>{count}</span>;
   };
 
-  const NAV_BTN = "flex items-center gap-1.5 px-3 py-1.5 text-sm border border-gray-200 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-300 transition w-fit";
+  const NAV_BTN = "flex items-center justify-center gap-1.5 px-3 min-h-[44px] min-w-[44px] lg:min-h-[36px] lg:min-w-[36px] text-sm border border-gray-200 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-300 transition w-fit";
 
   // Citas que se solapan se dibujan lado a lado; cada una se puede tocar.
   // Las canceladas e inasistencias no ocupan carril: van detrás (z-0) a todo el
@@ -153,16 +175,16 @@ export default function CalendarioCitas({ empleadoId, onCitaClick, onReagendar }
       <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
         {vista === "semana" ? (
           <div className="grid grid-cols-3 items-center gap-2 flex-1">
-            <button onClick={() => setLunes((d) => addDias(d, -7))} className={NAV_BTN}>
+            <button onClick={() => setLunes((d) => addDias(d, -7))} className={NAV_BTN} aria-label="Semana anterior">
               <ChevronLeft size={15} />
               <span className="hidden sm:inline">Anterior</span>
             </button>
             <div className="flex flex-col items-center gap-0.5">
               <span className="text-sm font-semibold text-gray-800 dark:text-slate-200 text-center">{semanaLabel}</span>
-              <button onClick={() => setLunes(getLunesDeEstaSemana(new Date()))} className="text-xs text-slate-700 dark:text-slate-400 hover:underline font-medium">Hoy</button>
+              <button onClick={() => setLunes(getLunesDeEstaSemana(new Date()))} className="min-h-[44px] lg:min-h-[28px] px-3 text-xs text-slate-700 dark:text-slate-300 hover:underline font-medium">Hoy</button>
             </div>
             <div className="flex justify-end">
-              <button onClick={() => setLunes((d) => addDias(d, 7))} className={NAV_BTN}>
+              <button onClick={() => setLunes((d) => addDias(d, 7))} className={NAV_BTN} aria-label="Semana siguiente">
                 <span className="hidden sm:inline">Siguiente</span>
                 <ChevronRight size={15} />
               </button>
@@ -173,17 +195,19 @@ export default function CalendarioCitas({ empleadoId, onCitaClick, onReagendar }
             <button
               onClick={() => { setDiaActivo((d) => { const nd = addDias(d, -1); abrirDia(nd); return nd; }); }}
               className={NAV_BTN}
+              aria-label="Día anterior"
             >
               <ChevronLeft size={15} />
             </button>
             <div className="flex flex-col items-center gap-0.5">
               <span className="text-sm font-semibold text-gray-800 dark:text-slate-200 text-center">{diaActivoLabel}</span>
-              <button onClick={() => abrirDia(new Date())} className="text-xs text-slate-700 dark:text-slate-400 hover:underline font-medium">Hoy</button>
+              <button onClick={() => abrirDia(new Date())} className="min-h-[44px] lg:min-h-[28px] px-3 text-xs text-slate-700 dark:text-slate-300 hover:underline font-medium">Hoy</button>
             </div>
             <div className="flex justify-end">
               <button
                 onClick={() => { setDiaActivo((d) => { const nd = addDias(d, 1); abrirDia(nd); return nd; }); }}
                 className={NAV_BTN}
+                aria-label="Día siguiente"
               >
                 <ChevronRight size={15} />
               </button>
@@ -192,10 +216,12 @@ export default function CalendarioCitas({ empleadoId, onCitaClick, onReagendar }
         )}
 
         {/* Toggle semana/día */}
-        <div className="flex bg-gray-100 dark:bg-slate-700 rounded-lg p-0.5 gap-0.5 shrink-0">
+        <div className="flex bg-gray-100 dark:bg-slate-700 rounded-lg p-0.5 gap-0.5 shrink-0" role="group" aria-label="Vista del calendario">
           <button
             onClick={() => setVista("semana")}
-            className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md transition ${
+            aria-pressed={vista === "semana"}
+            aria-label="Vista semana"
+            className={`flex items-center justify-center gap-1 px-2.5 min-h-[44px] min-w-[44px] lg:min-h-[32px] lg:min-w-0 text-xs font-medium rounded-md transition ${
               vista === "semana"
                 ? "bg-white dark:bg-slate-600 text-gray-800 dark:text-slate-100 shadow-sm"
                 : "text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200"
@@ -206,7 +232,9 @@ export default function CalendarioCitas({ empleadoId, onCitaClick, onReagendar }
           </button>
           <button
             onClick={() => { setDiaActivo(hoy); setVista("dia"); }}
-            className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md transition ${
+            aria-pressed={vista === "dia"}
+            aria-label="Vista día"
+            className={`flex items-center justify-center gap-1 px-2.5 min-h-[44px] min-w-[44px] lg:min-h-[32px] lg:min-w-0 text-xs font-medium rounded-md transition ${
               vista === "dia"
                 ? "bg-white dark:bg-slate-600 text-gray-800 dark:text-slate-100 shadow-sm"
                 : "text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200"
@@ -217,6 +245,20 @@ export default function CalendarioCitas({ empleadoId, onCitaClick, onReagendar }
           </button>
         </div>
       </div>
+
+      {isError && (
+        <div role="alert" className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 px-4 py-2 text-sm text-red-800 dark:text-red-300">
+          <span>No se pudo cargar el calendario. Un día vacío puede no estarlo.</span>
+          <button
+            type="button"
+            onClick={() => refetch()}
+            disabled={isFetching}
+            className="min-h-[44px] lg:min-h-[36px] px-4 rounded-lg border border-red-300 dark:border-red-800 font-medium hover:bg-red-100 dark:hover:bg-red-900/40 disabled:opacity-50 transition"
+          >
+            {isFetching ? "Reintentando…" : "Reintentar"}
+          </button>
+        </div>
+      )}
 
       {/* Leyenda estados: los mismos colores e iconos que la lista y el Gantt */}
       <ul className="flex gap-2 flex-wrap mb-3 text-xs" aria-label="Leyenda de estados">

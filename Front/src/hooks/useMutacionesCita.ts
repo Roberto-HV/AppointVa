@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient, type QueryClient } from "@tanstack/react-query";
-import { citasApi } from "../api/citas";
+import { citasApi, ESTADOS } from "../api/citas";
 import { useToastStore } from "../store/toastStore";
 import { useSectorTerms } from "./useSectorTerms";
 import { mensajeError } from "../utils/errores";
@@ -26,18 +26,46 @@ export function invalidarCitas(qc: QueryClient) {
   for (const clave of CLAVES_CITAS) qc.invalidateQueries({ queryKey: [clave] });
 }
 
+interface CambioEstado {
+  id: string;
+  estado: number;
+  motivo?: string;
+  /** Estado previo: solo sirve para ofrecer "Deshacer" cuando el cambio es reversible (ver `esReversible`). */
+  anterior?: number;
+}
+
+/**
+ * Solo "Confirmada → Inasistencia" se deshace con el endpoint inverso: el
+ * backend resta la inasistencia del cliente al salir de ese estado y no envía
+ * correos. Confirmar (correo al cliente), completar y cancelar (estados finales
+ * que el backend ya no deja modificar) no se pueden deshacer.
+ */
+function esReversible({ estado, anterior }: CambioEstado) {
+  return estado === ESTADOS.Inasistencia && anterior === ESTADOS.Confirmada;
+}
+
 export function useCambiarEstadoCita() {
   const qc = useQueryClient();
   const toast = useToastStore((s) => s.toast);
-  return useMutation({
-    mutationFn: ({ id, estado, motivo }: { id: string; estado: number; motivo?: string }) =>
+  const mutacion = useMutation({
+    mutationFn: ({ id, estado, motivo }: CambioEstado) =>
       citasApi.cambiarEstado(id, { nuevoEstado: estado, motivo: motivo || undefined }),
-    onSuccess: () => {
+    onSuccess: (_, cambio) => {
       invalidarCitas(qc);
-      toast("Estado actualizado");
+      if (esReversible(cambio)) {
+        toast("Marcada como inasistencia", "exito", {
+          accion: {
+            etiqueta: "Deshacer",
+            onClick: () => mutacion.mutate({ id: cambio.id, estado: cambio.anterior! }),
+          },
+        });
+      } else {
+        toast("Estado actualizado");
+      }
     },
     onError: (err) => toast(mensajeError(err, "No se pudo cambiar el estado"), "error"),
   });
+  return mutacion;
 }
 
 export function useReagendarCita() {

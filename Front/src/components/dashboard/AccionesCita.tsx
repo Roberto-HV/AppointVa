@@ -114,7 +114,7 @@ function HojaAbierta({
 
   const aplicarEstado = (estado: number, conMotivo = false) =>
     cambiarEstado.mutate(
-      { id: cita.id, estado, motivo: conMotivo ? motivo.trim() : undefined },
+      { id: cita.id, estado, motivo: conMotivo ? motivo.trim() : undefined, anterior: cita.estado },
       { onSuccess: onCerrar },
     );
 

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { citasApi } from "../../api/citas";
 import { empleadosApi } from "../../api/empleados";
 import { useAuthStore } from "../../store/authStore";
@@ -11,6 +12,10 @@ import { ESTADO_CITA, ESTADOS_CITA, estiloEstadoCita } from "../../lib/estadoCit
 import { dentroDelRango, ocupaAgenda, rangoHoras } from "../../lib/carrilesCitas";
 
 const PX_POR_HORA = 56;
+const BOTON_ICONO =
+  "inline-flex items-center justify-center min-h-[44px] min-w-[44px] lg:min-h-[36px] lg:min-w-[36px] rounded-lg " +
+  "hover:bg-gray-100 dark:hover:bg-slate-700 transition text-gray-600 dark:text-slate-300 " +
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 const COL_MIN_W = 148;
 
 const EMP_COLORS = [
@@ -52,7 +57,7 @@ export default function GanttCitas({ onCitaClick }: Props) {
   const usuario = useAuthStore((s) => s.usuario);
   const esEmpleado = usuario?.rol === "Empleado";
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ["citas-gantt", fecha],
     queryFn: () => citasApi.obtenerTodas({ desde: fecha, hasta: fecha, tamano: 200 }),
     staleTime: 0,
@@ -75,7 +80,7 @@ export default function GanttCitas({ onCitaClick }: Props) {
     return () => clearInterval(id);
   }, [HORA_INICIO, HORA_FIN]);
 
-  const { data: empleados = [] } = useQuery({
+  const { data: empleados = [], isError: errorEmpleados, refetch: reintentarEmpleados } = useQuery({
     queryKey: ["empleados"],
     queryFn: () => empleadosApi.obtenerTodos(),
     staleTime: 1000 * 60 * 5,
@@ -108,32 +113,32 @@ export default function GanttCitas({ onCitaClick }: Props) {
         <div className="flex items-center gap-1">
           <button
             onClick={() => setFecha(navFecha(fecha, -1))}
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition text-gray-500 dark:text-slate-400 text-sm leading-none"
+            className={BOTON_ICONO}
             aria-label="Día anterior"
           >
-            ←
+            <ChevronLeft size={16} aria-hidden="true" />
           </button>
           <div className="w-44">
             <DatePicker value={fecha} onChange={(v) => setFecha(v)} />
           </div>
           <button
             onClick={() => setFecha(navFecha(fecha, 1))}
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition text-gray-500 dark:text-slate-400 text-sm leading-none"
+            className={BOTON_ICONO}
             aria-label="Día siguiente"
           >
-            →
+            <ChevronRight size={16} aria-hidden="true" />
           </button>
         </div>
         <button
           onClick={() => setFecha(hoy)}
           disabled={fecha === hoy}
-          className="text-xs text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-40 px-2.5 py-1.5 rounded-lg transition"
+          className="min-h-[44px] lg:min-h-[36px] text-xs text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-40 px-3 rounded-lg transition"
         >
           Hoy
         </button>
         <div className="ml-auto flex items-center gap-4">
-          <span className="text-xs text-gray-400 dark:text-slate-500">
-            {isLoading ? "Cargando..." : `${citasActivas.length} cita${citasActivas.length !== 1 ? "s" : ""}`}
+          <span className="text-xs text-muted-foreground">
+            {isLoading ? "Cargando..." : isError ? "Sin datos" : `${citasActivas.length} cita${citasActivas.length !== 1 ? "s" : ""}`}
           </span>
           <ul className="hidden sm:flex items-center gap-3" aria-label="Leyenda de estados">
             {ESTADOS_CITA.map((estado) => (
@@ -147,11 +152,24 @@ export default function GanttCitas({ onCitaClick }: Props) {
       </div>
 
       {isLoading ? (
-        <div className="h-40 flex items-center justify-center text-sm text-gray-400 dark:text-slate-500">
+        <div className="h-40 flex items-center justify-center text-sm text-muted-foreground">
           Cargando jornada...
         </div>
+      ) : isError || errorEmpleados ? (
+        // Un fallo no debe parecer una jornada vacía.
+        <div role="alert" className="h-40 flex flex-col items-center justify-center gap-3 text-sm text-red-700 dark:text-red-400">
+          <span>No se pudo cargar la jornada.</span>
+          <button
+            type="button"
+            onClick={() => { refetch(); reintentarEmpleados(); }}
+            disabled={isFetching}
+            className="min-h-[44px] lg:min-h-[36px] px-4 rounded-lg border border-border font-medium text-foreground hover:bg-muted disabled:opacity-50 transition"
+          >
+            {isFetching ? "Reintentando…" : "Reintentar"}
+          </button>
+        </div>
       ) : emps.length === 0 ? (
-        <div className="h-40 flex items-center justify-center text-sm text-gray-400 dark:text-slate-500">
+        <div className="h-40 flex items-center justify-center text-sm text-muted-foreground">
           No hay empleados activos
         </div>
       ) : (
@@ -180,7 +198,7 @@ export default function GanttCitas({ onCitaClick }: Props) {
                     <span className="text-xs font-semibold text-gray-800 dark:text-slate-200 truncate max-w-[120px] px-1 leading-tight">
                       {emp.nombre}
                     </span>
-                    <span className="text-[10px] text-gray-400 dark:text-slate-500 mt-0.5">
+                    <span className="text-xs text-muted-foreground mt-0.5">
                       {empCitas.length > 0
                         ? `${empCitas.length} cita${empCitas.length !== 1 ? "s" : ""}`
                         : "Sin citas"}

@@ -81,3 +81,11 @@ export function estiloEstadoCita(estado: string | null | undefined): EstiloEstad
 export function citaAbierta(estado: string): boolean {
   return estado === "Pendiente" || estado === "Confirmada";
 }
+
+/**
+ * Ya terminó pero sigue Pendiente o Confirmada: es trabajo sin cerrar
+ * (completar, marcar inasistencia), no algo que se pueda atenuar.
+ */
+export function citaPorCerrar(cita: { estadoTexto: string; finEn: string }, ahora: Date = new Date()): boolean {
+  return citaAbierta(cita.estadoTexto) && new Date(cita.finEn) < ahora;
+}

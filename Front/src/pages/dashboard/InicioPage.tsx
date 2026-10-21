@@ -1,5 +1,5 @@
 ﻿import { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import {
@@ -7,7 +7,7 @@ import {
 } from "recharts";
 import { CheckCircle2, ChevronDown, Circle, X, Scissors, Users, CalendarDays, Clock, TrendingUp, Store, Images, ExternalLink, History } from "lucide-react";
 import { clientesApi } from "../../api/clientes";
-import type { ClienteCitaDto } from "../../types";
+import type { CitaDto, ClienteCitaDto } from "../../types";
 import { NotificacionBanner } from "../../components/ui/NotificacionBanner";
 import { dashboardApi } from "../../api/dashboard";
 import { citasApi } from "../../api/citas";
@@ -19,18 +19,20 @@ import EstadoBadge from "../../components/ui/EstadoBadge";
 import { Skeleton } from "../../components/ui/Skeleton";
 import AnimatedCounter from "../../components/ui/AnimatedCounter";
 import Modal from "../../components/ui/Modal";
-import AccionesCita from "../../components/dashboard/AccionesCita";
+import AccionesCita, { HojaAccionesCita, type VistaHoja } from "../../components/dashboard/AccionesCita";
+import { InsigniaPorCerrar } from "../../components/dashboard/TarjetaCita";
 import { useTheme } from "../../hooks/useTheme";
-import { citaAbierta, estiloEstadoCita } from "../../lib/estadoCita";
+import { citaAbierta, citaPorCerrar, estiloEstadoCita } from "../../lib/estadoCita";
 import { hoy as hoyLocal, inicioSemana as inicioSemanaLocal, finSemana as finSemanaLocal, fechaLocal } from "../../utils/fechas";
-import { formatPrecio, formatFechaHoraResumen as formatFechaHora, capitalizarPrimera } from "../../utils/formatters";
+import { formatPrecio, formatPrecioCorto, formatFechaHoraResumen as formatFechaHora, capitalizarPrimera } from "../../utils/formatters";
 
 interface TarjetaProps { label: string; valor?: string | number; rawValue?: number; valorCorto?: string; color?: string; accent?: boolean }
 function Tarjeta({ label, valor, rawValue, color = "text-slate-900 dark:text-gray-100", accent = false }: TarjetaProps) {
   const numCls = `text-xl sm:text-2xl font-black leading-none ${accent ? "text-white" : color}`;
   return (
     <div className={`rounded-2xl border p-3 sm:p-4 transition-all ${accent ? "bg-slate-900 border-slate-800" : "bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700"}`}>
-      <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest mb-1.5 line-clamp-1 text-slate-400 dark:text-gray-500">{label}</p>
+      {/* 12px mínimo y gris informativo (≥4.5:1): antes 9–10px slate-400, ~2.6:1. */}
+      <p className={`text-xs font-bold uppercase tracking-wide mb-1.5 line-clamp-1 ${accent ? "text-slate-300" : "text-muted-foreground"}`}>{label}</p>
       {typeof valor === "number" ? (
         <AnimatedCounter to={valor} className={numCls} />
       ) : rawValue !== undefined ? (
@@ -43,11 +45,6 @@ function Tarjeta({ label, valor, rawValue, color = "text-slate-900 dark:text-gra
       )}
     </div>
   );
-}
-
-function formatPrecioCorto(n: number) {
-  if (n >= 10000) return `$${Math.round(n / 1000)}k`;
-  return `$${Math.round(n).toLocaleString("es-MX")}`;
 }
 
 // ── Wizard de onboarding ──────────────────────────────────────────────────────
@@ -288,6 +285,8 @@ function BienvenidaScreen({
 // ── Vista del propietario ─────────────────────────────────────────────────────
 function VistaPropietario({ nombre }: { nombre: string }) {
   const [dias, setDias] = useState(14);
+  // Con "reducir movimiento" los tiles aparecen sin escalonado (y los contadores sin animar).
+  const reducirMovimiento = useReducedMotion();
   const usuario = useAuthStore((s) => s.usuario);
   const keyOnboarding = usuario?.negocioId ? `onboarding-ok-${usuario.negocioId}` : "";
   const [mostrarWizard, setMostrarWizard] = useState(() => keyOnboarding ? !localStorage.getItem(keyOnboarding) : false);
@@ -505,6 +504,7 @@ function VistaPropietario({ nombre }: { nombre: string }) {
                         <p className="text-xs text-muted-foreground truncate">{c.nombreServicio} · {c.nombreEmpleado}</p>
                       </div>
                       <EstadoBadge estado={c.estadoTexto} />
+                      <InsigniaPorCerrar cita={c} />
                       <AccionesCita cita={c} nombreNegocio={negocio?.nombre} whatsapp={false} className="ml-auto" />
                     </div>
                   );
@@ -517,7 +517,7 @@ function VistaPropietario({ nombre }: { nombre: string }) {
 
           <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2.5">Citas</p>
           <motion.div
-            initial="hidden" animate="show"
+            initial={reducirMovimiento ? false : "hidden"} animate="show"
             variants={{ hidden: {}, show: { transition: { staggerChildren: 0.08 } } }}
             className="grid grid-cols-3 gap-2 sm:gap-3 mb-6"
           >
@@ -534,7 +534,7 @@ function VistaPropietario({ nombre }: { nombre: string }) {
 
           <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2.5">Ingresos</p>
           <motion.div
-            initial="hidden" animate="show"
+            initial={reducirMovimiento ? false : "hidden"} animate="show"
             variants={{ hidden: {}, show: { transition: { staggerChildren: 0.08 } } }}
             className="grid grid-cols-3 gap-2 sm:gap-3 mb-8"
           >
@@ -687,6 +687,10 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
   const finSemanaStr = finSemanaLocal(ahora);
 
   const [clienteSel, setClienteSel] = useState<{ id: string; nombre: string } | null>(null);
+  // Tocar una cita de la agenda abre sus acciones; el historial es una de ellas.
+  const [citaHoja, setCitaHoja] = useState<CitaDto | null>(null);
+  const [vistaHoja, setVistaHoja] = useState<VistaHoja>("menu");
+  const abrirHoja = (c: CitaDto, v: VistaHoja = "menu") => { setCitaHoja(c); setVistaHoja(v); };
 
   const { data: citasHoy = [], isLoading: cargandoHoy, isError: errorCitasHoy, refetch: reintentarHoy } = useQuery({
     queryKey: ["mis-citas-hoy", hoy],
@@ -764,23 +768,21 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
       {/* Stats hoy */}
       <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-4">
         <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-3 sm:p-4">
-          <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 dark:text-gray-500 mb-1.5">Citas hoy</p>
+          <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-1.5">Citas hoy</p>
           <p className="text-2xl font-black text-slate-900 dark:text-gray-100 leading-none">
             {cargandoHoy ? "—" : citasHoy.length}
           </p>
         </div>
         <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-3 sm:p-4">
-          <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 dark:text-gray-500 mb-1.5">Completadas</p>
+          <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-1.5">Completadas</p>
           <p className="text-2xl font-black text-slate-900 dark:text-gray-100 leading-none">
             {cargandoHoy ? "—" : completadas.length}
           </p>
         </div>
         <div className="bg-slate-900 rounded-2xl p-3 sm:p-4">
-          <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1.5">Ingresos</p>
+          <p className="text-xs font-bold uppercase tracking-wide text-slate-300 mb-1.5">Ingresos</p>
           <p className="text-xl font-black text-white leading-none">
-            {cargandoHoy ? "—" : ingresosHoy >= 10000
-              ? `$${Math.round(ingresosHoy / 1000)}k`
-              : `$${Math.round(ingresosHoy).toLocaleString("es-MX")}`}
+            {cargandoHoy ? "—" : formatPrecioCorto(ingresosHoy)}
           </p>
         </div>
       </div>
@@ -800,9 +802,7 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
         <div className="text-right shrink-0">
           <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-0.5">Ingresos</p>
           <p className="text-base font-black text-foreground">
-            {ingresosSemana >= 10000
-              ? `$${Math.round(ingresosSemana / 1000)}k`
-              : `$${Math.round(ingresosSemana).toLocaleString("es-MX")}`}
+            {formatPrecioCorto(ingresosSemana)}
           </p>
         </div>
       </div>
@@ -851,6 +851,8 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
               const fin = new Date(inicio.getTime() + c.duracionMinutos * 60000);
               const enCurso = inicio <= ahora && ahora < fin && citaAbierta(c.estadoTexto);
               const cerrada = !citaAbierta(c.estadoTexto);
+              // Terminó y sigue abierta: etiqueta "Por cerrar" y la acción principal a la vista.
+              const porCerrar = citaPorCerrar(c, ahora);
               return (
                 <div
                   key={c.id}
@@ -864,8 +866,9 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
                 >
                   <button
                     type="button"
-                    onClick={() => setClienteSel({ id: c.clienteId, nombre: c.nombreCliente })}
-                    aria-label={`${horaTexto(c.inicioEn)} ${c.nombreCliente}, ${c.nombreServicio}. Ver historial del cliente`}
+                    onClick={() => abrirHoja(c)}
+                    aria-haspopup="dialog"
+                    aria-label={`${horaTexto(c.inicioEn)} ${c.nombreCliente}, ${c.nombreServicio}${porCerrar ? ", por cerrar" : ""}. Ver acciones`}
                     className="flex-1 min-w-0 flex items-center gap-3 p-3 text-left rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     <div className="shrink-0 text-right w-[52px]">
@@ -879,12 +882,19 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
                       <p className="text-sm font-semibold text-foreground truncate">{c.nombreCliente}</p>
                       <p className="text-xs text-muted-foreground truncate">{c.nombreServicio}</p>
                     </div>
-                    <div className="shrink-0 text-right">
+                    <div className="shrink-0 text-right flex flex-col items-end gap-0.5">
                       <EstadoBadge estado={c.estadoTexto} />
-                      <p className="text-xs font-semibold text-muted-foreground mt-0.5">{formatPrecio(c.precio)}</p>
+                      {porCerrar && <InsigniaPorCerrar cita={c} ahora={ahora} />}
+                      <p className="text-xs font-semibold text-muted-foreground">{formatPrecio(c.precio)}</p>
                     </div>
                   </button>
-                  <AccionesCita cita={c} whatsapp={false} primaria={false} className="pr-1" />
+                  <AccionesCita
+                    cita={c}
+                    whatsapp={false}
+                    primaria={porCerrar}
+                    className="pr-1"
+                    onAbrirHoja={(v) => abrirHoja(c, v)}
+                  />
                 </div>
               );
             })}
@@ -912,8 +922,8 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
               <div key={c.id} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
                 <div className="min-w-0 mr-3">
                   <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate">{c.nombreCliente}</p>
-                  <p className="text-xs text-gray-400 dark:text-gray-500 truncate">{c.nombreServicio}</p>
-                  <p className="text-xs text-gray-400 dark:text-gray-500">{formatFechaHora(c.inicioEn)}</p>
+                  <p className="text-xs text-muted-foreground truncate">{c.nombreServicio}</p>
+                  <p className="text-xs text-muted-foreground">{formatFechaHora(c.inicioEn)}</p>
                 </div>
                 <EstadoBadge estado={c.estadoTexto} />
               </div>
@@ -921,6 +931,18 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
           </div>
         )}
       </div>
+
+      <HojaAccionesCita
+        cita={citaHoja}
+        vistaInicial={vistaHoja}
+        onCerrar={() => setCitaHoja(null)}
+        accionesExtra={citaHoja?.clienteId ? [{
+          id: "historial",
+          etiqueta: "Ver historial del cliente",
+          Icono: History,
+          onSelect: () => setClienteSel({ id: citaHoja.clienteId, nombre: citaHoja.nombreCliente }),
+        }] : []}
+      />
 
       {/* Historial del cliente: Modal (Radix) da foco, Escape y tema oscuro */}
       <Modal

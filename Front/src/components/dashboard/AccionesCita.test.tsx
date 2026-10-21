@@ -161,3 +161,37 @@ describe("AccionesCita — hoja de acciones", () => {
     expect(await screen.findByRole("link", { name: "Ver detalle" })).toHaveAttribute("href", "/dashboard/citas/cita-1");
   });
 });
+
+describe("AccionesCita — deshacer (DC-17)", () => {
+  it("marcar inasistencia ofrece 'Deshacer', que vuelve a Confirmada con el mismo endpoint", async () => {
+    const { useToastStore } = await import("../../store/toastStore");
+    useToastStore.setState({ toasts: [] });
+    renderizar(<HojaAccionesCita cita={cita({ estadoTexto: "Confirmada", estado: 2 })} onCerrar={vi.fn()} />);
+    await userEvent.click(await screen.findByRole("button", { name: "Marcar inasistencia" }));
+    await userEvent.click(screen.getByRole("button", { name: "Marcar inasistencia" }));
+    await waitFor(() =>
+      expect(citasApi.cambiarEstado).toHaveBeenCalledWith("cita-1", { nuevoEstado: 5, motivo: undefined }),
+    );
+    const aviso = await waitFor(() => {
+      const t = useToastStore.getState().toasts.find((x) => x.accion);
+      expect(t?.accion?.etiqueta).toBe("Deshacer");
+      return t!;
+    });
+    useToastStore.getState().ejecutarAccion(aviso.id);
+    await waitFor(() =>
+      expect(citasApi.cambiarEstado).toHaveBeenLastCalledWith("cita-1", { nuevoEstado: 2, motivo: undefined }),
+    );
+    useToastStore.setState({ toasts: [] });
+  });
+
+  it("cancelar no ofrece deshacer: el backend no deja reabrir una cita cancelada", async () => {
+    const { useToastStore } = await import("../../store/toastStore");
+    useToastStore.setState({ toasts: [] });
+    renderizar(<HojaAccionesCita cita={cita()} onCerrar={vi.fn()} />);
+    await userEvent.click(await screen.findByRole("button", { name: "Cancelar cita" }));
+    await userEvent.click(screen.getByRole("button", { name: "Cancelar cita" }));
+    await waitFor(() => expect(useToastStore.getState().toasts).toHaveLength(1));
+    expect(useToastStore.getState().toasts[0].accion).toBeUndefined();
+    useToastStore.setState({ toasts: [] });
+  });
+});

@@ -1,4 +1,5 @@
 ﻿import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useSectorTerms } from "../../hooks/useSectorTerms";
 
 import { hoy, inicioSemana, finSemana, inicioMes, finMes } from "../../utils/fechas";
@@ -35,20 +36,44 @@ import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
 import { TAMANO_PAGINA } from "../../hooks/usePaginacionLocal";
 
 
+type VistaCitas = "lista" | "calendario" | "gantt";
+const ESTADOS_FILTRO = ["Pendiente", "Confirmada", "Completada", "Cancelada", "Inasistencia"];
+
 export default function CitasPage() {
   const qc = useQueryClient();
   const { toast } = useToastStore();
   const terms = useSectorTerms();
   const esMovil = useMediaQuery(CONSULTA_MOVIL);
 
-  const [vista, setVista] = useState<"lista" | "calendario" | "gantt">("lista");
-  const [desde, setDesde] = useState(() => hoy());
-  const [hasta, setHasta] = useState(() => hoy());
-  const [empleadoId, setEmpleadoId] = useState("");
-  const [busqueda, setBusqueda] = useState("");
-  const [estadoFiltro, setEstadoFiltro] = useState("");
-  const [pagina, setPagina] = useState(1);
+  // Vista, filtros y página viven en la URL: al volver del detalle de una cita
+  // (o recargar) la lista sigue donde estaba, y otras pantallas pueden enlazar
+  // a una lista filtrada (p. ej. `?estado=Pendiente`). Sin parámetro, el
+  // período es hoy; un parámetro vacío significa "sin límite".
+  const [params, setParams] = useSearchParams();
+  const actualizarParams = (cambios: Record<string, string | null>) =>
+    setParams((prev) => {
+      const sig = new URLSearchParams(prev);
+      for (const [k, v] of Object.entries(cambios)) {
+        if (v === null) sig.delete(k);
+        else sig.set(k, v);
+      }
+      return sig;
+    }, { replace: true });
+
+  const vistaParam = params.get("vista");
+  const vista: VistaCitas = vistaParam === "calendario" || vistaParam === "gantt" ? vistaParam : "lista";
+  const desde = params.get("desde") ?? hoy();
+  const hasta = params.get("hasta") ?? hoy();
+  const empleadoId = params.get("empleadoId") ?? "";
+  const busqueda = params.get("busqueda") ?? "";
+  const estadoFiltro = ESTADOS_FILTRO.includes(params.get("estado") ?? "") ? params.get("estado")! : "";
+  const pagina = Math.max(1, Math.floor(Number(params.get("pagina"))) || 1);
   const TAMANO = TAMANO_PAGINA;
+
+  const setVista = (v: VistaCitas) => actualizarParams({ vista: v === "lista" ? null : v });
+  const setPagina = (n: number) => actualizarParams({ pagina: n > 1 ? String(n) : null });
+  /** Cambia filtros y vuelve a la página 1. */
+  const filtrar = (cambios: Record<string, string | null>) => actualizarParams({ ...cambios, pagina: null });
 
   // Única hoja de acciones de la página: la abren el calendario, el Gantt, las
   // filas de la tabla y las tarjetas. Vive fuera del cambio tabla/tarjetas, así
@@ -100,12 +125,12 @@ export default function CitasPage() {
     v.trim() && !EMAIL_RE.test(v.trim()) ? "Correo no válido (ej: nombre@dominio.com)" : "";
 
   // La búsqueda ya llega confirmada desde la barra; aquí solo vuelve a la página 1.
-  const aplicarBusqueda = (v: string) => { setBusqueda(v); setPagina(1); };
+  const aplicarBusqueda = (v: string) => filtrar({ busqueda: v || null });
 
   // ── Queries ──────────────────────────────────────────────────────────────────
   const estadoNum = estadoFiltro ? ESTADOS[estadoFiltro as keyof typeof ESTADOS] : undefined;
 
-  const { data: pagCitas, isLoading } = useQuery({
+  const { data: pagCitas, isLoading, isError: errorCitas, refetch: reintentarCitas, isFetching: actualizandoCitas } = useQuery({
     queryKey: ["citas", desde, hasta, empleadoId, busqueda, estadoFiltro, pagina],
     queryFn: () => citasApi.obtenerTodas({
       desde: desde || undefined,
@@ -247,14 +272,31 @@ export default function CitasPage() {
     setEmailRepetirError("");
   };
 
-  const { mutate: actualizarNotas, isPending: guardandoNotas } = useMutation({
-    mutationFn: ({ id, notas }: { id: string; notas: string | null }) =>
-      citasApi.actualizarNotas(id, notas),
+  // Restaurar una nota es la operación inversa exacta (PATCH con el texto anterior).
+  const { mutate: restaurarNota } = useMutation({
+    mutationFn: ({ id, notas }: { id: string; notas: string }) => citasApi.actualizarNotas(id, notas),
     onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["citas"] });
+      toast("Nota restaurada");
+    },
+    onError: () => toast("No se pudo restaurar la nota. Intenta de nuevo.", "error"),
+  });
+
+  const { mutate: actualizarNotas, isPending: guardandoNotas } = useMutation({
+    mutationFn: ({ id, notas }: { id: string; notas: string | null; anterior?: string | null }) =>
+      citasApi.actualizarNotas(id, notas),
+    onSuccess: (_, { id, notas, anterior }) => {
       qc.invalidateQueries({ queryKey: ["citas"] });
       setCitaNotas(null);
       setNotasTexto("");
-      toast("Notas guardadas");
+      if (notas === null && anterior) {
+        // Borrar no pide confirmación: se puede deshacer desde el aviso.
+        toast("Nota eliminada", "exito", {
+          accion: { etiqueta: "Deshacer", onClick: () => restaurarNota({ id, notas: anterior }) },
+        });
+      } else {
+        toast("Notas guardadas");
+      }
     },
     onError: () => toast("No se pudieron guardar las notas. Intenta de nuevo.", "error"),
   });
@@ -309,7 +351,7 @@ export default function CitasPage() {
     id: "empleado",
     etiqueta: "Profesional",
     valor: empleadoId,
-    onChange: (v) => { setEmpleadoId(v); setPagina(1); },
+    onChange: (v) => filtrar({ empleadoId: v || null }),
     opciones: empleados.map((e) => ({ valor: e.id, etiqueta: e.nombre })),
   };
 
@@ -320,10 +362,9 @@ export default function CitasPage() {
       id: "estado",
       etiqueta: "Estado",
       valor: estadoFiltro,
-      onChange: (v) => { setEstadoFiltro(v); setPagina(1); },
+      onChange: (v) => filtrar({ estado: v || null }),
       etiquetaNeutra: "Todos",
-      opciones: ["Pendiente", "Confirmada", "Completada", "Cancelada", "Inasistencia"]
-        .map((e) => ({ valor: e, etiqueta: e })),
+      opciones: ESTADOS_FILTRO.map((e) => ({ valor: e, etiqueta: e })),
     },
     {
       tipo: "rangoFechas",
@@ -331,7 +372,7 @@ export default function CitasPage() {
       etiqueta: "Período",
       desde,
       hasta,
-      onChange: (d, h) => { setDesde(d); setHasta(h); setPagina(1); },
+      onChange: (d, h) => filtrar({ desde: d, hasta: h }),
       presets: [
         { etiqueta: "Hoy", desde: hoy(), hasta: hoy() },
         { etiqueta: "Semana", desde: inicioSemana(), hasta: finSemana() },
@@ -343,8 +384,7 @@ export default function CitasPage() {
   // Uno solo para la barra y para el estado vacío. Antes eran dos handlers
   // distintos y el del estado vacío se olvidaba de `empleadoId`.
   const limpiarFiltros = () => {
-    setDesde(""); setHasta(""); setEmpleadoId("");
-    setBusqueda(""); setEstadoFiltro(""); setPagina(1);
+    filtrar({ desde: "", hasta: "", empleadoId: null, busqueda: null, estado: null });
   };
 
   const hayFiltrosActivos =
@@ -501,6 +541,16 @@ export default function CitasPage() {
         <GanttCitas onCitaClick={(c: CitaDto) => abrirAcciones(c)} />
       )}
 
+      {/* Un fallo al refrescar no borra la lista que ya se ve, pero se avisa. */}
+      {vista === "lista" && errorCitas && citas.length > 0 && (
+        <div role="alert" className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 px-4 py-2 text-sm text-red-800 dark:text-red-300">
+          <span>{`No se pudo actualizar la lista de ${terms.citas.toLowerCase()}. Lo que ves puede no estar al día.`}</span>
+          <BotonAccion variante="secundaria" onClick={() => reintentarCitas()} disabled={actualizandoCitas}>
+            {actualizandoCitas ? "Reintentando…" : "Reintentar"}
+          </BotonAccion>
+        </div>
+      )}
+
       {/* Vista lista */}
       {vista === "lista" && (
         isLoading ? (
@@ -508,6 +558,16 @@ export default function CitasPage() {
             <table className="w-full text-sm">
               <tbody><SkeletonTableRows filas={6} columnas={5} /></tbody>
             </table>
+          </div>
+        ) : errorCitas && citas.length === 0 ? (
+          // Un fallo no debe leerse como "no hay citas": es lo más engañoso para una agenda.
+          <div role="alert" className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 px-4 py-10 text-center">
+            <AlertTriangle size={28} className="mx-auto mb-2 text-red-700 dark:text-red-400" aria-hidden="true" />
+            <p className="text-sm font-medium text-foreground">{`No se pudieron cargar las ${terms.citas.toLowerCase()}.`}</p>
+            <p className="text-sm text-muted-foreground mb-4">Revisa tu conexión e intenta de nuevo.</p>
+            <BotonAccion variante="secundaria" onClick={() => reintentarCitas()} disabled={actualizandoCitas}>
+              {actualizandoCitas ? "Reintentando…" : "Reintentar"}
+            </BotonAccion>
           </div>
         ) : citas.length === 0 ? (
           <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700">
@@ -553,7 +613,7 @@ export default function CitasPage() {
           <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-100 dark:border-slate-700 text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wide">
+                <tr className="border-b border-gray-100 dark:border-slate-700 text-xs text-muted-foreground uppercase tracking-wide">
                   <th className="text-left px-4 py-3 font-medium">Cliente</th>
                   <th className="text-left px-4 py-3 font-medium hidden sm:table-cell">Servicio</th>
                   <th className="text-left px-4 py-3 font-medium hidden sm:table-cell">Profesional</th>
@@ -569,13 +629,13 @@ export default function CitasPage() {
                   <tr key={c.id} className="border-b border-gray-50 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 transition">
                     <td className="px-4 py-3">
                       <p className="font-medium text-gray-800 dark:text-gray-200">{c.nombreCliente}</p>
-                      <p className="text-xs text-gray-400 dark:text-gray-500">{c.telefonoCliente}</p>
+                      <p className="text-xs text-muted-foreground">{c.telefonoCliente}</p>
                     </td>
                     <td className="px-4 py-3 text-gray-700 dark:text-gray-300 hidden sm:table-cell">{c.nombreServicio}</td>
                     <td className="px-4 py-3 text-gray-700 dark:text-gray-300 hidden sm:table-cell">{c.nombreEmpleado}</td>
                     <td className="px-4 py-3 text-gray-600 dark:text-gray-400 text-xs sm:text-sm whitespace-nowrap">
                       <p>{formatFechaCorta(c.inicioEn)}</p>
-                      <p className="text-gray-400 dark:text-gray-500">{formatHora(c.inicioEn)}</p>
+                      <p className="text-muted-foreground">{formatHora(c.inicioEn)}</p>
                     </td>
                     <td className="px-4 py-3 text-right font-medium text-gray-800 dark:text-gray-200 hidden sm:table-cell">{formatPrecio(c.precio)}</td>
 
@@ -587,7 +647,7 @@ export default function CitasPage() {
                             <CheckCircle2 size={11} aria-hidden="true" /> {c.metodoPago ?? "Pagado"}
                           </span>
                         ) : (
-                          <span className="text-xs text-gray-400 dark:text-gray-500">Por pagar</span>
+                          <span className="text-xs text-muted-foreground">Por pagar</span>
                         )}
                       </td>
                     )}
@@ -631,11 +691,13 @@ export default function CitasPage() {
         {citaEditar && (
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Nombre <span className="text-red-400">*</span>
+              <label htmlFor="editar-nombre" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Nombre <span className="text-red-700 dark:text-red-400" aria-hidden="true">*</span>
               </label>
               <input
+                id="editar-nombre"
                 type="text"
+                required
                 value={fEditar.nombre}
                 onChange={(e) => setFEditar((p) => ({ ...p, nombre: e.target.value }))}
                 placeholder="Nombre completo"
@@ -643,13 +705,14 @@ export default function CitasPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label htmlFor="editar-telefono" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Teléfono{" "}
                 <span className="text-gray-400 dark:text-gray-500 font-normal">
                   {fEditar.telefono ? "(vaciar para desvincular esta cita de la cliente)" : "(sin teléfono — cita independiente)"}
                 </span>
               </label>
               <input
+                id="editar-telefono"
                 type="tel"
                 value={fEditar.telefono}
                 onChange={(e) => setFEditar((p) => ({ ...p, telefono: e.target.value }))}
@@ -658,11 +721,14 @@ export default function CitasPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Correo <span className="text-gray-400 font-normal">(opcional)</span>
+              <label htmlFor="editar-email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Correo <span className="text-muted-foreground font-normal">(opcional)</span>
               </label>
               <input
+                id="editar-email"
                 type="email"
+                aria-invalid={!!emailEditarError || undefined}
+                aria-describedby={emailEditarError ? "editar-email-error" : undefined}
                 value={fEditar.email}
                 onChange={(e) => {
                   setFEditar((p) => ({ ...p, email: e.target.value }));
@@ -673,17 +739,18 @@ export default function CitasPage() {
                   emailEditarError ? "border-red-400 bg-red-50 dark:bg-red-900/20" : "border-gray-200 dark:border-slate-600"
                 }`}
               />
-              {emailEditarError && <p className="text-red-600 dark:text-red-400 text-xs mt-1 flex items-center gap-1"><AlertTriangle size={12} aria-hidden="true" /> {emailEditarError}</p>}
+              {emailEditarError && <p id="editar-email-error" className="text-red-700 dark:text-red-400 text-xs mt-1 flex items-center gap-1"><AlertTriangle size={12} aria-hidden="true" /> {emailEditarError}</p>}
             </div>
             <p className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded-lg px-3 py-2">
               Esto actualiza los datos de la cliente en todas sus citas.
             </p>
             <div className="flex gap-2">
               <button
+                type="button"
                 onClick={() => setCitaEditar(null)}
                 className="px-4 py-2.5 border border-gray-200 dark:border-slate-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700 rounded-xl text-sm transition"
               >
-                Cancelar
+                Volver
               </button>
               <button
                 onClick={() => { if (!emailEditarError) editarCliente(); }}
@@ -723,7 +790,7 @@ export default function CitasPage() {
             <div className="flex gap-2">
               {citaNotas.notas && (
                 <button
-                  onClick={() => actualizarNotas({ id: citaNotas.id, notas: null })}
+                  onClick={() => actualizarNotas({ id: citaNotas.id, notas: null, anterior: citaNotas.notas })}
                   disabled={guardandoNotas}
                   className="px-4 py-2.5 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-40 rounded-xl text-sm transition"
                 >
@@ -749,12 +816,13 @@ export default function CitasPage() {
           <div className="space-y-4">
             {/* Servicio */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Servicio</label>
-              <div className="max-h-48 overflow-y-auto border border-gray-200 dark:border-slate-600 rounded-lg divide-y divide-gray-100 dark:divide-slate-600">
+              <p id="nueva-servicio" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Servicio</p>
+              <div role="group" aria-labelledby="nueva-servicio" className="max-h-48 overflow-y-auto border border-gray-200 dark:border-slate-600 rounded-lg divide-y divide-gray-100 dark:divide-slate-600">
                 {servicios.filter((s) => s.activo).map((s) => (
                   <button
                     key={s.id}
                     type="button"
+                    aria-pressed={svcSel === s.id}
                     onClick={() => { setSvcSel(s.id); setEmpSel(""); setFechaNueva(""); setSlotNuevo(""); }}
                     className={`w-full text-left px-3 py-2.5 text-sm transition ${
                       svcSel === s.id
@@ -774,15 +842,16 @@ export default function CitasPage() {
             {/* Empleado */}
             {svcSel && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Profesional</label>
+                <p id="nueva-profesional" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Profesional</p>
                 {empleadosFiltrados.length === 0 ? (
                   <p className="text-sm text-gray-400 dark:text-gray-500">Ningún empleado ofrece este servicio</p>
                 ) : (
-                  <div className="max-h-36 overflow-y-auto border border-gray-200 dark:border-slate-600 rounded-lg divide-y divide-gray-100 dark:divide-slate-600">
+                  <div role="group" aria-labelledby="nueva-profesional" className="max-h-36 overflow-y-auto border border-gray-200 dark:border-slate-600 rounded-lg divide-y divide-gray-100 dark:divide-slate-600">
                     {empleadosFiltrados.map((e) => (
                       <button
                         key={e.id}
                         type="button"
+                        aria-pressed={empSel === e.id}
                         onClick={() => { setEmpSel(e.id); setFechaNueva(""); setSlotNuevo(""); }}
                         className={`w-full text-left px-3 py-2.5 text-sm transition ${
                           empSel === e.id
@@ -813,18 +882,20 @@ export default function CitasPage() {
             {/* Slots */}
             {svcSel && empSel && fechaNueva && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Horario disponible</label>
+                <p id="nueva-horario" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Horario disponible</p>
                 {cargandoSlotsNueva ? (
                   <p className="text-sm text-gray-400 dark:text-gray-500">Cargando horarios...</p>
                 ) : errorSlotsNueva ? (
-                  <p className="text-xs text-red-500 text-center py-2">Error al cargar horarios. Intenta de nuevo.</p>
+                  <p className="text-xs text-red-700 dark:text-red-400 text-center py-2" role="alert">Error al cargar horarios. Intenta de nuevo.</p>
                 ) : slotsNueva.length === 0 ? (
-                  <p className="text-xs text-slate-400 text-center py-2">Sin horarios disponibles para esta fecha</p>
+                  <p className="text-xs text-muted-foreground text-center py-2">Sin horarios disponibles para esta fecha</p>
                 ) : (
-                  <div className="grid grid-cols-3 gap-2 max-h-44 overflow-y-auto pr-1">
+                  <div role="group" aria-labelledby="nueva-horario" className="grid grid-cols-3 gap-2 max-h-44 overflow-y-auto pr-1">
                     {slotsNueva.map((s) => (
                       <button
                         key={s.inicio}
+                        type="button"
+                        aria-pressed={slotNuevo === s.inicio}
                         onClick={() => setSlotNuevo(s.inicio)}
                         className={`py-2 text-sm rounded-lg border transition ${
                           slotNuevo === s.inicio
@@ -861,9 +932,11 @@ export default function CitasPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre del cliente <span className="text-red-400">*</span></label>
+              <label htmlFor="nueva-nombre" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre del cliente <span className="text-red-700 dark:text-red-400" aria-hidden="true">*</span></label>
               <input
+                id="nueva-nombre"
                 type="text"
+                required
                 value={fCliente.nombre}
                 onChange={(e) => setFCliente((p) => ({ ...p, nombre: e.target.value }))}
                 placeholder="Nombre completo"
@@ -872,10 +945,11 @@ export default function CitasPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Teléfono <span className="text-gray-400 dark:text-gray-500 font-normal">(opcional)</span>
+              <label htmlFor="nueva-telefono" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Teléfono <span className="text-muted-foreground font-normal">(opcional)</span>
               </label>
               <input
+                id="nueva-telefono"
                 type="tel"
                 value={fCliente.telefono}
                 onChange={(e) => setFCliente((p) => ({ ...p, telefono: e.target.value }))}
@@ -885,11 +959,14 @@ export default function CitasPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Email <span className="text-gray-400 dark:text-gray-500 font-normal">(opcional — para recordatorio)</span>
+              <label htmlFor="nueva-email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Email <span className="text-muted-foreground font-normal">(opcional — para recordatorio)</span>
               </label>
               <input
+                id="nueva-email"
                 type="email"
+                aria-invalid={!!emailClienteError || undefined}
+                aria-describedby={emailClienteError ? "nueva-email-error" : undefined}
                 value={fCliente.email}
                 onChange={(e) => {
                   setFCliente((p) => ({ ...p, email: e.target.value }));
@@ -902,17 +979,18 @@ export default function CitasPage() {
                 }`}
               />
               {emailClienteError && (
-                <p className="text-red-600 dark:text-red-400 text-xs mt-1 flex items-center gap-1">
+                <p id="nueva-email-error" className="text-red-700 dark:text-red-400 text-xs mt-1 flex items-center gap-1">
                   <AlertTriangle size={12} aria-hidden="true" /> {emailClienteError}
                 </p>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Nota interna <span className="text-gray-400 dark:text-gray-500 font-normal">(opcional)</span>
+              <label htmlFor="nueva-nota" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Nota interna <span className="text-muted-foreground font-normal">(opcional)</span>
               </label>
               <textarea
+                id="nueva-nota"
                 value={fCliente.notas}
                 onChange={(e) => setFCliente((p) => ({ ...p, notas: e.target.value }))}
                 rows={2}
@@ -1046,29 +1124,36 @@ export default function CitasPage() {
                   <p><span className="text-gray-500 dark:text-gray-400">Hora:</span> <span className="font-medium dark:text-gray-200">{slotRepetir ? formatFechaHora(slotRepetir.inicio) : ""}</span></p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre del cliente <span className="text-red-400">*</span></label>
+                  <label htmlFor="repetir-nombre" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre del cliente <span className="text-red-700 dark:text-red-400" aria-hidden="true">*</span></label>
                   <input
+                    id="repetir-nombre"
                     type="text"
+                    required
                     value={fClienteRepetir.nombre}
                     onChange={(e) => setFClienteRepetir((p) => ({ ...p, nombre: e.target.value }))}
                     className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Teléfono <span className="text-red-400">*</span></label>
+                  <label htmlFor="repetir-telefono" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Teléfono <span className="text-red-700 dark:text-red-400" aria-hidden="true">*</span></label>
                   <input
+                    id="repetir-telefono"
                     type="tel"
+                    required
                     value={fClienteRepetir.telefono}
                     onChange={(e) => setFClienteRepetir((p) => ({ ...p, telefono: e.target.value }))}
                     className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Email <span className="text-gray-400 dark:text-gray-500 font-normal">(opcional)</span>
+                  <label htmlFor="repetir-email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Email <span className="text-muted-foreground font-normal">(opcional)</span>
                   </label>
                   <input
+                    id="repetir-email"
                     type="email"
+                    aria-invalid={!!emailRepetirError || undefined}
+                    aria-describedby={emailRepetirError ? "repetir-email-error" : undefined}
                     value={fClienteRepetir.email}
                     onChange={(e) => {
                       setFClienteRepetir((p) => ({ ...p, email: e.target.value }));
@@ -1080,16 +1165,17 @@ export default function CitasPage() {
                     }`}
                   />
                   {emailRepetirError && (
-                    <p className="text-red-600 dark:text-red-400 text-xs mt-1 flex items-center gap-1">
+                    <p id="repetir-email-error" className="text-red-700 dark:text-red-400 text-xs mt-1 flex items-center gap-1">
                       <AlertTriangle size={12} aria-hidden="true" /> {emailRepetirError}
                     </p>
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Nota interna <span className="text-gray-400 dark:text-gray-500 font-normal">(opcional)</span>
+                  <label htmlFor="repetir-nota" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Nota interna <span className="text-muted-foreground font-normal">(opcional)</span>
                   </label>
                   <textarea
+                    id="repetir-nota"
                     value={fClienteRepetir.notas}
                     onChange={(e) => setFClienteRepetir((p) => ({ ...p, notas: e.target.value }))}
                     rows={2}

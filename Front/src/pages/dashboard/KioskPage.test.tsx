@@ -182,3 +182,19 @@ describe("KioskPage — enlace de salida", () => {
     expect(link).toHaveAttribute("href", "/dashboard/citas");
   });
 });
+
+describe("KioskPage — carga y conexión (DC-28)", () => {
+  it("mientras carga dice que está cargando, no 'No hay empleados activos'", async () => {
+    vi.mocked(citasApi.obtenerTodas).mockReturnValue(new Promise(() => {}));
+    renderKiosk();
+    expect(await screen.findByText(/Cargando .* de hoy…/)).toBeInTheDocument();
+    expect(screen.queryByText("No hay empleados activos")).toBeNull();
+  });
+
+  it("un fallo de red avisa 'Sin conexión · reintentando' en vez de parecer un día vacío", async () => {
+    vi.mocked(citasApi.obtenerTodas).mockRejectedValue(new Error("red"));
+    renderKiosk();
+    expect(await screen.findByRole("alert")).toHaveTextContent("Sin conexión · reintentando");
+    expect(screen.queryByText("No hay empleados activos")).toBeNull();
+  });
+});

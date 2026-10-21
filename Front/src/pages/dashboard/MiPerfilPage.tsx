@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useForm } from "react-hook-form";
+import { useForm, type UseFormRegisterReturn } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Camera, Eye, EyeOff, Loader2, Trash2, Plus } from "lucide-react";
@@ -10,7 +10,12 @@ import { empleadosApi } from "../../api/empleados";
 import { negociosApi } from "../../api/negocios";
 import { citasApi } from "../../api/citas";
 import { DatePicker, TimePicker, citasABusySlots } from "../../components/ui/DateTimePicker";
-import type { HorarioDiaDto } from "../../types";
+import type { BloqueoDto, HorarioDiaDto } from "../../types";
+import { mensajeError } from "../../utils/errores";
+import { Link } from "react-router-dom";
+
+/** Marca como UTC una fecha que llega sin zona (el backend guarda los bloqueos en UTC). */
+const comoUtc = (iso: string) => (/[zZ]$|[+-]\d{2}:?\d{2}$/.test(iso) ? iso : `${iso}Z`);
 import PasswordStrengthBar from "../../components/PasswordStrengthBar";
 import ReglasContrasena from "../../components/ReglasContrasena";
 import { esquemaContrasena } from "../../utils/contrasena";
@@ -52,6 +57,53 @@ const schemaBloqueo = z
 type PwdForm     = z.infer<typeof schemaPwd>;
 type BloqueoForm = z.infer<typeof schemaBloqueo>;
 
+interface CampoContrasenaProps {
+  id: string;
+  etiqueta: string;
+  autoComplete: string;
+  placeholder?: string;
+  visible: boolean;
+  onAlternar: () => void;
+  error?: string;
+  registro: UseFormRegisterReturn;
+}
+
+/**
+ * Contraseña con etiqueta, error ligado (`aria-describedby`) y botón de
+ * mostrar/ocultar alcanzable con teclado (antes `tabIndex={-1}` y sin nombre).
+ */
+function CampoContrasena({ id, etiqueta, autoComplete, placeholder, visible, onAlternar, error, registro }: CampoContrasenaProps) {
+  const idError = `${id}-error`;
+  return (
+    <>
+      <label htmlFor={id} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{etiqueta}</label>
+      <div className="relative">
+        <input
+          id={id}
+          type={visible ? "text" : "password"}
+          autoComplete={autoComplete}
+          placeholder={placeholder}
+          aria-invalid={!!error || undefined}
+          aria-describedby={error ? idError : undefined}
+          {...registro}
+          className={`w-full min-h-[44px] lg:min-h-[36px] px-3 py-2 pr-12 rounded-lg border text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100 ${error ? "border-red-400 bg-red-50 dark:bg-red-900/20" : "border-gray-200 dark:border-slate-600"}`}
+        />
+        <button
+          type="button"
+          onClick={onAlternar}
+          onMouseDown={(e) => e.preventDefault()}
+          aria-label={visible ? `Ocultar ${etiqueta.toLowerCase()}` : `Mostrar ${etiqueta.toLowerCase()}`}
+          aria-pressed={visible}
+          className="absolute right-0 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-11 h-11 lg:w-9 lg:h-9 rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          {visible ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
+        </button>
+      </div>
+      {error && <p id={idError} className="text-red-700 dark:text-red-400 text-xs mt-1">{error}</p>}
+    </>
+  );
+}
+
 export default function MiPerfilPage() {
   const usuario        = useAuthStore((s) => s.usuario);
   const actualizarFoto = useAuthStore((s) => s.actualizarFoto);
@@ -90,7 +142,12 @@ export default function MiPerfilPage() {
   });
 
   // ── Bloqueos (solo empleados) ───────────────────────────────────────────────
-  const formB   = useForm<BloqueoForm>({ resolver: zodResolver(schemaBloqueo) });
+  // Valores por defecto vacíos: sin ellos `watch()` da `undefined` y `.length` fallaba
+  // en cuanto llegaba el id del empleado.
+  const formB   = useForm<BloqueoForm>({
+    resolver: zodResolver(schemaBloqueo),
+    defaultValues: { fechaInicio: "", horaInicio: "", fechaFin: "", horaFin: "", motivo: "" },
+  });
   const fInicio = formB.watch("fechaInicio");
   const fFin    = formB.watch("fechaFin");
 
@@ -174,9 +231,24 @@ export default function MiPerfilPage() {
     onError: () => toast("No se pudo guardar el bloqueo", "error"),
   });
 
-  const { mutate: eliminarBloqueo } = useMutation({
-    mutationFn: (bloqueoId: string) => empleadosApi.eliminarBloqueo(empleadoId!, bloqueoId),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["bloqueos", empleadoId] }); toast("Bloqueo eliminado"); },
+  // Deshacer = volver a crear el mismo bloqueo (mismo inicio, fin y motivo).
+  // El backend guarda en UTC y lo devuelve sin zona: se reenvía marcado como UTC
+  // para que no se desplace según la zona del servidor.
+  const { mutate: restaurarBloqueo } = useMutation({
+    mutationFn: (b: BloqueoDto) =>
+      empleadosApi.crearBloqueo(empleadoId!, { inicioEn: comoUtc(b.inicioEn), finEn: comoUtc(b.finEn), motivo: b.motivo }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["bloqueos", empleadoId] }); toast("Bloqueo restaurado"); },
+    onError: (err) => toast(mensajeError(err, "No se pudo restaurar el bloqueo"), "error"),
+  });
+
+  // Sin confirmación: borrar reabre el horario para reservas, así que el aviso
+  // ofrece "Deshacer" durante unos segundos.
+  const { mutate: eliminarBloqueo, isPending: eliminando, variables: bloqueoEliminando } = useMutation({
+    mutationFn: (b: BloqueoDto) => empleadosApi.eliminarBloqueo(empleadoId!, b.id!),
+    onSuccess: (_, b) => {
+      qc.invalidateQueries({ queryKey: ["bloqueos", empleadoId] });
+      toast("Bloqueo eliminado", "exito", { accion: { etiqueta: "Deshacer", onClick: () => restaurarBloqueo(b) } });
+    },
     onError: () => toast("No se pudo eliminar el bloqueo", "error"),
   });
 
@@ -257,59 +329,47 @@ export default function MiPerfilPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Contraseña actual</label>
-                <div className="relative">
-                  <input
-                    type={mostrarActual ? "text" : "password"}
-                    {...register("passwordActual")}
-                    className={`w-full px-3 py-2 pr-10 rounded-lg border text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100 ${errors.passwordActual ? "border-red-400 bg-red-50 dark:bg-red-900/20" : "border-gray-200 dark:border-slate-600"}`}
-                  />
-                  <button type="button" onClick={() => setMostrarActual((v) => !v)} onMouseDown={(e) => e.preventDefault()}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400" tabIndex={-1}>
-                    {mostrarActual ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                </div>
-                {errors.passwordActual && <p className="text-red-500 text-xs mt-1">{errors.passwordActual.message}</p>}
+                <CampoContrasena
+                  id="pwd-actual"
+                  etiqueta="Contraseña actual"
+                  autoComplete="current-password"
+                  visible={mostrarActual}
+                  onAlternar={() => setMostrarActual((v) => !v)}
+                  error={errors.passwordActual?.message}
+                  registro={register("passwordActual")}
+                />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nueva contraseña</label>
-                <div className="relative">
-                  <input
-                    type={mostrarNueva ? "text" : "password"}
-                    {...register("passwordNuevo")}
-                    placeholder="Mínimo 6 caracteres"
-                    className={`w-full px-3 py-2 pr-10 rounded-lg border text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100 ${errors.passwordNuevo ? "border-red-400 bg-red-50 dark:bg-red-900/20" : "border-gray-200 dark:border-slate-600"}`}
-                  />
-                  <button type="button" onClick={() => setMostrarNueva((v) => !v)} onMouseDown={(e) => e.preventDefault()}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400" tabIndex={-1}>
-                    {mostrarNueva ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                </div>
-                {errors.passwordNuevo && <p className="text-red-500 text-xs mt-1">{errors.passwordNuevo.message}</p>}
+                <CampoContrasena
+                  id="pwd-nueva"
+                  etiqueta="Nueva contraseña"
+                  autoComplete="new-password"
+                  placeholder="Mínimo 6 caracteres"
+                  visible={mostrarNueva}
+                  onAlternar={() => setMostrarNueva((v) => !v)}
+                  error={errors.passwordNuevo?.message}
+                  registro={register("passwordNuevo")}
+                />
                 <ReglasContrasena valor={nuevaValor ?? ""} />
                 <PasswordStrengthBar password={nuevaValor} />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Confirmar contraseña</label>
-                <div className="relative">
-                  <input
-                    type={mostrarConfirmar ? "text" : "password"}
-                    {...register("confirmar")}
-                    className={`w-full px-3 py-2 pr-10 rounded-lg border text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100 ${errors.confirmar ? "border-red-400 bg-red-50 dark:bg-red-900/20" : "border-gray-200 dark:border-slate-600"}`}
-                  />
-                  <button type="button" onClick={() => setMostrarConfirmar((v) => !v)} onMouseDown={(e) => e.preventDefault()}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400" tabIndex={-1}>
-                    {mostrarConfirmar ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                </div>
-                {errors.confirmar && <p className="text-red-500 text-xs mt-1">{errors.confirmar.message}</p>}
+                <CampoContrasena
+                  id="pwd-confirmar"
+                  etiqueta="Confirmar contraseña"
+                  autoComplete="new-password"
+                  visible={mostrarConfirmar}
+                  onAlternar={() => setMostrarConfirmar((v) => !v)}
+                  error={errors.confirmar?.message}
+                  registro={register("confirmar")}
+                />
               </div>
             </div>
 
             {mensaje && (
-              <div className={`text-sm rounded-lg px-4 py-3 ${mensaje.tipo === "ok" ? "bg-emerald-50 border border-emerald-200 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-800 dark:text-emerald-300" : "bg-red-50 border border-red-200 text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300"}`}>
+              <div role={mensaje.tipo === "ok" ? "status" : "alert"} className={`text-sm rounded-lg px-4 py-3 ${mensaje.tipo === "ok" ? "bg-emerald-50 border border-emerald-200 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-800 dark:text-emerald-300" : "bg-red-50 border border-red-200 text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300"}`}>
                 {mensaje.texto}
               </div>
             )}
@@ -324,6 +384,20 @@ export default function MiPerfilPage() {
           </form>
         </div>
 
+      </div>
+
+      {/* ── Seguridad: antes los empleados no tenían forma de llegar a la verificación en dos pasos ── */}
+      <div className="mt-6 bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-5 flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="text-base font-semibold text-gray-800 dark:text-gray-200">Seguridad</h2>
+          <p className="text-sm text-muted-foreground">Verificación en dos pasos para proteger tu cuenta.</p>
+        </div>
+        <Link
+          to="/dashboard/seguridad"
+          className="inline-flex items-center justify-center min-h-[44px] lg:min-h-[36px] px-4 rounded-xl border border-border text-sm font-medium text-foreground hover:bg-muted transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          Configurar verificación en dos pasos
+        </Link>
       </div>
 
       {/* ── Notificaciones push ── */}
@@ -406,8 +480,9 @@ export default function MiPerfilPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Motivo (opcional)</label>
+                <label htmlFor="bloqueo-motivo" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Motivo (opcional)</label>
                 <input
+                  id="bloqueo-motivo"
                   {...formB.register("motivo")}
                   placeholder="Cita médica, día personal..."
                   className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700"
@@ -450,11 +525,12 @@ export default function MiPerfilPage() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => { if (b.id) eliminarBloqueo(b.id); }}
-                    className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 hover:text-red-600 transition shrink-0 mt-0.5"
-                    title="Eliminar bloqueo"
+                    onClick={() => { if (b.id) eliminarBloqueo(b); }}
+                    disabled={eliminando && bloqueoEliminando?.id === b.id}
+                    className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] lg:min-h-[36px] lg:min-w-[36px] rounded-lg text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-40 transition shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    aria-label={`Eliminar bloqueo del ${fmtBloqueo(b.inicioEn)}`}
                   >
-                    <Trash2 size={14} />
+                    <Trash2 size={16} aria-hidden="true" />
                   </button>
                 </div>
               ))}

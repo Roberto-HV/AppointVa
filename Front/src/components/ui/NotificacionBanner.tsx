@@ -35,7 +35,7 @@ export function NotificacionBanner({ visible = true }: Props) {
           <button
             onClick={activar}
             disabled={cargando}
-            className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
+            className="rounded-md bg-primary text-primary-foreground min-h-[44px] lg:min-h-[32px] px-3 text-xs font-semibold hover:opacity-90 disabled:opacity-60"
           >
             {cargando ? "Activando…" : "Activar notificaciones"}
           </button>

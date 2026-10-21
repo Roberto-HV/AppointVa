@@ -4,12 +4,14 @@ import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import CitaDetallePage from "./CitaDetallePage";
 
+const mockNavigate = vi.hoisted(() => vi.fn());
+
 vi.mock("react-router-dom", async (importOriginal) => {
   const mod = await importOriginal<typeof import("react-router-dom")>();
   return {
     ...mod,
     useParams: () => ({ id: "cita-1" }),
-    useNavigate: () => vi.fn(),
+    useNavigate: () => mockNavigate,
   };
 });
 
@@ -55,12 +57,12 @@ const mockCita = {
   notas: null,
 };
 
-function renderConQuery() {
+function renderConQuery(entradas: string[] = ["/dashboard/citas/cita-1"]) {
   const qc = new QueryClient({
     defaultOptions: { queries: { retry: false, retryDelay: 0 } },
   });
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={entradas} initialIndex={entradas.length - 1}>
       <QueryClientProvider client={qc}>
         <CitaDetallePage />
       </QueryClientProvider>
@@ -73,11 +75,11 @@ beforeEach(() => {
 });
 
 describe("CitaDetallePage — estado de carga", () => {
-  it("muestra el spinner mientras se obtiene la cita", async () => {
+  it("muestra un esqueleto mientras se obtiene la cita", async () => {
     vi.mocked(citasApi.obtenerPorId).mockReturnValue(new Promise(() => {}));
     const { container } = renderConQuery();
     await waitFor(() =>
-      expect(container.querySelector(".animate-spin")).toBeTruthy()
+      expect(container.querySelector(".animate-pulse")).toBeTruthy()
     );
   });
 });
@@ -155,5 +157,21 @@ describe("CitaDetallePage — acciones", () => {
     expect(await screen.findByRole("button", { name: "Reagendar" })).toBeInTheDocument();
     // Desde el detalle no se ofrece volver al detalle.
     expect(screen.queryByRole("link", { name: "Ver detalle" })).toBeNull();
+  });
+});
+
+describe("CitaDetallePage — volver (DC-16)", () => {
+  it("con historial vuelve atrás, conservando los filtros de la lista", async () => {
+    vi.mocked(citasApi.obtenerPorId).mockResolvedValue(mockCita as never);
+    renderConQuery(["/dashboard/citas?estado=Pendiente&pagina=2", "/dashboard/citas/cita-1"]);
+    fireEvent.click(await screen.findByRole("button", { name: "Volver" }));
+    expect(mockNavigate).toHaveBeenCalledWith(-1);
+  });
+
+  it("si se llegó directo (notificación), abre la lista", async () => {
+    vi.mocked(citasApi.obtenerPorId).mockResolvedValue(mockCita as never);
+    renderConQuery();
+    fireEvent.click(await screen.findByRole("button", { name: "Volver" }));
+    expect(mockNavigate).toHaveBeenCalledWith("/dashboard/citas");
   });
 });

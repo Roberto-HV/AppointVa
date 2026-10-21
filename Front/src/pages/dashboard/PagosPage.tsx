@@ -13,6 +13,7 @@ import { exportarExcel } from "../../utils/exportarExcel";
 import { hoy, inicioSemana, finSemana, inicioMes, finMes } from "../../utils/fechas";
 import Modal from "../../components/ui/Modal";
 import ConfirmarAccion from "../../components/ui/ConfirmarAccion";
+import Switch from "../../components/ui/Switch";
 import { mensajeError } from "../../utils/errores";
 import Tabs from "../../components/ui/Tabs";
 import EmptyState from "../../components/ui/EmptyState";
@@ -24,7 +25,7 @@ import { DatePicker } from "../../components/ui/DateTimePicker";
 import TicketRecibo from "../../components/dashboard/TicketRecibo";
 import { cierreCajaApi } from "../../api/cierreCaja";
 import { htmlCorteCaja } from "../../utils/impresionCorte";
-import { capitalizarPrimera } from "../../utils/formatters";
+import { capitalizarPrimera, formatPrecio } from "../../utils/formatters";
 import type { CitaDto, CierreCajaDto, GuardarCierreCajaDto, RetiroItem } from "../../types";
 
 type FiltroEstadoPago = "todas" | "pendientes" | "pagadas";
@@ -492,18 +493,19 @@ export default function PagosPage() {
         <>
           {/* KPI cards */}
           {resumen && (
-            <div className="grid grid-cols-3 gap-4">
+            // Apiladas en el teléfono: tres montos text-2xl no caben en ~100px por columna.
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
               <div className="relative bg-card border border-border rounded-xl p-4 overflow-hidden">
                 <div className="absolute top-0 left-0 right-0 h-0.5 bg-primary/50" />
                 <div className="absolute top-3.5 right-3.5 text-muted-foreground/70"><TrendingUp size={14} /></div>
                 <p className="text-xs font-medium text-muted-foreground mb-2 pr-7">Total cobrado</p>
-                <p className="text-2xl font-semibold tracking-tight text-foreground leading-none mb-1">${totalCobrado.toFixed(2)}</p>
+                <p className="text-2xl font-semibold tracking-tight text-foreground leading-none mb-1">{formatPrecio(totalCobrado)}</p>
               </div>
               <div className="relative bg-card border border-border rounded-xl p-4 overflow-hidden">
                 <div className="absolute top-0 left-0 right-0 h-0.5 bg-primary/50" />
                 <div className="absolute top-3.5 right-3.5 text-muted-foreground/70"><AlertCircle size={14} /></div>
                 <p className="text-xs font-medium text-muted-foreground mb-2 pr-7">Por cobrar</p>
-                <p className="text-2xl font-semibold tracking-tight text-foreground leading-none mb-1">${totalPendiente.toFixed(2)}</p>
+                <p className="text-2xl font-semibold tracking-tight text-foreground leading-none mb-1">{formatPrecio(totalPendiente)}</p>
               </div>
               <div className="relative bg-card border border-border rounded-xl p-4 overflow-hidden">
                 <div className="absolute top-0 left-0 right-0 h-0.5 bg-primary/50" />
@@ -685,7 +687,7 @@ export default function PagosPage() {
                 <div className="flex items-center gap-2 text-xs text-slate-400 mb-1">
                   <TrendingUp size={14} /> Total cobrado
                 </div>
-                <p className="text-xl font-bold text-white">${histTotalCobrado.toFixed(2)}</p>
+                <p className="text-xl font-bold text-white">{formatPrecio(histTotalCobrado)}</p>
               </div>
               <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl p-4">
                 <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-1">
@@ -697,13 +699,13 @@ export default function PagosPage() {
                 <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-1">
                   <Receipt size={14} /> Propinas
                 </div>
-                <p className="text-xl font-bold text-teal-600 dark:text-teal-400">${histTotalPropinas.toFixed(2)}</p>
+                <p className="text-xl font-bold text-teal-600 dark:text-teal-400">{formatPrecio(histTotalPropinas)}</p>
               </div>
               <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl p-4">
                 <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-1">
                   <CreditCard size={14} /> Promedio/cita
                 </div>
-                <p className="text-xl font-bold text-slate-700 dark:text-slate-200">${histPromedio.toFixed(2)}</p>
+                <p className="text-xl font-bold text-slate-700 dark:text-slate-200">{formatPrecio(histPromedio)}</p>
               </div>
             </div>
           )}
@@ -755,8 +757,8 @@ export default function PagosPage() {
                       {/* "Total del período" y no "Total": con la tabla paginada
                           un "Total" a secas se leería como el total de la página. */}
                       <td colSpan={5} className="px-4 py-3 text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total del período</td>
-                      <td className="px-4 py-3 text-right text-emerald-600 dark:text-emerald-400">${histTotalCobrado.toFixed(2)}</td>
-                      <td className="px-4 py-3 text-right text-teal-600 dark:text-teal-400 hidden sm:table-cell">${histTotalPropinas.toFixed(2)}</td>
+                      <td className="px-4 py-3 text-right text-emerald-600 dark:text-emerald-400">{formatPrecio(histTotalCobrado)}</td>
+                      <td className="px-4 py-3 text-right text-teal-600 dark:text-teal-400 hidden sm:table-cell">{formatPrecio(histTotalPropinas)}</td>
                       <td></td>
                     </tr>
                   </tfoot>
@@ -814,15 +816,15 @@ export default function PagosPage() {
                 </div>
                 <div className="bg-slate-800 rounded-xl p-4">
                   <p className="text-xs text-slate-400 mb-1 flex items-center gap-1.5"><TrendingUp size={13} /> Total cobrado</p>
-                  <p className="text-2xl font-black text-white">${corteTotalCobrado.toFixed(2)}</p>
+                  <p className="text-xl sm:text-2xl font-black text-white">{formatPrecio(corteTotalCobrado)}</p>
                 </div>
                 <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl p-4">
                   <p className="text-xs text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1.5"><CreditCard size={13} /> Propinas</p>
-                  <p className="text-2xl font-black text-teal-600 dark:text-teal-400">${corteTotalPropinas.toFixed(2)}</p>
+                  <p className="text-xl sm:text-2xl font-black text-teal-600 dark:text-teal-400">{formatPrecio(corteTotalPropinas)}</p>
                 </div>
                 <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl p-4">
                   <p className="text-xs text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1.5"><Receipt size={13} /> Promedio/cita</p>
-                  <p className="text-2xl font-black text-slate-700 dark:text-slate-200">${cortePromedio.toFixed(2)}</p>
+                  <p className="text-xl sm:text-2xl font-black text-slate-700 dark:text-slate-200">{formatPrecio(cortePromedio)}</p>
                 </div>
               </div>
 
@@ -849,8 +851,8 @@ export default function PagosPage() {
                           <tr key={e.nombre}>
                             <td className="py-3 font-medium text-gray-800 dark:text-gray-200">{e.nombre}</td>
                             <td className="py-3 text-right text-gray-500 dark:text-gray-400">{e.cantidad}</td>
-                            <td className="py-3 text-right text-teal-600 dark:text-teal-400">${e.propinas.toFixed(2)}</td>
-                            <td className="py-3 text-right font-bold text-emerald-600 dark:text-emerald-400">${e.monto.toFixed(2)}</td>
+                            <td className="py-3 text-right text-teal-600 dark:text-teal-400">{formatPrecio(e.propinas)}</td>
+                            <td className="py-3 text-right font-bold text-emerald-600 dark:text-emerald-400">{formatPrecio(e.monto)}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -858,8 +860,8 @@ export default function PagosPage() {
                         <tr className="border-t-2 border-gray-200 dark:border-slate-600 font-semibold">
                           <td className="pt-3 text-xs text-gray-500 uppercase tracking-wider">Total</td>
                           <td className="pt-3 text-right text-gray-500">{corteData.length}</td>
-                          <td className="pt-3 text-right text-teal-600 dark:text-teal-400">${corteTotalPropinas.toFixed(2)}</td>
-                          <td className="pt-3 text-right text-emerald-600 dark:text-emerald-400">${corteTotalCobrado.toFixed(2)}</td>
+                          <td className="pt-3 text-right text-teal-600 dark:text-teal-400">{formatPrecio(corteTotalPropinas)}</td>
+                          <td className="pt-3 text-right text-emerald-600 dark:text-emerald-400">{formatPrecio(corteTotalCobrado)}</td>
                         </tr>
                       </tfoot>
                     </table>
@@ -920,7 +922,7 @@ export default function PagosPage() {
               {retiros.map((r, i) => (
                 <div key={i} className="flex items-center gap-2 mb-1 text-gray-900 dark:text-gray-100">
                   <span className="flex-1 text-sm">{r.concepto}</span>
-                  <span className="text-sm font-mono">${r.monto.toFixed(2)}</span>
+                  <span className="text-sm font-mono">{formatPrecio(r.monto)}</span>
                   <button
                     type="button"
                     onClick={() => { setRetiros(prev => prev.filter((_, j) => j !== i)); setCierreEditado(true); }}
@@ -977,17 +979,17 @@ export default function PagosPage() {
               <div className="space-y-1 text-sm text-gray-900 dark:text-gray-100">
                 <div className="flex justify-between">
                   <span className="text-gray-600 dark:text-gray-400">Inicio + Cobrado − Retiros</span>
-                  <span className="font-mono">${efectivoEsperado.toFixed(2)}</span>
+                  <span className="font-mono">{formatPrecio(efectivoEsperado)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600 dark:text-gray-400">Contado</span>
-                  <span className="font-mono">${contadoDec.toFixed(2)}</span>
+                  <span className="font-mono">{formatPrecio(contadoDec)}</span>
                 </div>
                 <div className={`flex justify-between font-semibold border-t pt-1 mt-1 ${
                   cuadrado ? 'text-green-700 dark:text-green-400' : 'text-yellow-700 dark:text-yellow-400'
                 }`}>
                   <span>Diferencia</span>
-                  <span className="font-mono">{diferencia >= 0 ? '+' : ''}{diferencia.toFixed(2)}</span>
+                  <span className="font-mono">{diferencia > 0 ? '+' : diferencia < 0 ? '−' : ''}{formatPrecio(Math.abs(diferencia))}</span>
                 </div>
               </div>
             </div>
@@ -1035,14 +1037,14 @@ export default function PagosPage() {
             <div className="bg-gray-50 dark:bg-slate-700/50 rounded-xl p-4 space-y-1 text-sm">
               <p className="font-semibold text-gray-900 dark:text-gray-100">{citaSel.nombreCliente}</p>
               <p className="text-gray-500 dark:text-gray-400">{citaSel.nombreServicio}</p>
-              <p className="text-lg font-bold text-slate-700 dark:text-slate-300 mt-2">${citaSel.precio.toFixed(2)}</p>
+              <p className="text-lg font-bold text-slate-700 dark:text-slate-300 mt-2">{formatPrecio(citaSel.precio)}</p>
             </div>
 
             {citaSel?.anticipoRecibido && citaSel.montoAnticipo && (
               <div className="flex items-start gap-2.5 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl p-3">
                 <CheckCircle2 size={16} className="text-emerald-600 dark:text-emerald-400 mt-0.5 shrink-0" />
                 <div className="text-sm text-emerald-800 dark:text-emerald-300">
-                  <span className="font-semibold">Anticipo registrado: ${citaSel.montoAnticipo.toFixed(2)}</span>
+                  <span className="font-semibold">Anticipo registrado: {formatPrecio(citaSel.montoAnticipo)}</span>
                   <br />
                   <span className="text-xs">Total a cobrar ajustado automáticamente. Puedes modificarlo abajo.</span>
                 </div>
@@ -1051,12 +1053,13 @@ export default function PagosPage() {
 
             {citaSel?.anticipoRecibido && citaSel.montoAnticipo && (
               <div>
-                <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+                <label htmlFor="pago-total" className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
                   Total a cobrar
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" aria-hidden="true">$</span>
                   <input
+                    id="pago-total"
                     type="number"
                     min={0}
                     step={0.01}
@@ -1066,17 +1069,19 @@ export default function PagosPage() {
                   />
                 </div>
                 <p className="text-xs text-gray-400 mt-1">
-                  Precio original: ${citaSel.precio.toFixed(2)} — Anticipo: −${citaSel.montoAnticipo.toFixed(2)}
+                  Precio original: {formatPrecio(citaSel.precio)} — Anticipo: −{formatPrecio(citaSel.montoAnticipo)}
                 </p>
               </div>
             )}
 
             <div>
-              <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Método de pago</p>
-              <div className="grid grid-cols-3 gap-2">
+              <p id="pago-metodo" className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Método de pago</p>
+              <div className="grid grid-cols-3 gap-2" role="group" aria-labelledby="pago-metodo">
                 {METODOS_PAGO.map((m) => (
                   <button
                     key={m}
+                    type="button"
+                    aria-pressed={metodoPago === m}
                     onClick={() => { setMetodoPago(m); setMontoRecibido(""); }}
                     className={`py-3 rounded-xl border text-sm font-medium flex flex-col items-center gap-1 transition ${
                       metodoPago === m
@@ -1093,34 +1098,31 @@ export default function PagosPage() {
 
             {/* Split-payment toggle */}
             <div className="flex items-center justify-between py-2">
-              <span className="text-sm text-gray-600 dark:text-gray-400">Dividir pago</span>
-              <button
-                type="button"
-                onClick={() => { setIsSplit(v => !v); setMontoPago2Input(''); }}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  isSplit ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'
-                }`}
-              >
-                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  isSplit ? 'translate-x-6' : 'translate-x-1'
-                }`} />
-              </button>
+              <span id="pago-dividir" className="text-sm text-gray-600 dark:text-gray-400">Dividir pago</span>
+              {/* Interruptor compartido: antes un botón sin rol ni nombre, en azul fuera del sistema. */}
+              <Switch
+                activo={isSplit}
+                onCambiar={(v) => { setIsSplit(v); setMontoPago2Input(''); }}
+                idEtiqueta="pago-dividir"
+              />
             </div>
 
             {isSplit && (
               <div className="space-y-3 border-t border-dashed border-gray-200 dark:border-gray-700 pt-3">
                 <div className="flex gap-3">
                   <div className="flex-1">
-                    <label className="block text-xs text-gray-500 mb-1">Monto en {metodoPago}</label>
+                    <label htmlFor="pago-monto1" className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Monto en {metodoPago}</label>
                     <input
+                      id="pago-monto1"
                       readOnly
                       value={montoPago1Dec.toFixed(2)}
                       className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm"
                     />
                   </div>
                   <div className="flex-1">
-                    <label className="block text-xs text-gray-500 mb-1">Segundo método</label>
+                    <label htmlFor="pago-metodo2" className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Segundo método</label>
                     <select
+                      id="pago-metodo2"
                       value={metodoPago2}
                       onChange={e => setMetodoPago2(e.target.value)}
                       className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm"
@@ -1132,8 +1134,9 @@ export default function PagosPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Monto en {metodoPago2}</label>
+                  <label htmlFor="pago-monto2" className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Monto en {metodoPago2}</label>
                   <input
+                    id="pago-monto2"
                     type="number"
                     min="0.01"
                     step="0.01"
@@ -1148,9 +1151,12 @@ export default function PagosPage() {
 
             {hayEfectivo && (
               <div>
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Monto recibido</label>
+                <label htmlFor="pago-recibido" className="text-sm font-medium text-gray-700 dark:text-gray-300">Monto recibido</label>
                 <input
+                  id="pago-recibido"
                   type="number"
+                  aria-invalid={(!!montoRecibido && montoRecibidoDec < porcionEfectivo) || undefined}
+                  aria-describedby={montoRecibido && montoRecibidoDec < porcionEfectivo ? "pago-recibido-error" : undefined}
                   step="0.01"
                   min={porcionEfectivo}
                   placeholder="Monto recibido"
@@ -1160,19 +1166,20 @@ export default function PagosPage() {
                 />
                 {montoRecibido && cambio > 0 && (
                   <p className="mt-2 text-sm text-emerald-600 dark:text-emerald-400 font-medium">
-                    Cambio: <span className="font-bold">${cambio.toFixed(2)}</span>
+                    Cambio: <span className="font-bold">{formatPrecio(cambio)}</span>
                   </p>
                 )}
                 {montoRecibido && montoRecibidoDec < porcionEfectivo && (
-                  <p className="mt-2 text-sm text-red-500">El monto recibido es menor al total</p>
+                  <p id="pago-recibido-error" className="mt-2 text-sm text-red-700 dark:text-red-400">El monto recibido es menor al total</p>
                 )}
               </div>
             )}
 
             {metodoPago !== "" && (
               <div>
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Propina (opcional)</label>
+                <label htmlFor="pago-propina" className="text-sm font-medium text-gray-700 dark:text-gray-300">Propina (opcional)</label>
                 <input
+                  id="pago-propina"
                   type="number"
                   step="0.01"
                   min="0"
@@ -1193,7 +1200,7 @@ export default function PagosPage() {
             <button
               onClick={handleConfirmar}
               disabled={!puedeConfirmar || mutPagar.isPending}
-              className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-semibold rounded-xl transition text-sm"
+              className="w-full min-h-[44px] py-2.5 bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50 font-semibold rounded-xl transition text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               {mutPagar.isPending ? "Procesando…" : "Confirmar pago"}
             </button>
@@ -1207,7 +1214,7 @@ export default function PagosPage() {
         titulo="Revertir pago"
         mensaje={pagoARevertir && (
           <p>
-            {`¿Revertir el pago de $${(pagoARevertir.montoCobrado ?? pagoARevertir.precio).toFixed(2)} de `}
+            {`¿Revertir el pago de ${formatPrecio((pagoARevertir.montoCobrado ?? pagoARevertir.precio))} de `}
             <strong className="text-foreground">{pagoARevertir.nombreCliente}</strong>
             {"? La cita volverá a quedar por cobrar y el corte del día cambiará."}
           </p>
@@ -1264,7 +1271,7 @@ function DesglosePorMetodo({
               <div className="flex-1">
                 <div className="flex justify-between items-center mb-1">
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{d.metodo}</span>
-                  <span className="text-sm font-bold text-gray-800 dark:text-gray-100">${d.monto.toFixed(2)}</span>
+                  <span className="text-sm font-bold text-gray-800 dark:text-gray-100">{formatPrecio(d.monto)}</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="flex-1 bg-gray-100 dark:bg-slate-700 rounded-full h-1.5">
@@ -1323,7 +1330,7 @@ function CitaCard({
         {cita.nombreEmpleado && <span className="truncate">{cita.nombreEmpleado}</span>}
       </div>
       <div className="flex items-center justify-between pt-1">
-        <span className="text-sm font-bold text-slate-700 dark:text-slate-300">${cita.precio.toFixed(2)}</span>
+        <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{formatPrecio(cita.precio)}</span>
         {cita.pagada ? (
           <span className="text-xs bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-full font-medium">
             {cita.metodoPago ?? "Pagada"}{cita.metodoPago2 ? ` + ${cita.metodoPago2}` : ''}
@@ -1390,10 +1397,10 @@ function HistorialRow({
         </span>
       </td>
       <td className="px-4 py-3 text-right font-semibold text-gray-900 dark:text-gray-100 text-sm whitespace-nowrap">
-        ${(cita.montoCobrado ?? cita.precio).toFixed(2)}
+        {formatPrecio((cita.montoCobrado ?? cita.precio))}
       </td>
       <td className="px-4 py-3 text-right text-sm text-teal-600 dark:text-teal-400 hidden sm:table-cell">
-        {cita.propina && cita.propina > 0 ? `$${cita.propina.toFixed(2)}` : "—"}
+        {cita.propina && cita.propina > 0 ? `${formatPrecio(cita.propina)}` : "—"}
       </td>
       <td className="px-4 py-3">
         <BotonRevertir onClick={onRevertir} deshabilitado={revertiendoId === cita.id} cliente={cita.nombreCliente} />

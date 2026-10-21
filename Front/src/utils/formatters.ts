@@ -3,6 +3,15 @@ export function formatPrecio(n: number): string {
   return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(n);
 }
 
+/**
+ * Precio compacto para tiles estrechos y ejes de gráfica: "$1,250", "$12k".
+ * Con separador de miles, igual que `formatPrecio`, pero sin centavos.
+ */
+export function formatPrecioCorto(n: number): string {
+  if (n >= 10000) return `$${Math.round(n / 1000).toLocaleString("es-MX")}k`;
+  return `$${Math.round(n).toLocaleString("es-MX")}`;
+}
+
 // ── Texto ──────────────────────────────────────────────────────────────────────
 
 /**

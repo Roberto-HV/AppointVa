@@ -52,6 +52,10 @@ vi.mock("../../api/servicios", () => ({
   },
 }));
 
+vi.mock("../../api/intake", () => ({
+  intakeApi: { getRespuestas: vi.fn().mockResolvedValue([]) },
+}));
+
 vi.mock("../../api/clientes", () => ({
   clientesApi: {
     obtenerCitas: vi.fn(),
@@ -73,6 +77,7 @@ vi.mock("../../components/ui/EstadoBadge", () => ({
 }));
 
 vi.mock("framer-motion", () => ({
+  useReducedMotion: () => false,
   motion: {
     div: ({
       children,
@@ -394,6 +399,49 @@ describe("InicioPage — vista empleado", () => {
     // Stat labels render before query data arrives
     expect(screen.getByText("Citas hoy")).toBeInTheDocument();
     expect(screen.getByText("Completadas")).toBeInTheDocument();
+  });
+});
+
+describe("InicioPage — agenda del empleado (DC-15)", () => {
+  const citaEmpleado = (estadoTexto: string, desfaseInicioMs: number) => ({
+    id: `c-${estadoTexto}`, codigoConfirmacion: "X1", clienteId: "cl1", empleadoId: "e1", servicioId: "s1",
+    nombreCliente: "Ana López", telefonoCliente: "", nombreEmpleado: "Ana",
+    nombreServicio: "Corte", duracionMinutos: 30, precio: 200, pagada: false,
+    inicioEn: new Date(Date.now() + desfaseInicioMs).toISOString(),
+    finEn: new Date(Date.now() + desfaseInicioMs + 1_800_000).toISOString(),
+    estado: 1, estadoTexto,
+  });
+
+  beforeEach(() => {
+    vi.mocked(useAuthStore).mockImplementation(// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(selector: (s: any) => unknown) => selector({ usuario: empleadoUser }));
+  });
+
+  it("tocar la cita abre sus acciones, con 'Ver historial del cliente' como una de ellas", async () => {
+    vi.mocked(citasApi.obtenerTodas).mockResolvedValue({ ...emptyPage, datos: [citaEmpleado("Pendiente", 3_600_000)], total: 1 });
+    renderConQuery();
+    fireEvent.click(await screen.findByRole("button", { name: /Ana López, Corte\. Ver acciones/ }));
+    const hoja = await screen.findByRole("dialog");
+    expect(within(hoja).getByRole("button", { name: "Confirmar cita" })).toBeInTheDocument();
+    fireEvent.click(within(hoja).getByRole("button", { name: "Ver historial del cliente" }));
+    expect(await screen.findByRole("dialog", { name: "Historial de Ana López" })).toBeInTheDocument();
+  });
+
+  it("una cita que ya terminó y sigue confirmada dice 'Por cerrar' y muestra Completar en la fila", async () => {
+    vi.mocked(citasApi.obtenerTodas).mockResolvedValue({ ...emptyPage, datos: [citaEmpleado("Confirmada", -7_200_000)], total: 1 });
+    renderConQuery();
+    expect(await screen.findByText("Por cerrar")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Completar cita de Ana López" })).toBeInTheDocument();
+  });
+
+  it("una cita futura no lleva 'Por cerrar' ni acción principal en la fila", async () => {
+    vi.mocked(citasApi.obtenerTodas).mockResolvedValue({ ...emptyPage, datos: [citaEmpleado("Confirmada", 3_600_000)], total: 1 });
+    renderConQuery();
+    await screen.findByRole("button", { name: /Ana López, Corte\. Ver acciones/ });
+    expect(screen.queryByText("Por cerrar")).toBeNull();
+    // La "Próxima cita" sí trae Completar; la fila de la agenda no.
+    const agenda = screen.getByRole("heading", { name: "Agenda de hoy" }).parentElement!.parentElement!;
+    expect(within(agenda).queryByRole("button", { name: "Completar cita de Ana López" })).toBeNull();
   });
 });
 

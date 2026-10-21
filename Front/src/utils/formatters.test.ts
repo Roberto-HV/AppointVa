@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   formatPrecio,
+  formatPrecioCorto,
   formatFecha,
   formatFechaLarga,
   formatFechaHoraCorta,
@@ -34,6 +35,15 @@ describe("capitalizarPrimera", () => {
     const s = formatear("2026-06-16T10:00:00");
     expect(s.charAt(0)).toBe(s.charAt(0).toLocaleUpperCase("es-MX"));
     expect(s.charAt(0)).not.toBe(s.charAt(0).toLocaleLowerCase("es-MX"));
+  });
+});
+
+describe("formatPrecioCorto", () => {
+  it("usa separador de miles y sin centavos", () => {
+    expect(formatPrecioCorto(1250.6)).toBe("$1,251");
+  });
+  it("compacta desde 10 mil", () => {
+    expect(formatPrecioCorto(12345)).toBe("$12k");
   });
 });
 

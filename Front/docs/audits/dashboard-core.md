@@ -1,7 +1,7 @@
 # Audit: Dashboard Core (shared Propietario / Empleado screens)
 
 - **Date:** 2026-10-20
-- **Status:** All severity-4 and severity-3 findings fixed in the working tree (pending commit, not yet verified in a rendered build), except the decision parts of DC-03 and DC-13. Several severity-2 items partially fixed as a side effect. Each finding carries its own **Status** line.
+- **Status:** All severity-4 and severity-3 findings fixed in the working tree (pending commit, not yet verified in a rendered build), except the decision parts of DC-03 and DC-13. Severity-2 batch (2026-10-21, pending commit): DC-15–DC-19, DC-21–DC-27 and DC-31–DC-33 fixed; DC-20 partially (categorical chart/employee palette open); DC-14, DC-28, DC-29 and DC-30 only their non-decision parts. Toasts now carry actions (undo). Not rendered yet. Each finding carries its own **Status** line.
 - **Type:** Code-based audit. **Nothing was rendered.** No browser, screenshots, emulated viewports or assistive technology were used. Contrast ratios are calculated from the Tailwind/hex values in the source. Layout, touch and dark-mode behavior are inferred from class names and the token definitions in `src/index.css` / `tailwind.config.js`. Verify visual findings in a running build, in light and dark mode, before fixing them.
 
 ## Scope
@@ -128,6 +128,7 @@ Line numbers point to the current working tree. Findings marked **DECISION NEEDE
 
 ### DC-07: Financial records change with one click and no confirmation or undo
 - **Status:** Fixed (pending commit) — "Revertir pago" (cards and history) is a text button with 44px target on its own line and opens `ConfirmarAccion` stating amount, client and that the cash report changes; "Anular anticipo" also confirms with amount. Undo toast not implemented (needs DC-17).
+  - **Sev-2 batch (pending commit):** DC-17 now allows undo toasts, but revert payment and annul deposit keep the confirmation: the backend's inverse call would reset `FechaPago`/`RegistradoPorId` (and `AnticipoRecibidoEn`/`Por`) to the undo moment, so it is not a true undo. Needs a backend restore endpoint.
   - **Follow-up (pending commit):** `mensajeError` moved to `src/utils/errores.ts` (used by PagosPage, DosFactoresPage, the cita mutations and the owner screens); `formatFechaMx` is a single export in `src/utils/formatters.ts` used by NegociosAdminPage and `comprobanteSuscripcion.ts`.
 - **Heuristic:** H3 User control and freedom; H5 Error prevention; microinteractions (feedback scaled to significance)
 - **Location:** `src/pages/dashboard/PagosPage.tsx:1280-1287` (card "Revertir pago"), `:1335-1342` (history row), `:398-408` (mutation); `src/pages/dashboard/CitasPage.tsx:751-765` (deposit register/annul toggle)
@@ -196,21 +197,21 @@ Line numbers point to the current working tree. Findings marked **DECISION NEEDE
 ## Severity 2: Minor
 
 ### DC-14: Employees get the same Citas and Pagos toolset as owners — DECISION NEEDED
-- **Status:** Open – DECISION NEEDED — employee permissions intentionally unchanged.
+- **Status:** Open – DECISION NEEDED — employee permissions intentionally unchanged. Sev-2 batch: no non-decision part to apply (the backend already limits employees to their own appointments for status, payment, deposit and notes).
 - **Heuristic:** H8 Minimalist design; H5 Error prevention
 - **Location:** `src/pages/dashboard/CitasPage.tsx` (no `rol` checks: `:363-370` professional filter, `:482-497` Recepción/Exportar, `:751-765` deposit, `:880-882` edit client "en todas sus citas"); `src/pages/dashboard/PagosPage.tsx:70`, `:469` (role only changes the subtitle), `:473-482` (Corte, Historial), `:1280` (revert)
 - **User impact:** Employees see a "Profesional" filter for a list that likely contains only their own appointments, and can revert payments, export data and record cash closings. Whether the backend blocks this is not visible from the frontend.
 - **Fix:** **DECISION NEEDED** — the permission matrix for Empleado (export, revert payment, deposits, cash closing, edit client globally, create appointments for others). Then hide disallowed controls in the UI and verify the backend enforces the same rules.
 
 ### DC-15: On the employee home, tapping an appointment opens client history, not the appointment; finished but unclosed appointments fade out
-- **Status:** Partially fixed — employee agenda rows now have an "Acciones" button next to the history button; closed appointments are no longer faded to 55%. "Por cerrar" label not added.
+- **Status:** Fixed (pending commit) — tapping an employee agenda row opens the action sheet; "Ver historial del cliente" is an action inside it. Ended-but-open appointments show a "Por cerrar" badge (`citaPorCerrar` in `src/lib/estadoCita.ts`, `InsigniaPorCerrar` in `TarjetaCita.tsx`, also used by list rows, cards and the owner agenda) and keep their inline Completar/Confirmar. Only closed appointments fade. Tests in `InicioPage.test.tsx`.
 - **Heuristic:** H2 Match with the real world; H1 Visibility
 - **Location:** `src/pages/dashboard/InicioPage.tsx:843-877` (row is a button that opens the history sheet, with a chevron suggesting detail), `:841`, `:850` (`opacity-55` when time has passed); owner `:580-588` (`opacity-40`)
 - **User impact:** The employee cannot confirm, complete or mark a no-show from the home screen. Appointments that ended but are still Pendiente/Confirmada (work that is not finished) are faded at the moment they need attention, and the 40% opacity drops all text below 3:1.
 - **Fix:** Make the row open the action sheet (DC-01), with "Ver historial" as one of its actions. Fade only Completada/Cancelada/Inasistencia; mark past-and-open appointments with a "Por cerrar" label and an inline Completar action.
 
 ### DC-16: The appointment detail page is a read-only dead end, and Citas filters are lost when returning
-- **Status:** Partially fixed — detail page has the actions sheet; rows link to detail through "Ver detalle". Filters are still not in the URL.
+- **Status:** Fixed (pending commit) — `CitasPage` keeps `vista`, `desde`, `hasta`, `empleadoId`, `estado`, `busqueda` and `pagina` in `useSearchParams` (replace; unknown `estado` ignored; no param = today, empty param = no limit). Detail "Volver" uses `navigate(-1)` when there is in-app history, else `/dashboard/citas`; loading is a skeleton. Tests in `CitasPage.test.tsx`, `CitaDetallePage.test.tsx`.
 - **Heuristic:** H3 User control; H4 Consistency
 - **Location:** `src/pages/dashboard/CitaDetallePage.tsx:82-184` (no actions; primary button is "Guardar en calendario"), `:86-88` and `:55` (`navigate("/dashboard/citas")`), `:42-48` (spinner, not skeleton); `src/pages/dashboard/CitasPage.tsx:53-59` (view, dates, filters, page in `useState`)
 - **Evidence:** The only way to reach the detail page is a notification (`src/components/dashboard/NotificacionesBell.tsx:101`). The list rows do not link to it.
@@ -218,76 +219,76 @@ Line numbers point to the current working tree. Findings marked **DECISION NEEDE
 - **Fix:** Add the status actions (same sheet as DC-01) to the detail page and link list rows to it. Keep `vista`, `desde`, `hasta`, `empleadoId`, `estado`, `busqueda` and `pagina` in `useSearchParams`, and use `navigate(-1)` when there is history.
 
 ### DC-17: Toasts are not announced, disappear after 3.5s including errors, and cannot carry an Undo action
-- **Status:** Open
+- **Status:** Fixed (pending commit) — `toastStore`: optional `{ accion: { etiqueta, onClick }, duracion }`, returns the id, `ejecutarAccion` (runs once, closes), `pausar`/`reanudar`; errors and toasts with an action last 8s. `ToastContainer`: always-mounted `role="status"` (polite) and `role="alert"` (assertive) regions, pause on hover/focus, 44px action and "Cerrar aviso" buttons, full width on phones. Undo is wired only where the inverse endpoint truly restores the record: delete note and delete time block (DC-33), Confirmada → Inasistencia (`useCambiarEstadoCita`). Confirm dialogs kept for revert payment and annul deposit (the backend resets `FechaPago`/`RegistradoPorId` and `AnticipoRecibidoEn`/`Por`, so re-registering would move the payment to the undo time and user), and for confirm/complete/cancel (email sent or terminal state). Tests: `toastStore.test.ts`, `ToastContainer.test.tsx`, `AccionesCita.test.tsx`.
 - **Heuristic:** WCAG 4.1.3 Status Messages; H3 (undo); microinteractions feedback
 - **Location:** `src/components/ui/ToastContainer.tsx:94-123` (no `role="status"` / `aria-live`, close button without `aria-label`), `src/store/toastStore.ts:19-25` (fixed 3500ms, no action field)
 - **User impact:** Screen-reader users get no confirmation for any dashboard action. Long server error messages vanish before they can be read. Every undo pattern in this report is blocked by the store's shape.
 - **Fix:** Add a polite live region (assertive for errors), keep errors until dismissed or 8s, pause on hover/focus, and extend the store with an optional `accion: { etiqueta, onClick }`.
 
 ### DC-18: Custom overlays bypass the accessible `Modal`
-- **Status:** Partially fixed — employee history sheet and drag-reschedule confirmation now use `Modal`; NotificacionesBell unchanged.
+- **Status:** Fixed (pending commit) — history sheet and drag confirmation use `Modal`. `NotificacionesBell` is a disclosure (Radix Popover is not installed): `aria-expanded`/`aria-controls`, Escape returns focus to the bell, closes on outside `pointerdown`/`focusin`; items with an appointment are buttons; unread count in the bell's name; error state; 44px targets; lucide icons instead of 🗓/❌. Tests in `NotificacionesBell.test.tsx`.
 - **Heuristic:** WCAG 2.1.2, 2.4.3, 4.1.2
 - **Location:** `src/pages/dashboard/InicioPage.tsx:912-973` (employee client-history sheet, close button without label); `src/pages/dashboard/CitasPage.tsx:1324-1335` (drag-reschedule confirmation); `src/components/dashboard/NotificacionesBell.tsx:95-104` (`li` with `onClick`, not focusable), `:52-60` (no Escape)
 - **User impact:** No `role="dialog"`, focus trap, initial focus or Escape. Keyboard users cannot open a notification.
 - **Fix:** Use `Modal` (Radix Dialog) for the two dialogs, Radix `Popover` for the bell, and render notification items as buttons or links.
 
 ### DC-19: Form fields are not programmatically labeled and errors are not linked
-- **Status:** Partially fixed — 2FA code field has `id`, `autoComplete="one-time-code"` and linked error; reschedule reason field labelled. No `Campo` primitive.
+- **Status:** Fixed (pending commit), without a shared `Campo` primitive — CitasPage edit-client, new and repeat modals: `htmlFor`/`id`, `aria-invalid` + `aria-describedby` on email errors, labelled groups with `aria-pressed` for service/professional/slot pickers. MiPerfil: local `CampoContrasena` (label, autocomplete, linked error, show/hide button focusable with a name and `aria-pressed`). 2FA setup is a `<form>` (Enter submits). Pagos payment modal: labelled fields, method buttons `aria-pressed`, "Dividir pago" uses the shared `Switch`. Not done: moving the CitasPage `useState` forms to react-hook-form + zod. Tests in `MiPerfilPage.test.tsx`, `DosFactoresPage.test.tsx`, `PagosPage.test.tsx`.
 - **Heuristic:** WCAG 1.3.1, 3.3.1, 3.3.2; H9
 - **Location:** `src/pages/dashboard/CitasPage.tsx:836-877`, `:1094-1150`, `:1303-1308`, `:1375-1423` (`<label>` without `htmlFor`, inputs without `id`); `src/pages/dashboard/MiPerfilPage.tsx:258-304` (also password toggles with `tabIndex={-1}` and no `aria-label`), `:406-411`; `src/pages/dashboard/DosFactoresPage.tsx:79-88` (no `autoComplete="one-time-code"`, not in a `<form>`, so Enter does nothing); `src/pages/dashboard/PagosPage.tsx:874-905`, `:1026`, `:1086-1149`
 - **User impact:** Screen readers announce unnamed fields. Errors are not tied to inputs (`aria-invalid`, `aria-describedby`). Keyboard users cannot reveal passwords. 2FA codes cannot be autofilled from SMS/OS or submitted with Enter.
 - **Fix:** Create one `Campo` primitive (label + input + hint + error with generated ids) and migrate these forms. Move the ad-hoc `useState` forms in `CitasPage` to react-hook-form + zod like `MiPerfilPage`.
 
 ### DC-20: Off-system colors for primary actions and row tools
-- **Status:** Partially fixed — reschedule/complete CTAs and "Guardar cierre" are slate; row tools neutral. Chart/employee palettes unchanged.
+- **Status:** Partially fixed (pending commit) — "Confirmar pago" and the push banner's "Activar notificaciones" use `bg-primary` (slate); earlier: reschedule/complete CTAs, "Guardar cierre", neutral row tools. Open: the chart (violet/teal) and employee hex palettes (Gantt, kiosk) still need a documented categorical token set in `src/index.css` + `docs/design-system.css`.
 - **Principle:** Project rule (primary is slate); Refactoring UI "systems over one-offs"; impeccable Theming
 - **Location:** `src/pages/dashboard/CitasPage.tsx:1211`, `:1225`, `:1331` (violet reschedule CTA), `:922` (blue-600 complete), `:700-794` (green, blue, violet, slate, yellow, emerald, indigo, cyan and amber icon buttons in one row); `src/pages/dashboard/PagosPage.tsx:990` (blue-600 "Guardar cierre"), `:1162` (emerald "Confirmar pago"); `src/pages/dashboard/InicioPage.tsx:494-519` (violet/teal chart); `src/components/ui/NotificacionBanner.tsx:38`; `src/components/dashboard/GanttCitas.tsx:32-35`, `KioskPage.tsx:11-14` (employee hex palette), `KioskPage.tsx:87` (`#060C1A`, indigo)
 - **User impact:** Nine hues in one toolbar compete with the status colors that should carry meaning (DC-06). Primary buttons change color per modal, so "the button that commits" is not recognizable.
 - **Fix:** Use `BotonAccion` / slate primary for every commit button; reserve the destructive token for destructive actions only; render row tools neutral (slate) with the color carried by status only. Move chart and employee colors into a documented categorical palette token set.
 
 ### DC-21: Labels and metadata use micro sizes and low-contrast grays
-- **Status:** Partially fixed — InicioPage section labels raised to 12px muted-foreground; KPI tile labels and kiosk text unchanged.
+- **Status:** Fixed (pending commit) — KPI tile and employee stat labels are 12px `text-muted-foreground` (slate-300 on the dark tile); CitasPage table header, phone/time metadata, Gantt counters and the InicioPage upcoming list use `text-muted-foreground`; kiosk information text raised to white/60–85 with a 12px minimum. "Cerrar sesión" was already red-700/red-400.
 - **Principle:** Refactoring UI contrast; WCAG 1.4.3
 - **Location:** `src/pages/dashboard/InicioPage.tsx:29` (`text-[9px] sm:text-[10px]` slate-400 KPI labels, about 2.6:1; `dark:text-gray-500` about 3.0:1), `:425`, `:442`, `:759-771`, `:858` (`text-slate-300`); `src/layouts/DashboardLayout.tsx:67`, `:110` (red-500 "Cerrar sesión", about 3.8:1); `src/pages/dashboard/CitasPage.tsx:584`, `:600`; `src/pages/dashboard/KioskPage.tsx:95`, `:139`, `:156`, `:209`, `:240-251` (white at 20–35% on `#060C1A`, about 1.9–2.6:1)
 - **User impact:** KPI labels, phone numbers and the kiosk's secondary text are hard to read, especially on a wall-mounted reception screen seen from a distance.
 - **Fix:** Set a 12px floor for text and use slate-500/`text-muted-foreground` as the lightest informative gray (4.5:1 on white). In the kiosk, use at least white/60 for information text.
 
 ### DC-22: Touch targets under 44px on core controls
-- **Status:** Partially fixed — row actions, drawer/menu/avatar buttons, Pagos revert/Cobrar, MiPerfil camera, retiro remove at 44px. Calendar toggle and Gantt toolbar unchanged.
+- **Status:** Fixed (pending commit) — calendar prev/next/"Hoy" and week/day toggle (named, `aria-pressed`), Gantt prev/next (lucide chevrons) and "Hoy", the notification bell and its delete buttons, MiPerfil time-block delete and password toggles, and the detail page back button use `min-h-[44px] lg:min-h-[36px]` (or `w-11 h-11`).
 - **Heuristic:** impeccable Responsive; WCAG 2.5.8
 - **Location:** `src/layouts/DashboardLayout.tsx:515`, `:540`, `:586` (32px menu and avatar); `src/pages/dashboard/CitasPage.tsx:656`, `:663`, `:671` (28px mobile row actions); `src/pages/dashboard/InicioPage.tsx:602` (28px WhatsApp); `src/pages/dashboard/PagosPage.tsx:1280`, `:1335` (about 21px revert); `src/pages/dashboard/MiPerfilPage.tsx:219` (28px camera); `src/components/dashboard/CalendarioCitas.tsx:186-207` (about 26px week/day toggle); `src/components/dashboard/GanttCitas.tsx:130-154`
 - **Fix:** Apply the existing `min-h-[44px] lg:min-h-[36px]` convention used by `BotonAccion`, `Tabs` and `Pagination`, or extend the hit area with padding while keeping the icon size.
 
 ### DC-23: The calendar opens in week view on phones
-- **Status:** Open
+- **Status:** Fixed (pending commit) — `CalendarioCitas` opens in "día" below `sm` (`CONSULTA_MOVIL`) and remembers the chosen view per device (`localStorage` key `calendario-vista`, guarded). Day arrows already existed; no swipe. Tests in `CalendarioCitas.test.tsx`.
 - **Heuristic:** impeccable Responsive
 - **Location:** `src/components/dashboard/CalendarioCitas.tsx:45` (`useState("semana")`), `:220-306`
 - **Evidence:** Seven day columns plus a 48px hour column at 375px leaves about 46px per day for truncated `text-xs` blocks.
 - **Fix:** Default to "día" below `sm`, remember the choice per device, and use swipe or arrows to change day.
 
 ### DC-24: Money is formatted inconsistently, and Pagos KPIs overflow on phones
-- **Status:** Open
+- **Status:** Fixed (pending commit) — every `$${n.toFixed(2)}` in PagosPage uses `formatPrecio` (the cash difference shows +/− with `formatPrecio`); new shared `formatPrecioCorto` in `src/utils/formatters.ts` replaces the InicioPage copies; kiosk revenue uses `formatPrecio`. Cobro KPIs stack below `sm`; Corte KPIs are `text-xl sm:text-2xl`.
 - **Principle:** H4 Consistency; Refactoring UI
 - **Location:** `src/pages/dashboard/PagosPage.tsx:489-509` (`grid-cols-3 gap-4` with `text-2xl` amounts), `:494`, `:500`, `:681`, `:810`, `:1266`, `:1321` (`$${n.toFixed(2)}`: no thousands separator); elsewhere `formatPrecio`, `toLocaleString`, `formatPrecioCorto` (`InicioPage.tsx:44-47`, duplicated at `:773-775`, `:795-797`)
 - **User impact:** "$12345.00" on one screen and "$12,345" on another. At 375px three `text-2xl` amounts do not fit in roughly 100px columns.
 - **Fix:** Use `formatPrecio` everywhere (with a compact variant for tiles), and stack Pagos KPIs (`grid-cols-1 sm:grid-cols-3`) or reduce them to `text-xl` on mobile.
 
 ### DC-25: The pending-confirmation signal appears only in the mobile header and cannot be clicked
-- **Status:** Open
+- **Status:** Fixed (pending commit) — the "N pendientes" chip is a link to `/dashboard/citas?estado=Pendiente` in both the mobile header and the desktop topbar; the collapsed sidebar shows a dot on Citas and its tooltip names the count. Tests in `DashboardLayout.render.test.tsx`.
 - **Heuristic:** H4 Consistency; H7 Efficiency
 - **Location:** `src/layouts/DashboardLayout.tsx:531-537` (chip inside a Tooltip, `cursor-default`), `:580-598` (desktop topbar has no equivalent), `:421-427` (sidebar count is hidden when collapsed), `:248-254` (toast only counts increases of today's pending)
 - **User impact:** On desktop the owner has no persistent "3 pendientes" cue. On mobile the cue does not lead to the list.
 - **Fix:** Show the same chip in both headers and make it a link to `/dashboard/citas?estado=Pendiente` (needs DC-16). Show a dot on the collapsed sidebar icon.
 
 ### DC-26: Motion restarts and loops without reduced-motion support
-- **Status:** Partially fixed — `animate-pulse` removed from EstadoBadge. AnimatedCounter unchanged.
+- **Status:** Fixed (pending commit) — `AnimatedCounter` animates from the previous value, skips animation under `useReducedMotion()`, and exposes the final value as `sr-only` text (animated digits are `aria-hidden`). The owner-home tile stagger is skipped under reduced motion. Pulse removed earlier. Tests in `AnimatedCounter.test.tsx`.
 - **Principle:** microinteractions (feedback matches significance); impeccable motion sensitivity
 - **Location:** `src/components/ui/AnimatedCounter.tsx:13-25` (animates from 0 whenever `to` changes, which happens on the 30s polling of `InicioPage.tsx:261-266`; renders "0" first for screen readers); `src/components/ui/EstadoBadge.tsx:21` (`animate-pulse` on every Confirmada badge); `src/pages/dashboard/InicioPage.tsx:350-365`, `:426-456` (stagger on every visit)
 - **User impact:** Numbers jump back to zero during a refresh; dozens of pulsing icons in a list pull attention to the calmest state.
 - **Fix:** Animate from the previous value, skip animation under `useReducedMotion()`, and drop the pulse (or keep it only on "En curso").
 
 ### DC-27: The 60-minute inactivity logout is silent, and scrolling the content does not count as activity
-- **Status:** Open
+- **Status:** Fixed (pending commit) — `useInactividadTimeout` listens in capture phase (scrolling inside `main` counts) and returns `{ aviso, seguir }`; one minute before logout `DashboardLayout` shows "¿Sigues ahí?" with "Seguir conectado" / "Cerrar sesión" (closing the dialog keeps the session; mouse movement no longer dismisses it on its own). Tests in `useInactividadTimeout.test.ts`, `DashboardLayout.render.test.tsx`.
 - **Heuristic:** H1 Visibility; H3 User control
 - **Location:** `src/hooks/useInactividadTimeout.ts:3-19`; `src/layouts/DashboardLayout.tsx:279`, `:575-578`
 - **Evidence:** `scroll` is listened to on `window`, but the dashboard scrolls inside `<main className="overflow-y-auto">`, whose scroll events do not bubble.
@@ -295,42 +296,42 @@ Line numbers point to the current working tree. Findings marked **DECISION NEEDE
 - **Fix:** Show a "Tu sesión se cerrará en 1 minuto · Seguir conectado" dialog before logging out. Listen for `scroll` with `capture: true` or on `main`.
 
 ### DC-28: The kiosk has no loading or error state, does not distinguish pending appointments, and shows full client names — DECISION NEEDED
-- **Status:** Partially fixed — kiosk chips use the status map, so Pendiente and Confirmada differ. Loading/error states and client identity (DECISION NEEDED) open.
+- **Status:** Partially fixed (pending commit) — loading state; on failure a "Sin conexión · reintentando · última actualización hh:mm" banner while the last data stays visible (no more "No hay empleados activos" on a network error); ended-but-open appointments are no longer faded; chips use the status map (earlier). Open – DECISION NEEDED: client identity (full names unchanged) and check-in. Tests in `KioskPage.test.tsx`.
 - **Heuristic:** H1 Visibility; privacy
 - **Location:** `src/pages/dashboard/KioskPage.tsx:46-58` (no `isLoading`/`isError`), `:113-116`, `:154-157` (a failed fetch reads as "No hay empleados activos" / "Sin citas"), `:192-200` (Pendiente and Confirmada share the same white/35 chip), `:204-208` (full client name)
 - **User impact:** On a network failure the reception board looks like an empty day. Staff cannot tell confirmed from unconfirmed. Waiting clients can read other clients' full names.
 - **Fix:** Add loading and "Sin conexión · reintentando" states with the last-updated time; use the status tokens (DC-06). **DECISION NEEDED** — what client identity the kiosk may show (full name, first name + initial, or code only), and whether it stays read-only or supports check-in.
 
 ### DC-29: Employees have no way to reach 2FA, and 2FA offers no recovery codes — DECISION NEEDED
-- **Status:** Open – DECISION NEEDED
+- **Status:** Partially fixed (pending commit) — Mi perfil has a "Seguridad" card linking to `/dashboard/seguridad` for both roles (the route already allowed Empleado); the setup step says plainly that AppointVa issues no backup codes and that the manual key is needed to set up a new phone. Open – DECISION NEEDED: recovery codes (backend) and mandatory 2FA for owners.
 - **Heuristic:** H6 Recognition; H3 User control
 - **Location:** `src/layouts/DashboardLayout.tsx:120-125` (`NAV_EMPLEADO` has no `/dashboard/seguridad`; route allows Empleado at `src/App.tsx:118`); `src/pages/dashboard/MiPerfilPage.tsx` (no link); `src/pages/dashboard/DosFactoresPage.tsx:139-178` (setup ends without backup codes)
 - **User impact:** Employees never discover 2FA. Anyone who enables it and loses their phone is locked out.
 - **Fix:** Add a "Seguridad" card to Mi perfil (both roles). **DECISION NEEDED** — whether to issue recovery codes (needs backend support) and whether 2FA should be required for owners.
 
 ### DC-30: No bulk actions for daily confirmations — DECISION NEEDED
-- **Status:** Open – DECISION NEEDED
+- **Status:** Open – DECISION NEEDED. Sev-2 batch: no safe non-product part; the DC-25 `?estado=Pendiente` link at least opens today's pending list directly.
 - **Heuristic:** H7 Flexibility and efficiency of use
 - **Location:** `src/pages/dashboard/CitasPage.tsx:582-816` (no row selection), `:331-348` (single-item mutation)
 - **User impact:** Confirming the morning's ten pending bookings takes ten separate clicks on desktop and twenty taps on mobile (open modal, choose, confirm).
 - **Fix:** **DECISION NEEDED** — which bulk actions to support (likely "Confirmar seleccionadas" and "Enviar recordatorio"). Then add selection checkboxes, a sticky bulk bar, and a backend batch endpoint.
 
 ### DC-31: "Cancelar" means two different things in the appointment modals
-- **Status:** Partially fixed — the actions sheet labels status actions "Confirmar cita", "Cancelar cita", "Marcar inasistencia" and dismiss buttons "Volver". Other CitasPage modals still say "Cancelar".
+- **Status:** Fixed (pending commit) — the last CitasPage dismiss button labelled "Cancelar" (edit client) now says "Volver"; status actions name their object ("Cancelar cita", "Marcar inasistencia", "Confirmar cita").
 - **Heuristic:** H4 Consistency; H5 Error prevention
 - **Location:** `src/pages/dashboard/CitasPage.tsx:39`, `:44` (status option "Cancelar"), versus `:888`, `:914`, `:1330`, `:427` (dismiss buttons labeled "Cancelar")
 - **User impact:** In the status modal "Cancelar" cancels the appointment; in every neighboring modal it closes the dialog. This invites the wrong action under time pressure.
 - **Fix:** Label status actions with their object: "Cancelar cita", "Marcar inasistencia", "Confirmar cita". Label dismiss buttons "Cerrar" or "Volver" where the modal edits an appointment.
 
 ### DC-32: Error states ask the user to reload instead of offering a retry
-- **Status:** Partially fixed — InicioPage error states have "Reintentar" wired to `refetch`. Gantt and Citas list still lack error states.
+- **Status:** Fixed (pending commit) — Citas list: full error state with "Reintentar" when there is no data, and an inline "No se pudo actualizar la lista" banner when a refresh fails over stale data; Gantt and calendar: error state/banner with "Reintentar" (the Gantt no longer says "No hay empleados activos" on failure). Tests in `CitasPage.test.tsx`, `GanttCitas.test.tsx`, `CalendarioCitas.test.tsx`.
 - **Heuristic:** H9 Error recovery
 - **Location:** `src/pages/dashboard/InicioPage.tsx:382` (`window.location.reload()`), `:832`, `:892`, `:934` ("Recarga la página." with no button); `src/components/dashboard/GanttCitas.tsx:91-96`, `:170-177` (no error state); `src/pages/dashboard/CitasPage.tsx:119-134` (list query has no error state: a failure shows "No hay citas en este rango")
 - **User impact:** A transient failure reads as "no appointments", the most misleading message possible for a scheduling tool.
 - **Fix:** Show an inline error with a "Reintentar" button wired to the query's `refetch`, in every list and on the home screen.
 
 ### DC-33: Low-stakes deletions have no confirmation or undo
-- **Status:** Open
+- **Status:** Fixed (pending commit) for time blocks and notes — deleting a time block (MiPerfil) or a note (CitasPage) shows "Deshacer", which recreates the block with the same start/end/motivo (sent as UTC) or PATCHes the previous note text. The block delete button has a name and a 44px target. Notification delete keeps its labelled button but has no undo: no endpoint restores a notification. Also fixed in MiPerfil: the time-block form had no default values, so `watch()` returned `undefined` and `.length` threw once the employee id loaded. Tests in `MiPerfilPage.test.tsx`, `CitasPage.test.tsx`.
 - **Heuristic:** H3 User control
 - **Location:** `src/pages/dashboard/MiPerfilPage.tsx:448-455` (delete time block, `title` only), `src/pages/dashboard/CitasPage.tsx:954-961` (delete note), `src/components/dashboard/NotificacionesBell.tsx:119-131`
 - **User impact:** Deleting a time block reopens that period for online booking at once; a mis-tap can produce bookings during the employee's absence.

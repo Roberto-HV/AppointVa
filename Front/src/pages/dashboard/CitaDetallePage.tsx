@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Calendar, User, Clock, DollarSign, FileText } from "lucide-react";
 import { SiGooglecalendar } from "react-icons/si";
@@ -6,6 +6,7 @@ import { citasApi } from "../../api/citas";
 import { negociosApi } from "../../api/negocios";
 import { useSectorTerms } from "../../hooks/useSectorTerms";
 import EstadoBadge from "../../components/ui/EstadoBadge";
+import { Skeleton } from "../../components/ui/Skeleton";
 import AccionesCita from "../../components/dashboard/AccionesCita";
 import { capitalizarPrimera } from "../../utils/formatters";
 
@@ -27,7 +28,12 @@ function buildGoogleCalUrl(
 export default function CitaDetallePage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const terms = useSectorTerms();
+  // Con historial dentro de la app, "Volver" regresa a la lista tal como estaba
+  // (filtros y página en la URL). Si se llegó directo (notificación, enlace),
+  // no hay a dónde volver y se abre la lista.
+  const volver = () => (location.key !== "default" ? navigate(-1) : navigate("/dashboard/citas"));
 
   const { data: cita, isLoading, error } = useQuery({
     queryKey: ["cita", id],
@@ -43,8 +49,10 @@ export default function CitaDetallePage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-2 border-slate-700 border-t-transparent rounded-full animate-spin" />
+      <div className="max-w-2xl mx-auto p-4 sm:p-6 space-y-4" aria-busy="true">
+        <span className="sr-only" role="status">{`Cargando ${terms.cita.toLowerCase()}…`}</span>
+        <Skeleton className="h-10 w-2/3 rounded-lg" />
+        <Skeleton className="h-64 rounded-2xl" />
       </div>
     );
   }
@@ -54,7 +62,7 @@ export default function CitaDetallePage() {
       <div className="max-w-xl mx-auto p-6 text-center">
         <p className="text-gray-500 dark:text-gray-400 mb-4">{`No se encontró la ${terms.cita.toLowerCase()} o no tienes acceso.`}</p>
         <button
-          onClick={() => navigate("/dashboard/citas")}
+          onClick={volver}
           className="text-sm text-slate-700 hover:underline"
         >
           {`← Volver a mis ${terms.citas.toLowerCase()}`}
@@ -84,8 +92,8 @@ export default function CitaDetallePage() {
       {/* Encabezado */}
       <div className="flex items-center gap-3">
         <button
-          onClick={() => navigate("/dashboard/citas")}
-          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition text-gray-500 dark:text-gray-400"
+          onClick={volver}
+          className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] lg:min-h-[36px] lg:min-w-[36px] rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition text-gray-500 dark:text-gray-400"
           aria-label="Volver"
         >
           <ArrowLeft size={20} />

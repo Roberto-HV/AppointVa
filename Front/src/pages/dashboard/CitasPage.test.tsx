@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor, fireEvent, within, act } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useLocation } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import CitasPage from "./CitasPage";
 import type { CitaDto } from "../../types";
@@ -153,14 +153,20 @@ const makeCita = (overrides = {}) => ({
   ...overrides,
 });
 
-function renderConQuery() {
+function UbicacionActual() {
+  const { search } = useLocation();
+  return <output data-testid="ubicacion">{search}</output>;
+}
+
+function renderConQuery(entrada = "/dashboard/citas") {
   const qc = new QueryClient({
     defaultOptions: { queries: { retry: false, retryDelay: 0 } },
   });
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[entrada]}>
       <QueryClientProvider client={qc}>
         <CitasPage />
+        <UbicacionActual />
       </QueryClientProvider>
     </MemoryRouter>
   );
@@ -720,5 +726,77 @@ describe("CitasPage — tarjetas en pantallas angostas", () => {
 
     fireEvent.click(acciones);
     expect(await screen.findByRole("button", { name: "Reagendar" })).toBeInTheDocument();
+  });
+});
+
+describe("CitasPage — filtros en la URL (DC-16)", () => {
+  const vacio = { datos: [], total: 0, pagina: 1, tamano: 15 };
+
+  it("lee estado, período y página de la URL", async () => {
+    vi.mocked(citasApi.obtenerTodas).mockResolvedValue(vacio);
+    renderConQuery("/dashboard/citas?estado=Pendiente&desde=2026-10-01&hasta=2026-10-31&pagina=2");
+    await waitFor(() =>
+      expect(citasApi.obtenerTodas).toHaveBeenCalledWith(
+        expect.objectContaining({ estado: 1, desde: "2026-10-01", hasta: "2026-10-31", pagina: 2 }),
+      ),
+    );
+    expect(await screen.findByRole("combobox", { name: "Estado" })).toHaveValue("Pendiente");
+  });
+
+  it("al filtrar escribe el filtro en la URL y vuelve a la página 1", async () => {
+    vi.mocked(citasApi.obtenerTodas).mockResolvedValue(vacio);
+    renderConQuery("/dashboard/citas?pagina=3");
+    fireEvent.change(await screen.findByRole("combobox", { name: "Estado" }), { target: { value: "Confirmada" } });
+    await waitFor(() => expect(screen.getByTestId("ubicacion")).toHaveTextContent("estado=Confirmada"));
+    expect(screen.getByTestId("ubicacion")).not.toHaveTextContent("pagina");
+  });
+
+  it("ignora un estado desconocido en la URL", async () => {
+    vi.mocked(citasApi.obtenerTodas).mockResolvedValue(vacio);
+    renderConQuery("/dashboard/citas?estado=Borrada");
+    await waitFor(() => expect(citasApi.obtenerTodas).toHaveBeenCalledWith(expect.objectContaining({ estado: undefined })));
+  });
+});
+
+describe("CitasPage — error al cargar (DC-32)", () => {
+  it("un fallo no se lee como 'no hay citas' y ofrece reintentar", async () => {
+    vi.mocked(citasApi.obtenerTodas).mockRejectedValueOnce(new Error("red"));
+    renderConQuery();
+    expect(await screen.findByText("No se pudieron cargar las citas.")).toBeInTheDocument();
+    expect(screen.queryByText("No hay citas en este rango")).toBeNull();
+    vi.mocked(citasApi.obtenerTodas).mockResolvedValue({ datos: [makeCita()], total: 1, pagina: 1, tamano: 15 });
+    fireEvent.click(screen.getByRole("button", { name: "Reintentar" }));
+    expect(await screen.findByText("Juan Pérez")).toBeInTheDocument();
+  });
+});
+
+describe("CitasPage — eliminar una nota se puede deshacer (DC-33)", () => {
+  it("borra sin confirmar y el aviso 'Deshacer' restaura el texto anterior", async () => {
+    const { useToastStore } = await import("../../store/toastStore");
+    act(() => useToastStore.setState({ toasts: [] }));
+    vi.mocked(citasApi.obtenerTodas).mockResolvedValue({
+      datos: [makeCita({ notas: "Alergia al tinte" })],
+      total: 1,
+      pagina: 1,
+      tamano: 15,
+    });
+    vi.mocked(citasApi.actualizarNotas).mockResolvedValue({} as never);
+    renderConQuery();
+    fireEvent.click(await screen.findByRole("button", { name: "Acciones de la cita de Juan Pérez" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Ver o editar nota interna" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Eliminar nota" }));
+    await waitFor(() => expect(citasApi.actualizarNotas).toHaveBeenCalledWith("cita-1", null));
+
+    const aviso = await waitFor(() => {
+      const t = useToastStore.getState().toasts.find((x) => x.mensaje === "Nota eliminada");
+      expect(t?.accion?.etiqueta).toBe("Deshacer");
+      return t!;
+    });
+    act(() => useToastStore.getState().ejecutarAccion(aviso.id));
+    await waitFor(() => expect(citasApi.actualizarNotas).toHaveBeenLastCalledWith("cita-1", "Alergia al tinte"));
+    await waitFor(() =>
+      expect(useToastStore.getState().toasts.some((x) => x.mensaje === "Nota restaurada")).toBe(true),
+    );
+    act(() => useToastStore.setState({ toasts: [] }));
   });
 });

@@ -1,4 +1,5 @@
-import { Banknote, CheckCircle2, Receipt } from "lucide-react";
+import { Banknote, CheckCircle2, Receipt, AlarmClock } from "lucide-react";
+import { citaPorCerrar } from "../../lib/estadoCita";
 import EstadoBadge from "../ui/EstadoBadge";
 import AccionesCita, { type AccionExtraCita, type VistaHoja } from "./AccionesCita";
 import { formatFechaCorta, formatHora, formatPrecio } from "../../utils/formatters";
@@ -12,10 +13,24 @@ import type { CitaDto } from "../../types";
 // cita se apila en una tarjeta y sus acciones (WhatsApp, la principal y "···")
 // quedan siempre a la vista, con objetivos táctiles de 44px.
 
-/** Insignias de anticipo y comprobante; las comparten la fila y la tarjeta. */
+/**
+ * "Por cerrar": la cita ya terminó y sigue Pendiente/Confirmada. Antes esas
+ * filas se atenuaban justo cuando necesitaban atención.
+ */
+export function InsigniaPorCerrar({ cita, ahora }: { cita: CitaDto; ahora?: Date }) {
+  if (!citaPorCerrar(cita, ahora)) return null;
+  return (
+    <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full border border-status-pending-dot text-status-pending-fg">
+      <AlarmClock size={11} aria-hidden="true" /> Por cerrar
+    </span>
+  );
+}
+
+/** Insignias de "por cerrar", anticipo y comprobante; las comparten la fila y la tarjeta. */
 export function InsigniasCita({ cita }: { cita: CitaDto }) {
   return (
     <>
+      <InsigniaPorCerrar cita={cita} />
       {cita.anticipoRequerido && (
         <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border-[1.5px] bg-transparent ${
           cita.anticipoRecibido

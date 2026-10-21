@@ -159,7 +159,11 @@ export default function DosFactoresPage() {
 
       {/* ── Paso: escanear QR ── */}
       {!estado?.habilitado && paso === "configurando" && (
-        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5 space-y-5">
+        // Formulario: Enter con el código escrito confirma la activación.
+        <form
+          onSubmit={(e) => { e.preventDefault(); if (!activando && codigo.length === 6) activar(); }}
+          className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5 space-y-5"
+        >
           <div>
             <h2 className="font-semibold text-gray-800 dark:text-gray-200 mb-1">Escanea el código QR</h2>
             <p className="text-sm text-gray-500 dark:text-gray-400">Abre tu app autenticadora y escanea este código.</p>
@@ -176,26 +180,30 @@ export default function DosFactoresPage() {
             <p className="text-center font-mono text-sm font-semibold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-slate-700 rounded-lg px-4 py-2 tracking-widest select-all">
               {llave}
             </p>
+            <p className="text-xs text-muted-foreground mt-2 text-center">
+              Guarda esta clave en un lugar seguro. AppointVa no genera códigos de respaldo: si cambias o pierdes el teléfono, la necesitarás para volver a configurar tu app autenticadora.
+            </p>
           </div>
 
           {inputCodigo}
 
           <div className="flex gap-3">
             <button
+              type="button"
               onClick={() => { setPaso("idle"); setCodigo(""); setErrorCodigo(""); }}
               className="flex-1 py-2.5 rounded-xl border-2 border-gray-200 dark:border-slate-600 text-sm font-medium text-gray-600 dark:text-gray-400 hover:border-gray-300 transition"
             >
               Cancelar
             </button>
             <button
-              onClick={() => activar()}
+              type="submit"
               disabled={activando || codigo.length < 6}
               className="flex-1 py-2.5 bg-slate-700 hover:bg-slate-800 disabled:opacity-40 text-white font-semibold rounded-xl text-sm transition"
             >
               {activando ? "Verificando..." : "Confirmar activación"}
             </button>
           </div>
-        </div>
+        </form>
       )}
 
       {/* ── 2FA ya estaba activado, mostrar éxito ── */}

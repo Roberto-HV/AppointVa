@@ -148,6 +148,20 @@ describe("PagosPage", () => {
     expect(screen.getByText(/\$20/)).toBeInTheDocument();
   });
 
+  it("los campos del pago tienen etiqueta y 'Dividir pago' es un interruptor con nombre (DC-19)", async () => {
+    renderPage();
+    await waitFor(() => screen.getByText("Ana García"));
+    await userEvent.click(screen.getByRole("button", { name: /cobrar/i }));
+    await userEvent.click(screen.getByRole("button", { name: /efectivo/i }));
+    expect(screen.getByRole("button", { name: /efectivo/i })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByLabelText("Monto recibido")).toBeInTheDocument();
+    expect(screen.getByLabelText("Propina (opcional)")).toBeInTheDocument();
+    const dividir = screen.getByRole("switch", { name: "Dividir pago" });
+    await userEvent.click(dividir);
+    expect(dividir).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByLabelText("Segundo método")).toBeInTheDocument();
+  });
+
   it("muestra el ticket tras confirmar el pago", async () => {
     renderPage();
     await waitFor(() => screen.getByText("Ana García"));
@@ -343,9 +357,9 @@ describe("cobro: filtrado en el servidor", () => {
     renderPage();
 
     await waitFor(() =>
-      expect(screen.getAllByText("$9999.00").length).toBeGreaterThan(0)
+      expect(screen.getAllByText("$9,999.00").length).toBeGreaterThan(0)
     );
-    expect(screen.getAllByText("$1234.00").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("$1,234.00").length).toBeGreaterThan(0);
     expect(screen.getAllByText("130").length).toBeGreaterThan(0);
     expect(screen.getAllByText("/ 260").length).toBeGreaterThan(0);
   });

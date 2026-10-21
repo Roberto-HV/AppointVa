@@ -8,7 +8,7 @@ import { useSectorTerms } from "../../hooks/useSectorTerms";
 import { useAuthStore } from "../../store/authStore";
 import type { CitaDto } from "../../types";
 import { estiloEstadoCita } from "../../lib/estadoCita";
-import { capitalizarPrimera } from "../../utils/formatters";
+import { capitalizarPrimera, formatPrecio } from "../../utils/formatters";
 
 const EMP_COLORS = [
   "#4F46E5", "#7C3AED", "#0891B2", "#059669",
@@ -45,7 +45,7 @@ export default function KioskPage() {
     return () => clearInterval(id);
   }, []);
 
-  const { data } = useQuery({
+  const { data, isLoading, isError, dataUpdatedAt } = useQuery({
     queryKey: ["citas-kiosk", today],
     queryFn: () => citasApi.obtenerTodas({ desde: today, hasta: today, tamano: 200 }),
     staleTime: 0,
@@ -53,7 +53,7 @@ export default function KioskPage() {
   });
   const citas = data?.datos ?? [];
 
-  const { data: empleados = [] } = useQuery({
+  const { data: empleados = [], isLoading: cargandoEmpleados, isError: errorEmpleados } = useQuery({
     queryKey: ["empleados"],
     queryFn: () => empleadosApi.obtenerTodos(),
     staleTime: 1000 * 60 * 5,
@@ -82,6 +82,14 @@ export default function KioskPage() {
   const completadas = citas.filter((c) => c.estadoTexto === "Completada").length;
   const revenue = citas.filter((c) => c.pagada).reduce((s, c) => s + c.precio, 0);
 
+  // Un fallo de red no debe parecer un día vacío: se avisa y se sigue mostrando
+  // lo último que llegó, con su hora (la consulta reintenta cada 30s).
+  const sinConexion = isError || errorEmpleados;
+  const cargando = (isLoading || cargandoEmpleados) && !sinConexion;
+  const actualizado = dataUpdatedAt
+    ? new Date(dataUpdatedAt).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", hour12: true })
+    : null;
+
   const horaStr = ahora.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", hour12: true });
   const fechaStr = capitalizarPrimera(ahora.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" }));
 
@@ -96,7 +104,7 @@ export default function KioskPage() {
           <div className="text-lg font-extrabold tracking-tight leading-none">
             {perfil?.nombre ?? "Mi Negocio"}
           </div>
-          <div className="text-[10px] text-white/30 uppercase tracking-widest mt-1">
+          <div className="text-xs text-white/60 uppercase tracking-widest mt-1">
             Modo recepción
           </div>
         </div>
@@ -104,9 +112,15 @@ export default function KioskPage() {
           <div className="text-3xl font-black tracking-tighter tabular-nums leading-none">
             {horaStr}
           </div>
-          <div className="text-xs text-white/30 mt-1">{fechaStr}</div>
+          <div className="text-sm text-white/70 mt-1">{fechaStr}</div>
         </div>
       </div>
+
+      {sinConexion && (
+        <div role="alert" className="px-6 py-2 bg-amber-500/15 border-b border-amber-400/30 text-sm text-amber-200 flex-shrink-0">
+          {`Sin conexión · reintentando${actualizado ? ` · última actualización ${actualizado}` : ""}`}
+        </div>
+      )}
 
       {/* Employee columns */}
       <div className="flex-1 overflow-x-auto overflow-y-hidden">
@@ -114,9 +128,13 @@ export default function KioskPage() {
           className="flex h-full"
           style={{ minWidth: Math.max(480, emps.length * 220) }}
         >
-          {emps.length === 0 ? (
-            <div className="flex-1 flex items-center justify-center text-white/25 text-sm">
-              No hay empleados activos
+          {cargando ? (
+            <div className="flex-1 flex items-center justify-center text-white/70 text-sm" role="status">
+              {`Cargando ${terms.citas.toLowerCase()} de hoy…`}
+            </div>
+          ) : emps.length === 0 ? (
+            <div className="flex-1 flex items-center justify-center text-white/70 text-sm">
+              {sinConexion ? "No se pudo cargar la agenda de hoy." : "No hay empleados activos"}
             </div>
           ) : (
             emps.map((emp, i) => {
@@ -140,7 +158,7 @@ export default function KioskPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="font-semibold text-sm truncate leading-tight">{emp.nombre}</div>
-                      <div className="text-xs text-white/35 mt-0.5">
+                      <div className="text-xs text-white/60 mt-0.5">
                         {`${empCitas.length} ${empCitas.length === 1 ? terms.cita.toLowerCase() : terms.citas.toLowerCase()} hoy`}
                       </div>
                     </div>
@@ -157,7 +175,7 @@ export default function KioskPage() {
                   <div className="flex-1 overflow-y-auto p-3 space-y-2">
                     {empCitas.length === 0 ? (
                       <div className="h-full min-h-[80px] flex items-center justify-center">
-                        <p className="text-white/20 text-xs">{`Sin ${terms.citas.toLowerCase()}`}</p>
+                        <p className="text-white/60 text-xs">{`Sin ${terms.citas.toLowerCase()}`}</p>
                       </div>
                     ) : (
                       empCitas.map((cita) => {
@@ -180,20 +198,21 @@ export default function KioskPage() {
                                 : completada
                                 ? "bg-white/[0.03] opacity-45"
                                 : pasada
-                                ? "bg-white/[0.04] opacity-55"
+                                // Terminó y sigue abierta: trabajo pendiente, no se atenúa.
+                                ? "bg-white/[0.06] border border-amber-400/30"
                                 : "bg-white/[0.06]"
                             }`}
                           >
                             <div className="flex items-start justify-between gap-2 mb-1.5">
                               <span
                                 className={`text-xs font-black tabular-nums leading-none ${
-                                  enProgreso ? "text-indigo-300" : "text-white/45"
+                                  enProgreso ? "text-indigo-300" : "text-white/70"
                                 }`}
                               >
                                 {horaCorta(cita.inicioEn)}
                               </span>
                               <span
-                                className={`text-[10px] font-bold px-2 py-0.5 rounded-full leading-none ${
+                                className={`text-xs font-bold px-2 py-0.5 rounded-full leading-none ${
                                   enProgreso
                                     ? "bg-indigo-500/30 text-indigo-300"
                                     : estiloEstadoCita(cita.estadoTexto).badge
@@ -204,11 +223,11 @@ export default function KioskPage() {
                             </div>
                             <div
                               className="text-sm font-semibold leading-tight mb-0.5 truncate"
-                              style={{ color: enProgreso ? "white" : "rgba(255,255,255,.68)" }}
+                              style={{ color: enProgreso ? "white" : "rgba(255,255,255,.85)" }}
                             >
                               {cita.nombreCliente}
                             </div>
-                            <div className="text-xs text-white/35 truncate">
+                            <div className="text-xs text-white/60 truncate">
                               {cita.nombreServicio} · {cita.duracionMinutos} min
                             </div>
                             {enProgreso && (
@@ -239,18 +258,18 @@ export default function KioskPage() {
 
       {/* Footer */}
       <div className="flex items-center justify-between px-6 py-3 border-t border-white/10 flex-shrink-0">
-        <div className="flex items-center gap-6 text-xs text-white/30">
+        <div className="flex items-center gap-6 text-sm text-white/60">
           <span>{`${citasValidas.length} ${terms.citas.toLowerCase()} hoy`}</span>
           <span>{completadas} completadas</span>
           {revenue > 0 && !esEmpleado && (
             <span className="text-emerald-400/80">
-              ${revenue.toLocaleString("es-MX")} generado
+              {formatPrecio(revenue)} generado
             </span>
           )}
         </div>
         <Link
           to="/dashboard/citas"
-          className="text-xs text-white/25 hover:text-white/55 transition flex items-center gap-1"
+          className="text-xs text-white/60 hover:text-white/85 transition flex items-center gap-1 min-h-[44px]"
         >
           ← Salir del modo pantalla
         </Link>

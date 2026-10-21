@@ -9,6 +9,7 @@ import { negociosApi } from "../api/negocios";
 import { citasApi, ESTADOS } from "../api/citas";
 import { useToastStore } from "../store/toastStore";
 import { Tooltip } from "../components/ui/Tooltip";
+import Modal from "../components/ui/Modal";
 import { NotificacionesBell } from '../components/dashboard/NotificacionesBell';
 import { EncuestaSatisfaccionModal } from '../components/dashboard/EncuestaSatisfaccionModal';
 import AvisoActivacionPendiente from '../components/dashboard/AvisoActivacionPendiente';
@@ -301,7 +302,7 @@ export default function DashboardLayout() {
     }
   };
 
-  useInactividadTimeout(handleLogout);
+  const inactividad = useInactividadTimeout(handleLogout);
 
   // El cajón es modal por debajo de `xl`: al cerrarlo, el foco vuelve al botón
   // que lo abrió (antes se perdía en <body>).
@@ -379,6 +380,20 @@ export default function DashboardLayout() {
         borde: "border-slate-100 dark:border-slate-700/50",
       };
   const etiquetaPendientes = `${pendientesCnt} cita${pendientesCnt !== 1 ? "s" : ""} pendiente${pendientesCnt !== 1 ? "s" : ""} por confirmar`;
+
+  // Mismo aviso en el header móvil y en la barra de escritorio, y lleva a la
+  // lista filtrada (antes era un chip sin acción y solo en el teléfono).
+  const chipPendientes = pendientesCnt > 0 && (
+    <NavLink
+      to="/dashboard/citas?estado=Pendiente"
+      aria-label={`${etiquetaPendientes}. Ver en ${terms.citas.toLowerCase()}`}
+      className="inline-flex items-center min-h-[44px] lg:min-h-[36px] px-1 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      <span className="flex items-center gap-1 bg-status-pending-bg text-status-pending-fg border border-status-pending-dot text-xs font-bold px-2 py-0.5 rounded-full hover:opacity-80 transition">
+        {pendientesCnt > 9 ? "9+" : pendientesCnt} pendiente{pendientesCnt !== 1 ? "s" : ""}
+      </span>
+    </NavLink>
+  );
 
   const rolChip = usuario?.rol === "Empleado"
     ? { label: "Empleado",    cls: "bg-transparent border-[1.5px] border-blue-600/40 text-blue-700 dark:border-blue-300/40 dark:text-blue-300" }
@@ -498,10 +513,14 @@ export default function DashboardLayout() {
               >
                 {({ isActive }) => (
                   <>
-                    <div className={`rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                    <div className={`relative rounded-xl flex items-center justify-center shrink-0 transition-colors ${
                       sidebarCollapsed ? "w-11 h-11" : "w-7 h-7"
                     } ${isActive && !sidebarCollapsed ? "bg-white/20" : "bg-transparent"}`}>
                       <Icon size={sidebarCollapsed ? 22 : 15} className={isActive ? "text-white" : temaNav.icono} />
+                      {/* Colapsado no cabe el contador: un punto avisa que hay pendientes. */}
+                      {sidebarCollapsed && esCitas && pendientesCnt > 0 && (
+                        <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-status-pending-dot ring-2 ring-white dark:ring-slate-900" aria-hidden="true" />
+                      )}
                     </div>
                     {!sidebarCollapsed && (
                       <>
@@ -522,7 +541,7 @@ export default function DashboardLayout() {
               </NavLink>
             );
             return sidebarCollapsed ? (
-              <Tooltip key={item.to} text={item.label} side="right">
+              <Tooltip key={item.to} text={item.to === "/dashboard/citas" && pendientesCnt > 0 ? `${item.label} · ${etiquetaPendientes}` : item.label} side="right">
                 {/* span wrapper evita que asChild rompa el className-function de NavLink */}
                 <span className="block">{link}</span>
               </Tooltip>
@@ -623,16 +642,7 @@ export default function DashboardLayout() {
           <div ref={headerUserRef} className="ml-auto flex items-center gap-2 relative">
             <FechaHoraActual className={salud ? "text-sidebar-salud-fg" : undefined} />
             {!esEmpleado && <NotificacionesBell />}
-            {pendientesCnt > 0 && (
-              <Tooltip text={etiquetaPendientes}>
-                <span
-                  aria-label={etiquetaPendientes}
-                  className="flex items-center gap-1 bg-status-pending-bg text-status-pending-fg border border-status-pending-dot text-[10px] font-bold px-2 py-0.5 rounded-full cursor-default"
-                >
-                  {pendientesCnt > 9 ? "9+" : pendientesCnt} pendiente{pendientesCnt !== 1 ? "s" : ""}
-                </span>
-              </Tooltip>
-            )}
+            {chipPendientes}
             <button
               ref={botonUsuarioMovilRef}
               onClick={() => setHeaderMenuOpen((o) => !o)}
@@ -670,6 +680,7 @@ export default function DashboardLayout() {
           {/* Desktop topbar — hidden on mobile (mobile has its own header) */}
           <header className="hidden xl:flex items-center justify-end gap-3 border-b border-slate-200 bg-slate-50 px-6 py-3 dark:border-slate-700 dark:bg-slate-900">
             <FechaHoraActual />
+            {chipPendientes}
             {!esEmpleado && <NotificacionesBell />}
             <div ref={desktopUserRef} className="relative flex items-center">
               <button
@@ -696,6 +707,31 @@ export default function DashboardLayout() {
         </main>
 
       </div>
+
+      {/* Aviso antes del cierre por inactividad: cerrar el aviso cuenta como seguir. */}
+      <Modal abierto={inactividad.aviso} onCerrar={inactividad.seguir} titulo="¿Sigues ahí?" ancho="sm">
+        <div className="space-y-5">
+          <p className="text-sm text-muted-foreground">
+            Por seguridad, tu sesión se cerrará en 1 minuto por inactividad. Lo que no hayas guardado se perderá.
+          </p>
+          <div className="flex flex-col-reverse sm:flex-row gap-2">
+            <button
+              type="button"
+              onClick={() => handleLogout()}
+              className="min-h-[44px] lg:min-h-[36px] flex-1 px-4 rounded-xl border border-border text-sm font-medium text-foreground hover:bg-muted transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              Cerrar sesión
+            </button>
+            <button
+              type="button"
+              onClick={inactividad.seguir}
+              className="min-h-[44px] lg:min-h-[36px] flex-1 px-4 rounded-xl text-sm font-semibold bg-primary text-primary-foreground hover:opacity-90 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              Seguir conectado
+            </button>
+          </div>
+        </div>
+      </Modal>
 
       {encuestaEstado?.mostrar && !encuestaCerrada && (
         <EncuestaSatisfaccionModal onCerrar={() => setEncuestaCerrada(true)} />

@@ -136,6 +136,19 @@ describe("DosFactoresPage — flujo activación: éxito", () => {
     await screen.findByText("¡2FA activado correctamente!");
     expect(authApi.activar2FA).toHaveBeenCalledWith("123456");
   });
+
+  it("Enter con el código escrito confirma la activación y avisa que no hay códigos de respaldo", async () => {
+    vi.mocked(authApi.obtenerEstado2FA).mockResolvedValue({ habilitado: false, tieneConfiguracion: false });
+    vi.mocked(authApi.configurar2FA).mockResolvedValue({ uri: "otpauth://totp/test?secret=ABCD1234", llave: "ABCD1234" });
+    vi.mocked(authApi.activar2FA).mockResolvedValue({ mensaje: "OK" });
+    renderConQuery();
+    fireEvent.click(await screen.findByRole("button", { name: "Activar autenticación en dos pasos" }));
+    const campo = await screen.findByPlaceholderText("000000");
+    expect(screen.getByText(/no genera códigos de respaldo/)).toBeInTheDocument();
+    fireEvent.change(campo, { target: { value: "654321" } });
+    fireEvent.submit(campo.closest("form")!);
+    await waitFor(() => expect(authApi.activar2FA).toHaveBeenCalledWith("654321"));
+  });
 });
 
 describe("DosFactoresPage — flujo activación: código incorrecto", () => {
