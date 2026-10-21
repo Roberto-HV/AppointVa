@@ -1,5 +1,6 @@
 import { api } from "./axios";
 import type { ServicioDto, CategoriaDto, CrearServicioDto } from "../types";
+import { configSubida, type OnProgreso } from "../lib/imagenes";
 
 // El PUT reemplaza el servicio completo: hay que reenviar los campos que no cambian
 // o se pierden (un `destacado` ausente llega al backend como false).
@@ -43,12 +44,10 @@ export const serviciosApi = {
     await api.delete(`/servicios/${id}`);
   },
 
-  subirImagen: async (id: string, archivo: File): Promise<ServicioDto> => {
+  subirImagen: async (id: string, archivo: File, onProgreso?: OnProgreso): Promise<ServicioDto> => {
     const form = new FormData();
     form.append("archivo", archivo);
-    const { data } = await api.post(`/servicios/${id}/imagen`, form, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    const { data } = await api.post(`/servicios/${id}/imagen`, form, configSubida(onProgreso));
     return data;
   },
 };

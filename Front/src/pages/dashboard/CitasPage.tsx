@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useSectorTerms } from "../../hooks/useSectorTerms";
 
@@ -34,6 +34,9 @@ import Pagination from "../../components/ui/Pagination";
 import BotonAccion, { EnlaceAccion } from "../../components/ui/BotonAccion";
 import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
 import { TAMANO_PAGINA } from "../../hooks/usePaginacionLocal";
+import { leerParamsCitas } from "../../lib/paramsCitas";
+import { mensajeError } from "../../utils/errores";
+import { isAxiosError } from "axios";
 
 
 type VistaCitas = "lista" | "calendario" | "gantt";
@@ -62,13 +65,19 @@ export default function CitasPage() {
 
   const vistaParam = params.get("vista");
   const vista: VistaCitas = vistaParam === "calendario" || vistaParam === "gantt" ? vistaParam : "lista";
-  const desde = params.get("desde") ?? hoy();
-  const hasta = params.get("hasta") ?? hoy();
-  const empleadoId = params.get("empleadoId") ?? "";
+  const { desde, hasta, empleadoId, pagina, invalidos: paramsInvalidos } = leerParamsCitas(params, hoy());
   const busqueda = params.get("busqueda") ?? "";
   const estadoFiltro = ESTADOS_FILTRO.includes(params.get("estado") ?? "") ? params.get("estado")! : "";
-  const pagina = Math.max(1, Math.floor(Number(params.get("pagina"))) || 1);
   const TAMANO = TAMANO_PAGINA;
+
+  // Un valor inválido en la URL (editada a mano o de un enlace viejo) se quita
+  // para que la barra de direcciones refleje lo que realmente se muestra.
+  const clavesInvalidas = paramsInvalidos.join(",");
+  useEffect(() => {
+    if (!clavesInvalidas) return;
+    actualizarParams(Object.fromEntries(clavesInvalidas.split(",").map((k) => [k, null])));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo cuando cambian las claves inválidas
+  }, [clavesInvalidas]);
 
   const setVista = (v: VistaCitas) => actualizarParams({ vista: v === "lista" ? null : v });
   const setPagina = (n: number) => actualizarParams({ pagina: n > 1 ? String(n) : null });
@@ -130,7 +139,9 @@ export default function CitasPage() {
   // ── Queries ──────────────────────────────────────────────────────────────────
   const estadoNum = estadoFiltro ? ESTADOS[estadoFiltro as keyof typeof ESTADOS] : undefined;
 
-  const { data: pagCitas, isLoading, isError: errorCitas, refetch: reintentarCitas, isFetching: actualizandoCitas } = useQuery({
+  const {
+    data: pagCitas, isLoading, isError: errorCitas, refetch: reintentarCitas, isFetching: actualizandoCitas, isPlaceholderData,
+  } = useQuery({
     queryKey: ["citas", desde, hasta, empleadoId, busqueda, estadoFiltro, pagina],
     queryFn: () => citasApi.obtenerTodas({
       desde: desde || undefined,
@@ -152,6 +163,13 @@ export default function CitasPage() {
   const citaHoja = citaAcciones ? (citas.find((c) => c.id === citaAcciones.id) ?? citaAcciones) : null;
   const totalCitas = pagCitas?.total ?? 0;
   const totalPaginas = Math.ceil(totalCitas / TAMANO) || 1;
+
+  // Página fuera de rango (p. ej. `?pagina=40` con 3 páginas): se lleva a la última.
+  const paginaFueraDeRango = !!pagCitas && !isPlaceholderData && !errorCitas && pagina > totalPaginas;
+  useEffect(() => {
+    if (paginaFueraDeRango) setPagina(totalPaginas);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- setPagina cambia en cada render
+  }, [paginaFueraDeRango, totalPaginas]);
 
   const { data: perfil } = useQuery({
     queryKey: ["negocio-perfil-layout"],
@@ -217,9 +235,7 @@ export default function CitasPage() {
       toast(`${terms.cita} creada`);
     },
     onError: (err: unknown) => {
-      const msg = (err as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje
-        ?? `No se pudo crear la ${terms.cita.toLowerCase()}`;
-      toast(msg, "error");
+      toast(mensajeError(err, `No se pudo crear la ${terms.cita.toLowerCase()}`), "error");
     },
   });
 
@@ -236,12 +252,10 @@ export default function CitasPage() {
       toast("Datos del cliente actualizados");
     },
     onError: (err: unknown) => {
-      const e = err as { response?: { status?: number; data?: { mensaje?: string } } };
-      const msg = e?.response?.data?.mensaje
-        ?? (e?.response?.status === 409
+      const duplicado = isAxiosError(err) && err.response?.status === 409;
+      toast(mensajeError(err, duplicado
           ? "Ese teléfono o correo ya está registrado con otra clienta"
-          : "No se pudo actualizar el cliente");
-      toast(msg, "error");
+          : "No se pudo actualizar el cliente"), "error");
     },
   });
 
@@ -326,8 +340,7 @@ export default function CitasPage() {
       toast(`${terms.cita} creada`);
     },
     onError: (err: unknown) => {
-      const msg = (err as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje ?? `No se pudo crear la ${terms.cita.toLowerCase()}`;
-      toast(msg, "error");
+      toast(mensajeError(err, `No se pudo crear la ${terms.cita.toLowerCase()}`), "error");
     },
   });
 

@@ -1,79 +1,118 @@
-﻿import { useMemo, useState } from "react";
+﻿import { useId, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2, Tag, X, Check, Copy } from "lucide-react";
+import { useForm, type Resolver } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Plus, Trash2, Tag, Check, Copy } from "lucide-react";
 import { descuentosApi, type Descuento } from "../../api/descuentos";
+import { negociosApi } from "../../api/negocios";
 import { useToastStore } from "../../store/toastStore";
 import Pagination from "../../components/ui/Pagination";
 import BotonAccion from "../../components/ui/BotonAccion";
 import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
+import Modal from "../../components/ui/Modal";
+import Select from "../../components/ui/Select";
+import ErrorCarga from "../../components/ui/ErrorCarga";
+import { DatePicker } from "../../components/ui/DateTimePicker";
 import { usePaginacionLocal } from "../../hooks/usePaginacionLocal";
 import ConfirmarAccion from "../../components/ui/ConfirmarAccion";
 import { useConfirmarDescarte } from "../../hooks/useCambiosSinGuardar";
 import { mensajeError } from "../../utils/errores";
+import { formatFecha, formatPrecio } from "../../utils/formatters";
+import { comoUtc, finDelDiaEnZona, hoy } from "../../utils/fechas";
+import { claseCampo, CLASE_ERROR_CAMPO } from "../../lib/clasesCampo";
 
 const TIPOS = [
   { value: "Porcentaje", label: "Porcentaje (%)" },
   { value: "MontoFijo", label: "Monto fijo ($)" },
-];
+] as const;
 
-interface FormState {
-  codigo: string;
-  descripcion: string;
-  tipo: string;
-  valor: string;
-  usoMaximo: string;
-  fechaExpiracion: string;
-}
+const vacioAIndefinido = (v: unknown) => (v === "" || v === null ? undefined : v);
 
-const EMPTY: FormState = {
-  codigo: "",
-  descripcion: "",
-  tipo: "Porcentaje",
-  valor: "",
-  usoMaximo: "",
-  fechaExpiracion: "",
+// Las mismas reglas que ya intentaban los atributos `min`/`max`, que nunca se
+// aplicaban porque el panel no era un <form>: un 150% llegaba al servidor.
+const schemaCupon = z.object({
+  codigo: z.string().trim().min(1, "Escribe un código").max(50, "Máximo 50 caracteres")
+    .regex(/^\S+$/, "El código no puede llevar espacios"),
+  descripcion: z.string().trim().max(200, "Máximo 200 caracteres").optional(),
+  tipo: z.enum(["Porcentaje", "MontoFijo"]),
+  valor: z.coerce.number({ error: "Escribe un valor" })
+    .positive("El valor debe ser mayor a 0")
+    .refine((n) => Math.round(n * 100) === n * 100, "Usa como máximo dos decimales"),
+  usoMaximo: z.preprocess(vacioAIndefinido, z.coerce.number().int("Debe ser un número entero").min(1, "Mínimo 1 uso").optional()),
+  fechaExpiracion: z.string().optional(),
+}).superRefine((d, ctx) => {
+  if (d.tipo === "Porcentaje" && d.valor > 100) {
+    ctx.addIssue({ code: "custom", path: ["valor"], message: "Un porcentaje no puede pasar de 100%" });
+  }
+  if (d.fechaExpiracion && d.fechaExpiracion < hoy()) {
+    ctx.addIssue({ code: "custom", path: ["fechaExpiracion"], message: "La fecha ya pasó" });
+  }
+});
+type CuponForm = z.infer<typeof schemaCupon>;
+
+const VALORES_INICIALES: CuponForm = {
+  codigo: "", descripcion: "", tipo: "Porcentaje", valor: "" as unknown as number, usoMaximo: undefined, fechaExpiracion: "",
 };
 
 function formatDescuento(desc: Descuento) {
   if (desc.tipo === "Porcentaje") return `${desc.valor}% de descuento`;
-  return `$${desc.valor} de descuento`;
+  return `${formatPrecio(desc.valor)} de descuento`;
 }
 
 export default function DescuentosPage() {
+  const idForm = useId();
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState<FormState>(EMPTY);
   const [copiado, setCopiado] = useState<string | null>(null);
-  const [cuponEliminar, setCuponEliminar] = useState<{ descuento: Descuento; vigente: boolean } | null>(null);
+  const [cuponEliminar, setCuponEliminar] = useState<Descuento | null>(null);
   const descarte = useConfirmarDescarte();
-  const formularioSucio = JSON.stringify(form) !== JSON.stringify(EMPTY);
-  const cerrarFormulario = () => descarte.pedirCierre(formularioSucio, () => { setShowForm(false); setForm(EMPTY); });
   const qc = useQueryClient();
   const { toast } = useToastStore();
 
-  const { data: descuentos = [], isLoading } = useQuery({
+  const {
+    register, handleSubmit, reset, watch, setValue,
+    formState: { errors, isDirty, isSubmitted },
+  } = useForm<CuponForm>({
+    resolver: zodResolver(schemaCupon) as Resolver<CuponForm>,
+    defaultValues: VALORES_INICIALES,
+  });
+
+  const cerrarFormulario = () => descarte.pedirCierre(isDirty, () => { setShowForm(false); reset(VALORES_INICIALES); });
+
+  const { data: descuentos = [], isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ["descuentos"],
     queryFn: descuentosApi.getDescuentos,
   });
 
+  // La zona del negocio decide cuándo termina "el día" de la expiración.
+  const { data: perfil } = useQuery({
+    queryKey: ["negocio-perfil-layout"],
+    queryFn: negociosApi.obtenerPerfil,
+    staleTime: 1000 * 60 * 5,
+  });
+
   const mutCrear = useMutation({
-    mutationFn: () =>
+    mutationFn: (d: CuponForm) =>
       descuentosApi.crear({
-        codigo: form.codigo,
-        descripcion: form.descripcion || undefined,
-        tipo: form.tipo,
-        valor: Number(form.valor),
-        usoMaximo: form.usoMaximo ? Number(form.usoMaximo) : undefined,
-        fechaExpiracion: form.fechaExpiracion || undefined,
+        codigo: d.codigo,
+        descripcion: d.descripcion || undefined,
+        tipo: d.tipo,
+        valor: d.valor,
+        usoMaximo: d.usoMaximo,
+        fechaExpiracion: d.fechaExpiracion ? finDelDiaEnZona(d.fechaExpiracion, perfil?.zonaHoraria) : undefined,
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["descuentos"] });
       setShowForm(false);
-      setForm(EMPTY);
+      reset(VALORES_INICIALES);
       toast("Cupón creado");
     },
     onError: (err: unknown) => toast(mensajeError(err, "No se pudo crear el cupón"), "error"),
   });
 
+  // El backend lo da de baja y deja de listarlo: no hay forma de reactivarlo,
+  // así que se llama "eliminar" en todos lados (antes el diálogo decía
+  // "desactivar" y el aviso "eliminado").
   const mutEliminar = useMutation({
     mutationFn: (id: string) => descuentosApi.eliminar(id),
     onSuccess: () => {
@@ -85,7 +124,7 @@ export default function DescuentosPage() {
   });
 
   const copiarCodigo = (codigo: string) => {
-    navigator.clipboard.writeText(codigo);
+    void navigator.clipboard?.writeText(codigo);
     setCopiado(codigo);
     setTimeout(() => setCopiado(null), 2000);
   };
@@ -107,6 +146,15 @@ export default function DescuentosPage() {
   const activosVisibles = paginados.visibles.filter(vigente);
   const inactivosVisibles = paginados.visibles.filter((d) => !vigente(d));
 
+  const tipo = watch("tipo");
+  const codigo = watch("codigo");
+  const valor = watch("valor");
+  const fechaExpiracion = watch("fechaExpiracion") ?? "";
+  const id = (campo: string) => `${idForm}-${campo}`;
+  const describir = (campo: keyof CuponForm) => (errors[campo] ? `${id(campo)}-error` : undefined);
+  const errorDe = (campo: keyof CuponForm) =>
+    errors[campo] ? <p id={`${id(campo)}-error`} className={CLASE_ERROR_CAMPO}>{errors[campo]?.message}</p> : null;
+
   return (
     <div className="p-4 sm:p-8 space-y-6">
       <EncabezadoPagina
@@ -119,107 +167,117 @@ export default function DescuentosPage() {
         }
       />
 
-      {/* El formulario sí se acota: a ancho completo sus seis campos quedarían de
-          más de 700px cada uno, que es peor de llenar. El resto de la página
-          —encabezado, listados y paginación— va al ancho del panel como en
-          Clientes o Servicios. */}
-      {showForm && (
-        <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-2xl p-5 shadow-sm space-y-4 max-w-3xl">
-          <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-gray-800 dark:text-gray-200">Nuevo cupón</h2>
-            <button type="button" aria-label="Cerrar formulario" onClick={cerrarFormulario} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400">
-              <X size={18} />
-            </button>
-          </div>
-
+      {/* El mismo modal + react-hook-form/zod que el resto del panel. */}
+      <Modal abierto={showForm} onCerrar={cerrarFormulario} titulo="Nuevo cupón" ancho="lg">
+        <form noValidate onSubmit={handleSubmit((d) => mutCrear.mutate(d))} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Código</label>
+              <label htmlFor={id("codigo")} className="text-sm font-medium text-gray-700 dark:text-gray-300">Código</label>
               <input
-                value={form.codigo}
-                onChange={(e) => setForm({ ...form, codigo: e.target.value.toUpperCase() })}
+                id={id("codigo")}
+                value={codigo}
+                onChange={(e) => setValue("codigo", e.target.value.toUpperCase(), { shouldDirty: true, shouldValidate: isSubmitted })}
                 placeholder="PROMO20"
                 maxLength={50}
-                className="mt-1 w-full border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 rounded-lg px-3 py-2 text-sm font-mono uppercase focus:outline-none focus:ring-2 focus:ring-slate-700/30"
+                aria-invalid={!!errors.codigo || undefined}
+                aria-describedby={describir("codigo")}
+                className={claseCampo(!!errors.codigo, "mt-1 font-mono uppercase")}
               />
+              {errorDe("codigo")}
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Descripción (opcional)</label>
+              <label htmlFor={id("descripcion")} className="text-sm font-medium text-gray-700 dark:text-gray-300">Descripción (opcional)</label>
               <input
-                value={form.descripcion}
-                onChange={(e) => setForm({ ...form, descripcion: e.target.value })}
+                id={id("descripcion")}
+                {...register("descripcion")}
                 placeholder="Descuento de bienvenida"
-                className="mt-1 w-full border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-700/30"
+                aria-invalid={!!errors.descripcion || undefined}
+                aria-describedby={describir("descripcion")}
+                className={claseCampo(!!errors.descripcion, "mt-1")}
               />
+              {errorDe("descripcion")}
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Tipo</label>
-              <select
-                value={form.tipo}
-                onChange={(e) => setForm({ ...form, tipo: e.target.value })}
-                className="mt-1 w-full border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-700/30"
-              >
+              <label htmlFor={id("tipo")} className="text-sm font-medium text-gray-700 dark:text-gray-300">Tipo</label>
+              <Select id={id("tipo")} {...register("tipo")} value={tipo} className="mt-1 w-full">
                 {TIPOS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-              </select>
+              </Select>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Valor {form.tipo === "Porcentaje" ? "(%)" : "($)"}
+              <label htmlFor={id("valor")} className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Valor {tipo === "Porcentaje" ? "(%)" : "($)"}
               </label>
               <input
+                id={id("valor")}
                 type="number"
-                value={form.valor}
-                onChange={(e) => setForm({ ...form, valor: e.target.value })}
-                placeholder={form.tipo === "Porcentaje" ? "20" : "50"}
-                min="0.01"
-                max={form.tipo === "Porcentaje" ? "100" : undefined}
+                inputMode="decimal"
                 step="0.01"
-                className="mt-1 w-full border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-700/30"
+                {...register("valor")}
+                placeholder={tipo === "Porcentaje" ? "20" : "50"}
+                aria-invalid={!!errors.valor || undefined}
+                aria-describedby={describir("valor")}
+                className={claseCampo(!!errors.valor, "mt-1")}
               />
+              {errorDe("valor")}
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Límite de usos (opcional)</label>
+              <label htmlFor={id("usoMaximo")} className="text-sm font-medium text-gray-700 dark:text-gray-300">Límite de usos (opcional)</label>
               <input
+                id={id("usoMaximo")}
                 type="number"
-                value={form.usoMaximo}
-                onChange={(e) => setForm({ ...form, usoMaximo: e.target.value })}
+                inputMode="numeric"
+                {...register("usoMaximo")}
                 placeholder="Sin límite"
-                min="1"
-                className="mt-1 w-full border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-700/30"
+                aria-invalid={!!errors.usoMaximo || undefined}
+                aria-describedby={describir("usoMaximo")}
+                className={claseCampo(!!errors.usoMaximo, "mt-1")}
               />
+              {errorDe("usoMaximo")}
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Fecha de expiración (opcional)</label>
-              <input
-                type="date"
-                value={form.fechaExpiracion}
-                onChange={(e) => setForm({ ...form, fechaExpiracion: e.target.value })}
-                className="mt-1 w-full border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-700/30"
+              <span id={id("fecha-etiqueta")} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Válido hasta (incluido, opcional)
+              </span>
+              <DatePicker
+                value={fechaExpiracion}
+                onChange={(v) => setValue("fechaExpiracion", v, { shouldDirty: true, shouldValidate: isSubmitted })}
+                minDate={hoy()}
+                ariaLabel="Válido hasta (incluido)"
+                error={errors.fechaExpiracion?.message}
               />
+              <p className="text-xs text-muted-foreground mt-1">Se acepta hasta las 23:59 de ese día, hora del negocio.</p>
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 pt-1">
-            <button type="button" onClick={cerrarFormulario} className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition">
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-1">
+            <button
+              type="button"
+              onClick={cerrarFormulario}
+              className="min-h-[44px] lg:min-h-[36px] px-4 text-sm text-foreground border border-border hover:bg-muted rounded-xl transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
               Cancelar
             </button>
             <button
-              onClick={() => mutCrear.mutate()}
-              disabled={!form.codigo.trim() || !form.valor || mutCrear.isPending}
-              className="flex items-center gap-1 px-4 py-2 bg-slate-700 text-white rounded-lg text-sm font-semibold disabled:opacity-50 hover:opacity-90 transition"
+              type="submit"
+              disabled={!codigo.trim() || valor === undefined || String(valor) === "" || mutCrear.isPending}
+              className="min-h-[44px] lg:min-h-[36px] inline-flex items-center justify-center gap-1 px-4 bg-slate-700 text-white rounded-xl text-sm font-semibold disabled:opacity-50 hover:opacity-90 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              <Check size={15} /> Crear cupón
+              <Check size={15} aria-hidden="true" /> {mutCrear.isPending ? "Creando…" : "Crear cupón"}
             </button>
           </div>
-        </div>
-      )}
+        </form>
+      </Modal>
 
       {/* Lista activos */}
       {isLoading ? (
-        <div className="text-center py-16 text-gray-400 dark:text-gray-500">Cargando...</div>
+        <div className="space-y-3" aria-busy="true" aria-label="Cargando cupones">
+          {[0, 1, 2].map((i) => <div key={i} className="h-[76px] rounded-xl bg-muted animate-pulse" />)}
+        </div>
+      ) : isError ? (
+        <ErrorCarga mensaje="No se pudieron cargar los cupones." onReintentar={() => refetch()} reintentando={isFetching} />
       ) : descuentos.length === 0 ? (
-        <div className="text-center py-16 text-gray-400 dark:text-gray-500">
-          <Tag size={40} className="mx-auto mb-3 opacity-30" />
+        <div className="text-center py-16 text-gray-500 dark:text-gray-400">
+          <Tag size={40} className="mx-auto mb-3 opacity-30" aria-hidden="true" />
           <p className="font-medium">No hay cupones configurados</p>
           <p className="text-sm mt-1">Crea cupones para ofrecer descuentos a tus clientes</p>
         </div>
@@ -234,7 +292,7 @@ export default function DescuentosPage() {
                   descuento={d}
                   copiado={copiado === d.codigo}
                   onCopiar={() => copiarCodigo(d.codigo)}
-                  onEliminar={() => setCuponEliminar({ descuento: d, vigente: true })}
+                  onEliminar={() => setCuponEliminar(d)}
                 />
               ))}
             </div>
@@ -246,9 +304,9 @@ export default function DescuentosPage() {
                 <DescuentoRow
                   key={d.id}
                   descuento={d}
-                  copiado={false}
+                  copiado={copiado === d.codigo}
                   onCopiar={() => copiarCodigo(d.codigo)}
-                  onEliminar={() => setCuponEliminar({ descuento: d, vigente: false })}
+                  onEliminar={() => setCuponEliminar(d)}
                 />
               ))}
             </div>
@@ -268,17 +326,17 @@ export default function DescuentosPage() {
         </>
       )}
 
-      {/* OM-17 (DECISION NEEDED): el backend desactiva el cupón y ya no lo lista. */}
+      {/* OM-17 (DECISION NEEDED): si los cupones deben poder reactivarse. Hoy no se puede. */}
       <ConfirmarAccion
         abierto={!!cuponEliminar}
-        titulo={cuponEliminar?.vigente ? "Desactivar cupón" : "Eliminar cupón"}
+        titulo="Eliminar cupón"
         mensaje={cuponEliminar && (
-          <p>{`El cupón ${cuponEliminar.descuento.codigo} dejará de aceptarse al reservar y desaparecerá de esta lista.`}</p>
+          <p>{`El cupón ${cuponEliminar.codigo} dejará de aceptarse al reservar y desaparecerá de esta lista. No se puede reactivar: para volver a ofrecerlo tendrás que crearlo de nuevo.`}</p>
         )}
-        etiquetaConfirmar={cuponEliminar?.vigente ? "Desactivar cupón" : "Eliminar cupón"}
+        etiquetaConfirmar="Eliminar cupón"
         destructiva
         pendiente={mutEliminar.isPending}
-        onConfirmar={() => cuponEliminar && mutEliminar.mutate(cuponEliminar.descuento.id)}
+        onConfirmar={() => cuponEliminar && mutEliminar.mutate(cuponEliminar.id)}
         onCerrar={() => setCuponEliminar(null)}
       />
       {descarte.dialogo}
@@ -307,30 +365,35 @@ function DescuentoRow({
             {formatDescuento(d)}
           </span>
           {d.agotado && <span className="text-xs bg-status-cancelled-bg text-status-cancelled-fg px-2 py-0.5 rounded-full">Agotado</span>}
-          {d.expirado && <span className="text-xs bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400 px-2 py-0.5 rounded-full">Expirado</span>}
+          {d.expirado && <span className="text-xs bg-status-absent-bg text-status-absent-fg px-2 py-0.5 rounded-full">Expirado</span>}
         </div>
         {d.descripcion && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{d.descripcion}</p>}
-        <div className="flex flex-wrap gap-3 text-xs text-gray-400 dark:text-gray-500 mt-1">
+        <div className="flex flex-wrap gap-3 text-xs text-gray-500 dark:text-gray-400 mt-1">
           <span>Usos: {d.usoActual}{d.usoMaximo ? ` / ${d.usoMaximo}` : ""}</span>
           {d.fechaExpiracion && (
-            <span>Expira: {new Date(d.fechaExpiracion).toLocaleDateString("es-MX")}</span>
+            // El backend guarda la expiración en UTC sin "Z".
+            <span>Válido hasta: {formatFecha(comoUtc(d.fechaExpiracion))}</span>
           )}
         </div>
       </div>
       <div className="flex items-center gap-1 shrink-0">
         <button
+          type="button"
           onClick={onCopiar}
+          aria-label={copiado ? `Código ${d.codigo} copiado` : `Copiar código ${d.codigo}`}
           title="Copiar código"
-          className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-slate-700 hover:bg-slate-700/10 rounded-lg transition"
+          className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] lg:min-h-[36px] lg:min-w-[36px] text-gray-500 dark:text-gray-400 hover:text-foreground hover:bg-muted rounded-lg transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          {copiado ? <Check size={15} className="text-green-500" /> : <Copy size={15} />}
+          {copiado ? <Check size={15} className="text-green-600 dark:text-green-400" aria-hidden="true" /> : <Copy size={15} aria-hidden="true" />}
         </button>
         <button
+          type="button"
           onClick={onEliminar}
-          title="Desactivar"
-          className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-lg transition"
+          aria-label={`Eliminar cupón ${d.codigo}`}
+          title="Eliminar"
+          className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] lg:min-h-[36px] lg:min-w-[36px] text-gray-500 dark:text-gray-400 hover:text-red-700 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          <Trash2 size={15} />
+          <Trash2 size={15} aria-hidden="true" />
         </button>
       </div>
     </div>

@@ -80,11 +80,25 @@ export default function GanttCitas({ onCitaClick }: Props) {
     return () => clearInterval(id);
   }, [HORA_INICIO, HORA_FIN]);
 
-  const { data: empleados = [], isError: errorEmpleados, refetch: reintentarEmpleados } = useQuery({
+  const {
+    data: datosEmpleados, isError: errorEmpleados, refetch: reintentarEmpleados, isFetching: actualizandoEmpleados,
+  } = useQuery({
     queryKey: ["empleados"],
     queryFn: () => empleadosApi.obtenerTodos(),
     staleTime: 1000 * 60 * 5,
   });
+  const empleados = datosEmpleados ?? [];
+
+  // Igual que Citas y Kiosko: un sondeo fallido no borra una jornada ya pintada.
+  // Error a pantalla completa solo si todavía no hay nada que mostrar; si ya hay
+  // datos se conservan y se avisa con un banner que no bloquea.
+  const sinDatos = (isError && !data) || (errorEmpleados && !datosEmpleados);
+  const datosDesactualizados = !sinDatos && (isError || errorEmpleados);
+  const reintentando = isFetching || actualizandoEmpleados;
+  const reintentar = () => {
+    if (isError) refetch();
+    if (errorEmpleados) reintentarEmpleados();
+  };
 
   const activos = empleados.filter((e) => e.activo);
   const conCitas = activos.filter((e) => citas.some((c) => c.empleadoId === e.id));
@@ -138,7 +152,7 @@ export default function GanttCitas({ onCitaClick }: Props) {
         </button>
         <div className="ml-auto flex items-center gap-4">
           <span className="text-xs text-muted-foreground">
-            {isLoading ? "Cargando..." : isError ? "Sin datos" : `${citasActivas.length} cita${citasActivas.length !== 1 ? "s" : ""}`}
+            {isLoading ? "Cargando..." : sinDatos ? "Sin datos" : `${citasActivas.length} cita${citasActivas.length !== 1 ? "s" : ""}`}
           </span>
           <ul className="hidden sm:flex items-center gap-3" aria-label="Leyenda de estados">
             {ESTADOS_CITA.map((estado) => (
@@ -151,21 +165,35 @@ export default function GanttCitas({ onCitaClick }: Props) {
         </div>
       </div>
 
+      {datosDesactualizados && (
+        <div role="alert" className="flex flex-wrap items-center justify-between gap-2 px-4 py-2 border-b border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 text-sm text-red-800 dark:text-red-300">
+          <span>No se pudo actualizar la jornada. Lo que ves puede no estar al día.</span>
+          <button
+            type="button"
+            onClick={reintentar}
+            disabled={reintentando}
+            className="min-h-[44px] lg:min-h-[36px] px-4 rounded-lg border border-border font-medium text-foreground hover:bg-muted disabled:opacity-50 transition"
+          >
+            {reintentando ? "Reintentando…" : "Reintentar"}
+          </button>
+        </div>
+      )}
+
       {isLoading ? (
         <div className="h-40 flex items-center justify-center text-sm text-muted-foreground">
           Cargando jornada...
         </div>
-      ) : isError || errorEmpleados ? (
+      ) : sinDatos ? (
         // Un fallo no debe parecer una jornada vacía.
         <div role="alert" className="h-40 flex flex-col items-center justify-center gap-3 text-sm text-red-700 dark:text-red-400">
           <span>No se pudo cargar la jornada.</span>
           <button
             type="button"
-            onClick={() => { refetch(); reintentarEmpleados(); }}
-            disabled={isFetching}
+            onClick={reintentar}
+            disabled={reintentando}
             className="min-h-[44px] lg:min-h-[36px] px-4 rounded-lg border border-border font-medium text-foreground hover:bg-muted disabled:opacity-50 transition"
           >
-            {isFetching ? "Reintentando…" : "Reintentar"}
+            {reintentando ? "Reintentando…" : "Reintentar"}
           </button>
         </div>
       ) : emps.length === 0 ? (

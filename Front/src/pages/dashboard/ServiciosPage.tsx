@@ -19,6 +19,12 @@ import { usePaginacionLocal } from "../../hooks/usePaginacionLocal";
 import { useConfirmarDescarte } from "../../hooks/useCambiosSinGuardar";
 import type { CategoriaDto, ServicioDto } from "../../types";
 import { formatPrecio } from "../../utils/formatters";
+import { claseCampo, CLASE_ERROR_CAMPO } from "../../lib/clasesCampo";
+import { ACCEPT_IMAGEN } from "../../lib/imagenes";
+import { useSubirImagen } from "../../hooks/useSubirImagen";
+import ProgresoSubida from "../../components/ui/ProgresoSubida";
+import Switch from "../../components/ui/Switch";
+import ErrorCarga from "../../components/ui/ErrorCarga";
 
 // ── Schemas ───────────────────────────────────────────────────────────────────
 // `noValidate` en el formulario: estos mensajes son los únicos que ve el dueño.
@@ -48,13 +54,6 @@ const schemaCategoria = z.object({
 });
 type CategoriaForm = z.infer<typeof schemaCategoria>;
 
-/** Clases de un campo: el borde de error gana también en dark mode. */
-function claseCampo(conError: boolean) {
-  return `w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100 ${
-    conError ? "border-red-500 dark:border-red-400" : "border-gray-200 dark:border-slate-600"
-  }`;
-}
-
 function agruparPorCategoria(items: ServicioDto[]) {
   return items.reduce<Record<string, ServicioDto[]>>((acc, s) => {
     const cat = s.categoriaNombre ?? "Sin categoría";
@@ -83,12 +82,17 @@ export default function ServiciosPage() {
   const [servicioEliminar, setServicioEliminar] = useState<ServicioDto | null>(null);
 
   // ── Queries ───────────────────────────────────────────────────────────────
-  const { data: servicios = [], isLoading } = useQuery({
+  const {
+    data: servicios = [], isLoading, isError: errorServicios, refetch: reintentarServicios, isFetching: actualizandoServicios,
+  } = useQuery({
     queryKey: ["servicios"],
     queryFn: () => serviciosApi.obtenerTodos(true),
   });
 
-  const { data: categorias = [], isLoading: cargandoCategorias } = useQuery({
+  const {
+    data: categorias = [], isLoading: cargandoCategorias, isError: errorCategorias,
+    refetch: reintentarCategorias, isFetching: actualizandoCategorias,
+  } = useQuery({
     queryKey: ["categorias"],
     queryFn: () => categoriasApi.obtenerTodas(),
   });
@@ -152,13 +156,19 @@ export default function ServiciosPage() {
     onError: () => toast(`No se pudo guardar el ${terms.servicio.toLowerCase()}. Intenta de nuevo.`, "error"),
   });
 
-  const { mutate: eliminarServicio } = useMutation({
+  const { mutate: eliminarServicio, isPending: eliminandoServicio } = useMutation({
     mutationFn: (id: string) => serviciosApi.eliminar(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["servicios"] }); toast(`${terms.servicio} eliminado`); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["servicios"] });
+      setServicioEliminar(null);
+      toast(`${terms.servicio} eliminado`);
+    },
     onError: () => toast(`No se pudo eliminar el ${terms.servicio.toLowerCase()}. Intenta de nuevo.`, "error"),
   });
 
-  const { mutate: mutToggleActivo, isPending: togglendoActivo } = useMutation({
+  // El estado pendiente es por fila: antes una petición en curso desactivaba los
+  // interruptores de todos los servicios.
+  const toggleActivo = useMutation({
     mutationFn: (s: ServicioDto) => serviciosApi.toggleActivo(s),
     onSuccess: (_, s) => {
       qc.invalidateQueries({ queryKey: ["servicios"] });
@@ -167,17 +177,20 @@ export default function ServiciosPage() {
     },
     onError: () => toast("No se pudo cambiar el estado del servicio. Intenta de nuevo.", "error"),
   });
+  const mutToggleActivo = toggleActivo.mutate;
+  const activoPendiente = toggleActivo.isPending ? toggleActivo.variables?.id : undefined;
 
-  const { mutate: mutToggleDestacado, isPending: togglendoDestacado } = useMutation({
+  const toggleDestacado = useMutation({
     mutationFn: (s: ServicioDto) => serviciosApi.toggleDestacado(s),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["servicios"] }); },
     onError: () => toast("No se pudo cambiar el destacado. Intenta de nuevo.", "error"),
   });
+  const destacadoPendiente = toggleDestacado.isPending ? toggleDestacado.variables?.id : undefined;
 
-  const { mutate: subirImagen } = useMutation({
-    mutationFn: ({ id, file }: { id: string; file: File }) => serviciosApi.subirImagen(id, file),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["servicios"] }); toast("Imagen actualizada"); },
-    onError: () => toast("No se pudo subir la imagen. Intenta de nuevo.", "error"),
+  const imagenServicio = useSubirImagen({
+    subir: (archivo, id, onProgreso) => serviciosApi.subirImagen(id!, archivo, onProgreso),
+    onExito: () => { qc.invalidateQueries({ queryKey: ["servicios"] }); toast("Imagen actualizada"); },
+    mensajeFallo: "No se pudo subir la imagen. Intenta de nuevo.",
   });
 
   // ── Mutations categorías ──────────────────────────────────────────────────
@@ -195,9 +208,10 @@ export default function ServiciosPage() {
     onError: () => toast("No se pudo guardar la categoría. Intenta de nuevo.", "error"),
   });
 
-  const { mutate: eliminarCategoria } = useMutation({
+  const { mutate: eliminarCategoria, isPending: eliminandoCategoria } = useMutation({
     mutationFn: (id: string) => categoriasApi.eliminar(id),
     onSuccess: () => {
+      setCategoriaEliminar(null);
       qc.invalidateQueries({ queryKey: ["categorias"] });
       qc.invalidateQueries({ queryKey: ["servicios"] });
       toast("Categoría eliminada");
@@ -269,6 +283,12 @@ export default function ServiciosPage() {
       {tab === "servicios" && (
         isLoading ? (
           <p className="text-gray-400 dark:text-gray-500">Cargando {terms.servicios.toLowerCase()}...</p>
+        ) : errorServicios ? (
+          <ErrorCarga
+            mensaje={`No se pudieron cargar los ${terms.servicios.toLowerCase()}.`}
+            onReintentar={() => reintentarServicios()}
+            reintentando={actualizandoServicios}
+          />
         ) : servicios.length === 0 ? (
           <div className="bg-white rounded-xl border border-gray-100 p-12 text-center dark:bg-slate-800 dark:border-slate-700">
             <div className="w-14 h-14 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 dark:bg-slate-700">
@@ -309,6 +329,7 @@ export default function ServiciosPage() {
                         className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center shrink-0 relative group dark:bg-slate-700
                           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                         onClick={() => { servicioImagenIdRef.current = s.id; imagenInputRef.current?.click(); }}
+                        disabled={imagenServicio.destino === s.id}
                         aria-label={`Cambiar imagen de ${s.nombre}`}
                         title="Cambiar imagen"
                       >
@@ -324,6 +345,9 @@ export default function ServiciosPage() {
                           <Camera size={11} />
                         </span>
                       </button>
+                      {imagenServicio.destino === s.id && (
+                        <ProgresoSubida className="w-16 shrink-0" porcentaje={imagenServicio.progreso ?? 0} etiqueta={`Subiendo imagen de ${s.nombre}`} />
+                      )}
 
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-gray-800 dark:text-gray-200 line-clamp-2">{s.nombre}</p>
@@ -333,45 +357,54 @@ export default function ServiciosPage() {
                       </div>
                       <div className="flex items-center gap-3 sm:gap-5 shrink-0">
                         <span className="hidden sm:inline font-semibold text-gray-800 text-sm dark:text-gray-200">{formatPrecio(s.precio)}</span>
-                        <div className="flex gap-2">
+                        <div className="flex items-center gap-2">
+                          {/* Interruptor con nombre de acción: "Activo" parecía una
+                              insignia y al pulsarlo sacaba el servicio de reservas. */}
+                          <div className="flex items-center">
+                            <Switch
+                              activo={s.activo}
+                              onCambiar={() => (s.activo ? setServicioOcultar(s) : mutToggleActivo(s))}
+                              disabled={activoPendiente === s.id}
+                              etiqueta={`Visible en reservas: ${s.nombre}`}
+                            />
+                            <span aria-hidden="true" className="hidden md:inline text-xs text-muted-foreground -ml-1">Visible en reservas</span>
+                          </div>
                           <button
-                            onClick={() => mutToggleDestacado(s)}
-                            disabled={togglendoDestacado}
+                            type="button"
+                            onClick={() => toggleDestacado.mutate(s)}
+                            disabled={destacadoPendiente === s.id}
+                            aria-pressed={s.destacado}
+                            aria-label={`Destacado: ${s.nombre}`}
                             title={s.destacado ? "Quitar de destacados" : "Mostrar en Destacados de la página pública"}
-                            className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg transition disabled:opacity-50 ${
+                            className={`inline-flex items-center justify-center gap-1.5 min-h-[44px] min-w-[44px] lg:min-h-[36px] lg:min-w-[36px] text-xs font-medium px-2.5 rounded-lg transition disabled:opacity-50
+                              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                               s.destacado
-                                ? "bg-amber-50 text-amber-600 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50"
-                                : "bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-slate-700 dark:text-gray-400 dark:hover:bg-slate-600"
+                                ? "bg-amber-50 text-amber-800 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-300 dark:hover:bg-amber-900/50"
+                                : "bg-muted text-muted-foreground hover:text-foreground"
                             }`}
                           >
-                            <Star size={12} fill={s.destacado ? "currentColor" : "none"} />
-                            <span className="hidden sm:inline">Destacado</span>
+                            <Star size={12} fill={s.destacado ? "currentColor" : "none"} aria-hidden="true" />
+                            <span className="hidden sm:inline" aria-hidden="true">Destacado</span>
                           </button>
                           <button
-                            onClick={() => (s.activo ? setServicioOcultar(s) : mutToggleActivo(s))}
-                            disabled={togglendoActivo}
-                            title={s.activo ? "Ocultar de la página de reservas" : "Mostrar en la página de reservas"}
-                            className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg transition disabled:opacity-50 ${
-                              s.activo
-                                ? "bg-green-50 text-green-600 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50"
-                                : "bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-slate-700 dark:text-gray-400 dark:hover:bg-slate-600"
-                            }`}
-                          >
-                            {s.activo ? "Activo" : "Inactivo"}
-                          </button>
-                          <button
+                            type="button"
                             onClick={() => abrirEditarServicio(s)}
-                            className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50 transition"
+                            aria-label={`Editar ${s.nombre}`}
+                            className="inline-flex items-center justify-center gap-1.5 min-h-[44px] min-w-[44px] lg:min-h-[36px] lg:min-w-[36px] text-xs font-medium px-2.5 rounded-lg border border-border text-foreground hover:bg-muted transition
+                              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                           >
-                            <Pencil size={12} />
-                            <span className="hidden sm:inline">Editar</span>
+                            <Pencil size={12} aria-hidden="true" />
+                            <span className="hidden sm:inline" aria-hidden="true">Editar</span>
                           </button>
                           <button
+                            type="button"
                             onClick={() => setServicioEliminar(s)}
-                            className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 dark:bg-red-900/40 dark:text-red-400 dark:hover:bg-red-900/60 dark:border dark:border-red-500/60 transition"
+                            aria-label={`Eliminar ${s.nombre}`}
+                            className="inline-flex items-center justify-center gap-1.5 min-h-[44px] min-w-[44px] lg:min-h-[36px] lg:min-w-[36px] text-xs font-medium px-2.5 rounded-lg bg-red-50 text-red-700 hover:bg-red-100 dark:bg-red-900/40 dark:text-red-300 dark:hover:bg-red-900/60 transition
+                              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                           >
-                            <Trash2 size={12} />
-                            <span className="hidden sm:inline">Eliminar</span>
+                            <Trash2 size={12} aria-hidden="true" />
+                            <span className="hidden sm:inline" aria-hidden="true">Eliminar</span>
                           </button>
                         </div>
                       </div>
@@ -400,6 +433,12 @@ export default function ServiciosPage() {
       {tab === "categorias" && (
         cargandoCategorias ? (
           <p className="text-gray-400 dark:text-gray-500">Cargando categorías...</p>
+        ) : errorCategorias ? (
+          <ErrorCarga
+            mensaje="No se pudieron cargar las categorías."
+            onReintentar={() => reintentarCategorias()}
+            reintentando={actualizandoCategorias}
+          />
         ) : categorias.length === 0 ? (
           <div className="bg-white rounded-xl border border-gray-100 p-12 text-center dark:bg-slate-800 dark:border-slate-700">
             <div className="w-14 h-14 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 dark:bg-slate-700">
@@ -433,17 +472,21 @@ export default function ServiciosPage() {
                   </div>
                   <div className="flex gap-2 pl-4">
                     <button
+                      type="button"
                       onClick={() => abrirEditarCategoria(c)}
-                      className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50 transition"
+                      aria-label={`Editar categoría ${c.nombre}`}
+                      className="inline-flex items-center gap-1.5 min-h-[44px] lg:min-h-[36px] text-xs font-medium px-2.5 rounded-lg border border-border text-foreground hover:bg-muted transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
-                      <Pencil size={12} />
+                      <Pencil size={12} aria-hidden="true" />
                       Editar
                     </button>
                     <button
+                      type="button"
                       onClick={() => setCategoriaEliminar(c)}
-                      className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 dark:bg-red-900/40 dark:text-red-400 dark:hover:bg-red-900/60 dark:border dark:border-red-500/60 transition"
+                      aria-label={`Eliminar categoría ${c.nombre}`}
+                      className="inline-flex items-center gap-1.5 min-h-[44px] lg:min-h-[36px] text-xs font-medium px-2.5 rounded-lg bg-red-50 text-red-700 hover:bg-red-100 dark:bg-red-900/40 dark:text-red-300 dark:hover:bg-red-900/60 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
-                      <Trash2 size={12} />
+                      <Trash2 size={12} aria-hidden="true" />
                       Eliminar
                     </button>
                   </div>
@@ -470,12 +513,11 @@ export default function ServiciosPage() {
       <input
         ref={imagenInputRef}
         type="file"
-        accept="image/*"
+        accept={ACCEPT_IMAGEN}
         className="hidden"
         onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f && servicioImagenIdRef.current) subirImagen({ id: servicioImagenIdRef.current, file: f });
-          e.target.value = "";
+          if (servicioImagenIdRef.current) imagenServicio.alElegir(e, servicioImagenIdRef.current);
+          else e.target.value = "";
         }}
       />
 
@@ -580,62 +622,45 @@ export default function ServiciosPage() {
         </form>
       </Modal>
 
-      {/* Modal confirmar eliminar servicio */}
-      <Modal abierto={!!servicioEliminar} onCerrar={() => setServicioEliminar(null)} titulo={`Eliminar ${terms.servicio.toLowerCase()}`} ancho="sm">
-        {servicioEliminar && (
-          <div>
-            <p className="text-sm text-gray-600 mb-1 dark:text-gray-400">
-              ¿Seguro que deseas eliminar <span className="font-semibold text-gray-900 dark:text-gray-100">"{servicioEliminar.nombre}"</span>?
-            </p>
-            <p className="text-xs text-gray-400 mb-6 dark:text-gray-500">Esta acción no se puede deshacer.</p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setServicioEliminar(null)}
-                className="flex-1 py-2.5 rounded-xl border-2 border-gray-200 text-sm font-medium text-gray-600 hover:border-gray-300 transition dark:border-slate-600 dark:text-gray-400"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={() => { eliminarServicio(servicioEliminar.id); setServicioEliminar(null); }}
-                className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-semibold transition"
-              >
-                Sí, eliminar
-              </button>
-            </div>
-          </div>
+      {/* Confirmar eliminar servicio. Ocultarlo es la alternativa reversible. */}
+      <ConfirmarAccion
+        abierto={!!servicioEliminar}
+        titulo={`Eliminar ${terms.servicio.toLowerCase()}`}
+        mensaje={servicioEliminar && (
+          <>
+            <p className="mb-2">{`¿Seguro que deseas eliminar "${servicioEliminar.nombre}"? Esta acción no se puede deshacer.`}</p>
+            {servicioEliminar.activo && (
+              <p>{`Si solo quieres dejar de ofrecerlo, apaga "Visible en reservas": se puede volver a activar cuando quieras.`}</p>
+            )}
+          </>
         )}
-      </Modal>
+        etiquetaConfirmar={`Eliminar ${terms.servicio.toLowerCase()}`}
+        destructiva
+        pendiente={eliminandoServicio}
+        onConfirmar={() => servicioEliminar && eliminarServicio(servicioEliminar.id)}
+        onCerrar={() => setServicioEliminar(null)}
+      />
 
-      {/* Modal confirmar eliminar categoría */}
-      <Modal abierto={!!categoriaEliminar} onCerrar={() => setCategoriaEliminar(null)} titulo="Eliminar categoría" ancho="sm">
-        {categoriaEliminar && (
-          <div>
-            <p className="text-sm text-gray-600 mb-1 dark:text-gray-400">
-              ¿Seguro que deseas eliminar <span className="font-semibold text-gray-900 dark:text-gray-100">"{categoriaEliminar.nombre}"</span>?
-            </p>
+      {/* Confirmar eliminar categoría */}
+      <ConfirmarAccion
+        abierto={!!categoriaEliminar}
+        titulo="Eliminar categoría"
+        mensaje={categoriaEliminar && (
+          <>
+            <p className="mb-2">{`¿Seguro que deseas eliminar "${categoriaEliminar.nombre}"? Esta acción no se puede deshacer.`}</p>
             {serviciosPorCategoria(categoriaEliminar.id) > 0 && (
-              <p className="text-xs text-status-pending-fg bg-status-pending-bg border border-status-pending-dot rounded-lg px-3 py-2 mb-3">
-                Esta categoría tiene {serviciosPorCategoria(categoriaEliminar.id)} servicio(s). Los servicios quedarán sin categoría.
+              <p className="text-status-pending-fg bg-status-pending-bg border border-status-pending-dot rounded-lg px-3 py-2">
+                {`Esta categoría tiene ${serviciosPorCategoria(categoriaEliminar.id)} ${serviciosPorCategoria(categoriaEliminar.id) === 1 ? terms.servicio.toLowerCase() : terms.servicios.toLowerCase()}. Quedarán sin categoría.`}
               </p>
             )}
-            <p className="text-xs text-gray-400 mb-6 dark:text-gray-500">Esta acción no se puede deshacer.</p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setCategoriaEliminar(null)}
-                className="flex-1 py-2.5 rounded-xl border-2 border-gray-200 text-sm font-medium text-gray-600 hover:border-gray-300 transition dark:border-slate-600 dark:text-gray-400"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={() => { eliminarCategoria(categoriaEliminar.id); setCategoriaEliminar(null); }}
-                className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-semibold transition"
-              >
-                Sí, eliminar
-              </button>
-            </div>
-          </div>
+          </>
         )}
-      </Modal>
+        etiquetaConfirmar="Eliminar categoría"
+        destructiva
+        pendiente={eliminandoCategoria}
+        onConfirmar={() => categoriaEliminar && eliminarCategoria(categoriaEliminar.id)}
+        onCerrar={() => setCategoriaEliminar(null)}
+      />
 
       {/* Modal categoría */}
       <Modal
@@ -650,11 +675,10 @@ export default function ServiciosPage() {
             <input
               {...formCat.register("nombre")}
               placeholder="Ej. Cabello, Uñas, Tratamientos..."
-              className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100 dark:border-slate-600
-                ${formCat.formState.errors.nombre ? "border-red-400 bg-red-50" : "border-gray-200"}`}
+              className={claseCampo(!!formCat.formState.errors.nombre)}
             />
             {formCat.formState.errors.nombre && (
-              <p className="text-red-500 text-xs mt-1">{formCat.formState.errors.nombre.message}</p>
+              <p className={CLASE_ERROR_CAMPO}>{formCat.formState.errors.nombre.message}</p>
             )}
           </div>
           <div>
@@ -685,7 +709,7 @@ export default function ServiciosPage() {
           </p>
         )}
         etiquetaConfirmar="Ocultar de reservas"
-        pendiente={togglendoActivo}
+        pendiente={!!servicioOcultar && activoPendiente === servicioOcultar.id}
         onConfirmar={() => servicioOcultar && mutToggleActivo(servicioOcultar)}
         onCerrar={() => setServicioOcultar(null)}
       />

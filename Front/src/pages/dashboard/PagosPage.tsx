@@ -452,21 +452,21 @@ export default function PagosPage() {
     exportarExcel(
       ["Fecha pago", "Cliente", "Servicio", "Empleado", "Método", "Total", "Propina"],
       histFiltrado.map(c => [[
-        c.fechaPago ? new Date(c.fechaPago).toLocaleDateString("es-MX") : "",
+        c.fechaPago ? new Date(c.fechaPago) : "",
         c.nombreCliente,
         c.nombreServicio,
         c.nombreEmpleado ?? "",
         c.metodoPago ?? "",
-        (c.montoCobrado ?? c.precio),
-        c.propina ?? 0,
+        { moneda: c.montoCobrado ?? c.precio },
+        { moneda: c.propina ?? 0 },
       ]]),
       `historial-pagos-${histDesde}-${histHasta}`,
       `Historial de pagos`,
       {
         subtitulo: `Del ${histDesde} al ${histHasta}`,
-        totales: ["", "", "", "", "Total:", histTotalCobrado, histTotalPropinas],
+        totales: ["", "", "", "", "Total:", { moneda: histTotalCobrado }, { moneda: histTotalPropinas }],
       }
-    );
+    ).catch(() => toast("No se pudo generar el archivo de Excel. Intenta de nuevo.", "error"));
   };
 
   return (
@@ -1214,7 +1214,7 @@ export default function PagosPage() {
         titulo="Revertir pago"
         mensaje={pagoARevertir && (
           <p>
-            {`¿Revertir el pago de ${formatPrecio((pagoARevertir.montoCobrado ?? pagoARevertir.precio))} de `}
+            {`¿Revertir el pago de ${formatPrecio(pagoARevertir.montoCobrado ?? pagoARevertir.precio)} de `}
             <strong className="text-foreground">{pagoARevertir.nombreCliente}</strong>
             {"? La cita volverá a quedar por cobrar y el corte del día cambiará."}
           </p>
@@ -1397,10 +1397,10 @@ function HistorialRow({
         </span>
       </td>
       <td className="px-4 py-3 text-right font-semibold text-gray-900 dark:text-gray-100 text-sm whitespace-nowrap">
-        {formatPrecio((cita.montoCobrado ?? cita.precio))}
+        {formatPrecio(cita.montoCobrado ?? cita.precio)}
       </td>
       <td className="px-4 py-3 text-right text-sm text-teal-600 dark:text-teal-400 hidden sm:table-cell">
-        {cita.propina && cita.propina > 0 ? `${formatPrecio(cita.propina)}` : "—"}
+        {cita.propina && cita.propina > 0 ? formatPrecio(cita.propina) : "—"}
       </td>
       <td className="px-4 py-3">
         <BotonRevertir onClick={onRevertir} deshabilitado={revertiendoId === cita.id} cliente={cita.nombreCliente} />

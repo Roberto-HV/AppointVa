@@ -5,10 +5,12 @@ import { formatFecha } from "../../utils/formatters";
 import Pagination from "../../components/ui/Pagination";
 import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
 import { Star } from "lucide-react";
+import ErrorCarga from "../../components/ui/ErrorCarga";
 
 import { TAMANO_PAGINA } from "../../hooks/usePaginacionLocal";
 
 const PAGE_SIZE = TAMANO_PAGINA;
+const LIMITE_COMENTARIO = 100;
 
 function formatearNombre(nombre: string): string {
   const partes = nombre.trim().split(/\s+/);
@@ -17,12 +19,14 @@ function formatearNombre(nombre: string): string {
 }
 
 function Estrellas({ rating }: { rating: number }) {
+  // Una imagen con nombre: los lectores de pantalla no oían ninguna calificación.
   return (
-    <div className="flex items-center gap-0.5">
+    <div role="img" aria-label={`${rating} de 5 estrellas`} className="flex items-center gap-0.5">
       {[1, 2, 3, 4, 5].map((n) => (
         <Star
           key={n}
           size={13}
+          aria-hidden="true"
           className={n <= rating ? "text-amber-400 fill-amber-400" : "text-gray-200 dark:text-slate-600"}
         />
       ))}
@@ -30,10 +34,29 @@ function Estrellas({ rating }: { rating: number }) {
   );
 }
 
+/** Comentario largo con "Ver más" en el mismo sitio: antes se cortaba a 100 caracteres sin forma de leerlo. */
+function Comentario({ texto }: { texto: string }) {
+  const [abierto, setAbierto] = useState(false);
+  if (texto.length <= LIMITE_COMENTARIO) return <>{texto}</>;
+  return (
+    <>
+      {abierto ? texto : `${texto.slice(0, LIMITE_COMENTARIO)}…`}{" "}
+      <button
+        type="button"
+        onClick={() => setAbierto((v) => !v)}
+        aria-expanded={abierto}
+        className="text-xs font-medium text-slate-700 dark:text-slate-300 underline underline-offset-2 hover:text-foreground rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        {abierto ? "Ver menos" : "Ver más"}
+      </button>
+    </>
+  );
+}
+
 export default function ResenasPage() {
   const [pagina, setPagina] = useState(1);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ["resenas", pagina],
     queryFn: () => meApi.obtenerResenas(pagina, PAGE_SIZE),
   });
@@ -92,6 +115,18 @@ export default function ResenasPage() {
             <div key={i} className="h-16 bg-gray-100 dark:bg-slate-800 rounded-xl animate-pulse" />
           ))}
         </div>
+      ) : isError ? (
+        <ErrorCarga mensaje="No se pudieron cargar las reseñas." onReintentar={() => refetch()} reintentando={isFetching} />
+      ) : resenas.length === 0 && total > 0 ? (
+        // Hay reseñas, pero ninguna aprobada en esta página: decir "aún no tienes"
+        // contradecía el contador de arriba.
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-12 text-center">
+          <p className="font-medium text-gray-700 dark:text-gray-300 mb-1">Ninguna reseña aprobada en esta página</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Las reseñas sin aprobar no se muestran aquí.</p>
+          {totalPaginas > 1 && (
+            <Pagination pagina={pagina} totalPaginas={totalPaginas} total={total} labelTotal="reseñas" onCambiar={setPagina} cargando={isLoading} />
+          )}
+        </div>
       ) : resenas.length === 0 ? (
         <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-12 text-center">
           <div className="flex justify-center mb-4">
@@ -129,9 +164,7 @@ export default function ResenasPage() {
                     </td>
                     <td className="px-5 py-3 text-gray-600 dark:text-gray-400 max-w-xs">
                       {r.comentario
-                        ? r.comentario.length > 100
-                          ? `${r.comentario.slice(0, 100)}…`
-                          : r.comentario
+                        ? <Comentario texto={r.comentario} />
                         : <span className="text-gray-300 dark:text-slate-600 italic text-xs">Sin comentario</span>}
                     </td>
                     <td className="px-5 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap">

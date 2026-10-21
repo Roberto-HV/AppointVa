@@ -173,3 +173,47 @@ describe("ListaEsperaPage — el botón dice lo que hace (OM-06)", () => {
     expect(screen.queryByRole("button", { name: /^Notificar$/ })).not.toBeInTheDocument();
   });
 });
+
+describe("ListaEsperaPage — expirar y estados vacíos (OM-31)", () => {
+  it("expirar a alguien en espera ofrece 'Deshacer' que lo devuelve a Esperando", async () => {
+    vi.mocked(listaEsperaApi.obtener).mockResolvedValue([makeEntrada({ estado: "Esperando" })]);
+    renderConQuery();
+    fireEvent.click(await screen.findByRole("button", { name: "Marcar a Ana García como expirado" }));
+    await waitFor(() => expect(listaEsperaApi.cambiarEstado).toHaveBeenCalledWith("ent-1", "Expirado"));
+    await waitFor(() =>
+      expect(mockToast).toHaveBeenCalledWith(
+        "Ana García quedó como expirada", "exito", expect.objectContaining({ accion: expect.objectContaining({ etiqueta: "Deshacer" }) }),
+      ),
+    );
+    const { accion } = mockToast.mock.calls.at(-1)![2];
+    accion.onClick();
+    await waitFor(() => expect(listaEsperaApi.cambiarEstado).toHaveBeenLastCalledWith("ent-1", "Esperando"));
+  });
+
+  it("expirar a alguien ya avisado pide confirmación y no ofrece deshacer", async () => {
+    vi.mocked(listaEsperaApi.obtener).mockResolvedValue([makeEntrada({ estado: "Notificado" })]);
+    renderConQuery();
+    fireEvent.click(await screen.findByRole("button", { name: "Marcar a Ana García como expirado" }));
+    expect(listaEsperaApi.cambiarEstado).not.toHaveBeenCalled();
+    fireEvent.click(await screen.findByRole("button", { name: "Marcar como expirado" }));
+    await waitFor(() => expect(listaEsperaApi.cambiarEstado).toHaveBeenCalledWith("ent-1", "Expirado"));
+    await waitFor(() => expect(mockToast).toHaveBeenCalledWith("Estado actualizado"));
+  });
+
+  it("con un filtro activo el vacío nombra el estado", async () => {
+    vi.mocked(listaEsperaApi.obtener).mockImplementation(async (estado?: string) =>
+      estado ? [] : [makeEntrada({ estado: "Esperando" })]);
+    renderConQuery();
+    await screen.findByText("Ana García");
+    fireEvent.click(screen.getByRole("button", { name: "Estado" }));
+    fireEvent.click(screen.getByRole("option", { name: "Confirmado" }));
+    expect(await screen.findByText('Ningún registro con estado "Confirmado"')).toBeInTheDocument();
+  });
+
+  it("un fallo de carga ofrece reintentar", async () => {
+    vi.mocked(listaEsperaApi.obtener).mockRejectedValue(new Error("red"));
+    renderConQuery();
+    expect(await screen.findByText("No se pudo cargar la lista de espera.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Reintentar" })).toBeInTheDocument();
+  });
+});

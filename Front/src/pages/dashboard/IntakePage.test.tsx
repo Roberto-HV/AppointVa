@@ -103,13 +103,13 @@ describe("IntakePage — formulario", () => {
     const tipoSelect = screen.getByDisplayValue("Texto corto");
 
     fireEvent.change(tipoSelect, { target: { value: "Seleccion" } });
-    expect(screen.getByPlaceholderText("Sí, No, Tal vez")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Opción 1")).toBeInTheDocument();
 
     fireEvent.change(tipoSelect, { target: { value: "Texto" } });
-    expect(screen.queryByPlaceholderText("Sí, No, Tal vez")).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText("Opción 1")).not.toBeInTheDocument();
   });
 
-  it("muestra toast de error al guardar Seleccion sin opciones", async () => {
+  it("avisa bajo el campo al guardar Seleccion sin opciones", async () => {
     renderConQuery();
     fireEvent.click(await screen.findByRole("button", { name: /Nueva pregunta/ }));
 
@@ -125,7 +125,7 @@ describe("IntakePage — formulario", () => {
     fireEvent.click(screen.getByRole("button", { name: /Crear pregunta/ }));
 
     expect(intakeApi.crearCampo).not.toHaveBeenCalled();
-    expect(mockToast).toHaveBeenCalledWith(expect.any(String), "error");
+    expect(screen.getByRole("alert")).toHaveTextContent("Agrega al menos una opción.");
   });
 
   it("llama a intakeApi.crearCampo con el payload correcto para tipo Texto", async () => {
@@ -173,5 +173,45 @@ describe("IntakePage — eliminar campo", () => {
     await waitFor(() => {
       expect(intakeApi.eliminarCampo).toHaveBeenCalledWith("1");
     });
+  });
+});
+
+describe("IntakePage — editor de opciones y acciones (OM-25)", () => {
+  it("una opción con coma se guarda como una sola opción", async () => {
+    renderConQuery();
+    fireEvent.click(await screen.findByRole("button", { name: /Nueva pregunta/ }));
+    fireEvent.change(screen.getByPlaceholderText("Ej: ¿Tienes alguna alergia?"), { target: { value: "¿Alergias?" } });
+    fireEvent.change(screen.getByDisplayValue("Texto corto"), { target: { value: "Seleccion" } });
+    fireEvent.change(screen.getByLabelText("Opción 1"), { target: { value: "Sí, pero leve" } });
+    fireEvent.change(screen.getByLabelText("Opción 2"), { target: { value: "No" } });
+    fireEvent.click(screen.getByRole("button", { name: "+ Agregar opción" }));
+    expect(screen.getByLabelText("Opción 3")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Crear pregunta/ }));
+    await waitFor(() =>
+      expect(intakeApi.crearCampo).toHaveBeenCalledWith(expect.objectContaining({ opciones: '["Sí, pero leve","No"]' })),
+    );
+  });
+
+  it("al editar una pregunta antigua separa sus opciones por coma", async () => {
+    vi.mocked(intakeApi.getCampos).mockResolvedValue([makeCampo({ tipo: "Seleccion", opciones: "Sí, No" })]);
+    renderConQuery();
+    fireEvent.click(await screen.findByRole("button", { name: 'Editar pregunta "Alergias"' }));
+    expect(screen.getByLabelText("Opción 1")).toHaveValue("Sí");
+    expect(screen.getByLabelText("Opción 2")).toHaveValue("No");
+  });
+
+  it("las acciones tienen nombre y 'Obligatoria' no usa el rojo de error", async () => {
+    vi.mocked(intakeApi.getCampos).mockResolvedValue([makeCampo({ requerido: true })]);
+    renderConQuery();
+    expect(await screen.findByRole("button", { name: 'Eliminar pregunta "Alergias"' })).toBeInTheDocument();
+    const insignia = screen.getByText("Obligatoria");
+    expect(insignia.className).not.toMatch(/red/);
+  });
+
+  it("muestra una vista previa de la pregunta", async () => {
+    renderConQuery();
+    fireEvent.click(await screen.findByRole("button", { name: /Nueva pregunta/ }));
+    fireEvent.change(screen.getByPlaceholderText("Ej: ¿Tienes alguna alergia?"), { target: { value: "¿Color favorito?" } });
+    expect(screen.getByRole("region", { name: "Vista previa" })).toHaveTextContent("¿Color favorito?");
   });
 });

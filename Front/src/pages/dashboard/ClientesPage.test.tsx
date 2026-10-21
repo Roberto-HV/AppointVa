@@ -17,7 +17,7 @@ vi.mock("../../api/clientes", () => ({
 }));
 
 vi.mock("../../utils/exportarExcel", () => ({
-  exportarExcel: vi.fn(),
+  exportarExcel: vi.fn(() => Promise.resolve()),
 }));
 
 vi.mock("../../store/toastStore", () => ({

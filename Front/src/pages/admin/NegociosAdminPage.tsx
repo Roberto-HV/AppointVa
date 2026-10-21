@@ -27,6 +27,7 @@ import { usePaginacionLocal } from "../../hooks/usePaginacionLocal";
 import { useToastStore } from "../../store/toastStore";
 import { formatFechaMx, formatPrecio } from "../../utils/formatters";
 import { generarHTMLComprobante } from "../../utils/comprobanteSuscripcion";
+import { mensajeError } from "../../utils/errores";
 
 // ── Constants ──────────────────────────────────────────────────────────────
 const ESTADO_ORDER: Record<string, number> = {
@@ -238,10 +239,7 @@ function ModalSuscripcion({
       toast("Pago registrado correctamente");
     },
     onError: (err: unknown) => {
-      const msg = (err as { response?: { data?: { mensaje?: string; title?: string } } })?.response?.data?.mensaje
-        ?? (err as { response?: { data?: { title?: string } } })?.response?.data?.title
-        ?? "No se pudo registrar el pago.";
-      toast(msg, "error");
+      toast(mensajeError(err, "No se pudo registrar el pago."), "error");
     },
   });
 
@@ -1103,8 +1101,7 @@ export default function NegociosAdminPage() {
       formPropietario.reset();
     },
     onError: (err: unknown) => {
-      const msg = (err as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje;
-      setErrorPropietario(msg ?? "No se pudo crear el propietario.");
+      setErrorPropietario(mensajeError(err, "No se pudo crear el propietario."));
     },
   });
 
@@ -1179,9 +1176,7 @@ export default function NegociosAdminPage() {
       setModalPropietario(false);
       toast("Contraseña restablecida correctamente");
     } catch (err) {
-      const msg = (err as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje
-        ?? "No se pudo restablecer la contraseña.";
-      setErrorPropietario(msg);
+      setErrorPropietario(mensajeError(err, "No se pudo restablecer la contraseña."));
     } finally {
       setResetandoPassword(false);
     }

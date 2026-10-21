@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { exportarExcel } from "./exportarExcel";
+import { exportarExcel, prepararCelda } from "./exportarExcel";
+import { fechaLocal } from "./fechas";
 
 const flushPromises = () => new Promise((r) => setTimeout(r, 0));
 
@@ -140,8 +141,8 @@ describe("exportarExcel", () => {
   });
 
   describe("nombre del archivo", () => {
-    it("incluye el nombreArchivo y la fecha de hoy en formato ISO", async () => {
-      const today = new Date().toISOString().slice(0, 10);
+    it("incluye el nombreArchivo y la fecha local de hoy (YYYY-MM-DD)", async () => {
+      const today = fechaLocal(new Date());
       exportarExcel(["Col"], [[["dato"]]], "ventas");
       await flushPromises();
       expect(mockAnchor.download).toBe(`ventas-${today}.xlsx`);
@@ -170,5 +171,41 @@ describe("exportarExcel", () => {
       expect(capturedBlob).toBeDefined();
       expect(capturedBlob!.type).toContain("openxmlformats-officedocument.spreadsheetml.sheet");
     });
+  });
+});
+
+describe("prepararCelda — celdas con tipo (OM-19)", () => {
+  it("los números se quedan como números", () => {
+    expect(prepararCelda(3)).toMatchObject({ value: 3, numFmt: "#,##0" });
+    expect(prepararCelda(2.5)).toMatchObject({ value: 2.5, numFmt: "#,##0.00" });
+  });
+
+  it("la moneda es un número con formato de pesos, no el texto \"$123.00\"", () => {
+    const c = prepararCelda({ moneda: 123 });
+    expect(c.value).toBe(123);
+    expect(c.numFmt).toContain("$");
+  });
+
+  it("el porcentaje se guarda como fracción", () => {
+    expect(prepararCelda({ porcentaje: 25 })).toMatchObject({ value: 0.25, numFmt: "0.0%" });
+  });
+
+  it("las fechas conservan la hora local al pasar a Excel", () => {
+    const c = prepararCelda(new Date(2026, 9, 21, 10, 30));
+    expect(c.value).toEqual(new Date(Date.UTC(2026, 9, 21, 10, 30)));
+    expect(c.numFmt).toBe("dd/mm/yyyy hh:mm");
+    expect(prepararCelda(new Date(2026, 9, 21)).numFmt).toBe("dd/mm/yyyy");
+  });
+
+  it("vacíos y fechas inválidas quedan en blanco", () => {
+    expect(prepararCelda(null).value).toBe("");
+    expect(prepararCelda(new Date("x")).value).toBe("");
+  });
+});
+
+describe("exportarExcel — errores", () => {
+  it("devuelve una promesa que se rechaza si la generación falla", async () => {
+    URL.createObjectURL = vi.fn(() => { throw new Error("sin memoria"); });
+    await expect(exportarExcel(["Col"], [[["dato"]]], "archivo")).rejects.toThrow("sin memoria");
   });
 });

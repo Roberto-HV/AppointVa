@@ -20,7 +20,15 @@ import ConfirmarAccion from "../../components/ui/ConfirmarAccion";
 import Switch from "../../components/ui/Switch";
 import SelectorFondoPortada from "../../components/dashboard/SelectorFondoPortada";
 import { fondoPortada } from "../../lib/portadaPresets";
-import { TimePicker, DatePicker } from "../../components/ui/DateTimePicker";
+import { DatePicker } from "../../components/ui/DateTimePicker";
+import EditorHorario from "../../components/dashboard/EditorHorario";
+import { errorDelDia } from "../../lib/horario";
+import { ACCEPT_IMAGEN, TEXTO_FORMATOS_IMAGEN, validarImagen } from "../../lib/imagenes";
+import { useSubirImagen } from "../../hooks/useSubirImagen";
+import ProgresoSubida from "../../components/ui/ProgresoSubida";
+import Modal from "../../components/ui/Modal";
+import { claseCampo, CLASE_ERROR_CAMPO } from "../../lib/clasesCampo";
+import { htmlHojaQr } from "../../utils/impresionQr";
 import { hoy } from "../../utils/fechas";
 import { mensajeError } from "../../utils/errores";
 import { capitalizarPrimera } from "../../utils/formatters";
@@ -40,8 +48,6 @@ const ZONAS_HORARIAS = [
   { valor: "America/Los_Angeles",     texto: "Los Ángeles (PST/PDT)" },
   { valor: "UTC",                     texto: "UTC" },
 ];
-
-const DIAS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 
 // Velos de la vista previa del booking. Van de arriba abajo porque aquí el texto
 // está arriba; en la portada real va abajo y el velo se invierte.
@@ -180,7 +186,7 @@ export default function PerfilPage() {
     queryFn: negociosApi.obtenerPerfil,
   });
 
-  const { register, handleSubmit, reset, watch, setValue, formState: { errors, isSubmitting, isDirty } } = useForm<PerfilForm>({
+  const { register, handleSubmit, reset, watch, setValue, formState: { errors, isDirty } } = useForm<PerfilForm>({
     resolver: zodResolver(schema) as Resolver<PerfilForm>,
   });
 
@@ -229,9 +235,18 @@ export default function PerfilPage() {
     }
   }, [negocio, reset]);
 
-  const { mutate: guardar } = useMutation({
+  // "Guardado" breve en la barra tras un guardado correcto.
+  const [guardadoReciente, setGuardadoReciente] = useState(false);
+  useEffect(() => {
+    if (!guardadoReciente) return;
+    const t = setTimeout(() => setGuardadoReciente(false), 3000);
+    return () => clearTimeout(t);
+  }, [guardadoReciente]);
+
+  const { mutate: guardar, isPending: guardandoPerfil } = useMutation({
     mutationFn: (dto: ActualizarNegocioDto) => negociosApi.actualizarPerfil(dto),
     onSuccess: (actualizado, variables) => {
+      setGuardadoReciente(true);
       reset(variables as unknown as PerfilForm);
       // La respuesta ya es el perfil guardado: los avisos de "sin guardar"
       // (posición, fondo) se apagan sin esperar a la recarga.
@@ -242,16 +257,17 @@ export default function PerfilPage() {
     onError: () => toast("No se pudieron guardar los cambios. Intenta de nuevo.", "error"),
   });
 
-  const { mutate: subirLogo, isPending: subiendoLogo } = useMutation({
-    mutationFn: (file: File) => negociosApi.subirLogo(file),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["negocio-perfil"] }); toast("Logo actualizado"); },
-    onError: () => toast("No se pudo subir el logo. Intenta de nuevo.", "error"),
+  // Las tres subidas validan tipo y tamaño antes de subir y muestran su avance.
+  const logo = useSubirImagen({
+    subir: (archivo, _d, onProgreso) => negociosApi.subirLogo(archivo, onProgreso),
+    onExito: () => { qc.invalidateQueries({ queryKey: ["negocio-perfil"] }); toast("Logo actualizado"); },
+    mensajeFallo: "No se pudo subir el logo. Intenta de nuevo.",
   });
 
-  const { mutate: subirPortada, isPending: subiendoPortada } = useMutation({
-    mutationFn: (file: File) => negociosApi.subirPortada(file),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["negocio-perfil"] }); toast("Portada actualizada"); },
-    onError: () => toast("No se pudo subir la portada. Intenta de nuevo.", "error"),
+  const portada = useSubirImagen({
+    subir: (archivo, _d, onProgreso) => negociosApi.subirPortada(archivo, onProgreso),
+    onExito: () => { qc.invalidateQueries({ queryKey: ["negocio-perfil"] }); toast("Portada actualizada"); },
+    mensajeFallo: "No se pudo subir la portada. Intenta de nuevo.",
   });
 
   function abrirPortadaModal(src: string, file?: File) {
@@ -261,7 +277,7 @@ export default function PerfilPage() {
   function confirmarPortadaModal() {
     if (!portadaModal) return;
     setPortadaObjectPosition(portadaModalPos);
-    if (portadaModal.file) { subirPortada(portadaModal.file); URL.revokeObjectURL(portadaModal.src); }
+    if (portadaModal.file) { portada.subirArchivo(portadaModal.file); URL.revokeObjectURL(portadaModal.src); }
     setPortadaModal(null);
   }
   function cancelarPortadaModal() {
@@ -269,10 +285,10 @@ export default function PerfilPage() {
     setPortadaModal(null);
   }
 
-  const { mutate: subirPoliticas, isPending: subiendoPoliticas } = useMutation({
-    mutationFn: (file: File) => negociosApi.subirPoliticas(file),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["negocio-perfil"] }); toast("Imagen de políticas actualizada"); },
-    onError: () => toast("No se pudo subir la imagen. Intenta de nuevo.", "error"),
+  const politicas = useSubirImagen({
+    subir: (archivo, _d, onProgreso) => negociosApi.subirPoliticas(archivo, onProgreso),
+    onExito: () => { qc.invalidateQueries({ queryKey: ["negocio-perfil"] }); toast("Imagen de políticas actualizada"); },
+    mensajeFallo: "No se pudo subir la imagen de políticas. Intenta de nuevo.",
   });
 
   const { mutate: eliminarLogo, isPending: eliminandoLogo } = useMutation({
@@ -366,7 +382,7 @@ export default function PerfilPage() {
   // en éxito calla: habla "Cambios guardados" por los dos. Un clic, un veredicto.
   // El fallo sí habla, o un verde anunciaría un guardado a medias; va redactado
   // como detalle de ese guardado y no como un segundo veredicto en competencia.
-  const { mutate: guardarColores } = useMutation({
+  const { mutate: guardarColores, isPending: guardandoColor } = useMutation({
     mutationFn: () => negociosApi.actualizarColores(colorPrimario),
     onSuccess: () => {
       setColorGuardado(colorPrimario);
@@ -397,73 +413,6 @@ export default function PerfilPage() {
     },
     onError: () => toast("No se pudieron guardar los horarios. Intenta de nuevo.", "error"),
   });
-
-  const toggleDia = (diaSemana: number) => {
-    setHorarios(prev => prev.map(h =>
-      h.diaSemana === diaSemana
-        ? {
-            ...h,
-            activo: !h.activo,
-            intervalos: !h.activo && h.intervalos.length === 0
-              ? [{ horaInicio: "09:00", horaFin: "18:00" }]
-              : h.intervalos
-          }
-        : h
-    ));
-    setHorariosDirty(true);
-  };
-
-  const actualizarIntervalo = (
-    diaSemana: number,
-    idx: number,
-    campo: "horaInicio" | "horaFin",
-    valor: string
-  ) => {
-    setHorarios(prev => prev.map(h =>
-      h.diaSemana === diaSemana
-        ? {
-            ...h,
-            intervalos: h.intervalos.map((iv, i) =>
-              i === idx ? { ...iv, [campo]: valor } : iv
-            )
-          }
-        : h
-    ));
-    setHorariosDirty(true);
-  };
-
-  const agregarIntervalo = (diaSemana: number) => {
-    setHorarios(prev => prev.map(h => {
-      if (h.diaSemana !== diaSemana) return h;
-      const ultimo = h.intervalos[h.intervalos.length - 1];
-      const nuevaHora = ultimo?.horaFin ?? "09:00";
-      return {
-        ...h,
-        intervalos: [...h.intervalos, { horaInicio: nuevaHora, horaFin: nuevaHora }]
-      };
-    }));
-    setHorariosDirty(true);
-  };
-
-  const eliminarIntervalo = (diaSemana: number, idx: number) => {
-    setHorarios(prev => prev.map(h =>
-      h.diaSemana === diaSemana
-        ? { ...h, intervalos: h.intervalos.filter((_, i) => i !== idx) }
-        : h
-    ));
-    setHorariosDirty(true);
-  };
-
-  const intervaloInvalido = (h: HorarioDiaDto): boolean => {
-    if (!h.activo) return false;
-    for (const iv of h.intervalos) {
-      if (!iv.horaInicio || !iv.horaFin || iv.horaInicio >= iv.horaFin) return true;
-    }
-    for (let i = 0; i < h.intervalos.length - 1; i++) {
-      if (h.intervalos[i].horaFin > h.intervalos[i + 1].horaInicio) return true;
-    }
-    return false;
-  };
 
   // ── Días bloqueados ───────────────────────────────────────────────────────
   const [nuevaFecha, setNuevaFecha] = useState("");
@@ -535,6 +484,20 @@ export default function PerfilPage() {
   // ── URL de reservas ───────────────────────────────────────────────────────
   const bookingUrl = negocio ? `${window.location.origin}/b/${negocio.slug}` : "";
 
+  const imprimirQR = () => {
+    const canvas = document.getElementById("qr-reservas") as HTMLCanvasElement | null;
+    if (!canvas) return;
+    const w = window.open("", "_blank", "width=720,height=900");
+    if (!w) {
+      toast("El navegador bloqueó la ventana de impresión. Permite popups para este sitio.", "error");
+      return;
+    }
+    w.document.write(htmlHojaQr({ negocio: negocio?.nombre, url: bookingUrl, qrDataUrl: canvas.toDataURL("image/png") }));
+    w.document.close();
+    w.focus();
+    setTimeout(() => { w.print(); w.close(); }, 300);
+  };
+
   const descargarQR = () => {
     const canvas = document.getElementById("qr-reservas") as HTMLCanvasElement | null;
     if (!canvas) return;
@@ -570,15 +533,32 @@ export default function PerfilPage() {
   // ── Barra de guardado compartida ─────────────────────────────────────────
   // Las tres pestañas del formulario son largas y el botón vivía al final de
   // cada una: editar algo de arriba dejaba al dueño sin ver cómo guardar.
+  // El estado sale de las mutaciones, no de `isSubmitting` (que solo dura lo
+  // que el handler síncrono): así el botón queda deshabilitado durante la
+  // petición y no se mandan dos PUT. Sin cambios no hay nada que guardar.
+  const cambiosFormulario = isDirty || colorSinGuardar || presetSinGuardar || posicionSinGuardar;
+  const guardandoFormulario = guardandoPerfil || guardandoColor;
   const btnGuardar = (
     <button
       type="submit"
-      disabled={isSubmitting}
+      disabled={guardandoFormulario || !cambiosFormulario}
+      aria-describedby="estado-guardado"
       className="bg-slate-700 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-xl transition text-sm
         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50 dark:focus-visible:ring-offset-slate-950"
     >
-      {isSubmitting ? "Guardando..." : "Guardar cambios"}
+      {guardandoFormulario ? "Guardando…" : "Guardar cambios"}
     </button>
+  );
+  const estadoGuardado = (
+    <p id="estado-guardado" role="status" className="text-xs font-medium text-muted-foreground">
+      {guardandoFormulario
+        ? ""
+        : cambiosFormulario
+          ? "Cambios sin guardar"
+          : guardadoReciente
+            ? "Guardado"
+            : ""}
+    </p>
   );
 
   // El centinela va justo debajo de la barra: mientras no se vea, queda página
@@ -624,7 +604,10 @@ export default function PerfilPage() {
               : "border-transparent"
           }`}
       >
-        {btnGuardar}
+        <div className="flex items-center gap-4">
+          {btnGuardar}
+          {estadoGuardado}
+        </div>
       </div>
       <div ref={centinelaBarra} aria-hidden className="h-px" />
     </>
@@ -670,7 +653,8 @@ export default function PerfilPage() {
       />
 
       {/* ── TAB: PERFIL ─────────────────────────────────────────────────────── */}
-      <form onSubmit={handleSubmit(onSubmit, onInvalid)}>
+      {/* noValidate: zod da los mensajes (en español), no el navegador. */}
+      <form noValidate onSubmit={handleSubmit(onSubmit, onInvalid)}>
         <div className={tab !== "perfil" ? "hidden" : "space-y-6"}>
 
           {/* Información del negocio */}
@@ -680,9 +664,9 @@ export default function PerfilPage() {
               <div className="sm:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre del negocio *</label>
                 <input {...register("nombre")}
-                  className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100
-                    ${errors.nombre ? "border-red-400 bg-red-50" : "border-gray-200 dark:border-slate-600"}`} />
-                {errors.nombre && <p className="text-red-500 text-xs mt-1">{errors.nombre.message}</p>}
+                  aria-invalid={!!errors.nombre || undefined}
+                  className={claseCampo(!!errors.nombre)} />
+                {errors.nombre && <p className={CLASE_ERROR_CAMPO}>{errors.nombre.message}</p>}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Teléfono</label>
@@ -690,10 +674,13 @@ export default function PerfilPage() {
                   className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Correo de contacto</label>
-                <input type="email" {...register("email")}
-                  className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100
-                    ${errors.email ? "border-red-400 bg-red-50" : "border-gray-200 dark:border-slate-600"}`} />
+                <label htmlFor="perfil-email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Correo de contacto</label>
+                <input id="perfil-email" type="email" {...register("email")}
+                  aria-invalid={!!errors.email || undefined}
+                  aria-describedby={errors.email ? "perfil-email-error" : undefined}
+                  className={claseCampo(!!errors.email)} />
+                {/* Antes el borde se ponía rojo pero el mensaje nunca se mostraba. */}
+                {errors.email && <p id="perfil-email-error" className={CLASE_ERROR_CAMPO}>{errors.email.message}</p>}
               </div>
               <div className="sm:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Dirección</label>
@@ -711,7 +698,8 @@ export default function PerfilPage() {
 
           {/* Imágenes */}
           <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Imágenes</h2>
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Imágenes</h2>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">{TEXTO_FORMATOS_IMAGEN}</p>
             <div className="grid grid-cols-4 gap-3">
               {/* Logo */}
               <div className="flex flex-col items-center">
@@ -720,12 +708,13 @@ export default function PerfilPage() {
                     ? <img src={negocio.logoUrl} alt="Logo" className="w-full h-full object-cover" />
                     : <span className="text-2xl font-bold text-gray-300 dark:text-gray-600">{negocio?.nombre?.charAt(0)}</span>}
                 </div>
-                <input ref={logoRef} type="file" accept="image/*" className="hidden"
-                  onChange={(e) => { const f = e.target.files?.[0]; if (f) subirLogo(f); e.target.value = ""; }} />
-                <button type="button" onClick={() => logoRef.current?.click()} disabled={subiendoLogo}
+                <input ref={logoRef} type="file" accept={ACCEPT_IMAGEN} className="hidden"
+                  onChange={(e) => logo.alElegir(e)} />
+                <button type="button" onClick={() => logoRef.current?.click()} disabled={logo.subiendo}
                   className="text-xs text-slate-700 dark:text-slate-300 hover:underline disabled:opacity-50">
-                  {subiendoLogo ? "Subiendo..." : "Cambiar logo"}
+                  {logo.subiendo ? "Subiendo…" : "Cambiar logo"}
                 </button>
+                {logo.progreso !== null && <ProgresoSubida className="mt-1" porcentaje={logo.progreso} etiqueta="Subiendo logo" />}
                 <div className="mt-auto pt-1 min-h-[1.25rem]">
                   {negocio?.logoUrl && (
                     <button type="button" onClick={() => setAccionPublica({ tipo: "logo" })} disabled={eliminandoLogo}
@@ -750,17 +739,22 @@ export default function PerfilPage() {
                     <span className="text-xs text-gray-400 dark:text-gray-500">Sin portada</span>
                   )}
                 </div>
-                <input ref={portadaRef} type="file" accept="image/*" className="hidden"
+                <input ref={portadaRef} type="file" accept={ACCEPT_IMAGEN} className="hidden"
                   onChange={(e) => {
                     const f = e.target.files?.[0];
+                    e.target.value = "";
                     if (!f) return;
+                    // Se valida antes de la vista previa: no tiene sentido posicionar
+                    // una foto que el servidor va a rechazar.
+                    const error = validarImagen(f);
+                    if (error) { toast(error, "error"); return; }
                     abrirPortadaModal(URL.createObjectURL(f), f);
-                    e.target.value = '';
                   }} />
-                <button type="button" onClick={() => portadaRef.current?.click()} disabled={subiendoPortada}
+                <button type="button" onClick={() => portadaRef.current?.click()} disabled={portada.subiendo}
                   className="text-xs text-slate-700 dark:text-slate-300 hover:underline disabled:opacity-50">
-                  {subiendoPortada ? "Subiendo..." : "Cambiar portada"}
+                  {portada.subiendo ? "Subiendo…" : "Cambiar portada"}
                 </button>
+                {portada.progreso !== null && <ProgresoSubida className="mt-1" porcentaje={portada.progreso} etiqueta="Subiendo portada" />}
                 {/* La posición viaja con "Guardar cambios" (el backend no tiene una
                     ruta para guardarla sola): se avisa igual que con el color. */}
                 {posicionSinGuardar && (
@@ -796,12 +790,13 @@ export default function PerfilPage() {
                     ? <img src={negocio.politicasUrl} alt="Políticas" className="w-full h-full object-contain" />
                     : <span className="text-xs text-gray-400 dark:text-gray-500">Sin políticas</span>}
                 </div>
-                <input ref={politicasRef} type="file" accept="image/*" className="hidden"
-                  onChange={(e) => { const f = e.target.files?.[0]; if (f) subirPoliticas(f); e.target.value = ""; }} />
-                <button type="button" onClick={() => politicasRef.current?.click()} disabled={subiendoPoliticas}
+                <input ref={politicasRef} type="file" accept={ACCEPT_IMAGEN} className="hidden"
+                  onChange={(e) => politicas.alElegir(e)} />
+                <button type="button" onClick={() => politicasRef.current?.click()} disabled={politicas.subiendo}
                   className="text-xs text-slate-700 dark:text-slate-300 hover:underline disabled:opacity-50">
-                  {subiendoPoliticas ? "Subiendo..." : "Cambiar políticas"}
+                  {politicas.subiendo ? "Subiendo…" : "Cambiar políticas"}
                 </button>
+                {politicas.progreso !== null && <ProgresoSubida className="mt-1" porcentaje={politicas.progreso} etiqueta="Subiendo imagen de políticas" />}
                 <div className="mt-auto pt-1 min-h-[1.25rem]">
                   {negocio?.politicasUrl && (
                     <button type="button" onClick={() => setAccionPublica({ tipo: "politicas" })} disabled={eliminandoPoliticas}
@@ -975,7 +970,7 @@ export default function PerfilPage() {
                       className="flex items-center gap-2 px-4 py-2 bg-gray-900 hover:bg-gray-700 text-white text-sm font-semibold rounded-lg transition">
                       <Download size={14} /> Descargar PNG
                     </button>
-                    <button type="button" onClick={() => window.print()}
+                    <button type="button" onClick={imprimirQR}
                       className="flex items-center gap-2 px-4 py-2 border border-gray-200 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg transition">
                       Imprimir
                     </button>
@@ -1175,42 +1170,47 @@ export default function PerfilPage() {
         {tab !== "horarios" && tab !== "cuenta" && barraGuardar}
       </form>
 
-      {/* ── Modal: eliminar cuenta ─────────────────────────────────────────── */}
-      {modalEliminar && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-sm p-6">
-            <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 mb-1">¿Eliminar tu cuenta?</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-              Esta acción es irreversible. Ingresa tu contraseña actual para confirmar.
-            </p>
+      {/* ── Modal: eliminar cuenta ───────────────────────────────────────────
+          El diálogo compartido: rol de diálogo, foco atrapado y Escape. Qué pasa
+          con el negocio al borrar la cuenta sigue pendiente de decisión (OM-29). */}
+      <Modal abierto={modalEliminar} onCerrar={() => setModalEliminar(false)} titulo="¿Eliminar tu cuenta?" ancho="sm">
+        <form
+          onSubmit={(e) => { e.preventDefault(); if (contrasenaEliminar && !eliminando) eliminarCuenta(); }}
+          className="space-y-4"
+        >
+          <p className="text-sm text-muted-foreground">
+            Esta acción es irreversible. Ingresa tu contraseña actual para confirmar.
+          </p>
+          <div>
+            <label htmlFor="contrasena-eliminar" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Contraseña actual</label>
             <input
+              id="contrasena-eliminar"
               type="password"
               autoFocus
-              placeholder="Contraseña actual"
+              autoComplete="current-password"
               value={contrasenaEliminar}
               onChange={(e) => setContrasenaEliminar(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-red-400 mb-4"
+              className={claseCampo(false)}
             />
-            <div className="flex gap-2 justify-end">
-              <button
-                type="button"
-                onClick={() => setModalEliminar(false)}
-                className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700 transition"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                disabled={!contrasenaEliminar || eliminando}
-                onClick={() => eliminarCuenta()}
-                className="px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 disabled:opacity-50 transition"
-              >
-                {eliminando ? "Eliminando..." : "Sí, eliminar cuenta"}
-              </button>
-            </div>
           </div>
-        </div>
-      )}
+          <div className="flex flex-col-reverse sm:flex-row gap-2">
+            <button
+              type="button"
+              onClick={() => setModalEliminar(false)}
+              className="min-h-[44px] lg:min-h-[36px] flex-1 px-4 rounded-xl border border-border text-sm font-medium text-foreground hover:bg-muted transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              Volver
+            </button>
+            <button
+              type="submit"
+              disabled={!contrasenaEliminar || eliminando}
+              className="min-h-[44px] lg:min-h-[36px] flex-1 px-4 rounded-xl bg-red-700 hover:bg-red-800 text-white text-sm font-semibold disabled:opacity-50 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              {eliminando ? "Eliminando…" : "Eliminar cuenta"}
+            </button>
+          </div>
+        </form>
+      </Modal>
 
       {/* ── TAB: CUENTA ─────────────────────────────────────────────────────── */}
       {tab === "cuenta" && (
@@ -1255,73 +1255,14 @@ export default function PerfilPage() {
         <div className="space-y-6">
           <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
             <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Horarios de atención</h2>
-            <div className="space-y-1">
-              {horarios.map((h) => (
-                <div key={h.diaSemana} className="py-2 border-b border-gray-50 dark:border-slate-700 last:border-0">
-                  {/* Interruptor del día + nombre (el nombre también lo cambia) */}
-                  <div className="flex items-center gap-1 -ml-2 mb-1">
-                    <Switch
-                      activo={h.activo}
-                      onCambiar={() => toggleDia(h.diaSemana)}
-                      idEtiqueta={`horario-negocio-dia-${h.diaSemana}`}
-                    />
-                    <span
-                      id={`horario-negocio-dia-${h.diaSemana}`}
-                      onClick={() => toggleDia(h.diaSemana)}
-                      className="text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none"
-                    >
-                      {DIAS[h.diaSemana]}
-                    </span>
-                  </div>
-
-                  {h.activo ? (
-                    <div className="pl-11 space-y-1.5">
-                      {h.intervalos.map((iv, idx) => (
-                        <div key={idx} className="flex items-center gap-2">
-                          <div className="flex-1 min-w-0">
-                            <TimePicker
-                              value={iv.horaInicio}
-                              onChange={(v) => actualizarIntervalo(h.diaSemana, idx, "horaInicio", v)}
-                            />
-                          </div>
-                          <span className="text-gray-400 dark:text-gray-500 text-sm shrink-0">—</span>
-                          <div className="flex-1 min-w-0">
-                            <TimePicker
-                              value={iv.horaFin}
-                              onChange={(v) => actualizarIntervalo(h.diaSemana, idx, "horaFin", v)}
-                              minTime={iv.horaInicio}
-                            />
-                          </div>
-                          {h.intervalos.length > 1 && (
-                            <button
-                              type="button"
-                              onClick={() => eliminarIntervalo(h.diaSemana, idx)}
-                              className="w-7 h-7 shrink-0 flex items-center justify-center rounded-full bg-gray-100 dark:bg-slate-700 text-gray-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/30 transition"
-                              aria-label="Eliminar intervalo"
-                            >
-                              ✕
-                            </button>
-                          )}
-                        </div>
-                      ))}
-                      {intervaloInvalido(h) && (
-                        <p className="text-xs text-red-500">Verifica que los horarios no se solapan y que la hora de fin sea posterior a la de inicio.</p>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => agregarIntervalo(h.diaSemana)}
-                        className="text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 mt-1 transition"
-                      >
-                        + Agregar intervalo
-                      </button>
-                    </div>
-                  ) : (
-                    <span className="text-sm text-gray-400 dark:text-gray-500 pl-11">Cerrado</span>
-                  )}
-                </div>
-              ))}
-            </div>
-            <button onClick={() => guardarHorarios()} disabled={guardandoHorarios || !horariosDirty || horarios.some(intervaloInvalido)}
+            <EditorHorario
+              horarios={horarios}
+              onCambiar={(nuevos) => { setHorarios(nuevos); setHorariosDirty(true); }}
+              idBase="horario-negocio"
+              intervaloInicial={{ horaInicio: "09:00", horaFin: "18:00" }}
+              etiquetaCerrado="Cerrado"
+            />
+            <button onClick={() => guardarHorarios()} disabled={guardandoHorarios || !horariosDirty || horarios.some((h) => !!errorDelDia(h))}
               className="mt-4 bg-slate-700 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-xl transition text-sm">
               {guardandoHorarios ? "Guardando..." : "Guardar horarios"}
             </button>

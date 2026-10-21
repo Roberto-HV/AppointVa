@@ -46,3 +46,32 @@ describe("GanttCitas — error (DC-32)", () => {
     expect(screen.getByRole("button", { name: "Hoy" }).className).toContain("min-h-[44px]");
   });
 });
+
+describe("GanttCitas — sondeo fallido con datos", () => {
+  it("conserva la jornada pintada y avisa con un banner que no bloquea", async () => {
+    const { empleadosApi } = await import("../../api/empleados");
+    vi.mocked(empleadosApi.obtenerTodos).mockResolvedValue([
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { id: "e1", nombre: "Ana López", activo: true, email: "ana@test.com", servicioIds: [] } as any,
+    ]);
+    vi.mocked(citasApi.obtenerTodas).mockResolvedValue({ datos: [], total: 0, pagina: 1, tamano: 200 });
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={qc}>
+        <GanttCitas onCitaClick={vi.fn()} />
+      </QueryClientProvider>,
+    );
+    expect(await screen.findByText("Ana López")).toBeInTheDocument();
+
+    vi.mocked(citasApi.obtenerTodas).mockRejectedValue(new Error("red"));
+    await qc.refetchQueries({ queryKey: ["citas-gantt"] });
+
+    expect(await screen.findByText(/No se pudo actualizar la jornada/)).toBeInTheDocument();
+    expect(screen.getByText("Ana López")).toBeInTheDocument();
+    expect(screen.queryByText("No se pudo cargar la jornada.")).toBeNull();
+
+    vi.mocked(citasApi.obtenerTodas).mockResolvedValue({ datos: [], total: 0, pagina: 1, tamano: 200 });
+    fireEvent.click(screen.getByRole("button", { name: "Reintentar" }));
+    await vi.waitFor(() => expect(screen.queryByText(/No se pudo actualizar la jornada/)).toBeNull());
+  });
+});

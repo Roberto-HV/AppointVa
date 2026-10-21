@@ -1,7 +1,7 @@
 # Audit: Owner Management Screens (Propietario only)
 
 - **Date:** 2026-10-20
-- **Status:** Severity-3 batch applied in the working tree (pending commit, **not verified in a rendered build**). OM-01, OM-02, OM-05, OM-07, OM-08, OM-10 fixed; OM-03, OM-04, OM-11 partially fixed; OM-06 and OM-09 open pending a decision (copy made honest). A few severity-2 items were partly fixed as a side effect. Each touched finding carries its own **Status** line. New shared pieces: `src/components/ui/Switch.tsx`, `src/components/ui/DialogoDescartarCambios.tsx`, `src/hooks/useCambiosSinGuardar.tsx`, `src/utils/errores.ts`.
+- **Status:** Severity-3 batch applied in the working tree (pending commit, **not verified in a rendered build**). OM-01, OM-02, OM-05, OM-07, OM-08, OM-10 fixed; OM-03, OM-04, OM-11 partially fixed; OM-06 and OM-09 open pending a decision (copy made honest). A few severity-2 items were partly fixed as a side effect. Each touched finding carries its own **Status** line. New shared pieces: `src/components/ui/Switch.tsx`, `src/components/ui/DialogoDescartarCambios.tsx`, `src/hooks/useCambiosSinGuardar.tsx`, `src/utils/errores.ts`. Severity-2 batch (2026-10-21, pending commit, not rendered): OM-13, OM-14, OM-16, OM-18, OM-19, OM-20, OM-22, OM-23, OM-25, OM-28, OM-30, OM-31 fixed; OM-17, OM-21, OM-24, OM-26, OM-29 only their non-decision parts; OM-15 and OM-27 open (decision). New shared pieces: `ErrorCarga`, `ProgresoSubida`, `TablaDatosOculta`, `EditorHorario`, `useSubirImagen`, `src/lib/{imagenes,horario,clasesCampo,heatmap,temaGraficas,opcionesIntake}.ts`, `src/utils/impresionQr.ts`; typed Excel cells.
 - **Type:** Code-based audit. **Nothing was rendered.** No browser, screenshots, emulated viewports or assistive technology were used. Contrast ratios are calculated from the Tailwind/hex values in the source. Layout, touch and dark-mode behavior are inferred from class names and the token definitions in `src/index.css` / `tailwind.config.js`. Two behaviors were confirmed against the backend source (`Back/AppointVaAPI`), noted where used. Verify visual findings in a running build, in light and dark mode, before fixing them.
 - **Companion audit:** `docs/audits/dashboard-core.md` (DC-xx). Shared root causes already reported there are referenced by ID, not re-reported. New locations of those issues are listed once in [New occurrences of Dashboard Core findings](#new-occurrences-of-dashboard-core-findings).
 
@@ -160,116 +160,132 @@ None found in code. The worst issues here lose data or block a subset of users (
 - **Fix:** Pass `"error"`. Make `tipo` required in `toast()` so this cannot recur.
 
 ### OM-13: The Mi negocio save bar never shows progress and is always enabled
+- **Status:** Fixed (pending commit) — the button is driven by the save mutations (`isPending` of profile + colour), is disabled when nothing changed and reads "Guardando…" during the request, so a second PUT cannot be sent; the bar says "Cambios sin guardar" / "Guardado" (`role="status"`). The form has `noValidate`. Tests in `PerfilPage.test.tsx`.
 - **Heuristic:** H1 Visibility; microinteractions (feedback, trigger states)
 - **Location:** `src/pages/dashboard/PerfilPage.tsx:514-523`, `:267-281` (`onSubmit` calls `mutate` and returns synchronously), `:206-214`
 - **Evidence:** `isSubmitting` is true only while the synchronous handler runs, so "Guardando..." never appears during the request and the button stays enabled, allowing duplicate PUTs. The button is equally prominent with or without changes, and there is no dirty cue in the bar. The colour save (`guardarColores`) runs in parallel with no shared pending state.
 - **Fix:** Drive the button from `mutation.isPending` (or `mutateAsync` + await, including the colour request). Disable when nothing changed; show "Cambios sin guardar" in the bar when dirty, "Guardado" briefly after success.
 
 ### OM-14: Gallery uploads have no per-file progress and silently drop files over the limit
+- **Status:** Fixed (pending commit) — one placeholder tile per file with its own progress (axios `onUploadProgress`), "Subiendo N…" until the last one ends, files over the limit reported ("2 fotos no se agregaron: el límite es de 20 fotos."), drag-over highlight, `accept` and copy aligned to the backend formats (JPG, PNG, WebP o GIF · hasta 10 MB), load error with "Reintentar". Tests in `GaleriaPage.test.tsx`.
 - **Heuristic:** H1 Visibility; microinteractions (loading states)
 - **Location:** `src/pages/dashboard/GaleriaPage.tsx:46-60` (`slice(0, restantes)`, parallel `subir()` calls), `:80-83` (one `isPending` for N uploads), `:97-108` (drop zone with no drag-over state), `:106` ("JPG, PNG o WebP" vs `accept="image/*"` and `startsWith("image/")`)
 - **User impact:** Dropping 8 photos with 5 slots left uploads 5 and says nothing about the other 3. With several uploads, "Subiendo..." ends when the last-started finishes, not when all do. HEIC/GIF pass the client check against the stated formats. The 10 MB limit is not stated before the error.
 - **Fix:** Show placeholder tiles with progress (axios `onUploadProgress`) per file; report "3 fotos no se agregaron: límite de 20"; add a drag-over highlight; align `accept` and copy (state "hasta 10 MB").
 
 ### OM-15: Gallery and questionnaire promise an order the owner cannot change — DECISION NEEDED
+- **Status:** Open – DECISION NEEDED (unchanged). For the decision: intake already has `PATCH /intake/campos/reordenar`; the gallery has no order endpoint.
 - **Heuristic:** H3 User control; H2 Match
 - **Location:** `src/pages/dashboard/GaleriaPage.tsx:158-160` ("se muestran … en el mismo orden"); `src/pages/dashboard/IntakePage.tsx:274-278` ("aparecen … en orden mostrado"); Servicios/Categorías use a numeric "Orden" field instead (`ServiciosPage.tsx:518-525`, `:615-623`)
 - **User impact:** The owner cannot choose the first photo clients see or the order of booking questions.
 - **Fix:** **DECISION NEEDED** — whether reordering is in scope (needs an order field/endpoint for gallery and intake). If yes, one sortable-list pattern with drag handles plus "Subir/Bajar" buttons for keyboard and touch, reused for services and categories.
 
 ### OM-16: Employee photo, service image, logo and policies uploads have no client-side checks or progress
+- **Status:** Fixed (pending commit) — one helper for all five uploaders: `src/lib/imagenes.ts` (formats from `BlobStorageService`, 10 MB client cap — the server cuts at 20 MB —, `configSubida` with progress), `src/hooks/useSubirImagen.ts` (validates before upload, resets the input, shows the server message, progress and the row being uploaded) and `src/components/ui/ProgresoSubida.tsx`. Used for employee photo, service image, logo, cover (validated before the positioning preview) and policies. Tests in `imagenes.test.ts`, `useSubirImagen.test.tsx` and the three page tests.
 - **Heuristic:** H5 Error prevention; H1 Visibility
 - **Location:** `EmpleadosPage.tsx:832-842`, `ServiciosPage.tsx:439-450`, `PerfilPage.tsx:664-665`, `:733-734` (also never reset `e.target.value`, so re-selecting the same file after a failure does nothing), `:694-700`
 - **User impact:** A 25 MB phone photo uploads for a long time with no indicator on the row, then fails with a generic toast. Galería is the only uploader that checks type and size first.
 - **Fix:** One `useSubirImagen` hook (type, size, progress, reset input, error message with the limit) used by all five uploaders.
 
 ### OM-17: Deleting an employee, a service or a coupon does not say what happens to related data — DECISION NEEDED
+- **Status:** Partially fixed (pending commit) — non-decision parts only: employee, service and category deletion use `ConfirmarAccion`; service deletion suggests turning off "Visible en reservas" as the reversible alternative; coupons use one verb ("Eliminar") in button, dialog and toast, and the dialog says they cannot be reactivated. Open – DECISION NEEDED: future appointments of deleted employees/services, coupon reactivation (the list endpoint returns only active coupons), a "Desactivar" alternative for employees (no endpoint).
 - **Heuristic:** H5 Error prevention; H2 Match; H4 Consistency
 - **Location:** `EmpleadosPage.tsx:810-812` ("no podrá recibir nuevas citas" — silent on existing future appointments); `ServiciosPage.tsx:542-545` (no mention of future appointments or that "Inactivo" is the reversible alternative); `DescuentosPage.tsx:234` ("¿Desactivar el cupón?") vs `:78` (toast "Cupón eliminado"); backend `DescuentosController.cs:94` (soft delete) and `:36` (list returns only active), so a "deactivated" coupon disappears with no way to reactivate
 - **User impact:** An owner deleting an employee who has next week's appointments does not know whether those clients are cancelled, reassigned or orphaned. Coupon copy promises a reversible deactivation that the UI cannot reverse.
 - **Fix:** **DECISION NEEDED** — behaviour for future appointments when an employee or service is removed, and whether coupons can be reactivated. Then state the count in the dialog ("Ana tiene 6 citas próximas: …"), offer "Desactivar" as the safe default for services and employees, and use one verb per action.
 
 ### OM-18: Report charts use brand gold, colour that encodes nothing, and light-theme axes in dark mode
+- **Status:** Fixed (pending commit, not rendered) — no gold in charts or Excel; one slate series (`hsl(var(--primary))`); axis, grid and tooltip from theme tokens (`src/lib/temaGraficas.ts`); `accessibilityLayer` plus a visually hidden data table (`TablaDatosOculta`) for the three bar charts; neutral employee initials; heatmap rows trimmed to business hours and widened to any hour with data (`src/lib/heatmap.ts`), every row labelled, cells with `aria-label`, 0–max legend. Not done: payment-method hex colours (DC-20).
 - **Heuristic:** Project rule (gold `#C8A961` is logo-only); WCAG 1.4.1, 1.4.3, 1.1.1; refactoring-ui (color with purpose)
 - **Location:** `src/pages/dashboard/ReportesPage.tsx:36` (`COLORES_GRAFICA` = gold shades), `:461-465`, `:581-585`, `:603` (bars), `:505-507` (initials in white on `#e8d4a0`, about 1.5:1, and on `#C8A961`, about 2.3:1), `:457-460`, `:577-580`, `:599-602` (recharts defaults: `#666` ticks on slate-800, about 2.5:1; light grid; white tooltip); `src/utils/exportarExcel.ts:3-5` (gold in the exported file)
 - **Evidence:** Each bar gets the next gold shade by index, so adjacent bars differ in colour without meaning. "Ingresos por servicio" and "Ingresos por día" have no table or text alternative; the heatmap explains values only through `title` (`:683`) and always draws 24 rows even for a 09:00–19:00 business.
 - **Fix:** One neutral chart palette token set (single slate series for single-measure bars; the categorical set proposed in DC-20 only where series differ), themed axis/grid/tooltip colours from tokens, `accessibilityLayer` on recharts plus a visually hidden data table. Trim heatmap rows to business hours and add a legend.
 
 ### OM-19: Excel exports show the wrong period and store numbers as text; failures are silent
+- **Status:** Fixed (pending commit) — `exportarExcel` writes typed cells (numbers, `{ moneda }` with a `$` number format, `{ porcentaje }`, `Date` keeping local time) and returns its promise; Reportes (3 exports), Clientes and Pagos show a toast on failure; the period uses `fechaLargaLocal` and the file name the local date. Tests in `exportarExcel.test.ts`, `fechas.test.ts`, `ReportesPage.test.tsx`.
 - **Heuristic:** H1 Visibility; H9 Error recovery; data integrity
 - **Location:** `src/pages/dashboard/ReportesPage.tsx:178-180`, `:213-215`, `:231-233` (`new Date("YYYY-MM-DD")` parses as UTC midnight, so in UTC-6 the subtitle reads one day earlier at both ends); `:192`, `:204`, `:224`, `:236` (`"$123.00"` strings); `src/utils/exportarExcel.ts:130`, `:166` (`cell.value = String(v)` for every cell), `:32` (`.catch(console.error)`)
 - **User impact:** "Período: 30 de septiembre — 19 de octubre" for an October report. Accountants cannot sum prices or counts without converting columns. If generation fails, nothing happens and no message appears.
 - **Fix:** Format the period with the local-date helpers in `src/utils/fechas.ts`. Write numbers as numbers with an Excel currency `numFmt`. Return the promise and show a toast on failure. Applies to the Clientes export too.
 
 ### OM-20: Report tabs hide load failures or give the wrong advice
+- **Status:** Fixed (pending commit) — shared `src/components/ui/ErrorCarga.tsx` with "Reintentar" on every Reportes tab (citas, ingresos, empleados, horarios, retención); the "Intenta cambiar el rango de fechas" advice is gone. The same component now covers Servicios, Galería, Descuentos, Intake, Lista de espera and Reseñas. Tests in `ReportesPage.test.tsx`.
 - **Heuristic:** H9 Error recovery; extends **DC-32**
 - **Location:** `src/pages/dashboard/ReportesPage.tsx:161-171` (heatmap and retención ignore `isError`), `:648-651`, `:712-715` (a failure reads "No hay citas en el rango"), `:370-372`, `:425-427`, `:564-566` ("Intenta cambiar el rango de fechas")
 - **User impact:** A server error looks like an empty week, and the suggested fix (change dates) does not address it.
 - **Fix:** Shared inline error with "Reintentar" wired to `refetch`, used in every tab.
 
 ### OM-21: Reseñas filters approval on the client, so counts, average and empty state contradict each other — DECISION NEEDED
+- **Status:** Partially fixed (pending commit) — stars are `role="img"` "N de 5 estrellas"; long comments expand in place ("Ver más"/"Ver menos", `aria-expanded`); a page with reviews but none approved says so instead of "Aún no tienes reseñas"; load error with "Reintentar". Open: approved filter and average on the server (backend gap: `/me/resenas` has neither) and the moderation DECISION. Tests in `ResenasPage.test.tsx`.
 - **Heuristic:** H1 Visibility; H4 Consistency; WCAG 1.1.1
 - **Location:** `src/pages/dashboard/ResenasPage.tsx:41` (`filter(r => r.aprobada)` after paging), `:61-65`, `:110` (server `total` includes unapproved), `:95-104` (empty state), `:45-51`, `:75-86` (average of the page), `:131-134` (comment cut at 100 chars, no expand), `:19-31` (stars with no text alternative)
 - **User impact:** A page can show 9 rows, or "Aún no tienes reseñas" under a subtitle saying "(14 reseñas)". The headline rating changes when paging. Long reviews cannot be read in full. Screen readers get no rating.
 - **Fix:** Ask the API for approved reviews and a server-side average/distribution. Expand comments in place. Add `aria-label="4 de 5 estrellas"`. **DECISION NEEDED** — what "aprobada" means and whether owners can approve, hide or reply to reviews from here.
 
 ### OM-22: The two schedule editors behave differently and their pickers have no useful names
+- **Status:** Fixed (pending commit) — shared `src/components/dashboard/EditorHorario.tsx` + `src/lib/horario.ts` for business and employee schedules: a new interval starts at the previous end and lasts 1 h, clamped to the business end / 23:30 (the button disables when nothing fits); errors name the interval; 44px named remove buttons; `TimePicker` names like "Lunes, inicio del intervalo 1"; 12px business-hours hint; "Aplicar a los demás días abiertos". Tests in `EditorHorario.test.tsx`, `horario.test.ts`.
 - **Heuristic:** H4 Consistency; WCAG 2.4.6, 4.1.2
 - **Location:** `src/pages/dashboard/PerfilPage.tsx:415-426` (new interval starts and ends at the same time, so the day turns invalid immediately), `:1245-1247` (one generic error); `src/pages/dashboard/EmpleadosPage.tsx:342-351` (new interval = previous end + 1h; past 23:00 wraps to 00:xx and is invalid), `:655-657` (specific error), `:630-639` (20px remove button vs 28px in Perfil `:1237`), `:647-652` (business-hours hint in `text-[10px]` slate-400); `TimePicker` calls without `ariaLabel` (`EmpleadosPage.tsx:616-629`, `PerfilPage.tsx:1220-1231`) fall back to "Hora" (`src/components/ui/DateTimePicker.tsx:372`)
 - **User impact:** The same task (add a break) produces an error in one screen and a valid row in the other. A screen reader announces fourteen identical "Hora" buttons with no day or start/end. There is no "copiar a todos los días", so a uniform week takes 7× the work.
 - **Fix:** Extract one `EditorHorario` component (used by business and employee), with the +1h rule clamped to the allowed range, specific errors, 44px remove targets, `ariaLabel="Lunes, inicio del intervalo 1"`, and "Aplicar a todos los días laborales".
 
 ### OM-23: Error styling disappears in dark mode on several forms
-- **Status:** Partially fixed — the Servicios service form uses an error-aware class helper; Empleados forms unchanged.
+- **Status:** Fixed (pending commit) — shared `claseCampo` in `src/lib/clasesCampo.ts` (the red border wins in dark mode) used by Empleados (employee, invite, block reason), Servicios (service, category), Perfil (name, email), Descuentos and Intake; the Perfil email error message is now rendered; Empleados fields linked with `htmlFor`/`aria-describedby`. Tests in `clasesCampo.test.ts`, `EmpleadosPage.test.tsx`, `PerfilPage.test.tsx`.
 - **Heuristic:** WCAG 1.4.1, 3.3.1; H9
 - **Location:** `src/pages/dashboard/EmpleadosPage.tsx:538-540`, `:852-854`, `:862-866`; `src/pages/dashboard/ServiciosPage.tsx:461-465`, `:491-493`, `:513-515` — `dark:border-slate-600` is applied unconditionally, and `.dark .dark\:border-slate-600` outranks `border-red-400`. `PerfilPage.tsx:624-625` uses the correct pattern (dark border only in the non-error branch). `PerfilPage.tsx:635-637` never renders the email error message.
 - **User impact:** In dark mode an invalid field looks normal; only the small red text below (when present) signals the problem.
 - **Fix:** One input class helper with explicit error variants in both themes (part of the DC-19 `Campo` primitive).
 
 ### OM-24: The coupon form enforces nothing client-side and its expiry date is ambiguous
+- **Status:** Partially fixed (pending commit) — `Modal` + react-hook-form/zod (code without spaces, value > 0 with two decimals, ≤ 100% for percentages, integer usage ≥ 1, date not past), Enter submits, shared `DatePicker` labelled "Válido hasta (incluido)" and sent as 23:59:59 in the business time zone, as UTC (`finDelDiaEnZona`); amount via `formatPrecio`; expiry shown with `comoUtc` + `formatFecha`; named 44px row actions. Open: editing (backend gap: no PUT for coupons). Tests in `DescuentosPage.test.tsx`, `fechas.test.ts`.
 - **Heuristic:** H5 Error prevention; H2 Match; H4 Consistency
 - **Location:** `src/pages/dashboard/DescuentosPage.tsx:122-210` (inline panel, no `<form>`, so `min`/`max` at `:170-171`, `:183` never run; Enter does not submit), `:204` (only checks non-empty), `:187-195` (native `type="date"` instead of the shared `DatePicker`), `:36` (`$${valor}` instead of `formatPrecio`); backend `DescuentosController.cs:42` (`FechaExpiracion < DateTime.UtcNow`, so a date-only value expires at 00:00 UTC — 18:00 the previous evening in Mexico)
 - **User impact:** A 150% or negative discount reaches the server; the owner learns of it only from a server message. A coupon set to "expire 31 Dec" stops working on the evening of 30 Dec. Coupons cannot be edited, only recreated.
 - **Fix:** Move to the shared modal + react-hook-form/zod pattern; label the date "Válido hasta (incluido)" and send end-of-day in the business time zone; add edit.
 
 ### OM-25: Questionnaire options are a comma-separated string, and row actions are unlabeled
+- **Status:** Fixed (pending commit) — one input per option (add/remove), saved as a JSON array that `BookingPage` already reads (old comma-separated questions still load); inline error; named edit/delete buttons; neutral "Obligatoria" badge; live preview. Tests in `IntakePage.test.tsx`, `opcionesIntake.test.ts`.
 - **Heuristic:** H5 Error prevention; H6 Recognition; WCAG 4.1.2
 - **Location:** `src/pages/dashboard/IntakePage.tsx:171-186`, `:318-329` (edit/delete icons with no `aria-label` or `title`), `:302-306` ("Requerido" in red, the error colour)
 - **User impact:** An option containing a comma ("Sí, pero leve") splits into two. Screen readers hear "button, button". There is no preview of what the client sees.
 - **Fix:** An option list editor (one input per option, add/remove), labeled icon buttons, a neutral "Obligatoria" badge, and a small preview of the rendered question.
 
 ### OM-26: Giving an employee access means the owner invents and hands over their password — DECISION NEEDED
+- **Status:** Partially fixed (pending commit) — non-decision part: the password reveal toggle is focusable, named "Mostrar/Ocultar contraseña", `aria-pressed`, 44px; invite fields labelled. Open: "Con acceso / Sin acceso" needs the API to say whether an employee has a user (backend gap: `EmpleadoDto` has no such field), and the email-invitation DECISION.
 - **Heuristic:** H2 Match; security-adjacent (see Out of scope)
 - **Location:** `src/pages/dashboard/EmpleadosPage.tsx:53-56` (min 6 chars), `:845-890`, `:868-876` (reveal toggle `tabIndex={-1}`, no label), `:484-489` ("Invitar" shown even if the employee already has an account)
 - **User impact:** The owner must communicate a password out of band and knows the employee's credentials. The card gives no signal of who already has access.
 - **Fix:** **DECISION NEEDED** — move to an email invitation with a set-password link. Meanwhile show "Con acceso" / "Sin acceso" on the card and label the reveal toggle.
 
 ### OM-27: "Canal de notificaciones" shows a single control that does nothing — DECISION NEEDED
+- **Status:** Open – DECISION NEEDED (unchanged).
 - **Heuristic:** H2 Match; impeccable Integrity (decorative controls)
 - **Location:** `src/pages/dashboard/PerfilPage.tsx:1012-1021`; schema still accepts `WhatsApp` and `Ambos` (`:85-86`)
 - **User impact:** A pressed-looking "Correo" button with no alternative reads as a broken selector.
 - **Fix:** **DECISION NEEDED** — is WhatsApp coming? If not, replace the button with plain text ("Las notificaciones se envían por correo"). If yes, a real segmented control.
 
 ### OM-28: "Imprimir" next to the QR prints the whole dashboard
+- **Status:** Fixed (pending commit) — "Imprimir" opens a sheet with only the QR, business name and booking URL (`src/utils/impresionQr.ts`, every value escaped, only a PNG data URL accepted); popup-blocked toast. Tests in `impresionQr.test.ts`, `PerfilPage.test.tsx`.
 - **Heuristic:** H2 Match
 - **Location:** `src/pages/dashboard/PerfilPage.tsx:912-915` (`window.print()`; no print styles in the page or layout)
 - **Fix:** Print a dedicated sheet (QR, business name, booking URL) via a print-only container or a generated PDF/PNG.
 
 ### OM-29: Account deletion uses a hand-rolled dialog and does not say what happens to the business — DECISION NEEDED
+- **Status:** Partially fixed (pending commit) — the dialog is the shared `Modal` (dialog role, focus trap, Escape) with a labelled password field inside a form (Enter submits) and "Volver" / "Eliminar cuenta". Open – DECISION NEEDED: consequences, typing the business name, data export. Test in `PerfilPage.test.tsx`.
 - **Heuristic:** H5 Error prevention; WCAG 2.1.2/2.4.3 (same root cause as **DC-18**)
 - **Location:** `src/pages/dashboard/PerfilPage.tsx:1119-1153` (no `role="dialog"`, no Escape, no focus trap), `:1178-1180`
 - **User impact:** The copy covers "datos personales" and anonymised history but not the public booking page, employees' accounts or clients with future appointments.
 - **Fix:** Use `Modal`. **DECISION NEEDED** — exact consequences (are future appointments cancelled and clients notified? is there a grace period?). State them, require typing the business name, and offer data export first.
 
 ### OM-30: Service toggles read as status, not action, and one pending toggle freezes every row
-- **Status:** Partially fixed — hiding a service is confirmed and its title names the action; the global pending state and the "Activo" label are unchanged.
+- **Status:** Fixed (pending commit) — a labelled `Switch` "Visible en reservas" per row (hiding still confirms, showing is one click); pending state per row for visibility and Destacado, so other rows stay usable; Destacado has `aria-pressed` + `aria-label`; neutral Editar; row actions named and 44px. Tests in `ServiciosPage.test.tsx`.
 - **Heuristic:** H4 Consistency; H1 Visibility; WCAG 4.1.2
 - **Location:** `src/pages/dashboard/ServiciosPage.tsx:307-331` (`disabled={togglendoActivo}` / `togglendoDestacado` are global), `:318` (Destacado is icon-only on mobile, `title` only), `:332-338` (Editar uses the same amber as an active Destacado)
 - **User impact:** "Activo" looks like a badge; clicking it takes the service off the booking page. While one request is pending all other rows' toggles are disabled. On a phone the star has no name.
 - **Fix:** A labeled `Switch` (OM-02) "Visible en reservas" with per-row pending state; `aria-pressed` and `aria-label` on Destacado; neutral styling for Editar.
 
 ### OM-31: Waitlist: "Expirado" is a one-way, unlabeled action, and the filtered empty state is wrong
-- **Status:** Partially fixed — delete uses `ConfirmarAccion` instead of `window.confirm`; Expirar, labels and the filtered empty state are unchanged.
+- **Status:** Fixed (pending commit) — labelled "Expirar" action; Esperando → Expirado shows "Deshacer" (PATCH back to Esperando restores the entry exactly); Notificado → Expirado asks for confirmation instead, because returning to Notificado rewrites `FechaNotificacion`; filtered empty state "Ningún registro con estado X"; sector-neutral icon; named delete; skeleton and "Reintentar". Tests in `ListaEsperaPage.test.tsx`.
 - **Heuristic:** H3 User control; H6; H4
 - **Location:** `src/pages/dashboard/ListaEsperaPage.tsx:232-240` (icon-only, no confirm; an expired entry offers no way back, only delete), `:241-247`, `:121` (title "No hay entradas en la lista de espera" even when a filter is active), `:134` (`window.confirm`), `:190` (scissors icon for any sector)
 - **Fix:** Labeled actions, undo toast for Expirar, "Ningún registro con estado X" for filtered empties, sector-neutral icon.

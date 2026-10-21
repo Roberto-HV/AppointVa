@@ -1,5 +1,6 @@
 import { api } from "./axios";
 import type { EmpleadoDto, CrearEmpleadoDto, HorarioDiaDto, BloqueoDto } from "../types";
+import { configSubida, type OnProgreso } from "../lib/imagenes";
 
 export const empleadosApi = {
   obtenerTodos: async (incluirInactivos = false): Promise<EmpleadoDto[]> => {
@@ -52,12 +53,10 @@ export const empleadosApi = {
     await api.delete(`/empleados/${empleadoId}/bloqueo/${bloqueoId}`);
   },
 
-  subirFoto: async (id: string, archivo: File): Promise<EmpleadoDto> => {
+  subirFoto: async (id: string, archivo: File, onProgreso?: OnProgreso): Promise<EmpleadoDto> => {
     const form = new FormData();
     form.append("archivo", archivo);
-    const { data } = await api.post(`/empleados/${id}/foto`, form, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    const { data } = await api.post(`/empleados/${id}/foto`, form, configSubida(onProgreso));
     return data;
   },
 };

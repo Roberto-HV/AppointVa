@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Pencil, Trash2, ClipboardList, Check } from "lucide-react";
+import { Plus, Pencil, Trash2, ClipboardList, Check, X } from "lucide-react";
 import { intakeApi, type CampoIntake } from "../../api/intake";
 import { serviciosApi } from "../../api/servicios";
 import { useToastStore } from "../../store/toastStore";
@@ -8,7 +8,10 @@ import Modal from "../../components/ui/Modal";
 import BotonAccion from "../../components/ui/BotonAccion";
 import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
 import ConfirmarAccion from "../../components/ui/ConfirmarAccion";
+import ErrorCarga from "../../components/ui/ErrorCarga";
 import { useConfirmarDescarte } from "../../hooks/useCambiosSinGuardar";
+import { claseCampo, CLASE_ERROR_CAMPO } from "../../lib/clasesCampo";
+import { leerOpciones, serializarOpciones } from "../../lib/opcionesIntake";
 
 const TIPOS = [
   { value: "Texto", label: "Texto corto" },
@@ -20,7 +23,8 @@ const TIPOS = [
 interface FormState {
   etiqueta: string;
   tipo: string;
-  opciones: string;
+  /** Una entrada por opción: una opción puede llevar comas. */
+  opciones: string[];
   requerido: boolean;
   servicioIds: string[];
 }
@@ -28,19 +32,31 @@ interface FormState {
 const EMPTY: FormState = {
   etiqueta: "",
   tipo: "Texto",
-  opciones: "",
+  opciones: ["", ""],
   requerido: false,
   servicioIds: [],
 };
 
+function datosParaApi(data: FormState) {
+  return {
+    etiqueta: data.etiqueta,
+    tipo: data.tipo,
+    opciones: data.tipo === "Seleccion" ? serializarOpciones(data.opciones) : undefined,
+    requerido: data.requerido,
+    servicioIds: data.servicioIds.length > 0 ? data.servicioIds : undefined,
+  };
+}
+
 export default function IntakePage() {
+  const idForm = useId();
   const [showForm, setShowForm] = useState(false);
   const [editando, setEditando] = useState<CampoIntake | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY);
+  const [errorOpciones, setErrorOpciones] = useState("");
   const qc = useQueryClient();
   const { toast } = useToastStore();
 
-  const { data: campos = [], isLoading } = useQuery({
+  const { data: campos = [], isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ["intake-campos"],
     queryFn: () => intakeApi.getCampos(),
   });
@@ -51,40 +67,26 @@ export default function IntakePage() {
   });
 
   const mutCrear = useMutation({
-    mutationFn: (data: typeof form) =>
-      intakeApi.crearCampo({
-        etiqueta: data.etiqueta,
-        tipo: data.tipo,
-        opciones: data.tipo === "Seleccion" ? data.opciones || undefined : undefined,
-        requerido: data.requerido,
-        servicioIds: data.servicioIds.length > 0 ? data.servicioIds : undefined,
-      }),
+    mutationFn: (data: FormState) => intakeApi.crearCampo(datosParaApi(data)),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["intake-campos"] });
       setShowForm(false);
       setForm(EMPTY);
-      toast("Campo creado");
+      toast("Pregunta creada");
     },
-    onError: () => toast("No se pudo crear el campo. Intenta de nuevo.", "error"),
+    onError: () => toast("No se pudo crear la pregunta. Intenta de nuevo.", "error"),
   });
 
   const mutActualizar = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: typeof form }) =>
-      intakeApi.actualizarCampo(id, {
-        etiqueta: data.etiqueta,
-        tipo: data.tipo,
-        opciones: data.tipo === "Seleccion" ? data.opciones || undefined : undefined,
-        requerido: data.requerido,
-        servicioIds: data.servicioIds.length > 0 ? data.servicioIds : undefined,
-      }),
+    mutationFn: ({ id, data }: { id: string; data: FormState }) => intakeApi.actualizarCampo(id, datosParaApi(data)),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["intake-campos"] });
       setEditando(null);
       setShowForm(false);
       setForm(EMPTY);
-      toast("Campo actualizado");
+      toast("Pregunta actualizada");
     },
-    onError: () => toast("No se pudo actualizar el campo. Intenta de nuevo.", "error"),
+    onError: () => toast("No se pudo actualizar la pregunta. Intenta de nuevo.", "error"),
   });
 
   const mutEliminar = useMutation({
@@ -92,49 +94,64 @@ export default function IntakePage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["intake-campos"] });
       setCampoEliminar(null);
-      toast("Campo eliminado");
+      toast("Pregunta eliminada");
     },
-    onError: () => toast("No se pudo eliminar el campo. Intenta de nuevo.", "error"),
+    onError: () => toast("No se pudo eliminar la pregunta. Intenta de nuevo.", "error"),
   });
 
   const [campoEliminar, setCampoEliminar] = useState<CampoIntake | null>(null);
   const descarte = useConfirmarDescarte();
+  const formDe = (campo: CampoIntake): FormState => {
+    const opciones = leerOpciones(campo.opciones);
+    return {
+      etiqueta: campo.etiqueta,
+      tipo: campo.tipo,
+      opciones: opciones.length > 0 ? opciones : ["", ""],
+      requerido: campo.requerido,
+      servicioIds: campo.servicioIds ?? [],
+    };
+  };
   // Lo que había al abrir el modal, para preguntar antes de perder lo escrito.
-  const formularioInicial: FormState = editando
-    ? { etiqueta: editando.etiqueta, tipo: editando.tipo, opciones: editando.opciones ?? "", requerido: editando.requerido, servicioIds: editando.servicioIds ?? [] }
-    : EMPTY;
+  const formularioInicial: FormState = editando ? formDe(editando) : EMPTY;
   const formularioSucio = showForm && JSON.stringify(form) !== JSON.stringify(formularioInicial);
+  const cerrar = () => descarte.pedirCierre(formularioSucio, () => { setShowForm(false); setEditando(null); });
 
   function abrirCrear() {
     setEditando(null);
     setForm(EMPTY);
+    setErrorOpciones("");
     setShowForm(true);
   }
 
   function abrirEditar(campo: CampoIntake) {
     setEditando(campo);
-    setForm({
-      etiqueta: campo.etiqueta,
-      tipo: campo.tipo,
-      opciones: campo.opciones ?? "",
-      requerido: campo.requerido,
-      servicioIds: campo.servicioIds ?? [],
-    });
+    setForm(formDe(campo));
+    setErrorOpciones("");
     setShowForm(true);
   }
 
-  function guardar() {
+  function guardar(e?: React.FormEvent) {
+    e?.preventDefault();
     if (!form.etiqueta.trim()) return;
-    if (form.tipo === "Seleccion" && !form.opciones.trim()) {
-      toast("Debes agregar al menos una opción para el campo de selección", "error");
+    if (form.tipo === "Seleccion" && !serializarOpciones(form.opciones)) {
+      setErrorOpciones("Agrega al menos una opción.");
       return;
     }
+    setErrorOpciones("");
     if (editando) {
       mutActualizar.mutate({ id: editando.id, data: form });
     } else {
       mutCrear.mutate(form);
     }
   }
+
+  const cambiarOpcion = (i: number, valor: string) =>
+    setForm({ ...form, opciones: form.opciones.map((o, j) => (j === i ? valor : o)) });
+  const quitarOpcion = (i: number) =>
+    setForm({ ...form, opciones: form.opciones.filter((_, j) => j !== i) });
+  const agregarOpcion = () => setForm({ ...form, opciones: [...form.opciones, ""] });
+
+  const id = (campo: string) => `${idForm}-${campo}`;
 
   return (
     <div className="p-4 sm:p-8 space-y-6">
@@ -151,27 +168,29 @@ export default function IntakePage() {
       {/* Form modal */}
       <Modal
         abierto={showForm}
-        onCerrar={() => descarte.pedirCierre(formularioSucio, () => { setShowForm(false); setEditando(null); })}
+        onCerrar={cerrar}
         titulo={editando ? "Editar pregunta" : "Nueva pregunta"}
       >
-        <div className="space-y-4">
+        <form noValidate onSubmit={guardar} className="space-y-4">
           <div className="space-y-3">
             <div>
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Pregunta / etiqueta</label>
+              <label htmlFor={id("etiqueta")} className="text-sm font-medium text-gray-700 dark:text-gray-300">Pregunta / etiqueta</label>
               <input
+                id={id("etiqueta")}
                 value={form.etiqueta}
                 onChange={(e) => setForm({ ...form, etiqueta: e.target.value })}
                 placeholder="Ej: ¿Tienes alguna alergia?"
-                className="mt-1 w-full border border-gray-200 dark:bg-slate-800 dark:text-gray-100 dark:border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-700/30 dark:focus:ring-slate-500/30"
+                className={claseCampo(false, "mt-1")}
               />
             </div>
 
             <div>
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Tipo de respuesta</label>
+              <label htmlFor={id("tipo")} className="text-sm font-medium text-gray-700 dark:text-gray-300">Tipo de respuesta</label>
               <select
+                id={id("tipo")}
                 value={form.tipo}
                 onChange={(e) => setForm({ ...form, tipo: e.target.value })}
-                className="mt-1 w-full border border-gray-200 dark:bg-slate-800 dark:text-gray-100 dark:border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-700/30 dark:focus:ring-slate-500/30"
+                className={claseCampo(false, "mt-1")}
               >
                 {TIPOS.map((t) => (
                   <option key={t.value} value={t.value}>{t.label}</option>
@@ -180,28 +199,49 @@ export default function IntakePage() {
             </div>
 
             {form.tipo === "Seleccion" && (
-              <div>
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Opciones (separadas por coma)
-                </label>
-                <input
-                  value={form.opciones}
-                  onChange={(e) => setForm({ ...form, opciones: e.target.value })}
-                  placeholder="Sí, No, Tal vez"
-                  className="mt-1 w-full border border-gray-200 dark:bg-slate-800 dark:text-gray-100 dark:border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-700/30 dark:focus:ring-slate-500/30"
-                />
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                  Escribe las opciones separadas por coma
-                </p>
-              </div>
+              <fieldset aria-describedby={errorOpciones ? id("opciones-error") : undefined}>
+                <legend className="text-sm font-medium text-gray-700 dark:text-gray-300">Opciones</legend>
+                <ul className="mt-1 space-y-2">
+                  {form.opciones.map((op, i) => (
+                    <li key={i} className="flex items-center gap-2">
+                      <input
+                        value={op}
+                        onChange={(e) => cambiarOpcion(i, e.target.value)}
+                        placeholder={`Opción ${i + 1}`}
+                        aria-label={`Opción ${i + 1}`}
+                        aria-invalid={(!!errorOpciones && !op.trim()) || undefined}
+                        className={claseCampo(!!errorOpciones && !op.trim())}
+                      />
+                      {form.opciones.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => quitarOpcion(i)}
+                          aria-label={`Quitar opción ${i + 1}`}
+                          className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] shrink-0 rounded-lg text-muted-foreground hover:text-red-700 dark:hover:text-red-400 hover:bg-muted transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                          <X size={16} aria-hidden="true" />
+                        </button>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+                <button
+                  type="button"
+                  onClick={agregarOpcion}
+                  className="mt-1 min-h-[44px] text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-foreground hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  + Agregar opción
+                </button>
+                {errorOpciones && <p id={id("opciones-error")} role="alert" className={CLASE_ERROR_CAMPO}>{errorOpciones}</p>}
+              </fieldset>
             )}
 
             <div>
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                 Servicios (opcional — deja vacío para todos)
-              </label>
+              </span>
               {servicios.length === 0 ? (
-                <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">No hay servicios configurados</p>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">No hay servicios configurados</p>
               ) : (
                 <div className="mt-1 space-y-1 max-h-36 overflow-y-auto border border-gray-200 dark:border-slate-600 rounded-lg p-2">
                   {servicios.map((s) => (
@@ -213,7 +253,7 @@ export default function IntakePage() {
                         onChange={(e) => {
                           const next = e.target.checked
                             ? [...form.servicioIds, s.id]
-                            : form.servicioIds.filter((id) => id !== s.id);
+                            : form.servicioIds.filter((sid) => sid !== s.id);
                           setForm({ ...form, servicioIds: next });
                         }}
                       />
@@ -231,35 +271,42 @@ export default function IntakePage() {
                 onChange={(e) => setForm({ ...form, requerido: e.target.checked })}
                 className="accent-slate-700 w-4 h-4"
               />
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Respuesta requerida</span>
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Respuesta obligatoria</span>
             </label>
+
+            <VistaPrevia form={form} />
           </div>
 
-          <div className="flex justify-end gap-2 pt-1">
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-1">
             <button
-              onClick={() => { setShowForm(false); setEditando(null); }}
-              className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition"
+              type="button"
+              onClick={cerrar}
+              className="min-h-[44px] lg:min-h-[36px] px-4 text-sm text-foreground border border-border hover:bg-muted rounded-xl transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               Cancelar
             </button>
             <button
-              onClick={guardar}
+              type="submit"
               disabled={!form.etiqueta.trim() || mutCrear.isPending || mutActualizar.isPending}
-              className="flex items-center gap-1 px-4 py-2 bg-slate-700 text-white rounded-lg text-sm font-semibold disabled:opacity-50 hover:opacity-90 transition"
+              className="min-h-[44px] lg:min-h-[36px] inline-flex items-center justify-center gap-1 px-4 bg-slate-700 text-white rounded-xl text-sm font-semibold disabled:opacity-50 hover:opacity-90 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              <Check size={15} />
+              <Check size={15} aria-hidden="true" />
               {editando ? "Guardar cambios" : "Crear pregunta"}
             </button>
           </div>
-        </div>
+        </form>
       </Modal>
 
       {/* Lista de campos */}
       {isLoading ? (
-        <div className="text-center py-16 text-gray-400 dark:text-gray-500">Cargando...</div>
+        <div className="space-y-2" aria-busy="true" aria-label="Cargando preguntas">
+          {[0, 1, 2].map((i) => <div key={i} className="h-[60px] rounded-xl bg-muted animate-pulse" />)}
+        </div>
+      ) : isError ? (
+        <ErrorCarga mensaje="No se pudieron cargar las preguntas." onReintentar={() => refetch()} reintentando={isFetching} />
       ) : campos.length === 0 ? (
-        <div className="text-center py-16 text-gray-400 dark:text-gray-500">
-          <ClipboardList size={40} className="mx-auto mb-3 opacity-30" />
+        <div className="text-center py-16 text-gray-500 dark:text-gray-400">
+          <ClipboardList size={40} className="mx-auto mb-3 opacity-30" aria-hidden="true" />
           <p className="font-medium">No hay preguntas configuradas</p>
           <p className="text-sm mt-1">
             Agrega preguntas que se mostrarán al cliente antes de confirmar su reserva
@@ -280,7 +327,7 @@ export default function IntakePage() {
       )}
 
       {campos.length > 0 && (
-        <p className="text-xs text-gray-400 dark:text-gray-500 text-center">
+        <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
           {campos.length} pregunta{campos.length !== 1 ? "s" : ""} — aparecen en el formulario de reserva en orden mostrado
         </p>
       )}
@@ -302,6 +349,37 @@ export default function IntakePage() {
   );
 }
 
+/** Cómo verá el cliente la pregunta (sin interacción). */
+function VistaPrevia({ form }: { form: FormState }) {
+  const etiqueta = form.etiqueta.trim() || "Tu pregunta";
+  const opciones = form.opciones.map((o) => o.trim()).filter(Boolean);
+  const clase = "w-full px-3 py-2 rounded-lg border border-border bg-background text-sm text-muted-foreground";
+  return (
+    <section aria-label="Vista previa" className="rounded-xl border border-dashed border-border p-3">
+      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Vista previa</p>
+      <div aria-hidden="true">
+        {form.tipo === "Checkbox" ? (
+          <p className="flex items-center gap-2 text-sm text-foreground">
+            <span className="w-4 h-4 rounded border border-border bg-background" />
+            {etiqueta}{form.requerido && " *"}
+          </p>
+        ) : (
+          <>
+            <p className="text-sm font-medium text-foreground mb-1">{etiqueta}{form.requerido && " *"}</p>
+            {form.tipo === "Seleccion" ? (
+              <div className={clase}>
+                {opciones.length > 0 ? `Selecciona una opción (${opciones.join(" · ")})` : "Selecciona una opción"}
+              </div>
+            ) : (
+              <div className={`${clase} ${form.tipo === "MultilineTexto" ? "h-16" : ""}`}>Respuesta del cliente</div>
+            )}
+          </>
+        )}
+      </div>
+    </section>
+  );
+}
+
 function CampoRow({
   campo,
   orden,
@@ -317,17 +395,18 @@ function CampoRow({
 
   return (
     <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl px-4 py-3 flex items-center gap-3">
-      <span className="text-xs text-gray-400 dark:text-gray-500 w-5 shrink-0">{orden}</span>
+      <span className="text-xs text-gray-500 dark:text-gray-400 w-5 shrink-0">{orden}</span>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <p className="font-medium text-gray-800 dark:text-gray-200 text-sm truncate">{campo.etiqueta}</p>
+          {/* Neutra: el rojo es para errores, no para "obligatoria". */}
           {campo.requerido && (
-            <span className="text-xs bg-red-50 dark:bg-red-900/40 text-red-500 dark:text-red-400 px-1.5 py-0.5 rounded font-medium">
-              Requerido
+            <span className="text-xs bg-muted text-foreground px-1.5 py-0.5 rounded font-medium">
+              Obligatoria
             </span>
           )}
         </div>
-        <div className="flex items-center gap-3 text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+        <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
           <span>{tipoLabel}</span>
           {campo.servicioNombres && campo.servicioNombres.length > 0 ? (
             <span>Solo para: {campo.servicioNombres.join(", ")}</span>
@@ -338,16 +417,22 @@ function CampoRow({
       </div>
       <div className="flex items-center gap-1 shrink-0">
         <button
+          type="button"
           onClick={onEditar}
-          className="p-1.5 text-gray-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-700/10 dark:hover:bg-slate-600/30 rounded-lg transition"
+          aria-label={`Editar pregunta "${campo.etiqueta}"`}
+          title="Editar"
+          className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] lg:min-h-[36px] lg:min-w-[36px] text-gray-500 dark:text-gray-400 hover:text-foreground hover:bg-muted rounded-lg transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          <Pencil size={15} />
+          <Pencil size={15} aria-hidden="true" />
         </button>
         <button
+          type="button"
           onClick={onEliminar}
-          className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition"
+          aria-label={`Eliminar pregunta "${campo.etiqueta}"`}
+          title="Eliminar"
+          className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] lg:min-h-[36px] lg:min-w-[36px] text-gray-500 dark:text-gray-400 hover:text-red-700 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          <Trash2 size={15} />
+          <Trash2 size={15} aria-hidden="true" />
         </button>
       </div>
     </div>

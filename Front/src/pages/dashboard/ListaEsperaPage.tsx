@@ -1,6 +1,6 @@
 ﻿import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Clock, Trash2, CheckCircle, Bell, Ban, Phone, Mail, Calendar, User, Scissors } from "lucide-react";
+import { Clock, Trash2, CheckCircle, Bell, Ban, Phone, Mail, Calendar, User, Tag } from "lucide-react";
 import { listaEsperaApi, type EntradaListaEspera } from "../../api/listaEspera";
 import { useToastStore } from "../../store/toastStore";
 import EmptyState from "../../components/ui/EmptyState";
@@ -9,6 +9,7 @@ import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
 import { FiltroBarra } from "../../components/ui/filtros";
 import { usePaginacionLocal } from "../../hooks/usePaginacionLocal";
 import ConfirmarAccion from "../../components/ui/ConfirmarAccion";
+import ErrorCarga from "../../components/ui/ErrorCarga";
 
 // Tokens de estado (`--status-*`), que ya cambian con el tema.
 const ESTADOS_CONFIG: Record<string, { label: string; color: string }> = {
@@ -29,8 +30,11 @@ export default function ListaEsperaPage() {
   const qc = useQueryClient();
   const { toast } = useToastStore();
   const [entradaEliminar, setEntradaEliminar] = useState<EntradaListaEspera | null>(null);
+  // Expirar a alguien ya avisado no se puede deshacer fielmente (volver a
+  // "Avisado" reescribe la fecha del aviso), así que ese caso se confirma antes.
+  const [entradaExpirar, setEntradaExpirar] = useState<EntradaListaEspera | null>(null);
 
-  const { data: lista = [], isLoading, isError } = useQuery({
+  const { data: lista = [], isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ["lista-espera", filtroEstado],
     queryFn: () => listaEsperaApi.obtener(filtroEstado || undefined),
   });
@@ -45,14 +49,31 @@ export default function ListaEsperaPage() {
   });
 
   const mutCambiarEstado = useMutation({
-    mutationFn: ({ id, estado }: { id: string; estado: string }) =>
+    mutationFn: ({ id, estado }: { id: string; estado: string; anterior?: string; nombre?: string }) =>
       listaEsperaApi.cambiarEstado(id, estado),
-    onSuccess: () => {
+    onSuccess: (_r, { id, estado, anterior, nombre }) => {
       qc.invalidateQueries({ queryKey: ["lista-espera"] });
-      toast("Estado actualizado");
+      setEntradaExpirar(null);
+      // "Esperando" → "Expirado" se revierte sin perder nada: el backend solo
+      // cambia el estado. Es el único cambio que ofrece "Deshacer".
+      if (estado === "Expirado" && anterior === "Esperando") {
+        toast(`${nombre ?? "La entrada"} quedó como expirada`, "exito", {
+          accion: { etiqueta: "Deshacer", onClick: () => mutCambiarEstado.mutate({ id, estado: "Esperando" }) },
+        });
+      } else {
+        toast("Estado actualizado");
+      }
     },
     onError: () => toast("No se pudo actualizar el estado. Intenta de nuevo.", "error"),
   });
+
+  const expirar = (entrada: EntradaListaEspera) => {
+    if (entrada.estado === "Esperando") {
+      mutCambiarEstado.mutate({ id: entrada.id, estado: "Expirado", anterior: "Esperando", nombre: entrada.nombreCliente });
+    } else {
+      setEntradaExpirar(entrada);
+    }
+  };
 
   const mutEliminar = useMutation({
     mutationFn: (id: string) => listaEsperaApi.eliminar(id),
@@ -115,14 +136,18 @@ export default function ListaEsperaPage() {
 
       {/* Tabla */}
       {isLoading ? (
-        <div className="text-center py-16 text-gray-400 dark:text-gray-500">Cargando...</div>
+        <div className="space-y-3" aria-busy="true" aria-label="Cargando lista de espera">
+          {[0, 1, 2].map((i) => <div key={i} className="h-[92px] rounded-xl bg-muted animate-pulse" />)}
+        </div>
       ) : isError ? (
-        <div role="alert" className="text-center py-16 text-red-700 dark:text-red-400">No se pudo cargar la lista de espera.</div>
+        <ErrorCarga mensaje="No se pudo cargar la lista de espera." onReintentar={() => refetch()} reintentando={isFetching} />
       ) : lista.length === 0 ? (
         <EmptyState
           variante={filtroEstado ? "sinResultados" : "vacio"}
           icon={filtroEstado ? undefined : <Clock size={40} strokeWidth={1.5} />}
-          title="No hay entradas en la lista de espera"
+          title={filtroEstado
+            ? `Ningún registro con estado "${ESTADOS_CONFIG[filtroEstado]?.label ?? filtroEstado}"`
+            : "No hay entradas en la lista de espera"}
           onLimpiarFiltros={filtroEstado ? () => setFiltroEstado("") : undefined}
         />
       ) : (
@@ -134,6 +159,8 @@ export default function ListaEsperaPage() {
               onCambiarEstado={(estado) =>
                 mutCambiarEstado.mutate({ id: entrada.id, estado })
               }
+              onExpirar={() => expirar(entrada)}
+              pendiente={mutCambiarEstado.isPending && mutCambiarEstado.variables?.id === entrada.id}
               onEliminar={() => setEntradaEliminar(entrada)}
             />
           ))}
@@ -164,6 +191,18 @@ export default function ListaEsperaPage() {
         onConfirmar={() => entradaEliminar && mutEliminar.mutate(entradaEliminar.id)}
         onCerrar={() => setEntradaEliminar(null)}
       />
+
+      <ConfirmarAccion
+        abierto={!!entradaExpirar}
+        titulo="Marcar como expirado"
+        mensaje={entradaExpirar && (
+          <p>{`${entradaExpirar.nombreCliente} ya fue avisado. Si lo marcas como expirado no podrás volver a "Avisado" con la fecha original.`}</p>
+        )}
+        etiquetaConfirmar="Marcar como expirado"
+        pendiente={mutCambiarEstado.isPending}
+        onConfirmar={() => entradaExpirar && mutCambiarEstado.mutate({ id: entradaExpirar.id, estado: "Expirado" })}
+        onCerrar={() => setEntradaExpirar(null)}
+      />
     </div>
   );
 }
@@ -171,11 +210,15 @@ export default function ListaEsperaPage() {
 function EntradaCard({
   entrada,
   onCambiarEstado,
+  onExpirar,
   onEliminar,
+  pendiente,
 }: {
   entrada: EntradaListaEspera;
   onCambiarEstado: (estado: string) => void;
+  onExpirar: () => void;
   onEliminar: () => void;
+  pendiente: boolean;
 }) {
   const cfg = ESTADOS_CONFIG[entrada.estado] ?? ESTADOS_CONFIG.Esperando;
 
@@ -201,7 +244,7 @@ function EntradaCard({
           )}
           {entrada.servicioNombre && (
             <span className="flex items-center gap-1">
-              <Scissors size={13} /> {entrada.servicioNombre}
+              <Tag size={13} aria-hidden="true" /> {entrada.servicioNombre}
             </span>
           )}
           {entrada.empleadoNombre && (
@@ -223,44 +266,51 @@ function EntradaCard({
         </p>
       </div>
 
-      {/* Acciones */}
-      <div className="flex items-center gap-2 shrink-0">
+      {/* Acciones: todas con texto o nombre; antes "expirar" y "eliminar" eran iconos mudos. */}
+      <div className="flex flex-wrap items-center gap-2 shrink-0">
         {/* OM-06 (pendiente de decisión): este botón solo registra que el
             negocio ya avisó al cliente; no envía ningún mensaje. */}
         {entrada.estado === "Esperando" && (
           <button
             type="button"
             onClick={() => onCambiarEstado("Notificado")}
+            disabled={pendiente}
             title="Registra que ya avisaste al cliente. No envía ningún mensaje."
-            className="flex items-center gap-1 px-3 py-1.5 text-sm bg-status-completed-bg text-status-completed-fg hover:opacity-90 rounded-lg transition font-medium"
+            className="min-h-[44px] lg:min-h-[36px] flex items-center gap-1 px-3 text-sm bg-status-completed-bg text-status-completed-fg hover:opacity-90 disabled:opacity-50 rounded-lg transition font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <Bell size={14} aria-hidden="true" /> Marcar como avisado
           </button>
         )}
         {entrada.estado === "Notificado" && (
           <button
+            type="button"
             onClick={() => onCambiarEstado("Confirmado")}
+            disabled={pendiente}
             title="Marcar como confirmado"
-            className="flex items-center gap-1 px-3 py-1.5 text-sm bg-status-confirmed-bg text-status-confirmed-fg hover:opacity-90 rounded-lg transition font-medium"
+            className="min-h-[44px] lg:min-h-[36px] flex items-center gap-1 px-3 text-sm bg-status-confirmed-bg text-status-confirmed-fg hover:opacity-90 disabled:opacity-50 rounded-lg transition font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            <CheckCircle size={14} /> Confirmar
+            <CheckCircle size={14} aria-hidden="true" /> Confirmar
           </button>
         )}
         {(entrada.estado === "Esperando" || entrada.estado === "Notificado") && (
           <button
-            onClick={() => onCambiarEstado("Expirado")}
-            title="Marcar como expirado"
-            className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition"
+            type="button"
+            onClick={onExpirar}
+            disabled={pendiente}
+            aria-label={`Marcar a ${entrada.nombreCliente} como expirado`}
+            className="min-h-[44px] lg:min-h-[36px] flex items-center gap-1 px-3 text-sm border border-border text-foreground hover:bg-muted disabled:opacity-50 rounded-lg transition font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            <Ban size={15} />
+            <Ban size={14} aria-hidden="true" /> Expirar
           </button>
         )}
         <button
+          type="button"
           onClick={onEliminar}
+          aria-label={`Eliminar a ${entrada.nombreCliente} de la lista`}
           title="Eliminar"
-          className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-lg transition"
+          className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] lg:min-h-[36px] lg:min-w-[36px] text-gray-500 dark:text-gray-400 hover:text-red-700 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          <Trash2 size={15} />
+          <Trash2 size={15} aria-hidden="true" />
         </button>
       </div>
     </div>

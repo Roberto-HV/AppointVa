@@ -52,3 +52,61 @@ export function inicioAnio(base: Date = new Date()): string {
 export function finAnio(base: Date = new Date()): string {
   return fechaLocal(new Date(base.getFullYear(), 11, 31));
 }
+
+/**
+ * Marca como UTC un ISO que llega sin zona ("2026-10-21T15:00:00"). El backend
+ * guarda los bloqueos en UTC; sin la "Z" el navegador lo leería como hora local.
+ */
+export function comoUtc(iso: string): string {
+  return /[zZ]$|[+-]\d{2}:?\d{2}$/.test(iso) ? iso : `${iso}Z`;
+}
+
+/** Día local (a medianoche) de un instante ISO: para exportar "última visita" como fecha sin hora. */
+export function soloFecha(iso: string): Date {
+  const d = new Date(iso);
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+/**
+ * "YYYY-MM-DD" → Date local. `new Date("2026-10-01")` lo lee como medianoche
+ * UTC, que en México es el día anterior a las 18:00.
+ */
+export function deFechaLocal(ymd: string): Date {
+  const [anio, mes, dia] = ymd.split("-").map(Number);
+  return new Date(anio, mes - 1, dia);
+}
+
+/** "2026-10-01" → "01 de octubre de 2026", sin desfase por zona horaria. */
+export function fechaLargaLocal(ymd: string): string {
+  return deFechaLocal(ymd).toLocaleDateString("es-MX", { day: "2-digit", month: "long", year: "numeric" });
+}
+
+/** Desfase (ms) de la zona `zona` respecto a UTC en el instante `instante`. */
+function desfaseZona(instante: number, zona: string): number {
+  const partes = new Intl.DateTimeFormat("en-US", {
+    timeZone: zona, hourCycle: "h23",
+    year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit",
+  }).formatToParts(new Date(instante));
+  const v = (t: string) => Number(partes.find((p) => p.type === t)?.value);
+  return Date.UTC(v("year"), v("month") - 1, v("day"), v("hour"), v("minute"), v("second")) - instante;
+}
+
+/**
+ * Último segundo del día "YYYY-MM-DD" en la zona horaria del negocio, como ISO
+ * UTC. Un cupón "válido hasta el 31" mandado como fecha sola vencía a las 00:00
+ * UTC, es decir, la tarde del 30 en México. Sin zona válida usa la del navegador.
+ */
+export function finDelDiaEnZona(ymd: string, zona?: string | null): string {
+  const [anio, mes, dia] = ymd.split("-").map(Number);
+  const pared = Date.UTC(anio, mes - 1, dia, 23, 59, 59);
+  try {
+    if (!zona) throw new Error("sin zona");
+    // Dos pasadas: la primera estima con el desfase de la hora "de pared" y la
+    // segunda corrige si ese día hay cambio de horario.
+    let instante = pared - desfaseZona(pared, zona);
+    instante = pared - desfaseZona(instante, zona);
+    return new Date(instante).toISOString();
+  } catch {
+    return new Date(anio, mes - 1, dia, 23, 59, 59).toISOString();
+  }
+}

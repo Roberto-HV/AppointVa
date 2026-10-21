@@ -7,6 +7,7 @@ import { useSectorTerms } from "../../hooks/useSectorTerms";
 import Modal from "../../components/ui/Modal";
 import EstadoBadge from "../../components/ui/EstadoBadge";
 import { exportarExcel } from "../../utils/exportarExcel";
+import { soloFecha } from "../../utils/fechas";
 import type { ClienteDto } from "../../types";
 import { formatPrecio, formatFecha, formatFechaCorta, formatFechaHora } from "../../utils/formatters";
 import Pagination from "../../components/ui/Pagination";
@@ -163,10 +164,11 @@ export default function ClientesPage() {
       c.email ?? "",
       c.totalCitas,
       c.cantidadInasistencias,
-      c.ultimaCitaEn ? new Date(c.ultimaCitaEn).toLocaleDateString("es-MX") : "",
-      new Date(c.fechaCreacion).toLocaleDateString("es-MX"),
+      c.ultimaCitaEn ? soloFecha(c.ultimaCitaEn) : "",
+      soloFecha(c.fechaCreacion),
     ]);
-    exportarExcel(enc, [filas], "clientes", terms.clientes);
+    exportarExcel(enc, [filas], "clientes", terms.clientes)
+      .catch(() => toast("No se pudo generar el archivo de Excel. Intenta de nuevo.", "error"));
   };
 
   return (

@@ -6,9 +6,25 @@ import { Upload, Trash2, X, ImageIcon } from "lucide-react";
 import BotonAccion from "../../components/ui/BotonAccion";
 import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
 import ConfirmarAccion from "../../components/ui/ConfirmarAccion";
+import ProgresoSubida from "../../components/ui/ProgresoSubida";
+import ErrorCarga from "../../components/ui/ErrorCarga";
 import { mensajeError } from "../../utils/errores";
+import { ACCEPT_IMAGEN, TEXTO_FORMATOS_IMAGEN, validarImagen } from "../../lib/imagenes";
 
 const MAX_FOTOS = 20;
+
+/** Una subida en curso: se pinta como una miniatura con su avance. */
+interface Subida {
+  id: string;
+  nombre: string;
+  progreso: number;
+}
+
+/** Cuántas fotos de una selección entran sin pasar el límite, y cuántas sobran. */
+function repartirPorLimite<T>(archivos: T[], ocupadas: number, maximo = MAX_FOTOS) {
+  const libres = Math.max(0, maximo - ocupadas);
+  return { aceptados: archivos.slice(0, libres), descartados: Math.max(0, archivos.length - libres) };
+}
 
 export default function GaleriaPage() {
   const qc = useQueryClient();
@@ -17,19 +33,31 @@ export default function GaleriaPage() {
   const [lightbox, setLightbox] = useState<string | null>(null);
   const [eliminando, setEliminando] = useState<string | null>(null);
 
-  const { data: imagenes = [], isLoading } = useQuery({
+  const { data: imagenes = [], isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ["galeria"],
     queryFn: negociosApi.obtenerGaleria,
   });
 
-  const { mutate: subir, isPending: subiendo } = useMutation({
-    mutationFn: (archivo: File) => negociosApi.subirImagenGaleria(archivo),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["galeria"] });
-      toast("Foto agregada a la galería");
-    },
-    onError: (err: unknown) => toast(mensajeError(err, "No se pudo subir la imagen"), "error"),
-  });
+  // Una entrada por archivo: cada uno muestra su propio avance, y "Subiendo…"
+  // dura hasta que termina el último, no el primero.
+  const [subidas, setSubidas] = useState<Subida[]>([]);
+  const [arrastrando, setArrastrando] = useState(false);
+  const subiendo = subidas.length > 0;
+
+  const subir = async (archivo: File) => {
+    const id = crypto.randomUUID();
+    setSubidas((s) => [...s, { id, nombre: archivo.name, progreso: 0 }]);
+    try {
+      await negociosApi.subirImagenGaleria(archivo, undefined, (progreso) =>
+        setSubidas((s) => s.map((x) => (x.id === id ? { ...x, progreso } : x))));
+      await qc.invalidateQueries({ queryKey: ["galeria"] });
+      toast(`"${archivo.name}" se agregó a la galería`);
+    } catch (err) {
+      toast(mensajeError(err, `No se pudo subir "${archivo.name}". Intenta de nuevo.`), "error");
+    } finally {
+      setSubidas((s) => s.filter((x) => x.id !== id));
+    }
+  };
 
   const { mutate: eliminar, isPending: eliminandoFoto } = useMutation({
     mutationFn: (id: string) => negociosApi.eliminarImagenGaleria(id),
@@ -41,27 +69,38 @@ export default function GaleriaPage() {
     onError: () => toast("No se pudo eliminar la foto. Intenta de nuevo.", "error"),
   });
 
-  const MAX_MB = 10;
   const handleArchivos = (files: FileList | null) => {
     if (!files) return;
-    const restantes = MAX_FOTOS - imagenes.length;
-    Array.from(files).slice(0, restantes).forEach((f) => {
-      if (!f.type.startsWith("image/")) {
-        toast(`"${f.name}" no es una imagen válida`, "error");
-        return;
-      }
-      if (f.size > MAX_MB * 1024 * 1024) {
-        toast(`"${f.name}" supera el límite de ${MAX_MB} MB`, "error");
-        return;
-      }
-      subir(f);
-    });
+    const validos: File[] = [];
+    for (const f of Array.from(files)) {
+      const error = validarImagen(f);
+      if (error) toast(error, "error");
+      else validos.push(f);
+    }
+    // Las que no caben se cuentan en voz alta: antes se descartaban en silencio.
+    const { aceptados, descartados } = repartirPorLimite(validos, imagenes.length + subidas.length);
+    if (descartados > 0) {
+      toast(
+        `${descartados} ${descartados === 1 ? "foto no se agregó" : "fotos no se agregaron"}: el límite es de ${MAX_FOTOS} fotos.`,
+        "error",
+      );
+    }
+    aceptados.forEach((f) => { void subir(f); });
   };
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    handleArchivos(e.dataTransfer.files);
+  const zonaArrastre = {
+    onDragEnter: (e: React.DragEvent) => { e.preventDefault(); setArrastrando(true); },
+    onDragOver: (e: React.DragEvent) => { e.preventDefault(); setArrastrando(true); },
+    onDragLeave: (e: React.DragEvent) => {
+      if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setArrastrando(false);
+    },
+    onDrop: (e: React.DragEvent) => {
+      e.preventDefault();
+      setArrastrando(false);
+      handleArchivos(e.dataTransfer.files);
+    },
   };
+  const lleno = imagenes.length + subidas.length >= MAX_FOTOS;
 
   return (
     <div className="p-4 sm:p-8">
@@ -75,10 +114,10 @@ export default function GaleriaPage() {
           </>
         }
         acciones={
-          imagenes.length < MAX_FOTOS && (
-            <BotonAccion onClick={() => inputRef.current?.click()} disabled={subiendo}>
+          !lleno && (
+            <BotonAccion onClick={() => inputRef.current?.click()}>
               <Upload size={15} />
-              {subiendo ? "Subiendo..." : "Agregar fotos"}
+              {subiendo ? `Subiendo ${subidas.length}…` : "Agregar fotos"}
             </BotonAccion>
           )
         }
@@ -86,24 +125,32 @@ export default function GaleriaPage() {
       <input
         ref={inputRef}
         type="file"
-        accept="image/*"
+        accept={ACCEPT_IMAGEN}
         multiple
         className="hidden"
         onChange={(e) => { handleArchivos(e.target.files); e.target.value = ""; }}
       />
 
-      {/* Drop zone (solo cuando no hay fotos) */}
-      {!isLoading && imagenes.length === 0 && (
-        <div
-          onDrop={handleDrop}
-          onDragOver={(e) => e.preventDefault()}
+      {/* Drop zone (solo cuando no hay fotos ni subidas) */}
+      {!isLoading && !isError && imagenes.length === 0 && subidas.length === 0 && (
+        <button
+          type="button"
+          {...zonaArrastre}
           onClick={() => inputRef.current?.click()}
-          className="border-2 border-dashed border-gray-200 dark:border-slate-600 rounded-2xl p-16 flex flex-col items-center gap-3 text-gray-400 dark:text-gray-500 hover:border-gray-300 hover:text-gray-500 dark:hover:text-gray-400 cursor-pointer transition"
+          data-arrastrando={arrastrando || undefined}
+          className={`w-full border-2 border-dashed rounded-2xl p-16 flex flex-col items-center gap-3 cursor-pointer transition
+            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+              arrastrando
+                ? "border-primary bg-muted text-foreground"
+                : "border-gray-200 dark:border-slate-600 text-gray-500 dark:text-gray-400 hover:border-gray-300 hover:text-gray-600 dark:hover:text-gray-300"
+            }`}
         >
-          <ImageIcon size={40} strokeWidth={1.2} />
-          <p className="text-sm font-medium">Arrastra fotos aquí o haz clic para seleccionar</p>
-          <p className="text-xs">JPG, PNG o WebP · Máximo {MAX_FOTOS} fotos</p>
-        </div>
+          <ImageIcon size={40} strokeWidth={1.2} aria-hidden="true" />
+          <span className="text-sm font-medium">
+            {arrastrando ? "Suelta las fotos para subirlas" : "Arrastra fotos aquí o haz clic para seleccionar"}
+          </span>
+          <span className="text-xs">{`${TEXTO_FORMATOS_IMAGEN} · Máximo ${MAX_FOTOS} fotos`}</span>
+        </button>
       )}
 
       {/* Grid de fotos */}
@@ -113,14 +160,17 @@ export default function GaleriaPage() {
             <div key={i} className="aspect-square rounded-xl bg-gray-100 dark:bg-slate-700 animate-pulse" />
           ))}
         </div>
-      ) : imagenes.length > 0 && (
+      ) : isError ? (
+        <ErrorCarga mensaje="No se pudo cargar la galería." onReintentar={() => refetch()} reintentando={isFetching} />
+      ) : (imagenes.length > 0 || subidas.length > 0) && (
         <>
           <div
             // Más columnas al ensanchar: el grid ya no está acotado a 4xl, y con
             // cuatro columnas fijas cada miniatura pasaría de 350px de lado.
-            className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-3"
-            onDrop={handleDrop}
-            onDragOver={(e) => e.preventDefault()}
+            className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-3 rounded-xl transition ${
+              arrastrando ? "ring-2 ring-primary ring-offset-4 ring-offset-background" : ""
+            }`}
+            {...zonaArrastre}
           >
             {imagenes.map((img, i) => (
               <div key={img.id} className="group relative aspect-square rounded-xl overflow-hidden bg-gray-100 dark:bg-slate-700">
@@ -152,21 +202,34 @@ export default function GaleriaPage() {
               </div>
             ))}
 
-            {/* Celda de agregar más */}
-            {imagenes.length < MAX_FOTOS && (
-              <button
-                onClick={() => inputRef.current?.click()}
-                disabled={subiendo}
-                className="aspect-square rounded-xl border-2 border-dashed border-gray-200 dark:border-slate-600 hover:border-gray-300 flex flex-col items-center justify-center gap-2 text-gray-400 dark:text-gray-500 hover:text-gray-500 dark:hover:text-gray-400 transition disabled:opacity-40"
+            {/* Una miniatura por subida en curso, con su propio avance. */}
+            {subidas.map((s) => (
+              <div
+                key={s.id}
+                className="aspect-square rounded-xl bg-muted border border-border flex flex-col items-center justify-center gap-2 p-3 text-center"
               >
-                <Upload size={22} strokeWidth={1.5} />
+                <Upload size={20} className="text-muted-foreground" aria-hidden="true" />
+                <span className="text-xs text-foreground truncate max-w-full" title={s.nombre}>{s.nombre}</span>
+                <ProgresoSubida porcentaje={s.progreso} etiqueta={`Subiendo ${s.nombre}`} />
+              </div>
+            ))}
+
+            {/* Celda de agregar más */}
+            {!lleno && (
+              <button
+                type="button"
+                onClick={() => inputRef.current?.click()}
+                className="aspect-square rounded-xl border-2 border-dashed border-gray-200 dark:border-slate-600 hover:border-gray-300 flex flex-col items-center justify-center gap-2 text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition
+                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <Upload size={22} strokeWidth={1.5} aria-hidden="true" />
                 <span className="text-xs font-medium">Agregar</span>
               </button>
             )}
           </div>
 
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-3">
-            Arrastra imágenes al grid para agregar más · Las fotos se muestran en tu página de reservas en el mismo orden.
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
+            {`Arrastra imágenes al grid para agregar más · ${TEXTO_FORMATOS_IMAGEN} · Las fotos se muestran en tu página de reservas en el mismo orden.`}
           </p>
         </>
       )}

@@ -18,6 +18,8 @@ vi.mock("../../api/servicios", () => ({
     actualizar: vi.fn(),
     eliminar: vi.fn(),
     subirImagen: vi.fn(),
+    toggleActivo: vi.fn(),
+    toggleDestacado: vi.fn(),
   },
   categoriasApi: {
     obtenerTodas: vi.fn(),
@@ -157,8 +159,8 @@ describe("ServiciosPage — lista de servicios", () => {
     vi.mocked(serviciosApi.obtenerTodos).mockResolvedValue([mockServicio]);
     renderConQuery();
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: "Editar" })).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: "Eliminar" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Editar Corte de cabello" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Eliminar Corte de cabello" })).toBeInTheDocument();
     });
   });
 });
@@ -200,13 +202,13 @@ describe("ServiciosPage — eliminar servicio", () => {
     vi.mocked(serviciosApi.eliminar).mockResolvedValue();
     renderConQuery();
     await waitFor(() =>
-      expect(screen.getByRole("button", { name: "Eliminar" })).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: "Eliminar Corte de cabello" })).toBeInTheDocument()
     );
-    fireEvent.click(screen.getByRole("button", { name: "Eliminar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Eliminar Corte de cabello" }));
     await waitFor(() =>
       expect(screen.getByRole("dialog", { name: "Eliminar servicio" })).toBeInTheDocument()
     );
-    fireEvent.click(screen.getByRole("button", { name: "Sí, eliminar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Eliminar servicio" }));
     await waitFor(() =>
       expect(vi.mocked(serviciosApi.eliminar)).toHaveBeenCalledWith("svc-1")
     );
@@ -299,5 +301,59 @@ describe("ServiciosPage — imagen del servicio (OM-07)", () => {
     vi.mocked(serviciosApi.obtenerTodos).mockResolvedValue([mockServicio]);
     renderConQuery();
     expect(await screen.findByRole("button", { name: "Cambiar imagen de Corte de cabello" })).toBeInTheDocument();
+  });
+});
+
+describe("ServiciosPage — visibilidad y destacado (OM-30)", () => {
+  it("la visibilidad es un interruptor con nombre de acción y el destacado anuncia su estado", async () => {
+    vi.mocked(serviciosApi.obtenerTodos).mockResolvedValue([mockServicio]);
+    renderConQuery();
+    const sw = await screen.findByRole("switch", { name: "Visible en reservas: Corte de cabello" });
+    expect(sw).toHaveAttribute("aria-checked", String(mockServicio.activo));
+    expect(screen.getByRole("button", { name: "Destacado: Corte de cabello" })).toHaveAttribute(
+      "aria-pressed", String(!!mockServicio.destacado),
+    );
+  });
+
+  it("una petición en curso solo bloquea la fila de ese servicio", async () => {
+    const otro = { ...mockServicio, id: "svc-2", nombre: "Barba" };
+    vi.mocked(serviciosApi.obtenerTodos).mockResolvedValue([mockServicio, otro]);
+    vi.mocked(serviciosApi.toggleDestacado).mockReturnValue(new Promise(() => {}));
+    renderConQuery();
+    fireEvent.click(await screen.findByRole("button", { name: "Destacado: Corte de cabello" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Destacado: Corte de cabello" })).toBeDisabled());
+    expect(screen.getByRole("button", { name: "Destacado: Barba" })).toBeEnabled();
+  });
+
+  it("al eliminar sugiere ocultarlo como alternativa reversible (OM-17)", async () => {
+    vi.mocked(serviciosApi.obtenerTodos).mockResolvedValue([{ ...mockServicio, activo: true }]);
+    renderConQuery();
+    fireEvent.click(await screen.findByRole("button", { name: "Eliminar Corte de cabello" }));
+    expect(await screen.findByText(/apaga "Visible en reservas"/)).toBeInTheDocument();
+  });
+});
+
+describe("ServiciosPage — imagen del servicio (OM-16)", () => {
+  it("no sube un archivo que excede el límite", async () => {
+    vi.mocked(serviciosApi.obtenerTodos).mockResolvedValue([mockServicio]);
+    renderConQuery();
+    fireEvent.click(await screen.findByRole("button", { name: "Cambiar imagen de Corte de cabello" }));
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const grande = new File(["x"], "g.jpg", { type: "image/jpeg" });
+    Object.defineProperty(grande, "size", { value: 30 * 1024 * 1024 });
+    fireEvent.change(input, { target: { files: [grande] } });
+    expect(serviciosApi.subirImagen).not.toHaveBeenCalled();
+  });
+});
+
+describe("ServiciosPage — error de carga", () => {
+  it("un fallo no se lee como catálogo vacío y se puede reintentar", async () => {
+    vi.mocked(serviciosApi.obtenerTodos).mockRejectedValueOnce(new Error("red"));
+    renderConQuery();
+    expect(await screen.findByText("No se pudieron cargar los servicios.")).toBeInTheDocument();
+    expect(screen.queryByText(/Aún no tienes/)).toBeNull();
+    vi.mocked(serviciosApi.obtenerTodos).mockResolvedValue([mockServicio]);
+    fireEvent.click(screen.getByRole("button", { name: "Reintentar" }));
+    expect(await screen.findByText("Corte de cabello")).toBeInTheDocument();
   });
 });

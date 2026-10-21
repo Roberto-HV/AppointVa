@@ -12,10 +12,9 @@ import { citasApi } from "../../api/citas";
 import { DatePicker, TimePicker, citasABusySlots } from "../../components/ui/DateTimePicker";
 import type { BloqueoDto, HorarioDiaDto } from "../../types";
 import { mensajeError } from "../../utils/errores";
+import { comoUtc } from "../../utils/fechas";
 import { Link } from "react-router-dom";
 
-/** Marca como UTC una fecha que llega sin zona (el backend guarda los bloqueos en UTC). */
-const comoUtc = (iso: string) => (/[zZ]$|[+-]\d{2}:?\d{2}$/.test(iso) ? iso : `${iso}Z`);
 import PasswordStrengthBar from "../../components/PasswordStrengthBar";
 import ReglasContrasena from "../../components/ReglasContrasena";
 import { esquemaContrasena } from "../../utils/contrasena";

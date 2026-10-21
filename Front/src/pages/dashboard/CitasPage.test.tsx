@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor, fireEvent, within, act } from "@testing-library/react";
 import { MemoryRouter, useLocation } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { hoy } from "../../utils/fechas";
 import CitasPage from "./CitasPage";
 import type { CitaDto } from "../../types";
 
@@ -65,7 +66,7 @@ vi.mock("../../api/axios", () => ({
 }));
 
 vi.mock("../../utils/exportarExcel", () => ({
-  exportarExcel: vi.fn(),
+  exportarExcel: vi.fn(() => Promise.resolve()),
 }));
 
 vi.mock("../../components/ui/DateTimePicker", () => ({
@@ -749,6 +750,24 @@ describe("CitasPage — filtros en la URL (DC-16)", () => {
     fireEvent.change(await screen.findByRole("combobox", { name: "Estado" }), { target: { value: "Confirmada" } });
     await waitFor(() => expect(screen.getByTestId("ubicacion")).toHaveTextContent("estado=Confirmada"));
     expect(screen.getByTestId("ubicacion")).not.toHaveTextContent("pagina");
+  });
+
+  it("descarta fechas, página y empleado inválidos y los quita de la URL", async () => {
+    vi.mocked(citasApi.obtenerTodas).mockResolvedValue(vacio);
+    renderConQuery("/dashboard/citas?desde=ayer&hasta=2026-02-31&pagina=1e308&empleadoId=abc&estado=Pendiente");
+    await waitFor(() =>
+      expect(citasApi.obtenerTodas).toHaveBeenCalledWith(
+        expect.objectContaining({ desde: hoy(), hasta: hoy(), pagina: 1, empleadoId: undefined }),
+      ),
+    );
+    await waitFor(() => expect(screen.getByTestId("ubicacion")).toHaveTextContent(/^\?estado=Pendiente$/));
+  });
+
+  it("una página mayor que el total se lleva a la última", async () => {
+    vi.mocked(citasApi.obtenerTodas).mockResolvedValue({ datos: [makeCita()], total: 20, pagina: 40, tamano: 15 });
+    renderConQuery("/dashboard/citas?pagina=40");
+    await waitFor(() => expect(screen.getByTestId("ubicacion")).toHaveTextContent("pagina=2"));
+    await waitFor(() => expect(citasApi.obtenerTodas).toHaveBeenCalledWith(expect.objectContaining({ pagina: 2 })));
   });
 
   it("ignora un estado desconocido en la URL", async () => {

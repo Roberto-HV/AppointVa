@@ -11,8 +11,10 @@ import { negociosApi } from "../../api/negocios";
 import { citasApi } from "../../api/citas";
 import Modal from "../../components/ui/Modal";
 import ConfirmarAccion from "../../components/ui/ConfirmarAccion";
-import Switch from "../../components/ui/Switch";
-import { DatePicker, TimePicker, citasABusySlots, HORAS } from "../../components/ui/DateTimePicker";
+import EditorHorario from "../../components/dashboard/EditorHorario";
+import { errorDelDia } from "../../lib/horario";
+import { claseCampo, CLASE_ERROR_CAMPO } from "../../lib/clasesCampo";
+import { DatePicker, TimePicker, citasABusySlots } from "../../components/ui/DateTimePicker";
 import { Skeleton, SkeletonCards } from "../../components/ui/Skeleton";
 import EmptyState from "../../components/ui/EmptyState";
 import { FiltroBarra } from "../../components/ui/filtros";
@@ -25,20 +27,10 @@ import { usePaginacionLocal } from "../../hooks/usePaginacionLocal";
 import { useConfirmarDescarte } from "../../hooks/useCambiosSinGuardar";
 import { mensajeError } from "../../utils/errores";
 import { hoy } from "../../utils/fechas";
+import { useSubirImagen } from "../../hooks/useSubirImagen";
+import { ACCEPT_IMAGEN } from "../../lib/imagenes";
+import ProgresoSubida from "../../components/ui/ProgresoSubida";
 import type { EmpleadoDto, HorarioDiaDto } from "../../types";
-
-const DIAS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
-
-// Slots fuera del horario del negocio para ese día (se ocultan en el picker)
-function busySlotsNegocio(intervalos: { horaInicio: string; horaFin: string }[], forEnd = false): string[] {
-  if (intervalos.length === 0) return [];
-  return HORAS.filter(slot =>
-    !intervalos.some(iv =>
-      forEnd ? (slot > iv.horaInicio && slot <= iv.horaFin)
-             : (slot >= iv.horaInicio && slot < iv.horaFin)
-    )
-  );
-}
 
 const HORARIO_BASE: HorarioDiaDto[] = Array.from({ length: 7 }, (_, i) => ({
   diaSemana: i,
@@ -270,10 +262,10 @@ export default function EmpleadosPage() {
     setModalBloqueo(true);
   };
 
-  const { mutate: subirFoto } = useMutation({
-    mutationFn: ({ id, file }: { id: string; file: File }) => empleadosApi.subirFoto(id, file),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["empleados"] }); toast("Foto actualizada"); },
-    onError: () => toast("No se pudo subir la foto. Intenta de nuevo.", "error"),
+  const fotoEmpleado = useSubirImagen({
+    subir: (archivo, id, onProgreso) => empleadosApi.subirFoto(id!, archivo, onProgreso),
+    onExito: () => { qc.invalidateQueries({ queryKey: ["empleados"] }); toast("Foto actualizada"); },
+    mensajeFallo: "No se pudo subir la foto. Intenta de nuevo.",
   });
 
   const { mutate: guardarEmpleado, isPending: guardando } = useMutation({
@@ -291,9 +283,13 @@ export default function EmpleadosPage() {
     },
   });
 
-  const { mutate: eliminar } = useMutation({
+  const { mutate: eliminar, isPending: eliminandoEmpleado } = useMutation({
     mutationFn: (id: string) => empleadosApi.eliminar(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["empleados"] }); toast(`${terms.empleado} eliminado`); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["empleados"] });
+      setEmpleadoEliminar(null);
+      toast(`${terms.empleado} eliminado`);
+    },
     onError: () => toast(`No se pudo eliminar el ${terms.empleado.toLowerCase()}. Intenta de nuevo.`, "error"),
   });
 
@@ -346,62 +342,6 @@ export default function EmpleadosPage() {
       "servicioIds",
       actuales.includes(id) ? actuales.filter((s) => s !== id) : [...actuales, id]
     );
-  };
-
-  const toggleDiaEmpleado = (idx: number) => {
-    setHorarioLocal(prev => prev.map((h, i) =>
-      i !== idx ? h : {
-        ...h,
-        activo: !h.activo,
-        intervalos: !h.activo && h.intervalos.length === 0
-          ? [{ horaInicio: "09:00", horaFin: "19:00" }]
-          : h.intervalos
-      }
-    ));
-  };
-
-  const actualizarIntervaloEmpleado = (
-    dayIdx: number,
-    ivIdx: number,
-    campo: "horaInicio" | "horaFin",
-    valor: string
-  ) => {
-    setHorarioLocal(prev => prev.map((h, i) =>
-      i !== dayIdx ? h : {
-        ...h,
-        intervalos: h.intervalos.map((iv, j) =>
-          j === ivIdx ? { ...iv, [campo]: valor } : iv
-        )
-      }
-    ));
-  };
-
-  const intervaloInvalidoEmpleado = (h: HorarioDiaDto): string | null => {
-    if (!h.activo) return null;
-    for (const iv of h.intervalos) {
-      if (!iv.horaInicio || !iv.horaFin || iv.horaInicio >= iv.horaFin) return "La hora de fin debe ser mayor a la de inicio.";
-    }
-    for (let i = 0; i < h.intervalos.length - 1; i++) {
-      if (h.intervalos[i].horaFin > h.intervalos[i + 1].horaInicio) return "Un intervalo empieza antes de que termine el anterior.";
-    }
-    return null;
-  };
-
-  const agregarIntervaloEmpleado = (dayIdx: number) => {
-    setHorarioLocal(prev => prev.map((h, i) => {
-      if (i !== dayIdx) return h;
-      const ultimo = h.intervalos[h.intervalos.length - 1];
-      const nuevaHora = ultimo?.horaFin ?? "09:00";
-      const [hh, mm] = nuevaHora.split(":").map(Number);
-      const horaFin = `${String((hh + 1) % 24).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
-      return { ...h, intervalos: [...h.intervalos, { horaInicio: nuevaHora, horaFin }] };
-    }));
-  };
-
-  const eliminarIntervaloEmpleado = (dayIdx: number, ivIdx: number) => {
-    setHorarioLocal(prev => prev.map((h, i) =>
-      i !== dayIdx ? h : { ...h, intervalos: h.intervalos.filter((_, j) => j !== ivIdx) }
-    ));
   };
 
   function formatBloqueo(iso: string) {
@@ -482,24 +422,30 @@ export default function EmpleadosPage() {
             >
               {/* Un botón, no un div: se enfoca con Tab, y la insignia de la cámara
                   está siempre a la vista, también en pantallas táctiles sin hover. */}
-              <button
-                type="button"
-                className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center shrink-0 relative group dark:bg-slate-700
-                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                onClick={() => { empleadoFotoIdRef.current = emp.id; fotoInputRef.current?.click(); }}
-                aria-label={`Cambiar foto de ${emp.nombre}`}
-                title="Cambiar foto"
-              >
-                <span className="w-full h-full rounded-full overflow-hidden flex items-center justify-center">
-                  {emp.fotoUrl
-                    ? <img src={emp.fotoUrl} alt="" className="w-full h-full object-cover" />
-                    : <span className="text-xl font-bold text-gray-400">{emp.nombre.charAt(0)}</span>
-                  }
-                </span>
-                <span aria-hidden="true" className="absolute -bottom-0.5 -right-0.5 w-6 h-6 rounded-full bg-card border border-border text-muted-foreground flex items-center justify-center shadow-sm group-hover:text-foreground transition">
-                  <Camera size={13} />
-                </span>
-              </button>
+              <div className="shrink-0 w-14 flex flex-col items-center gap-1.5">
+                <button
+                  type="button"
+                  className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center shrink-0 relative group dark:bg-slate-700 disabled:opacity-60
+                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  onClick={() => { empleadoFotoIdRef.current = emp.id; fotoInputRef.current?.click(); }}
+                  disabled={fotoEmpleado.destino === emp.id}
+                  aria-label={`Cambiar foto de ${emp.nombre}`}
+                  title="Cambiar foto"
+                >
+                  <span className="w-full h-full rounded-full overflow-hidden flex items-center justify-center">
+                    {emp.fotoUrl
+                      ? <img src={emp.fotoUrl} alt="" className="w-full h-full object-cover" />
+                      : <span className="text-xl font-bold text-gray-400">{emp.nombre.charAt(0)}</span>
+                    }
+                  </span>
+                  <span aria-hidden="true" className="absolute -bottom-0.5 -right-0.5 w-6 h-6 rounded-full bg-card border border-border text-muted-foreground flex items-center justify-center shadow-sm group-hover:text-foreground transition">
+                    <Camera size={13} />
+                  </span>
+                </button>
+                {fotoEmpleado.destino === emp.id && (
+                  <ProgresoSubida porcentaje={fotoEmpleado.progreso ?? 0} etiqueta={`Subiendo foto de ${emp.nombre}`} />
+                )}
+              </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-0.5">
                   <p className="font-semibold text-gray-800 truncate dark:text-gray-200">{emp.nombre}</p>
@@ -582,16 +528,19 @@ export default function EmpleadosPage() {
             const err = formEmpleado.formState.errors[campo];
             return (
               <div key={campo}>
-                <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">{labels[campo]}</label>
+                <label htmlFor={`${idDia}-emp-${campo}`} className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">{labels[campo]}</label>
                 {campo === "biografia" ? (
-                  <textarea rows={2} {...formEmpleado.register(campo)}
-                    className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700 resize-none dark:bg-slate-800 dark:text-gray-100 dark:border-slate-600" />
+                  <textarea id={`${idDia}-emp-${campo}`} rows={2} {...formEmpleado.register(campo)}
+                    aria-invalid={!!err || undefined}
+                    aria-describedby={err ? `${idDia}-emp-${campo}-error` : undefined}
+                    className={claseCampo(!!err, "resize-none")} />
                 ) : (
-                  <input type={campo === "email" ? "email" : "text"} {...formEmpleado.register(campo)}
-                    className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100 dark:border-slate-600
-                      ${err ? "border-red-400 bg-red-50" : "border-gray-200"}`} />
+                  <input id={`${idDia}-emp-${campo}`} type={campo === "email" ? "email" : "text"} {...formEmpleado.register(campo)}
+                    aria-invalid={!!err || undefined}
+                    aria-describedby={err ? `${idDia}-emp-${campo}-error` : undefined}
+                    className={claseCampo(!!err)} />
                 )}
-                {err && <p className="text-red-500 text-xs mt-1">{err.message}</p>}
+                {err && <p id={`${idDia}-emp-${campo}-error`} className={CLASE_ERROR_CAMPO}>{err.message}</p>}
               </div>
             );
           })}
@@ -648,103 +597,23 @@ export default function EmpleadosPage() {
             <div aria-busy="true" aria-label="Cargando horario" className="space-y-3">
               {Array.from({ length: 7 }).map((_, i) => <Skeleton key={i} className="h-12 rounded-lg" />)}
             </div>
-          ) : horarioLocal.map((h, i) => (
-            <div
-              key={h.diaSemana}
-              className={`rounded-lg border p-3 transition ${
-                h.activo
-                  ? "bg-white border-gray-200 dark:bg-slate-800 dark:border-slate-600"
-                  : "bg-gray-50 border-gray-100 dark:bg-slate-700 dark:border-slate-700"
-              }`}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-1 -ml-2">
-                  <Switch
-                    activo={h.activo}
-                    onCambiar={() => toggleDiaEmpleado(i)}
-                    idEtiqueta={`${idDia}-dia-${h.diaSemana}`}
-                  />
-                  {/* El nombre del día también cambia el interruptor, como hacía la etiqueta. */}
-                  <span
-                    id={`${idDia}-dia-${h.diaSemana}`}
-                    onClick={() => toggleDiaEmpleado(i)}
-                    className={`text-sm font-medium cursor-pointer select-none ${
-                      h.activo ? "text-gray-800 dark:text-gray-200" : "text-gray-500 dark:text-gray-400"
-                    }`}
-                  >
-                    {DIAS[h.diaSemana]}
-                  </span>
-                </div>
-                {!h.activo && (
-                  <span className="text-xs text-gray-400 dark:text-gray-500">Descanso</span>
-                )}
-              </div>
-
-              {h.activo && (
-                <div className="ml-6 space-y-1.5">
-                  {h.intervalos.map((iv, idx) => {
-                    const negDia = horariosNegocio.find(d => d.diaSemana === h.diaSemana);
-                    const negIntervalos = (negDia?.activo ? negDia.intervalos : []) ?? [];
-                    return (
-                    <div key={idx} className="flex items-center gap-1.5">
-                      <span className="text-[11px] text-gray-500 dark:text-gray-400">De</span>
-                      <TimePicker
-                        compact
-                        value={iv.horaInicio}
-                        onChange={(v) => actualizarIntervaloEmpleado(i, idx, "horaInicio", v)}
-                        busySlots={busySlotsNegocio(negIntervalos, false)}
-                      />
-                      <span className="text-[11px] text-gray-500 dark:text-gray-400">a</span>
-                      <TimePicker
-                        compact
-                        value={iv.horaFin}
-                        onChange={(v) => actualizarIntervaloEmpleado(i, idx, "horaFin", v)}
-                        minTime={iv.horaInicio}
-                        busySlots={busySlotsNegocio(negIntervalos, true)}
-                      />
-                      {h.intervalos.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => eliminarIntervaloEmpleado(i, idx)}
-                          className="w-5 h-5 flex items-center justify-center rounded-full text-gray-400 dark:text-gray-300 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/30 transition text-[11px]"
-                          aria-label="Eliminar intervalo"
-                        >
-                          ✕
-                        </button>
-                      )}
-                    </div>
-                  );
-                  })}
-                  {(() => {
-                    const negDia = horariosNegocio.find(d => d.diaSemana === h.diaSemana);
-                    if (!negDia || !negDia.activo || negDia.intervalos.length === 0) return null;
-                    return (
-                      <p className="text-[10px] text-slate-400 dark:text-slate-500">
-                        Negocio: {negDia.intervalos.map(iv => {
-                          const fmt = (t: string) => { const [h, m] = t.split(':').map(Number); const suffix = h < 12 ? 'a.m.' : 'p.m.'; const h12 = h % 12 || 12; return `${h12}:${String(m).padStart(2,'0')} ${suffix}`; };
-                          return `${fmt(iv.horaInicio)}–${fmt(iv.horaFin)}`;
-                        }).join(' · ')}
-                      </p>
-                    );
-                  })()}
-                  {intervaloInvalidoEmpleado(h) && (
-                    <p className="text-xs text-red-500">{intervaloInvalidoEmpleado(h)}</p>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => agregarIntervaloEmpleado(i)}
-                    className="text-xs text-slate-600 dark:text-slate-400 hover:underline mt-0.5"
-                  >
-                    + Agregar intervalo
-                  </button>
-                </div>
-              )}
-            </div>
-          ))}
+          ) : (
+            <EditorHorario
+              horarios={horarioLocal}
+              onCambiar={setHorarioLocal}
+              idBase={idDia}
+              intervaloInicial={{ horaInicio: "09:00", horaFin: "19:00" }}
+              etiquetaCerrado="Descanso"
+              horarioPermitido={(dia) => {
+                const negDia = horariosNegocio.find((d) => d.diaSemana === dia);
+                return negDia?.activo ? negDia.intervalos : null;
+              }}
+            />
+          )}
 
           <button
             onClick={() => guardarHorario()}
-            disabled={!horarioCargado || guardandoHorario || horarioLocal.some(h => !!intervaloInvalidoEmpleado(h))}
+            disabled={!horarioCargado || guardandoHorario || horarioLocal.some((h) => !!errorDelDia(h))}
             className="w-full bg-slate-700 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-xl transition mt-2"
           >
             {guardandoHorario ? "Guardando..." : "Guardar horario"}
@@ -861,7 +730,7 @@ export default function EmpleadosPage() {
                   type="text"
                   {...formBloqueo.register("motivo")}
                   placeholder="Ej. Vacaciones, cita médica..."
-                  className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100 dark:border-slate-600"
+                  className={claseCampo(false)}
                 />
               </div>
               <button
@@ -876,44 +745,34 @@ export default function EmpleadosPage() {
         </div>
       </Modal>
 
-      {/* Modal confirmar eliminar empleado */}
-      <Modal abierto={!!empleadoEliminar} onCerrar={() => setEmpleadoEliminar(null)} titulo={`Eliminar ${terms.empleado.toLowerCase()}`} ancho="sm">
-        {empleadoEliminar && (
-          <div>
-            <p className="text-sm text-gray-600 mb-1 dark:text-gray-400">
-              ¿Seguro que deseas eliminar a <span className="font-semibold text-gray-900 dark:text-gray-100">{empleadoEliminar.nombre}</span>?
+      {/* Confirmar eliminar empleado: el mismo diálogo que el resto de borrados. */}
+      <ConfirmarAccion
+        abierto={!!empleadoEliminar}
+        titulo={`Eliminar ${terms.empleado.toLowerCase()}`}
+        mensaje={empleadoEliminar && (
+          <>
+            <p className="mb-1">
+              {"¿Seguro que deseas eliminar a "}<span className="font-semibold text-foreground">{empleadoEliminar.nombre}</span>?
             </p>
-            <p className="text-xs text-gray-400 mb-6 dark:text-gray-500">
-              El {terms.empleado.toLowerCase()} dejará de aparecer y no podrá recibir nuevas citas. Esta acción no se puede deshacer.
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setEmpleadoEliminar(null)}
-                className="flex-1 py-2.5 rounded-xl border-2 border-gray-200 text-sm font-medium text-gray-600 hover:border-gray-300 transition dark:border-slate-600 dark:text-gray-400"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={() => { eliminar(empleadoEliminar.id); setEmpleadoEliminar(null); }}
-                className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-semibold transition"
-              >
-                Sí, eliminar
-              </button>
-            </div>
-          </div>
+            <p>{`El ${terms.empleado.toLowerCase()} dejará de aparecer y no podrá recibir nuevas citas. Esta acción no se puede deshacer.`}</p>
+          </>
         )}
-      </Modal>
+        etiquetaConfirmar={`Eliminar ${terms.empleado.toLowerCase()}`}
+        destructiva
+        pendiente={eliminandoEmpleado}
+        onConfirmar={() => empleadoEliminar && eliminar(empleadoEliminar.id)}
+        onCerrar={() => setEmpleadoEliminar(null)}
+      />
 
       {/* Input oculto para foto de empleado */}
       <input
         ref={fotoInputRef}
         type="file"
-        accept="image/*"
+        accept={ACCEPT_IMAGEN}
         className="hidden"
         onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f && empleadoFotoIdRef.current) subirFoto({ id: empleadoFotoIdRef.current, file: f });
-          e.target.value = "";
+          if (empleadoFotoIdRef.current) fotoEmpleado.alElegir(e, empleadoFotoIdRef.current);
+          else e.target.value = "";
         }}
       />
 
@@ -924,35 +783,41 @@ export default function EmpleadosPage() {
         </p>
         <form onSubmit={formInvitar.handleSubmit((d) => invitar(d))} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Correo de acceso *</label>
-            <input type="email" {...formInvitar.register("email")}
-              className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100 dark:border-slate-600
-                ${formInvitar.formState.errors.email ? "border-red-400 bg-red-50" : "border-gray-200"}`} />
+            <label htmlFor={`${idDia}-inv-email`} className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Correo de acceso *</label>
+            <input id={`${idDia}-inv-email`} type="email" {...formInvitar.register("email")}
+              aria-invalid={!!formInvitar.formState.errors.email || undefined}
+              aria-describedby={formInvitar.formState.errors.email ? `${idDia}-inv-email-error` : undefined}
+              className={claseCampo(!!formInvitar.formState.errors.email)} />
             {formInvitar.formState.errors.email && (
-              <p className="text-red-500 text-xs mt-1">{formInvitar.formState.errors.email.message}</p>
+              <p id={`${idDia}-inv-email-error`} className={CLASE_ERROR_CAMPO}>{formInvitar.formState.errors.email.message}</p>
             )}
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Contraseña inicial *</label>
+            <label htmlFor={`${idDia}-inv-password`} className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Contraseña inicial *</label>
             <div className="relative">
               <input
+                id={`${idDia}-inv-password`}
                 type={mostrarPasswordInvitar ? "text" : "password"}
                 {...formInvitar.register("password")}
-                className={`w-full px-3 py-2 pr-10 rounded-lg border text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100 dark:border-slate-600
-                  ${formInvitar.formState.errors.password ? "border-red-400 bg-red-50" : "border-gray-200"}`}
+                aria-invalid={!!formInvitar.formState.errors.password || undefined}
+                aria-describedby={formInvitar.formState.errors.password ? `${idDia}-inv-password-error` : undefined}
+                className={claseCampo(!!formInvitar.formState.errors.password, "pr-12")}
               />
+              {/* Con nombre y en el orden de tabulación: antes era un icono mudo con tabIndex=-1. */}
               <button
                 type="button"
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => setMostrarPasswordInvitar((v) => !v)}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-gray-500"
-                tabIndex={-1}
+                aria-label={mostrarPasswordInvitar ? "Ocultar contraseña" : "Mostrar contraseña"}
+                aria-pressed={mostrarPasswordInvitar}
+                className="absolute right-0 top-1/2 -translate-y-1/2 inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200
+                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
-                {mostrarPasswordInvitar ? <EyeOff size={16} /> : <Eye size={16} />}
+                {mostrarPasswordInvitar ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
               </button>
             </div>
             {formInvitar.formState.errors.password && (
-              <p className="text-red-500 text-xs mt-1">{formInvitar.formState.errors.password.message}</p>
+              <p id={`${idDia}-inv-password-error`} className={CLASE_ERROR_CAMPO}>{formInvitar.formState.errors.password.message}</p>
             )}
           </div>
           {errorInvitar && (

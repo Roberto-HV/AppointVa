@@ -271,10 +271,12 @@ describe("EmpleadosPage — eliminar empleado", () => {
     await waitFor(() =>
       expect(screen.getByRole("dialog", { name: "Eliminar empleado" })).toBeInTheDocument()
     );
-    fireEvent.click(screen.getByRole("button", { name: "Sí, eliminar" }));
+    // El botón nombra la acción (ConfirmarAccion), no "Sí, eliminar".
+    fireEvent.click(screen.getByRole("button", { name: "Eliminar empleado" }));
     await waitFor(() =>
       expect(vi.mocked(empleadosApi.eliminar)).toHaveBeenCalledWith("emp-1")
     );
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   });
 });
 
@@ -387,5 +389,58 @@ describe("EmpleadosPage — foto del empleado (OM-07)", () => {
     vi.mocked(empleadosApi.obtenerTodos).mockResolvedValue([mockEmpleado]);
     renderConQuery();
     expect(await screen.findByRole("button", { name: "Cambiar foto de María García" })).toBeInTheDocument();
+  });
+});
+
+describe("EmpleadosPage — acceso y campos (OM-23, OM-26)", () => {
+  it("el botón para ver la contraseña tiene nombre y se alcanza con el teclado", async () => {
+    vi.mocked(empleadosApi.obtenerTodos).mockResolvedValue([mockEmpleado]);
+    renderConQuery();
+    await screen.findByText("María García");
+    fireEvent.click(screen.getByRole("button", { name: /Invitar/ }));
+    const ver = await screen.findByRole("button", { name: "Mostrar contraseña" });
+    expect(ver).not.toHaveAttribute("tabindex", "-1");
+    fireEvent.click(ver);
+    expect(screen.getByRole("button", { name: "Ocultar contraseña" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByLabelText("Contraseña inicial *")).toHaveAttribute("type", "text");
+  });
+
+  it("un campo inválido marca el error también en dark mode y lo enlaza al campo", async () => {
+    vi.mocked(empleadosApi.obtenerTodos).mockResolvedValue([mockEmpleado]);
+    renderConQuery();
+    await screen.findByText("María García");
+    fireEvent.click(screen.getByRole("button", { name: /Nuevo/ }));
+    const nombre = await screen.findByLabelText("Nombre *");
+    fireEvent.submit(nombre.closest("form")!);
+    await waitFor(() => expect(nombre).toHaveAttribute("aria-invalid", "true"));
+    expect(nombre.className).toContain("dark:border-red-400");
+    expect(nombre.className).not.toContain("dark:border-slate-600");
+    expect(nombre).toHaveAccessibleDescription("Nombre requerido");
+  });
+});
+
+describe("EmpleadosPage — foto con validación y avance (OM-16)", () => {
+  it("rechaza un archivo que no es imagen sin subirlo", async () => {
+    vi.mocked(empleadosApi.obtenerTodos).mockResolvedValue([mockEmpleado]);
+    renderConQuery();
+    fireEvent.click(await screen.findByRole("button", { name: "Cambiar foto de María García" }));
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    fireEvent.change(input, { target: { files: [new File(["x"], "cv.pdf", { type: "application/pdf" })] } });
+    expect(empleadosApi.subirFoto).not.toHaveBeenCalled();
+  });
+
+  it("muestra el avance en la tarjeta mientras sube", async () => {
+    vi.mocked(empleadosApi.obtenerTodos).mockResolvedValue([mockEmpleado]);
+    vi.mocked(empleadosApi.subirFoto).mockImplementation((_id, _f, onProgreso) => {
+      onProgreso?.(30);
+      return new Promise(() => {});
+    });
+    renderConQuery();
+    fireEvent.click(await screen.findByRole("button", { name: "Cambiar foto de María García" }));
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    fireEvent.change(input, { target: { files: [new File(["x"], "f.jpg", { type: "image/jpeg" })] } });
+    const barra = await screen.findByRole("progressbar", { name: "Subiendo foto de María García" });
+    await waitFor(() => expect(barra).toHaveAttribute("aria-valuenow", "30"));
+    expect(screen.getByRole("button", { name: "Cambiar foto de María García" })).toBeDisabled();
   });
 });

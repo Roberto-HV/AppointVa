@@ -144,7 +144,7 @@ describe("GaleriaPage — subida válida", () => {
     fireEvent.change(input, { target: { files: [file] } });
 
     await waitFor(() =>
-      expect(negociosApi.subirImagenGaleria).toHaveBeenCalledWith(file)
+      expect(negociosApi.subirImagenGaleria).toHaveBeenCalledWith(file, undefined, expect.any(Function))
     );
   });
 });
@@ -193,5 +193,60 @@ describe("GaleriaPage — acciones sin hover (OM-07)", () => {
     // Visible por defecto: solo se oculta donde hay hover real.
     expect(eliminar.className).toMatch(/(^|\s)opacity-100(\s|$)/);
     expect(eliminar.className).toContain("focus-visible:opacity-100");
+  });
+});
+
+describe("GaleriaPage — subidas (OM-14)", () => {
+  it("muestra una miniatura con avance por cada foto que se sube", async () => {
+    vi.mocked(negociosApi.obtenerGaleria).mockResolvedValue([]);
+    vi.mocked(negociosApi.subirImagenGaleria).mockImplementation((_f, _d, onProgreso) => {
+      onProgreso?.(60);
+      return new Promise(() => {});
+    });
+    renderConQuery();
+    await screen.findByText(/Arrastra fotos aquí/i);
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    fireEvent.change(input, {
+      target: { files: [new File(["a"], "a.jpg", { type: "image/jpeg" }), new File(["b"], "b.png", { type: "image/png" })] },
+    });
+    const barras = await screen.findAllByRole("progressbar");
+    expect(barras).toHaveLength(2);
+    expect(screen.getByRole("progressbar", { name: "Subiendo a.jpg" })).toHaveAttribute("aria-valuenow", "60");
+    expect(screen.getByRole("button", { name: /Subiendo 2…/ })).toBeInTheDocument();
+  });
+
+  it("avisa cuántas fotos no entraron por el límite de 20", async () => {
+    vi.mocked(negociosApi.obtenerGaleria).mockResolvedValue(
+      Array.from({ length: 19 }, (_, i) => makeImagen({ id: String(i), url: `https://x/${i}.jpg` })),
+    );
+    vi.mocked(negociosApi.subirImagenGaleria).mockReturnValue(new Promise(() => {}));
+    renderConQuery();
+    await screen.findByRole("button", { name: "Ver foto 19 ampliada" });
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const archivos = ["1", "2", "3"].map((n) => new File([n], `${n}.jpg`, { type: "image/jpeg" }));
+    fireEvent.change(input, { target: { files: archivos } });
+    expect(mockToast).toHaveBeenCalledWith("2 fotos no se agregaron: el límite es de 20 fotos.", "error");
+    await waitFor(() => expect(negociosApi.subirImagenGaleria).toHaveBeenCalledTimes(1));
+  });
+
+  it("resalta la zona al arrastrar encima y acepta solo los formatos del servidor", async () => {
+    vi.mocked(negociosApi.obtenerGaleria).mockResolvedValue([]);
+    renderConQuery();
+    const zona = (await screen.findByText(/Arrastra fotos aquí/i)).closest("button")!;
+    fireEvent.dragEnter(zona);
+    expect(zona).toHaveAttribute("data-arrastrando", "true");
+    expect(screen.getByText("Suelta las fotos para subirlas")).toBeInTheDocument();
+    expect((document.querySelector('input[type="file"]') as HTMLInputElement).accept).not.toContain("image/*");
+    expect(screen.getByText(/hasta 10 MB/)).toBeInTheDocument();
+  });
+
+  it("un HEIC se rechaza antes de subir", async () => {
+    vi.mocked(negociosApi.obtenerGaleria).mockResolvedValue([]);
+    renderConQuery();
+    await screen.findByText(/Arrastra fotos aquí/i);
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    fireEvent.change(input, { target: { files: [new File(["x"], "foto.heic", { type: "image/heic" })] } });
+    expect(negociosApi.subirImagenGaleria).not.toHaveBeenCalled();
+    expect(mockToast).toHaveBeenCalledWith('"foto.heic" no es JPG, PNG, WebP o GIF.', "error");
   });
 });

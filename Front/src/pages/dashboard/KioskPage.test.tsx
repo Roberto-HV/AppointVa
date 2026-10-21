@@ -1,8 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import KioskPage from "./KioskPage";
+
+// Mismo intervalo que el sondeo de la página.
+const INTERVALO_SONDEO_MS = 30_000;
 import { citasApi } from "../../api/citas";
 import { empleadosApi } from "../../api/empleados";
 import { negociosApi } from "../../api/negocios";
@@ -196,5 +199,29 @@ describe("KioskPage — carga y conexión (DC-28)", () => {
     renderKiosk();
     expect(await screen.findByRole("alert")).toHaveTextContent("Sin conexión · reintentando");
     expect(screen.queryByText("No hay empleados activos")).toBeNull();
+  });
+});
+
+describe("KioskPage — recuperación de empleados", () => {
+  it("vuelve a pedir los empleados tras un fallo y el aviso desaparece solo", async () => {
+    vi.mocked(empleadosApi.obtenerTodos).mockRejectedValueOnce(new Error("red"));
+    renderKiosk();
+    expect(await screen.findByRole("alert")).toHaveTextContent("Sin conexión · reintentando");
+
+    vi.mocked(empleadosApi.obtenerTodos).mockResolvedValue([makeEmpleado()]);
+    await act(async () => { await vi.advanceTimersByTimeAsync(INTERVALO_SONDEO_MS); });
+
+    expect(await screen.findByText("Ana García")).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("sin nada cargado ofrece 'Reintentar' a mano", async () => {
+    vi.mocked(empleadosApi.obtenerTodos).mockRejectedValueOnce(new Error("red"));
+    renderKiosk();
+    const boton = await screen.findByRole("button", { name: "Reintentar" });
+    vi.mocked(empleadosApi.obtenerTodos).mockResolvedValue([makeEmpleado()]);
+    fireEvent.click(boton);
+    expect(await screen.findByText("Ana García")).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).toBeNull();
   });
 });

@@ -7,7 +7,7 @@ import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
 import { TAMANO_PAGINA } from "../../hooks/usePaginacionLocal";
 import { FiltroBarra, type CampoFiltro } from "../../components/ui/filtros";
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
 import { Download, TrendingUp, TrendingDown, Calendar, DollarSign, CheckCircle } from "lucide-react";
 import { reportesApi, type FiltrosReporteCitas } from "../../api/reportes";
@@ -19,7 +19,13 @@ import { serviciosApi } from "../../api/servicios";
 import EstadoBadge from "../../components/ui/EstadoBadge";
 import { SkeletonTableRows } from "../../components/ui/Skeleton";
 import { formatPrecio, formatFechaHora as formatFecha } from "../../utils/formatters";
-import { hoy, inicioSemana, inicioMes, finMes, inicioAnio } from "../../utils/fechas";
+import { hoy, inicioSemana, inicioMes, finMes, inicioAnio, fechaLargaLocal } from "../../utils/fechas";
+import { negociosApi } from "../../api/negocios";
+import { useToastStore } from "../../store/toastStore";
+import ErrorCarga from "../../components/ui/ErrorCarga";
+import TablaDatosOculta from "../../components/ui/TablaDatosOculta";
+import { COLOR_SERIE, EJE_LINEA, EJE_TICK, REJILLA, TOOLTIP } from "../../lib/temaGraficas";
+import { horasVisiblesHeatmap } from "../../lib/heatmap";
 
 type Tab = "citas" | "ingresos" | "empleados" | "heatmap" | "retencion";
 
@@ -33,7 +39,10 @@ const ESTADOS_OPCIONES = [
   { valor: 5, texto: "Inasistencia" },
 ];
 
-const COLORES_GRAFICA = ["#C8A961", "#a88b45", "#e8d4a0", "#7a6530", "#d4bc80"];
+const MENSAJE_ERROR_EXCEL = "No se pudo generar el archivo de Excel. Intenta de nuevo.";
+const DIAS_HEATMAP = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
+const DIAS_HEATMAP_LARGOS = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"];
+const formatMoneda = (v: unknown) => `$${Number(v).toLocaleString("es-MX")}`;
 
 function Tarjeta({ label, valor, subvalor, icono }: { label: string; valor: React.ReactNode; subvalor?: string; icono: React.ReactNode }) {
   return (
@@ -49,6 +58,7 @@ function Tarjeta({ label, valor, subvalor, icono }: { label: string; valor: Reac
 
 export default function ReportesPage() {
   const terms = useSectorTerms();
+  const { toast } = useToastStore();
   const [tab, setTab] = useState<Tab>("citas");
   const [reportePagina, setReportePagina] = useState(1);
   const [desde, setDesde] = useState(inicioMes());
@@ -146,25 +156,45 @@ export default function ReportesPage() {
   };
 
 
-  const { data: reporteCitas, isLoading: cargandoCitas, isError: errorCitas } = useQuery({
+  const {
+    data: reporteCitas, isLoading: cargandoCitas, isError: errorCitas,
+    refetch: reintentarCitas, isFetching: actualizandoCitas,
+  } = useQuery({
     queryKey: ["reporte-citas", filtros],
     queryFn: () => reportesApi.obtenerCitas(filtros),
     enabled: tab === "citas" && !errorFecha,
   });
 
-  const { data: reporteIngresos, isLoading: cargandoIngresos, isError: errorIngresos } = useQuery({
+  const {
+    data: reporteIngresos, isLoading: cargandoIngresos, isError: errorIngresos,
+    refetch: reintentarIngresos, isFetching: actualizandoIngresos,
+  } = useQuery({
     queryKey: ["reporte-ingresos", desde, hasta],
     queryFn: () => reportesApi.obtenerIngresos(desde, hasta),
     enabled: (tab === "ingresos" || tab === "empleados") && !errorFecha,
   });
 
-  const { data: heatmap, isLoading: cargandoHeatmap } = useQuery({
+  const {
+    data: heatmap, isLoading: cargandoHeatmap, isError: errorHeatmap,
+    refetch: reintentarHeatmap, isFetching: actualizandoHeatmap,
+  } = useQuery({
     queryKey: ["reporte-heatmap", desde, hasta],
     queryFn: () => reportesApi.obtenerHeatmap(desde, hasta),
     enabled: tab === "heatmap" && !errorFecha,
   });
 
-  const { data: retencion, isLoading: cargandoRetencion } = useQuery({
+  // Solo para recortar el mapa de calor a las horas de atención.
+  const { data: horariosNegocio = [] } = useQuery({
+    queryKey: ["horarios-negocio"],
+    queryFn: negociosApi.obtenerHorarios,
+    enabled: tab === "heatmap",
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const {
+    data: retencion, isLoading: cargandoRetencion, isError: errorRetencion,
+    refetch: reintentarRetencion, isFetching: actualizandoRetencion,
+  } = useQuery({
     queryKey: ["reporte-retencion", desde, hasta],
     queryFn: () => reportesApi.obtenerRetencion(desde, hasta),
     enabled: tab === "retencion" && !errorFecha,
@@ -172,12 +202,13 @@ export default function ReportesPage() {
 
   useEffect(() => { setReportePagina(1); }, [reporteCitas]);
 
+  // Fechas locales: `new Date("YYYY-MM-DD")` es medianoche UTC y en México el
+  // período salía un día antes en los dos extremos.
+  const subtituloPeriodo = `Período: ${fechaLargaLocal(desde)} — ${fechaLargaLocal(hasta)}`;
+  const avisarFalloExcel = () => toast(MENSAJE_ERROR_EXCEL, "error");
+
   const handleExportar = () => {
     if (!reporteCitas?.citas.length) return;
-
-    const fmtFecha = (iso: string) =>
-      new Date(iso).toLocaleDateString("es-MX", { day: "2-digit", month: "long", year: "numeric" });
-    const subtitulo = `Período: ${fmtFecha(desde)} — ${fmtFecha(hasta)}`;
 
     const encabezados = ["Código", "Cliente", "Teléfono", "Email", "Servicio", "Empleado", "Fecha", "Duración (min)", "Precio", "Pagada", "Método de pago", "Estado", "Notas"];
     const filas = reporteCitas.citas.map((c) => [
@@ -187,9 +218,9 @@ export default function ReportesPage() {
       c.emailCliente ?? "",
       c.nombreServicio,
       c.nombreEmpleado,
-      new Date(c.inicioEn).toLocaleString("es-MX", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true }),
+      new Date(c.inicioEn),
       c.duracionMinutos,
-      `$${c.precio.toFixed(2)}`,
+      { moneda: c.precio },
       c.pagada ? "Sí" : "No",
       c.metodoPago ?? "",
       c.estadoTexto,
@@ -197,22 +228,20 @@ export default function ReportesPage() {
     ]);
 
     const totalMinutos = reporteCitas.citas.reduce((s, c) => s + c.duracionMinutos, 0);
-    const totales: (string | number)[] = [
-      `${reporteCitas.totalCitas} citas`,
+    const totales = [
+      `${reporteCitas.totalCitas} ${terms.citas.toLowerCase()}`,
       "", "", "", "", "", "",
       totalMinutos,
-      `$${reporteCitas.totalIngresos.toFixed(2)}`,
+      { moneda: reporteCitas.totalIngresos },
       "", "", "", "",
     ];
 
-    exportarExcel(encabezados, [filas], "reporte-citas", `Reporte de ${terms.citas}`, { subtitulo, totales });
+    exportarExcel(encabezados, [filas], "reporte-citas", `Reporte de ${terms.citas}`, { subtitulo: subtituloPeriodo, totales })
+      .catch(avisarFalloExcel);
   };
 
   const handleExportarEmpleados = () => {
     if (!reporteIngresos?.porEmpleado.length) return;
-    const fmtFecha = (iso: string) =>
-      new Date(iso).toLocaleDateString("es-MX", { day: "2-digit", month: "long", year: "numeric" });
-    const subtitulo = `Período: ${fmtFecha(desde)} — ${fmtFecha(hasta)}`;
     const encabezados = ["Empleado", "Citas", "Ingresos", "Ticket promedio", "% del total"];
     const totalEquipoIngresos = reporteIngresos.porEmpleado.reduce((s, e) => s + e.totalIngresos, 0);
     const filas = reporteIngresos.porEmpleado
@@ -221,25 +250,32 @@ export default function ReportesPage() {
       .map((e) => {
         const ticket = e.totalCitas > 0 ? e.totalIngresos / e.totalCitas : 0;
         const pct = totalEquipoIngresos > 0 ? (e.totalIngresos / totalEquipoIngresos) * 100 : 0;
-        return [e.nombreEmpleado, e.totalCitas, `$${e.totalIngresos.toFixed(2)}`, `$${ticket.toFixed(2)}`, `${pct.toFixed(1)}%`];
+        return [e.nombreEmpleado, e.totalCitas, { moneda: e.totalIngresos }, { moneda: ticket }, { porcentaje: pct }];
       });
-    exportarExcel(encabezados, [filas], "reporte-empleados", "Reporte por Empleado", { subtitulo });
+    exportarExcel(encabezados, [filas], "reporte-empleados", "Reporte por Empleado", { subtitulo: subtituloPeriodo })
+      .catch(avisarFalloExcel);
   };
 
   const handleExportarIngresos = () => {
     if (!reporteIngresos?.porServicio.length) return;
-    const fmtFecha = (iso: string) =>
-      new Date(iso).toLocaleDateString("es-MX", { day: "2-digit", month: "long", year: "numeric" });
-    const subtitulo = `Período: ${fmtFecha(desde)} — ${fmtFecha(hasta)}`;
     const encabezados = ["Servicio", "Citas", "% del total", "Ingresos"];
     const filas = reporteIngresos.porServicio.map((s) => [
-      s.nombreServicio, s.totalCitas, `${s.porcentaje.toFixed(1)}%`, `$${s.totalIngresos.toFixed(2)}`,
+      s.nombreServicio, s.totalCitas, { porcentaje: s.porcentaje }, { moneda: s.totalIngresos },
     ]);
-    const totales: (string | number)[] = [
-      "TOTAL", reporteIngresos.totalCitasCompletadas, "100%", `$${reporteIngresos.totalIngresos.toFixed(2)}`,
+    const totales = [
+      "TOTAL", reporteIngresos.totalCitasCompletadas, { porcentaje: 100 }, { moneda: reporteIngresos.totalIngresos },
     ];
-    exportarExcel(encabezados, [filas], "reporte-ingresos", "Reporte de Ingresos", { subtitulo, totales });
+    exportarExcel(encabezados, [filas], "reporte-ingresos", "Reporte de Ingresos", { subtitulo: subtituloPeriodo, totales })
+      .catch(avisarFalloExcel);
   };
+
+  const errorIngresosEnLinea = (
+    <ErrorCarga
+      mensaje="No se pudieron cargar los ingresos."
+      onReintentar={() => reintentarIngresos()}
+      reintentando={actualizandoIngresos}
+    />
+  );
 
 
   return (
@@ -367,8 +403,13 @@ export default function ReportesPage() {
                   <SkeletonTableRows filas={8} columnas={8} />
                 ) : errorCitas ? (
                   <tr>
-                    <td colSpan={8} className="px-4 py-10 text-center text-red-400 text-sm">
-                      No se pudieron cargar las citas. Intenta cambiar el rango de fechas.
+                    <td colSpan={8} className="p-0">
+                      <ErrorCarga
+                        className="border-0 rounded-none"
+                        mensaje={`No se pudieron cargar las ${terms.citas.toLowerCase()}.`}
+                        onReintentar={() => reintentarCitas()}
+                        reintentando={actualizandoCitas}
+                      />
                     </td>
                   </tr>
                 ) : !reporteCitas?.citas.length ? (
@@ -422,9 +463,7 @@ export default function ReportesPage() {
               <div className="animate-spin w-6 h-6 border-2 border-slate-700 border-t-transparent rounded-full" />
             </div>
           ) : errorIngresos ? (
-            <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-10 text-center text-sm text-red-400">
-              No se pudieron cargar los datos. Intenta cambiar el rango de fechas.
-            </div>
+            errorIngresosEnLinea
           ) : !reporteIngresos?.porEmpleado.length ? (
             <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-10 text-center text-sm text-gray-400 dark:text-gray-500">
               No hay datos de empleados en el rango seleccionado.
@@ -450,21 +489,23 @@ export default function ReportesPage() {
                 <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Ingresos por empleado</h2>
                 <ResponsiveContainer width="100%" height={Math.max(200, reporteIngresos.porEmpleado.length * 52)}>
                   <BarChart
+                    accessibilityLayer
                     data={reporteIngresos.porEmpleado}
                     layout="vertical"
                     margin={{ left: 8, right: 32 }}
                   >
-                    <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                    <XAxis type="number" tickFormatter={(v) => `$${Number(v).toLocaleString("es-MX")}`} tick={{ fontSize: 11 }} />
-                    <YAxis type="category" dataKey="nombreEmpleado" width={120} tick={{ fontSize: 11 }} />
-                    <Tooltip formatter={(v) => formatPrecio(Number(v))} labelFormatter={(l) => `Empleado: ${l}`} />
-                    <Bar dataKey="totalIngresos" radius={[0, 6, 6, 0]} maxBarSize={36}>
-                      {reporteIngresos.porEmpleado.map((_, i) => (
-                        <Cell key={i} fill={COLORES_GRAFICA[i % COLORES_GRAFICA.length]} />
-                      ))}
-                    </Bar>
+                    <CartesianGrid {...REJILLA} horizontal={false} />
+                    <XAxis type="number" tickFormatter={formatMoneda} tick={EJE_TICK} axisLine={EJE_LINEA} tickLine={EJE_LINEA} />
+                    <YAxis type="category" dataKey="nombreEmpleado" width={120} tick={EJE_TICK} axisLine={EJE_LINEA} tickLine={EJE_LINEA} />
+                    <Tooltip {...TOOLTIP} formatter={(v) => formatPrecio(Number(v))} labelFormatter={(l) => `Empleado: ${l}`} />
+                    <Bar dataKey="totalIngresos" name="Ingresos" fill={COLOR_SERIE} radius={[0, 6, 6, 0]} maxBarSize={36} />
                   </BarChart>
                 </ResponsiveContainer>
+                <TablaDatosOculta
+                  titulo="Ingresos por empleado"
+                  columnas={["Empleado", "Ingresos"]}
+                  filas={reporteIngresos.porEmpleado.map((e) => [e.nombreEmpleado, formatPrecio(e.totalIngresos)])}
+                />
               </div>
 
               {/* Tabla detallada por empleado */}
@@ -503,8 +544,8 @@ export default function ReportesPage() {
                               <td className="px-5 py-3">
                                 <div className="flex items-center gap-3">
                                   <div
-                                    className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
-                                    style={{ backgroundColor: COLORES_GRAFICA[i % COLORES_GRAFICA.length] }}
+                                    aria-hidden="true"
+                                    className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold bg-muted text-foreground shrink-0"
                                   >
                                     {iniciales}
                                   </div>
@@ -528,7 +569,7 @@ export default function ReportesPage() {
                                   <div className="w-16 h-1.5 bg-gray-100 dark:bg-slate-600 rounded-full overflow-hidden">
                                     <div
                                       className="h-full rounded-full"
-                                      style={{ width: `${pct}%`, backgroundColor: COLORES_GRAFICA[i % COLORES_GRAFICA.length] }}
+                                      style={{ width: `${pct}%`, backgroundColor: COLOR_SERIE }}
                                     />
                                   </div>
                                   <span className="text-xs text-gray-500 dark:text-gray-400 w-10 text-right tabular-nums">{pct.toFixed(1)}%</span>
@@ -561,9 +602,7 @@ export default function ReportesPage() {
               <div className="animate-spin w-6 h-6 border-2 border-slate-700 border-t-transparent rounded-full" />
             </div>
           ) : errorIngresos ? (
-            <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-10 text-center text-sm text-red-400">
-              No se pudieron cargar los datos. Intenta cambiar el rango de fechas.
-            </div>
+            errorIngresosEnLinea
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Ingresos por servicio */}
@@ -572,19 +611,22 @@ export default function ReportesPage() {
                 {!reporteIngresos?.porServicio.length ? (
                   <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-6">Sin datos</p>
                 ) : (
-                  <ResponsiveContainer width="100%" height={220}>
-                    <BarChart data={reporteIngresos.porServicio} layout="vertical" margin={{ left: 8, right: 24 }}>
-                      <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                      <XAxis type="number" tickFormatter={(v) => `$${Number(v).toLocaleString("es-MX")}`} tick={{ fontSize: 11 }} />
-                      <YAxis type="category" dataKey="nombreServicio" width={110} tick={{ fontSize: 11 }} />
-                      <Tooltip formatter={(v) => formatPrecio(Number(v))} />
-                      <Bar dataKey="totalIngresos" radius={[0, 4, 4, 0]}>
-                        {reporteIngresos.porServicio.map((_, i) => (
-                          <Cell key={i} fill={COLORES_GRAFICA[i % COLORES_GRAFICA.length]} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
+                  <>
+                    <ResponsiveContainer width="100%" height={220}>
+                      <BarChart accessibilityLayer data={reporteIngresos.porServicio} layout="vertical" margin={{ left: 8, right: 24 }}>
+                        <CartesianGrid {...REJILLA} horizontal={false} />
+                        <XAxis type="number" tickFormatter={formatMoneda} tick={EJE_TICK} axisLine={EJE_LINEA} tickLine={EJE_LINEA} />
+                        <YAxis type="category" dataKey="nombreServicio" width={110} tick={EJE_TICK} axisLine={EJE_LINEA} tickLine={EJE_LINEA} />
+                        <Tooltip {...TOOLTIP} formatter={(v) => formatPrecio(Number(v))} />
+                        <Bar dataKey="totalIngresos" name="Ingresos" fill={COLOR_SERIE} radius={[0, 4, 4, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                    <TablaDatosOculta
+                      titulo={`Ingresos por ${terms.servicios.toLowerCase()}`}
+                      columnas={[terms.servicio, "Ingresos"]}
+                      filas={reporteIngresos.porServicio.map((s) => [s.nombreServicio, formatPrecio(s.totalIngresos)])}
+                    />
+                  </>
                 )}
               </div>
 
@@ -594,15 +636,22 @@ export default function ReportesPage() {
                 {!reporteIngresos?.porDia.length ? (
                   <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-6">Sin datos</p>
                 ) : (
-                  <ResponsiveContainer width="100%" height={220}>
-                    <BarChart data={reporteIngresos.porDia} margin={{ right: 8 }}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                      <XAxis dataKey="fecha" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
-                      <YAxis tickFormatter={(v) => `$${Number(v).toLocaleString("es-MX")}`} tick={{ fontSize: 11 }} />
-                      <Tooltip formatter={(v) => formatPrecio(Number(v))} />
-                      <Bar dataKey="totalIngresos" fill="#C8A961" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
+                  <>
+                    <ResponsiveContainer width="100%" height={220}>
+                      <BarChart accessibilityLayer data={reporteIngresos.porDia} margin={{ right: 8 }}>
+                        <CartesianGrid {...REJILLA} vertical={false} />
+                        <XAxis dataKey="fecha" tick={{ ...EJE_TICK, fontSize: 10 }} axisLine={EJE_LINEA} tickLine={EJE_LINEA} interval="preserveStartEnd" />
+                        <YAxis tickFormatter={formatMoneda} tick={EJE_TICK} axisLine={EJE_LINEA} tickLine={EJE_LINEA} />
+                        <Tooltip {...TOOLTIP} formatter={(v) => formatPrecio(Number(v))} />
+                        <Bar dataKey="totalIngresos" name="Ingresos" fill={COLOR_SERIE} radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                    <TablaDatosOculta
+                      titulo="Ingresos por día"
+                      columnas={["Día", "Ingresos"]}
+                      filas={reporteIngresos.porDia.map((d) => [d.fecha, formatPrecio(d.totalIngresos)])}
+                    />
+                  </>
                 )}
               </div>
 
@@ -645,6 +694,12 @@ export default function ReportesPage() {
             <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-8 flex items-center justify-center">
               <div className="animate-spin w-6 h-6 border-2 border-slate-700 border-t-transparent rounded-full" />
             </div>
+          ) : errorHeatmap ? (
+            <ErrorCarga
+              mensaje="No se pudo cargar la ocupación por horario."
+              onReintentar={() => reintentarHeatmap()}
+              reintentando={actualizandoHeatmap}
+            />
           ) : !heatmap || heatmap.totalCitas === 0 ? (
             <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-10 text-center text-sm text-gray-400 dark:text-gray-500">
               {`No hay ${terms.citas.toLowerCase()} en el rango seleccionado.`}
@@ -659,28 +714,31 @@ export default function ReportesPage() {
 
               <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
                 <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Ocupación por hora y día</h2>
-                <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">Número de citas por franja horaria. Más oscuro = más ocupado.</p>
+                <p className="text-xs text-muted-foreground mb-4">{`Número de ${terms.citas.toLowerCase()} por franja horaria, dentro del horario de atención.`}</p>
                 <div className="overflow-x-auto">
-                  <div className="min-w-[480px]">
-                    <div className="grid grid-cols-[40px_repeat(7,1fr)] gap-1 mb-1">
-                      <div />
-                      {["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"].map((d) => (
-                        <div key={d} className="text-center text-xs font-semibold text-gray-500 dark:text-gray-400">{d}</div>
+                  <div className="min-w-[480px]" role="table" aria-label={`${terms.citas} por hora y día de la semana`}>
+                    <div role="row" className="grid grid-cols-[48px_repeat(7,1fr)] gap-1 mb-1">
+                      <div role="columnheader" />
+                      {DIAS_HEATMAP.map((d) => (
+                        <div key={d} role="columnheader" className="text-center text-xs font-semibold text-muted-foreground">{d}</div>
                       ))}
                     </div>
-                    {Array.from({ length: 24 }, (_, hora) => (
-                      <div key={hora} className="grid grid-cols-[40px_repeat(7,1fr)] gap-1 mb-1">
-                        <div className="text-right text-xs text-gray-400 dark:text-gray-500 pr-2 self-center leading-none">
-                          {hora % 3 === 0 ? `${hora}:00` : ""}
+                    {horasVisiblesHeatmap(heatmap.matriz, horariosNegocio).map((hora) => (
+                      <div key={hora} role="row" className="grid grid-cols-[48px_repeat(7,1fr)] gap-1 mb-1">
+                        <div role="rowheader" className="text-right text-xs text-muted-foreground pr-2 self-center leading-none tabular-nums">
+                          {`${hora}:00`}
                         </div>
                         {Array.from({ length: 7 }, (_, dia) => {
                           const val = heatmap.matriz[hora]?.[dia] ?? 0;
                           const intensity = heatmap.maximo > 0 ? val / heatmap.maximo : 0;
                           const alpha = intensity === 0 ? 0 : Math.max(0.08, intensity);
+                          const texto = val > 0 ? `${val} ${val === 1 ? terms.cita.toLowerCase() : terms.citas.toLowerCase()}` : `Sin ${terms.citas.toLowerCase()}`;
                           return (
                             <div
                               key={dia}
-                              title={val > 0 ? `${val} ${val === 1 ? terms.cita.toLowerCase() : terms.citas.toLowerCase()}` : `Sin ${terms.citas.toLowerCase()}`}
+                              role="cell"
+                              aria-label={`${DIAS_HEATMAP_LARGOS[dia]} ${hora}:00, ${texto}`}
+                              title={texto}
                               className="h-7 rounded-md flex items-center justify-center text-xs font-medium cursor-default"
                               // Escala sobre el color del texto del tema (oscuro en claro,
                               // claro en oscuro): en dark mode el slate-700 fijo se perdía
@@ -698,7 +756,23 @@ export default function ReportesPage() {
                     ))}
                   </div>
                 </div>
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-3 text-right">Zona horaria del negocio</p>
+                {/* Leyenda: la intensidad sola no dice cuántas citas son. */}
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-2" aria-label={`Escala: de 0 a ${heatmap.maximo} ${terms.citas.toLowerCase()}`}>
+                    <span>0</span>
+                    <div className="flex gap-0.5" aria-hidden="true">
+                      {[0, 0.25, 0.5, 0.75, 1].map((a) => (
+                        <span
+                          key={a}
+                          className="w-5 h-3 rounded-sm"
+                          style={{ backgroundColor: a === 0 ? "hsl(var(--muted))" : `hsl(var(--foreground) / ${a})` }}
+                        />
+                      ))}
+                    </div>
+                    <span>{`${heatmap.maximo} ${heatmap.maximo === 1 ? terms.cita.toLowerCase() : terms.citas.toLowerCase()}`}</span>
+                  </div>
+                  <span>Zona horaria del negocio</span>
+                </div>
               </div>
             </>
           )}
@@ -712,6 +786,12 @@ export default function ReportesPage() {
             <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-8 flex items-center justify-center">
               <div className="animate-spin w-6 h-6 border-2 border-slate-700 border-t-transparent rounded-full" />
             </div>
+          ) : errorRetencion ? (
+            <ErrorCarga
+              mensaje="No se pudieron cargar los datos de retención."
+              onReintentar={() => reintentarRetencion()}
+              reintentando={actualizandoRetencion}
+            />
           ) : !retencion || retencion.totalClientes === 0 ? (
             <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-10 text-center text-sm text-gray-400 dark:text-gray-500">
               {`No hay datos de ${terms.clientes.toLowerCase()} en el rango seleccionado.`}

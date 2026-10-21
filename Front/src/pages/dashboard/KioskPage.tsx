@@ -10,6 +10,9 @@ import type { CitaDto } from "../../types";
 import { estiloEstadoCita } from "../../lib/estadoCita";
 import { capitalizarPrimera, formatPrecio } from "../../utils/formatters";
 
+/** Cada cuánto se vuelven a pedir citas y empleados (también tras un fallo). */
+const INTERVALO_SONDEO_MS = 30_000;
+
 const EMP_COLORS = [
   "#4F46E5", "#7C3AED", "#0891B2", "#059669",
   "#D97706", "#DC2626", "#DB2777", "#0F766E",
@@ -45,19 +48,26 @@ export default function KioskPage() {
     return () => clearInterval(id);
   }, []);
 
-  const { data, isLoading, isError, dataUpdatedAt } = useQuery({
+  const { data, isLoading, isError, dataUpdatedAt, refetch: reintentarCitas, isFetching: actualizandoCitas } = useQuery({
     queryKey: ["citas-kiosk", today],
     queryFn: () => citasApi.obtenerTodas({ desde: today, hasta: today, tamano: 200 }),
     staleTime: 0,
-    refetchInterval: 30_000,
+    refetchInterval: INTERVALO_SONDEO_MS,
   });
   const citas = data?.datos ?? [];
 
-  const { data: empleados = [], isLoading: cargandoEmpleados, isError: errorEmpleados } = useQuery({
+  // Los empleados también se sondean al mismo ritmo: sin esto un fallo dejaba el
+  // aviso "reintentando" fijo para siempre, porque nada volvía a pedirlos.
+  const {
+    data: datosEmpleados, isLoading: cargandoEmpleados, isError: errorEmpleados,
+    refetch: reintentarEmpleados, isFetching: actualizandoEmpleados,
+  } = useQuery({
     queryKey: ["empleados"],
     queryFn: () => empleadosApi.obtenerTodos(),
     staleTime: 1000 * 60 * 5,
+    refetchInterval: INTERVALO_SONDEO_MS,
   });
+  const empleados = datosEmpleados ?? [];
 
   const { data: perfil } = useQuery({
     queryKey: ["negocio-perfil-layout"],
@@ -86,6 +96,13 @@ export default function KioskPage() {
   // lo último que llegó, con su hora (la consulta reintenta cada 30s).
   const sinConexion = isError || errorEmpleados;
   const cargando = (isLoading || cargandoEmpleados) && !sinConexion;
+  // Sin nada cargado, esperar 30s no basta: se ofrece reintentar a mano.
+  const nadaCargado = !data || !datosEmpleados;
+  const reintentando = actualizandoCitas || actualizandoEmpleados;
+  const reintentar = () => {
+    if (isError) reintentarCitas();
+    if (errorEmpleados) reintentarEmpleados();
+  };
   const actualizado = dataUpdatedAt
     ? new Date(dataUpdatedAt).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", hour12: true })
     : null;
@@ -117,8 +134,18 @@ export default function KioskPage() {
       </div>
 
       {sinConexion && (
-        <div role="alert" className="px-6 py-2 bg-amber-500/15 border-b border-amber-400/30 text-sm text-amber-200 flex-shrink-0">
-          {`Sin conexión · reintentando${actualizado ? ` · última actualización ${actualizado}` : ""}`}
+        <div role="alert" className="px-6 py-2 bg-amber-500/15 border-b border-amber-400/30 text-sm text-amber-200 flex-shrink-0 flex flex-wrap items-center justify-between gap-2">
+          <span>{`Sin conexión · reintentando${actualizado ? ` · última actualización ${actualizado}` : ""}`}</span>
+          {nadaCargado && (
+            <button
+              type="button"
+              onClick={reintentar}
+              disabled={reintentando}
+              className="min-h-[44px] px-4 rounded-lg border border-amber-300/40 font-medium text-amber-100 hover:bg-white/10 disabled:opacity-50 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200"
+            >
+              {reintentando ? "Reintentando…" : "Reintentar"}
+            </button>
+          )}
         </div>
       )}
 

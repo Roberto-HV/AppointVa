@@ -65,6 +65,7 @@ vi.mock("../../api/negocios", () => ({
     actualizarColores: vi.fn().mockResolvedValue({}),
     subirLogo: vi.fn().mockResolvedValue({ url: "" }),
     subirPortada: vi.fn().mockResolvedValue({ url: "" }),
+    subirPoliticas: vi.fn().mockResolvedValue({ url: "" }),
     obtenerHorarios: vi.fn().mockResolvedValue([]),
     obtenerDiasBloqueados: vi.fn().mockResolvedValue([]),
     bloquearDia: vi.fn().mockResolvedValue({}),
@@ -96,6 +97,11 @@ const { toastSpy } = vi.hoisted(() => ({ toastSpy: vi.fn() }));
 vi.mock("../../store/toastStore", () => ({
   useToastStore: () => ({ toast: toastSpy }),
 }));
+
+/** Edita un campo del formulario: sin cambios "Guardar cambios" está deshabilitado. */
+function marcarCambio() {
+  fireEvent.change(screen.getByDisplayValue("Salón Test"), { target: { value: "Salón Test 2" } });
+}
 
 function renderPerfilPage(searchParams = "") {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -183,6 +189,8 @@ describe("PerfilPage — 5 tabs", () => {
     renderPerfilPage();
     await waitFor(() => screen.getByText("Información del negocio"));
 
+    // Sin cambios el botón está deshabilitado (OM-13): se edita otro campo.
+    marcarCambio();
     await userEvent.click(screen.getAllByRole("button", { name: "Guardar cambios" })[0]);
 
     await waitFor(() =>
@@ -237,6 +245,7 @@ describe("PerfilPage — 5 tabs", () => {
     renderPerfilPage();
     await waitFor(() => screen.getByText("Información del negocio"));
 
+    marcarCambio();
     await userEvent.click(screen.getByRole("button", { name: "Guardar cambios" }));
 
     await waitFor(() => expect(negociosApi.actualizarPerfil).toHaveBeenCalled());
@@ -256,6 +265,7 @@ describe("PerfilPage — 5 tabs", () => {
     fireEvent.change(campo, { target: { value: "#FF0" } });
     expect(campo).toHaveValue("#FF0");
 
+    marcarCambio();
     await userEvent.click(screen.getByRole("button", { name: "Guardar cambios" }));
     await waitFor(() => expect(negociosApi.actualizarPerfil).toHaveBeenCalled());
     expect(negociosApi.actualizarColores).not.toHaveBeenCalled();
@@ -499,5 +509,124 @@ describe("PerfilPage — días sin atención usan la fecha local (DC-04 / B7)", 
     const calendario = await screen.findByRole("dialog", { name: /Calendario/ });
     expect(within(calendario).getByRole("button", { name: "20" })).toBeEnabled();
     expect(within(calendario).getByRole("button", { name: "19" })).toBeDisabled();
+  });
+});
+
+describe("PerfilPage — barra de guardado (OM-13)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(negociosApi.obtenerPerfil).mockResolvedValue({ ...PERFIL_BASE } as never);
+    vi.mocked(negociosApi.obtenerHorarios).mockResolvedValue([]);
+  });
+
+  it("sin cambios el botón está deshabilitado; al editar dice 'Cambios sin guardar'", async () => {
+    renderPerfilPage();
+    await waitFor(() => screen.getByText("Información del negocio"));
+    const guardar = screen.getByRole("button", { name: "Guardar cambios" });
+    expect(guardar).toBeDisabled();
+    marcarCambio();
+    expect(guardar).toBeEnabled();
+    expect(within(screen.getByTestId("barra-guardar")).getByRole("status")).toHaveTextContent("Cambios sin guardar");
+  });
+
+  it("mientras guarda muestra 'Guardando…' y no deja mandar un segundo PUT", async () => {
+    let resolver: (v: unknown) => void = () => {};
+    vi.mocked(negociosApi.actualizarPerfil).mockReturnValueOnce(new Promise((r) => { resolver = r; }) as never);
+    renderPerfilPage();
+    await waitFor(() => screen.getByText("Información del negocio"));
+    marcarCambio();
+    fireEvent.click(screen.getByRole("button", { name: "Guardar cambios" }));
+    const pendiente = await screen.findByRole("button", { name: "Guardando…" });
+    expect(pendiente).toBeDisabled();
+    fireEvent.click(pendiente);
+    expect(negociosApi.actualizarPerfil).toHaveBeenCalledTimes(1);
+
+    resolver({});
+    await waitFor(() =>
+      expect(within(screen.getByTestId("barra-guardar")).getByRole("status")).toHaveTextContent("Guardado"),
+    );
+  });
+});
+
+describe("PerfilPage — subidas de imágenes (OM-16)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(negociosApi.obtenerPerfil).mockResolvedValue({ ...PERFIL_BASE } as never);
+  });
+
+  const inputs = () => Array.from(document.querySelectorAll('input[type="file"]')) as HTMLInputElement[];
+
+  it("rechaza un logo que no es imagen sin subirlo y lo explica", async () => {
+    renderPerfilPage();
+    await waitFor(() => screen.getByText("Imágenes"));
+    fireEvent.change(inputs()[0], { target: { files: [new File(["x"], "logo.svg", { type: "image/svg+xml" })] } });
+    expect(negociosApi.subirLogo).not.toHaveBeenCalled();
+    expect(toastSpy).toHaveBeenCalledWith('"logo.svg" no es JPG, PNG, WebP o GIF.', "error");
+  });
+
+  it("una portada demasiado grande no abre la vista previa", async () => {
+    renderPerfilPage();
+    await waitFor(() => screen.getByText("Imágenes"));
+    const grande = new File(["x"], "portada.jpg", { type: "image/jpeg" });
+    Object.defineProperty(grande, "size", { value: 40 * 1024 * 1024 });
+    fireEvent.change(inputs()[1], { target: { files: [grande] } });
+    expect(screen.queryByText("Vista previa de portada")).toBeNull();
+    expect(toastSpy).toHaveBeenCalledWith(expect.stringContaining("el límite es 10 MB"), "error");
+  });
+
+  it("muestra el avance al subir la imagen de políticas", async () => {
+    vi.mocked(negociosApi.subirPoliticas).mockImplementationOnce((_a, onProgreso) => {
+      onProgreso?.(55);
+      return new Promise(() => {});
+    });
+    renderPerfilPage();
+    await waitFor(() => screen.getByText("Imágenes"));
+    fireEvent.change(inputs()[2], { target: { files: [new File(["x"], "p.png", { type: "image/png" })] } });
+    const barra = await screen.findByRole("progressbar", { name: "Subiendo imagen de políticas" });
+    await waitFor(() => expect(barra).toHaveAttribute("aria-valuenow", "55"));
+  });
+});
+
+describe("PerfilPage — correo, QR y cuenta (OM-23, OM-28, OM-29)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(negociosApi.obtenerPerfil).mockResolvedValue({ ...PERFIL_BASE } as never);
+  });
+
+  it("un correo inválido muestra su mensaje, no solo el borde rojo", async () => {
+    renderPerfilPage();
+    const correo = await screen.findByLabelText("Correo de contacto");
+    fireEvent.change(correo, { target: { value: "no-es-correo" } });
+    fireEvent.click(screen.getByRole("button", { name: "Guardar cambios" }));
+    expect(await screen.findByText("Correo inválido")).toBeInTheDocument();
+    expect(correo).toHaveAttribute("aria-invalid", "true");
+    expect(correo.className).toContain("dark:border-red-400");
+  });
+
+  it("'Imprimir' abre una hoja solo con el QR, no imprime el dashboard", async () => {
+    const escrito: string[] = [];
+    const ventana = { document: { write: (h: string) => escrito.push(h), close: vi.fn() }, focus: vi.fn(), print: vi.fn(), close: vi.fn() };
+    const abrir = vi.spyOn(window, "open").mockReturnValue(ventana as unknown as Window);
+    const imprimirPagina = vi.spyOn(window, "print").mockImplementation(() => {});
+    HTMLCanvasElement.prototype.toDataURL = vi.fn(() => "data:image/png;base64,AAA");
+    renderPerfilPage();
+    fireEvent.click(await screen.findByRole("button", { name: "Imprimir" }));
+    expect(abrir).toHaveBeenCalled();
+    expect(imprimirPagina).not.toHaveBeenCalled();
+    expect(escrito.join("")).toContain("Salón Test");
+    expect(escrito.join("")).toContain("/b/salon-test");
+    abrir.mockRestore();
+    imprimirPagina.mockRestore();
+  });
+
+  it("eliminar la cuenta usa un diálogo accesible que se cierra con Escape", async () => {
+    const user = userEvent.setup();
+    renderPerfilPage("?tab=cuenta");
+    await user.click(await screen.findByRole("button", { name: "Eliminar mi cuenta" }));
+    const dialogo = await screen.findByRole("dialog", { name: "¿Eliminar tu cuenta?" });
+    expect(within(dialogo).getByLabelText("Contraseña actual")).toBeInTheDocument();
+    expect(within(dialogo).getByRole("button", { name: "Eliminar cuenta" })).toBeDisabled();
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   });
 });

@@ -1,5 +1,6 @@
 import { api } from "./axios";
 import type { NegocioDto, ActualizarNegocioDto, HorarioDiaDto, BloqueoNegocioDto } from "../types";
+import { configSubida, type OnProgreso } from "../lib/imagenes";
 
 export const negociosApi = {
   obtenerPerfil: async (): Promise<NegocioDto> => {
@@ -12,30 +13,24 @@ export const negociosApi = {
     return data;
   },
 
-  subirLogo: async (archivo: File): Promise<{ url: string }> => {
+  subirLogo: async (archivo: File, onProgreso?: OnProgreso): Promise<{ url: string }> => {
     const form = new FormData();
     form.append("archivo", archivo);
-    const { data } = await api.post("/negocios/perfil/logo", form, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    const { data } = await api.post("/negocios/perfil/logo", form, configSubida(onProgreso));
     return data;
   },
 
-  subirPortada: async (archivo: File): Promise<{ url: string }> => {
+  subirPortada: async (archivo: File, onProgreso?: OnProgreso): Promise<{ url: string }> => {
     const form = new FormData();
     form.append("archivo", archivo);
-    const { data } = await api.post("/negocios/perfil/portada", form, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    const { data } = await api.post("/negocios/perfil/portada", form, configSubida(onProgreso));
     return data;
   },
 
-  subirPoliticas: async (archivo: File): Promise<{ url: string }> => {
+  subirPoliticas: async (archivo: File, onProgreso?: OnProgreso): Promise<{ url: string }> => {
     const form = new FormData();
     form.append("archivo", archivo);
-    const { data } = await api.post("/negocios/perfil/politicas", form, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    const { data } = await api.post("/negocios/perfil/politicas", form, configSubida(onProgreso));
     return data;
   },
 
@@ -85,13 +80,11 @@ export const negociosApi = {
     return data;
   },
 
-  subirImagenGaleria: async (archivo: File, descripcion?: string): Promise<ImagenGaleriaItem> => {
+  subirImagenGaleria: async (archivo: File, descripcion?: string, onProgreso?: OnProgreso): Promise<ImagenGaleriaItem> => {
     const form = new FormData();
     form.append("archivo", archivo);
     if (descripcion) form.append("descripcion", descripcion);
-    const { data } = await api.post("/negocios/galeria", form, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    const { data } = await api.post("/negocios/galeria", form, configSubida(onProgreso));
     return data;
   },
 

@@ -1,6 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
   fechaLocal,
+  comoUtc,
+  deFechaLocal,
+  fechaLargaLocal,
+  soloFecha,
+  finDelDiaEnZona,
   hoy,
   inicioSemana,
   finSemana,
@@ -166,5 +171,46 @@ describe("orden de los rangos", () => {
       expect(inicioMes() <= hoy()).toBe(true);
       expect(hoy() <= finMes()).toBe(true);
     }
+  });
+});
+
+describe("comoUtc", () => {
+  it("añade la Z solo cuando el ISO no trae zona", () => {
+    expect(comoUtc("2026-10-21T15:00:00")).toBe("2026-10-21T15:00:00Z");
+    expect(comoUtc("2026-10-21T15:00:00Z")).toBe("2026-10-21T15:00:00Z");
+    expect(comoUtc("2026-10-21T15:00:00-06:00")).toBe("2026-10-21T15:00:00-06:00");
+  });
+});
+
+describe("fechas locales desde YYYY-MM-DD (OM-19)", () => {
+  it("deFechaLocal no se corre un día por la zona horaria", () => {
+    const d = deFechaLocal("2026-10-01");
+    expect([d.getFullYear(), d.getMonth(), d.getDate()]).toEqual([2026, 9, 1]);
+  });
+
+  it("fechaLargaLocal muestra el mismo día que se pidió", () => {
+    expect(fechaLargaLocal("2026-10-01")).toMatch(/^01 de octubre de 2026$/);
+  });
+
+  it("soloFecha quita la hora y conserva el día local", () => {
+    const d = soloFecha(new Date(2026, 9, 21, 23, 15).toISOString());
+    expect([d.getDate(), d.getHours(), d.getMinutes()]).toEqual([21, 0, 0]);
+  });
+});
+
+describe("finDelDiaEnZona (OM-24)", () => {
+  it("el 31 de diciembre en Ciudad de México termina a las 05:59:59 UTC del día siguiente", () => {
+    expect(finDelDiaEnZona("2026-12-31", "America/Mexico_City")).toBe("2027-01-01T05:59:59.000Z");
+  });
+
+  it("respeta otras zonas, incluido el horario de verano", () => {
+    expect(finDelDiaEnZona("2026-07-15", "America/New_York")).toBe("2026-07-16T03:59:59.000Z");
+    expect(finDelDiaEnZona("2026-07-15", "UTC")).toBe("2026-07-15T23:59:59.000Z");
+  });
+
+  it("con una zona inválida o ausente usa el fin del día local del navegador", () => {
+    const esperado = new Date(2026, 6, 15, 23, 59, 59).toISOString();
+    expect(finDelDiaEnZona("2026-07-15", "No/Existe")).toBe(esperado);
+    expect(finDelDiaEnZona("2026-07-15")).toBe(esperado);
   });
 });

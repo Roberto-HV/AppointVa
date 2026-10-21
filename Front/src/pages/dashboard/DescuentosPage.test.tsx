@@ -17,6 +17,10 @@ vi.mock("../../api/descuentos", () => ({
   },
 }));
 
+vi.mock("../../api/negocios", () => ({
+  negociosApi: { obtenerPerfil: vi.fn().mockResolvedValue({ zonaHoraria: "America/Mexico_City" }) },
+}));
+
 vi.mock("../../store/toastStore", () => ({
   useToastStore: () => ({ toast: mockToast }),
 }));
@@ -149,8 +153,8 @@ describe("DescuentosPage — eliminar cupón", () => {
     vi.mocked(descuentosApi.getDescuentos).mockResolvedValue([makeDescuento()]);
 
     renderConQuery();
-    fireEvent.click(await screen.findByTitle("Desactivar"));
-    fireEvent.click(await screen.findByRole("button", { name: "Desactivar cupón" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Eliminar cupón TEST10" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Eliminar cupón" }));
 
     await waitFor(() => {
       expect(descuentosApi.eliminar).toHaveBeenCalledWith("1");
@@ -161,11 +165,61 @@ describe("DescuentosPage — eliminar cupón", () => {
     vi.mocked(descuentosApi.getDescuentos).mockResolvedValue([makeDescuento()]);
 
     renderConQuery();
-    fireEvent.click(await screen.findByTitle("Desactivar"));
+    fireEvent.click(await screen.findByRole("button", { name: "Eliminar cupón TEST10" }));
     fireEvent.click(await screen.findByRole("button", { name: "Volver" }));
 
     await waitFor(() => {
       expect(descuentosApi.eliminar).not.toHaveBeenCalled();
     });
+  });
+});
+
+describe("DescuentosPage — validación y expiración (OM-24)", () => {
+  const abrir = async () => {
+    renderConQuery();
+    fireEvent.click(await screen.findByRole("button", { name: /Nuevo cupón/ }));
+    return screen.getByRole("dialog", { name: "Nuevo cupón" });
+  };
+
+  it("un porcentaje mayor a 100 no llega al servidor y se explica bajo el campo", async () => {
+    await abrir();
+    fireEvent.change(screen.getByPlaceholderText("PROMO20"), { target: { value: "MUCHO" } });
+    fireEvent.change(screen.getByPlaceholderText("20"), { target: { value: "150" } });
+    fireEvent.click(screen.getByRole("button", { name: /Crear cupón/ }));
+    expect(await screen.findByText("Un porcentaje no puede pasar de 100%")).toBeInTheDocument();
+    expect(screen.getByLabelText("Valor (%)")).toHaveAttribute("aria-invalid", "true");
+    expect(descuentosApi.crear).not.toHaveBeenCalled();
+  });
+
+  it("Enter en el formulario lo envía (ahora es un <form>)", async () => {
+    await abrir();
+    fireEvent.change(screen.getByPlaceholderText("PROMO20"), { target: { value: "ENTER5" } });
+    fireEvent.change(screen.getByPlaceholderText("20"), { target: { value: "5" } });
+    fireEvent.submit(screen.getByPlaceholderText("20").closest("form")!);
+    await waitFor(() => expect(descuentosApi.crear).toHaveBeenCalledWith(expect.objectContaining({ codigo: "ENTER5", valor: 5 })));
+  });
+
+  it("el monto fijo se muestra con formato de precio", async () => {
+    vi.mocked(descuentosApi.getDescuentos).mockResolvedValue([makeDescuento({ tipo: "MontoFijo", valor: 50 })]);
+    renderConQuery();
+    expect(await screen.findByText("$50.00 de descuento")).toBeInTheDocument();
+  });
+
+  it("la fecha de expiración se muestra como 'Válido hasta' en el día local correcto", async () => {
+    // 05:59:59 UTC del 1 de enero = 23:59:59 del 31 de diciembre en Ciudad de México.
+    vi.mocked(descuentosApi.getDescuentos).mockResolvedValue([
+      makeDescuento({ fechaExpiracion: "2027-01-01T05:59:59" }),
+    ]);
+    renderConQuery();
+    expect(await screen.findByText(/Válido hasta:/)).toBeInTheDocument();
+  });
+});
+
+describe("DescuentosPage — error de carga", () => {
+  it("un fallo no se lee como 'no hay cupones'", async () => {
+    vi.mocked(descuentosApi.getDescuentos).mockRejectedValueOnce(new Error("red"));
+    renderConQuery();
+    expect(await screen.findByText("No se pudieron cargar los cupones.")).toBeInTheDocument();
+    expect(screen.queryByText("No hay cupones configurados")).toBeNull();
   });
 });
