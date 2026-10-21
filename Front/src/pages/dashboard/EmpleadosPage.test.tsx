@@ -134,6 +134,9 @@ function renderConQuery() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // clearAllMocks keeps queued *Once values; a test that ends before its
+  // query fires would leak them into the next test.
+  vi.mocked(empleadosApi.obtenerHorario).mockReset();
 });
 
 describe("EmpleadosPage — estado de carga", () => {

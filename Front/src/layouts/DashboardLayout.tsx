@@ -2,6 +2,7 @@
 import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { Menu, X, LayoutDashboard, CalendarDays, Users, Scissors, UserCheck, Building2, Link, Copy, Check, BarChart2, ShieldCheck, UserCircle, Images, ClipboardList, Tag, LogOut, ChevronLeft, ChevronRight, BookOpen, Moon, Sun, CreditCard, Star } from "lucide-react";
 import { useTheme } from "../hooks/useTheme";
+import LogoMarca from "../components/LogoMarca";
 import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "../store/authStore";
 import { authApi } from "../api/auth";
@@ -9,7 +10,7 @@ import { negociosApi } from "../api/negocios";
 import { citasApi, ESTADOS } from "../api/citas";
 import { useToastStore } from "../store/toastStore";
 import { Tooltip } from "../components/ui/Tooltip";
-import Modal from "../components/ui/Modal";
+import AvisoInactividad from "../components/AvisoInactividad";
 import { NotificacionesBell } from '../components/dashboard/NotificacionesBell';
 import { EncuestaSatisfaccionModal } from '../components/dashboard/EncuestaSatisfaccionModal';
 import AvisoActivacionPendiente from '../components/dashboard/AvisoActivacionPendiente';
@@ -470,7 +471,7 @@ export default function DashboardLayout() {
                   <img src="/icons/LogoAppOscuro.png" alt="AppointVa" className="h-7 object-contain transition-all duration-200 hidden dark:block" />
                 </>
               ) : theme === "dark" || salud ? (
-                <img src="/MaterLogoOscuro.png" alt="AppointVa" className="h-10 object-contain transition-all duration-200" style={{ mixBlendMode: "screen" }} />
+                <LogoMarca prioridad variante="oscuro" className="h-10 transition-all duration-200" />
               ) : (
                 <img src="/icons/Banner.png" alt="AppointVa" className="h-10 object-contain transition-all duration-200" />
               )}
@@ -708,30 +709,7 @@ export default function DashboardLayout() {
 
       </div>
 
-      {/* Aviso antes del cierre por inactividad: cerrar el aviso cuenta como seguir. */}
-      <Modal abierto={inactividad.aviso} onCerrar={inactividad.seguir} titulo="¿Sigues ahí?" ancho="sm">
-        <div className="space-y-5">
-          <p className="text-sm text-muted-foreground">
-            Por seguridad, tu sesión se cerrará en 1 minuto por inactividad. Lo que no hayas guardado se perderá.
-          </p>
-          <div className="flex flex-col-reverse sm:flex-row gap-2">
-            <button
-              type="button"
-              onClick={() => handleLogout()}
-              className="min-h-[44px] lg:min-h-[36px] flex-1 px-4 rounded-xl border border-border text-sm font-medium text-foreground hover:bg-muted transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              Cerrar sesión
-            </button>
-            <button
-              type="button"
-              onClick={inactividad.seguir}
-              className="min-h-[44px] lg:min-h-[36px] flex-1 px-4 rounded-xl text-sm font-semibold bg-primary text-primary-foreground hover:opacity-90 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              Seguir conectado
-            </button>
-          </div>
-        </div>
-      </Modal>
+      <AvisoInactividad abierto={inactividad.aviso} onSeguir={inactividad.seguir} onCerrarSesion={() => handleLogout()} />
 
       {encuestaEstado?.mostrar && !encuestaCerrada && (
         <EncuestaSatisfaccionModal onCerrar={() => setEncuestaCerrada(true)} />

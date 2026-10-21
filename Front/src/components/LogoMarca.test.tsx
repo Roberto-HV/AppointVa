@@ -18,4 +18,12 @@ describe("LogoMarca", () => {
     expect(img.getAttribute("src")).toBe("/logo-appointva-sm.png");
     expect(img.getAttribute("loading")).toBe("lazy");
   });
+
+  it("la variante oscura usa la copia optimizada de texto claro", () => {
+    render(<LogoMarca variante="oscuro" className="h-10" />);
+    const img = screen.getByRole("img", { name: "AppointVa" });
+    expect(img.getAttribute("src")).toBe("/logo-appointva-oscuro.png");
+    expect(img.getAttribute("width")).toBe("576");
+    expect(img.getAttribute("height")).toBe("192");
+  });
 });

@@ -562,3 +562,42 @@ describe('NegociosAdminPage — Nuevo negocio (AP-23)', () => {
     expect(within(dialogo).getByRole('button', { name: 'Crear negocio' })).toBeDisabled();
   });
 });
+
+describe('NegociosAdminPage — error de métricas', () => {
+  beforeEach(() => {
+    vi.mocked(adminModule.adminApi.obtenerPagos).mockResolvedValue([]);
+    vi.mocked(adminModule.adminApi.obtenerPlanes).mockResolvedValue([]);
+  });
+
+  it('un fallo de métricas muestra el error con Reintentar en vez de KPIs en cero', async () => {
+    vi.mocked(adminModule.adminApi.obtenerMetricas)
+      .mockReset()
+      .mockRejectedValueOnce(new Error('500'))
+      .mockResolvedValue([mockNegocio]);
+    vi.mocked(adminModule.adminApi.obtenerSuscripciones).mockResolvedValue([mockSuscripcion]);
+    const user = userEvent.setup();
+    renderPage();
+
+    const alerta = await screen.findByRole('alert');
+    expect(alerta).toHaveTextContent('No se pudieron cargar las métricas del panel.');
+    expect(screen.queryByText('Ingresos est.')).not.toBeInTheDocument();
+    expect(screen.queryByText(/registrados? en total/)).not.toBeInTheDocument();
+    expect(screen.queryByText('No hay negocios registrados')).not.toBeInTheDocument();
+
+    await user.click(within(alerta).getByRole('button', { name: 'Reintentar' }));
+
+    expect(await screen.findByText('Peluquería Test')).toBeInTheDocument();
+    expect(screen.getByText('Ingresos est.')).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(adminModule.adminApi.obtenerMetricas).toHaveBeenCalledTimes(2);
+  });
+
+  it('un fallo de suscripciones también muestra el error en vez de ingresos en cero', async () => {
+    vi.mocked(adminModule.adminApi.obtenerMetricas).mockResolvedValue([mockNegocio]);
+    vi.mocked(adminModule.adminApi.obtenerSuscripciones).mockRejectedValue(new Error('500'));
+    renderPage();
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('No se pudieron cargar las métricas del panel.');
+    expect(screen.queryByText('Ingresos est.')).not.toBeInTheDocument();
+  });
+});

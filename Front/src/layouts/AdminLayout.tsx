@@ -1,11 +1,16 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { Menu, X, ExternalLink, Sun, Moon } from "lucide-react";
 import { useAuthStore } from "../store/authStore";
 import { authApi } from "../api/auth";
 import { useInactividadTimeout } from "../hooks/useInactividadTimeout";
 import { useTheme } from "../hooks/useTheme";
-import { AppLogo } from "../components/AppLogo";
+import { useMediaQuery } from "../hooks/useMediaQuery";
+import LogoMarca from "../components/LogoMarca";
+import AvisoInactividad from "../components/AvisoInactividad";
+
+/** Desde `md` el sidebar es fijo; por debajo es un cajón modal. */
+const CONSULTA_ESCRITORIO = "(min-width: 768px)";
 
 const ENLACE_NAV =
   "flex items-center gap-1 min-h-[44px] px-4 rounded-xl text-sm font-medium transition-colors " +
@@ -32,9 +37,44 @@ export default function AdminLayout() {
     }
   };
 
-  useInactividadTimeout(handleLogout);
+  const inactividad = useInactividadTimeout(handleLogout);
 
-  const cerrarSidebar = () => setSidebarOpen(false);
+  const esEscritorio = useMediaQuery(CONSULTA_ESCRITORIO);
+  const sidebarRef = useRef<HTMLElement>(null);
+  const botonMenuRef = useRef<HTMLButtonElement>(null);
+  const botonCerrarRef = useRef<HTMLButtonElement>(null);
+
+  // Mismo patrón que DashboardLayout: al cerrar el cajón, el foco vuelve al
+  // botón que lo abrió.
+  const cerrarSidebar = () => {
+    const estabaAbierto = sidebarOpen;
+    setSidebarOpen(false);
+    if (estabaAbierto && !esEscritorio) botonMenuRef.current?.focus();
+  };
+
+  // Cajón abierto: foco al botón de cerrar, Escape lo cierra y Tab no sale de él.
+  useEffect(() => {
+    if (!sidebarOpen || esEscritorio) return;
+    botonCerrarRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setSidebarOpen(false);
+        botonMenuRef.current?.focus();
+        return;
+      }
+      if (e.key !== "Tab" || !sidebarRef.current) return;
+      const enfocables = sidebarRef.current.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+      if (enfocables.length === 0) return;
+      const primero = enfocables[0];
+      const ultimo = enfocables[enfocables.length - 1];
+      if (e.shiftKey && document.activeElement === primero) { e.preventDefault(); ultimo.focus(); }
+      else if (!e.shiftKey && document.activeElement === ultimo) { e.preventDefault(); primero.focus(); }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [sidebarOpen, esEscritorio]);
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-slate-50 dark:bg-slate-950">
@@ -42,9 +82,11 @@ export default function AdminLayout() {
       {/* ── Barra superior móvil ── */}
       <header className="md:hidden bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 px-4 py-3 flex items-center gap-3 sticky top-0 z-30 shadow-sm">
         <button
+          ref={botonMenuRef}
           onClick={() => setSidebarOpen(true)}
           aria-label="Abrir el menú"
           aria-expanded={sidebarOpen}
+          aria-controls="menu-admin"
           className="min-h-[44px] min-w-[44px] -ml-2 flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40"
         >
           <Menu size={22} aria-hidden="true" />
@@ -76,6 +118,13 @@ export default function AdminLayout() {
 
       {/* ── Sidebar ── */}
       <aside
+        id="menu-admin"
+        ref={sidebarRef}
+        aria-label="Menú de administración"
+        // Cerrado en móvil, el cajón está fuera de pantalla: `inert` saca sus
+        // enlaces del orden de tabulación y del lector de pantalla.
+        inert={!esEscritorio && !sidebarOpen}
+        {...(!esEscritorio && sidebarOpen ? { role: "dialog", "aria-modal": true } : {})}
         className={`
           fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col
           transition-transform duration-200 ease-in-out
@@ -85,8 +134,9 @@ export default function AdminLayout() {
       >
         {/* Logo + cerrar */}
         <div className="px-5 py-5 flex items-center justify-between">
-          <AppLogo isDark={theme === "dark"} className="h-10 object-contain rounded-xl mx-auto" />
+          <LogoMarca prioridad variante={theme === "dark" ? "oscuro" : "normal"} className="h-10 mx-auto" />
           <button
+            ref={botonCerrarRef}
             onClick={cerrarSidebar}
             aria-label="Cerrar el menú"
             className="md:hidden min-h-[44px] min-w-[44px] -mr-2 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40"
@@ -151,6 +201,8 @@ export default function AdminLayout() {
           <Outlet />
         </div>
       </main>
+
+      <AvisoInactividad abierto={inactividad.aviso} onSeguir={inactividad.seguir} onCerrarSesion={() => handleLogout()} />
     </div>
   );
 }

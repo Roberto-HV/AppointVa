@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { api } from "../../api/axios";
 import PasoFechaHora from "../../components/booking/PasoFechaHora";
 import type { SlotDisponible } from "../../types";
@@ -82,6 +83,8 @@ export default function MisCitasPage() {
   const [errorReagenda, setErrorReagenda] = useState("");
   const [exitoReagenda, setExitoReagenda] = useState("");
   const reagendaTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Sin Dialog.Trigger, Radix no sabe a dónde devolver el foco al cerrar.
+  const botonReagendarRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     return () => {
@@ -93,12 +96,16 @@ export default function MisCitasPage() {
     if (session && !buscado) setBuscado(session);
   }, []);
 
-  useEffect(() => {
-    if (reagendando) {
-      document.body.style.overflow = "hidden";
-      return () => { document.body.style.overflow = ""; };
-    }
-  }, [reagendando]);
+  // Radix Dialog bloquea el scroll del fondo, atrapa el foco y cierra con
+  // Escape; `onCloseAutoFocus` devuelve el foco al botón "Reagendar".
+  const cerrarReagenda = () => {
+    if (reagendaTimerRef.current) clearTimeout(reagendaTimerRef.current);
+    reagendaTimerRef.current = null;
+    setReagendando(null);
+    setSlotNuevo(null);
+    setErrorReagenda("");
+    setExitoReagenda("");
+  };
 
   const { data: queryData, isLoading, error, refetch, isFetching } = useQuery<{ citas: MiCita[]; total: number }>({
     queryKey: ["mis-citas", slug, buscado?.email, buscado?.telefono, pagina],
@@ -164,7 +171,7 @@ export default function MisCitasPage() {
       );
       setExitoReagenda("¡Cita reagendada exitosamente!");
       qc.invalidateQueries({ queryKey: ["mis-citas", slug, buscado.email, buscado.telefono] });
-      reagendaTimerRef.current = setTimeout(() => { setReagendando(null); setSlotNuevo(null); setExitoReagenda(""); }, 5000);
+      reagendaTimerRef.current = setTimeout(cerrarReagenda, 5000);
     } catch (err: unknown) {
       setErrorReagenda(mensajeError(err, "No se pudo reagendar la cita."));
     } finally {
@@ -359,7 +366,7 @@ export default function MisCitasPage() {
                             <>
                               <button
                                 type="button"
-                                onClick={() => { setReagendando(c); setSlotNuevo(null); setErrorReagenda(""); }}
+                                onClick={(e) => { botonReagendarRef.current = e.currentTarget; setReagendando(c); setSlotNuevo(null); setErrorReagenda(""); }}
                                 className={BOTON_SECUNDARIO}
                               >
                                 Reagendar
@@ -537,9 +544,16 @@ export default function MisCitasPage() {
       </div>
 
       {/* Modal reagendar — bottom sheet en mobile */}
-      {reagendando && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center sm:p-4">
-          <div className="bg-white w-full sm:max-w-lg sm:rounded-2xl rounded-t-3xl max-h-[92vh] overflow-y-auto">
+      <DialogPrimitive.Root open={!!reagendando} onOpenChange={(abierto) => { if (!abierto) cerrarReagenda(); }}>
+        <DialogPrimitive.Portal>
+          <DialogPrimitive.Overlay className="fixed inset-0 bg-black/50 z-50" />
+          <DialogPrimitive.Content
+            aria-describedby={undefined}
+            onCloseAutoFocus={(e) => { e.preventDefault(); botonReagendarRef.current?.focus(); }}
+            className="fixed z-50 inset-x-0 bottom-0 sm:inset-auto sm:left-1/2 sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2
+              bg-white w-full sm:max-w-lg sm:rounded-2xl rounded-t-3xl max-h-[92vh] overflow-y-auto focus:outline-none"
+          >
+          {reagendando && (<>
             {/* Handle bar */}
             <div className="flex justify-center pt-3 pb-1 sm:hidden">
               <div className="w-10 h-1 bg-slate-200 rounded-full" />
@@ -547,15 +561,15 @@ export default function MisCitasPage() {
 
             <div className="sticky top-0 bg-white border-b border-slate-100 px-5 py-4 flex items-start justify-between">
               <div>
-                <h2 className="font-bold text-slate-900">Reagendar cita</h2>
+                <DialogPrimitive.Title className="font-bold text-slate-900">Reagendar cita</DialogPrimitive.Title>
                 <p className="text-xs text-slate-400 mt-0.5">{reagendando.nombreServicio} · {reagendando.nombreEmpleado}</p>
               </div>
-              <button
-                onClick={() => { setReagendando(null); setSlotNuevo(null); setErrorReagenda(""); }}
-                className="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition"
+              <DialogPrimitive.Close
+                aria-label="Cerrar"
+                className="min-w-[44px] min-h-[44px] -mr-2 -mt-2 rounded-xl flex items-center justify-center text-slate-500 hover:bg-slate-100 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40"
               >
-                <X size={15} />
-              </button>
+                <X size={15} aria-hidden="true" />
+              </DialogPrimitive.Close>
             </div>
 
             <div className="p-5">
@@ -563,7 +577,7 @@ export default function MisCitasPage() {
                 <div className="flex flex-col items-center gap-3 py-10 text-center">
                   <CheckCircle2 size={48} className="text-emerald-500" />
                   <p className="text-slate-800 font-semibold">{exitoReagenda}</p>
-                  <button onClick={() => { setExitoReagenda(""); setReagendando(null); setSlotNuevo(null); }} className="mt-2 text-xs underline text-emerald-700">Cerrar</button>
+                  <button type="button" onClick={cerrarReagenda} className="mt-2 min-h-[44px] px-3 text-xs underline text-emerald-700">Cerrar</button>
                 </div>
               ) : (
                 <>
@@ -590,9 +604,10 @@ export default function MisCitasPage() {
                 </>
               )}
             </div>
-          </div>
-        </div>
-      )}
+          </>)}
+          </DialogPrimitive.Content>
+        </DialogPrimitive.Portal>
+      </DialogPrimitive.Root>
     </div>
   );
 }

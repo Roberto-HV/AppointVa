@@ -1,7 +1,7 @@
 # Audit: Public Booking Flow
 
 - **Date:** 2026-10-20
-- **Status:** Fixes in progress. Severity 3 (BF-01 … BF-09) is fixed in commit `1e21323`. Severity 2 (BF-10 … BF-22) is fixed in the working tree, pending commit. Severity 1 (BF-23 … BF-27) is fixed in the working tree (2026-10-21, pending commit, not rendered). Each finding carries its own **Status** line.
+- **Status:** All findings fixed. Severity 3 (BF-01 … BF-09) is fixed in commit `1e21323`. Severity 2 (BF-10 … BF-22) is fixed in commit `26bbc55`. Severity 1 (BF-23 … BF-27) is fixed (2026-10-21, commit `f4261c0`, not rendered). Each finding carries its own **Status** line.
 - **Type:** Code-based audit. **Nothing was rendered.** No browser, screenshots, emulated viewports or assistive technology were used. Contrast ratios are calculated from the Tailwind/hex values in the source. Layout and touch behavior are inferred from class names. Verify visual findings in a running build before fixing them.
 
 ## Scope
@@ -31,8 +31,8 @@ Line numbers point to the tree as audited, before any fix; the code has moved si
 | --- | --- | --- | --- |
 | 4 Catastrophic | 0 | — | — |
 | 3 Major | 9 | BF-01 … BF-09 | Fixed in `1e21323` |
-| 2 Minor | 13 | BF-10 … BF-22 | Fixed (pending commit) |
-| 1 Cosmetic | 5 | BF-23 … BF-27 | Fixed (pending commit) |
+| 2 Minor | 13 | BF-10 … BF-22 | Fixed (commit `26bbc55`) |
+| 1 Cosmetic | 5 | BF-23 … BF-27 | Fixed (commit `f4261c0`) |
 | **Total** | **27** | | |
 
 | Framework | Score | Main reasons |
@@ -125,76 +125,76 @@ Line numbers point to the tree as audited, before any fix; the code has moved si
 ## Severity 2: Minor
 
 ### BF-10: The progress indicator has no step names, is invisible with the default brand color, and its total changes mid-flow
-- **Status:** Fixed (pending commit). Remaining limit: the total can still change when a business only has questions tied to specific services; a stable total in that case needs a `tieneIntake` flag on `ServicioPublico` from the backend.
+- **Status:** Fixed (commit `26bbc55`). Remaining limit: the total can still change when a business only has questions tied to specific services; a stable total in that case needs a `tieneIntake` flag on `ServicioPublico` from the backend.
 - **Heuristic:** H1 Visibility; Krug "Step 2 of 4: Shipping details"
 - **Location:** `src/components/booking/IndicadorPasos.tsx:16-38`: the `pasos` labels are passed in but never rendered, and bars use the raw brand `color` on `#18181B`. `BookingPage.tsx:887-892`: the intake query only runs after a service is chosen (`:638`), so the total changes from "1 de 4" to "1 de 5".
 - **User impact:** With the default `#334155`, the active bars reach about 1.7:1 against the strip, so the progress is nearly invisible. Users cannot see what comes next, and the moving total looks like a glitch.
 - **Fix:** Render the current step label ("Paso 2 de 4 · Profesional"). Use a light accent (for example `white/80`, or `brandAccent` calculated against dark) for the bars. Expose `aria-label="Paso 2 de 4: …"` or a `<ol>` with `aria-current="step"`. Decide whether intake exists from the service data, so the total is stable from step 1.
 
 ### BF-11: The summary's "Total a pagar" ignores an applied discount, and prices use two formats
-- **Status:** Fixed (pending commit).
+- **Status:** Fixed (commit `26bbc55`).
 - **Heuristic:** H4 Consistency; H1 Visibility
 - **Location:** `PasoDatosCliente.tsx:326-329` always shows `formatPrecio(servicio.precio)`. The coupon block renders below it (`BookingPage.tsx:1350-1371`) and builds its own string: `` `$${descuentoAplicado.valor}` `` and `(…).toFixed(2)`, where everything else uses `formatPrecio` (es-MX, MXN).
 - **User impact:** After applying a code, the dark summary card still shows the full price right above the green "precio final". This creates doubt at the moment of commitment.
 - **Fix:** Pass the discount into `PasoDatosCliente`, show the original price struck through plus the final total in the summary, and format every amount with `formatPrecio`. Move the coupon trigger above the summary.
 
 ### BF-12: Submission errors are not announced and may appear off-screen
-- **Status:** Fixed (pending commit).
+- **Status:** Fixed (commit `26bbc55`).
 - **Heuristic:** H9 Recognize and recover from errors; WCAG 4.1.3
 - **Location:** `PasoDatosCliente.tsx:250-260` (error box inside the form, above the policies and summary, with no `role="alert"`). The submit button is in the fixed bar (`BookingPage.tsx:986-1000`). The slot-taken banner at `BookingPage.tsx:1239-1246` also has no live region.
 - **User impact:** The user taps "Confirmar cita" at the bottom of the screen, the button returns to its normal state, and nothing visible changes near it. Screen reader users hear nothing.
 - **Fix:** Add `role="alert"` to both error boxes, and scroll the error into view or move focus to it on failure. A short inline status in the action bar ("No se pudo agendar · ver detalle") is also an option.
 
 ### BF-13: The "slot no longer available" banner is never cleared
-- **Status:** Fixed (pending commit).
+- **Status:** Fixed (commit `26bbc55`).
 - **Heuristic:** H1 Visibility (stale status)
 - **Location:** `BookingPage.tsx:603`, `:784`. `setErrorSlotTomado` is only ever called with a message, never with `""`.
 - **User impact:** After picking a new slot, and even after going forward and coming back, the red banner keeps saying the slot is gone.
 - **Fix:** Clear it in the `onSeleccionar` handler passed to `PasoFechaHora` (`:1250`) and when the user leaves step 3.
 
 ### BF-14: "Confirmar cita" is disabled without saying why
-- **Status:** Fixed (pending commit).
+- **Status:** Fixed (commit `26bbc55`).
 - **Heuristic:** H1 Visibility; H5 Error prevention (explain constraints)
 - **Location:** `BookingPage.tsx:993` (`disabled={enviando || (!!negocio.politicasUrl && !politicasAceptadas)}`). The checkbox is at `PasoDatosCliente.tsx:281-291`, inside the scrolling form.
 - **User impact:** On mobile, the checkbox can be off-screen while the faded CTA (`disabled:opacity-40`) is always visible. Users tap a button that does nothing.
 - **Fix:** Keep the button enabled. On submit without acceptance, show an inline error on the checkbox and scroll to it. Alternatively, show a one-line hint in the action bar while the button is disabled ("Acepta las políticas para continuar").
 
 ### BF-15: Validation copy has gaps: English default messages, an inaccurate phone rule, and intake errors with no text
-- **Status:** Fixed (pending commit).
+- **Status:** Fixed (commit `26bbc55`).
 - **Heuristic:** H9; project convention "UI copy is Spanish"
 - **Location:** `PasoDatosCliente.tsx:13`: `.max(15)` has no message, so zod v4 shows its English default. `:15` has the same problem with `notas .max(300)`. `:13`: `.min(10, "Ingresa un teléfono válido de 10 dígitos")` counts characters, not digits, so "12 34 56 7" (7 digits) passes. `:14` "Correo inválido" does not say how to fix it. `BookingPage.tsx:527`, `:546`, `:559`: required intake `select`/`textarea`/`input` only turn the border red, while the checkbox variant (`:506-508`) shows text.
 - **Fix:** Add Spanish messages to every rule ("Máximo 15 caracteres", "Máximo 300 caracteres"). Validate digits with `.refine(v => soloDigitos(v).length === 10, …)`. Use "Revisa el formato del correo (ej. nombre@correo.com)". Show "Este campo es obligatorio" under every required intake field. A `maxLength` counter on notes would also help.
 
 ### BF-16: Design-token violations: gold review stars and hard-coded status colors
-- **Status:** Fixed (pending commit). Only the booking and confirmation pages were migrated; other pages that use the gold (for example `ResenaPage.tsx`) are outside this audit.
+- **Status:** Fixed (commit `26bbc55`). Only the booking and confirmation pages were migrated; other pages that use the gold (for example `ResenaPage.tsx`) are outside this audit.
 - **Principle:** `CLAUDE.md` design system: gold is for the logo only, status colors are semantic tokens
 - **Location:** `BookingPage.tsx:447`, `:460` (`fill="#C8A961" stroke="#C8A961"` on review stars), `:1091` (`#F59E0B` star in the header). `ConfirmacionPage.tsx:283-287` (status badge uses ad hoc `bg-emerald-50 text-emerald-600` / `bg-amber-50 text-amber-600`).
 - **Evidence:** The `--status-*` tokens exist only in `docs/design-system.css:50-69`, `:141-155`. They are not defined in `src/index.css` or `tailwind.config.js`, so there is no class to use.
 - **Fix:** Use a neutral or `amber-500` rating color, defined as a `--rating` token. Add the `--status-*` tokens to `src/index.css`/`tailwind.config.js` (for example `bg-status-pending-bg text-status-pending-fg`) and use them in the badge. Status text also gains contrast (`yellow-700` instead of `amber-600`).
 
 ### BF-17: The confirmation page's action order puts the wrong thing first
-- **Status:** Fixed (pending commit).
+- **Status:** Fixed (commit `26bbc55`).
 - **Heuristic:** H8 Aesthetic and minimalist design (one primary CTA); Refactoring UI button hierarchy; WCAG 2.5.5
 - **Location:** `ConfirmacionPage.tsx:455-469` (full-width WhatsApp share is the primary action, white text on `#25D366` at about 2:1). `:474-481` ("Agregar al calendario" is collapsed behind a toggle with no `aria-expanded`). `:528-548` ("Reagendar" and "Cancelar cita" are bare `text-sm` links well under 44px tall).
 - **User impact:** The most useful next step, saving the appointment to a calendar, takes two taps and looks secondary. Changing or cancelling is hard to tap. The WhatsApp button text is hard to read.
 - **Fix:** Make "Agregar al calendario" the primary action, with Google and Apple shown inline. Make WhatsApp a secondary button (use a darker WhatsApp green such as `#128C7E` or dark text for contrast). Give Reagendar and Cancelar real button styles with `min-h-[44px]`. Add `aria-expanded`/`aria-controls` if the toggle stays.
 
 ### BF-18: The confirmation page's error and loading states give no way forward
-- **Status:** Fixed (pending commit).
+- **Status:** Fixed (commit `26bbc55`).
 - **Heuristic:** H9; H1
 - **Location:** `ConfirmacionPage.tsx:115-129`: every failure, including network errors, shows "Cita no encontrada". There is no retry, and on `/cita/:codigo` (no `slug`) there is no action at all. `:107-113`: the spinner has no `role="status"` or text.
 - **User impact:** A visitor on a weak connection right after booking is told the appointment does not exist and may book again.
 - **Fix:** Tell 404 apart from other errors, as `BookingPage` does at `:829-865`. Offer "Reintentar" and "Ver mis citas". Fall back to `cita.negocioSlug` when it is available. Add `role="status"` and visually hidden "Cargando tu cita…".
 
 ### BF-19: The reschedule picker ignores the minimum-notice rule
-- **Status:** Fixed (pending commit). The frontend passes `diasAnticipacionMinima`, but the backend confirmation payload (`/publico/citas/{codigo}`) does not send it yet, so the limit only takes effect once it does.
+- **Status:** Fixed (commit `26bbc55`). The frontend passes `diasAnticipacionMinima`, but the backend confirmation payload (`/publico/citas/{codigo}`) does not send it yet, so the limit only takes effect once it does.
 - **Heuristic:** H5 Error prevention; H4 Consistency
 - **Location:** `ConfirmacionPage.tsx:568-575` renders `PasoFechaHora` without `diasAnticipacionMinima`, whereas `BookingPage.tsx:1254` passes it.
 - **User impact:** Days the business does not accept appear selectable when rescheduling. The visitor learns this only from a server error (`:581-585`), if the backend enforces it.
 - **Fix:** Expose `diasAnticipacionMinima` in the appointment payload and pass it through. Show the same cancellation policy line used in step 3.
 
 ### BF-20: Controls are unlabeled or too small in the gallery, lightboxes and coupon
-- **Status:** Fixed (pending commit).
+- **Status:** Fixed (commit `26bbc55`).
 - **Heuristic:** WCAG 2.5.5 / 4.1.2; ux-heuristics "tiny tap targets"
 - **Location:**
   - `BookingPage.tsx:229-239`: gallery dots are 6px with no `aria-label`
@@ -207,14 +207,14 @@ Line numbers point to the tree as audited, before any fix; the code has moved si
 - **Fix:** Use `min-w-11 min-h-11` (44px) for all icon buttons, and add `aria-label` ("Cerrar", "Quitar código", "Ir a la imagen 3"). Reuse the shadcn `Dialog` for the lightboxes so they get focus trap, Escape and focus return.
 
 ### BF-21: The selected slot can be active but hidden
-- **Status:** Fixed (pending commit).
+- **Status:** Fixed (commit `26bbc55`).
 - **Heuristic:** H1 Visibility; H6 Recognition
 - **Location:** `PasoFechaHora.tsx:50` (`fechaSel` is local and starts as `null`), `:70-83` (changing week clears `fechaSel` but not the parent's slot). `BookingPage.tsx:716-718`: returning from step 4 to step 3 keeps `slot` but `PasoFechaHora` remounts with no date selected.
 - **User impact:** "Continuar" is enabled but no day or time is highlighted. The user cannot tell what is selected without reaching step 4.
 - **Fix:** Start `fechaSel` and `semanaRef` from `seleccionado?.inicio` when present. Either call `onLimpiarSlot` when changing week, or keep the selected slot's day visible. Show the current selection in the step-3 breadcrumb (`BookingPage.tsx:1147-1161`) as well.
 
 ### BF-22: Day and time buttons don't expose their selected state or full date to screen readers
-- **Status:** Fixed (pending commit).
+- **Status:** Fixed (commit `26bbc55`).
 - **Heuristic:** WCAG 4.1.2, 1.4.1 (selection shown only by color)
 - **Location:** `PasoFechaHora.tsx:145-174` (day buttons are read as "Lu 12" with no month and no `aria-pressed`), `:219-228` (slot buttons have no `aria-pressed`; selection is shown only by background color).
 - **Fix:** Add `aria-pressed={seleccionada}` and `aria-label="lunes 12 de octubre"` (plus ", hoy" when it applies). Wrap the times in `role="group"` with `aria-label` "Mañana"/"Tarde"/"Noche". `FilaSeleccion` already does this well (`aria-pressed`, `FilaSeleccion.tsx:55`).
@@ -224,19 +224,19 @@ Line numbers point to the tree as audited, before any fix; the code has moved si
 ## Severity 1: Cosmetic
 
 ### BF-23: Selection patterns differ between steps, and colors are hard-coded hex
-- **Status:** Fixed (pending commit). `PasoEmpleado` now renders "Sin preferencia" and every staff member as `FilaSeleccion` rows (inset ring + check mark, avatar or initial in `inicio`, biography as the description), the same pattern as step 1; the two custom cards and their hex values are gone. Static hex replaced by Tailwind/tokens: `FilaSeleccion` idle ring uses `hsl(var(--border))`, `IndicadorPasos` strip is `bg-zinc-900`, slot buttons use classes, gallery dots `bg-slate-700/300`, the photo header and confirmation code band `bg-zinc-950`, the confirmation page `bg-slate-50`; `color = "#334155"` defaults use `DEFAULT_COLOR`. Remaining inline colours are brand-derived (`brandAccent`/`brandTint`) and the WhatsApp brand green.
+- **Status:** Fixed (commit `f4261c0`). `PasoEmpleado` now renders "Sin preferencia" and every staff member as `FilaSeleccion` rows (inset ring + check mark, avatar or initial in `inicio`, biography as the description), the same pattern as step 1; the two custom cards and their hex values are gone. Static hex replaced by Tailwind/tokens: `FilaSeleccion` idle ring uses `hsl(var(--border))`, `IndicadorPasos` strip is `bg-zinc-900`, slot buttons use classes, gallery dots `bg-slate-700/300`, the photo header and confirmation code band `bg-zinc-950`, the confirmation page `bg-slate-50`; `color = "#334155"` defaults use `DEFAULT_COLOR`. Remaining inline colours are brand-derived (`brandAccent`/`brandTint`) and the WhatsApp brand green.
 - **Principle:** H4 Consistency; Refactoring UI "systems over one-offs"
 - **Location:** Step 1 uses `FilaSeleccion` rows (inset ring and check mark). Step 2 uses a different two-column card with `border-2` and no check mark (`PasoEmpleado.tsx:88-124`), and its "Sin preferencia" card is a third variant (`:46-77`). Hex literals: `PasoEmpleado.tsx:50`, `:54`, `:58`, `:65`, `:95`, `:118`; `PasoFechaHora.tsx:225`; `FilaSeleccion.tsx:62`; `IndicadorPasos.tsx:12`; `ConfirmacionPage.tsx:193`, `:209`, `:270`; `BookingPage.tsx:236`.
 - **Fix:** Reuse `FilaSeleccion` (with the avatar in `inicio`) for staff, or extract one selectable-card primitive. Replace hex values with tokens. This is also a prerequisite for BF-07.
 
 ### BF-24: Emoji used as interface icons
-- **Status:** Fixed (pending commit). The header without a logo shows the business initial; the address uses lucide `MapPin`; the confirmation status badge uses `Check`/`Clock` with text ("Confirmada", "Pendiente"); the reschedule success banner uses `CheckCircle2` (and lost its dead `dark:` classes). Tests in `BookingPage.test.tsx`, `ConfirmacionPage.test.tsx`.
+- **Status:** Fixed (commit `f4261c0`). The header without a logo shows the business initial; the address uses lucide `MapPin`; the confirmation status badge uses `Check`/`Clock` with text ("Confirmada", "Pendiente"); the reschedule success banner uses `CheckCircle2` (and lost its dead `dark:` classes). Tests in `BookingPage.test.tsx`, `ConfirmacionPage.test.tsx`.
 - **Principle:** impeccable craft floor (no generic or emoji iconography in product UI)
 - **Location:** `BookingPage.tsx:1074` (🏪 fallback logo), `:1112` (📍 address); `ConfirmacionPage.tsx:256` (✓), `:288-289` (✓, ⏳ inside the status badge).
 - **Fix:** Use lucide `Store`, `MapPin`, `Check` and `Clock` (already a dependency). For the fallback logo, use the business initial, consistent with staff avatars.
 
 ### BF-25: Copy and wording refinements
-- **Status:** Fixed (pending commit). The "Reserva tu cita" eyebrow was removed; intake reads "Unas preguntas rápidas" / "Nos ayudan a preparar tu cita."; the review pill is hidden when there are no reviews (and its value has an `sr-only` "Calificación"); the confirmation receipt labels the staff member with `getSectorTerms(sector).empleado`, reading the sector from the cached public business query (`["negocio", slug]`, because `/publico/citas/{codigo}` does not send it); `PasoEmpleado`'s empty message uses `terms.servicio`. `impeccable clarify` was not run.
+- **Status:** Fixed (commit `f4261c0`). The "Reserva tu cita" eyebrow was removed; intake reads "Unas preguntas rápidas" / "Nos ayudan a preparar tu cita."; the review pill is hidden when there are no reviews (and its value has an `sr-only` "Calificación"); the confirmation receipt labels the staff member with `getSectorTerms(sector).empleado`, reading the sector from the cached public business query (`["negocio", slug]`, because `/publico/citas/{codigo}` does not send it); `PasoEmpleado`'s empty message uses `terms.servicio`. `impeccable clarify` was not run.
 - **Principle:** Krug "get rid of half the words"; H4 Consistency
 - **Location:**
   - `BookingPage.tsx:1181`: the eyebrow "Reserva tu cita" in slate-400 repeats the `<h2>` right below it
@@ -247,12 +247,12 @@ Line numbers point to the tree as audited, before any fix; the code has moved si
 - **Fix:** Apply the edits above. Run `impeccable clarify` on the full flow once.
 
 ### BF-26: "Mis citas" links reload the whole app
-- **Status:** Fixed (pending commit). `IndicadorPasos` and the confirmation page's no-email banner use `Link`.
+- **Status:** Fixed (commit `f4261c0`). `IndicadorPasos` and the confirmation page's no-email banner use `Link`.
 - **Location:** `IndicadorPasos.tsx:43-51`, `ConfirmacionPage.tsx:244-249` use `<a href>` instead of `Link`.
 - **Fix:** Use `Link` from `react-router-dom` to avoid a full reload and refetch.
 
 ### BF-27: Clipboard failures are silent
-- **Status:** Fixed (pending commit). When the clipboard is missing or rejects, the link appears in a read-only field (selected on focus) under the button that failed, announced with `role="alert"`. Test in `ConfirmacionPage.test.tsx`.
+- **Status:** Fixed (commit `f4261c0`). When the clipboard is missing or rejects, the link appears in a read-only field (selected on focus) under the button that failed, announced with `role="alert"`. Test in `ConfirmacionPage.test.tsx`.
 - **Heuristic:** H1 Visibility
 - **Location:** `ConfirmacionPage.tsx:94`, `:102` (`catch {}`)
 - **User impact:** Low on its own, but visitors without an email depend on this link (`:227-235`).

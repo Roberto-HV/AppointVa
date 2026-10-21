@@ -22,6 +22,7 @@ import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
 import BotonAccion from "../../components/ui/BotonAccion";
 import Tabs from "../../components/ui/Tabs";
 import EmptyState from "../../components/ui/EmptyState";
+import ErrorCarga from "../../components/ui/ErrorCarga";
 import Pagination from "../../components/ui/Pagination";
 import { FiltroBarra } from "../../components/ui/filtros";
 import { usePaginacionLocal } from "../../hooks/usePaginacionLocal";
@@ -1040,17 +1041,30 @@ export default function NegociosAdminPage() {
   const queryClient = qc;
   const [tab, setTab] = useState<'negocios' | 'facturacion'>('negocios');
 
-  const { data: metricas = [], isLoading } = useQuery({
+  const {
+    data: metricas = [], isLoading, isError: errorMetricas, refetch: recargarMetricas, isFetching: recargandoMetricas,
+  } = useQuery({
     queryKey: ["admin-negocios-metricas"],
     queryFn: adminApi.obtenerMetricas,
     staleTime: 1000 * 60 * 2,
   });
 
-  const { data: suscripciones = [] } = useQuery({
+  const {
+    data: suscripciones = [], isLoading: cargandoSuscripciones, isError: errorSuscripciones,
+    refetch: recargarSuscripciones, isFetching: recargandoSuscripciones,
+  } = useQuery({
     queryKey: ["admin-suscripciones"],
     queryFn: adminApi.obtenerSuscripciones,
     staleTime: 1000 * 60,
   });
+
+  // Un fallo de cualquiera de las dos consultas deja los KPIs en cero: se
+  // muestra el error con "Reintentar" en vez de cifras falsas.
+  const errorPanel = errorMetricas || errorSuscripciones;
+  const reintentarPanel = () => {
+    if (errorMetricas) recargarMetricas();
+    if (errorSuscripciones) recargarSuscripciones();
+  };
 
   const suscripcionMap = useMemo(
     () => Object.fromEntries(suscripciones.map((s) => [s.negocioId, s])),
@@ -1326,7 +1340,7 @@ export default function NegociosAdminPage() {
       <EncabezadoPagina
         className="mb-5"
         titulo="Panel de negocios"
-        subtitulo={`${metricas.length} ${metricas.length === 1 ? "registrado" : "registrados"} en total`}
+        subtitulo={isLoading || errorMetricas ? undefined : `${metricas.length} ${metricas.length === 1 ? "registrado" : "registrados"} en total`}
         acciones={
           <BotonAccion onClick={() => { formNegocio.reset(); setModalNegocio(true); }}>
             + Nuevo negocio
@@ -1335,7 +1349,14 @@ export default function NegociosAdminPage() {
       />
 
       {/* Metrics strip */}
-      {!isLoading && (
+      {errorPanel ? (
+        <ErrorCarga
+          className="mb-5 py-6"
+          mensaje="No se pudieron cargar las métricas del panel."
+          onReintentar={reintentarPanel}
+          reintentando={recargandoMetricas || recargandoSuscripciones}
+        />
+      ) : !isLoading && !cargandoSuscripciones && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
           {[
             { label: "Total", value: String(metricas.length), color: "text-slate-700 dark:text-slate-200" },
@@ -1409,7 +1430,7 @@ export default function NegociosAdminPage() {
           {/* Grid de tarjetas */}
           {isLoading ? (
             <p className="text-slate-400 dark:text-slate-500">Cargando negocios...</p>
-          ) : metricasFiltradas.length === 0 ? (
+          ) : errorMetricas ? null : metricasFiltradas.length === 0 ? (
             <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700">
               {hayFiltros ? (
                 <EmptyState
@@ -1468,7 +1489,7 @@ export default function NegociosAdminPage() {
         </>
       )}
 
-      {tab === 'facturacion' && (
+      {tab === 'facturacion' && !errorSuscripciones && (
         <div>
           {suscripcionesFiltradas.length === 0 ? (
             <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700">

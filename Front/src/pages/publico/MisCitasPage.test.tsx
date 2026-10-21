@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import MisCitasPage from "./MisCitasPage";
@@ -221,5 +222,38 @@ describe("MisCitasPage", () => {
     expect(
       screen.getByRole("link", { name: /nueva reserva/i })
     ).toBeInTheDocument();
+  });
+  it("reagendar abre un diálogo modal con título; Escape lo cierra y el foco vuelve al botón", async () => {
+    localStorage.setItem(SESSION_KEY, JSON.stringify(mockSession));
+    vi.mocked(api.get).mockResolvedValue({
+      data: [futureCita],
+      headers: { "x-total-count": "1" },
+    });
+    const user = userEvent.setup();
+    renderConQuery();
+    const boton = await screen.findByRole("button", { name: "Reagendar" });
+    await user.click(boton);
+
+    const dialogo = await screen.findByRole("dialog", { name: "Reagendar cita" });
+    expect(dialogo).toContainElement(screen.getByTestId("paso-fecha-hora"));
+    expect(dialogo).toContainElement(document.activeElement as HTMLElement);
+
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(boton).toHaveFocus();
+  });
+
+  it("el botón Cerrar del diálogo de reagendar tiene nombre accesible y lo cierra", async () => {
+    localStorage.setItem(SESSION_KEY, JSON.stringify(mockSession));
+    vi.mocked(api.get).mockResolvedValue({
+      data: [futureCita],
+      headers: { "x-total-count": "1" },
+    });
+    const user = userEvent.setup();
+    renderConQuery();
+    await user.click(await screen.findByRole("button", { name: "Reagendar" }));
+    const dialogo = await screen.findByRole("dialog", { name: "Reagendar cita" });
+    await user.click(within(dialogo).getByRole("button", { name: "Cerrar" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
   });
 });
