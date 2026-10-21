@@ -11,6 +11,7 @@ import { z } from "zod";
 import { serviciosApi, categoriasApi } from "../../api/servicios";
 import Modal from "../../components/ui/Modal";
 import ConfirmarAccion from "../../components/ui/ConfirmarAccion";
+import DialogoEliminarConCitas from "../../components/dashboard/DialogoEliminarConCitas";
 import Pagination from "../../components/ui/Pagination";
 import BotonAccion from "../../components/ui/BotonAccion";
 import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
@@ -624,22 +625,25 @@ export default function ServiciosPage() {
         </form>
       </Modal>
 
-      {/* Confirmar eliminar servicio. Ocultarlo es la alternativa reversible. */}
-      <ConfirmarAccion
+      {/* Eliminar servicio (decisión 7, OM-17): se bloquea si tiene citas
+          abiertas desde hoy, y ocultarlo (reversible) es la acción principal. */}
+      <DialogoEliminarConCitas
         abierto={!!servicioEliminar}
         titulo={`Eliminar ${terms.servicio.toLowerCase()}`}
+        filtro={servicioEliminar ? { servicioId: servicioEliminar.id } : null}
+        terminoCitas={{ singular: terms.cita.toLowerCase(), plural: terms.citas.toLowerCase() }}
         mensaje={servicioEliminar && (
-          <>
-            <p className="mb-2">{`¿Seguro que deseas eliminar "${servicioEliminar.nombre}"? Esta acción no se puede deshacer.`}</p>
-            {servicioEliminar.activo && (
-              <p>{`Si solo quieres dejar de ofrecerlo, apaga "Visible en reservas": se puede volver a activar cuando quieras.`}</p>
-            )}
-          </>
+          <p>{`¿Seguro que deseas eliminar "${servicioEliminar.nombre}"? Esta acción no se puede deshacer.`}</p>
         )}
-        etiquetaConfirmar={`Eliminar ${terms.servicio.toLowerCase()}`}
-        destructiva
-        pendiente={eliminandoServicio}
-        onConfirmar={() => servicioEliminar && eliminarServicio(servicioEliminar.id)}
+        alternativa={servicioEliminar?.activo ? {
+          etiqueta: "Ocultar de reservas",
+          descripcion: "Si solo quieres dejar de ofrecerlo, ocúltalo de tu página de reservas: se puede volver a activar cuando quieras.",
+          pendiente: activoPendiente === servicioEliminar.id,
+          onSelect: () => mutToggleActivo(servicioEliminar, { onSuccess: () => setServicioEliminar(null) }),
+        } : undefined}
+        etiquetaEliminar={`Eliminar ${terms.servicio.toLowerCase()}`}
+        eliminando={eliminandoServicio}
+        onEliminar={() => servicioEliminar && eliminarServicio(servicioEliminar.id)}
         onCerrar={() => setServicioEliminar(null)}
       />
 

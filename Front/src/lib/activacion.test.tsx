@@ -13,10 +13,19 @@ describe("mensaje de activación", () => {
     expect(screen.getByRole("status")).toHaveTextContent("Tu negocio está pendiente de activación.");
   });
 
-  it("no promete lo que el backend no hace: ni aviso por correo ni un plazo fijo", () => {
+  it("da el plazo comprometido y dice cómo se entera el propietario (decisión 1)", () => {
+    for (const texto of [ACTIVACION_FAQ, ACTIVACION_RESUMEN, ACTIVACION_PASOS[2]]) {
+      expect(texto).toContain("en menos de 24 horas hábiles");
+    }
+    expect(ACTIVACION_FAQ).toMatch(/el aviso desaparece cuando tu negocio esté activo/);
+    render(<AvisoActivacionPendiente />);
+    expect(screen.getByRole("status")).toHaveTextContent("Este aviso desaparece cuando tu negocio esté activo.");
+  });
+
+  it("no promete lo que el backend no hace: ni aviso por correo ni activación inmediata", () => {
     const todo = [ACTIVACION_FAQ, ACTIVACION_RESUMEN, ...ACTIVACION_PASOS].join(" ");
     expect(todo).not.toMatch(/te notificamos|te avisaremos por (email|correo)/i);
-    expect(todo).not.toMatch(/24-48|24–48|48 horas/);
+    expect(todo).not.toMatch(/24-48|24–48|48 horas|5 minutos|al instante|inmediat/i);
   });
 
   it("dice que la activación es manual y que la página no recibe citas mientras tanto", () => {

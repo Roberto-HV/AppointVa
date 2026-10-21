@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import KioskPage from "./KioskPage";
@@ -11,6 +11,8 @@ import { empleadosApi } from "../../api/empleados";
 import { negociosApi } from "../../api/negocios";
 import type { PaginaCitas } from "../../api/citas";
 import type { EmpleadoDto } from "../../types";
+import { authApi } from "../../api/auth";
+import { AxiosError, AxiosHeaders } from "axios";
 
 // ── Hoisted mocks ─────────────────────────────────────────────────────────────
 
@@ -39,8 +41,18 @@ vi.mock("../../store/toastStore", () => ({
 }));
 
 vi.mock("../../store/authStore", () => ({
-  useAuthStore: (selector: (s: { usuario: null }) => unknown) =>
-    selector({ usuario: null }),
+  useAuthStore: (selector: (s: { usuario: { email: string; rol: string } }) => unknown) =>
+    selector({ usuario: { email: "dueno@negocio.mx", rol: "Propietario" } }),
+}));
+
+vi.mock("../../api/auth", () => ({
+  authApi: { login: vi.fn(), logout: vi.fn().mockResolvedValue(undefined) },
+}));
+
+const mockNavigate = vi.hoisted(() => vi.fn());
+vi.mock("react-router-dom", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("react-router-dom")>()),
+  useNavigate: () => mockNavigate,
 }));
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -153,7 +165,9 @@ describe("KioskPage — tarjeta de cita", () => {
       tamano: 200,
     });
     renderKiosk();
-    await screen.findByText("María López");
+    // Solo nombre e inicial del apellido: la pantalla se ve desde la sala (DC-28).
+    await screen.findByText("María L.");
+    expect(screen.queryByText("María López")).not.toBeInTheDocument();
   });
 });
 
@@ -178,11 +192,58 @@ describe("KioskPage — barra de progreso en curso", () => {
   });
 });
 
-describe("KioskPage — enlace de salida", () => {
-  it("muestra un enlace a /dashboard/citas", async () => {
+describe("KioskPage — salida protegida (DC-13)", () => {
+  const error401 = () =>
+    new AxiosError("401", "ERR", undefined, undefined, {
+      status: 401, statusText: "", headers: {}, config: { headers: new AxiosHeaders() }, data: {},
+    });
+
+  async function abrirSalida() {
     renderKiosk();
-    const link = await screen.findByRole("link", { name: /Salir del modo pantalla/ });
-    expect(link).toHaveAttribute("href", "/dashboard/citas");
+    const boton = await screen.findByRole("button", { name: /Salir del modo pantalla/ });
+    expect(boton).toHaveAccessibleDescription("Mantén presionado para salir");
+    fireEvent.pointerDown(boton);
+    act(() => { vi.advanceTimersByTime(1500); });
+    return screen.findByRole("dialog", { name: "Salir del modo recepción" });
+  }
+
+  it("ya no es un enlace directo y una pulsación corta no abre nada", async () => {
+    renderKiosk();
+    const boton = await screen.findByRole("button", { name: /Salir del modo pantalla/ });
+    expect(screen.queryByRole("link", { name: /Salir/ })).not.toBeInTheDocument();
+    fireEvent.pointerDown(boton);
+    act(() => { vi.advanceTimersByTime(800); });
+    fireEvent.pointerUp(boton);
+    act(() => { vi.advanceTimersByTime(1500); });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("mantener Enter 1.5 s con el botón enfocado abre la verificación", async () => {
+    renderKiosk();
+    const boton = await screen.findByRole("button", { name: /Salir del modo pantalla/ });
+    boton.focus();
+    fireEvent.keyDown(boton, { key: "Enter" });
+    act(() => { vi.advanceTimersByTime(1500); });
+    expect(await screen.findByRole("dialog", { name: "Salir del modo recepción" })).toBeInTheDocument();
+  });
+
+  it("una contraseña incorrecta muestra un error y no sale", async () => {
+    vi.mocked(authApi.login).mockRejectedValue(error401());
+    const dialogo = await abrirSalida();
+    fireEvent.change(within(dialogo).getByLabelText("Contraseña"), { target: { value: "mala" } });
+    fireEvent.click(within(dialogo).getByRole("button", { name: "Salir" }));
+    expect(await within(dialogo).findByRole("alert")).toHaveTextContent("Contraseña incorrecta.");
+    expect(authApi.login).toHaveBeenCalledWith("dueno@negocio.mx", "mala");
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
+  it("con la contraseña correcta revoca la sesión nueva y vuelve a Citas", async () => {
+    vi.mocked(authApi.login).mockResolvedValue({ token: "t", refreshToken: "r-nuevo" } as never);
+    const dialogo = await abrirSalida();
+    fireEvent.change(within(dialogo).getByLabelText("Contraseña"), { target: { value: "buena" } });
+    fireEvent.click(within(dialogo).getByRole("button", { name: "Salir" }));
+    await vi.waitFor(() => expect(mockNavigate).toHaveBeenCalledWith("/dashboard/citas"));
+    expect(authApi.logout).toHaveBeenCalledWith("r-nuevo");
   });
 });
 

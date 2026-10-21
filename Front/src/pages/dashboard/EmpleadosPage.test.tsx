@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { MemoryRouter } from "react-router-dom";
+import { citasApi } from "../../api/citas";
 import EmpleadosPage from "./EmpleadosPage";
 
 vi.mock("framer-motion", () => ({
@@ -46,6 +48,7 @@ vi.mock("../../api/citas", () => ({
     obtenerTodas: vi.fn().mockResolvedValue({ datos: [], total: 0 }),
   },
   citasABusySlots: vi.fn().mockReturnValue([]),
+  ESTADOS: { Pendiente: 1, Confirmada: 2, Completada: 3, Cancelada: 4, Inasistencia: 5 },
 }));
 
 vi.mock("../../store/toastStore", () => ({
@@ -95,6 +98,7 @@ vi.mock("../../components/ui/DateTimePicker", () => ({
     />
   ),
   citasABusySlots: vi.fn().mockReturnValue([]),
+  ESTADOS: { Pendiente: 1, Confirmada: 2, Completada: 3, Cancelada: 4, Inasistencia: 5 },
 }));
 
 vi.mock("../../components/ui/Skeleton", () => ({
@@ -126,14 +130,17 @@ function renderConQuery() {
     defaultOptions: { queries: { retry: false, retryDelay: 0 } },
   });
   return render(
-    <QueryClientProvider client={qc}>
-      <EmpleadosPage />
-    </QueryClientProvider>
+    <MemoryRouter>
+      <QueryClientProvider client={qc}>
+        <EmpleadosPage />
+      </QueryClientProvider>
+    </MemoryRouter>
   );
 }
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(citasApi.obtenerTodas).mockResolvedValue({ datos: [], total: 0 } as never);
   // clearAllMocks keeps queued *Once values; a test that ends before its
   // query fires would leak them into the next test.
   vi.mocked(empleadosApi.obtenerHorario).mockReset();
@@ -275,12 +282,29 @@ describe("EmpleadosPage — eliminar empleado", () => {
     await waitFor(() =>
       expect(screen.getByRole("dialog", { name: "Eliminar empleado" })).toBeInTheDocument()
     );
-    // El botón nombra la acción (ConfirmarAccion), no "Sí, eliminar".
-    fireEvent.click(screen.getByRole("button", { name: "Eliminar empleado" }));
+    // El botón nombra la acción, no "Sí, eliminar". Aparece tras comprobar que no hay citas futuras.
+    fireEvent.click(await screen.findByRole("button", { name: "Eliminar empleado" }));
     await waitFor(() =>
       expect(vi.mocked(empleadosApi.eliminar)).toHaveBeenCalledWith("emp-1")
     );
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  });
+
+  it("con citas futuras bloquea la eliminación, dice cuántas y enlaza a Citas filtradas (OM-17)", async () => {
+    vi.mocked(empleadosApi.obtenerTodos).mockResolvedValue([mockEmpleado]);
+    // Pendientes: 2, Confirmadas: 1.
+    vi.mocked(citasApi.obtenerTodas).mockImplementation(async (f) =>
+      ({ datos: [], total: f?.estado === 1 ? 2 : 1, pagina: 1, tamano: 1 }) as never);
+    renderConQuery();
+    fireEvent.click(await screen.findByRole("button", { name: "Eliminar" }));
+    const dialogo = await screen.findByRole("dialog", { name: "No se puede eliminar todavía" });
+    expect(dialogo).toHaveTextContent("Tiene 3 citas pendientes o confirmadas desde hoy");
+    expect(vi.mocked(citasApi.obtenerTodas)).toHaveBeenCalledWith(expect.objectContaining({ empleadoId: "emp-1", estado: 1 }));
+    const enlace = screen.getByRole("link", { name: "Ver sus citas" });
+    expect(enlace.getAttribute("href")).toContain("empleadoId=emp-1");
+    expect(enlace.getAttribute("href")).toMatch(/desde=\d{4}-\d{2}-\d{2}/);
+    expect(screen.queryByRole("button", { name: "Eliminar empleado" })).not.toBeInTheDocument();
+    expect(empleadosApi.eliminar).not.toHaveBeenCalled();
   });
 });
 

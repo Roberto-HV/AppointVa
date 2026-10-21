@@ -96,8 +96,8 @@ None found in code. The worst issues here lose data or block a subset of users (
 - **User impact:** An owner cannot enter a price ending in .90 or .99, and when something is wrong gets either an English browser bubble or a red outline with no explanation.
 - **Fix:** Use `step="0.01"` (or `inputMode="decimal"` text with zod), add `noValidate` so zod owns validation, and render the message under every field through the shared field primitive (see DC-19).
 
-### OM-06: "Notificar" in the waitlist notifies nobody — DECISION NEEDED
-- **Status:** Open – DECISION NEEDED — no messages are sent (unchanged). Copy only: the button reads "Marcar como avisado" with a title saying it sends nothing; the state, filter and KPI read "Avisado(s)". Contact links on the card not added.
+### OM-06: "Notificar" in the waitlist notifies nobody — DECIDED
+- **Status:** Fixed (pending commit). Decision 6 applied: with a phone, the card shows "Avisar por WhatsApp", a `wa.me` link (`urlAvisoListaEsperaWhatsApp` in `utils/whatsapp.ts`) with business name, service, the freed date/time and the booking link, and the click records "Notificado" through the existing endpoint. Without a phone only "Marcar como avisado" remains. Automatic email (`NotificarListaEsperaAsync`) stays a later option (B29). Tests: `ListaEsperaPage.test.tsx`. Before: Open – DECISION NEEDED — no messages are sent (unchanged). Copy only: the button reads "Marcar como avisado" with a title saying it sends nothing; the state, filter and KPI read "Avisado(s)". Contact links on the card not added.
 - **Heuristic:** H2 Match between system and real world; H1 Visibility
 - **Location:** `src/pages/dashboard/ListaEsperaPage.tsx:214-221`; backend `Back/AppointVaAPI/AppointVaAPI/Controllers/V1/ListaEsperaController.cs:85-89` (verified: sets `Estado` and `FechaNotificacion`, sends nothing)
 - **Evidence:** The button reads "Notificar" with a bell icon; only its hover `title` says "Marcar como notificado". The entry shows phone and email as plain text, with no call, WhatsApp or email shortcut (the Clientes page has a WhatsApp action for the same need).
@@ -124,8 +124,8 @@ None found in code. The worst issues here lose data or block a subset of users (
 - **User impact:** In dark mode the owner cannot read an employee's absences, the discount each coupon gives, or the busiest hours of the week — the one piece of information on each of those surfaces.
 - **Fix:** Fold into the DC-11 theming pass. Heatmap: scale on a token (`--primary` / `hsl(var(--foreground))` alpha) over `bg-muted` for zero, and pick label colour by computed contrast. Use the status tokens from DC-06 for waitlist states.
 
-### OM-09: "Exportar Excel" in Clientes exports only the visible page (15 rows) — DECISION NEEDED
-- **Status:** Open – DECISION NEEDED — still exports only the visible page. The disclosure is now readable (12px, amber-800 / amber-300) instead of 10px amber-500.
+### OM-09: "Exportar Excel" in Clientes exports only the visible page (15 rows) — DECIDED
+- **Status:** Open – backend. Decision 10 (full export with an audit-log entry) needs B18. Current copy stays honest: "Solo esta página: n de N". The export button is now also gated by `usePermisos` (owner only). Before: Open – DECISION NEEDED — still exports only the visible page. The disclosure is now readable (12px, amber-800 / amber-300) instead of 10px amber-500.
 - **Heuristic:** H2 Match with the real world; H1 Visibility
 - **Location:** `src/pages/dashboard/ClientesPage.tsx:153-165`, `:178-191` (warning `text-[10px] text-amber-500`, about 2.1:1 on white)
 - **Evidence:** `exportarClientes` maps `clientes`, the current server page. The only disclosure is a 10px amber line and a hover `title`.
@@ -173,8 +173,8 @@ None found in code. The worst issues here lose data or block a subset of users (
 - **User impact:** Dropping 8 photos with 5 slots left uploads 5 and says nothing about the other 3. With several uploads, "Subiendo..." ends when the last-started finishes, not when all do. HEIC/GIF pass the client check against the stated formats. The 10 MB limit is not stated before the error.
 - **Fix:** Show placeholder tiles with progress (axios `onUploadProgress`) per file; report "3 fotos no se agregaron: límite de 20"; add a drag-over highlight; align `accept` and copy (state "hasta 10 MB").
 
-### OM-15: Gallery and questionnaire promise an order the owner cannot change — DECISION NEEDED
-- **Status:** Open – DECISION NEEDED (unchanged). For the decision: intake already has `PATCH /intake/campos/reordenar`; the gallery has no order endpoint.
+### OM-15: Gallery and questionnaire promise an order the owner cannot change — DECIDED
+- **Status:** Fixed (pending commit). Decision 20 applied: Cuestionario rows have "Subir"/"Bajar" buttons (named per question, 44px, disabled at the ends, focus kept on the moved row) that call the existing `PATCH /intake/campos/reordenar` with an optimistic update and rollback; a polite live region announces "… ahora es la pregunta n de m". Galería no longer promises "en el mismo orden" (gallery reordering stays out of scope; B12 only if it comes back). Tests: `IntakePage.test.tsx`. Before: Open – DECISION NEEDED (unchanged). For the decision: intake already has `PATCH /intake/campos/reordenar`; the gallery has no order endpoint.
 - **Heuristic:** H3 User control; H2 Match
 - **Location:** `src/pages/dashboard/GaleriaPage.tsx:158-160` ("se muestran … en el mismo orden"); `src/pages/dashboard/IntakePage.tsx:274-278` ("aparecen … en orden mostrado"); Servicios/Categorías use a numeric "Orden" field instead (`ServiciosPage.tsx:518-525`, `:615-623`)
 - **User impact:** The owner cannot choose the first photo clients see or the order of booking questions.
@@ -187,8 +187,8 @@ None found in code. The worst issues here lose data or block a subset of users (
 - **User impact:** A 25 MB phone photo uploads for a long time with no indicator on the row, then fails with a generic toast. Galería is the only uploader that checks type and size first.
 - **Fix:** One `useSubirImagen` hook (type, size, progress, reset input, error message with the limit) used by all five uploaders.
 
-### OM-17: Deleting an employee, a service or a coupon does not say what happens to related data — DECISION NEEDED
-- **Status:** Partially fixed (commit `d4bde59`) — non-decision parts only: employee, service and category deletion use `ConfirmarAccion`; service deletion suggests turning off "Visible en reservas" as the reversible alternative; coupons use one verb ("Eliminar") in button, dialog and toast, and the dialog says they cannot be reactivated. Open – DECISION NEEDED: future appointments of deleted employees/services, coupon reactivation (the list endpoint returns only active coupons), a "Desactivar" alternative for employees (no endpoint).
+### OM-17: Deleting an employee, a service or a coupon does not say what happens to related data — DECIDED
+- **Status:** Partially fixed – backend. Decision 7 applied (pending commit): `components/dashboard/DialogoEliminarConCitas.tsx` counts open (Pendiente/Confirmada) appointments from today with the existing list endpoint (`lib/citasFuturas.ts`) and, if any, blocks the deletion with the count and a link to Citas filtered from today (by employee for employees). For services, "Ocultar de reservas" is the primary action of the dialog. Remaining backend: an employee "Desactivar" endpoint and a count endpoint (B13; services are counted from a 500-row page and the dialog says "al menos" when truncated); coupon reactivation (B14, no endpoint, so no "Reactivar" button). Tests: `EmpleadosPage.test.tsx`, `ServiciosPage.test.tsx`. Before: Partially fixed (commit `d4bde59`) — non-decision parts only: employee, service and category deletion use `ConfirmarAccion`; service deletion suggests turning off "Visible en reservas" as the reversible alternative; coupons use one verb ("Eliminar") in button, dialog and toast, and the dialog says they cannot be reactivated. Open – DECISION NEEDED: future appointments of deleted employees/services, coupon reactivation (the list endpoint returns only active coupons), a "Desactivar" alternative for employees (no endpoint).
 - **Heuristic:** H5 Error prevention; H2 Match; H4 Consistency
 - **Location:** `EmpleadosPage.tsx:810-812` ("no podrá recibir nuevas citas" — silent on existing future appointments); `ServiciosPage.tsx:542-545` (no mention of future appointments or that "Inactivo" is the reversible alternative); `DescuentosPage.tsx:234` ("¿Desactivar el cupón?") vs `:78` (toast "Cupón eliminado"); backend `DescuentosController.cs:94` (soft delete) and `:36` (list returns only active), so a "deactivated" coupon disappears with no way to reactivate
 - **User impact:** An owner deleting an employee who has next week's appointments does not know whether those clients are cancelled, reassigned or orphaned. Coupon copy promises a reversible deactivation that the UI cannot reverse.
@@ -215,8 +215,8 @@ None found in code. The worst issues here lose data or block a subset of users (
 - **User impact:** A server error looks like an empty week, and the suggested fix (change dates) does not address it.
 - **Fix:** Shared inline error with "Reintentar" wired to `refetch`, used in every tab.
 
-### OM-21: Reseñas filters approval on the client, so counts, average and empty state contradict each other — DECISION NEEDED
-- **Status:** Partially fixed (commit `d4bde59`) — stars are `role="img"` "N de 5 estrellas"; long comments expand in place ("Ver más"/"Ver menos", `aria-expanded`); a page with reviews but none approved says so instead of "Aún no tienes reseñas"; load error with "Reintentar". Open: approved filter and average on the server (backend gap: `/me/resenas` has neither) and the moderation DECISION. Tests in `ResenasPage.test.tsx`.
+### OM-21: Reseñas filters approval on the client, so counts, average and empty state contradict each other — DECIDED
+- **Status:** Partially fixed (commit `d4bde59`) — stars are `role="img"` "N de 5 estrellas"; long comments expand in place ("Ver más"/"Ver menos", `aria-expanded`); a page with reviews but none approved says so instead of "Aún no tienes reseñas"; load error with "Reintentar". Open: approved filter and average on the server (backend gap: `/me/resenas` has neither) and the moderation DECISION. Tests in `ResenasPage.test.tsx`. Decision 15 (approved only, server-side average, replies later) is backend (B15). Copy unchanged and honest.
 - **Heuristic:** H1 Visibility; H4 Consistency; WCAG 1.1.1
 - **Location:** `src/pages/dashboard/ResenasPage.tsx:41` (`filter(r => r.aprobada)` after paging), `:61-65`, `:110` (server `total` includes unapproved), `:95-104` (empty state), `:45-51`, `:75-86` (average of the page), `:131-134` (comment cut at 100 chars, no expand), `:19-31` (stars with no text alternative)
 - **User impact:** A page can show 9 rows, or "Aún no tienes reseñas" under a subtitle saying "(14 reseñas)". The headline rating changes when paging. Long reviews cannot be read in full. Screen readers get no rating.
@@ -250,15 +250,15 @@ None found in code. The worst issues here lose data or block a subset of users (
 - **User impact:** An option containing a comma ("Sí, pero leve") splits into two. Screen readers hear "button, button". There is no preview of what the client sees.
 - **Fix:** An option list editor (one input per option, add/remove), labeled icon buttons, a neutral "Obligatoria" badge, and a small preview of the rendered question.
 
-### OM-26: Giving an employee access means the owner invents and hands over their password — DECISION NEEDED
-- **Status:** Partially fixed (commit `d4bde59`) — non-decision part: the password reveal toggle is focusable, named "Mostrar/Ocultar contraseña", `aria-pressed`, 44px; invite fields labelled. Open: "Con acceso / Sin acceso" needs the API to say whether an employee has a user (backend gap: `EmpleadoDto` has no such field), and the email-invitation DECISION.
+### OM-26: Giving an employee access means the owner invents and hands over their password — DECIDED
+- **Status:** Partially fixed – backend. Decision 8 (email invitation; forced change on first login meanwhile): no frontend part. The backend has no "must change password" flag (checked: no such field or check in Identity setup or `AutenticacionController`). Backend: B17 and B27. Before: Partially fixed (commit `d4bde59`) — non-decision part: the password reveal toggle is focusable, named "Mostrar/Ocultar contraseña", `aria-pressed`, 44px; invite fields labelled. Open: "Con acceso / Sin acceso" needs the API to say whether an employee has a user (backend gap: `EmpleadoDto` has no such field), and the email-invitation DECISION.
 - **Heuristic:** H2 Match; security-adjacent (see Out of scope)
 - **Location:** `src/pages/dashboard/EmpleadosPage.tsx:53-56` (min 6 chars), `:845-890`, `:868-876` (reveal toggle `tabIndex={-1}`, no label), `:484-489` ("Invitar" shown even if the employee already has an account)
 - **User impact:** The owner must communicate a password out of band and knows the employee's credentials. The card gives no signal of who already has access.
 - **Fix:** **DECISION NEEDED** — move to an email invitation with a set-password link. Meanwhile show "Con acceso" / "Sin acceso" on the card and label the reveal toggle.
 
-### OM-27: "Canal de notificaciones" shows a single control that does nothing — DECISION NEEDED
-- **Status:** Open – DECISION NEEDED (unchanged).
+### OM-27: "Canal de notificaciones" shows a single control that does nothing — DECIDED
+- **Status:** Fixed (pending commit). Decision 16 applied: no WhatsApp notification claims remain. The settings note reads "Las notificaciones se envían por correo: …"; both landings answer "¿Cómo se avisa a…?" with the same text (`lib/notificaciones.ts`); `/salud` no longer offers "Recordatorios por WhatsApp". Before: Open – DECISION NEEDED (unchanged).
 - **Heuristic:** H2 Match; impeccable Integrity (decorative controls)
 - **Location:** `src/pages/dashboard/PerfilPage.tsx:1012-1021`; schema still accepts `WhatsApp` and `Ambos` (`:85-86`)
 - **User impact:** A pressed-looking "Correo" button with no alternative reads as a broken selector.
@@ -270,8 +270,8 @@ None found in code. The worst issues here lose data or block a subset of users (
 - **Location:** `src/pages/dashboard/PerfilPage.tsx:912-915` (`window.print()`; no print styles in the page or layout)
 - **Fix:** Print a dedicated sheet (QR, business name, booking URL) via a print-only container or a generated PDF/PNG.
 
-### OM-29: Account deletion uses a hand-rolled dialog and does not say what happens to the business — DECISION NEEDED
-- **Status:** Partially fixed (commit `d4bde59`) — the dialog is the shared `Modal` (dialog role, focus trap, Escape) with a labelled password field inside a form (Enter submits) and "Volver" / "Eliminar cuenta". Open – DECISION NEEDED: consequences, typing the business name, data export. Test in `PerfilPage.test.tsx`.
+### OM-29: Account deletion uses a hand-rolled dialog and does not say what happens to the business — DECIDED
+- **Status:** Partially fixed – backend. Decision 11 (30-day grace period, future appointments cancelled with notice, export first) is backend (B28). Until then the dialog says what really happens: deletion is immediate and irreversible, there is no grace period, and an active business blocks it (as `AutenticacionController.EliminarCuenta` does). Before: Partially fixed (commit `d4bde59`) — the dialog is the shared `Modal` (dialog role, focus trap, Escape) with a labelled password field inside a form (Enter submits) and "Volver" / "Eliminar cuenta". Open – DECISION NEEDED: consequences, typing the business name, data export. Test in `PerfilPage.test.tsx`.
 - **Heuristic:** H5 Error prevention; WCAG 2.1.2/2.4.3 (same root cause as **DC-18**)
 - **Location:** `src/pages/dashboard/PerfilPage.tsx:1119-1153` (no `role="dialog"`, no Escape, no focus trap), `:1178-1180`
 - **User impact:** The copy covers "datos personales" and anonymised history but not the public booking page, employees' accounts or clients with future appointments.

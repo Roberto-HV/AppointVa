@@ -13,7 +13,7 @@ export default function AvisoActivacionPendiente() {
       </div>
       <p className="text-xs text-amber-800 dark:text-amber-200">
         <span className="font-semibold">Tu negocio está pendiente de activación.</span>{" "}
-        {ACTIVACION_RESUMEN}{" "}
+        {ACTIVACION_RESUMEN} Este aviso desaparece cuando tu negocio esté activo.{" "}
         ¿Dudas?{" "}
         <a
           href={`mailto:${CORREO_SOPORTE}`}

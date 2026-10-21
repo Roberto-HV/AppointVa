@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
@@ -98,10 +98,13 @@ vi.mock("../../api/cierreCaja", () => ({
   },
 }));
 
+const rolActual = vi.hoisted(() => ({ rol: "Propietario" }));
 vi.mock("../../store/authStore", () => ({
-  useAuthStore: vi.fn(() => ({
-    usuario: { rol: "Propietario", nombreCompleto: "Roberto" },
-  })),
+  // Respeta el selector, como el store real (usePermisos lee solo el rol).
+  useAuthStore: vi.fn((selector?: (s: unknown) => unknown) => {
+    const estado = { usuario: { rol: rolActual.rol, nombreCompleto: "Roberto" } };
+    return selector ? selector(estado) : estado;
+  }),
 }));
 
 vi.mock("../../components/dashboard/TicketRecibo", () => ({
@@ -484,5 +487,43 @@ describe("corte: el estado guardado no miente tras editar (B3)", () => {
     await userEvent.type(screen.getByLabelText("Monto del retiro"), "20");
     await userEvent.click(screen.getByRole("button", { name: "+ Agregar" }));
     expect(screen.getByRole("status")).toHaveTextContent("Cambios sin guardar en el cierre.");
+  });
+});
+
+describe("Empleado: rol restringido (DC-14, decisión 2)", () => {
+  const pagada = {
+    id: "cita-1", codigoConfirmacion: "ABC", clienteId: "c1", empleadoId: "e1", servicioId: "s1",
+    nombreCliente: "Ana García", telefonoCliente: "555-0000", nombreEmpleado: "Sofía Hernández",
+    nombreServicio: "Corte de dama", duracionMinutos: 30, precio: 280, montoCobrado: 280, pagada: true,
+    metodoPago: "Efectivo", estado: 3, estadoTexto: "Completada",
+    inicioEn: "2026-07-31T11:30:00Z", finEn: "2026-07-31T12:00:00Z",
+  };
+
+  beforeEach(() => { rolActual.rol = "Empleado"; });
+  afterEach(() => { rolActual.rol = "Propietario"; });
+
+  it("puede cobrar, pero no ve Corte del día ni Revertir", async () => {
+    vi.mocked(citasApi.obtenerTodas).mockResolvedValue({ datos: [pagada], total: 1, pagina: 1, tamano: 15 });
+    renderPage();
+    await screen.findByText("Ana García");
+    expect(screen.getByRole("button", { name: "Cobro" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Historial" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Corte del día" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Revertir pago/ })).not.toBeInTheDocument();
+  });
+
+  it("en Historial no puede exportar a Excel", async () => {
+    vi.mocked(citasApi.obtenerHistorialPagos).mockResolvedValue([pagada] as never);
+    renderPage();
+    await userEvent.click(await screen.findByRole("button", { name: "Historial" }));
+    await screen.findByText("Ana García");
+    expect(screen.queryByRole("button", { name: /Exportar Excel/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Revertir pago/ })).not.toBeInTheDocument();
+  });
+
+  it("el Propietario sí ve Corte del día", async () => {
+    rolActual.rol = "Propietario";
+    renderPage();
+    expect(await screen.findByRole("button", { name: "Corte del día" })).toBeInTheDocument();
   });
 });

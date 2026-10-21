@@ -66,3 +66,40 @@ describe("LandingPage — estados accesibles y precios (AP-20)", () => {
     expect(document.getElementById("menu-movil-landing")).toBeInTheDocument();
   });
 });
+
+describe("LandingPage — copy honesto y precios (decisiones 1, 5, 16, 18)", () => {
+  it("no promete nada gratis ni '5 minutos'; los CTA dicen 'Crear mi cuenta' / 'Empezar ahora'", () => {
+    const { container } = renderLanding();
+    const texto = container.textContent ?? "";
+    expect(texto).not.toMatch(/gratis/i);
+    expect(texto).not.toMatch(/(^|[^\d])5 min(utos)?\b/);
+    expect(screen.getAllByRole("link", { name: "Crear mi cuenta" }).length).toBeGreaterThan(0);
+    expect(screen.getByRole("link", { name: /Empezar ahora/ })).toHaveAttribute("href", "/registro");
+  });
+
+  it("Pro anual muestra $382 MXN/mes con su ahorro, y los precios llevan MXN", async () => {
+    const user = userEvent.setup();
+    renderLanding();
+    await user.click(screen.getByRole("button", { name: /^Anual/ }));
+    const pro = screen.getByText("Pro").closest("div.relative") as HTMLElement;
+    expect(within(pro).getByText("$382")).toBeInTheDocument();
+    expect(within(pro).getByText("MXN/mes")).toBeInTheDocument();
+    expect(within(pro).getByText(/Ahorras \$804 MXN\/año/)).toBeInTheDocument();
+    expect(within(pro).queryByText(/Sin descuento anual/)).not.toBeInTheDocument();
+  });
+
+  it("explica que las notificaciones se envían por correo", async () => {
+    const user = userEvent.setup();
+    renderLanding();
+    await user.click(screen.getByRole("button", { name: /Cómo se avisa a mis clientes/ }));
+    expect(screen.getByText(/Las notificaciones se envían por correo/)).toBeInTheDocument();
+  });
+
+  it("el dorado de la marca solo queda en el logo", () => {
+    const { container } = renderLanding();
+    const conDorado = [...container.querySelectorAll<HTMLElement>("[style]")]
+      .filter((el) => /c8a961|200,\s*169,\s*97/i.test(el.getAttribute("style") ?? ""));
+    expect(conDorado.length).toBeGreaterThan(0);
+    expect(conDorado.every((el) => el.textContent === "Va")).toBe(true);
+  });
+});

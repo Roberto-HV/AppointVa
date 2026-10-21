@@ -50,3 +50,12 @@ describe("formatMonto", () => {
     expect(formatMonto(199)).toBe("199");
   });
 });
+
+describe("PRECIOS_PLANES (decisión 5, AP-08)", () => {
+  it("Pro anual cuesta 382: 15 % menos que 449", async () => {
+    const { PRECIOS_PLANES } = await import("./precios");
+    expect(PRECIOS_PLANES.pro).toEqual({ mensual: 449, anual: 382 });
+    expect(Math.round(PRECIOS_PLANES.pro.mensual * 0.85)).toBe(PRECIOS_PLANES.pro.anual);
+    expect(precioVisible(PRECIOS_PLANES.pro, true)).toMatchObject({ porMes: 382, facturaAnual: true, ahorroAnual: 804 });
+  });
+});

@@ -230,7 +230,7 @@ export default function GaleriaPage() {
           </div>
 
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-3">
-            {`Arrastra imágenes al grid para agregar más · ${TEXTO_FORMATOS_IMAGEN} · Las fotos se muestran en tu página de reservas en el mismo orden.`}
+            {`Arrastra imágenes al grid para agregar más · ${TEXTO_FORMATOS_IMAGEN} · Las fotos se muestran en tu página de reservas.`}
           </p>
         </>
       )}

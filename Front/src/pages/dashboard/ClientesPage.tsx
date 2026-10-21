@@ -21,6 +21,7 @@ import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
 import { FiltroBarra } from "../../components/ui/filtros";
 import { TAMANO_PAGINA } from "../../hooks/usePaginacionLocal";
 import { useConfirmarDescarte } from "../../hooks/useCambiosSinGuardar";
+import { usePermisos } from "../../hooks/usePermisos";
 
 type TabClientes = "todos" | "activos" | "inactivos";
 const TAMANO = TAMANO_PAGINA;
@@ -30,6 +31,8 @@ export default function ClientesPage() {
   const qc = useQueryClient();
   const { toast } = useToastStore();
   const terms = useSectorTerms();
+  // La ruta ya es solo de Propietario; el permiso se comprueba igual por si cambia (decisión 2).
+  const permisos = usePermisos();
   const [searchParams, setSearchParams] = useSearchParams();
   const [tab, setTab] = useState<TabClientes>("todos");
   const [buscarActivo, setBuscarActivo] = useState("");
@@ -183,7 +186,7 @@ export default function ClientesPage() {
              todo el directorio. Lo que cambia es el número — decía siempre "30"
              aunque la página tuviera tres filas, y a 15 por página eso pasaría
              más seguido. Ahora cuenta las filas que realmente se exportan. */
-          tab === "todos" && clientes.length > 0 && (
+          permisos.exportar && tab === "todos" && clientes.length > 0 && (
             <div className="flex flex-col items-end gap-0.5">
               <BotonAccion
                 variante="secundaria"

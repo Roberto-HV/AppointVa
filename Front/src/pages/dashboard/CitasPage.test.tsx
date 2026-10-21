@@ -4,6 +4,8 @@ import { MemoryRouter, useLocation } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { hoy } from "../../utils/fechas";
 import CitasPage from "./CitasPage";
+import { useAuthStore } from "../../store/authStore";
+import { useToastStore } from "../../store/toastStore";
 import type { CitaDto } from "../../types";
 
 vi.mock("react-router-dom", async (importOriginal) => {
@@ -820,5 +822,93 @@ describe("CitasPage — eliminar una nota se puede deshacer (DC-33)", () => {
       expect(useToastStore.getState().toasts.some((x) => x.mensaje === "Nota restaurada")).toBe(true),
     );
     act(() => useToastStore.setState({ toasts: [] }));
+  });
+});
+
+describe("CitasPage — Empleado: rol restringido (DC-14, decisión 2)", () => {
+  beforeEach(() => {
+    useAuthStore.setState({ usuario: { id: "u-emp", email: "e@x.mx", nombreCompleto: "Emp", rol: "Empleado", negocioId: "n1" } });
+  });
+  afterEach(() => {
+    useAuthStore.setState({ usuario: null });
+  });
+
+  it("no ve Exportar ni 'Editar datos del cliente', y no puede anular un anticipo", async () => {
+    vi.mocked(citasApi.obtenerTodas).mockResolvedValue({
+      datos: [makeCita({ estadoTexto: "Confirmada", estado: 2, anticipoRequerido: true, anticipoRecibido: true, montoAnticipo: 50 })],
+      total: 1, pagina: 1, tamano: 15,
+    });
+    renderConQuery();
+    fireEvent.click(await screen.findByRole("button", { name: "Acciones de la cita de Juan Pérez" }));
+    expect(await screen.findByRole("button", { name: "Agregar nota interna" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Editar datos del cliente" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Anular anticipo" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Exportar Excel" })).not.toBeInTheDocument();
+  });
+
+  it("sí puede registrar el anticipo de su cita", async () => {
+    vi.mocked(citasApi.obtenerTodas).mockResolvedValue({
+      datos: [makeCita({ estadoTexto: "Confirmada", estado: 2, anticipoRequerido: true, anticipoRecibido: false, montoAnticipo: 50 })],
+      total: 1, pagina: 1, tamano: 15,
+    });
+    renderConQuery();
+    fireEvent.click(await screen.findByRole("button", { name: "Acciones de la cita de Juan Pérez" }));
+    expect(await screen.findByRole("button", { name: /Registrar anticipo de/ })).toBeInTheDocument();
+  });
+});
+
+describe("CitasPage — Confirmar seleccionadas (DC-30, decisión 14)", () => {
+  const pendientes = () => [
+    makeCita({ id: "c1", nombreCliente: "Ana Ruiz" }),
+    makeCita({ id: "c2", nombreCliente: "Beto Soto" }),
+    makeCita({ id: "c3", nombreCliente: "Carla Díaz" }),
+    makeCita({ id: "c4", nombreCliente: "Dora Paz", estadoTexto: "Confirmada", estado: 2 }),
+  ];
+
+  afterEach(() => {
+    useToastStore.setState({ toasts: [] });
+  });
+
+  it("solo las Pendientes tienen casilla; la barra muestra el conteo", async () => {
+    vi.mocked(citasApi.obtenerTodas).mockResolvedValue({ datos: pendientes(), total: 4, pagina: 1, tamano: 15 });
+    renderConQuery();
+    const casilla = await screen.findByRole("checkbox", { name: "Seleccionar cita de Ana Ruiz" });
+    expect(screen.queryByRole("checkbox", { name: "Seleccionar cita de Dora Paz" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Citas seleccionadas" })).not.toBeInTheDocument();
+    fireEvent.click(casilla);
+    const barra = screen.getByRole("region", { name: "Citas seleccionadas" });
+    expect(barra).toHaveTextContent("1 seleccionada");
+    fireEvent.click(screen.getByRole("checkbox", { name: /Seleccionar todas las citas pendientes/ }));
+    expect(barra).toHaveTextContent("3 seleccionadas");
+  });
+
+  it("confirma una por una con el endpoint individual y resume el resultado con 'Reintentar'", async () => {
+    vi.mocked(citasApi.obtenerTodas).mockResolvedValue({ datos: pendientes(), total: 4, pagina: 1, tamano: 15 });
+    vi.mocked(citasApi.cambiarEstado).mockImplementation(async (id) => {
+      if (id === "c2") throw new Error("409");
+      return {} as never;
+    });
+    renderConQuery();
+    fireEvent.click(await screen.findByRole("checkbox", { name: /Seleccionar todas las citas pendientes/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Confirmar seleccionadas" }));
+
+    await waitFor(() => expect(citasApi.cambiarEstado).toHaveBeenCalledTimes(3));
+    expect(vi.mocked(citasApi.cambiarEstado).mock.calls.map((c) => c[0])).toEqual(["c1", "c2", "c3"]);
+    expect(citasApi.cambiarEstado).toHaveBeenCalledWith("c1", { nuevoEstado: 2 });
+
+    await waitFor(() => {
+      const t = useToastStore.getState().toasts.at(-1);
+      expect(t?.mensaje).toBe("2 confirmadas, 1 falló");
+      expect(t?.tipo).toBe("error");
+      expect(t?.accion?.etiqueta).toBe("Reintentar");
+    });
+    // La que falló sigue seleccionada.
+    expect(screen.getByRole("checkbox", { name: "Seleccionar cita de Beto Soto" })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "Seleccionar cita de Ana Ruiz" })).not.toBeChecked();
+
+    vi.mocked(citasApi.cambiarEstado).mockResolvedValue({} as never);
+    act(() => useToastStore.getState().toasts.at(-1)!.accion!.onClick());
+    await waitFor(() => expect(vi.mocked(citasApi.cambiarEstado).mock.calls.at(-1)?.[0]).toBe("c2"));
+    await waitFor(() => expect(useToastStore.getState().toasts.at(-1)?.mensaje).toBe("1 confirmada"));
   });
 });

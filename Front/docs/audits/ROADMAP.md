@@ -1,11 +1,11 @@
 # UI/UX Roadmap: Final State
 
 - **Updated:** 2026-10-21
-- **Branch:** `docs/front-claude-md` (6 commits pushed, 5 local; the five admin and Mis citas items in section 5 are fixed in the working tree, pending commit)
+- **Branch:** `docs/front-claude-md` (HEAD `7461858`). The frontend parts of the 20 product decisions (section 2) are applied in the working tree, pending commit.
 - **Sources:** [`booking-flow.md`](booking-flow.md) (BF), [`dashboard-core.md`](dashboard-core.md) (DC), [`owner-management.md`](owner-management.md) (OM), [`auth-public-admin.md`](auth-public-admin.md) (AP)
 - **Caveat:** The audits are code-based. Only the checks marked as verified in [section 6](#6-manual-verification-checklist) were done in a browser.
 
-**Bottom line:** 124 findings. 96 are fixed, 19 are partly fixed, and 9 are open pending a product decision. No finding is open only because of the backend. All of the frontend work is committed except the five items listed at the end of section 5, which are fixed in the working tree. What remains is **20 product decisions**, **26 backend changes**, 9 security items (7 still open) and a short list of frontend tasks. Every Status line in the four reports now names the commit that landed it; only the five items fixed in this change still say "Fixed (pending commit)".
+**Bottom line:** 124 findings. 105 are fixed, 18 are partly fixed and 1 is open; none waits on a product decision any more. All 20 decisions were answered on 2026-10-21 and their frontend parts are applied in the working tree (pending commit). What remains is backend work (16 of the 18 partial items and the open OM-09; see section 2.1 and section 3), one input from the product owner (the privacy contact address, AP-16) and the frontend tasks in section 5 (OM-03).
 
 ---
 
@@ -16,18 +16,20 @@
 | Report | Total | Fixed | Partially fixed | Open: decision | Open: backend |
 | --- | --- | --- | --- | --- | --- |
 | Booking flow (BF) | 27 | 27 | 0 | 0 | 0 |
-| Dashboard core (DC) | 36 | 30 | 3 | 3 | 0 |
-| Owner management (OM) | 33 | 21 | 8 | 4 | 0 |
-| Auth, public, admin (AP) | 28 | 18 | 8 | 2 | 0 |
-| **Total** | **124** | **96** | **19** | **9** | **0** |
+| Dashboard core (DC) | 36 | 33 | 3 | 0 | 0 |
+| Owner management (OM) | 33 | 24 | 8 | 0 | 1 |
+| Auth, public, admin (AP) | 28 | 21 | 7 | 0 | 0 |
+| **Total** | **124** | **105** | **18** | **0** | **1** |
 
-- **Open, waiting on a decision (9):** DC-13, DC-14, DC-30, OM-06, OM-09, OM-15, OM-27, AP-10, AP-16.
-- **Partly fixed (19), grouped by what blocks the rest:**
-  - A decision (12): DC-03, DC-28, DC-29, OM-17, OM-21, OM-26, OM-29, AP-02, AP-04, AP-08, AP-09, AP-22.
-  - The backend (6): OM-04, OM-11, OM-24, AP-03, AP-07, AP-24.
+Recounted after the decisions (2026-10-21, pending commit). Newly fixed: DC-03, DC-28, DC-30, OM-06, OM-15, OM-27, AP-09, AP-10, AP-22. Moved from "open: decision" to "partly fixed – backend": DC-13, DC-14; to "partly fixed": AP-16 (contact address pending); to "open: backend": OM-09.
+
+- **Open (1):** OM-09, backend only (B18).
+- **Partly fixed (18), grouped by what blocks the rest:**
+  - The backend (16): DC-13, DC-14, DC-29, OM-04, OM-11, OM-17, OM-21, OM-24, OM-26, OM-29, AP-02, AP-03, AP-04, AP-07, AP-08, AP-24.
+  - Input from the product owner (1): AP-16 (privacy contact address).
   - Frontend work (1): OM-03.
 - **Fixed, but one part only takes effect once the backend changes:** BF-10 (stable step total), BF-19 (minimum notice when rescheduling), DC-07 (a true undo for payment reversal).
-- **Open or partial items by severity:** severity 4: 1 (DC-03, already tokenized and readable). Severity 3: 11. Severity 2: 16. Severity 1: 0.
+- **Open or partial items by severity:** not recounted per severity after the decisions. DC-03, the only severity-4 item, is closed (decision 19).
 
 ### Commits on `docs/front-claude-md` (`511ebfb..HEAD`)
 
@@ -47,32 +49,50 @@
 
 ---
 
-## 2. Decisions needed from the product owner
+## 2. Product decisions (answered 2026-10-21)
 
-There are 21 decision items. Merging duplicates leaves 20 decisions, ordered by impact. "Done so far" describes what is already shipped while each one waits.
+All 20 decisions are answered. "Frontend (pending commit)" is what this change applied; "Backend still needed" lists the B-items in section 3 that finish each one.
 
-| # | IDs | Question | Options and tradeoffs | Recommended default | Unblocks |
-| --- | --- | --- | --- | --- | --- |
-| 1 | AP-02 | Is manual activation permanent, and who tells the owner when the page goes live? | Manual approval keeps vetting but delays the start. Auto-activation is instant but drops vetting. | Keep manual approval. Send an automatic email on activation and state a time frame. | Activation email (B21); "5 minutos" claims; priority of the AP-07 queue. Done so far: one honest message on three screens |
-| 2 | DC-14 | What may an Empleado do in Citas and Pagos? | Full parity is simple but lets employees export, revert payments and close cash. A restricted role is safer but needs the backend to enforce it. | No export, no payment reversal, no cash closing, no global client edits. Employees may charge and record deposits on their own appointments. | Hiding controls; backend enforcement (B10). The backend already limits status, payment, deposit and notes to the employee's own appointments |
-| 3 | DC-13 | How is kiosk mode secured? | A password or PIN to exit is cheap but still runs in the owner's session. A restricted kiosk token is robust but needs backend work. | A password to exit now, with the exit hidden behind a long press. A restricted token later (B9). | DC-13 |
-| 4 | AP-04 (+S4) | Can clients who book with only a phone reschedule or cancel themselves? | A message only is free, but those clients still call the business. A one-time code by SMS or WhatsApp gives self-service but costs money and backend work. | Keep the message. Add a one-time code together with the Mis citas security fix (S4). | AP-04; S4. Done so far: explanation and a "Buscar con mi correo" button |
-| 5 | AP-08 | What is the Pro annual price? Is "Comenzar gratis" accurate? | Give Pro an annual price, or keep "Sin descuento anual". Remove "gratis", or add a trial. | Give Pro an annual price. Remove "gratis" unless a trial exists. Add "MXN". | AP-08 copy and data; `?plan=` once B20 exists |
-| 6 | OM-06 | Should "Marcar como avisado" (waitlist) send a message? | Email through the existing `NotificarListaEsperaAsync` job is automatic but needs wiring. A WhatsApp deep link needs no backend but is manual. | Open a WhatsApp deep link and record the state. Turn on email later. | OM-06; AP-19 success copy |
-| 7 | OM-17 | What happens to future appointments when an employee or service is deleted? Can coupons be reactivated? | Cancel and notify, reassign, or block the deletion. | Make "Desactivar" the default. Block deletion while future appointments exist. Allow coupon reactivation. | OM-17 dialogs (B13, B14) |
-| 8 | OM-26 (+S6) | Should employee and owner access use an email invitation instead of a password the owner picks? | An invitation is secure but needs a set-password flow. Today's approach works now but the owner knows the employee's password. | Email invitation with a set-password link. Until then, force a password change on first login. | OM-26 (B16, B17); S6 |
-| 9 | DC-29 | Should 2FA issue recovery codes? Is 2FA mandatory for owners? | Recovery codes prevent lockouts but need backend work. Mandatory 2FA is safer but adds friction at onboarding. | Issue recovery codes. Keep 2FA optional and promote it to owners. | DC-29 and the login "usar código de recuperación" option (B8) |
-| 10 | OM-09 (+S7) | May owners export the whole client directory? | A full export is useful but exposes personal data. Exporting one page is safe but misleading. | Allow the full export and write an audit-log entry for each one. | OM-09 (B18); S7 |
-| 11 | OM-29 | What exactly happens when an owner deletes their account? | Delete at once, or after a grace period. Cancel future appointments and notify clients. | A 30-day grace period, future appointments cancelled with notice, and a data export offered first. | OM-29 dialog copy |
-| 12 | DC-28 | Which client identity may the kiosk show? Should it support check-in? | Full name, first name and initial, or a code only. Read-only, or check-in. | First name and initial, read-only. | DC-28 remainder |
-| 13 | AP-16 | Legal review of the privacy policy | Correct the facts only, or run a full legal review. | Correct the facts now (PBKDF2, `localStorage`, one contact address), then run the legal review. | AP-16 |
-| 14 | DC-30 | Which bulk actions should Citas support? | None, "Confirmar seleccionadas", or that plus "Enviar recordatorio". | Both actions. | DC-30 (B7) |
-| 15 | OM-21 | What does "aprobada" mean for reviews? Can owners approve, hide or reply to them? | Show approved reviews only, or add moderation and replies. | Approved reviews only, with the average computed on the server. Replies later. | OM-21 (B15) |
-| 16 | OM-27 + AP-22 | Is a WhatsApp channel planned? Should "Negocios reales" stay on `/salud`? | Advertising WhatsApp before it works erodes trust. | Plain text: "Las notificaciones se envían por correo". Do not advertise WhatsApp. Hide "Negocios reales" until there is a health customer. Add the FAQ and the final CTA to `/salud`. | OM-27; AP-22 |
-| 17 | AP-10 | Load Inter, or adopt the system font stack? | Self-hosted Inter gives one brand look for about 30–50 KB. The system stack costs nothing but looks different on each OS. | Self-host Inter as a variable WOFF2 subset. | AP-10 |
-| 18 | AP-09 | Do the landings get an exception to "gold is logo-only"? | An exception keeps brand warmth but needs a darker gold token that passes contrast. No exception keeps one visual language. | No exception: use slate accents. (The admin part is already fixed.) | AP-09 landings |
-| 19 | DC-03 | Keep the "salud" colour scheme in the dashboard sidebar? | Keeping it sets the sector apart, and it is already tokenized. Removing it means less to maintain. | Keep it. It is tokenized at 5.6:1 or better. | Closing DC-03 |
-| 20 | OM-15 | Is reordering gallery photos and intake questions in scope? | A sortable list with keyboard buttons, or no reordering. Intake already has `PATCH /intake/campos/reordenar`. The gallery has no order endpoint. | Out of scope for now. Remove the "en el mismo orden" promise. | OM-15 (B12) |
+| # | IDs | Decision | Frontend (pending commit) | Backend still needed |
+| --- | --- | --- | --- | --- |
+| 1 | AP-02 | Keep manual activation; promise a time frame; tell the owner when it is live. | `lib/activacion.ts`: "en menos de 24 horas hábiles" on the registration steps, landing FAQs, `/salud` and the dashboard banner; because no activation email exists (checked `NegociosController.Activar`), the copy says "Revisa tu panel: el aviso desaparece cuando tu negocio esté activo". All "5 minutos" and "gratis" claims removed (landings, login panel). Admin keeps pending businesses first (verified). | B21 (activation email, welcome email). Then switch the copy to "Te avisaremos por correo". |
+| 2 | DC-14 | Restricted Empleado: no export, no payment reversal, no deposit annulment, no cash closing, no global client edits; may charge and record deposits on own appointments. | `hooks/usePermisos.ts` gates Citas (Exportar, Editar datos del cliente, Anular anticipo), Pagos (Corte del día tab and closing, Revertir, Exportar) and Clientes (Exportar). | B10, including an employee check on `PATCH /citas/{id}/cliente`. |
+| 3 | DC-13 | Password to exit the kiosk, exit hidden behind a long press. | Hold 1.5 s (pointer, or Enter/Space on the focused button) with a visible hint; password dialog re-checks the session email via `POST /auth/login` and revokes the extra session; wrong password stays on the kiosk. | B9 (restricted kiosk token). Failed exit attempts count toward the login lockout until then. |
+| 4 | AP-04 (+S4) | Keep the message; add a one-time code with the S4 fix. | No change; copy already honest. | B25, S4. |
+| 5 | AP-08 | Pro annual 382 (15 % off 449); no "gratis"; show MXN. | `PRECIOS_PLANES` shared by both landings; "MXN/mes", "MXN/año"; "Hasta −20%" badge; CTAs "Crear mi cuenta" / "Empezar ahora". | B20 (`plan` on registration) for `?plan=`. |
+| 6 | OM-06 | WhatsApp deep link that records the state; email later. | "Avisar por WhatsApp" (`urlAvisoListaEsperaWhatsApp`) with business, service, freed date/time and booking link; records "Notificado". Without a phone, only "Marcar como avisado". | Optional: B29 (email through `NotificarListaEsperaAsync`). |
+| 7 | OM-17 | "Desactivar" by default; block deletion while future appointments exist; coupon reactivation. | `DialogoEliminarConCitas` blocks employee and service deletion with the count of open appointments from today and a link to Citas filtered; "Ocultar de reservas" is the primary action for services. | B13 (employee deactivation and a count endpoint), B14 (coupon reactivation; no "Reactivar" button without it). |
+| 8 | OM-26 (+S6) | Email invitation; forced password change on first login meanwhile. | None: the backend has no "must change password" flag (checked). | B17, B27. |
+| 9 | DC-29 | Recovery codes; 2FA optional but promoted to owners. | Dismissible "Protege tu negocio…" card in Mi perfil for owners while 2FA is off. | B8. |
+| 10 | OM-09 (+S7) | Full client export with an audit-log entry. | None; copy stays "Solo esta página: n de N". | B18, S7. |
+| 11 | OM-29 | 30-day grace period, future appointments cancelled with notice, export first. | Dialog no longer implies a grace period: it says deletion is immediate and irreversible and that an active business blocks it. | B28. |
+| 12 | DC-28 | Kiosk shows first name + initial, read-only. | `nombreConInicial` ("María G."). | None. |
+| 13 | AP-16 | Correct the facts now, legal review later. | Privacy page: "PBKDF2, mediante ASP.NET Core Identity"; session in `localStorage`, not cookies. Other wording untouched. | None. **TODO (product owner):** provide the correct contact address; the page still shows the current one on purpose. |
+| 14 | DC-30 | "Confirmar seleccionadas" only (no bulk cancel or reminders). | Checkboxes on Pendiente rows/cards, sticky bar with count and progress, sequential calls to the single-appointment endpoint, summary toast with "Reintentar". Owner and Empleado (own appointments). | Optional: B7 (fewer requests). |
+| 15 | OM-21 | Approved reviews only, server-side average; replies later. | None; copy honest. | B15. |
+| 16 | OM-27 + AP-22 | "Las notificaciones se envían por correo"; hide "Negocios reales" on `/salud`; add FAQ and final CTA there. | WhatsApp reminder claims removed (settings, `/salud` features and plan); FAQ answer in `lib/notificaciones.ts`; `/salud` gets FAQ + CTA from the shared `components/landing/FaqItem.tsx` and `CtaFinal.tsx`. | None. |
+| 17 | AP-10 | Self-host Inter as a variable WOFF2 subset. | Added `@fontsource-variable/inter@5.3.0` (exact pin); one `@font-face` for the Latin subset (48 KB) with `font-display: swap` and a system fallback stack. | None. |
+| 18 | AP-09 | No gold exception on the landings. | Gold only in the "Va" of the logo; all accents slate. | None. |
+| 19 | DC-03 | Keep the "salud" sidebar scheme. | No code; closed. | None. |
+| 20 | OM-15 | Intake reordering in scope; gallery out. | "Subir"/"Bajar" buttons on Cuestionario rows with `PATCH /intake/campos/reordenar`, live-region announcement, rollback on error; Galería no longer promises "en el mismo orden". | None (B12 only if gallery ordering comes back). |
+
+### 2.1 Backend work needed for these decisions
+
+In priority order. Details in section 3.
+
+- **B10** Enforce the Empleado matrix on the server (export endpoints, cash closing, payment reversal, deposit annulment, `PATCH /citas/{id}/cliente`). Decision 2.
+- **B9** Restricted kiosk token or role, plus a verify-password endpoint that does not count toward the login lockout. Decision 3.
+- **B21** Activation email from `NegociosController.Activar`; fix the welcome email. Decision 1.
+- **B13** Employee "Desactivar" endpoint and a count of future appointments per employee or service. Decision 7.
+- **B14** Coupon list with inactive coupons and a reactivation call. Decision 7.
+- **B8** 2FA recovery codes. Decision 9.
+- **B17 + B27** Email invitation with a set-password link; meanwhile a "must change password" flag checked at login. Decision 8.
+- **B18** Full client export with an audit-log entry. Decision 10.
+- **B28** Account deletion with a 30-day grace period, cancellation notices and a data export. Decision 11.
+- **B25** One-time code for phone-only Mis citas clients (with S4). Decision 4.
+- **B15** Approved-only reviews with server-side average. Decision 15.
+- **B20** `plan` on `RegistroNegocioDto`. Decision 5.
+- Optional: **B7** batch confirm (decision 14 works without it), **B29** waitlist email (decision 6).
 
 ---
 
@@ -88,8 +108,8 @@ There are 21 decision items. Merging duplicates leaves 20 decisions, ordered by 
 | B6 | Restore endpoint for a deleted notification | Deleting a notification has no undo | DC-33 (notification part) |
 | B7 | Batch confirm and batch reminder endpoint | Bulk actions | DC-30 (decision 14) |
 | B8 | 2FA recovery codes (generate, store hashed, accept at login) | Losing the phone locks the user out | DC-29 (decision 9) |
-| B9 | Restricted kiosk token or role | Kiosk exit opens the full owner session | DC-13 (decision 3) |
-| B10 | Enforce the Empleado permission matrix (export, cash closing, payment reversal, global client edit) | Hiding controls in the UI is not enough | DC-14 (decision 2) |
+| B9 | Restricted kiosk token or role; a verify-password endpoint | Kiosk exit opens the full owner session; the interim exit check reuses `POST /auth/login`, so failed attempts count toward the lockout | DC-13 (decision 3) |
+| B10 | Enforce the Empleado permission matrix (export, cash closing, payment reversal, deposit annulment, global client edit; `PATCH /citas/{id}/cliente` has no employee check) | The UI now hides these controls (`usePermisos`), but hiding is not enough | DC-14 (decision 2) |
 | B11 | `PATCH` to save `PortadaObjectPosition` on its own | `PUT /negocios/perfil` is a full update, so "Confirmar" cannot save the position | OM-04 |
 | B12 | Order field and reorder endpoint for gallery photos | Only intake has a reorder endpoint | OM-15 (decision 20) |
 | B13 | Employee "Desactivar" endpoint, plus a count of future appointments for an employee or service | The deletion dialogs cannot state the consequences | OM-17 (decision 7) |
@@ -106,6 +126,9 @@ There are 21 decision items. Merging duplicates leaves 20 decisions, ordered by 
 | B24 | `GET /api/admin/audit`: filter by email and date range | Searching only works with a raw UUID | AP-24 |
 | B25 | Business phone in the Mis citas response; a one-time code for phone-only clients | Phone-only clients can only be told to "contact the business" | AP-04 (decision 4); S4 |
 | B26 | Localized `IdentityErrorDescriber`, or Identity error codes in the response | The client maps English Identity messages to Spanish | AP-12 (optional cleanup) |
+| B27 | "Must change password" flag on the user, set when the owner or SuperAdmin chooses the password, checked at login | Interim measure until invitations exist (decision 8) | OM-26; S6 |
+| B28 | Account deletion with a 30-day grace period, cancellation of future appointments with client notice, and a data export offered first | Today deletion is immediate (decision 11) | OM-29 |
+| B29 | Send the waitlist email through `NotificarListaEsperaAsync` when an entry is marked "Notificado" | Optional automatic channel next to the WhatsApp link (decision 6) | OM-06 (optional) |
 
 Security changes on the backend (Hangfire ticket, cookie sessions, generic enumeration responses, email out of query strings) are in section 4.
 
@@ -172,6 +195,16 @@ Severity values are estimates. Route the open items to a `review-risk` pass.
 - [x] Cancel page for a completed appointment (AP-18).
 
 ### Still to check
+
+**Decisions applied on 2026-10-21 (not yet seen in a browser)**
+- [ ] Landings `/` and `/salud`: Inter loads (Network shows one `inter-latin-wght-normal-*.woff2`), no gold outside the logo, Pro annual $382 MXN, CTAs "Crear mi cuenta" / "Empezar ahora", `/salud` FAQ and final CTA at 375px and 1280px.
+- [ ] Kiosk: long press with a finger and with Enter, the hint, wrong password stays, right password returns to Citas; check that the account is not locked after a couple of wrong tries in normal use.
+- [ ] Citas "Confirmar seleccionadas": checkboxes on table and cards, sticky bar above the safe area at 375px, progress text, toast with "Reintentar", in light and dark mode; as Empleado.
+- [ ] Empleado: no Exportar, no Revertir, no Corte del día, no "Editar datos del cliente", no "Anular anticipo"; can still charge and register a deposit.
+- [ ] Waitlist "Avisar por WhatsApp" opens WhatsApp with the right text and marks the entry "Avisado".
+- [ ] Deleting an employee/service with future appointments shows the block and the link opens Citas filtered.
+- [ ] Cuestionario "Subir"/"Bajar" with keyboard and screen reader; order persists after reload.
+- [ ] Mi perfil 2FA card for an owner without 2FA, dismiss, reload.
 
 Test as Propietario and as Empleado where it applies.
 

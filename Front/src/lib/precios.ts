@@ -49,3 +49,16 @@ export function precioVisible(plan: PrecioPlan, anualSeleccionado: boolean): Pre
 export function formatMonto(n: number): string {
   return n.toLocaleString("es-MX", { maximumFractionDigits: 0 });
 }
+
+/**
+ * Precios de los planes en MXN, iguales en `/` y `/salud` (decisión 5, AP-08).
+ * Pro anual: 15 % menos que el mensual (449 × 0.85 ≈ 382).
+ */
+export const PRECIOS_PLANES = {
+  basico: { mensual: 249, anual: 199 },
+  pro: { mensual: 449, anual: 382 },
+  premium: { mensual: 799 },
+} as const satisfies Record<string, PrecioPlan>;
+
+/** Moneda que acompaña a todos los precios de las landings. */
+export const MONEDA = "MXN";

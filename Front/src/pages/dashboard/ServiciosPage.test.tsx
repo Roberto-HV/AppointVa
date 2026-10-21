@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { MemoryRouter } from "react-router-dom";
 import ServiciosPage from "./ServiciosPage";
 
 vi.mock("framer-motion", () => ({
@@ -28,6 +29,11 @@ vi.mock("../../api/servicios", () => ({
     actualizar: vi.fn(),
     eliminar: vi.fn(),
   },
+}));
+
+vi.mock("../../api/citas", () => ({
+  citasApi: { obtenerTodas: vi.fn().mockResolvedValue({ datos: [], total: 0, pagina: 1, tamano: 500 }) },
+  ESTADOS: { Pendiente: 1, Confirmada: 2, Completada: 3, Cancelada: 4, Inasistencia: 5 },
 }));
 
 vi.mock("../../store/toastStore", () => ({
@@ -60,6 +66,7 @@ vi.mock("../../components/ui/Select", () => ({
 }));
 
 import { serviciosApi, categoriasApi } from "../../api/servicios";
+import { citasApi } from "../../api/citas";
 
 const mockServicio = {
   id: "svc-1",
@@ -88,14 +95,17 @@ function renderConQuery() {
     defaultOptions: { queries: { retry: false, retryDelay: 0 } },
   });
   return render(
-    <QueryClientProvider client={qc}>
-      <ServiciosPage />
-    </QueryClientProvider>
+    <MemoryRouter>
+      <QueryClientProvider client={qc}>
+        <ServiciosPage />
+      </QueryClientProvider>
+    </MemoryRouter>
   );
 }
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(citasApi.obtenerTodas).mockResolvedValue({ datos: [], total: 0, pagina: 1, tamano: 500 });
   vi.mocked(categoriasApi.obtenerTodas).mockResolvedValue([]);
 });
 
@@ -209,10 +219,28 @@ describe("ServiciosPage — eliminar servicio", () => {
     await waitFor(() =>
       expect(screen.getByRole("dialog", { name: "Eliminar servicio" })).toBeInTheDocument()
     );
-    fireEvent.click(screen.getByRole("button", { name: "Eliminar servicio" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Eliminar servicio" }));
     await waitFor(() =>
       expect(vi.mocked(serviciosApi.eliminar)).toHaveBeenCalledWith("svc-1")
     );
+  });
+
+  it("con citas futuras del servicio bloquea la eliminación y muestra cuántas (OM-17)", async () => {
+    vi.mocked(serviciosApi.obtenerTodos).mockResolvedValue([mockServicio]);
+    vi.mocked(citasApi.obtenerTodas).mockImplementation(async (f) => ({
+      datos: f?.estado === 1
+        ? [{ id: "c1", servicioId: "svc-1" }, { id: "c2", servicioId: "otro" }]
+        : [{ id: "c3", servicioId: "svc-1" }],
+      total: f?.estado === 1 ? 2 : 1, pagina: 1, tamano: 500,
+    }) as never);
+    renderConQuery();
+    fireEvent.click(await screen.findByRole("button", { name: "Eliminar Corte de cabello" }));
+    const dialogo = await screen.findByRole("dialog", { name: "No se puede eliminar todavía" });
+    expect(dialogo).toHaveTextContent("Tiene 2 citas pendientes o confirmadas desde hoy");
+    expect(screen.getByRole("link", { name: "Ver citas desde hoy" })).toHaveAttribute("href", expect.stringContaining("/dashboard/citas?desde="));
+    expect(screen.queryByRole("button", { name: "Eliminar servicio" })).not.toBeInTheDocument();
+    // Ocultar sigue disponible como acción principal.
+    expect(screen.getByRole("button", { name: "Ocultar de reservas" })).toBeInTheDocument();
   });
 });
 
@@ -330,7 +358,8 @@ describe("ServiciosPage — visibilidad y destacado (OM-30)", () => {
     vi.mocked(serviciosApi.obtenerTodos).mockResolvedValue([{ ...mockServicio, activo: true }]);
     renderConQuery();
     fireEvent.click(await screen.findByRole("button", { name: "Eliminar Corte de cabello" }));
-    expect(await screen.findByText(/apaga "Visible en reservas"/)).toBeInTheDocument();
+    expect(await screen.findByText(/ocúltalo de tu página de reservas/)).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Ocultar de reservas" })).toBeInTheDocument();
   });
 });
 

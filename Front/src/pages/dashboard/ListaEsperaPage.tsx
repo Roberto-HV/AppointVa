@@ -10,6 +10,9 @@ import { FiltroBarra } from "../../components/ui/filtros";
 import { usePaginacionLocal } from "../../hooks/usePaginacionLocal";
 import ConfirmarAccion from "../../components/ui/ConfirmarAccion";
 import ErrorCarga from "../../components/ui/ErrorCarga";
+import { SiWhatsapp } from "react-icons/si";
+import { negociosApi } from "../../api/negocios";
+import { urlAvisoListaEsperaWhatsApp } from "../../utils/whatsapp";
 
 // Tokens de estado (`--status-*`), que ya cambian con el tema.
 const ESTADOS_CONFIG: Record<string, { label: string; color: string }> = {
@@ -46,6 +49,13 @@ export default function ListaEsperaPage() {
   const { data: listaCompleta = [] } = useQuery({
     queryKey: ["lista-espera", ""],
     queryFn: () => listaEsperaApi.obtener(undefined),
+  });
+
+  // Nombre y enlace del negocio para el mensaje de WhatsApp (misma clave que el layout).
+  const { data: perfil } = useQuery({
+    queryKey: ["negocio-perfil-layout"],
+    queryFn: negociosApi.obtenerPerfil,
+    staleTime: 1000 * 60 * 5,
   });
 
   const mutCambiarEstado = useMutation({
@@ -160,6 +170,9 @@ export default function ListaEsperaPage() {
                 mutCambiarEstado.mutate({ id: entrada.id, estado })
               }
               onExpirar={() => expirar(entrada)}
+              urlWhatsApp={entrada.telefonoCliente?.replace(/\D/g, "")
+                ? urlAvisoListaEsperaWhatsApp(entrada, perfil?.nombre, perfil?.slug)
+                : null}
               pendiente={mutCambiarEstado.isPending && mutCambiarEstado.variables?.id === entrada.id}
               onEliminar={() => setEntradaEliminar(entrada)}
             />
@@ -213,8 +226,11 @@ function EntradaCard({
   onExpirar,
   onEliminar,
   pendiente,
+  urlWhatsApp,
 }: {
   entrada: EntradaListaEspera;
+  /** Sin teléfono no hay enlace y queda solo "Marcar como avisado". */
+  urlWhatsApp: string | null;
   onCambiarEstado: (estado: string) => void;
   onExpirar: () => void;
   onEliminar: () => void;
@@ -268,9 +284,26 @@ function EntradaCard({
 
       {/* Acciones: todas con texto o nombre; antes "expirar" y "eliminar" eran iconos mudos. */}
       <div className="flex flex-wrap items-center gap-2 shrink-0">
-        {/* OM-06 (pendiente de decisión): este botón solo registra que el
-            negocio ya avisó al cliente; no envía ningún mensaje. */}
-        {entrada.estado === "Esperando" && (
+        {/* OM-06 (decisión 6): con teléfono, el aviso abre WhatsApp con el
+            mensaje listo y registra el estado "Avisado". Sin teléfono solo se
+            puede registrar que el negocio ya avisó por otro medio. */}
+        {entrada.estado === "Esperando" && urlWhatsApp && (
+          <a
+            href={urlWhatsApp}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => {
+              if (pendiente) { e.preventDefault(); return; }
+              onCambiarEstado("Notificado");
+            }}
+            aria-disabled={pendiente || undefined}
+            title="Abre WhatsApp con el mensaje listo y registra el aviso."
+            className="min-h-[44px] lg:min-h-[36px] flex items-center gap-1.5 px-3 text-sm bg-status-completed-bg text-status-completed-fg hover:opacity-90 aria-disabled:opacity-50 rounded-lg transition font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <SiWhatsapp size={14} aria-hidden="true" /> Avisar por WhatsApp
+          </a>
+        )}
+        {entrada.estado === "Esperando" && !urlWhatsApp && (
           <button
             type="button"
             onClick={() => onCambiarEstado("Notificado")}

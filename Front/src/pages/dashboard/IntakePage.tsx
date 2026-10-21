@@ -1,6 +1,6 @@
 import { useId, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Pencil, Trash2, ClipboardList, Check, X } from "lucide-react";
+import { Plus, Pencil, Trash2, ClipboardList, Check, X, ArrowUp, ArrowDown } from "lucide-react";
 import { intakeApi, type CampoIntake } from "../../api/intake";
 import { serviciosApi } from "../../api/servicios";
 import { useToastStore } from "../../store/toastStore";
@@ -56,10 +56,51 @@ export default function IntakePage() {
   const qc = useQueryClient();
   const { toast } = useToastStore();
 
-  const { data: campos = [], isLoading, isError, refetch, isFetching } = useQuery({
+  const { data: camposApi = [], isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ["intake-campos"],
     queryFn: () => intakeApi.getCampos(),
   });
+  // Mismo orden que ve el cliente en la reserva.
+  const campos = [...camposApi].sort((a, b) => a.orden - b.orden);
+
+  // ── Reordenar (decisión 20, OM-15) ─────────────────────────────────────────
+  // Botones Subir/Bajar (accesibles por teclado) que llaman a
+  // PATCH /intake/campos/reordenar. El cambio se ve al instante y se revierte
+  // si el servidor falla; el lector de pantalla anuncia la nueva posición.
+  const [anuncioOrden, setAnuncioOrden] = useState("");
+  const mutReordenar = useMutation({
+    mutationFn: (nuevos: CampoIntake[]) =>
+      intakeApi.reordenar(nuevos.map((c, i) => ({ id: c.id, orden: i + 1 }))),
+    onMutate: async (nuevos) => {
+      await qc.cancelQueries({ queryKey: ["intake-campos"] });
+      const previos = qc.getQueryData<CampoIntake[]>(["intake-campos"]);
+      qc.setQueryData<CampoIntake[]>(["intake-campos"], nuevos.map((c, i) => ({ ...c, orden: i + 1 })));
+      return { previos };
+    },
+    onError: (_err, _nuevos, ctx) => {
+      if (ctx?.previos) qc.setQueryData(["intake-campos"], ctx.previos);
+      setAnuncioOrden("No se pudo cambiar el orden.");
+      toast("No se pudo cambiar el orden de las preguntas. Intenta de nuevo.", "error");
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ["intake-campos"] }),
+  });
+
+  const mover = (idx: number, delta: -1 | 1) => {
+    const destino = idx + delta;
+    if (destino < 0 || destino >= campos.length || mutReordenar.isPending) return;
+    const nuevos = [...campos];
+    [nuevos[idx], nuevos[destino]] = [nuevos[destino], nuevos[idx]];
+    const movido = nuevos[destino];
+    mutReordenar.mutate(nuevos);
+    setAnuncioOrden(`"${movido.etiqueta}" ahora es la pregunta ${destino + 1} de ${nuevos.length}.`);
+    // Si el botón pulsado queda deshabilitado (llegó al extremo), el foco pasa al otro.
+    requestAnimationFrame(() => {
+      const mismo = document.querySelector<HTMLButtonElement>(`[data-mover="${movido.id}:${delta}"]`);
+      const otro = document.querySelector<HTMLButtonElement>(`[data-mover="${movido.id}:${-delta}"]`);
+      if (mismo && !mismo.disabled) mismo.focus();
+      else otro?.focus();
+    });
+  };
 
   const { data: servicios = [] } = useQuery({
     queryKey: ["servicios-intake"],
@@ -313,18 +354,26 @@ export default function IntakePage() {
           </p>
         </div>
       ) : (
-        <div className="space-y-2">
+        <ol className="space-y-2" aria-label="Preguntas del formulario, en orden">
           {campos.map((campo, idx) => (
-            <CampoRow
-              key={campo.id}
-              campo={campo}
-              orden={idx + 1}
-              onEditar={() => abrirEditar(campo)}
-              onEliminar={() => setCampoEliminar(campo)}
-            />
+            <li key={campo.id}>
+              <CampoRow
+                campo={campo}
+                orden={idx + 1}
+                esPrimero={idx === 0}
+                esUltimo={idx === campos.length - 1}
+                reordenando={mutReordenar.isPending}
+                onSubir={() => mover(idx, -1)}
+                onBajar={() => mover(idx, 1)}
+                onEditar={() => abrirEditar(campo)}
+                onEliminar={() => setCampoEliminar(campo)}
+              />
+            </li>
           ))}
-        </div>
+        </ol>
       )}
+
+      <p className="sr-only" aria-live="polite" role="status">{anuncioOrden}</p>
 
       {campos.length > 0 && (
         <p className="text-xs text-slate-500 dark:text-slate-400 text-center">
@@ -380,14 +429,27 @@ function VistaPrevia({ form }: { form: FormState }) {
   );
 }
 
+const CLASE_BOTON_ICONO =
+  "inline-flex items-center justify-center min-h-[44px] min-w-[44px] lg:min-h-[36px] lg:min-w-[36px] text-slate-500 dark:text-slate-400 hover:text-foreground hover:bg-muted rounded-lg transition disabled:opacity-30 disabled:hover:bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+
 function CampoRow({
   campo,
   orden,
+  esPrimero,
+  esUltimo,
+  reordenando,
+  onSubir,
+  onBajar,
   onEditar,
   onEliminar,
 }: {
   campo: CampoIntake;
   orden: number;
+  esPrimero: boolean;
+  esUltimo: boolean;
+  reordenando: boolean;
+  onSubir: () => void;
+  onBajar: () => void;
   onEditar: () => void;
   onEliminar: () => void;
 }) {
@@ -416,6 +478,28 @@ function CampoRow({
         </div>
       </div>
       <div className="flex items-center gap-1 shrink-0">
+        <button
+          type="button"
+          onClick={onSubir}
+          disabled={esPrimero || reordenando}
+          data-mover={`${campo.id}:-1`}
+          aria-label={`Subir pregunta "${campo.etiqueta}"`}
+          title="Subir"
+          className={CLASE_BOTON_ICONO}
+        >
+          <ArrowUp size={15} aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          onClick={onBajar}
+          disabled={esUltimo || reordenando}
+          data-mover={`${campo.id}:1`}
+          aria-label={`Bajar pregunta "${campo.etiqueta}"`}
+          title="Bajar"
+          className={CLASE_BOTON_ICONO}
+        >
+          <ArrowDown size={15} aria-hidden="true" />
+        </button>
         <button
           type="button"
           onClick={onEditar}

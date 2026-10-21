@@ -25,6 +25,7 @@ import { NotificacionPerfilSection } from "../../components/ui/NotificacionBanne
 import { hoy as hoyLocal } from "../../utils/fechas";
 import { useSubirImagen } from "../../hooks/useSubirImagen";
 import { ACCEPT_IMAGEN } from "../../lib/imagenes";
+import AvisoDosFactores from "../../components/dashboard/AvisoDosFactores";
 
 const schemaPwd = z
   .object({
@@ -275,6 +276,8 @@ export default function MiPerfilPage() {
             : "Tus datos de acceso y preferencias de notificación"
         }
       />
+
+      {usuario?.rol === "Propietario" && <AvisoDosFactores usuarioId={usuario.id} />}
 
       <div className="flex flex-col lg:flex-row gap-6 items-start">
 

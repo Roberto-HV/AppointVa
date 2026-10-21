@@ -179,3 +179,14 @@ describe("formatFechaMx", () => {
     expect(formatFechaMx("no-es-fecha")).toBe("—");
   });
 });
+
+describe("nombreConInicial (DC-28)", () => {
+  it("deja el nombre de pila y la inicial del primer apellido", async () => {
+    const { nombreConInicial } = await import("./formatters");
+    expect(nombreConInicial("María García López")).toBe("María G.");
+    expect(nombreConInicial("  josé   pérez ")).toBe("josé P.");
+    expect(nombreConInicial("Ana")).toBe("Ana");
+    expect(nombreConInicial("")).toBe("");
+    expect(nombreConInicial(null)).toBe("");
+  });
+});

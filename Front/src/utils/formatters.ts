@@ -116,3 +116,14 @@ export function formatFechaHoraCompleta(iso: string): string {
   }).replace(/\bDe\b/g, "de");
   return capitalizarPrimera(s);
 }
+
+/**
+ * Nombre de pila + inicial del apellido: "María García López" → "María G.".
+ * Lo usa el modo recepción, que se ve desde la sala de espera (decisión 12, DC-28).
+ */
+export function nombreConInicial(nombreCompleto: string | null | undefined): string {
+  const partes = (nombreCompleto ?? "").trim().split(/\s+/).filter(Boolean);
+  if (partes.length === 0) return "";
+  if (partes.length === 1) return partes[0];
+  return `${partes[0]} ${partes[1].charAt(0).toLocaleUpperCase("es-MX")}.`;
+}

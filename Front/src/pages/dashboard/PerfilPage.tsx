@@ -1072,7 +1072,7 @@ export default function PerfilPage() {
                     <Mail size={13} /> Correo
                   </button>
                 </div>
-                <p className="text-xs text-slate-400 dark:text-slate-500">Los clientes reciben confirmaciones, recordatorios y cancelaciones por correo electrónico.</p>
+                <p className="text-xs text-slate-400 dark:text-slate-500">Las notificaciones se envían por correo: los clientes reciben confirmaciones, recordatorios y cancelaciones en su email.</p>
               </div>
             </div>
           </div>
@@ -1171,15 +1171,16 @@ export default function PerfilPage() {
       </form>
 
       {/* ── Modal: eliminar cuenta ───────────────────────────────────────────
-          El diálogo compartido: rol de diálogo, foco atrapado y Escape. Qué pasa
-          con el negocio al borrar la cuenta sigue pendiente de decisión (OM-29). */}
+          El diálogo compartido: rol de diálogo, foco atrapado y Escape. El texto solo
+          promete lo que hace el backend hoy: borrado inmediato, sin periodo de
+          gracia, bloqueado con el negocio activo. El periodo de 30 días es backend (OM-29). */}
       <Modal abierto={modalEliminar} onCerrar={() => setModalEliminar(false)} titulo="¿Eliminar tu cuenta?" ancho="sm">
         <form
           onSubmit={(e) => { e.preventDefault(); if (contrasenaEliminar && !eliminando) eliminarCuenta(); }}
           className="space-y-4"
         >
           <p className="text-sm text-muted-foreground">
-            Esta acción es irreversible. Ingresa tu contraseña actual para confirmar.
+            Esta acción es inmediata e irreversible: no hay periodo de gracia para recuperar la cuenta. Mientras tu negocio esté activo no se puede eliminar; primero hay que cerrarlo con soporte. Ingresa tu contraseña actual para confirmar.
           </p>
           <div>
             <label htmlFor="contrasena-eliminar" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Contraseña actual</label>

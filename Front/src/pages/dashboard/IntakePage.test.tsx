@@ -215,3 +215,47 @@ describe("IntakePage — editor de opciones y acciones (OM-25)", () => {
     expect(screen.getByRole("region", { name: "Vista previa" })).toHaveTextContent("¿Color favorito?");
   });
 });
+
+describe("IntakePage — reordenar preguntas (OM-15, decisión 20)", () => {
+  const tres = () => [
+    makeCampo({ id: "a", etiqueta: "Alergias", orden: 1 }),
+    makeCampo({ id: "b", etiqueta: "Medicamentos", orden: 2 }),
+    makeCampo({ id: "c", etiqueta: "Embarazo", orden: 3 }),
+  ];
+
+  it("Bajar mueve la pregunta, llama a reordenar con el orden nuevo y anuncia la posición", async () => {
+    const [a, b, c] = tres();
+    // Tras guardar, el servidor devuelve el orden nuevo.
+    vi.mocked(intakeApi.getCampos)
+      .mockResolvedValueOnce(tres())
+      .mockResolvedValue([{ ...b, orden: 1 }, { ...a, orden: 2 }, c]);
+    vi.mocked(intakeApi.reordenar).mockResolvedValue({} as never);
+    renderConQuery();
+    fireEvent.click(await screen.findByRole("button", { name: 'Bajar pregunta "Alergias"' }));
+    await waitFor(() =>
+      expect(intakeApi.reordenar).toHaveBeenCalledWith([
+        { id: "b", orden: 1 }, { id: "a", orden: 2 }, { id: "c", orden: 3 },
+      ]),
+    );
+    expect(screen.getByRole("status")).toHaveTextContent('"Alergias" ahora es la pregunta 2 de 3.');
+    await waitFor(() => expect(screen.getAllByRole("listitem")[0]).toHaveTextContent("Medicamentos"));
+    expect(screen.getAllByRole("listitem")[1]).toHaveTextContent("Alergias");
+  });
+
+  it("la primera no se puede subir y la última no se puede bajar", async () => {
+    vi.mocked(intakeApi.getCampos).mockResolvedValue(tres());
+    renderConQuery();
+    expect(await screen.findByRole("button", { name: 'Subir pregunta "Alergias"' })).toBeDisabled();
+    expect(screen.getByRole("button", { name: 'Bajar pregunta "Embarazo"' })).toBeDisabled();
+    expect(screen.getByRole("button", { name: 'Subir pregunta "Embarazo"' })).toBeEnabled();
+  });
+
+  it("si el servidor falla, vuelve al orden anterior y avisa", async () => {
+    vi.mocked(intakeApi.getCampos).mockResolvedValue(tres());
+    vi.mocked(intakeApi.reordenar).mockRejectedValue(new Error("500"));
+    renderConQuery();
+    fireEvent.click(await screen.findByRole("button", { name: 'Subir pregunta "Embarazo"' }));
+    await waitFor(() => expect(mockToast).toHaveBeenCalledWith(expect.stringContaining("No se pudo cambiar el orden"), "error"));
+    await waitFor(() => expect(screen.getAllByRole("listitem")[2]).toHaveTextContent("Embarazo"));
+  });
+});

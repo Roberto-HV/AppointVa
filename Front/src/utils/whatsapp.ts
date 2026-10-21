@@ -1,5 +1,5 @@
 import type { CitaDto } from "../types";
-import { formatFechaHoraCorta, formatPrecio } from "./formatters";
+import { formatFechaCorta, formatFechaHoraCorta, formatPrecio } from "./formatters";
 
 // Enlaces de WhatsApp del dashboard. Antes cada pantalla armaba su propio
 // mensaje; ahora la lista, el inicio y la hoja de acciones usan el mismo.
@@ -38,4 +38,35 @@ export function urlResenaWhatsApp(cita: CitaDto, nombreNegocio?: string | null, 
     `👉 ${enlace}\n\n` +
     `¡Muchas gracias! 🌟`;
   return `https://wa.me/${telefonoWhatsApp(cita.telefonoCliente)}?text=${encodeURIComponent(msg)}`;
+}
+
+/** Datos mínimos de una entrada de la lista de espera para avisarle. */
+interface AvisoListaEspera {
+  nombreCliente: string;
+  telefonoCliente: string;
+  servicioNombre?: string;
+  fechaPreferida?: string;
+}
+
+/**
+ * Aviso a quien espera en la lista: se liberó un espacio (decisión 6, OM-06).
+ * Incluye negocio, servicio y la fecha/hora liberada si se conoce.
+ */
+export function urlAvisoListaEsperaWhatsApp(
+  entrada: AvisoListaEspera,
+  nombreNegocio?: string | null,
+  slug?: string | null,
+): string {
+  const nombre = entrada.nombreCliente.trim().split(/\s+/)[0] ?? "";
+  const negocio = nombreNegocio ? ` de *${nombreNegocio}*` : "";
+  const servicio = entrada.servicioNombre ? ` para *${entrada.servicioNombre}*` : "";
+  const fecha = entrada.fechaPreferida
+    ? ` el ${entrada.fechaPreferida.includes("T") ? formatFechaHoraCorta(entrada.fechaPreferida) : formatFechaCorta(entrada.fechaPreferida)}`
+    : "";
+  const enlace = slug ? `\n\nPuedes reservarlo aquí: ${window.location.origin}/b/${slug}` : "";
+  const msg =
+    `Hola ${nombre}, te escribimos${negocio}. ` +
+    `Se liberó un espacio${servicio}${fecha}. ¿Te gustaría tomarlo? ` +
+    `Responde este mensaje para apartarlo.${enlace}`;
+  return `https://wa.me/${telefonoWhatsApp(entrada.telefonoCliente)}?text=${encodeURIComponent(msg)}`;
 }

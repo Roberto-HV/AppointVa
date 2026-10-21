@@ -37,6 +37,8 @@ import { TAMANO_PAGINA } from "../../hooks/usePaginacionLocal";
 import { leerParamsCitas } from "../../lib/paramsCitas";
 import { mensajeError } from "../../utils/errores";
 import { isAxiosError } from "axios";
+import { usePermisos } from "../../hooks/usePermisos";
+import { confirmarEnLote, resumenLote } from "../../lib/confirmarEnLote";
 
 
 type VistaCitas = "lista" | "calendario" | "gantt";
@@ -47,6 +49,7 @@ export default function CitasPage() {
   const { toast } = useToastStore();
   const terms = useSectorTerms();
   const esMovil = useMediaQuery(CONSULTA_MOVIL);
+  const permisos = usePermisos();
 
   // Vista, filtros y página viven en la URL: al volver del detalle de una cita
   // (o recargar) la lista sigue donde estaba, y otras pantallas pueden enlazar
@@ -356,6 +359,53 @@ export default function CitasPage() {
     onError: () => toast("No se pudo actualizar el anticipo", "error"),
   });
 
+  // ── Confirmar seleccionadas (decisión 14, DC-30) ─────────────────────────────
+  // Solo citas Pendientes de la página visible. Para el Empleado la lista ya
+  // trae solo sus citas, y el backend rechaza cambiar el estado de las ajenas.
+  const [seleccion, setSeleccion] = useState<Set<string>>(() => new Set());
+  const [progresoLote, setProgresoLote] = useState<{ hechas: number; total: number } | null>(null);
+  // Al cambiar de página, filtros o vista, la selección se vacía (patrón de
+  // "reiniciar estado al cambiar una clave", sin efecto).
+  const claveLista = [desde, hasta, empleadoId, busqueda, estadoFiltro, pagina, vista].join("|");
+  const [claveSeleccion, setClaveSeleccion] = useState(claveLista);
+  if (claveSeleccion !== claveLista) {
+    setClaveSeleccion(claveLista);
+    setSeleccion(new Set());
+  }
+  const pendientesPagina = citas.filter((c) => c.estadoTexto === "Pendiente");
+  const idsSeleccionados = pendientesPagina.filter((c) => seleccion.has(c.id)).map((c) => c.id);
+  const todasSeleccionadas = pendientesPagina.length > 0 && idsSeleccionados.length === pendientesPagina.length;
+  const alternarSeleccion = (id: string) =>
+    setSeleccion((prev) => {
+      const sig = new Set(prev);
+      if (sig.has(id)) sig.delete(id);
+      else sig.add(id);
+      return sig;
+    });
+  const alternarTodas = () =>
+    setSeleccion(todasSeleccionadas ? new Set() : new Set(pendientesPagina.map((c) => c.id)));
+
+  const confirmarSeleccionadas = async (ids: string[]) => {
+    if (ids.length === 0) return;
+    setProgresoLote({ hechas: 0, total: ids.length });
+    const resultado = await confirmarEnLote(
+      ids,
+      (id) => citasApi.cambiarEstado(id, { nuevoEstado: ESTADOS.Confirmada }),
+      (hechas, total) => setProgresoLote({ hechas, total }),
+    );
+    setProgresoLote(null);
+    invalidarCitas(qc);
+    // Las que fallaron siguen seleccionadas para reintentarlas.
+    setSeleccion(new Set(resultado.fallidas));
+    if (resultado.fallidas.length === 0) {
+      toast(resumenLote(resultado), "exito");
+    } else {
+      toast(resumenLote(resultado), "error", {
+        accion: { etiqueta: "Reintentar", onClick: () => void confirmarSeleccionadas(resultado.fallidas) },
+      });
+    }
+  };
+
   // ── Filtros ──────────────────────────────────────────────────────────────────
   // Todo cambio de filtro vuelve a la página 1: quedarse en la 7 tras filtrar
   // devolvía una tabla vacía que parecía "sin resultados".
@@ -424,8 +474,12 @@ export default function CitasPage() {
       marcador: !!c.notas,
       onSelect: () => abrirNotas(c),
     },
-    { id: "editar", etiqueta: `Editar datos del ${terms.cliente.toLowerCase()}`, Icono: Pencil, onSelect: () => abrirEditar(c) },
-    ...(c.anticipoRequerido && !c.pagada
+    // Editar cambia el registro global del cliente: solo Propietario (decisión 2).
+    ...(permisos.editarCliente
+      ? [{ id: "editar", etiqueta: `Editar datos del ${terms.cliente.toLowerCase()}`, Icono: Pencil, onSelect: () => abrirEditar(c) }]
+      : []),
+    // El Empleado registra anticipos de sus citas, pero no los anula.
+    ...(c.anticipoRequerido && !c.pagada && !(c.anticipoRecibido && !permisos.anularAnticipo)
       ? [c.anticipoRecibido
           ? { id: "anticipo", etiqueta: "Anular anticipo", Icono: Banknote, onSelect: () => setCitaAnularAnticipo(c) }
           : {
@@ -486,7 +540,7 @@ export default function CitasPage() {
                 <Monitor size={16} aria-hidden="true" />
                 Recepción
               </EnlaceAccion>
-              {citas.length > 0 && vista === "lista" && (
+              {permisos.exportar && citas.length > 0 && vista === "lista" && (
                 <BotonAccion
                   variante="secundaria"
                   onClick={exportarCSV}
@@ -603,14 +657,28 @@ export default function CitasPage() {
           <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700">
             <ul className="divide-y divide-slate-100 dark:divide-slate-700" aria-label={terms.citas}>
               {citas.map((c) => (
-                <li key={c.id}>
-                  <TarjetaCita
-                    cita={c}
-                    accionesExtra={accionesExtra(c)}
-                    nombreNegocio={nombreNegocio}
-                    mostrarPago={tienePagos}
-                    onAbrirHoja={(v) => abrirAcciones(c, v)}
-                  />
+                <li key={c.id} className="flex items-start">
+                  {pendientesPagina.length > 0 && (
+                    <div className="w-11 shrink-0 pt-2 pl-1">
+                      {c.estadoTexto === "Pendiente" && (
+                        <CasillaSeleccion
+                          etiqueta={`Seleccionar ${terms.cita.toLowerCase()} de ${c.nombreCliente}`}
+                          marcada={seleccion.has(c.id)}
+                          onCambiar={() => alternarSeleccion(c.id)}
+                          deshabilitada={!!progresoLote}
+                        />
+                      )}
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <TarjetaCita
+                      cita={c}
+                      accionesExtra={accionesExtra(c)}
+                      nombreNegocio={nombreNegocio}
+                      mostrarPago={tienePagos}
+                      onAbrirHoja={(v) => abrirAcciones(c, v)}
+                    />
+                  </div>
                 </li>
               ))}
             </ul>
@@ -629,6 +697,16 @@ export default function CitasPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-100 dark:border-slate-700 text-xs text-muted-foreground uppercase tracking-wide">
+                  {pendientesPagina.length > 0 && (
+                    <th className="w-11 pl-2 py-1">
+                      <CasillaSeleccion
+                        etiqueta={`Seleccionar todas las ${terms.citas.toLowerCase()} pendientes de esta página`}
+                        marcada={todasSeleccionadas}
+                        onCambiar={alternarTodas}
+                        deshabilitada={!!progresoLote}
+                      />
+                    </th>
+                  )}
                   <th className="text-left px-4 py-3 font-medium">Cliente</th>
                   <th className="text-left px-4 py-3 font-medium hidden sm:table-cell">Servicio</th>
                   <th className="text-left px-4 py-3 font-medium hidden sm:table-cell">{terms.empleado}</th>
@@ -642,6 +720,18 @@ export default function CitasPage() {
               <tbody>
                 {citas.map((c) => (
                   <tr key={c.id} className="border-b border-slate-50 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition">
+                    {pendientesPagina.length > 0 && (
+                      <td className="w-11 pl-2 py-1">
+                        {c.estadoTexto === "Pendiente" && (
+                          <CasillaSeleccion
+                            etiqueta={`Seleccionar ${terms.cita.toLowerCase()} de ${c.nombreCliente}`}
+                            marcada={seleccion.has(c.id)}
+                            onCambiar={() => alternarSeleccion(c.id)}
+                            deshabilitada={!!progresoLote}
+                          />
+                        )}
+                      </td>
+                    )}
                     <td className="px-4 py-3">
                       <p className="font-medium text-slate-800 dark:text-slate-200">{c.nombreCliente}</p>
                       <p className="text-xs text-muted-foreground">{c.telefonoCliente}</p>
@@ -700,6 +790,29 @@ export default function CitasPage() {
         )
       )}
 
+
+      {/* ── Barra de acciones en lote: fija abajo mientras haya selección ── */}
+      {vista === "lista" && (idsSeleccionados.length > 0 || progresoLote) && (
+        <div
+          role="region"
+          aria-label={`${terms.citas} seleccionadas`}
+          className="sticky bottom-0 z-20 mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white/95 dark:bg-slate-800/95 backdrop-blur px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-lg"
+        >
+          <p className="text-sm font-medium text-foreground" aria-live="polite">
+            {progresoLote
+              ? `Confirmando ${progresoLote.hechas} de ${progresoLote.total}…`
+              : `${idsSeleccionados.length} ${idsSeleccionados.length === 1 ? "seleccionada" : "seleccionadas"}`}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <BotonAccion variante="secundaria" onClick={() => setSeleccion(new Set())} disabled={!!progresoLote}>
+              Quitar selección
+            </BotonAccion>
+            <BotonAccion onClick={() => void confirmarSeleccionadas(idsSeleccionados)} disabled={!!progresoLote}>
+              Confirmar seleccionadas
+            </BotonAccion>
+          </div>
+        </div>
+      )}
 
       {/* ── Modal: Editar cliente ── */}
       <Modal abierto={!!citaEditar} onCerrar={() => setCitaEditar(null)} titulo="Editar datos del cliente" ancho="sm">
@@ -1222,5 +1335,23 @@ export default function CitasPage() {
         )}
       </Modal>
     </div>
+  );
+}
+
+/** Casilla de 44px para seleccionar citas en lote. */
+function CasillaSeleccion({ etiqueta, marcada, onCambiar, deshabilitada }: {
+  etiqueta: string; marcada: boolean; onCambiar: () => void; deshabilitada?: boolean;
+}) {
+  return (
+    <label className="inline-flex h-11 w-11 items-center justify-center cursor-pointer">
+      <input
+        type="checkbox"
+        aria-label={etiqueta}
+        checked={marcada}
+        onChange={onCambiar}
+        disabled={deshabilitada}
+        className="h-4 w-4 rounded border-slate-300 dark:border-slate-500 accent-slate-700 dark:accent-slate-400 disabled:opacity-40"
+      />
+    </label>
   );
 }

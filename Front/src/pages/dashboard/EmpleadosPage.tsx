@@ -12,6 +12,7 @@ import { negociosApi } from "../../api/negocios";
 import { citasApi } from "../../api/citas";
 import Modal from "../../components/ui/Modal";
 import ConfirmarAccion from "../../components/ui/ConfirmarAccion";
+import DialogoEliminarConCitas from "../../components/dashboard/DialogoEliminarConCitas";
 import EditorHorario from "../../components/dashboard/EditorHorario";
 import { errorDelDia } from "../../lib/horario";
 import { claseCampo, CLASE_ERROR_CAMPO } from "../../lib/clasesCampo";
@@ -749,10 +750,14 @@ export default function EmpleadosPage() {
         </div>
       </Modal>
 
-      {/* Confirmar eliminar empleado: el mismo diálogo que el resto de borrados. */}
-      <ConfirmarAccion
+      {/* Eliminar empleado (decisión 7, OM-17): bloqueado mientras tenga citas
+          abiertas desde hoy. "Desactivar" como acción principal necesita un
+          endpoint que aún no existe (B13). */}
+      <DialogoEliminarConCitas
         abierto={!!empleadoEliminar}
         titulo={`Eliminar ${terms.empleado.toLowerCase()}`}
+        filtro={empleadoEliminar ? { empleadoId: empleadoEliminar.id } : null}
+        terminoCitas={{ singular: terms.cita.toLowerCase(), plural: terms.citas.toLowerCase() }}
         mensaje={empleadoEliminar && (
           <>
             <p className="mb-1">
@@ -761,10 +766,9 @@ export default function EmpleadosPage() {
             <p>{`El ${terms.empleado.toLowerCase()} dejará de aparecer y no podrá recibir nuevas citas. Esta acción no se puede deshacer.`}</p>
           </>
         )}
-        etiquetaConfirmar={`Eliminar ${terms.empleado.toLowerCase()}`}
-        destructiva
-        pendiente={eliminandoEmpleado}
-        onConfirmar={() => empleadoEliminar && eliminar(empleadoEliminar.id)}
+        etiquetaEliminar={`Eliminar ${terms.empleado.toLowerCase()}`}
+        eliminando={eliminandoEmpleado}
+        onEliminar={() => empleadoEliminar && eliminar(empleadoEliminar.id)}
         onCerrar={() => setEmpleadoEliminar(null)}
       />
 

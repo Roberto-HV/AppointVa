@@ -1,16 +1,20 @@
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useId, useState, type FormEvent } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { citasApi } from "../../api/citas";
 import { empleadosApi } from "../../api/empleados";
 import { negociosApi } from "../../api/negocios";
 import { useSectorTerms } from "../../hooks/useSectorTerms";
 import { ArrowLeft, Check } from "lucide-react";
+import Modal from "../../components/ui/Modal";
+import { usePulsacionLarga } from "../../hooks/usePulsacionLarga";
+import { verificarContrasena } from "../../lib/reautenticacion";
+import { mensajeError } from "../../utils/errores";
 import { colorCategoria, TEXTO_SOBRE_CATEGORIA } from "../../lib/temaGraficas";
 import { useAuthStore } from "../../store/authStore";
 import type { CitaDto } from "../../types";
 import { estiloEstadoCita } from "../../lib/estadoCita";
-import { capitalizarPrimera, formatPrecio } from "../../utils/formatters";
+import { capitalizarPrimera, formatPrecio, nombreConInicial } from "../../utils/formatters";
 
 /** Cada cuánto se vuelven a pedir citas y empleados (también tras un fallo). */
 const INTERVALO_SONDEO_MS = 30_000;
@@ -252,7 +256,8 @@ export default function KioskPage() {
                               className="text-sm font-semibold leading-tight mb-0.5 truncate"
                               style={{ color: enProgreso ? "white" : "rgba(255,255,255,.85)" }}
                             >
-                              {cita.nombreCliente}
+                              {/* Solo nombre e inicial: la pantalla se ve desde la sala (DC-28). */}
+                              {nombreConInicial(cita.nombreCliente)}
                             </div>
                             <div className="text-xs text-white/60 truncate">
                               {cita.nombreServicio} · {cita.duracionMinutos} min
@@ -294,15 +299,115 @@ export default function KioskPage() {
             </span>
           )}
         </div>
-        <Link
-          to="/dashboard/citas"
-          className="text-xs text-white/60 hover:text-white/85 transition flex items-center gap-1 min-h-[44px]"
-        >
-          <ArrowLeft size={14} aria-hidden="true" />
-          Salir del modo pantalla
-        </Link>
+        <SalidaProtegida email={usuario?.email ?? ""} />
       </div>
 
     </div>
+  );
+}
+
+// ── Salida protegida (decisión 3, DC-13) ──────────────────────────────────────
+// Salir pide la contraseña de la cuenta con la que se abrió el modo recepción.
+// El control se mantiene pulsado 1.5 s (dedo, ratón, o Enter/Espacio con el
+// botón enfocado) para que un cliente no lo active por accidente.
+function SalidaProtegida({ email }: { email: string }) {
+  const navigate = useNavigate();
+  const [abierto, setAbierto] = useState(false);
+  const [contrasena, setContrasena] = useState("");
+  const [error, setError] = useState("");
+  const [verificando, setVerificando] = useState(false);
+  const idPista = useId();
+  const idError = useId();
+  const pulsacion = usePulsacionLarga(() => setAbierto(true));
+
+  const cerrar = () => {
+    setAbierto(false);
+    setContrasena("");
+    setError("");
+  };
+
+  const enviar = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!contrasena || verificando) return;
+    setVerificando(true);
+    setError("");
+    try {
+      const correcta = await verificarContrasena(email, contrasena);
+      if (correcta) {
+        navigate("/dashboard/citas");
+        return;
+      }
+      setError("Contraseña incorrecta.");
+    } catch (err) {
+      setError(mensajeError(err, "No se pudo verificar la contraseña. Intenta de nuevo."));
+    } finally {
+      setVerificando(false);
+    }
+  };
+
+  return (
+    <>
+      <div className="flex flex-col items-end">
+        <button
+          type="button"
+          {...pulsacion.props}
+          aria-describedby={idPista}
+          className="relative overflow-hidden text-xs text-white/40 hover:text-white/70 focus-visible:text-white/85 transition flex items-center gap-1 min-h-[44px] px-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 touch-none select-none"
+        >
+          <ArrowLeft size={14} aria-hidden="true" />
+          Salir del modo pantalla
+          <span
+            aria-hidden="true"
+            className={`absolute left-0 bottom-0 h-0.5 bg-white/70 ${pulsacion.presionando ? "w-full transition-[width] duration-[1500ms] ease-linear" : "w-0"}`}
+          />
+        </button>
+        <span id={idPista} className="text-[11px] text-white/40">
+          Mantén presionado para salir
+        </span>
+      </div>
+
+      <Modal abierto={abierto} onCerrar={cerrar} titulo="Salir del modo recepción" ancho="sm">
+        <form onSubmit={enviar} className="space-y-4" noValidate>
+          <p className="text-sm text-muted-foreground">
+            Escribe la contraseña de <strong className="text-foreground">{email}</strong> para volver al panel.
+          </p>
+          <div>
+            <label htmlFor="kiosko-contrasena" className="block text-sm font-medium text-foreground mb-1">
+              Contraseña
+            </label>
+            <input
+              id="kiosko-contrasena"
+              type="password"
+              autoComplete="current-password"
+              autoFocus
+              value={contrasena}
+              onChange={(e) => { setContrasena(e.target.value); setError(""); }}
+              aria-invalid={!!error}
+              aria-describedby={error ? idError : undefined}
+              className="w-full min-h-[44px] rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40"
+            />
+            {error && (
+              <p id={idError} role="alert" className="mt-1.5 text-sm text-red-700 dark:text-red-400">{error}</p>
+            )}
+          </div>
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={cerrar}
+              className="min-h-[44px] px-4 rounded-lg border border-slate-200 dark:border-slate-600 text-sm font-medium text-foreground hover:bg-slate-50 dark:hover:bg-slate-700 transition"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={!contrasena || verificando}
+              className="min-h-[44px] px-4 rounded-lg bg-slate-700 hover:bg-slate-800 dark:bg-slate-600 dark:hover:bg-slate-500 text-sm font-semibold text-white disabled:opacity-40 transition"
+            >
+              {verificando ? "Verificando…" : "Salir"}
+            </button>
+          </div>
+        </form>
+      </Modal>
+    </>
   );
 }

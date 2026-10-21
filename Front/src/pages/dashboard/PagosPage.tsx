@@ -10,6 +10,7 @@ import { negociosApi } from "../../api/negocios";
 import { useAuthStore } from "../../store/authStore";
 import { useToastStore } from "../../store/toastStore";
 import { exportarExcel } from "../../utils/exportarExcel";
+import { usePermisos } from "../../hooks/usePermisos";
 import { hoy, inicioSemana, finSemana, inicioMes, finMes } from "../../utils/fechas";
 import Modal from "../../components/ui/Modal";
 import ConfirmarAccion from "../../components/ui/ConfirmarAccion";
@@ -73,6 +74,8 @@ export default function PagosPage() {
   const { usuario } = useAuthStore();
   const { toast } = useToastStore();
   const esEmpleado = usuario?.rol === "Empleado";
+  // Empleado: cobra sus citas, pero no exporta, no revierte ni hace el corte (decisión 2).
+  const permisos = usePermisos();
 
   // ── Tab ──────────────────────────────────────────────────────────────────
   const [tab, setTab] = useState<Tab>("cobro");
@@ -484,7 +487,7 @@ export default function PagosPage() {
         opciones={[
           { id: "cobro", label: "Cobro" },
           { id: "historial", label: "Historial" },
-          { id: "corte", label: "Corte del día" },
+          ...(permisos.corteCaja ? [{ id: "corte" as const, label: "Corte del día" }] : []),
         ]}
       />
 
@@ -619,7 +622,7 @@ export default function PagosPage() {
                       setMontoCobradoInput('');
                     }
                   }}
-                  onRevertir={() => setPagoARevertir(cita)}
+                  onRevertir={permisos.revertirPago ? () => setPagoARevertir(cita) : undefined}
                   revertiendoId={mutRevertir.isPending && mutRevertir.variables === cita.id ? cita.id : null}
                 />
               ))}
@@ -672,12 +675,14 @@ export default function PagosPage() {
                 },
               ]}
             />
+            {permisos.exportar && (
             <button
               onClick={handleExportarHistorial}
               className="self-start min-h-[44px] lg:min-h-[36px] flex items-center gap-2 px-3 text-xs border border-slate-200 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40"
             >
               <Download size={14} /> Exportar Excel
             </button>
+            )}
           </div>
 
           {/* KPIs historial */}
@@ -747,7 +752,7 @@ export default function PagosPage() {
                       <HistorialRow
                         key={c.id}
                         cita={c}
-                        onRevertir={() => setPagoARevertir(c)}
+                        onRevertir={permisos.revertirPago ? () => setPagoARevertir(c) : undefined}
                         revertiendoId={mutRevertir.isPending && mutRevertir.variables === c.id ? c.id : null}
                       />
                     ))}
@@ -778,7 +783,7 @@ export default function PagosPage() {
       )}
 
       {/* ── TAB CORTE DEL DÍA ─────────────────────────────────────────────── */}
-      {tab === "corte" && (
+      {tab === "corte" && permisos.corteCaja && (
         <div className="space-y-5">
           {/* Selector de fecha + botón imprimir */}
           <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -1299,7 +1304,8 @@ function CitaCard({
 }: {
   cita: CitaDto;
   onCobrar: () => void;
-  onRevertir: () => void;
+  /** Sin valor: el rol no puede revertir pagos y no se muestra el botón. */
+  onRevertir?: () => void;
   revertiendoId: string | null;
 }) {
   const hora = cita.inicioEn
@@ -1346,7 +1352,7 @@ function CitaCard({
       </div>
       {/* Revertir va en su propia línea, con texto y 44px: junto al chip del
           método era un icono de 21px que se tocaba sin querer. */}
-      {cita.pagada && (
+      {cita.pagada && onRevertir && (
         <div className="flex justify-end border-t border-slate-100 dark:border-slate-700 pt-2">
           <BotonRevertir onClick={onRevertir} deshabilitado={revertiendoId === cita.id} cliente={cita.nombreCliente} />
         </div>
@@ -1375,7 +1381,8 @@ function HistorialRow({
   cita, onRevertir, revertiendoId,
 }: {
   cita: CitaDto;
-  onRevertir: () => void;
+  /** Sin valor: el rol no puede revertir pagos y no se muestra el botón. */
+  onRevertir?: () => void;
   revertiendoId: string | null;
 }) {
   const fechaPago = cita.fechaPago
@@ -1403,7 +1410,9 @@ function HistorialRow({
         {cita.propina && cita.propina > 0 ? formatPrecio(cita.propina) : "—"}
       </td>
       <td className="px-4 py-3">
-        <BotonRevertir onClick={onRevertir} deshabilitado={revertiendoId === cita.id} cliente={cita.nombreCliente} />
+        {onRevertir && (
+          <BotonRevertir onClick={onRevertir} deshabilitado={revertiendoId === cita.id} cliente={cita.nombreCliente} />
+        )}
       </td>
     </tr>
   );

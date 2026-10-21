@@ -21,6 +21,12 @@ vi.mock("../../api/listaEspera", () => ({
   },
 }));
 
+vi.mock("../../api/negocios", () => ({
+  negociosApi: {
+    obtenerPerfil: vi.fn().mockResolvedValue({ nombre: "Salón Luna", slug: "salon-luna" }),
+  },
+}));
+
 vi.mock("../../store/toastStore", () => ({
   useToastStore: () => ({ toast: mockToast }),
 }));
@@ -100,7 +106,7 @@ describe("ListaEsperaPage — filtro de estado", () => {
 describe("ListaEsperaPage — visibilidad de acciones", () => {
   it("muestra 'Marcar como avisado' cuando estado es Esperando", async () => {
     vi.mocked(listaEsperaApi.obtener).mockResolvedValue([
-      makeEntrada({ estado: "Esperando" }),
+      makeEntrada({ estado: "Esperando", telefonoCliente: "" }),
     ]);
     renderConQuery();
     await screen.findByRole("button", { name: /Marcar como avisado/ });
@@ -128,7 +134,7 @@ describe("ListaEsperaPage — visibilidad de acciones", () => {
 describe("ListaEsperaPage — cambio de estado", () => {
   it("llama a cambiarEstado con 'Notificado' al hacer clic en 'Marcar como avisado'", async () => {
     vi.mocked(listaEsperaApi.obtener).mockResolvedValue([
-      makeEntrada({ id: "ent-1", estado: "Esperando" }),
+      makeEntrada({ id: "ent-1", estado: "Esperando", telefonoCliente: "" }),
     ]);
     renderConQuery();
     fireEvent.click(await screen.findByRole("button", { name: /Marcar como avisado/ }));
@@ -164,12 +170,36 @@ describe("ListaEsperaPage — eliminar entrada", () => {
   });
 });
 
-describe("ListaEsperaPage — el botón dice lo que hace (OM-06)", () => {
-  it("aclara que solo registra el aviso y no envía mensajes", async () => {
-    vi.mocked(listaEsperaApi.obtener).mockResolvedValue([makeEntrada({ estado: "Esperando" })]);
+describe("ListaEsperaPage — avisar por WhatsApp (OM-06, decisión 6)", () => {
+  it("con teléfono abre WhatsApp con negocio, servicio y fecha, y registra 'Avisado'", async () => {
+    vi.mocked(listaEsperaApi.obtener).mockResolvedValue([
+      makeEntrada({
+        estado: "Esperando", telefonoCliente: "55 1234 5678", servicioNombre: "Corte",
+        fechaPreferida: "2026-11-03T16:30:00",
+      }),
+    ]);
+    renderConQuery();
+    const enlace = await screen.findByRole("link", { name: /Avisar por WhatsApp/ });
+    await waitFor(() => expect(decodeURIComponent(enlace.getAttribute("href")!)).toContain("Salón Luna"));
+    const href = enlace.getAttribute("href")!;
+    expect(href).toMatch(/^https:\/\/wa\.me\/525512345678\?text=/);
+    const texto = decodeURIComponent(href.split("?text=")[1]);
+    expect(texto).toContain("Hola Ana");
+    expect(texto).toContain("*Corte*");
+    expect(texto).toMatch(/03 nov/i);
+    expect(texto).toContain("/b/salon-luna");
+    expect(screen.queryByRole("button", { name: /Marcar como avisado/ })).not.toBeInTheDocument();
+
+    fireEvent.click(enlace);
+    await waitFor(() => expect(listaEsperaApi.cambiarEstado).toHaveBeenCalledWith("ent-1", "Notificado"));
+  });
+
+  it("sin teléfono solo ofrece 'Marcar como avisado', que no envía mensajes", async () => {
+    vi.mocked(listaEsperaApi.obtener).mockResolvedValue([makeEntrada({ estado: "Esperando", telefonoCliente: "" })]);
     renderConQuery();
     const boton = await screen.findByRole("button", { name: /Marcar como avisado/ });
     expect(boton).toHaveAttribute("title", expect.stringContaining("No envía ningún mensaje"));
+    expect(screen.queryByRole("link", { name: /Avisar por WhatsApp/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /^Notificar$/ })).not.toBeInTheDocument();
   });
 });

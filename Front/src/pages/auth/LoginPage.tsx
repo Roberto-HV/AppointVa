@@ -281,7 +281,7 @@ export default function LoginPage() {
         <div className="relative z-10 w-full max-w-xs text-center">
           <h2 className="text-3xl font-bold text-white mb-3">¿Nuevo por aquí?</h2>
           <p className="text-slate-400 text-sm leading-relaxed mb-8">
-            Registra tu negocio gratis y empieza a gestionar tus citas desde el primer día.
+            Registra tu negocio y configura servicios y horarios mientras lo activamos, en menos de 24 horas hábiles.
           </p>
 
           {/* Mini-cards de producto */}

@@ -102,7 +102,7 @@ export default function PrivacidadPage() {
             <h2 className="text-base font-bold text-slate-800 mb-2">5. Seguridad de la información</h2>
             <p className="text-base text-slate-600 leading-relaxed">
               Implementamos medidas técnicas y organizativas para proteger tu información:
-              transmisión cifrada mediante TLS/HTTPS, contraseñas almacenadas con hash seguro (bcrypt),
+              transmisión cifrada mediante TLS/HTTPS, contraseñas almacenadas con hash seguro (PBKDF2, mediante ASP.NET Core Identity),
               autenticación de dos factores opcional y control de acceso por roles.
               Ningún sistema es 100% infalible, por lo que te recomendamos usar contraseñas únicas
               y activar la verificación en dos pasos.
@@ -124,7 +124,9 @@ export default function PrivacidadPage() {
           <section>
             <h2 className="text-base font-bold text-slate-800 mb-2">7. Cookies y tecnologías similares</h2>
             <p className="text-base text-slate-600 leading-relaxed">
-              Usamos cookies de sesión estrictamente necesarias para mantener tu inicio de sesión activo.
+              No usamos cookies para mantener tu sesión: tu inicio de sesión se guarda en el
+              almacenamiento local de tu navegador (localStorage) y se borra al cerrar sesión. El
+              navegador también guarda ahí preferencias como el tema claro u oscuro.
               No utilizamos cookies de seguimiento publicitario ni herramientas de análisis de comportamiento
               de terceros (como Google Analytics).
             </p>

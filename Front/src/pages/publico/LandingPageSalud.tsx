@@ -1,10 +1,15 @@
 import { Link } from "react-router-dom";
 import { useState, useEffect, type ReactNode } from "react";
-import { precioVisible, formatMonto } from "../../lib/precios";
+import { precioVisible, formatMonto, PRECIOS_PLANES } from "../../lib/precios";
 import { useFadeInUp } from "../../components/landing/useFadeInUp";
-import { ACTIVACION_RESUMEN } from "../../lib/activacion";
+import { ACTIVACION_FAQ, ACTIVACION_PLAZO, ACTIVACION_RESUMEN } from "../../lib/activacion";
+import { AVISO_NOTIFICACIONES } from "../../lib/notificaciones";
+import { FaqItem } from "../../components/landing/FaqItem";
+import { CtaFinal } from "../../components/landing/CtaFinal";
 
+// Dorado de la marca: SOLO en el logo ("Va"). Acentos y decoración en slate (AP-09).
 const GOLD = "#C8A961";
+const ACENTO = "#475569";
 const SLATE_700 = "#334155";
 const DARK = "#0F172A";
 
@@ -48,7 +53,7 @@ function Navbar() {
 
         <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-500">
           <a href="#caracteristicas" className="hover:text-slate-900 transition-colors">Características</a>
-          <a href="#negocios" className="hover:text-slate-900 transition-colors">Negocios reales</a>
+          <a href="#preguntas" className="hover:text-slate-900 transition-colors">Preguntas</a>
           <a href="#precios" className="hover:text-slate-900 transition-colors">Precios</a>
           <span className="text-slate-200">·</span>
           <Link to="/" className="text-sm text-slate-500 hover:text-slate-700 transition-colors">
@@ -65,7 +70,7 @@ function Navbar() {
             className="px-5 py-2 text-sm font-bold text-white rounded-xl transition-colors"
             style={{ backgroundColor: SLATE_700 }}
           >
-            Empieza gratis
+            Crear mi cuenta
           </Link>
         </div>
 
@@ -84,12 +89,12 @@ function Navbar() {
       {open && (
         <div id="menu-movil-landing" className="md:hidden bg-white border-t border-slate-100 px-6 py-4 flex flex-col gap-3 shadow-lg">
           <a href="#caracteristicas" className="py-2 text-sm font-medium text-slate-700" onClick={() => setOpen(false)}>Características</a>
-          <a href="#negocios" className="py-2 text-sm font-medium text-slate-700" onClick={() => setOpen(false)}>Negocios reales</a>
+          <a href="#preguntas" className="py-2 text-sm font-medium text-slate-700" onClick={() => setOpen(false)}>Preguntas</a>
           <a href="#precios" className="py-2 text-sm font-medium text-slate-700" onClick={() => setOpen(false)}>Precios</a>
           <Link to="/" className="py-2 text-sm font-medium text-slate-500 hover:text-slate-700 transition-colors" onClick={() => setOpen(false)}>¿Tienes un salón o barbería?</Link>
           <div className="border-t border-slate-100 pt-3 flex flex-col gap-2">
             <Link to="/login" className="py-2.5 text-sm font-medium text-center text-slate-600 border border-slate-200 rounded-xl">Iniciar sesión</Link>
-            <Link to="/registro?sector=salud" className="py-2.5 text-sm font-bold text-center text-white rounded-xl" style={{ backgroundColor: SLATE_700 }}>Empieza gratis</Link>
+            <Link to="/registro?sector=salud" className="py-2.5 text-sm font-bold text-center text-white rounded-xl" style={{ backgroundColor: SLATE_700 }}>Crear mi cuenta</Link>
           </div>
         </div>
       )}
@@ -101,45 +106,12 @@ function Navbar() {
 function FeatureCard({ icon, title, desc, delay }: { icon: ReactNode; title: string; desc: string; delay?: number }) {
   const fade = useFadeInUp(delay);
   return (
-    <div ref={fade.ref} style={fade.style} className="group p-6 rounded-2xl border border-slate-100 bg-white hover:border-amber-200 hover:shadow-lg hover:shadow-amber-50 transition-all duration-300">
-      <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-5 transition-transform duration-300 group-hover:scale-110" style={{ backgroundColor: "#FEF9EC", color: GOLD }}>
+    <div ref={fade.ref} style={fade.style} className="group p-6 rounded-2xl border border-slate-100 bg-white hover:border-slate-300 hover:shadow-lg hover:shadow-slate-100 transition-all duration-300">
+      <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-5 transition-transform duration-300 group-hover:scale-110" style={{ backgroundColor: "#F1F5F9", color: ACENTO }}>
         {icon}
       </div>
       <h3 className="font-bold text-slate-900 mb-2 text-[15px]">{title}</h3>
       <p className="text-sm text-slate-500 leading-relaxed">{desc}</p>
-    </div>
-  );
-}
-
-// ─── Negocio real ─────────────────────────────────────────────────────────────
-// Fila completa dentro de una columna: la lista se lee intencional con dos
-// negocios y admite un tercero sin rehacer la retícula.
-function NegocioCard({ nombre, tipo, slug, initials, delay = 0 }: {
-  nombre: string; tipo: string; slug: string; initials: string; delay?: number;
-}) {
-  const fade = useFadeInUp(delay);
-  return (
-    <div ref={fade.ref} style={fade.style}>
-      <Link
-        to={`/b/${slug}`}
-        aria-label={`Abrir la página de reservas de ${nombre}`}
-        className="group flex items-center gap-4 p-5 rounded-2xl border border-slate-200 bg-white hover:border-amber-200 hover:shadow-lg hover:shadow-amber-50/50 transition-all duration-300"
-      >
-        <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-sm font-black text-white flex-shrink-0" style={{ background: `linear-gradient(135deg, ${GOLD}, #a8862e)` }}>
-          {initials}
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <p className="font-bold text-slate-900 leading-tight">{nombre}</p>
-          <p className="text-xs text-slate-400 mt-1 leading-snug">{tipo}</p>
-          <p className="text-xs text-slate-400 mt-1.5 truncate">appointva.com/b/{slug}</p>
-        </div>
-
-        <span className="shrink-0 inline-flex items-center gap-1.5 text-sm font-bold text-slate-700 group-hover:text-slate-900 transition-colors">
-          <span className="hidden sm:inline">Ver su página</span>
-          <Ico d={dArrow} className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-0.5" />
-        </span>
-      </Link>
     </div>
   );
 }
@@ -161,21 +133,21 @@ function PricingCard({
       className={`relative flex flex-col p-7 rounded-2xl border transition-all duration-300 ${highlighted ? "border-transparent shadow-2xl" : "border-slate-200 hover:border-slate-300 hover:shadow-md"}`}
     >
       {highlighted && (
-        <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-[11px] font-black text-slate-900 whitespace-nowrap" style={{ backgroundColor: GOLD }}>
+        <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-[11px] font-black text-slate-900 whitespace-nowrap" style={{ backgroundColor: "#E2E8F0" }}>
           Más popular
         </div>
       )}
 
       <div className="mb-6">
-        <p className={`text-xs font-bold uppercase tracking-widest mb-3 ${highlighted ? "text-amber-400" : "text-slate-400"}`}>{name}</p>
+        <p className={`text-xs font-bold uppercase tracking-widest mb-3 ${highlighted ? "text-slate-300" : "text-slate-400"}`}>{name}</p>
 
         <div className="flex items-baseline gap-1.5 mb-1">
           <span className={`text-5xl font-black tabular-nums ${highlighted ? "text-white" : "text-slate-900"}`}>${formatMonto(precio.porMes)}</span>
-          <span className="text-sm text-slate-400">/mes</span>
+          <span className="text-sm text-slate-400">MXN/mes</span>
         </div>
         {precio.facturaAnual && (
-          <p className="text-xs font-semibold mb-1" style={{ color: GOLD }}>
-            Facturado anual · Ahorras ${formatMonto(precio.ahorroAnual)}/año
+          <p className={`text-xs font-semibold mb-1 ${highlighted ? "text-slate-300" : "text-slate-600"}`}>
+            Facturado anual · Ahorras ${formatMonto(precio.ahorroAnual)} MXN/año
           </p>
         )}
         {precio.sinPrecioAnual && (
@@ -192,7 +164,7 @@ function PricingCard({
       <ul className="flex flex-col gap-3 mb-8 flex-1">
         {features.map(f => (
           <li key={f} className="flex items-start gap-2.5">
-            <span className="mt-0.5 flex-shrink-0" style={{ color: GOLD }}><Ico d={dCheck} className="w-3.5 h-3.5" /></span>
+            <span className={`mt-0.5 flex-shrink-0 ${highlighted ? "text-slate-300" : "text-slate-500"}`}><Ico d={dCheck} className="w-3.5 h-3.5" /></span>
             <span className={`text-sm leading-snug ${highlighted ? "text-slate-300" : "text-slate-600"}`}>{f}</span>
           </li>
         ))}
@@ -203,7 +175,7 @@ function PricingCard({
           Próximamente disponible
         </div>
       ) : (
-        <Link to="/registro?sector=salud" className="block text-center py-3 rounded-xl text-sm font-bold transition-all hover:opacity-90 active:scale-95" style={{ backgroundColor: highlighted ? GOLD : SLATE_700, color: highlighted ? DARK : "white" }}>
+        <Link to="/registro?sector=salud" className="block text-center py-3 rounded-xl text-sm font-bold transition-all hover:opacity-90 active:scale-95" style={{ backgroundColor: highlighted ? "#FFFFFF" : SLATE_700, color: highlighted ? DARK : "white" }}>
           Empezar con {name}
         </Link>
       )}
@@ -230,7 +202,7 @@ export function LandingPageSalud() {
         @media (prefers-reduced-motion: no-preference) {
           html { scroll-behavior: smooth; }
         }
-        ::selection { background: #C8A96133; }
+        ::selection { background: #47556933; }
       `}</style>
 
       <div className="min-h-screen bg-white text-slate-900 antialiased overflow-x-hidden">
@@ -243,8 +215,8 @@ export function LandingPageSalud() {
 
           <div className="max-w-6xl mx-auto px-6">
             <div className="max-w-2xl">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold mb-8" style={{ backgroundColor: "#FEF9EC", color: "#92701A", border: "1px solid #F3E0A0" }}>
-                <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: GOLD, boxShadow: `0 0 6px ${GOLD}` }} />
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold mb-8" style={{ backgroundColor: "#F1F5F9", color: "#334155", border: "1px solid #E2E8F0" }}>
+                <span className="w-1.5 h-1.5 rounded-full bg-slate-500" />
                 Para profesionales de la salud · México
               </div>
 
@@ -253,7 +225,7 @@ export function LandingPageSalud() {
                 <br />
                 para tu
                 <br />
-                <span style={{ color: GOLD }}>consultorio.</span>
+                <span style={{ color: ACENTO }}>consultorio.</span>
               </h1>
 
               <p className="text-lg text-slate-500 leading-relaxed max-w-[440px] mb-10">
@@ -267,7 +239,7 @@ export function LandingPageSalud() {
                   className="inline-flex items-center gap-2 px-7 py-3.5 text-sm font-bold text-white rounded-xl transition-all hover:-translate-y-0.5 hover:shadow-lg active:scale-95"
                   style={{ backgroundColor: SLATE_700, boxShadow: `0 4px 16px -2px ${SLATE_700}44` }}
                 >
-                  Empieza gratis
+                  Crear mi cuenta
                   <Ico d={dArrow} className="w-4 h-4" />
                 </Link>
                 <a href="#precios" className="inline-flex items-center gap-2 px-7 py-3.5 text-sm font-semibold text-slate-700 rounded-xl border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-95">
@@ -306,7 +278,7 @@ export function LandingPageSalud() {
         <section id="caracteristicas" className="py-28 scroll-mt-20">
           <div className="max-w-6xl mx-auto px-6">
             <div className="text-center mb-16">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] mb-4" style={{ color: GOLD }}>Características</p>
+              <p className="text-xs font-bold uppercase tracking-[0.2em] mb-4" style={{ color: ACENTO }}>Características</p>
               <h2 className="text-4xl md:text-5xl font-black text-slate-900 mb-5 leading-tight">
                 Todo lo que necesitas,
                 <br />nada de lo que no.
@@ -325,7 +297,7 @@ export function LandingPageSalud() {
                 delay={80}
                 icon={<Ico d={dBell} />}
                 title="Recordatorios automáticos"
-                desc="Reduce inasistencias con recordatorios por correo y WhatsApp."
+                desc="Reduce inasistencias con recordatorios automáticos por correo."
               />
               <FeatureCard
                 delay={160}
@@ -337,45 +309,13 @@ export function LandingPageSalud() {
           </div>
         </section>
 
-        {/* ── NEGOCIOS REALES ───────────────────────────────────────────────── */}
-        <section id="negocios" className="py-24 bg-slate-50 scroll-mt-20">
-          <div className="max-w-5xl mx-auto px-6">
-            <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
-              <div className="text-center lg:text-left">
-                <p className="text-xs font-bold uppercase tracking-[0.2em] mb-4" style={{ color: GOLD }}>Negocios reales</p>
-                <h2 className="text-4xl md:text-5xl font-black text-slate-900 mb-5 leading-tight">
-                  Negocios que ya reservan con AppointVa
-                </h2>
-                <p className="text-slate-500 text-base max-w-sm mx-auto lg:mx-0">
-                  Abre su página y reserva como lo haría tu paciente.
-                </p>
-              </div>
-
-              <div className="flex flex-col gap-4">
-                <NegocioCard
-                  delay={0}
-                  nombre="Aramis Manzo Salón"
-                  tipo="Salón de belleza"
-                  slug="aramis-manzo-salon"
-                  initials="AM"
-                />
-                <NegocioCard
-                  delay={120}
-                  nombre="Lashes_crisantemo"
-                  tipo="Estudio de pestañas · Zacatepec, Tejupilco"
-                  slug="lashescrisantemo"
-                  initials="LC"
-                />
-              </div>
-            </div>
-          </div>
-        </section>
+        {/* "Negocios reales" oculto hasta tener un cliente del sector salud (decisión 16, AP-22). */}
 
         {/* ── PRICING ───────────────────────────────────────────────────────── */}
         <section id="precios" className="py-28 bg-white scroll-mt-20">
           <div className="max-w-6xl mx-auto px-6">
             <div className="text-center mb-10">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] mb-4" style={{ color: GOLD }}>Precios</p>
+              <p className="text-xs font-bold uppercase tracking-[0.2em] mb-4" style={{ color: ACENTO }}>Precios</p>
               <h2 className="text-4xl md:text-5xl font-black text-slate-900 mb-5">Sin sorpresas al final del mes</h2>
               <p className="text-slate-500 text-base max-w-md mx-auto">Un precio fijo, todo incluido. Sin comisiones por cita, sin módulos extras.</p>
             </div>
@@ -398,8 +338,8 @@ export function LandingPageSalud() {
                   className={`flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-bold transition-all duration-200 ${billedAnnually ? "bg-slate-900 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
                 >
                   Anual
-                  <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full transition-colors ${billedAnnually ? "bg-amber-400/20 text-amber-300" : "bg-emerald-100 text-emerald-600"}`}>
-                    −20%
+                  <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full transition-colors ${billedAnnually ? "bg-white/15 text-slate-200" : "bg-emerald-100 text-emerald-600"}`}>
+                    Hasta −20%
                   </span>
                 </button>
               </div>
@@ -407,24 +347,24 @@ export function LandingPageSalud() {
 
             <div className="grid md:grid-cols-3 gap-5 items-stretch">
               <PricingCard
-                delay={0} name="Básico" price={249} annualPrice={199} employees={2}
+                delay={0} name="Básico" price={PRECIOS_PLANES.basico.mensual} annualPrice={PRECIOS_PLANES.basico.anual} employees={2}
                 billedAnnually={billedAnnually}
                 features={["Portal de reservas público", "2 empleados", "Notificaciones por email", "Dashboard y calendario", "Campana de notificaciones", "Gestión de clientes"]}
               />
               <PricingCard
-                delay={100} name="Pro" price={449} employees={4}
+                delay={100} name="Pro" price={PRECIOS_PLANES.pro.mensual} annualPrice={PRECIOS_PLANES.pro.anual} employees={4}
                 highlighted billedAnnually={billedAnnually}
                 features={[
                   "Todo lo del plan Básico",
                   "Hasta 4 profesionales",
                   "Historial completo de pacientes",
                   "Exportar reportes en Excel",
-                  "Recordatorios por WhatsApp",
+                  "Recordatorios por correo",
                   "Personalización de colores"
                 ]}
               />
               <PricingCard
-                delay={200} name="Premium" price={799} employees={50} comingSoon
+                delay={200} name="Premium" price={PRECIOS_PLANES.premium.mensual} employees={50} comingSoon
                 billedAnnually={billedAnnually}
                 features={["Todo lo del plan Pro", "Formularios de admisión", "Reportes avanzados", "Soporte prioritario"]}
               />
@@ -441,6 +381,43 @@ export function LandingPageSalud() {
             </p>
           </div>
         </section>
+
+        {/* ── FAQ ───────────────────────────────────────────────────────────── */}
+        <section id="preguntas" className="py-28 bg-slate-50 scroll-mt-20">
+          <div className="max-w-3xl mx-auto px-6">
+            <div className="text-center mb-16">
+              <p className="text-xs font-bold uppercase tracking-[0.2em] mb-4" style={{ color: ACENTO }}>FAQ</p>
+              <h2 className="text-4xl md:text-5xl font-black text-slate-900 leading-tight">Lo que más nos preguntan</h2>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm px-8">
+              <FaqItem
+                defaultOpen
+                q="¿Mis pacientes necesitan descargar una app o crear una cuenta?"
+                a="No. Tus pacientes agendan desde la página de tu consultorio en cualquier navegador, sin registrarse ni instalar nada. Eligen el servicio, el horario y confirman."
+              />
+              <FaqItem
+                q="¿Cómo se avisa a mis pacientes de su cita?"
+                a={AVISO_NOTIFICACIONES}
+              />
+              <FaqItem
+                q="¿Puedo atender con varios profesionales y horarios distintos?"
+                a="Sí. Cada profesional tiene su propio horario y los servicios que ofrece. Tus pacientes eligen con quién agendar o dejan que el sistema asigne a alguien disponible."
+              />
+              <FaqItem
+                q="¿Cómo funciona el proceso de activación después de registrarme?"
+                a={ACTIVACION_FAQ}
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* ── CTA FINAL ─────────────────────────────────────────────────────── */}
+        <CtaFinal
+          to="/registro?sector=salud"
+          titulo="¿Listo para que tus pacientes agenden sin llamarte?"
+          subtitulo={`Sin tarjeta de crédito. Activamos tu consultorio ${ACTIVACION_PLAZO}.`}
+        />
 
         {/* ── FOOTER ────────────────────────────────────────────────────────── */}
         <footer style={{ backgroundColor: "#070E1A" }} className="border-t border-white/5">
@@ -460,7 +437,7 @@ export function LandingPageSalud() {
                 <p className="text-xs font-bold uppercase tracking-widest text-slate-600 mb-4">Producto</p>
                 <nav className="flex flex-col gap-2.5">
                   <a href="#caracteristicas" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">Características</a>
-                  <a href="#negocios" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">Negocios reales</a>
+                  <a href="#preguntas" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">Preguntas</a>
                   <a href="#precios" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">Precios</a>
                   <Link to="/registro?sector=salud" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">Registrarse</Link>
                   <Link to="/login" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">Iniciar sesión</Link>

@@ -77,7 +77,8 @@ export default {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        sans: ["Inter", "system-ui", "sans-serif"],
+        // Inter autohospedada en src/index.css (@font-face) con la pila del sistema de respaldo.
+        sans: ["Inter", "system-ui", "-apple-system", "\"Segoe UI\"", "Roboto", "\"Helvetica Neue\"", "Arial", "sans-serif"],
       },
       animation: {
         "fade-in":        "fadeIn 0.18s ease-out",
