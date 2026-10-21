@@ -8,6 +8,7 @@ import { authApi } from "../../api/auth";
 import PasswordStrengthBar from "../../components/PasswordStrengthBar";
 import ReglasContrasena from "../../components/ReglasContrasena";
 import LogoMarca from "../../components/LogoMarca";
+import { BOTON_PRIMARIO_AUTH, FONDO_AUTH, TARJETA_AUTH, TITULO_AUTH, campoAuth } from "../../lib/clasesAuth";
 import { esquemaContrasena } from "../../utils/contrasena";
 import { mensajeError } from "../../utils/errores";
 import { useTituloPagina } from "../../hooks/useTituloPagina";
@@ -71,13 +72,13 @@ export default function RestablecerContrasenaPage() {
 
   if (!token || !email) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="w-full max-w-md bg-white rounded-2xl border border-gray-100 p-8 text-center">
-          <h1 className="text-lg font-semibold text-gray-800 mb-2">Enlace inválido o incompleto</h1>
-          <p className="text-sm text-gray-500 mb-4">Los enlaces para restablecer la contraseña vencen. Pide uno nuevo con tu correo.</p>
+      <div className={FONDO_AUTH}>
+        <div className={`w-full max-w-md text-center ${TARJETA_AUTH}`}>
+          <h1 className={TITULO_AUTH}>Enlace inválido o incompleto</h1>
+          <p className="text-sm text-slate-500 mb-4">Los enlaces para restablecer la contraseña vencen. Pide uno nuevo con tu correo.</p>
           <div className="flex flex-col items-center gap-1">
             <NuevoEnlace email={email} />
-            <Link to="/login" className="inline-flex items-center min-h-[44px] text-sm text-gray-600 hover:underline">Volver al inicio de sesión</Link>
+            <Link to="/login" className="inline-flex items-center min-h-[44px] text-sm text-slate-600 hover:underline">Volver al inicio de sesión</Link>
           </div>
         </div>
       </div>
@@ -85,66 +86,67 @@ export default function RestablecerContrasenaPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+    <div className={FONDO_AUTH}>
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <LogoMarca prioridad className="h-20 mx-auto" />
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8">
+        <div className={TARJETA_AUTH}>
           {exito ? (
             <div className="text-center py-4">
               <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-7 h-7 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-7 h-7 text-green-600" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h2 className="text-lg font-semibold text-gray-800 mb-2">¡Contraseña actualizada!</h2>
-              <p className="text-sm text-gray-500 mb-6">
+              <h1 className={TITULO_AUTH}>¡Contraseña actualizada!</h1>
+              <p className="text-sm text-slate-500 mb-6">
                 Ya puedes iniciar sesión con tu nueva contraseña.
               </p>
               <Link
                 to="/login"
-                className="inline-block bg-slate-700 hover:bg-slate-800 text-white font-semibold px-6 py-2.5 rounded-lg text-sm transition"
+                className={`inline-flex items-center justify-center ${BOTON_PRIMARIO_AUTH}`}
               >
                 Ir al inicio de sesión
               </Link>
             </div>
           ) : (
             <>
-              <h2 className="text-xl font-semibold text-gray-800 mb-2">Nueva contraseña</h2>
-              <p className="text-sm text-gray-500 mb-6">
+              <h1 className={TITULO_AUTH}>Nueva contraseña</h1>
+              <p className="text-sm text-slate-500 mb-6">
                 Crea una contraseña segura para tu cuenta.
               </p>
 
               <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-5">
                 {/* Nueva contraseña */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="nueva-contrasena" className="block text-sm font-medium text-slate-700 mb-1">
                     Nueva contraseña
                   </label>
                   <div className="relative">
                     <input
+                      id="nueva-contrasena"
                       type={mostrarNueva ? "text" : "password"}
                       autoComplete="new-password"
                       {...register("nuevaContrasena")}
-                      className={`w-full px-4 py-2.5 pr-11 rounded-lg border text-sm outline-none transition
-                        focus:ring-2 focus:ring-slate-700/40 focus:border-slate-700
-                        ${errors.nuevaContrasena ? "border-red-400 bg-red-50" : "border-gray-300"}`}
+                      className={`${campoAuth(!!errors.nuevaContrasena)} pr-12`}
+                      aria-invalid={errors.nuevaContrasena ? true : undefined}
                       aria-describedby="reglas-nueva-contrasena"
                     />
                     <button
                       type="button"
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => setMostrarNueva((v) => !v)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                      tabIndex={-1}
+                      aria-label={mostrarNueva ? "Ocultar contraseña" : "Mostrar contraseña"}
+                      aria-pressed={mostrarNueva}
+                      className="absolute right-0 top-1/2 -translate-y-1/2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-slate-500 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40"
                     >
                       {mostrarNueva ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
                   </div>
                   {errors.nuevaContrasena && (
-                    <p className="text-red-500 text-xs mt-1">{errors.nuevaContrasena.message}</p>
+                    <p className="text-red-600 text-xs mt-1">{errors.nuevaContrasena.message}</p>
                   )}
                   <ReglasContrasena id="reglas-nueva-contrasena" valor={nuevaValor ?? ""} />
                   <PasswordStrengthBar password={nuevaValor} />
@@ -152,31 +154,33 @@ export default function RestablecerContrasenaPage() {
 
                 {/* Confirmar */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="confirmar-contrasena" className="block text-sm font-medium text-slate-700 mb-1">
                     Confirmar contraseña
                   </label>
                   <div className="relative">
                     <input
+                      id="confirmar-contrasena"
                       type={mostrarConfirmar ? "text" : "password"}
                       autoComplete="new-password"
                       {...register("confirmar")}
-                      className={`w-full px-4 py-2.5 pr-11 rounded-lg border text-sm outline-none transition
-                        focus:ring-2 focus:ring-slate-700/40 focus:border-slate-700
-                        ${errors.confirmar ? "border-red-400 bg-red-50" : "border-gray-300"}`}
+                      className={`${campoAuth(!!errors.confirmar)} pr-12`}
+                      aria-invalid={errors.confirmar ? true : undefined}
+                      aria-describedby={errors.confirmar ? "confirmar-contrasena-error" : undefined}
                       placeholder="Repite la contraseña"
                     />
                     <button
                       type="button"
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => setMostrarConfirmar((v) => !v)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                      tabIndex={-1}
+                      aria-label={mostrarConfirmar ? "Ocultar contraseña" : "Mostrar contraseña"}
+                      aria-pressed={mostrarConfirmar}
+                      className="absolute right-0 top-1/2 -translate-y-1/2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-slate-500 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40"
                     >
                       {mostrarConfirmar ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
                   </div>
                   {errors.confirmar && (
-                    <p className="text-red-500 text-xs mt-1">{errors.confirmar.message}</p>
+                    <p id="confirmar-contrasena-error" className="text-red-600 text-xs mt-1">{errors.confirmar.message}</p>
                   )}
                 </div>
 
@@ -190,8 +194,7 @@ export default function RestablecerContrasenaPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full bg-slate-700 hover:bg-slate-800 disabled:opacity-60 disabled:cursor-not-allowed
-                    text-white font-semibold py-2.5 rounded-lg transition text-sm"
+                  className={BOTON_PRIMARIO_AUTH}
                 >
                   {isSubmitting ? "Guardando..." : "Restablecer contraseña"}
                 </button>

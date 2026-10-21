@@ -249,6 +249,29 @@ describe("BookingPage", () => {
     );
   });
 
+  it("pone el título de la pestaña con el formato común", async () => {
+    vi.mocked(publicoApi.obtenerNegocio).mockResolvedValue(mockNegocio);
+    renderConQuery();
+    await waitFor(() => expect(document.title).toBe("Reservar en Salón Test · AppointVa"));
+  });
+
+  // BF-24/BF-25: sin logo, la inicial (no 🏪); sin reseñas, ninguna estrella.
+  it("sin logo muestra la inicial y sin reseñas no muestra la píldora de calificación", async () => {
+    vi.mocked(publicoApi.obtenerNegocio).mockResolvedValue({ ...mockNegocio, logoUrl: undefined, totalResenas: 0 });
+    renderConQuery();
+    const portada = await screen.findByTestId("portada-negocio");
+    expect(portada).toHaveTextContent("S");
+    expect(portada.textContent).not.toMatch(/🏪|📍/);
+    expect(screen.queryByText("Sin reseñas")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Calificación/)).not.toBeInTheDocument();
+  });
+
+  it("con reseñas muestra el promedio con nombre accesible", async () => {
+    vi.mocked(publicoApi.obtenerNegocio).mockResolvedValue({ ...mockNegocio, totalResenas: 3, promedioResenas: 4.67 });
+    renderConQuery();
+    expect((await screen.findByText(/Calificación/)).parentElement).toHaveTextContent("Calificación 4.7");
+  });
+
   it("renders step 1 (service selection) by default", async () => {
     vi.mocked(publicoApi.obtenerNegocio).mockResolvedValue(mockNegocio);
     renderConQuery();

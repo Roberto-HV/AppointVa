@@ -1,10 +1,11 @@
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Calendar, User, Clock, DollarSign, FileText } from "lucide-react";
 import { SiGooglecalendar } from "react-icons/si";
 import { citasApi } from "../../api/citas";
 import { negociosApi } from "../../api/negocios";
 import { useSectorTerms } from "../../hooks/useSectorTerms";
+import { useVolverAtras } from "../../hooks/useVolverAtras";
 import EstadoBadge from "../../components/ui/EstadoBadge";
 import { Skeleton } from "../../components/ui/Skeleton";
 import AccionesCita from "../../components/dashboard/AccionesCita";
@@ -27,13 +28,11 @@ function buildGoogleCalUrl(
 
 export default function CitaDetallePage() {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-  const location = useLocation();
   const terms = useSectorTerms();
   // Con historial dentro de la app, "Volver" regresa a la lista tal como estaba
   // (filtros y página en la URL). Si se llegó directo (notificación, enlace),
   // no hay a dónde volver y se abre la lista.
-  const volver = () => (location.key !== "default" ? navigate(-1) : navigate("/dashboard/citas"));
+  const { volver } = useVolverAtras("/dashboard/citas");
 
   const { data: cita, isLoading, error } = useQuery({
     queryKey: ["cita", id],
@@ -60,12 +59,14 @@ export default function CitaDetallePage() {
   if (error || !cita) {
     return (
       <div className="max-w-xl mx-auto p-6 text-center">
-        <p className="text-gray-500 dark:text-gray-400 mb-4">{`No se encontró la ${terms.cita.toLowerCase()} o no tienes acceso.`}</p>
+        <p className="text-slate-500 dark:text-slate-400 mb-4">{`No se encontró la ${terms.cita.toLowerCase()} o no tienes acceso.`}</p>
         <button
+          type="button"
           onClick={volver}
-          className="text-sm text-slate-700 hover:underline"
+          className="inline-flex items-center gap-1 min-h-[44px] px-2 text-sm text-slate-700 dark:text-slate-300 hover:underline"
         >
-          {`← Volver a mis ${terms.citas.toLowerCase()}`}
+          <ArrowLeft size={16} aria-hidden="true" />
+          {`Volver a ${terms.citas.toLowerCase()}`}
         </button>
       </div>
     );
@@ -93,14 +94,14 @@ export default function CitaDetallePage() {
       <div className="flex items-center gap-3">
         <button
           onClick={volver}
-          className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] lg:min-h-[36px] lg:min-w-[36px] rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition text-gray-500 dark:text-gray-400"
+          className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] lg:min-h-[36px] lg:min-w-[36px] rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition text-slate-500 dark:text-slate-400"
           aria-label="Volver"
         >
           <ArrowLeft size={20} />
         </button>
         <div>
-          <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{`Detalle de ${terms.cita.toLowerCase()}`}</h1>
-          <p className="text-xs text-gray-400 dark:text-gray-500 font-mono">{cita.codigoConfirmacion}</p>
+          <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">{`Detalle de ${terms.cita.toLowerCase()}`}</h1>
+          <p className="text-xs text-slate-400 dark:text-slate-500 font-mono">{cita.codigoConfirmacion}</p>
         </div>
         <span className="ml-auto">
           <EstadoBadge estado={cita.estadoTexto} />
@@ -108,47 +109,47 @@ export default function CitaDetallePage() {
       </div>
 
       {/* Acciones: la misma hoja que la lista, el calendario y el inicio */}
-      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm p-3 flex items-center justify-between gap-2">
-        <p className="text-sm font-medium text-gray-700 dark:text-gray-300 pl-2">{`Gestionar ${terms.cita.toLowerCase()}`}</p>
+      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm p-3 flex items-center justify-between gap-2">
+        <p className="text-sm font-medium text-slate-700 dark:text-slate-300 pl-2">{`Gestionar ${terms.cita.toLowerCase()}`}</p>
         <AccionesCita cita={cita} nombreNegocio={perfil?.nombre} mostrarDetalle={false} conEtiqueta />
       </div>
 
       {/* Tarjeta principal */}
-      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm divide-y divide-gray-50 dark:divide-slate-700">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm divide-y divide-slate-50 dark:divide-slate-700">
 
         {/* Servicio y profesional */}
         <div className="p-5">
-          <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1">Servicio</p>
-          <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">{cita.nombreServicio}</p>
+          <p className="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-1">Servicio</p>
+          <p className="text-lg font-semibold text-slate-900 dark:text-slate-100">{cita.nombreServicio}</p>
           {cita.nombreEmpleado && (
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">con {cita.nombreEmpleado}</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">con {cita.nombreEmpleado}</p>
           )}
         </div>
 
         {/* Fecha y hora */}
         <div className="p-5 flex gap-3">
-          <Clock size={18} className="text-gray-400 dark:text-gray-500 mt-0.5 shrink-0" />
+          <Clock size={18} className="text-slate-400 dark:text-slate-500 mt-0.5 shrink-0" />
           <div>
-            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{fechaStr}</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">{horaStr} · {cita.duracionMinutos} min</p>
+            <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{fechaStr}</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">{horaStr} · {cita.duracionMinutos} min</p>
           </div>
         </div>
 
         {/* Cliente */}
         <div className="p-5 flex gap-3">
-          <User size={18} className="text-gray-400 dark:text-gray-500 mt-0.5 shrink-0" />
+          <User size={18} className="text-slate-400 dark:text-slate-500 mt-0.5 shrink-0" />
           <div>
-            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{cita.nombreCliente}</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">{cita.telefonoCliente}</p>
-            {cita.emailCliente && <p className="text-sm text-gray-500 dark:text-gray-400">{cita.emailCliente}</p>}
+            <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{cita.nombreCliente}</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">{cita.telefonoCliente}</p>
+            {cita.emailCliente && <p className="text-sm text-slate-500 dark:text-slate-400">{cita.emailCliente}</p>}
           </div>
         </div>
 
         {/* Precio */}
         <div className="p-5 flex gap-3">
-          <DollarSign size={18} className="text-gray-400 dark:text-gray-500 mt-0.5 shrink-0" />
+          <DollarSign size={18} className="text-slate-400 dark:text-slate-500 mt-0.5 shrink-0" />
           <div className="flex items-center gap-2">
-            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+            <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
               {cita.precio.toLocaleString("es-MX", { style: "currency", currency: "MXN" })}
             </p>
             {cita.pagada && (
@@ -162,15 +163,15 @@ export default function CitaDetallePage() {
         {/* Notas */}
         {cita.notas && (
           <div className="p-5 flex gap-3">
-            <FileText size={18} className="text-gray-400 dark:text-gray-500 mt-0.5 shrink-0" />
-            <p className="text-sm text-gray-600 dark:text-gray-400">{cita.notas}</p>
+            <FileText size={18} className="text-slate-400 dark:text-slate-500 mt-0.5 shrink-0" />
+            <p className="text-sm text-slate-600 dark:text-slate-400">{cita.notas}</p>
           </div>
         )}
       </div>
 
       {/* Botones de calendario */}
-      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm p-5 space-y-3">
-        <p className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm p-5 space-y-3">
+        <p className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
           <Calendar size={16} />
           Agregar al calendario
         </p>
@@ -179,7 +180,7 @@ export default function CitaDetallePage() {
             href={googleCalUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 flex-1 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 hover:border-gray-300 dark:hover:border-slate-500 hover:bg-gray-50 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-300 text-sm font-medium px-4 py-2.5 rounded-xl transition"
+            className="flex items-center justify-center gap-2 flex-1 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 hover:bg-slate-50 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 text-sm font-medium px-4 py-2.5 rounded-xl transition"
           >
             <SiGooglecalendar size={15} />
             Google Calendar

@@ -74,7 +74,7 @@ export function NotificacionPerfilSection() {
 
   if (!soportado) {
     return (
-      <div className="rounded-lg border border-gray-200 bg-gray-50 dark:border-slate-700 dark:bg-slate-800 p-4 text-sm text-gray-500 dark:text-gray-400">
+      <div className="rounded-lg border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800 p-4 text-sm text-slate-500 dark:text-slate-400">
         Tu navegador no soporta notificaciones push.
       </div>
     );
@@ -125,19 +125,19 @@ export function NotificacionPerfilSection() {
   }
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white dark:border-slate-700 dark:bg-slate-800 p-4">
+    <div className="rounded-lg border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800 p-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           {suscrito ? (
             <Bell className="h-5 w-5 text-green-600" />
           ) : (
-            <BellOff className="h-5 w-5 text-gray-400" />
+            <BellOff className="h-5 w-5 text-slate-400" />
           )}
           <div>
-            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+            <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
               {suscrito ? "Notificaciones activas" : "Notificaciones desactivadas"}
             </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
               {suscrito
                 ? "Recibirás alertas cuando te asignen una nueva cita."
                 : "Actívalas para saber de tus citas al instante."}
@@ -150,7 +150,7 @@ export function NotificacionPerfilSection() {
             disabled={cargando}
             className={`rounded-md px-4 py-1.5 text-xs font-semibold transition-colors disabled:opacity-60 ${
               suscrito
-                ? "border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700"
+                ? "border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700"
                 : "bg-blue-600 text-white hover:bg-blue-700"
             }`}
           >

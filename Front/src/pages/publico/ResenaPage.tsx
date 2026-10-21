@@ -1,4 +1,5 @@
 ﻿import { useState } from "react";
+import { AlertCircle, Star } from "lucide-react";
 import { useParams } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { publicoApi } from "../../api/publico";
@@ -48,7 +49,7 @@ export default function ResenaPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
         <div className="bg-white rounded-2xl border border-slate-100 p-8 max-w-sm w-full text-center shadow-sm">
-          <div className="text-4xl mb-4">😔</div>
+          <AlertCircle size={40} className="mx-auto mb-4 text-slate-400" aria-hidden="true" />
           <h1 className="text-xl font-bold text-gray-900 mb-2">Enlace no válido</h1>
           <p className="text-sm text-gray-500">{errorMsg ?? "Este enlace ha expirado o ya fue utilizado."}</p>
         </div>
@@ -60,7 +61,7 @@ export default function ResenaPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
         <div className="bg-white rounded-2xl border border-slate-100 p-8 max-w-sm w-full text-center shadow-sm">
-          <div className="text-5xl mb-4">⭐</div>
+          <Star size={44} className="mx-auto mb-4 text-rating fill-rating" aria-hidden="true" />
           <h1 className="text-xl font-bold text-gray-900 mb-2">¡Gracias por tu reseña!</h1>
           <p className="text-sm text-gray-500">Tu opinión ayuda a <strong>{info?.negocioNombre}</strong> a seguir mejorando.</p>
         </div>

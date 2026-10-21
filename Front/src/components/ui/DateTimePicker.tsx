@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useLayoutEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { ChevronLeft, ChevronRight, Calendar, Clock } from "lucide-react";
+import { codigoCitaAbierta } from "../../lib/estadoCita";
 
 const DIAS  = ["DOM","LUN","MAR","MIÉ","JUE","VIE","SÁB"];
 const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio",
@@ -224,7 +225,7 @@ export function DatePicker({ value, onChange, label, minDate, error, ariaLabel }
 
   return (
     <div className="relative">
-      {label && <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>}
+      {label && <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{label}</label>}
 
       <button
         ref={triggerRef}
@@ -235,11 +236,11 @@ export function DatePicker({ value, onChange, label, minDate, error, ariaLabel }
         aria-label={`${nombreAccesible}${value ? `: ${displayFecha}` : ""}`}
         className={`w-full min-h-[44px] flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border text-sm text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40 ${
           error ? "border-red-400 bg-red-50 text-red-700"
-                : value ? "border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-800 dark:text-gray-100"
-                        : "border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-400 dark:text-gray-500"
+                : value ? "border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100"
+                        : "border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500"
         } hover:border-slate-400 dark:hover:border-slate-500`}
       >
-        <Calendar size={14} className="shrink-0 text-gray-400 dark:text-gray-500" />
+        <Calendar size={14} className="shrink-0 text-slate-400 dark:text-slate-500" />
         <span className="truncate">{value ? displayFecha : "Fecha"}</span>
       </button>
 
@@ -251,22 +252,22 @@ export function DatePicker({ value, onChange, label, minDate, error, ariaLabel }
           onClose={() => setOpen(false)}
           ancho={352}
           ariaLabel={`Calendario — ${nombreAccesible}`}
-          className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl shadow-xl p-4 select-none"
+          className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl p-4 select-none"
         >
           {/* Navegación */}
           <div className="flex items-center justify-between mb-4">
-            <span className="text-sm font-bold text-gray-800 dark:text-gray-100 capitalize">
+            <span className="text-sm font-bold text-slate-800 dark:text-slate-100 capitalize">
               {MESES[mes.getMonth()]} {mes.getFullYear()}
             </span>
             <div className="flex gap-0.5">
               <button type="button" aria-label="Mes anterior"
                 onClick={() => setMes(new Date(mes.getFullYear(), mes.getMonth()-1, 1))}
-                className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 text-blue-500 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50">
+                className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-blue-500 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50">
                 <ChevronLeft size={16} />
               </button>
               <button type="button" aria-label="Mes siguiente"
                 onClick={() => setMes(new Date(mes.getFullYear(), mes.getMonth()+1, 1))}
-                className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 text-blue-500 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50">
+                className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-blue-500 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50">
                 <ChevronRight size={16} />
               </button>
             </div>
@@ -276,7 +277,7 @@ export function DatePicker({ value, onChange, label, minDate, error, ariaLabel }
           <div className="grid grid-cols-7 mb-1">
             {DIAS.map((d, i) => (
               <div key={d} className={`text-center text-[10px] font-semibold tracking-wide py-1 ${
-                i === 0 || i === 6 ? "text-red-400" : "text-gray-400 dark:text-gray-500"
+                i === 0 || i === 6 ? "text-red-400" : "text-slate-400 dark:text-slate-500"
               }`}>{d}</div>
             ))}
           </div>
@@ -296,11 +297,11 @@ export function DatePicker({ value, onChange, label, minDate, error, ariaLabel }
                   onClick={() => !isDis && seleccionarCelda(cell)}
                   className={`h-11 w-11 mx-auto text-xs rounded-full font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 ${
                     isSel      ? "bg-blue-500 text-white"
-                    : isDis    ? "text-gray-300 dark:text-slate-600 cursor-not-allowed"
-                    : isAdj    ? "text-gray-300 dark:text-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700/50"
+                    : isDis    ? "text-slate-300 dark:text-slate-600 cursor-not-allowed"
+                    : isAdj    ? "text-slate-300 dark:text-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700/50"
                     : isHoy    ? "ring-2 ring-blue-500 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20"
                     : isWeekend ? "text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
-                               : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700"
+                               : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
                   }`}>
                   {cell.day}
                 </button>
@@ -309,10 +310,10 @@ export function DatePicker({ value, onChange, label, minDate, error, ariaLabel }
           </div>
 
           {/* Footer */}
-          <div className="flex justify-between mt-3 pt-2 border-t border-gray-100 dark:border-slate-700">
+          <div className="flex justify-between mt-3 pt-2 border-t border-slate-100 dark:border-slate-700">
             <button type="button"
               onClick={() => { onChange(""); setOpen(false); }}
-              className="min-h-[44px] px-2 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition font-medium rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40">
+              className="min-h-[44px] px-2 text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition font-medium rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40">
               Borrar
             </button>
             <button type="button" onClick={irAHoy}
@@ -332,8 +333,8 @@ export function citasABusySlots(
   citas: Array<{ inicioEn: string; finEn: string; estado: number }>
 ): string[] {
   const busy = new Set<string>();
-  // Solo citas activas (Pendiente=1, Confirmada=2)
-  for (const c of citas.filter((x) => x.estado === 1 || x.estado === 2)) {
+  // Solo citas activas (Pendiente, Confirmada)
+  for (const c of citas.filter((x) => codigoCitaAbierta(x.estado))) {
     const inicio    = new Date(c.inicioEn);
     const fin       = new Date(c.finEn);
     const minInicio = inicio.getHours() * 60 + inicio.getMinutes();
@@ -376,7 +377,7 @@ export function TimePicker({ value, onChange, label, minTime, maxTime, busySlots
 
   return (
     <div className="relative">
-      {label && <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>}
+      {label && <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{label}</label>}
 
       <button
         ref={triggerRef}
@@ -388,17 +389,17 @@ export function TimePicker({ value, onChange, label, minTime, maxTime, busySlots
         className={compact
           ? `min-h-[44px] flex items-center gap-1 px-2 py-1 rounded border text-xs transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 ${
               error ? "border-red-400 bg-red-50 text-red-700"
-                    : value ? "border-gray-200 bg-white text-gray-800 dark:bg-slate-700 dark:text-gray-100 dark:border-slate-600"
-                            : "border-gray-200 bg-white text-gray-400 dark:bg-slate-700 dark:border-slate-600"
+                    : value ? "border-slate-200 bg-white text-slate-800 dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600"
+                            : "border-slate-200 bg-white text-slate-400 dark:bg-slate-700 dark:border-slate-600"
             } hover:border-slate-400`
           : `w-full min-h-[44px] flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border text-sm text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 ${
               error ? "border-red-400 bg-red-50 text-red-700"
-                    : value ? "border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-800 dark:text-gray-100"
-                            : "border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-400 dark:text-gray-500"
+                    : value ? "border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100"
+                            : "border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500"
             } hover:border-slate-400 dark:hover:border-slate-500`
         }
       >
-        <Clock size={compact ? 11 : 14} className="shrink-0 text-gray-400 dark:text-gray-500" />
+        <Clock size={compact ? 11 : 14} className="shrink-0 text-slate-400 dark:text-slate-500" />
         <span className="whitespace-nowrap">{value ? displayHora(value) : "Hora"}</span>
       </button>
 
@@ -410,7 +411,7 @@ export function TimePicker({ value, onChange, label, minTime, maxTime, busySlots
           onClose={() => setOpen(false)}
           ancho={180}
           ariaLabel={`Horas — ${nombreAccesible}`}
-          className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl shadow-xl p-2 select-none"
+          className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl shadow-xl p-2 select-none"
         >
           <ul role="listbox" aria-label={nombreAccesible} className="max-h-56 overflow-y-auto space-y-0.5 pr-0.5">
             {opciones.map(h => (
@@ -422,7 +423,7 @@ export function TimePicker({ value, onChange, label, minTime, maxTime, busySlots
                   className={`w-full min-h-[44px] flex items-center text-left text-sm px-3 rounded-lg transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 ${
                     value === h
                       ? "bg-slate-700 text-white font-medium"
-                      : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700"
+                      : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
                   }`}>
                   {displayHora(h)}
                 </button>

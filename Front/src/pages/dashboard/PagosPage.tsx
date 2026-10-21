@@ -522,13 +522,13 @@ export default function PagosPage() {
           {totalCitas > 0 && (
             <div className="space-y-1.5">
               <div className="flex items-center gap-3">
-                <div className="flex-1 bg-gray-100 dark:bg-slate-700 rounded-full h-1.5">
+                <div className="flex-1 bg-slate-100 dark:bg-slate-700 rounded-full h-1.5">
                   <div
                     className="bg-emerald-500 h-1.5 rounded-full transition-all duration-500"
                     style={{ width: `${totalCitas > 0 ? Math.round((citasPagadas / totalCitas) * 100) : 0}%` }}
                   />
                 </div>
-                <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0 font-medium">
+                <span className="text-xs text-slate-400 dark:text-slate-500 shrink-0 font-medium">
                   {citasPagadas}/{totalCitas} cobradas
                 </span>
               </div>
@@ -580,7 +580,7 @@ export default function PagosPage() {
           {cobroLoading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="h-36 bg-gray-100 dark:bg-slate-800 rounded-xl animate-pulse" />
+                <div key={i} className="h-36 bg-slate-100 dark:bg-slate-800 rounded-xl animate-pulse" />
               ))}
             </div>
           ) : citasFiltradas.length === 0 ? (
@@ -674,7 +674,7 @@ export default function PagosPage() {
             />
             <button
               onClick={handleExportarHistorial}
-              className="self-start min-h-[44px] lg:min-h-[36px] flex items-center gap-2 px-3 text-xs border border-gray-200 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-600 dark:text-gray-400 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40"
+              className="self-start min-h-[44px] lg:min-h-[36px] flex items-center gap-2 px-3 text-xs border border-slate-200 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40"
             >
               <Download size={14} /> Exportar Excel
             </button>
@@ -689,20 +689,20 @@ export default function PagosPage() {
                 </div>
                 <p className="text-xl font-bold text-white">{formatPrecio(histTotalCobrado)}</p>
               </div>
-              <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl p-4">
-                <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-1">
+              <div className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl p-4">
+                <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mb-1">
                   <CheckCircle2 size={14} /> Pagos
                 </div>
                 <p className="text-xl font-bold text-slate-700 dark:text-slate-200">{histFiltrado.length}</p>
               </div>
-              <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl p-4">
-                <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-1">
+              <div className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl p-4">
+                <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mb-1">
                   <Receipt size={14} /> Propinas
                 </div>
                 <p className="text-xl font-bold text-teal-600 dark:text-teal-400">{formatPrecio(histTotalPropinas)}</p>
               </div>
-              <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl p-4">
-                <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-1">
+              <div className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl p-4">
+                <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mb-1">
                   <CreditCard size={14} /> Promedio/cita
                 </div>
                 <p className="text-xl font-bold text-slate-700 dark:text-slate-200">{formatPrecio(histPromedio)}</p>
@@ -718,31 +718,31 @@ export default function PagosPage() {
           {histLoading ? (
             <div className="space-y-2">
               {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="h-12 bg-gray-100 dark:bg-slate-800 rounded-lg animate-pulse" />
+                <div key={i} className="h-12 bg-slate-100 dark:bg-slate-800 rounded-lg animate-pulse" />
               ))}
             </div>
           ) : histFiltrado.length === 0 ? (
-            <div className="text-center py-16 text-gray-400 dark:text-gray-500">
+            <div className="text-center py-16 text-slate-400 dark:text-slate-500">
               <Receipt size={40} className="mx-auto mb-3 opacity-30" />
               <p className="font-medium">No hay pagos registrados en este período</p>
             </div>
           ) : (
-            <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl overflow-hidden">
+            <div className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-700/50">
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Fecha pago</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Cliente</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden md:table-cell">Servicio</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden lg:table-cell">Empleado</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Método</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden sm:table-cell">Propina</th>
+                    <tr className="border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/50">
+                      <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Fecha pago</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Cliente</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider hidden md:table-cell">Servicio</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider hidden lg:table-cell">Empleado</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Método</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider hidden sm:table-cell">Propina</th>
                       <th className="px-4 py-3 w-10"></th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                     {hist.visibles.map((c) => (
                       <HistorialRow
                         key={c.id}
@@ -753,10 +753,10 @@ export default function PagosPage() {
                     ))}
                   </tbody>
                   <tfoot>
-                    <tr className="border-t-2 border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-700/50 font-semibold">
+                    <tr className="border-t-2 border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/50 font-semibold">
                       {/* "Total del período" y no "Total": con la tabla paginada
                           un "Total" a secas se leería como el total de la página. */}
-                      <td colSpan={5} className="px-4 py-3 text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total del período</td>
+                      <td colSpan={5} className="px-4 py-3 text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total del período</td>
                       <td className="px-4 py-3 text-right text-emerald-600 dark:text-emerald-400">{formatPrecio(histTotalCobrado)}</td>
                       <td className="px-4 py-3 text-right text-teal-600 dark:text-teal-400 hidden sm:table-cell">{formatPrecio(histTotalPropinas)}</td>
                       <td></td>
@@ -783,7 +783,7 @@ export default function PagosPage() {
           {/* Selector de fecha + botón imprimir */}
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2 w-full sm:w-auto">
-              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Fecha del corte</label>
+              <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Fecha del corte</label>
               <div className="w-full sm:w-48">
                 <DatePicker value={corteDate} onChange={v => setCorteDate(v)} />
               </div>
@@ -799,10 +799,10 @@ export default function PagosPage() {
 
           {corteLoading ? (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {[1, 2, 3].map(i => <div key={i} className="h-20 bg-gray-100 dark:bg-slate-700 rounded-xl animate-pulse" />)}
+              {[1, 2, 3].map(i => <div key={i} className="h-20 bg-slate-100 dark:bg-slate-700 rounded-xl animate-pulse" />)}
             </div>
           ) : corteData.length === 0 ? (
-            <div className="text-center py-16 text-gray-400 dark:text-gray-500">
+            <div className="text-center py-16 text-slate-400 dark:text-slate-500">
               <Receipt size={36} className="mx-auto mb-3 opacity-30" />
               <p className="text-sm font-medium">Sin cobros registrados para esta fecha</p>
             </div>
@@ -810,20 +810,20 @@ export default function PagosPage() {
             <>
               {/* KPI cards */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl p-4">
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1.5"><CheckCircle2 size={13} /> Citas atendidas</p>
-                  <p className="text-2xl font-black text-slate-800 dark:text-gray-100">{corteData.length}</p>
+                <div className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl p-4">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1.5"><CheckCircle2 size={13} /> Citas atendidas</p>
+                  <p className="text-2xl font-black text-slate-800 dark:text-slate-100">{corteData.length}</p>
                 </div>
                 <div className="bg-slate-800 rounded-xl p-4">
                   <p className="text-xs text-slate-400 mb-1 flex items-center gap-1.5"><TrendingUp size={13} /> Total cobrado</p>
                   <p className="text-xl sm:text-2xl font-black text-white">{formatPrecio(corteTotalCobrado)}</p>
                 </div>
-                <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl p-4">
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1.5"><CreditCard size={13} /> Propinas</p>
+                <div className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl p-4">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1.5"><CreditCard size={13} /> Propinas</p>
                   <p className="text-xl sm:text-2xl font-black text-teal-600 dark:text-teal-400">{formatPrecio(corteTotalPropinas)}</p>
                 </div>
-                <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl p-4">
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1.5"><Receipt size={13} /> Promedio/cita</p>
+                <div className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl p-4">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1.5"><Receipt size={13} /> Promedio/cita</p>
                   <p className="text-xl sm:text-2xl font-black text-slate-700 dark:text-slate-200">{formatPrecio(cortePromedio)}</p>
                 </div>
               </div>
@@ -832,34 +832,34 @@ export default function PagosPage() {
 
               {/* Por empleado */}
               {cortePorEmpleado.length > 0 && (
-                <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl p-5">
-                  <h3 className="text-sm font-bold text-gray-700 dark:text-gray-200 mb-4 flex items-center gap-2">
+                <div className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl p-5">
+                  <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-4 flex items-center gap-2">
                     <Users size={15} /> Ingresos por empleado
                   </h3>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="border-b border-gray-100 dark:border-slate-700">
-                          <th className="pb-2 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Empleado</th>
-                          <th className="pb-2 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">Citas</th>
-                          <th className="pb-2 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">Propinas</th>
-                          <th className="pb-2 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">Total</th>
+                        <tr className="border-b border-slate-100 dark:border-slate-700">
+                          <th className="pb-2 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Empleado</th>
+                          <th className="pb-2 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">Citas</th>
+                          <th className="pb-2 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">Propinas</th>
+                          <th className="pb-2 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">Total</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-50 dark:divide-slate-700">
+                      <tbody className="divide-y divide-slate-50 dark:divide-slate-700">
                         {cortePorEmpleado.map(e => (
                           <tr key={e.nombre}>
-                            <td className="py-3 font-medium text-gray-800 dark:text-gray-200">{e.nombre}</td>
-                            <td className="py-3 text-right text-gray-500 dark:text-gray-400">{e.cantidad}</td>
+                            <td className="py-3 font-medium text-slate-800 dark:text-slate-200">{e.nombre}</td>
+                            <td className="py-3 text-right text-slate-500 dark:text-slate-400">{e.cantidad}</td>
                             <td className="py-3 text-right text-teal-600 dark:text-teal-400">{formatPrecio(e.propinas)}</td>
                             <td className="py-3 text-right font-bold text-emerald-600 dark:text-emerald-400">{formatPrecio(e.monto)}</td>
                           </tr>
                         ))}
                       </tbody>
                       <tfoot>
-                        <tr className="border-t-2 border-gray-200 dark:border-slate-600 font-semibold">
-                          <td className="pt-3 text-xs text-gray-500 uppercase tracking-wider">Total</td>
-                          <td className="pt-3 text-right text-gray-500">{corteData.length}</td>
+                        <tr className="border-t-2 border-slate-200 dark:border-slate-600 font-semibold">
+                          <td className="pt-3 text-xs text-slate-500 uppercase tracking-wider">Total</td>
+                          <td className="pt-3 text-right text-slate-500">{corteData.length}</td>
                           <td className="pt-3 text-right text-teal-600 dark:text-teal-400">{formatPrecio(corteTotalPropinas)}</td>
                           <td className="pt-3 text-right text-emerald-600 dark:text-emerald-400">{formatPrecio(corteTotalCobrado)}</td>
                         </tr>
@@ -873,14 +873,14 @@ export default function PagosPage() {
 
           {/* Cierre formal de caja */}
           <div className="mt-6 space-y-4">
-            <h3 className="text-base font-semibold text-gray-900 dark:text-white">
+            <h3 className="text-base font-semibold text-slate-900 dark:text-white">
               Cierre formal de caja
             </h3>
 
             {/* 3-column grid: inicio / cobrado / contado */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label htmlFor="cierre-inicio" className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Efectivo inicial</label>
+                <label htmlFor="cierre-inicio" className="block text-xs text-slate-500 dark:text-slate-400 mb-1">Efectivo inicial</label>
                 <input
                   id="cierre-inicio"
                   type="number"
@@ -889,20 +889,20 @@ export default function PagosPage() {
                   value={cierreInicio}
                   onChange={e => { setCierreInicio(e.target.value); setCierreEditado(true); }}
                   placeholder="0.00"
-                  className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm"
+                  className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm"
                 />
               </div>
               <div>
-                <label htmlFor="cierre-cobrado" className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Cobrado en efectivo</label>
+                <label htmlFor="cierre-cobrado" className="block text-xs text-slate-500 dark:text-slate-400 mb-1">Cobrado en efectivo</label>
                 <input
                   id="cierre-cobrado"
                   readOnly
                   value={efectivoCobradoDia.toFixed(2)}
-                  className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-3 py-2 text-sm text-gray-600 dark:text-gray-400"
+                  className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-3 py-2 text-sm text-slate-600 dark:text-slate-400"
                 />
               </div>
               <div>
-                <label htmlFor="cierre-contado" className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Efectivo contado</label>
+                <label htmlFor="cierre-contado" className="block text-xs text-slate-500 dark:text-slate-400 mb-1">Efectivo contado</label>
                 <input
                   id="cierre-contado"
                   type="number"
@@ -911,23 +911,23 @@ export default function PagosPage() {
                   value={cierreContado}
                   onChange={e => { setCierreContado(e.target.value); setCierreEditado(true); }}
                   placeholder="0.00"
-                  className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm"
+                  className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm"
                 />
               </div>
             </div>
 
             {/* Retiros */}
             <div>
-              <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Retiros de caja</p>
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-2">Retiros de caja</p>
               {retiros.map((r, i) => (
-                <div key={i} className="flex items-center gap-2 mb-1 text-gray-900 dark:text-gray-100">
+                <div key={i} className="flex items-center gap-2 mb-1 text-slate-900 dark:text-slate-100">
                   <span className="flex-1 text-sm">{r.concepto}</span>
                   <span className="text-sm font-mono">{formatPrecio(r.monto)}</span>
                   <button
                     type="button"
                     onClick={() => { setRetiros(prev => prev.filter((_, j) => j !== i)); setCierreEditado(true); }}
                     aria-label={`Quitar retiro ${r.concepto}`}
-                    className="w-11 h-11 lg:w-9 lg:h-9 inline-flex items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 hover:text-red-700 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+                    className="w-11 h-11 lg:w-9 lg:h-9 inline-flex items-center justify-center rounded-lg text-slate-500 dark:text-slate-400 hover:text-red-700 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
                   >
                     <X size={14} aria-hidden="true" />
                   </button>
@@ -940,7 +940,7 @@ export default function PagosPage() {
                   onChange={e => setRetiroConcepto(e.target.value)}
                   placeholder="Concepto"
                   aria-label="Concepto del retiro"
-                  className="flex-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm"
+                  className="flex-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm"
                 />
                 <input
                   type="number"
@@ -950,7 +950,7 @@ export default function PagosPage() {
                   onChange={e => setRetiroMonto(e.target.value)}
                   placeholder="Monto"
                   aria-label="Monto del retiro"
-                  className="w-24 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm"
+                  className="w-24 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm"
                 />
                 <button
                   type="button"
@@ -963,7 +963,7 @@ export default function PagosPage() {
                       setRetiroMonto('');
                     }
                   }}
-                  className="px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm hover:bg-gray-200 dark:hover:bg-gray-600"
+                  className="px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 text-sm hover:bg-slate-200 dark:hover:bg-slate-600"
                 >
                   + Agregar
                 </button>
@@ -976,13 +976,13 @@ export default function PagosPage() {
                 ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700'
                 : 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-700'
             }`}>
-              <div className="space-y-1 text-sm text-gray-900 dark:text-gray-100">
+              <div className="space-y-1 text-sm text-slate-900 dark:text-slate-100">
                 <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">Inicio + Cobrado − Retiros</span>
+                  <span className="text-slate-600 dark:text-slate-400">Inicio + Cobrado − Retiros</span>
                   <span className="font-mono">{formatPrecio(efectivoEsperado)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">Contado</span>
+                  <span className="text-slate-600 dark:text-slate-400">Contado</span>
                   <span className="font-mono">{formatPrecio(contadoDec)}</span>
                 </div>
                 <div className={`flex justify-between font-semibold border-t pt-1 mt-1 ${
@@ -1034,9 +1034,9 @@ export default function PagosPage() {
       >
         {citaSel && (
           <div className="space-y-4">
-            <div className="bg-gray-50 dark:bg-slate-700/50 rounded-xl p-4 space-y-1 text-sm">
-              <p className="font-semibold text-gray-900 dark:text-gray-100">{citaSel.nombreCliente}</p>
-              <p className="text-gray-500 dark:text-gray-400">{citaSel.nombreServicio}</p>
+            <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 space-y-1 text-sm">
+              <p className="font-semibold text-slate-900 dark:text-slate-100">{citaSel.nombreCliente}</p>
+              <p className="text-slate-500 dark:text-slate-400">{citaSel.nombreServicio}</p>
               <p className="text-lg font-bold text-slate-700 dark:text-slate-300 mt-2">{formatPrecio(citaSel.precio)}</p>
             </div>
 
@@ -1053,11 +1053,11 @@ export default function PagosPage() {
 
             {citaSel?.anticipoRecibido && citaSel.montoAnticipo && (
               <div>
-                <label htmlFor="pago-total" className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+                <label htmlFor="pago-total" className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
                   Total a cobrar
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" aria-hidden="true">$</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm" aria-hidden="true">$</span>
                   <input
                     id="pago-total"
                     type="number"
@@ -1065,17 +1065,17 @@ export default function PagosPage() {
                     step={0.01}
                     value={montoCobradoInput}
                     onChange={e => setMontoCobradoInput(e.target.value)}
-                    className="w-full pl-7 pr-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                    className="w-full pl-7 pr-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-400"
                   />
                 </div>
-                <p className="text-xs text-gray-400 mt-1">
+                <p className="text-xs text-slate-400 mt-1">
                   Precio original: {formatPrecio(citaSel.precio)} — Anticipo: −{formatPrecio(citaSel.montoAnticipo)}
                 </p>
               </div>
             )}
 
             <div>
-              <p id="pago-metodo" className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Método de pago</p>
+              <p id="pago-metodo" className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Método de pago</p>
               <div className="grid grid-cols-3 gap-2" role="group" aria-labelledby="pago-metodo">
                 {METODOS_PAGO.map((m) => (
                   <button
@@ -1086,7 +1086,7 @@ export default function PagosPage() {
                     className={`py-3 rounded-xl border text-sm font-medium flex flex-col items-center gap-1 transition ${
                       metodoPago === m
                         ? "bg-slate-700 text-white border-slate-700"
-                        : "border-gray-200 dark:border-slate-600 text-gray-700 dark:text-gray-300 hover:border-slate-400"
+                        : "border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:border-slate-400"
                     }`}
                   >
                     {METODO_ICONO_LG[m]}
@@ -1098,7 +1098,7 @@ export default function PagosPage() {
 
             {/* Split-payment toggle */}
             <div className="flex items-center justify-between py-2">
-              <span id="pago-dividir" className="text-sm text-gray-600 dark:text-gray-400">Dividir pago</span>
+              <span id="pago-dividir" className="text-sm text-slate-600 dark:text-slate-400">Dividir pago</span>
               {/* Interruptor compartido: antes un botón sin rol ni nombre, en azul fuera del sistema. */}
               <Switch
                 activo={isSplit}
@@ -1108,24 +1108,24 @@ export default function PagosPage() {
             </div>
 
             {isSplit && (
-              <div className="space-y-3 border-t border-dashed border-gray-200 dark:border-gray-700 pt-3">
+              <div className="space-y-3 border-t border-dashed border-slate-200 dark:border-slate-700 pt-3">
                 <div className="flex gap-3">
                   <div className="flex-1">
-                    <label htmlFor="pago-monto1" className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Monto en {metodoPago}</label>
+                    <label htmlFor="pago-monto1" className="block text-xs text-slate-500 dark:text-slate-400 mb-1">Monto en {metodoPago}</label>
                     <input
                       id="pago-monto1"
                       readOnly
                       value={montoPago1Dec.toFixed(2)}
-                      className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm"
+                      className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm"
                     />
                   </div>
                   <div className="flex-1">
-                    <label htmlFor="pago-metodo2" className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Segundo método</label>
+                    <label htmlFor="pago-metodo2" className="block text-xs text-slate-500 dark:text-slate-400 mb-1">Segundo método</label>
                     <select
                       id="pago-metodo2"
                       value={metodoPago2}
                       onChange={e => setMetodoPago2(e.target.value)}
-                      className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm"
+                      className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm"
                     >
                       {['Efectivo','Tarjeta','Transferencia'].filter(m => m !== metodoPago).map(m => (
                         <option key={m} value={m}>{m}</option>
@@ -1134,7 +1134,7 @@ export default function PagosPage() {
                   </div>
                 </div>
                 <div>
-                  <label htmlFor="pago-monto2" className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Monto en {metodoPago2}</label>
+                  <label htmlFor="pago-monto2" className="block text-xs text-slate-500 dark:text-slate-400 mb-1">Monto en {metodoPago2}</label>
                   <input
                     id="pago-monto2"
                     type="number"
@@ -1143,7 +1143,7 @@ export default function PagosPage() {
                     value={montoPago2Input}
                     onChange={e => setMontoPago2Input(e.target.value)}
                     placeholder="0.00"
-                    className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm"
+                    className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm"
                   />
                 </div>
               </div>
@@ -1151,7 +1151,7 @@ export default function PagosPage() {
 
             {hayEfectivo && (
               <div>
-                <label htmlFor="pago-recibido" className="text-sm font-medium text-gray-700 dark:text-gray-300">Monto recibido</label>
+                <label htmlFor="pago-recibido" className="text-sm font-medium text-slate-700 dark:text-slate-300">Monto recibido</label>
                 <input
                   id="pago-recibido"
                   type="number"
@@ -1162,7 +1162,7 @@ export default function PagosPage() {
                   placeholder="Monto recibido"
                   value={montoRecibido}
                   onChange={(e) => setMontoRecibido(e.target.value)}
-                  className="mt-1 w-full border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-700/30"
+                  className="mt-1 w-full border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-700/30"
                 />
                 {montoRecibido && cambio > 0 && (
                   <p className="mt-2 text-sm text-emerald-600 dark:text-emerald-400 font-medium">
@@ -1177,7 +1177,7 @@ export default function PagosPage() {
 
             {metodoPago !== "" && (
               <div>
-                <label htmlFor="pago-propina" className="text-sm font-medium text-gray-700 dark:text-gray-300">Propina (opcional)</label>
+                <label htmlFor="pago-propina" className="text-sm font-medium text-slate-700 dark:text-slate-300">Propina (opcional)</label>
                 <input
                   id="pago-propina"
                   type="number"
@@ -1186,7 +1186,7 @@ export default function PagosPage() {
                   placeholder="0.00"
                   value={propina}
                   onChange={(e) => setPropina(e.target.value)}
-                  className="mt-1 w-full border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-700/30"
+                  className="mt-1 w-full border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-700/30"
                 />
               </div>
             )}
@@ -1258,8 +1258,8 @@ function DesglosePorMetodo({
 }) {
   if (data.length === 0) return null;
   return (
-    <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl p-5">
-      <h3 className="text-sm font-bold text-gray-700 dark:text-gray-200 mb-4">{titulo}</h3>
+    <div className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl p-5">
+      <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-4">{titulo}</h3>
       <div className="space-y-3">
         {data.map(d => {
           const pct = total > 0 ? Math.round((d.monto / total) * 100) : 0;
@@ -1270,17 +1270,17 @@ function DesglosePorMetodo({
               </div>
               <div className="flex-1">
                 <div className="flex justify-between items-center mb-1">
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{d.metodo}</span>
-                  <span className="text-sm font-bold text-gray-800 dark:text-gray-100">{formatPrecio(d.monto)}</span>
+                  <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{d.metodo}</span>
+                  <span className="text-sm font-bold text-slate-800 dark:text-slate-100">{formatPrecio(d.monto)}</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="flex-1 bg-gray-100 dark:bg-slate-700 rounded-full h-1.5">
+                  <div className="flex-1 bg-slate-100 dark:bg-slate-700 rounded-full h-1.5">
                     <div
                       className="bg-slate-700 dark:bg-slate-400 h-1.5 rounded-full transition-all duration-500"
                       style={{ width: `${pct}%` }}
                     />
                   </div>
-                  <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0 tabular-nums">
+                  <span className="text-xs text-slate-400 dark:text-slate-500 shrink-0 tabular-nums">
                     {d.cantidad} cita{d.cantidad !== 1 ? "s" : ""} · {pct}%
                   </span>
                 </div>
@@ -1311,21 +1311,21 @@ function CitaCard({
       className={`bg-white dark:bg-slate-800 border rounded-xl p-4 space-y-3 shadow-sm ${
         cita.pagada
           ? "border-emerald-100 dark:border-emerald-900/40"
-          : "border-gray-200 dark:border-slate-600"
+          : "border-slate-200 dark:border-slate-600"
       }`}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="font-semibold text-gray-900 dark:text-gray-100 truncate">{cita.nombreCliente}</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">{cita.nombreServicio}</p>
+          <p className="font-semibold text-slate-900 dark:text-slate-100 truncate">{cita.nombreCliente}</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">{cita.nombreServicio}</p>
         </div>
         {cita.pagada ? (
           <CheckCircle2 size={18} className="text-emerald-500 shrink-0 mt-0.5" />
         ) : (
-          <Circle size={18} className="text-gray-300 dark:text-slate-600 shrink-0 mt-0.5" />
+          <Circle size={18} className="text-slate-300 dark:text-slate-600 shrink-0 mt-0.5" />
         )}
       </div>
-      <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+      <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
         <span className="flex items-center gap-1"><Clock size={12} /> {hora}</span>
         {cita.nombreEmpleado && <span className="truncate">{cita.nombreEmpleado}</span>}
       </div>
@@ -1347,7 +1347,7 @@ function CitaCard({
       {/* Revertir va en su propia línea, con texto y 44px: junto al chip del
           método era un icono de 21px que se tocaba sin querer. */}
       {cita.pagada && (
-        <div className="flex justify-end border-t border-gray-100 dark:border-slate-700 pt-2">
+        <div className="flex justify-end border-t border-slate-100 dark:border-slate-700 pt-2">
           <BotonRevertir onClick={onRevertir} deshabilitado={revertiendoId === cita.id} cliente={cita.nombreCliente} />
         </div>
       )}
@@ -1362,7 +1362,7 @@ function BotonRevertir({ onClick, deshabilitado, cliente }: { onClick: () => voi
       onClick={onClick}
       disabled={deshabilitado}
       aria-label={`Revertir pago de ${cliente}`}
-      className="min-h-[44px] lg:min-h-[36px] inline-flex items-center gap-1.5 px-3 rounded-lg text-xs font-medium text-gray-600 dark:text-gray-300 hover:text-red-700 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-40 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40"
+      className="min-h-[44px] lg:min-h-[36px] inline-flex items-center gap-1.5 px-3 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-red-700 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-40 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40"
     >
       <RotateCcw size={13} aria-hidden="true" />
       Revertir
@@ -1383,20 +1383,20 @@ function HistorialRow({
     : "—";
 
   return (
-    <tr className="hover:bg-gray-50 dark:hover:bg-slate-700/30 transition">
-      <td className="px-4 py-3 text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">{fechaPago}</td>
+    <tr className="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition">
+      <td className="px-4 py-3 text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">{fechaPago}</td>
       <td className="px-4 py-3">
-        <p className="font-medium text-gray-900 dark:text-gray-100 text-sm">{cita.nombreCliente}</p>
+        <p className="font-medium text-slate-900 dark:text-slate-100 text-sm">{cita.nombreCliente}</p>
       </td>
-      <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400 hidden md:table-cell">{cita.nombreServicio}</td>
-      <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400 hidden lg:table-cell">{cita.nombreEmpleado ?? "—"}</td>
+      <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400 hidden md:table-cell">{cita.nombreServicio}</td>
+      <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400 hidden lg:table-cell">{cita.nombreEmpleado ?? "—"}</td>
       <td className="px-4 py-3">
-        <span className="inline-flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400">
+        <span className="inline-flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400">
           {METODO_ICONO[cita.metodoPago ?? ""] ?? null}
           {cita.metodoPago ?? "—"}{cita.metodoPago2 ? ` + ${cita.metodoPago2}` : ''}
         </span>
       </td>
-      <td className="px-4 py-3 text-right font-semibold text-gray-900 dark:text-gray-100 text-sm whitespace-nowrap">
+      <td className="px-4 py-3 text-right font-semibold text-slate-900 dark:text-slate-100 text-sm whitespace-nowrap">
         {formatPrecio(cita.montoCobrado ?? cita.precio)}
       </td>
       <td className="px-4 py-3 text-right text-sm text-teal-600 dark:text-teal-400 hidden sm:table-cell">

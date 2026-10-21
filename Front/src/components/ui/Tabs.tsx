@@ -45,7 +45,7 @@ export default function Tabs<T extends string>({
     <nav
       aria-label={etiqueta}
       className={cn(
-        "flex w-full gap-1 p-1 rounded-lg bg-gray-100 dark:bg-slate-700",
+        "flex w-full gap-1 p-1 rounded-lg bg-slate-100 dark:bg-slate-700",
         "overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
         className
       )}

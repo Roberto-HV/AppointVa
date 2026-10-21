@@ -86,6 +86,10 @@ export interface ResultadoAplicar {
  * Con `horarioPermitido` (editor de un empleado), cada copia se recorta al
  * horario del negocio de ese día; si no cabe nada (o el negocio cierra), el día
  * se deja como estaba. El resultado dice qué pasó en cada día para avisarlo.
+ *
+ * Si el día de origen no tiene intervalos, copiar es vaciar: los demás días
+ * abiertos quedan sin intervalos en los dos modos. Recortar una copia vacía no
+ * tiene sentido y antes se informaba como "fuera del horario del negocio".
  */
 export function aplicarATodosLosAbiertos(
   horarios: HorarioDiaDto[],
@@ -99,7 +103,7 @@ export function aplicarATodosLosAbiertos(
   resultado.horarios = horarios.map((h) => {
     if (h.diaSemana === diaOrigen || !h.activo) return h;
     const copia = origen.intervalos.map((iv) => ({ ...iv }));
-    if (!horarioPermitido) {
+    if (!horarioPermitido || copia.length === 0) {
       resultado.copiados.push(h.diaSemana);
       return { ...h, intervalos: copia };
     }

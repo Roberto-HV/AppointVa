@@ -59,7 +59,7 @@ export default function FiltroRangoFechas({
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40",
                   activo
                     ? "bg-slate-700 text-white border-slate-700 dark:bg-slate-600 dark:border-slate-600"
-                    : "bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-300 border-gray-200 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500"
+                    : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500"
                 )}
               >
                 {preset.etiqueta}
@@ -77,7 +77,7 @@ export default function FiltroRangoFechas({
             ariaLabel={`${etiqueta} — desde`}
           />
         </div>
-        <span aria-hidden="true" className="text-gray-400 dark:text-slate-500 text-sm shrink-0">–</span>
+        <span aria-hidden="true" className="text-slate-400 dark:text-slate-500 text-sm shrink-0">–</span>
         <div className="flex-1 min-w-0 lg:w-40 lg:flex-none">
           <DatePicker
             value={hasta}

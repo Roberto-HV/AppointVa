@@ -5,6 +5,8 @@ import { citasApi } from "../../api/citas";
 import { empleadosApi } from "../../api/empleados";
 import { negociosApi } from "../../api/negocios";
 import { useSectorTerms } from "../../hooks/useSectorTerms";
+import { ArrowLeft, Check } from "lucide-react";
+import { colorCategoria, TEXTO_SOBRE_CATEGORIA } from "../../lib/temaGraficas";
 import { useAuthStore } from "../../store/authStore";
 import type { CitaDto } from "../../types";
 import { estiloEstadoCita } from "../../lib/estadoCita";
@@ -13,10 +15,6 @@ import { capitalizarPrimera, formatPrecio } from "../../utils/formatters";
 /** Cada cuánto se vuelven a pedir citas y empleados (también tras un fallo). */
 const INTERVALO_SONDEO_MS = 30_000;
 
-const EMP_COLORS = [
-  "#4F46E5", "#7C3AED", "#0891B2", "#059669",
-  "#D97706", "#DC2626", "#DB2777", "#0F766E",
-];
 
 function horaCorta(iso: string): string {
   return new Date(iso).toLocaleTimeString("es-MX", {
@@ -113,7 +111,7 @@ export default function KioskPage() {
   return (
     // `dark` en la raíz: el modo recepción siempre es oscuro, así que los tokens
     // --status-* toman sus valores oscuros aunque el resto del panel esté en claro.
-    <div className="dark min-h-screen bg-[#060C1A] text-white flex flex-col select-none overflow-hidden">
+    <div className="dark min-h-screen bg-slate-950 text-white flex flex-col select-none overflow-hidden">
 
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 flex-shrink-0">
@@ -166,7 +164,7 @@ export default function KioskPage() {
           ) : (
             emps.map((emp, i) => {
               const empCitas = porEmp.get(emp.id) ?? [];
-              const color = EMP_COLORS[i % EMP_COLORS.length];
+              const color = colorCategoria(i);
               const ocupado = empCitas.some(estaEnProgreso);
 
               return (
@@ -178,7 +176,7 @@ export default function KioskPage() {
                   {/* Employee header */}
                   <div className="flex items-center gap-3 px-4 py-4 border-b border-white/[0.06] flex-shrink-0">
                     <div
-                      className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
+                      className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0 ${TEXTO_SOBRE_CATEGORIA}`}
                       style={{ background: color }}
                     >
                       {emp.nombre.charAt(0).toUpperCase()}
@@ -239,13 +237,15 @@ export default function KioskPage() {
                                 {horaCorta(cita.inicioEn)}
                               </span>
                               <span
-                                className={`text-xs font-bold px-2 py-0.5 rounded-full leading-none ${
+                                className={`inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full leading-none ${
                                   enProgreso
                                     ? "bg-indigo-500/30 text-indigo-300"
                                     : estiloEstadoCita(cita.estadoTexto).badge
                                 }`}
                               >
-                                {enProgreso ? "● En curso" : completada ? "✓ Lista" : cita.estadoTexto}
+                                {enProgreso && <span className="w-1.5 h-1.5 rounded-full bg-current" aria-hidden="true" />}
+                                {completada && !enProgreso && <Check size={12} strokeWidth={3} aria-hidden="true" />}
+                                {enProgreso ? "En curso" : completada ? "Lista" : cita.estadoTexto}
                               </span>
                             </div>
                             <div
@@ -298,7 +298,8 @@ export default function KioskPage() {
           to="/dashboard/citas"
           className="text-xs text-white/60 hover:text-white/85 transition flex items-center gap-1 min-h-[44px]"
         >
-          ← Salir del modo pantalla
+          <ArrowLeft size={14} aria-hidden="true" />
+          Salir del modo pantalla
         </Link>
       </div>
 

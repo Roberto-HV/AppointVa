@@ -76,7 +76,7 @@ export default function FiltroPills({ labelId, valor, onChange, opciones, classN
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40",
               seleccionada
                 ? "bg-slate-700 text-white border-slate-700 dark:bg-slate-600 dark:border-slate-600"
-                : "bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-300 border-gray-200 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500"
+                : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500"
             )}
           >
             {opcion.etiqueta}
@@ -86,7 +86,7 @@ export default function FiltroPills({ labelId, valor, onChange, opciones, classN
                   "text-[11px] tabular-nums rounded-full px-1.5 py-0.5",
                   seleccionada
                     ? "bg-white/20 text-white"
-                    : "bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-slate-400"
+                    : "bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400"
                 )}
               >
                 {opcion.conteo}

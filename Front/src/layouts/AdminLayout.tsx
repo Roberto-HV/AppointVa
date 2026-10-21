@@ -12,7 +12,7 @@ const ENLACE_NAV =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40";
 const ENLACE_NAV_ACTIVO = "bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400";
 const ENLACE_NAV_INACTIVO =
-  "text-gray-500 dark:text-gray-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-gray-200";
+  "text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200";
 
 const claseEnlaceNav = ({ isActive }: { isActive: boolean }) =>
   `${ENLACE_NAV} ${isActive ? ENLACE_NAV_ACTIVO : ENLACE_NAV_INACTIVO}`;
@@ -40,19 +40,19 @@ export default function AdminLayout() {
     <div className="min-h-screen flex flex-col md:flex-row bg-slate-50 dark:bg-slate-950">
 
       {/* ── Barra superior móvil ── */}
-      <header className="md:hidden bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-800 px-4 py-3 flex items-center gap-3 sticky top-0 z-30 shadow-sm">
+      <header className="md:hidden bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 px-4 py-3 flex items-center gap-3 sticky top-0 z-30 shadow-sm">
         <button
           onClick={() => setSidebarOpen(true)}
           aria-label="Abrir el menú"
           aria-expanded={sidebarOpen}
-          className="min-h-[44px] min-w-[44px] -ml-2 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40"
+          className="min-h-[44px] min-w-[44px] -ml-2 flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40"
         >
           <Menu size={22} aria-hidden="true" />
         </button>
-        <span className="font-bold text-gray-900 dark:text-white">
+        <span className="font-bold text-slate-900 dark:text-white">
           Appoint<span className="text-[#C8A961]">Va</span>
         </span>
-        <span className="text-xs bg-yellow-400 text-gray-900 font-bold px-2 py-0.5 rounded-full">
+        <span className="text-xs bg-yellow-400 text-slate-900 font-bold px-2 py-0.5 rounded-full">
           Admin
         </span>
         {/* El tema vivía solo en la cabecera de escritorio: en un teléfono no
@@ -60,7 +60,7 @@ export default function AdminLayout() {
         <button
           onClick={toggle}
           aria-label={theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
-          className="ml-auto min-h-[44px] min-w-[44px] -mr-2 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40"
+          className="ml-auto min-h-[44px] min-w-[44px] -mr-2 flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40"
         >
           {theme === "dark" ? <Sun size={18} aria-hidden="true" /> : <Moon size={18} aria-hidden="true" />}
         </button>
@@ -89,7 +89,7 @@ export default function AdminLayout() {
           <button
             onClick={cerrarSidebar}
             aria-label="Cerrar el menú"
-            className="md:hidden min-h-[44px] min-w-[44px] -mr-2 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40"
+            className="md:hidden min-h-[44px] min-w-[44px] -mr-2 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40"
           >
             <X size={20} aria-hidden="true" />
           </button>
@@ -116,11 +116,11 @@ export default function AdminLayout() {
 
         {/* Usuario */}
         <div className="p-4 border-t border-slate-200 dark:border-slate-800">
-          <p className="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate">{usuario?.nombreCompleto}</p>
-          <p className="text-xs text-gray-400 dark:text-gray-500 truncate mb-3">{usuario?.email}</p>
+          <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">{usuario?.nombreCompleto}</p>
+          <p className="text-xs text-slate-400 dark:text-slate-500 truncate mb-3">{usuario?.email}</p>
           <button
             onClick={handleLogout}
-            className="min-h-[44px] lg:min-h-[36px] px-2 -mx-2 rounded-lg text-xs text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40"
+            className="min-h-[44px] lg:min-h-[36px] px-2 -mx-2 rounded-lg text-xs text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40"
           >
             Cerrar sesión
           </button>
@@ -131,17 +131,17 @@ export default function AdminLayout() {
       <main className="flex-1 overflow-y-auto min-h-0 flex flex-col">
         <div className="hidden md:flex px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 items-center justify-between shrink-0">
           <div className="flex items-center gap-2">
-            <span className="text-xl font-bold text-gray-900 dark:text-white">
+            <span className="text-xl font-bold text-slate-900 dark:text-white">
               Appoint<span className="text-[#C8A961]">Va</span>
             </span>
-            <span className="text-xs bg-yellow-400 text-gray-900 font-bold px-2 py-0.5 rounded-full">
+            <span className="text-xs bg-yellow-400 text-slate-900 font-bold px-2 py-0.5 rounded-full">
               Admin
             </span>
           </div>
           <button
             onClick={toggle}
             aria-label={theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
-            className="min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40"
+            className="min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40"
             title={theme === "dark" ? "Modo claro" : "Modo oscuro"}
           >
             {theme === "dark" ? <Sun size={18} aria-hidden="true" /> : <Moon size={18} aria-hidden="true" />}

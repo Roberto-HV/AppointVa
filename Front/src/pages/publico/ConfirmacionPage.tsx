@@ -6,12 +6,14 @@ import { comprobantesApi } from "../../api/comprobantes";
 import { Copy, Check, CalendarClock, Printer, CheckCircle2, XCircle, Star, Bell, Scissors, Upload, Info, Clock, WifiOff, AlertCircle } from "lucide-react";
 import { SiWhatsapp, SiApple, SiGooglecalendar } from "react-icons/si";
 import PublicFooter from "../../components/PublicFooter";
+import { useTituloPagina } from "../../hooks/useTituloPagina";
 import { formatPrecio, formatFechaHoraCompleta as formatFechaHora } from "../../utils/formatters";
 
 import { hexToChannels, DEFAULT_COLOR } from "../../lib/colorUtils";
 import SocialLinks from "../../components/icons/SocialLinks";
 import PasoFechaHora from "../../components/booking/PasoFechaHora";
 import type { ConfirmacionCita, SlotDisponible } from "../../types";
+import { getSectorTerms } from "../../hooks/useSectorTerms";
 
 const estadoHttp = (err: unknown) => (err as { response?: { status?: number } })?.response?.status;
 
@@ -61,6 +63,28 @@ const TEXTOS_ESTADO: Record<EstadoVisibleCita, {
   },
 };
 
+/**
+ * Respaldo cuando el portapapeles no está disponible o falla (BF-27): el enlace
+ * queda a la vista, seleccionado al enfocarlo, para copiarlo a mano. Importa
+ * sobre todo a quien reservó sin correo y solo tiene este enlace.
+ */
+function EnlaceParaCopiar({ url }: { url: string }) {
+  return (
+    <div role="alert" className="w-full mt-2 text-left">
+      <label htmlFor="enlace-copia-manual" className="block text-xs text-slate-600 mb-1">
+        No se pudo copiar. Mantén presionado el enlace (o selecciónalo) para copiarlo:
+      </label>
+      <input
+        id="enlace-copia-manual"
+        readOnly
+        value={url}
+        onFocus={(e) => e.currentTarget.select()}
+        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-mono text-slate-800"
+      />
+    </div>
+  );
+}
+
 export default function ConfirmacionPage() {
   const { slug, codigo } = useParams<{ slug?: string; codigo: string }>();
   const navigate = useNavigate();
@@ -71,6 +95,8 @@ export default function ConfirmacionPage() {
   const [slotReag, setSlotReag] = useState<SlotDisponible | null>(null);
   const [linkCopiado, setLinkCopiado] = useState(false);
   const [bannerCopiado, setBannerCopiado] = useState(false);
+  /** Si el portapapeles falla, el enlace se muestra para copiarlo a mano (BF-27). */
+  const [copiaManual, setCopiaManual] = useState<{ origen: "banner" | "cita"; url: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [errorComprobante, setErrorComprobante] = useState("");
   const [exitoReagenda, setExitoReagenda] = useState(false);
@@ -118,12 +144,13 @@ export default function ConfirmacionPage() {
   const negocioSlug = slug ?? cita?.negocioSlug ?? "";
   const linkCita = `${window.location.origin}/cita/${codigo}`;
 
+  useTituloPagina(cita ? `Tu cita en ${cita.nombreNegocio}` : null);
+
   // OG meta tags dinámicos para compartir en redes sociales
   useEffect(() => {
     if (!cita) return;
-    const title = `Tu cita en ${cita.nombreNegocio} — AppointVa`;
+    const title = `Tu cita en ${cita.nombreNegocio} · AppointVa`;
     const desc = `${cita.estadoTexto === "Confirmada" ? "Cita confirmada" : "Cita agendada"}: ${cita.nombreServicio} con ${cita.nombreEmpleado}. Gestiona tu reserva en línea.`;
-    document.title = title;
     const setMeta = (prop: string, val: string) => {
       let el = document.querySelector(`meta[property="${prop}"]`);
       if (!el) { el = document.createElement("meta"); el.setAttribute("property", prop); document.head.appendChild(el); }
@@ -132,24 +159,31 @@ export default function ConfirmacionPage() {
     setMeta("og:title", title);
     setMeta("og:description", desc);
     setMeta("og:url", linkCita);
-    return () => { document.title = "AppointVa — Tu agenda online. Sin llamadas."; };
   }, [cita, linkCita]);
 
-  const copiarLink = async () => {
+  const copiar = async (origen: "banner" | "cita", url: string, marcar: (v: boolean) => void) => {
     try {
-      await navigator.clipboard.writeText(linkCita);
-      setLinkCopiado(true);
-      setTimeout(() => setLinkCopiado(false), 2000);
-    } catch {}
+      if (!navigator.clipboard) throw new Error("Sin portapapeles");
+      await navigator.clipboard.writeText(url);
+      setCopiaManual(null);
+      marcar(true);
+      setTimeout(() => marcar(false), 2000);
+    } catch {
+      setCopiaManual({ origen, url });
+    }
   };
+  const copiarLink = () => copiar("cita", linkCita, setLinkCopiado);
+  const copiarLinkBanner = () => copiar("banner", window.location.href, setBannerCopiado);
 
-  const copiarLinkBanner = async () => {
-    try {
-      await navigator.clipboard.writeText(window.location.href);
-      setBannerCopiado(true);
-      setTimeout(() => setBannerCopiado(false), 2000);
-    } catch {}
-  };
+  const { data: negocioPublico } = useQuery({
+    queryKey: ["negocio", negocioSlug],
+    queryFn: () => publicoApi.obtenerNegocio(negocioSlug),
+    enabled: !!negocioSlug,
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  });
+  // El mismo término que usó el flujo de reserva ("Profesional" en salud) (BF-25).
+  const terms = getSectorTerms(negocioPublico?.sector);
 
   const irAlNegocio = () => navigate(negocioSlug ? `/b/${negocioSlug}` : "/");
 
@@ -278,7 +312,7 @@ export default function ConfirmacionPage() {
   const IconoEstado = confirmada ? CheckCircle2 : Clock;
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] print:bg-white">
+    <div className="min-h-screen bg-slate-50 print:bg-white">
       <style>{`
         @media print {
           body { background: white !important; margin: 0; }
@@ -293,8 +327,7 @@ export default function ConfirmacionPage() {
       `}</style>
 
       {/* Header oscuro Style C */}
-      <div className="relative flex flex-col items-center justify-center py-10 px-4 print:hidden overflow-hidden"
-        style={{ background: "#0C0C0F" }}>
+      <div className="relative flex flex-col items-center justify-center py-10 px-4 print:hidden overflow-hidden bg-zinc-950">
         <div className="absolute inset-0 pointer-events-none" style={{
           background: `radial-gradient(ellipse 70% 80% at 50% 0%, rgb(${hexToChannels(color)} / 0.28) 0%, transparent 100%)`,
         }} />
@@ -304,7 +337,7 @@ export default function ConfirmacionPage() {
             <IconoEstado size={32} style={{ color }} aria-hidden="true" />
           </div>
           <h1 className="text-2xl font-bold text-white">{textosEstado.titulo}</h1>
-          <p className="text-sm" style={{ color: "rgba(255,255,255,0.7)" }}>
+          <p className="text-sm text-white/70">
             {textosEstado.subtitulo}
           </p>
         </div>
@@ -329,19 +362,21 @@ export default function ConfirmacionPage() {
               >
                 {bannerCopiado ? "¡Copiado!" : "Copiar enlace"}
               </button>
-              <a
-                href={`/b/${negocioSlug}/mis-citas`}
+              <Link
+                to={`/b/${negocioSlug}/mis-citas`}
                 className="text-amber-700 border border-amber-300 rounded-lg px-3 py-1.5 text-xs font-medium hover:bg-amber-100 transition"
               >
                 Ver mis citas
-              </a>
+              </Link>
             </div>
+            {copiaManual?.origen === "banner" && <EnlaceParaCopiar url={copiaManual.url} />}
           </div>
         )}
 
         {exitoReagenda && (
-          <div className="mb-4 p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg flex items-center gap-2">
-            <span className="text-emerald-600 dark:text-emerald-400 text-sm font-medium">✓ Tu cita fue reagendada correctamente</span>
+          <div role="status" className="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded-lg flex items-center gap-2">
+            <CheckCircle2 size={16} className="text-emerald-700 shrink-0" aria-hidden="true" />
+            <span className="text-emerald-700 text-sm font-medium">Tu cita fue reagendada correctamente</span>
           </div>
         )}
 
@@ -355,9 +390,8 @@ export default function ConfirmacionPage() {
           </div>
 
           {/* Código de confirmación */}
-          <div className="flex flex-col items-center py-5" style={{ background: "#0C0C0F" }}>
-            <p className="text-xs font-semibold uppercase tracking-widest mb-2"
-              style={{ color: "rgba(255,255,255,0.7)" }}>Código de confirmación</p>
+          <div className="flex flex-col items-center py-5 bg-zinc-950">
+            <p className="text-xs font-semibold uppercase tracking-widest mb-2 text-white/70">Código de confirmación</p>
             <span className="font-mono text-2xl font-black text-white tracking-[0.2em]">
               {cita.codigoConfirmacion}
             </span>
@@ -368,20 +402,20 @@ export default function ConfirmacionPage() {
             {/* Estado — badge estilo Klarna */}
             <div className="flex justify-between items-center">
               <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Estado</span>
-              <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+              <span className={`inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full ${
                 cita.estadoTexto === "Confirmada" ? "bg-status-confirmed-bg text-status-confirmed-fg" :
                 cita.estadoTexto === "Pendiente"  ? "bg-status-pending-bg text-status-pending-fg" :
                 "bg-slate-100 text-slate-600"
               }`}>
-                {cita.estadoTexto === "Confirmada" ? "✓ Confirmada" :
-                 cita.estadoTexto === "Pendiente"  ? "⏳ Pendiente confirmación" :
-                 cita.estadoTexto}
+                {cita.estadoTexto === "Confirmada" && <Check size={12} strokeWidth={3} aria-hidden="true" />}
+                {cita.estadoTexto === "Pendiente" && <Clock size={12} strokeWidth={2.5} aria-hidden="true" />}
+                {cita.estadoTexto}
               </span>
             </div>
             {[
               { label: "Negocio",     valor: cita.nombreNegocio,  hide: "print:hidden" },
               { label: "Servicio",    valor: cita.nombreServicio },
-              { label: "Profesional", valor: cita.nombreEmpleado },
+              { label: terms.empleado, valor: cita.nombreEmpleado },
               { label: "Cliente",     valor: cita.nombreCliente },
             ].map(({ label, valor, hide }) => (
               <div key={label} className={`flex justify-between items-center ${hide ?? ""}`}>
@@ -610,6 +644,7 @@ export default function ConfirmacionPage() {
               Imprimir
             </button>
           </div>
+          {copiaManual?.origen === "cita" && <EnlaceParaCopiar url={copiaManual.url} />}
 
           {cancelable && !confirmandoCancelar && !reagendando && puedeCancel && (
             <div className="flex gap-2">

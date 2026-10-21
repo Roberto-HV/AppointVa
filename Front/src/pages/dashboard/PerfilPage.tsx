@@ -599,7 +599,7 @@ export default function PerfilPage() {
         className={`sticky bottom-0 z-20 -mx-4 sm:-mx-8 mt-6 flex items-center px-4 sm:px-8 pt-3
           pb-[calc(0.75rem+env(safe-area-inset-bottom))] rounded-t-2xl border-t transition-colors ${
             barraPegada
-              ? "border-gray-200 dark:border-slate-700 bg-slate-50/90 dark:bg-slate-950/90 backdrop-blur " +
+              ? "border-slate-200 dark:border-slate-700 bg-slate-50/90 dark:bg-slate-950/90 backdrop-blur " +
                 "shadow-[0_-4px_16px_rgba(15,23,42,0.08)] dark:shadow-[0_-4px_16px_rgba(0,0,0,0.45)]"
               : "border-transparent"
           }`}
@@ -616,10 +616,10 @@ export default function PerfilPage() {
   if (isLoading) return (
     <div className="p-4 sm:p-8 space-y-6">
       <Skeleton className="h-8 w-48" />
-      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 p-5">
         <Skeleton className="h-4 w-36 mb-3" /><Skeleton className="h-10 rounded-lg" />
       </div>
-      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5 space-y-4">
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 p-5 space-y-4">
         <Skeleton className="h-4 w-40" />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {[0,1,2,3,4,5].map(i => <Skeleton key={i} className="h-10 rounded-lg" />)}
@@ -658,23 +658,23 @@ export default function PerfilPage() {
         <div className={tab !== "perfil" ? "hidden" : "space-y-6"}>
 
           {/* Información del negocio */}
-          <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Información del negocio</h2>
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 p-5">
+            <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4">Información del negocio</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre del negocio *</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nombre del negocio *</label>
                 <input {...register("nombre")}
                   aria-invalid={!!errors.nombre || undefined}
                   className={claseCampo(!!errors.nombre)} />
                 {errors.nombre && <p className={CLASE_ERROR_CAMPO}>{errors.nombre.message}</p>}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Teléfono</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Teléfono</label>
                 <input {...register("telefono")}
-                  className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700" />
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm outline-none focus:border-slate-700" />
               </div>
               <div>
-                <label htmlFor="perfil-email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Correo de contacto</label>
+                <label htmlFor="perfil-email" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Correo de contacto</label>
                 <input id="perfil-email" type="email" {...register("email")}
                   aria-invalid={!!errors.email || undefined}
                   aria-describedby={errors.email ? "perfil-email-error" : undefined}
@@ -683,30 +683,30 @@ export default function PerfilPage() {
                 {errors.email && <p id="perfil-email-error" className={CLASE_ERROR_CAMPO}>{errors.email.message}</p>}
               </div>
               <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Dirección</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Dirección</label>
                 <input {...register("direccion")}
-                  className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700" />
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm outline-none focus:border-slate-700" />
               </div>
               <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Descripción</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Descripción</label>
                 <textarea rows={3} maxLength={500} {...register("descripcion")}
-                  className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700 resize-none" />
-                <p className="text-xs text-gray-400 dark:text-gray-500 text-right mt-0.5">{(watch("descripcion") ?? "").length}/500</p>
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm outline-none focus:border-slate-700 resize-none" />
+                <p className="text-xs text-slate-400 dark:text-slate-500 text-right mt-0.5">{(watch("descripcion") ?? "").length}/500</p>
               </div>
             </div>
           </div>
 
           {/* Imágenes */}
-          <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Imágenes</h2>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">{TEXTO_FORMATOS_IMAGEN}</p>
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 p-5">
+            <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Imágenes</h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">{TEXTO_FORMATOS_IMAGEN}</p>
             <div className="grid grid-cols-4 gap-3">
               {/* Logo */}
               <div className="flex flex-col items-center">
-                <div className="w-full aspect-square rounded-xl bg-gray-100 dark:bg-slate-700 overflow-hidden mb-2 flex items-center justify-center">
+                <div className="w-full aspect-square rounded-xl bg-slate-100 dark:bg-slate-700 overflow-hidden mb-2 flex items-center justify-center">
                   {negocio?.logoUrl
                     ? <img src={negocio.logoUrl} alt="Logo" className="w-full h-full object-cover" />
-                    : <span className="text-2xl font-bold text-gray-300 dark:text-gray-600">{negocio?.nombre?.charAt(0)}</span>}
+                    : <span className="text-2xl font-bold text-slate-300 dark:text-slate-600">{negocio?.nombre?.charAt(0)}</span>}
                 </div>
                 <input ref={logoRef} type="file" accept={ACCEPT_IMAGEN} className="hidden"
                   onChange={(e) => logo.alElegir(e)} />
@@ -729,14 +729,14 @@ export default function PerfilPage() {
                 {/* Muestra lo que realmente se verá en la portada: la foto, o el
                     fondo elegido, que gana sobre ella. */}
                 <div
-                  className="w-full aspect-[2/1] rounded-xl bg-gray-100 dark:bg-slate-700 overflow-hidden mb-2 flex items-center justify-center"
+                  className="w-full aspect-[2/1] rounded-xl bg-slate-100 dark:bg-slate-700 overflow-hidden mb-2 flex items-center justify-center"
                   style={presetPortada ? fondoPortadaActual : undefined}
                 >
                   {mostrarFotoPortada && (
                     <img src={negocio!.portadaUrl!} alt="Portada" className="w-full h-full object-cover" style={{ objectPosition: portadaObjectPosition }} />
                   )}
                   {!mostrarFotoPortada && !presetPortada && (
-                    <span className="text-xs text-gray-400 dark:text-gray-500">Sin portada</span>
+                    <span className="text-xs text-slate-400 dark:text-slate-500">Sin portada</span>
                   )}
                 </div>
                 <input ref={portadaRef} type="file" accept={ACCEPT_IMAGEN} className="hidden"
@@ -764,7 +764,7 @@ export default function PerfilPage() {
                 )}
                 {/* Sin este aviso, "Eliminar" borraría una foto que la miniatura no muestra. */}
                 {fotoOcultaPorFondo && (
-                  <p className="text-[11px] text-gray-400 dark:text-gray-500 text-center mt-1">
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500 text-center mt-1">
                     Tu foto sigue guardada, oculta tras el fondo elegido.
                   </p>
                 )}
@@ -785,10 +785,10 @@ export default function PerfilPage() {
               </div>
               {/* Políticas */}
               <div className="flex flex-col items-center">
-                <div className="w-full aspect-square rounded-xl bg-gray-100 dark:bg-slate-700 overflow-hidden mb-2 flex items-center justify-center">
+                <div className="w-full aspect-square rounded-xl bg-slate-100 dark:bg-slate-700 overflow-hidden mb-2 flex items-center justify-center">
                   {negocio?.politicasUrl
                     ? <img src={negocio.politicasUrl} alt="Políticas" className="w-full h-full object-contain" />
-                    : <span className="text-xs text-gray-400 dark:text-gray-500">Sin políticas</span>}
+                    : <span className="text-xs text-slate-400 dark:text-slate-500">Sin políticas</span>}
                 </div>
                 <input ref={politicasRef} type="file" accept={ACCEPT_IMAGEN} className="hidden"
                   onChange={(e) => politicas.alElegir(e)} />
@@ -810,15 +810,15 @@ export default function PerfilPage() {
           </div>
 
           {/* Color del booking */}
-          <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Color de tu página de reservas</h2>
-            <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">Se usa en botones, selección de servicios, fechas y el encabezado de tu página.</p>
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 p-5">
+            <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Color de tu página de reservas</h2>
+            <p className="text-xs text-slate-400 dark:text-slate-500 mb-4">Se usa en botones, selección de servicios, fechas y el encabezado de tu página.</p>
             <div className="flex gap-3 items-center mb-4">
               <input
                 type="color"
                 value={colorPrimario}
                 onChange={(e) => setColorPrimario(e.target.value)}
-                className="w-12 h-12 rounded-lg cursor-pointer border border-gray-200 dark:border-slate-600 p-0.5 shrink-0"
+                className="w-12 h-12 rounded-lg cursor-pointer border border-slate-200 dark:border-slate-600 p-0.5 shrink-0"
               />
               <input
                 type="text"
@@ -833,13 +833,13 @@ export default function PerfilPage() {
                 onBlur={confirmarColorTexto}
                 onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); confirmarColorTexto(); } }}
                 aria-label="Color en hexadecimal"
-                className="w-32 px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700 font-mono uppercase"
+                className="w-32 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm outline-none focus:border-slate-700 font-mono uppercase"
                 maxLength={7}
                 placeholder="#334155"
               />
             </div>
             {/* Vista previa del header del booking */}
-            <div className="rounded-xl overflow-hidden border border-gray-100 dark:border-slate-700 mb-4">
+            <div className="rounded-xl overflow-hidden border border-slate-100 dark:border-slate-700 mb-4">
               {/* Refleja la portada real: foto, fondo elegido, o el degradado de
                   marca. Antes era un negro fijo, que no era ninguno de los tres. */}
               <div className="px-4 pt-3 pb-3 flex items-start gap-3 relative"
@@ -900,9 +900,9 @@ export default function PerfilPage() {
           </div>
 
           {/* Fondo de portada */}
-          <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Fondo de portada</h2>
-            <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 p-5">
+            <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Fondo de portada</h2>
+            <p className="text-xs text-slate-400 dark:text-slate-500 mb-4">
               {negocio?.portadaUrl
                 ? "Elige un fondo si prefieres no mostrar tu foto. Tu foto se conserva: puedes volver a ella cuando quieras."
                 : "Cada fondo se dibuja con tu color de marca, así que ningún otro negocio tiene el tuyo."}
@@ -922,9 +922,9 @@ export default function PerfilPage() {
           </div>
 
           {/* Redes sociales */}
-          <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Redes sociales</h2>
-            <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">Se muestran en tu página de reservas para que los clientes te sigan.</p>
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 p-5">
+            <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Redes sociales</h2>
+            <p className="text-xs text-slate-400 dark:text-slate-500 mb-4">Se muestran en tu página de reservas para que los clientes te sigan.</p>
             <div className="space-y-3">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
@@ -932,46 +932,46 @@ export default function PerfilPage() {
                   <SiInstagram className="w-4 h-4 text-white" />
                 </div>
                 <input {...register("instagramUrl")} placeholder="https://instagram.com/tu_negocio"
-                  className="flex-1 px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700" />
+                  className="flex-1 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm outline-none focus:border-slate-700" />
               </div>
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-[#1877F2] flex items-center justify-center shrink-0">
                   <SiFacebook className="w-4 h-4 text-white" />
                 </div>
                 <input {...register("facebookUrl")} placeholder="https://facebook.com/tu_negocio"
-                  className="flex-1 px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700" />
+                  className="flex-1 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm outline-none focus:border-slate-700" />
               </div>
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-black flex items-center justify-center shrink-0">
                   <SiTiktok className="w-4 h-4 text-white" />
                 </div>
                 <input {...register("tiktokUrl")} placeholder="https://tiktok.com/@tu_negocio"
-                  className="flex-1 px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700" />
+                  className="flex-1 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm outline-none focus:border-slate-700" />
               </div>
             </div>
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-3">Pega la URL completa. Deja vacío si no usas esa red.</p>
+            <p className="text-xs text-slate-400 dark:text-slate-500 mt-3">Pega la URL completa. Deja vacío si no usas esa red.</p>
           </div>
 
           {/* QR */}
           {negocio && (
-            <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
-              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Código QR de reservas</h2>
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 p-5">
+              <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Código QR de reservas</h2>
               <div className="flex flex-col sm:flex-row items-start gap-4">
-                <div className="p-3 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl shadow-sm inline-block shrink-0">
+                <div className="p-3 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl shadow-sm inline-block shrink-0">
                   <QRCodeCanvas id="qr-reservas" value={bookingUrl} size={120} level="M"
                     includeMargin={false} bgColor="#ffffff" fgColor="#1a1a1a" />
                 </div>
                 <div className="flex flex-col justify-center gap-3">
-                  <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs">
+                  <p className="text-sm text-slate-500 dark:text-slate-400 max-w-xs">
                     Comparte este código en tu negocio para que los clientes reserven escaneándolo.
                   </p>
                   <div className="flex gap-2">
                     <button type="button" onClick={descargarQR}
-                      className="flex items-center gap-2 px-4 py-2 bg-gray-900 hover:bg-gray-700 text-white text-sm font-semibold rounded-lg transition">
+                      className="flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-700 text-white text-sm font-semibold rounded-lg transition">
                       <Download size={14} /> Descargar PNG
                     </button>
                     <button type="button" onClick={imprimirQR}
-                      className="flex items-center gap-2 px-4 py-2 border border-gray-200 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg transition">
+                      className="flex items-center gap-2 px-4 py-2 border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-lg transition">
                       Imprimir
                     </button>
                   </div>
@@ -984,12 +984,12 @@ export default function PerfilPage() {
         {/* ── TAB: CITAS ──────────────────────────────────────────────────────── */}
         {tab === "citas" && (
           <div className="space-y-6">
-            <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5 space-y-5">
-              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Ajustes de citas</h2>
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 p-5 space-y-5">
+              <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Ajustes de citas</h2>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Zona horaria</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Zona horaria</label>
                   <Select {...register("zonaHoraria")} value={watch("zonaHoraria") ?? ""} className="w-full">
                     <option value="">Seleccionar...</option>
                     {ZONAS_HORARIAS.map((z) => (
@@ -998,25 +998,25 @@ export default function PerfilPage() {
                   </Select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Recordatorio al cliente</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Recordatorio al cliente</label>
                   <Select {...register("horasRecordatorio")} value={watch("horasRecordatorio") ?? ""} className="w-full">
                     {HORAS_RECORDATORIO.map((h) => (
                       <option key={h.valor} value={h.valor}>{h.texto}</option>
                     ))}
                   </Select>
-                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Cuánto antes se envía el recordatorio por email.</p>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Cuánto antes se envía el recordatorio por email.</p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Política de cancelación</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Política de cancelación</label>
                   <Select {...register("horasCancelacion")} value={watch("horasCancelacion") ?? ""} className="w-full">
                     {HORAS_CANCELACION.map((h) => (
                       <option key={h.valor} value={h.valor}>{h.texto}</option>
                     ))}
                   </Select>
-                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Anticipación mínima para que el cliente cancele.</p>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Anticipación mínima para que el cliente cancele.</p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Anticipación mínima para agendar</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Anticipación mínima para agendar</label>
                   <select
                     {...register("diasAnticipacionMinima")}
                     className="w-full border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100"
@@ -1026,14 +1026,14 @@ export default function PerfilPage() {
                     <option value={2}>2 días antes</option>
                     <option value={3}>3 días antes</option>
                   </select>
-                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Días mínimos de anticipación para que el cliente pueda reservar.</p>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Días mínimos de anticipación para que el cliente pueda reservar.</p>
                 </div>
               </div>
 
-              <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-slate-700 rounded-lg border border-gray-100 dark:border-slate-600">
+              <div className="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-700 rounded-lg border border-slate-100 dark:border-slate-600">
                 <div className="flex-1">
-                  <p id="ajuste-autoconfirmar" className="text-sm font-medium text-gray-700 dark:text-gray-300">Confirmación automática de citas</p>
-                  <p id="ajuste-autoconfirmar-desc" className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  <p id="ajuste-autoconfirmar" className="text-sm font-medium text-slate-700 dark:text-slate-300">Confirmación automática de citas</p>
+                  <p id="ajuste-autoconfirmar-desc" className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                     Activado: las reservas quedan confirmadas de inmediato.<br />
                     Desactivado: quedan pendientes y debes confirmarlas manualmente.
                   </p>
@@ -1047,10 +1047,10 @@ export default function PerfilPage() {
                 />
               </div>
 
-              <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-slate-700 rounded-lg border border-gray-100 dark:border-slate-600">
+              <div className="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-700 rounded-lg border border-slate-100 dark:border-slate-600">
                 <div className="flex-1">
-                  <p id="ajuste-lista-espera" className="text-sm font-medium text-gray-700 dark:text-gray-300">Lista de espera</p>
-                  <p id="ajuste-lista-espera-desc" className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  <p id="ajuste-lista-espera" className="text-sm font-medium text-slate-700 dark:text-slate-300">Lista de espera</p>
+                  <p id="ajuste-lista-espera-desc" className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                     Activado: cuando canceles una cita se notificará automáticamente al primer cliente en espera.<br />
                     Desactivado: la lista de espera no genera notificaciones automáticas.
                   </p>
@@ -1064,15 +1064,15 @@ export default function PerfilPage() {
                 />
               </div>
 
-              <div className="p-3 bg-gray-50 dark:bg-slate-700 rounded-lg border border-gray-100 dark:border-slate-600">
-                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Canal de notificaciones al cliente</p>
+              <div className="p-3 bg-slate-50 dark:bg-slate-700 rounded-lg border border-slate-100 dark:border-slate-600">
+                <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Canal de notificaciones al cliente</p>
                 <div className="flex flex-wrap gap-2 mb-2">
                   <button type="button"
                     className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-medium bg-slate-700 text-white">
                     <Mail size={13} /> Correo
                   </button>
                 </div>
-                <p className="text-xs text-gray-400 dark:text-gray-500">Los clientes reciben confirmaciones, recordatorios y cancelaciones por correo electrónico.</p>
+                <p className="text-xs text-slate-400 dark:text-slate-500">Los clientes reciben confirmaciones, recordatorios y cancelaciones por correo electrónico.</p>
               </div>
             </div>
           </div>
@@ -1081,22 +1081,22 @@ export default function PerfilPage() {
         {/* ── TAB: ANTICIPOS ──────────────────────────────────────────────────── */}
         {tab === "anticipos" && (
           <div className="space-y-6">
-            <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl p-5 space-y-4">
-              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">Anticipo al reservar</h3>
+            <div className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl p-5 space-y-4">
+              <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200">Anticipo al reservar</h3>
 
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <p className="text-sm font-medium text-gray-700 dark:text-gray-200">Requerir anticipo al reservar</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">El cliente deberá pagar un anticipo antes de confirmar su cita</p>
+                  <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Requerir anticipo al reservar</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">El cliente deberá pagar un anticipo antes de confirmar su cita</p>
                 </div>
                 <input type="checkbox" {...register("requiereAnticipo")} className="w-4 h-4 rounded" />
               </div>
 
               {watch("requiereAnticipo") && (
-                <div className="space-y-4 pt-3 border-t border-gray-100 dark:border-slate-700">
+                <div className="space-y-4 pt-3 border-t border-slate-100 dark:border-slate-700">
 
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">
                       Porcentaje del anticipo
                     </label>
                     <div className="flex items-center gap-3">
@@ -1108,55 +1108,55 @@ export default function PerfilPage() {
                         {...register("porcentajeAnticipo", { valueAsNumber: true })}
                         className="flex-1 accent-slate-700"
                       />
-                      <span className="text-sm font-bold text-gray-800 dark:text-gray-200 w-12 text-right">
+                      <span className="text-sm font-bold text-slate-800 dark:text-slate-200 w-12 text-right">
                         {watch("porcentajeAnticipo")}%
                       </span>
                     </div>
-                    <p className="text-xs text-gray-400 mt-1">Entre 10% y 80% del costo del servicio</p>
+                    <p className="text-xs text-slate-400 mt-1">Entre 10% y 80% del costo del servicio</p>
                     {errors.porcentajeAnticipo && (
                       <p className="text-red-500 text-xs mt-1">{errors.porcentajeAnticipo.message}</p>
                     )}
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
                       Horas mínimas de anticipación para reembolso
                     </label>
                     <input
                       type="number"
                       min={0}
                       {...register("horasCancelacionConReembolso", { valueAsNumber: true })}
-                      className="w-32 px-3 py-1.5 text-sm border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                      className="w-32 px-3 py-1.5 text-sm border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-400"
                     />
-                    <p className="text-xs text-gray-400 mt-1">0 = sin reembolso en ningún caso</p>
+                    <p className="text-xs text-slate-400 mt-1">0 = sin reembolso en ningún caso</p>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                      Política de cancelación <span className="text-gray-400">(visible para el cliente)</span>
+                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                      Política de cancelación <span className="text-slate-400">(visible para el cliente)</span>
                     </label>
                     <textarea
                       maxLength={500}
                       rows={3}
                       placeholder="Ej: El anticipo es reembolsable si cancelas con al menos 24 horas de anticipación..."
                       {...register("politicaCancelacionAnticipo")}
-                      className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-slate-400 resize-none"
+                      className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-400 resize-none"
                     />
-                    <p className="text-xs text-gray-400 mt-1">
+                    <p className="text-xs text-slate-400 mt-1">
                       {(watch("politicaCancelacionAnticipo") ?? '').length}/500 caracteres
                     </p>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                      Instrucciones de pago del anticipo <span className="text-gray-400">(visible para el cliente)</span>
+                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                      Instrucciones de pago del anticipo <span className="text-slate-400">(visible para el cliente)</span>
                     </label>
                     <textarea
                       maxLength={500}
                       rows={3}
                       placeholder="Ej: Transferir a la cuenta CLABE 012345678901234567 a nombre de..."
                       {...register("instruccionesAnticipo")}
-                      className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-slate-400 resize-none"
+                      className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-400 resize-none"
                     />
                   </div>
                 </div>
@@ -1182,7 +1182,7 @@ export default function PerfilPage() {
             Esta acción es irreversible. Ingresa tu contraseña actual para confirmar.
           </p>
           <div>
-            <label htmlFor="contrasena-eliminar" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Contraseña actual</label>
+            <label htmlFor="contrasena-eliminar" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Contraseña actual</label>
             <input
               id="contrasena-eliminar"
               type="password"
@@ -1216,15 +1216,15 @@ export default function PerfilPage() {
       {tab === "cuenta" && (
         <div className="space-y-6">
           <div className="bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl p-4">
-            <p className="text-xs font-semibold text-slate-400 dark:text-gray-500 uppercase tracking-wide mb-1">Tu suscripción</p>
-            <p className="text-base font-bold text-slate-800 dark:text-gray-200">
+            <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-1">Tu suscripción</p>
+            <p className="text-base font-bold text-slate-800 dark:text-slate-200">
               {negocio?.planNombre ?? "Sin plan asignado"}
             </p>
-            <p className="text-xs text-slate-400 dark:text-gray-500 mt-2">
+            <p className="text-xs text-slate-400 dark:text-slate-500 mt-2">
               ¿Quieres cambiar de plan? Escríbenos a{" "}
               <a
                 href="mailto:hola@appointva.com"
-                className="text-slate-600 dark:text-gray-400 font-semibold underline"
+                className="text-slate-600 dark:text-slate-400 font-semibold underline"
               >
                 hola@appointva.com
               </a>
@@ -1235,7 +1235,7 @@ export default function PerfilPage() {
             <h2 className="text-sm font-semibold text-red-700 dark:text-red-400 mb-1 flex items-center gap-2">
               <Trash2 size={15} /> Zona de peligro
             </h2>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
               Eliminar tu cuenta es permanente. Todos tus datos personales serán eliminados de forma irreversible. El historial de citas se conservará de forma anonimizada.
             </p>
             <button
@@ -1253,8 +1253,8 @@ export default function PerfilPage() {
       {/* ── TAB: HORARIOS ───────────────────────────────────────────────────── */}
       {tab === "horarios" && (
         <div className="space-y-6">
-          <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Horarios de atención</h2>
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 p-5">
+            <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4">Horarios de atención</h2>
             <EditorHorario
               horarios={horarios}
               onCambiar={(nuevos) => { setHorarios(nuevos); setHorariosDirty(true); }}
@@ -1268,27 +1268,27 @@ export default function PerfilPage() {
             </button>
           </div>
 
-          <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Días sin atención</h2>
-            <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">Bloquea días donde el negocio no trabajará (feriados, vacaciones). Los clientes no podrán reservar esos días.</p>
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 p-5">
+            <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Días sin atención</h2>
+            <p className="text-xs text-slate-400 dark:text-slate-500 mb-4">Bloquea días donde el negocio no trabajará (feriados, vacaciones). Los clientes no podrán reservar esos días.</p>
             <div className="flex gap-2 mb-4 flex-wrap items-end">
               <div className="w-48">
-                <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Fecha</label>
+                <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">Fecha</label>
                 <DatePicker value={nuevaFecha} onChange={(v) => setNuevaFecha(v)} minDate={hoy()} />
               </div>
               <div className="flex-1 min-w-[180px]">
-                <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Motivo <span className="text-gray-400 dark:text-gray-500">(opcional)</span></label>
+                <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">Motivo <span className="text-slate-400 dark:text-slate-500">(opcional)</span></label>
                 <input type="text" value={nuevoMotivo} onChange={(e) => setNuevoMotivo(e.target.value)}
                   placeholder="Ej: Día festivo, Vacaciones..." maxLength={100}
-                  className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700" />
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm outline-none focus:border-slate-700" />
               </div>
               <button onClick={() => nuevaFecha && bloquearDia()} disabled={!nuevaFecha || bloqueando}
-                className="px-4 py-2 bg-gray-800 hover:bg-gray-700 disabled:opacity-40 text-white text-sm font-medium rounded-lg transition">
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-white text-sm font-medium rounded-lg transition">
                 {bloqueando ? "Guardando..." : "+ Bloquear día"}
               </button>
             </div>
             {diasBloqueados.length === 0 ? (
-              <p className="text-sm text-gray-400 dark:text-gray-500">No hay días bloqueados próximos.</p>
+              <p className="text-sm text-slate-400 dark:text-slate-500">No hay días bloqueados próximos.</p>
             ) : (
               <div className="space-y-2">
                 {diasBloqueados.map((b) => {

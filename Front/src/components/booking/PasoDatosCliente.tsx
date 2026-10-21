@@ -8,6 +8,7 @@ import { SIN_PREFERENCIA_ID } from "./PasoEmpleado";
 import { publicoApi } from "../../api/publico";
 import { formatPrecio, formatFechaLarga as formatFecha } from "../../utils/formatters";
 import { precioConDescuento } from "../../utils/descuentos";
+import { DEFAULT_COLOR } from "../../lib/colorUtils";
 import { CalendarDays, User, Clock, Tag, Info, ChevronDown, ChevronUp, UserCheck, Check } from "lucide-react";
 
 /** Mínimo de dígitos de un teléfono; también es el mínimo con el que vale la pena consultar. */
@@ -59,7 +60,7 @@ interface Props {
   bloqueDescuento?: ReactNode;
 }
 
-export default function PasoDatosCliente({ servicio, empleado, slot, formId, slug, politicasAceptadas, onPoliticasAceptadasChange, onEnviar, onClienteReconocidoChange, valoresIniciales, onValoresChange, notasLabel = 'Notas (opcional)', error, politicasUrl, color = "#334155", descuento, bloqueDescuento }: Props) {
+export default function PasoDatosCliente({ servicio, empleado, slot, formId, slug, politicasAceptadas, onPoliticasAceptadasChange, onEnviar, onClienteReconocidoChange, valoresIniciales, onValoresChange, notasLabel = 'Notas (opcional)', error, politicasUrl, color = DEFAULT_COLOR, descuento, bloqueDescuento }: Props) {
   const [politicasAbiertas, setPoliticasAbiertas] = useState(false);
   // El botón de envío vive en la barra fija; sin aceptar las políticas el envío se
   // detiene aquí y explica por qué, en lugar de dejar un botón apagado sin motivo.

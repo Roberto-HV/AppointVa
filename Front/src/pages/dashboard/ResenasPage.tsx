@@ -27,7 +27,7 @@ function Estrellas({ rating }: { rating: number }) {
           key={n}
           size={13}
           aria-hidden="true"
-          className={n <= rating ? "text-amber-400 fill-amber-400" : "text-gray-200 dark:text-slate-600"}
+          className={n <= rating ? "text-amber-400 fill-amber-400" : "text-slate-200 dark:text-slate-600"}
         />
       ))}
     </div>
@@ -82,7 +82,7 @@ export default function ResenasPage() {
           <>
             Opiniones que dejan tus clientes al terminar su cita
             {!isLoading && (
-              <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">
+              <span className="ml-2 text-xs text-slate-400 dark:text-slate-500">
                 ({total} reseña{total !== 1 ? "s" : ""})
               </span>
             )}
@@ -112,7 +112,7 @@ export default function ResenasPage() {
       {isLoading ? (
         <div className="space-y-2">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-16 bg-gray-100 dark:bg-slate-800 rounded-xl animate-pulse" />
+            <div key={i} className="h-16 bg-slate-100 dark:bg-slate-800 rounded-xl animate-pulse" />
           ))}
         </div>
       ) : isError ? (
@@ -120,20 +120,20 @@ export default function ResenasPage() {
       ) : resenas.length === 0 && total > 0 ? (
         // Hay reseñas, pero ninguna aprobada en esta página: decir "aún no tienes"
         // contradecía el contador de arriba.
-        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-12 text-center">
-          <p className="font-medium text-gray-700 dark:text-gray-300 mb-1">Ninguna reseña aprobada en esta página</p>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Las reseñas sin aprobar no se muestran aquí.</p>
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 p-12 text-center">
+          <p className="font-medium text-slate-700 dark:text-slate-300 mb-1">Ninguna reseña aprobada en esta página</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">Las reseñas sin aprobar no se muestran aquí.</p>
           {totalPaginas > 1 && (
             <Pagination pagina={pagina} totalPaginas={totalPaginas} total={total} labelTotal="reseñas" onCambiar={setPagina} cargando={isLoading} />
           )}
         </div>
       ) : resenas.length === 0 ? (
-        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-12 text-center">
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 p-12 text-center">
           <div className="flex justify-center mb-4">
-            <Star size={36} className="text-gray-200 dark:text-slate-600" />
+            <Star size={36} className="text-slate-200 dark:text-slate-600" />
           </div>
-          <p className="font-medium text-gray-700 dark:text-gray-300 mb-1">Aún no tienes reseñas</p>
-          <p className="text-sm text-gray-400 dark:text-gray-500">
+          <p className="font-medium text-slate-700 dark:text-slate-300 mb-1">Aún no tienes reseñas</p>
+          <p className="text-sm text-slate-400 dark:text-slate-500">
             Las reseñas aparecerán aquí cuando tus clientes las dejen
           </p>
         </div>
@@ -142,11 +142,11 @@ export default function ResenasPage() {
           {/* Sin "aprobadas": `total` lo da el servidor sobre todas las reseñas y
               el filtro de aprobación se aplica aquí, sobre la página cargada, así
               que ese número no puede afirmar cuántas están aprobadas. */}
-          <p className="text-xs text-gray-400 dark:text-gray-500 mb-3">{total} reseña{total !== 1 ? "s" : ""} recibida{total !== 1 ? "s" : ""}</p>
-          <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 overflow-x-auto">
+          <p className="text-xs text-slate-400 dark:text-slate-500 mb-3">{total} reseña{total !== 1 ? "s" : ""} recibida{total !== 1 ? "s" : ""}</p>
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 overflow-x-auto">
             <table className="w-full text-sm min-w-[520px]">
               <thead>
-                <tr className="border-b border-gray-100 dark:border-slate-700 text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wide">
+                <tr className="border-b border-slate-100 dark:border-slate-700 text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wide">
                   <th className="text-left px-5 py-3 font-medium">Calificación</th>
                   <th className="text-left px-5 py-3 font-medium">Cliente</th>
                   <th className="text-left px-5 py-3 font-medium">Comentario</th>
@@ -155,19 +155,19 @@ export default function ResenasPage() {
               </thead>
               <tbody>
                 {resenas.map((r) => (
-                  <tr key={r.id} className="border-b border-gray-50 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition">
+                  <tr key={r.id} className="border-b border-slate-50 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition">
                     <td className="px-5 py-3">
                       <Estrellas rating={r.rating} />
                     </td>
                     <td className="px-5 py-3">
-                      <p className="font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap">{formatearNombre(r.nombreCliente)}</p>
+                      <p className="font-medium text-slate-800 dark:text-slate-200 whitespace-nowrap">{formatearNombre(r.nombreCliente)}</p>
                     </td>
-                    <td className="px-5 py-3 text-gray-600 dark:text-gray-400 max-w-xs">
+                    <td className="px-5 py-3 text-slate-600 dark:text-slate-400 max-w-xs">
                       {r.comentario
                         ? <Comentario texto={r.comentario} />
-                        : <span className="text-gray-300 dark:text-slate-600 italic text-xs">Sin comentario</span>}
+                        : <span className="text-slate-300 dark:text-slate-600 italic text-xs">Sin comentario</span>}
                     </td>
-                    <td className="px-5 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                    <td className="px-5 py-3 text-slate-500 dark:text-slate-400 whitespace-nowrap">
                       {formatFecha(r.fechaCreacion)}
                     </td>
                   </tr>

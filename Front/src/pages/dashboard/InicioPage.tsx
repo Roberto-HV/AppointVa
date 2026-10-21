@@ -21,13 +21,13 @@ import AnimatedCounter from "../../components/ui/AnimatedCounter";
 import Modal from "../../components/ui/Modal";
 import AccionesCita, { HojaAccionesCita, type VistaHoja } from "../../components/dashboard/AccionesCita";
 import { InsigniaPorCerrar } from "../../components/dashboard/TarjetaCita";
-import { useTheme } from "../../hooks/useTheme";
+import { colorCategoria, EJE_TICK, REJILLA } from "../../lib/temaGraficas";
 import { citaAbierta, citaPorCerrar, estiloEstadoCita } from "../../lib/estadoCita";
 import { hoy as hoyLocal, inicioSemana as inicioSemanaLocal, finSemana as finSemanaLocal, fechaLocal } from "../../utils/fechas";
 import { formatPrecio, formatPrecioCorto, formatFechaHoraResumen as formatFechaHora, capitalizarPrimera } from "../../utils/formatters";
 
 interface TarjetaProps { label: string; valor?: string | number; rawValue?: number; valorCorto?: string; color?: string; accent?: boolean }
-function Tarjeta({ label, valor, rawValue, color = "text-slate-900 dark:text-gray-100", accent = false }: TarjetaProps) {
+function Tarjeta({ label, valor, rawValue, color = "text-slate-900 dark:text-slate-100", accent = false }: TarjetaProps) {
   const numCls = `text-xl sm:text-2xl font-black leading-none ${accent ? "text-white" : color}`;
   return (
     <div className={`rounded-2xl border p-3 sm:p-4 transition-all ${accent ? "bg-slate-900 border-slate-800" : "bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700"}`}>
@@ -100,16 +100,16 @@ function WizardOnboarding({ negocioId, slug, tieneServicios, tieneHorarios, tien
   // fuera de la pantalla.
   return (
     <section aria-label="Configura tu negocio" className="bg-white dark:bg-slate-800 rounded-xl border border-slate-700/20 dark:border-slate-700 p-4 mb-6 relative">
-      <button type="button" onClick={onClose} aria-label="Cerrar la guía de inicio" className="absolute top-1 right-1 w-11 h-11 inline-flex items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition">
+      <button type="button" onClick={onClose} aria-label="Cerrar la guía de inicio" className="absolute top-1 right-1 w-11 h-11 inline-flex items-center justify-center rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition">
         <X size={16} />
       </button>
 
       <div className="flex items-center justify-between gap-3 mb-2 pr-10">
-        <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200">Configura tu negocio</h3>
-        <span className="text-xs font-semibold text-slate-700 dark:text-gray-300 whitespace-nowrap">{hechos}/{pasos.length} completados</span>
+        <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200">Configura tu negocio</h3>
+        <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{hechos}/{pasos.length} completados</span>
       </div>
       <div
-        className="w-full bg-gray-100 dark:bg-slate-700 rounded-full h-1.5 mb-3"
+        className="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-1.5 mb-3"
         role="progressbar"
         aria-label="Progreso de la configuración"
         aria-valuemin={0}
@@ -122,13 +122,13 @@ function WizardOnboarding({ negocioId, slug, tieneServicios, tieneHorarios, tien
       {siguiente ? (
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           <div className="flex-1 min-w-[10rem]">
-            <p className="text-xs text-gray-500 dark:text-gray-400">Siguiente paso</p>
-            <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{siguiente.label}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Siguiente paso</p>
+            <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{siguiente.label}</p>
           </div>
           {enlacePaso(siguiente)}
         </div>
       ) : (
-        <p className="text-sm text-gray-600 dark:text-gray-300">Tu negocio está listo para recibir reservas.</p>
+        <p className="text-sm text-slate-600 dark:text-slate-300">Tu negocio está listo para recibir reservas.</p>
       )}
 
       <button
@@ -145,16 +145,16 @@ function WizardOnboarding({ negocioId, slug, tieneServicios, tieneHorarios, tien
       {expandida && (
         <ul id={idLista} className="mt-2 space-y-2">
           {pasos.map((p, i) => (
-            <li key={i} className={`flex items-start gap-3 p-3 rounded-lg ${p.hecho ? "bg-gray-50 dark:bg-slate-700" : "bg-slate-700/5 dark:bg-slate-700/40 border border-slate-700/10 dark:border-slate-600"}`}>
+            <li key={i} className={`flex items-start gap-3 p-3 rounded-lg ${p.hecho ? "bg-slate-50 dark:bg-slate-700" : "bg-slate-700/5 dark:bg-slate-700/40 border border-slate-700/10 dark:border-slate-600"}`}>
               <div className={`mt-0.5 shrink-0 ${p.hecho ? "text-emerald-500" : "text-slate-700 dark:text-slate-300"}`}>
                 {p.hecho ? <CheckCircle2 size={18} aria-hidden="true" /> : <Circle size={18} aria-hidden="true" />}
               </div>
               <div className="flex-1 min-w-0">
-                <p className={`text-sm font-medium ${p.hecho ? "text-gray-400 dark:text-gray-500 line-through" : "text-gray-800 dark:text-gray-200"}`}>
+                <p className={`text-sm font-medium ${p.hecho ? "text-slate-400 dark:text-slate-500 line-through" : "text-slate-800 dark:text-slate-200"}`}>
                   {p.label}
                   {p.hecho && <span className="sr-only"> (completado)</span>}
                 </p>
-                {!p.hecho && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{p.desc}</p>}
+                {!p.hecho && <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{p.desc}</p>}
               </div>
               {!p.hecho && enlacePaso(p)}
             </li>
@@ -201,7 +201,7 @@ function BienvenidaScreen({
         <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-slate-900 dark:bg-slate-700 mb-4 shadow-lg">
           <Store size={26} className="text-white" />
         </div>
-        <h2 className="text-2xl font-black text-slate-900 dark:text-gray-100 mb-1.5">
+        <h2 className="text-2xl font-black text-slate-900 dark:text-slate-100 mb-1.5">
           Tu página está casi lista
         </h2>
         <p className="text-sm text-slate-500 dark:text-slate-400">
@@ -216,7 +216,7 @@ function BienvenidaScreen({
             <div
               key={i}
               className={`h-1.5 w-10 rounded-full transition-all duration-500 ${
-                i < hechos ? "bg-emerald-500" : "bg-gray-200 dark:bg-slate-700"
+                i < hechos ? "bg-emerald-500" : "bg-slate-200 dark:bg-slate-700"
               }`}
             />
           ))}
@@ -249,7 +249,7 @@ function BienvenidaScreen({
                 className={`text-sm font-bold mb-0.5 ${
                   paso.done
                     ? "text-emerald-700 dark:text-emerald-400 line-through"
-                    : "text-slate-800 dark:text-gray-200"
+                    : "text-slate-800 dark:text-slate-200"
                 }`}
               >
                 {paso.titulo}
@@ -292,7 +292,6 @@ function VistaPropietario({ nombre }: { nombre: string }) {
   const [mostrarWizard, setMostrarWizard] = useState(() => keyOnboarding ? !localStorage.getItem(keyOnboarding) : false);
   // Fecha local: en UTC-6, `toISOString()` ya es "mañana" desde las 18:00.
   const hoy = hoyLocal();
-  const { theme } = useTheme();
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["dashboard-resumen"],
@@ -370,7 +369,7 @@ function VistaPropietario({ nombre }: { nombre: string }) {
 
       {/* Encabezado — Apple Store style */}
       <div className="mb-6">
-        <h1 className="text-3xl font-black text-slate-900 dark:text-gray-100 leading-none mb-1">Hola, {nombre}</h1>
+        <h1 className="text-3xl font-black text-slate-900 dark:text-slate-100 leading-none mb-1">Hola, {nombre}</h1>
         <div className="flex items-center gap-3">
           <p className="text-sm text-slate-400">{negocio?.nombre ?? "Tu negocio"}</p>
           {!mostrarWizard && keyOnboarding && (
@@ -461,7 +460,7 @@ function VistaPropietario({ nombre }: { nombre: string }) {
           <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-5 mb-6">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h2 className="text-sm font-bold text-slate-800 dark:text-gray-200">Agenda de hoy</h2>
+                <h2 className="text-sm font-bold text-slate-800 dark:text-slate-200">Agenda de hoy</h2>
                 <span className="text-xs text-muted-foreground">
                   {capitalizarPrimera(new Date().toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" }))}
                 </span>
@@ -500,7 +499,7 @@ function VistaPropietario({ nombre }: { nombre: string }) {
                     >
                       <span className="text-xs font-mono font-bold text-slate-600 dark:text-slate-300 w-16 shrink-0">{hora}</span>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-slate-800 dark:text-gray-100 truncate">{c.nombreCliente}</p>
+                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">{c.nombreCliente}</p>
                         <p className="text-xs text-muted-foreground truncate">{c.nombreServicio} · {c.nombreEmpleado}</p>
                       </div>
                       <EstadoBadge estado={c.estadoTexto} />
@@ -552,7 +551,7 @@ function VistaPropietario({ nombre }: { nombre: string }) {
           {/* Gráfica de tendencia */}
           <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-5 mb-6 overflow-hidden">
             <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-              <h2 className="text-sm font-bold text-slate-800 dark:text-gray-200">Ingresos y citas por día</h2>
+              <h2 className="text-sm font-bold text-slate-800 dark:text-slate-200">Ingresos y citas por día</h2>
               {/*
                 No usa FiltroBarra: es un control del encabezado de la gráfica,
                 no un filtro de la página, y meterlo en una barra con su propio
@@ -569,7 +568,7 @@ function VistaPropietario({ nombre }: { nombre: string }) {
                     className={`min-h-[44px] lg:min-h-[36px] px-3 inline-flex items-center rounded-lg border text-sm lg:text-xs font-medium whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40 ${
                       dias === d
                         ? "bg-slate-700 text-white border-slate-700 dark:bg-slate-600 dark:border-slate-600"
-                        : "bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-300 border-gray-200 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500"
+                        : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500"
                     }`}
                   >
                     {d}d
@@ -578,24 +577,24 @@ function VistaPropietario({ nombre }: { nombre: string }) {
               </div>
             </div>
             {tendencia.length === 0 ? (
-              <p className="text-sm text-gray-400 text-center py-8">Sin datos para este período</p>
+              <p className="text-sm text-slate-400 text-center py-8">Sin datos para este período</p>
             ) : (
               <ResponsiveContainer width="100%" height={200}>
                 <AreaChart data={tendencia} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
                   <defs>
                     <linearGradient id="gradIngresos" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#7c3aed" stopOpacity={0.15} />
-                      <stop offset="95%" stopColor="#7c3aed" stopOpacity={0} />
+                      <stop offset="5%" stopColor={colorCategoria(1)} stopOpacity={0.15} />
+                      <stop offset="95%" stopColor={colorCategoria(1)} stopOpacity={0} />
                     </linearGradient>
                     <linearGradient id="gradCitas" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#0D9488" stopOpacity={0.2} />
-                      <stop offset="95%" stopColor="#0D9488" stopOpacity={0} />
+                      <stop offset="5%" stopColor={colorCategoria(7)} stopOpacity={0.2} />
+                      <stop offset="95%" stopColor={colorCategoria(7)} stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke={theme === "dark" ? "#334155" : "#f3f4f6"} />
-                  <XAxis dataKey="etiqueta" tick={{ fontSize: 10, fill: "#9ca3af" }} axisLine={false} tickLine={false} />
-                  <YAxis yAxisId="ingresos" tickFormatter={formatPrecioCorto} tick={{ fontSize: 10, fill: "#9ca3af" }} axisLine={false} tickLine={false} width={40} />
-                  <YAxis yAxisId="citas" orientation="right" tick={{ fontSize: 10, fill: "#9ca3af" }} axisLine={false} tickLine={false} width={28} allowDecimals={false} />
+                  <CartesianGrid {...REJILLA} />
+                  <XAxis dataKey="etiqueta" tick={EJE_TICK} axisLine={false} tickLine={false} />
+                  <YAxis yAxisId="ingresos" tickFormatter={formatPrecioCorto} tick={EJE_TICK} axisLine={false} tickLine={false} width={40} />
+                  <YAxis yAxisId="citas" orientation="right" tick={EJE_TICK} axisLine={false} tickLine={false} width={28} allowDecimals={false} />
                   <Tooltip
                     formatter={(val, name) =>
                       name === "ingresos" ? [formatPrecio(Number(val)), "Ingresos"] : [Number(val), "Citas"]
@@ -614,26 +613,26 @@ function VistaPropietario({ nombre }: { nombre: string }) {
                     wrapperStyle={{ fontSize: 11, paddingTop: 8 }}
                     formatter={(v) => v === "ingresos" ? "Ingresos" : "Citas"}
                   />
-                  <Area yAxisId="ingresos" type="monotone" dataKey="ingresos" stroke="#7c3aed" strokeWidth={2} fill="url(#gradIngresos)" dot={false} />
-                  <Area yAxisId="citas" type="monotone" dataKey="citas" stroke="#0D9488" strokeWidth={2} fill="url(#gradCitas)" dot={false} />
+                  <Area yAxisId="ingresos" type="monotone" dataKey="ingresos" stroke={colorCategoria(1)} strokeWidth={2} fill="url(#gradIngresos)" dot={false} />
+                  <Area yAxisId="citas" type="monotone" dataKey="citas" stroke={colorCategoria(7)} strokeWidth={2} fill="url(#gradCitas)" dot={false} />
                 </AreaChart>
               </ResponsiveContainer>
             )}
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
-              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Próximas citas</h2>
+            <div className="lg:col-span-2 bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 p-5">
+              <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4">Próximas citas</h2>
               {data.proximasCitas.length === 0 ? (
-                <p className="text-gray-400 dark:text-gray-500 text-sm">No hay citas próximas</p>
+                <p className="text-slate-400 dark:text-slate-500 text-sm">No hay citas próximas</p>
               ) : (
                 <div className="space-y-3">
                   {data.proximasCitas.map((c) => (
-                    <div key={c.id} className="flex items-center justify-between py-2 border-b border-gray-50 dark:border-slate-700 last:border-0">
+                    <div key={c.id} className="flex items-center justify-between py-2 border-b border-slate-50 dark:border-slate-700 last:border-0">
                       <div>
-                        <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{c.nombreCliente}</p>
-                        <p className="text-xs text-gray-400 dark:text-gray-500">{c.nombreServicio} · {c.nombreEmpleado}</p>
-                        <p className="text-xs text-gray-400 dark:text-gray-500">{formatFechaHora(c.inicioEn)}</p>
+                        <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{c.nombreCliente}</p>
+                        <p className="text-xs text-slate-400 dark:text-slate-500">{c.nombreServicio} · {c.nombreEmpleado}</p>
+                        <p className="text-xs text-slate-400 dark:text-slate-500">{formatFechaHora(c.inicioEn)}</p>
                       </div>
                       <EstadoBadge estado={c.estadoTexto} />
                     </div>
@@ -642,19 +641,19 @@ function VistaPropietario({ nombre }: { nombre: string }) {
               )}
             </div>
 
-            <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
-              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Top servicios</h2>
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 p-5">
+              <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4">Top servicios</h2>
               {data.topServicios.length === 0 ? (
-                <p className="text-gray-400 dark:text-gray-500 text-sm">Sin datos aún</p>
+                <p className="text-slate-400 dark:text-slate-500 text-sm">Sin datos aún</p>
               ) : (
                 <div className="space-y-3">
                   {data.topServicios.map((s, i) => (
                     <div key={s.nombre}>
                       <div className="flex justify-between items-center mb-1">
-                        <span className="text-xs text-gray-600 dark:text-gray-400 font-medium">{i + 1}. {s.nombre}</span>
-                        <span className="text-xs text-gray-400 dark:text-gray-500">{s.totalCitas} citas</span>
+                        <span className="text-xs text-slate-600 dark:text-slate-400 font-medium">{i + 1}. {s.nombre}</span>
+                        <span className="text-xs text-slate-400 dark:text-slate-500">{s.totalCitas} citas</span>
                       </div>
-                      <div className="w-full bg-gray-100 dark:bg-slate-700 rounded-full h-1.5">
+                      <div className="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-1.5">
                         <div
                           className="bg-slate-700 h-1.5 rounded-full"
                           style={{ width: `${Math.min((s.totalCitas / (data.topServicios[0]?.totalCitas || 1)) * 100, 100)}%` }}
@@ -761,21 +760,21 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
 
       {/* Encabezado */}
       <div className="mb-6">
-        <p className="text-sm text-slate-400 dark:text-gray-500 mb-0.5">{saludo}</p>
-        <h1 className="text-3xl font-black text-slate-900 dark:text-gray-100 leading-none">{nombre}</h1>
+        <p className="text-sm text-slate-400 dark:text-slate-500 mb-0.5">{saludo}</p>
+        <h1 className="text-3xl font-black text-slate-900 dark:text-slate-100 leading-none">{nombre}</h1>
       </div>
 
       {/* Stats hoy */}
       <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-4">
         <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-3 sm:p-4">
           <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-1.5">Citas hoy</p>
-          <p className="text-2xl font-black text-slate-900 dark:text-gray-100 leading-none">
+          <p className="text-2xl font-black text-slate-900 dark:text-slate-100 leading-none">
             {cargandoHoy ? "—" : citasHoy.length}
           </p>
         </div>
         <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-3 sm:p-4">
           <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-1.5">Completadas</p>
-          <p className="text-2xl font-black text-slate-900 dark:text-gray-100 leading-none">
+          <p className="text-2xl font-black text-slate-900 dark:text-slate-100 leading-none">
             {cargandoHoy ? "—" : completadas.length}
           </p>
         </div>
@@ -828,7 +827,7 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
       {/* Agenda del día */}
       <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-5 mb-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Agenda de hoy</h2>
+          <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Agenda de hoy</h2>
           <span className="text-xs bg-slate-700/10 text-slate-700 dark:bg-slate-700 dark:text-slate-200 font-semibold px-2.5 py-1 rounded-full">
             {cargandoHoy ? "..." : citasHoy.length}
           </span>
@@ -843,7 +842,7 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
             <button onClick={() => reintentarHoy()} className="mt-2 min-h-[44px] px-4 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition">Reintentar</button>
           </div>
         ) : citasOrdenadas.length === 0 ? (
-          <p className="text-gray-400 dark:text-gray-500 text-sm py-2">No tienes citas hoy — ¡disfruta el día!</p>
+          <p className="text-slate-400 dark:text-slate-500 text-sm py-2">No tienes citas hoy.</p>
         ) : (
           <div className="space-y-2">
             {citasOrdenadas.map((c) => {
@@ -904,7 +903,7 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
 
       {/* Próximas citas (mañana en adelante) */}
       <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-5">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Próximas citas</h2>
+        <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4">Próximas citas</h2>
         {cargandoProximas ? (
           <div className="space-y-2">
             {[0, 1, 2].map((i) => <Skeleton key={i} className="h-12 rounded-xl" />)}
@@ -915,13 +914,13 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
             <button onClick={() => reintentarProximas()} className="mt-2 min-h-[44px] px-4 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition">Reintentar</button>
           </div>
         ) : pendientesOConfirmadas.length === 0 ? (
-          <p className="text-gray-400 dark:text-gray-500 text-sm">Sin citas próximas</p>
+          <p className="text-slate-400 dark:text-slate-500 text-sm">Sin citas próximas</p>
         ) : (
           <div className="divide-y divide-border">
             {pendientesOConfirmadas.map((c) => (
               <div key={c.id} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
                 <div className="min-w-0 mr-3">
-                  <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate">{c.nombreCliente}</p>
+                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">{c.nombreCliente}</p>
                   <p className="text-xs text-muted-foreground truncate">{c.nombreServicio}</p>
                   <p className="text-xs text-muted-foreground">{formatFechaHora(c.inicioEn)}</p>
                 </div>

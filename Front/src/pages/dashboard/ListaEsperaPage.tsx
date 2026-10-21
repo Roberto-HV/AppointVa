@@ -102,13 +102,13 @@ export default function ListaEsperaPage() {
       {/* KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: "Total", value: listaCompleta.length, color: "text-gray-700 dark:text-gray-300" },
+          { label: "Total", value: listaCompleta.length, color: "text-slate-700 dark:text-slate-300" },
           { label: "Esperando", value: cuantos("Esperando"), color: "text-status-pending-fg" },
           { label: "Avisados", value: cuantos("Notificado"), color: "text-status-completed-fg" },
           { label: "Confirmados", value: cuantos("Confirmado"), color: "text-status-confirmed-fg" },
         ].map((k) => (
-          <div key={k.label} className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4">
-            <p className="text-xs text-gray-500 dark:text-gray-400">{k.label}</p>
+          <div key={k.label} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 p-4">
+            <p className="text-xs text-slate-500 dark:text-slate-400">{k.label}</p>
             <p className={`text-3xl font-bold mt-1 ${k.color}`}>{k.value}</p>
           </div>
         ))}
@@ -165,7 +165,7 @@ export default function ListaEsperaPage() {
             />
           ))}
           {paginada.totalPaginas > 1 && (
-            <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700">
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700">
               <Pagination
                 pagina={paginada.pagina}
                 totalPaginas={paginada.totalPaginas}
@@ -223,17 +223,17 @@ function EntradaCard({
   const cfg = ESTADOS_CONFIG[entrada.estado] ?? ESTADOS_CONFIG.Esperando;
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4 flex flex-col sm:flex-row sm:items-center gap-4">
+    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 p-4 flex flex-col sm:flex-row sm:items-center gap-4">
       {/* Info principal */}
       <div className="flex-1 space-y-1.5">
         <div className="flex items-center gap-2 flex-wrap">
-          <p className="font-semibold text-gray-900 dark:text-gray-100">{entrada.nombreCliente}</p>
+          <p className="font-semibold text-slate-900 dark:text-slate-100">{entrada.nombreCliente}</p>
           <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${cfg.color}`}>
             {cfg.label}
           </span>
         </div>
 
-        <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-500 dark:text-gray-400">
+        <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-500 dark:text-slate-400">
           <span className="flex items-center gap-1">
             <Phone size={13} /> {entrada.telefonoCliente}
           </span>
@@ -259,7 +259,7 @@ function EntradaCard({
           )}
         </div>
 
-        <p className="text-xs text-gray-400 dark:text-gray-500">
+        <p className="text-xs text-slate-400 dark:text-slate-500">
           Registrado: {formatFecha(entrada.fechaCreacion)}
           {entrada.fechaNotificacion &&
             ` · Avisado: ${formatFecha(entrada.fechaNotificacion)}`}
@@ -308,7 +308,7 @@ function EntradaCard({
           onClick={onEliminar}
           aria-label={`Eliminar a ${entrada.nombreCliente} de la lista`}
           title="Eliminar"
-          className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] lg:min-h-[36px] lg:min-w-[36px] text-gray-500 dark:text-gray-400 hover:text-red-700 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] lg:min-h-[36px] lg:min-w-[36px] text-slate-500 dark:text-slate-400 hover:text-red-700 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <Trash2 size={15} aria-hidden="true" />
         </button>

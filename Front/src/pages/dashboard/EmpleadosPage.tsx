@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState, useMemo } from "react";
 import { motion } from "framer-motion";
+import { useEntradaAnimada } from "../../hooks/useEntradaAnimada";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -83,6 +84,7 @@ const schemaBloqueo = z.object({
 type BloqueoForm = z.infer<typeof schemaBloqueo>;
 
 export default function EmpleadosPage() {
+  const entrada = useEntradaAnimada();
   const terms = useSectorTerms();
   const qc = useQueryClient();
   const { toast } = useToastStore();
@@ -302,7 +304,7 @@ export default function EmpleadosPage() {
   const { mutate: invitar, isPending: invitando } = useMutation({
     mutationFn: ({ email, password }: InvitarForm) =>
       empleadosApi.invitar(empleadoInvitar!.id, email, password),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["empleados"] }); setModalInvitar(false); toast("Cuenta creada exitosamente"); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["empleados"] }); setModalInvitar(false); toast("Acceso creado"); },
     onError: (err: unknown) => {
       setErrorInvitar(mensajeError(err, "No se pudo crear la cuenta. Intenta de nuevo."));
     },
@@ -381,14 +383,14 @@ export default function EmpleadosPage() {
       {isLoading ? (
         <SkeletonCards cantidad={4} />
       ) : empleados.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-100 p-12 text-center dark:bg-slate-800 dark:border-slate-700">
-          <div className="w-14 h-14 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 dark:bg-slate-700">
-            <svg className="w-7 h-7 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <div className="bg-white rounded-xl border border-slate-100 p-12 text-center dark:bg-slate-800 dark:border-slate-700">
+          <div className="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 dark:bg-slate-700">
+            <svg className="w-7 h-7 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a4 4 0 00-5.196-3.793M9 20H4v-2a4 4 0 015.196-3.793M15 7a4 4 0 11-8 0 4 4 0 018 0zm6 4a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
           </div>
-          <p className="font-medium text-gray-700 mb-1 dark:text-gray-300">Aún no tienes {terms.empleados.toLowerCase()}</p>
-          <p className="text-sm text-gray-400 mb-5 dark:text-gray-500">Agrega a tu equipo para que puedan recibir citas</p>
+          <p className="font-medium text-slate-700 mb-1 dark:text-slate-300">Aún no tienes {terms.empleados.toLowerCase()}</p>
+          <p className="text-sm text-slate-400 mb-5 dark:text-slate-500">Agrega a tu equipo para que puedan recibir citas</p>
           <button
             onClick={abrirCrear}
             className="bg-slate-700 hover:bg-slate-800 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition"
@@ -397,7 +399,7 @@ export default function EmpleadosPage() {
           </button>
         </div>
       ) : empleadosFiltrados.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-100 dark:bg-slate-800 dark:border-slate-700">
+        <div className="bg-white rounded-xl border border-slate-100 dark:bg-slate-800 dark:border-slate-700">
           <EmptyState
             variante="sinResultados"
             title="Sin resultados"
@@ -408,8 +410,10 @@ export default function EmpleadosPage() {
         </div>
       ) : (
         <>
+        {/* Entrada escalonada solo al montar (no al paginar ni filtrar) y nunca con
+            movimiento reducido (OM-33). */}
         <motion.div
-          initial="hidden"
+          {...entrada}
           animate="show"
           variants={{ hidden: {}, show: { transition: { staggerChildren: 0.07 } } }}
           className="grid grid-cols-1 md:grid-cols-2 gap-4"
@@ -418,14 +422,14 @@ export default function EmpleadosPage() {
             <motion.div
               key={emp.id}
               variants={{ hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0, transition: { duration: 0.35 } } }}
-              className="bg-white rounded-xl border border-gray-100 p-5 flex gap-4 hover:-translate-y-0.5 hover:shadow-md transition-all dark:bg-slate-800 dark:border-slate-700"
+              className="bg-white rounded-xl border border-slate-100 p-5 flex gap-4 dark:bg-slate-800 dark:border-slate-700"
             >
               {/* Un botón, no un div: se enfoca con Tab, y la insignia de la cámara
                   está siempre a la vista, también en pantallas táctiles sin hover. */}
               <div className="shrink-0 w-14 flex flex-col items-center gap-1.5">
                 <button
                   type="button"
-                  className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center shrink-0 relative group dark:bg-slate-700 disabled:opacity-60
+                  className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center shrink-0 relative group dark:bg-slate-700 disabled:opacity-60
                     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                   onClick={() => { empleadoFotoIdRef.current = emp.id; fotoInputRef.current?.click(); }}
                   disabled={fotoEmpleado.subiendoEn(emp.id)}
@@ -435,7 +439,7 @@ export default function EmpleadosPage() {
                   <span className="w-full h-full rounded-full overflow-hidden flex items-center justify-center">
                     {emp.fotoUrl
                       ? <img src={emp.fotoUrl} alt="" className="w-full h-full object-cover" />
-                      : <span className="text-xl font-bold text-gray-400">{emp.nombre.charAt(0)}</span>
+                      : <span className="text-xl font-bold text-slate-400">{emp.nombre.charAt(0)}</span>
                     }
                   </span>
                   <span aria-hidden="true" className="absolute -bottom-0.5 -right-0.5 w-6 h-6 rounded-full bg-card border border-border text-muted-foreground flex items-center justify-center shadow-sm group-hover:text-foreground transition">
@@ -448,14 +452,14 @@ export default function EmpleadosPage() {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-0.5">
-                  <p className="font-semibold text-gray-800 truncate dark:text-gray-200">{emp.nombre}</p>
+                  <p className="font-semibold text-slate-800 truncate dark:text-slate-200">{emp.nombre}</p>
                   <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${emp.activo ? "bg-status-confirmed-bg text-status-confirmed-fg" : "bg-status-absent-bg text-status-absent-fg"}`}>
                     {emp.activo ? "Activo" : "Inactivo"}
                   </span>
                 </div>
-                {emp.email && <p className="text-xs text-gray-400 truncate dark:text-gray-500">{emp.email}</p>}
-                {emp.telefono && <p className="text-xs text-gray-400 dark:text-gray-500">{emp.telefono}</p>}
-                <p className="text-xs text-gray-400 mt-1 dark:text-gray-500">{emp.servicioIds.length} {emp.servicioIds.length === 1 ? terms.servicio : terms.servicios} asignados</p>
+                {emp.email && <p className="text-xs text-slate-400 truncate dark:text-slate-500">{emp.email}</p>}
+                {emp.telefono && <p className="text-xs text-slate-400 dark:text-slate-500">{emp.telefono}</p>}
+                <p className="text-xs text-slate-400 mt-1 dark:text-slate-500">{emp.servicioIds.length} {emp.servicioIds.length === 1 ? terms.servicio : terms.servicios} asignados</p>
 
                 <div className="mt-3 space-y-1.5">
                   <div className="grid grid-cols-2 gap-1.5">
@@ -500,7 +504,7 @@ export default function EmpleadosPage() {
         {/* Fuera de la tarjeta: la lista es una rejilla de tarjetas sueltas, no
             una tabla con borde al que pegar el paginador. */}
         {paginaEmpleados.totalPaginas > 1 && (
-          <div className="mt-2 bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700">
+          <div className="mt-2 bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700">
             <Pagination
               pagina={paginaEmpleados.pagina}
               totalPaginas={paginaEmpleados.totalPaginas}
@@ -528,7 +532,7 @@ export default function EmpleadosPage() {
             const err = formEmpleado.formState.errors[campo];
             return (
               <div key={campo}>
-                <label htmlFor={`${idDia}-emp-${campo}`} className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">{labels[campo]}</label>
+                <label htmlFor={`${idDia}-emp-${campo}`} className="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">{labels[campo]}</label>
                 {campo === "biografia" ? (
                   <textarea id={`${idDia}-emp-${campo}`} rows={2} {...formEmpleado.register(campo)}
                     aria-invalid={!!err || undefined}
@@ -546,7 +550,7 @@ export default function EmpleadosPage() {
           })}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">{terms.servicios} que ofrece</label>
+            <label className="block text-sm font-medium text-slate-700 mb-2 dark:text-slate-300">{terms.servicios} que ofrece</label>
             <div className="space-y-1.5 max-h-40 overflow-y-auto">
               {servicios.map((s) => (
                 <label key={s.id} className="flex items-center gap-2 cursor-pointer">
@@ -554,7 +558,7 @@ export default function EmpleadosPage() {
                     checked={serviciosSeleccionados.includes(s.id)}
                     onChange={() => toggleServicio(s.id)}
                     className="accent-slate-700" />
-                  <span className="text-sm text-gray-700 dark:text-gray-300">{s.nombre}</span>
+                  <span className="text-sm text-slate-700 dark:text-slate-300">{s.nombre}</span>
                 </label>
               ))}
             </div>
@@ -630,11 +634,11 @@ export default function EmpleadosPage() {
         <div>
           {/* Lista bloqueos actuales */}
           <div className="mb-5">
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2 dark:text-gray-400">Bloqueos activos</p>
+            <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2 dark:text-slate-400">Bloqueos activos</p>
             {cargandoBloqueos ? (
-              <p className="text-sm text-gray-400 dark:text-gray-500">Cargando...</p>
+              <p className="text-sm text-slate-400 dark:text-slate-500">Cargando...</p>
             ) : bloqueos.length === 0 ? (
-              <p className="text-sm text-gray-400 dark:text-gray-500">Sin bloqueos registrados</p>
+              <p className="text-sm text-slate-400 dark:text-slate-500">Sin bloqueos registrados</p>
             ) : (
               <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                 {bloqueos.map((b) => (
@@ -659,12 +663,12 @@ export default function EmpleadosPage() {
           </div>
 
           {/* Formulario nuevo bloqueo */}
-          <div className="border-t border-gray-100 pt-4 dark:border-slate-700">
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3 dark:text-gray-400">Agregar bloqueo</p>
+          <div className="border-t border-slate-100 pt-4 dark:border-slate-700">
+            <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-3 dark:text-slate-400">Agregar bloqueo</p>
             <form onSubmit={formBloqueo.handleSubmit((d) => crearBloqueo(d))} className="space-y-3">
               {/* Inicio */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Inicio *</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">Inicio *</label>
                 <div className="grid grid-cols-2 gap-2">
                   <DatePicker
                     value={formBloqueo.watch("fechaInicio") ?? ""}
@@ -687,7 +691,7 @@ export default function EmpleadosPage() {
 
               {/* Fin */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Fin *</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">Fin *</label>
                 <div className="grid grid-cols-2 gap-2">
                   <DatePicker
                     value={formBloqueo.watch("fechaFin") ?? ""}
@@ -723,8 +727,8 @@ export default function EmpleadosPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">
-                  Motivo <span className="text-gray-400 font-normal dark:text-gray-500">(opcional)</span>
+                <label className="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">
+                  Motivo <span className="text-slate-400 font-normal dark:text-slate-500">(opcional)</span>
                 </label>
                 <input
                   type="text"
@@ -778,12 +782,12 @@ export default function EmpleadosPage() {
 
       {/* Modal invitar */}
       <Modal abierto={modalInvitar} onCerrar={() => descarte.pedirCierre(formInvitar.formState.isDirty, () => setModalInvitar(false))} titulo="Invitar acceso al sistema" ancho="sm">
-        <p className="text-sm text-gray-500 mb-4 dark:text-gray-400">
+        <p className="text-sm text-slate-500 mb-4 dark:text-slate-400">
           Crea una cuenta para que <strong>{empleadoInvitar?.nombre}</strong> pueda iniciar sesión.
         </p>
         <form onSubmit={formInvitar.handleSubmit((d) => invitar(d))} className="space-y-4">
           <div>
-            <label htmlFor={`${idDia}-inv-email`} className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Correo de acceso *</label>
+            <label htmlFor={`${idDia}-inv-email`} className="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">Correo de acceso *</label>
             <input id={`${idDia}-inv-email`} type="email" {...formInvitar.register("email")}
               aria-invalid={!!formInvitar.formState.errors.email || undefined}
               aria-describedby={formInvitar.formState.errors.email ? `${idDia}-inv-email-error` : undefined}
@@ -793,7 +797,7 @@ export default function EmpleadosPage() {
             )}
           </div>
           <div>
-            <label htmlFor={`${idDia}-inv-password`} className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Contraseña inicial *</label>
+            <label htmlFor={`${idDia}-inv-password`} className="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">Contraseña inicial *</label>
             <div className="relative">
               <input
                 id={`${idDia}-inv-password`}
@@ -810,7 +814,7 @@ export default function EmpleadosPage() {
                 onClick={() => setMostrarPasswordInvitar((v) => !v)}
                 aria-label={mostrarPasswordInvitar ? "Ocultar contraseña" : "Mostrar contraseña"}
                 aria-pressed={mostrarPasswordInvitar}
-                className="absolute right-0 top-1/2 -translate-y-1/2 inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200
+                className="absolute right-0 top-1/2 -translate-y-1/2 inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded-lg text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200
                   focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 {mostrarPasswordInvitar ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}

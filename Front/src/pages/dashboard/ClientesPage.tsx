@@ -100,10 +100,11 @@ export default function ClientesPage() {
     const link = negocio?.slug ? `${window.location.origin}/b/${negocio.slug}` : "";
     const dias = Math.floor((ahora.getTime() - new Date(c.ultimaCitaEn!).getTime()) / (1000 * 60 * 60 * 24));
     const nombre = c.nombreCompleto.split(" ")[0];
+    // Tono neutral y sin emoji (OM-32): el mensaje sale a nombre del negocio.
     const msg =
-      `Hola ${nombre} 👋, hace ${dias} días que no te vemos en *${negocioNombre}*.\n\n` +
-      `¡Nos encantaría verte de nuevo! Reserva tu próxima cita fácilmente aquí:\n${link}\n\n` +
-      `¡Te esperamos! 😊`;
+      `Hola, ${nombre}. Han pasado ${dias} días desde tu última visita a *${negocioNombre}*.\n\n` +
+      (link ? `Cuando quieras, puedes reservar tu próxima cita aquí:\n${link}\n\n` : "") +
+      `Será un gusto atenderte de nuevo.`;
     return `https://wa.me/${formatWaPhone(c.telefono)}?text=${encodeURIComponent(msg)}`;
   };
 
@@ -220,7 +221,7 @@ export default function ClientesPage() {
           <div className="w-full sm:w-auto">
             <span
               id={idActividad}
-              className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-1.5"
+              className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5"
             >
               Actividad
             </span>
@@ -263,7 +264,7 @@ export default function ClientesPage() {
           {cargandoActividad ? (
             <div className="space-y-2">
               {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="h-16 bg-gray-100 dark:bg-slate-800 rounded-xl animate-pulse" />
+                <div key={i} className="h-16 bg-slate-100 dark:bg-slate-800 rounded-xl animate-pulse" />
               ))}
             </div>
           ) : (
@@ -276,14 +277,14 @@ export default function ClientesPage() {
                   tope de 500; el análisis ya recorre el directorio entero, así
                   que dejarlo sería advertir de un recorte que no ocurre. */}
               <div className="space-y-1">
-                <p className="text-xs text-gray-400 dark:text-gray-500">
+                <p className="text-xs text-slate-400 dark:text-slate-500">
                   {totalActividad} cliente{totalActividad !== 1 ? "s" : ""}{" "}
                   {tab === "activos"
                     ? `con visita en los últimos ${diasInactivo} días`
                     : `sin visitar en más de ${diasInactivo} días`}
                 </p>
                 {resumenActividad && (
-                  <p className="text-[11px] text-gray-400 dark:text-gray-500">
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500">
                     De {resumenActividad.total} {terms.clientes.toLowerCase()}: {resumenActividad.activos} activos,{" "}
                     {resumenActividad.inactivos} inactivos y {resumenActividad.sinVisitas} sin visitas registradas
                     {resumenActividad.sinVisitas > 0 && " (nunca se les agendó una cita, así que no cuentan en ninguno de los dos grupos)"}.
@@ -292,7 +293,7 @@ export default function ClientesPage() {
               </div>
 
               {clientesActividad.length === 0 ? (
-                <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700">
+                <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700">
                   {tab === "activos" ? (
                     <EmptyState
                       icon={<UserCheck size={40} strokeWidth={1.5} />}
@@ -308,21 +309,21 @@ export default function ClientesPage() {
                   )}
                 </div>
               ) : (
-                <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 divide-y divide-gray-50 dark:divide-slate-700">
+                <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 divide-y divide-slate-50 dark:divide-slate-700">
                 {clientesActividad.map((c) => {
                   const dias = Math.floor(
                     (ahora.getTime() - new Date(c.ultimaCitaEn!).getTime()) / (1000 * 60 * 60 * 24)
                   );
                   return (
-                    <div key={c.id} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition">
+                    <div key={c.id} className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition">
                       <div className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center shrink-0">
                         <span className="text-sm font-bold text-slate-600 dark:text-slate-300">
                           {c.nombreCompleto.charAt(0).toUpperCase()}
                         </span>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{c.nombreCompleto}</p>
-                        <p className="text-xs text-gray-400 dark:text-gray-500">
+                        <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{c.nombreCompleto}</p>
+                        <p className="text-xs text-slate-400 dark:text-slate-500">
                           {c.telefono} · {c.totalCitas} cita{c.totalCitas !== 1 ? "s" : ""}
                         </p>
                       </div>
@@ -336,12 +337,12 @@ export default function ClientesPage() {
                           <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
                             {formatFechaCorta(c.ultimaCitaEn!)}
                           </p>
-                          <p className="text-xs text-gray-400 dark:text-gray-500">última cita</p>
+                          <p className="text-xs text-slate-400 dark:text-slate-500">última cita</p>
                         </div>
                       ) : (
                         <div className="text-right shrink-0 mr-2">
                           <p className="text-sm font-bold text-amber-500">{dias} días</p>
-                          <p className="text-xs text-gray-400 dark:text-gray-500">sin visitar</p>
+                          <p className="text-xs text-slate-400 dark:text-slate-500">sin visitar</p>
                         </div>
                       )}
                       {tab === "inactivos" && c.telefono && (
@@ -378,9 +379,9 @@ export default function ClientesPage() {
       {tab === "todos" && (<>
       {/* Lista */}
       {isLoading ? (
-        <p className="text-gray-400 dark:text-gray-500">Cargando clientes...</p>
+        <p className="text-slate-400 dark:text-slate-500">Cargando clientes...</p>
       ) : clientes.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-100 dark:bg-slate-800 dark:border-slate-700">
+        <div className="bg-white rounded-xl border border-slate-100 dark:bg-slate-800 dark:border-slate-700">
           {buscarActivo ? (
             <EmptyState
               variante="sinResultados"
@@ -399,26 +400,26 @@ export default function ClientesPage() {
         </div>
       ) : (
         <>
-          <p className="text-xs text-gray-400 mb-3 dark:text-gray-500">{totalClientes} {totalClientes !== 1 ? terms.clientes.toLowerCase() : terms.cliente.toLowerCase()}</p>
+          <p className="text-xs text-slate-400 mb-3 dark:text-slate-500">{totalClientes} {totalClientes !== 1 ? terms.clientes.toLowerCase() : terms.cliente.toLowerCase()}</p>
           {/* Teléfono: tarjetas apiladas; toda la tarjeta abre el detalle. La tabla
               de abajo dejaba "Ver detalle" fuera de la pantalla a 375 px. */}
-          <ul className="sm:hidden bg-white rounded-xl border border-gray-100 divide-y divide-gray-100 dark:bg-slate-800 dark:border-slate-700 dark:divide-slate-700" aria-label={terms.clientes}>
+          <ul className="sm:hidden bg-white rounded-xl border border-slate-100 divide-y divide-slate-100 dark:bg-slate-800 dark:border-slate-700 dark:divide-slate-700" aria-label={terms.clientes}>
             {clientes.map((c) => (
               <li key={c.id}>
                 <button
                   type="button"
                   onClick={() => abrirCliente(c)}
                   aria-label={`Ver detalle de ${c.nombreCompleto}`}
-                  className="w-full min-h-[44px] flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-slate-700 transition
+                  className="w-full min-h-[44px] flex items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 dark:hover:bg-slate-700 transition
                     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
                 >
                   <span aria-hidden="true" className="w-9 h-9 rounded-full bg-muted flex items-center justify-center shrink-0 text-xs font-bold text-foreground">
                     {c.nombreCompleto.charAt(0).toUpperCase()}
                   </span>
                   <span className="flex-1 min-w-0">
-                    <span className="block font-medium text-gray-800 dark:text-gray-200 truncate">{c.nombreCompleto}</span>
-                    <span className="block text-xs text-gray-500 dark:text-gray-400">{c.telefono}</span>
-                    <span className="block text-xs text-gray-500 dark:text-gray-400">
+                    <span className="block font-medium text-slate-800 dark:text-slate-200 truncate">{c.nombreCompleto}</span>
+                    <span className="block text-xs text-slate-500 dark:text-slate-400">{c.telefono}</span>
+                    <span className="block text-xs text-slate-500 dark:text-slate-400">
                       {c.ultimaCitaEn ? `Última visita: ${formatFecha(c.ultimaCitaEn)}` : "Sin visitas"}
                       {c.cantidadInasistencias > 0 && (
                         <span className="text-red-600 dark:text-red-400">{` · ${c.cantidadInasistencias} inasistencia${c.cantidadInasistencias === 1 ? "" : "s"}`}</span>
@@ -430,10 +431,10 @@ export default function ClientesPage() {
               </li>
             ))}
           </ul>
-          <div className="hidden sm:block bg-white rounded-xl border border-gray-100 overflow-x-auto dark:bg-slate-800 dark:border-slate-700">
+          <div className="hidden sm:block bg-white rounded-xl border border-slate-100 overflow-x-auto dark:bg-slate-800 dark:border-slate-700">
             <table className="w-full text-sm min-w-[560px]">
               <thead>
-                <tr className="border-b border-gray-100 text-xs text-gray-400 uppercase tracking-wide dark:border-slate-700 dark:text-gray-500">
+                <tr className="border-b border-slate-100 text-xs text-slate-400 uppercase tracking-wide dark:border-slate-700 dark:text-slate-500">
                   <th className="text-left px-5 py-3 font-medium">{terms.cliente}</th>
                   <th className="text-left px-5 py-3 font-medium">Contacto</th>
                   <th className="text-center px-5 py-3 font-medium">{terms.citas}</th>
@@ -449,7 +450,7 @@ export default function ClientesPage() {
                   <tr
                     key={c.id}
                     onClick={() => abrirCliente(c)}
-                    className="border-b border-gray-50 hover:bg-gray-50 transition cursor-pointer dark:border-slate-700 dark:hover:bg-slate-700"
+                    className="border-b border-slate-50 hover:bg-slate-50 transition cursor-pointer dark:border-slate-700 dark:hover:bg-slate-700"
                   >
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-3">
@@ -458,25 +459,25 @@ export default function ClientesPage() {
                             {c.nombreCompleto.charAt(0).toUpperCase()}
                           </span>
                         </div>
-                        <p className="font-medium text-gray-800 dark:text-gray-200">{c.nombreCompleto}</p>
+                        <p className="font-medium text-slate-800 dark:text-slate-200">{c.nombreCompleto}</p>
                       </div>
                     </td>
                     <td className="px-5 py-3">
-                      <p className="text-gray-700 dark:text-gray-300">{c.telefono}</p>
-                      {c.email && <p className="text-xs text-gray-400 dark:text-gray-500">{c.email}</p>}
+                      <p className="text-slate-700 dark:text-slate-300">{c.telefono}</p>
+                      {c.email && <p className="text-xs text-slate-400 dark:text-slate-500">{c.email}</p>}
                     </td>
                     <td className="px-5 py-3 text-center">
-                      <span className="font-semibold text-gray-800 dark:text-gray-200">{c.totalCitas}</span>
+                      <span className="font-semibold text-slate-800 dark:text-slate-200">{c.totalCitas}</span>
                     </td>
                     <td className="px-5 py-3 text-center">
                       {c.cantidadInasistencias > 0 ? (
                         <span className="font-medium text-red-500">{c.cantidadInasistencias}</span>
                       ) : (
-                        <span className="text-gray-400 dark:text-gray-500">—</span>
+                        <span className="text-slate-400 dark:text-slate-500">—</span>
                       )}
                     </td>
-                    <td className="px-5 py-3 text-gray-600 text-sm dark:text-gray-400">
-                      {c.ultimaCitaEn ? formatFecha(c.ultimaCitaEn) : <span className="text-gray-400 dark:text-gray-500">—</span>}
+                    <td className="px-5 py-3 text-slate-600 text-sm dark:text-slate-400">
+                      {c.ultimaCitaEn ? formatFecha(c.ultimaCitaEn) : <span className="text-slate-400 dark:text-slate-500">—</span>}
                     </td>
                     <td className="px-5 py-3 text-right">
                       <button
@@ -493,7 +494,7 @@ export default function ClientesPage() {
             </table>
           </div>
           {/* Un solo paginador para las dos vistas (tarjetas y tabla). */}
-          <div className="mt-2 bg-white rounded-xl border border-gray-100 dark:bg-slate-800 dark:border-slate-700">
+          <div className="mt-2 bg-white rounded-xl border border-slate-100 dark:bg-slate-800 dark:border-slate-700">
             <Pagination
               pagina={pagina}
               totalPaginas={totalPaginas}
@@ -518,78 +519,78 @@ export default function ClientesPage() {
           <div className="space-y-5">
             {/* Info básica */}
             <div className="grid grid-cols-2 gap-3 text-sm">
-              <div className="bg-gray-50 rounded-lg px-3 py-2 dark:bg-slate-700">
-                <p className="text-xs text-gray-400 mb-0.5 dark:text-gray-500">Teléfono</p>
-                <p className="font-medium text-gray-800 dark:text-gray-200">{clienteSel.telefono}</p>
+              <div className="bg-slate-50 rounded-lg px-3 py-2 dark:bg-slate-700">
+                <p className="text-xs text-slate-400 mb-0.5 dark:text-slate-500">Teléfono</p>
+                <p className="font-medium text-slate-800 dark:text-slate-200">{clienteSel.telefono}</p>
               </div>
               {clienteSel.email && (
-                <div className="bg-gray-50 rounded-lg px-3 py-2 dark:bg-slate-700">
-                  <p className="text-xs text-gray-400 mb-0.5 dark:text-gray-500">Correo</p>
-                  <p className="font-medium text-gray-800 truncate dark:text-gray-200">{clienteSel.email}</p>
+                <div className="bg-slate-50 rounded-lg px-3 py-2 dark:bg-slate-700">
+                  <p className="text-xs text-slate-400 mb-0.5 dark:text-slate-500">Correo</p>
+                  <p className="font-medium text-slate-800 truncate dark:text-slate-200">{clienteSel.email}</p>
                 </div>
               )}
-              <div className="bg-gray-50 rounded-lg px-3 py-2 dark:bg-slate-700">
-                <p className="text-xs text-gray-400 mb-0.5 dark:text-gray-500">Total citas</p>
-                <p className="font-bold text-gray-800 text-lg dark:text-gray-200">{clienteSel.totalCitas}</p>
+              <div className="bg-slate-50 rounded-lg px-3 py-2 dark:bg-slate-700">
+                <p className="text-xs text-slate-400 mb-0.5 dark:text-slate-500">Total citas</p>
+                <p className="font-bold text-slate-800 text-lg dark:text-slate-200">{clienteSel.totalCitas}</p>
               </div>
-              <div className="bg-gray-50 rounded-lg px-3 py-2 dark:bg-slate-700">
-                <p className="text-xs text-gray-400 mb-0.5 dark:text-gray-500">Inasistencias</p>
-                <p className={`font-bold text-lg ${clienteSel.cantidadInasistencias > 0 ? "text-red-500" : "text-gray-800 dark:text-gray-200"}`}>
+              <div className="bg-slate-50 rounded-lg px-3 py-2 dark:bg-slate-700">
+                <p className="text-xs text-slate-400 mb-0.5 dark:text-slate-500">Inasistencias</p>
+                <p className={`font-bold text-lg ${clienteSel.cantidadInasistencias > 0 ? "text-red-500" : "text-slate-800 dark:text-slate-200"}`}>
                   {clienteSel.cantidadInasistencias}
                 </p>
               </div>
-              <div className="bg-gray-50 rounded-lg px-3 py-2 col-span-2 dark:bg-slate-700">
-                <p className="text-xs text-gray-400 mb-0.5 dark:text-gray-500">{`${terms.cliente} desde`}</p>
-                <p className="font-medium text-gray-800 dark:text-gray-200">{formatFecha(clienteSel.fechaCreacion)}</p>
+              <div className="bg-slate-50 rounded-lg px-3 py-2 col-span-2 dark:bg-slate-700">
+                <p className="text-xs text-slate-400 mb-0.5 dark:text-slate-500">{`${terms.cliente} desde`}</p>
+                <p className="font-medium text-slate-800 dark:text-slate-200">{formatFecha(clienteSel.fechaCreacion)}</p>
               </div>
             </div>
 
             {/* Notas */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">
+              <label className="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">
                 Notas internas
-                <span className="text-gray-400 font-normal ml-1 dark:text-gray-500">(solo visible para ti)</span>
+                <span className="text-slate-400 font-normal ml-1 dark:text-slate-500">(solo visible para ti)</span>
               </label>
               <textarea
                 value={notas}
                 onChange={(e) => { setNotas(e.target.value); setNotasGuardadas(false); }}
                 rows={3}
                 placeholder="Preferencias, alergias, observaciones..."
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-slate-700 resize-none dark:bg-slate-800 dark:text-gray-100 dark:border-slate-600"
+                className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:border-slate-700 resize-none dark:bg-slate-800 dark:text-slate-100 dark:border-slate-600"
               />
               <div className="flex items-center gap-3 mt-2">
                 <button
                   onClick={() => guardarNotas()}
                   disabled={guardandoNotas || notas === (clienteSel.notas ?? "")}
-                  className="px-4 py-1.5 bg-gray-800 hover:bg-gray-700 disabled:opacity-40 text-white text-xs font-medium rounded-lg transition"
+                  className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-white text-xs font-medium rounded-lg transition"
                 >
                   {guardandoNotas ? "Guardando..." : "Guardar notas"}
                 </button>
                 {notasGuardadas && (
-                  <span className="text-xs text-green-600 font-medium">¡Guardado!</span>
+                  <span role="status" className="text-xs text-green-700 dark:text-green-400 font-medium">Guardado</span>
                 )}
               </div>
             </div>
 
             {/* Historial citas */}
             <div>
-              <p className="text-sm font-semibold text-gray-700 mb-2 dark:text-gray-300">Historial de citas</p>
+              <p className="text-sm font-semibold text-slate-700 mb-2 dark:text-slate-300">Historial de citas</p>
               {cargandoCitas ? (
-                <p className="text-sm text-gray-400 dark:text-gray-500">Cargando historial...</p>
+                <p className="text-sm text-slate-400 dark:text-slate-500">Cargando historial...</p>
               ) : citasCliente.length === 0 ? (
-                <p className="text-sm text-gray-400 dark:text-gray-500">Sin citas registradas</p>
+                <p className="text-sm text-slate-400 dark:text-slate-500">Sin citas registradas</p>
               ) : (
                 <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
                   {citasCliente.map((cita) => (
-                    <div key={cita.id} className="flex items-center justify-between gap-3 bg-gray-50 rounded-lg px-3 py-2 dark:bg-slate-700">
+                    <div key={cita.id} className="flex items-center justify-between gap-3 bg-slate-50 rounded-lg px-3 py-2 dark:bg-slate-700">
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-gray-800 truncate dark:text-gray-200">{cita.nombreServicio}</p>
-                        <p className="text-xs text-gray-400 dark:text-gray-500">
+                        <p className="text-sm font-medium text-slate-800 truncate dark:text-slate-200">{cita.nombreServicio}</p>
+                        <p className="text-xs text-slate-400 dark:text-slate-500">
                           {cita.nombreEmpleado} · {formatFechaHora(cita.inicioEn)}
                         </p>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{formatPrecio(cita.precio)}</span>
+                        <span className="text-xs font-medium text-slate-700 dark:text-slate-300">{formatPrecio(cita.precio)}</span>
                         <EstadoBadge estado={cita.estadoTexto} />
                       </div>
                     </div>

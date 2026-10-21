@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { act, render, screen, fireEvent } from "@testing-library/react";
 import ErrorBoundary from "./ErrorBoundary";
 
 // Componente que lanza un error controlado
@@ -88,10 +88,10 @@ describe("ErrorBoundary", () => {
     expect(container.querySelector("svg")).toBeInTheDocument();
   });
 
-  it("el botón Volver llama a window.history.back", () => {
+  it("con historial en la pestaña, Volver llama a window.history.back", () => {
     const backMock = vi.fn();
     Object.defineProperty(window, "history", {
-      value: { back: backMock },
+      value: { back: backMock, state: { idx: 2 } },
       writable: true,
     });
 
@@ -103,5 +103,41 @@ describe("ErrorBoundary", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /volver/i }));
     expect(backMock).toHaveBeenCalledOnce();
+  });
+
+  it("sin historial (primera página de la pestaña) ofrece Ir al inicio en lugar de un Volver inerte", () => {
+    const backMock = vi.fn();
+    const assignMock = vi.fn();
+    Object.defineProperty(window, "history", { value: { back: backMock, state: { idx: 0 } }, writable: true });
+    Object.defineProperty(window, "location", { value: { assign: assignMock, reload: vi.fn() }, writable: true });
+
+    render(
+      <ErrorBoundary>
+        <Bomba lanzar={true} />
+      </ErrorBoundary>
+    );
+
+    expect(screen.queryByRole("button", { name: /volver/i })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Ir al inicio" }));
+    expect(assignMock).toHaveBeenCalledWith("/");
+    expect(backMock).not.toHaveBeenCalled();
+  });
+
+  it("al volver atrás en el historial suelta el error y pinta la página", () => {
+    let romper = true;
+    function Pagina() {
+      if (romper) throw new Error("Error de prueba");
+      return <div>Página anterior</div>;
+    }
+    render(
+      <ErrorBoundary>
+        <Pagina />
+      </ErrorBoundary>
+    );
+    expect(screen.getByText("Algo salió mal")).toBeInTheDocument();
+
+    romper = false;
+    act(() => { window.dispatchEvent(new PopStateEvent("popstate")); });
+    expect(screen.getByText("Página anterior")).toBeInTheDocument();
   });
 });

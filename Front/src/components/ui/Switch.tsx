@@ -53,7 +53,7 @@ export default function Switch({
         aria-hidden="true"
         className={`relative inline-block w-11 h-6 rounded-full transition-colors
           group-focus-visible:ring-2 group-focus-visible:ring-ring group-focus-visible:ring-offset-2 group-focus-visible:ring-offset-background
-          ${activo ? "bg-primary" : "bg-gray-300 dark:bg-slate-600"}`}
+          ${activo ? "bg-primary" : "bg-slate-300 dark:bg-slate-600"}`}
       >
         <span
           className={`absolute top-1 left-1 w-4 h-4 rounded-full shadow transition-transform motion-reduce:transition-none

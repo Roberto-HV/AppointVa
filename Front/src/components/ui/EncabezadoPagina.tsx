@@ -43,9 +43,9 @@ export default function EncabezadoPagina({
   return (
     <div className={cn("flex items-start justify-between gap-3", className)}>
       <div className="min-w-0 flex-1">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{titulo}</h1>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{titulo}</h1>
         {subtitulo && (
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{subtitulo}</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{subtitulo}</p>
         )}
       </div>
       {acciones && <AccionesPagina>{acciones}</AccionesPagina>}

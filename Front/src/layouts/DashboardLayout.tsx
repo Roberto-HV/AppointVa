@@ -16,7 +16,7 @@ import AvisoActivacionPendiente from '../components/dashboard/AvisoActivacionPen
 import { encuestaApi } from '../api/encuesta';
 import { toUtcDate, capitalizarPrimera } from '../utils/formatters';
 import { useInactividadTimeout } from '../hooks/useInactividadTimeout';
-import { useSectorTerms, getSectorTerms } from "../hooks/useSectorTerms";
+import { useSectorTerms, getSectorTerms, type SectorTerms } from "../hooks/useSectorTerms";
 import { useSectorFeatures } from "../hooks/useSectorFeatures";
 import { hoy as hoyLocal } from "../utils/fechas";
 
@@ -136,9 +136,9 @@ function UserMenuContent({ usuario, perfil, iniciales, rolChip, rol, onProfile, 
   );
 }
 
-const NAV_EMPLEADO = [
+const navEmpleado = (terms: SectorTerms): NavItem[] => [
   { to: "/dashboard", label: "Inicio", end: true, icon: LayoutDashboard },
-  { to: "/dashboard/citas", label: "Mis citas", icon: CalendarDays },
+  { to: "/dashboard/citas", label: `Mis ${terms.citas.toLowerCase()}`, icon: CalendarDays },
   { to: "/dashboard/pagos", label: "Pagos", icon: CreditCard },
   { to: "/dashboard/mi-perfil", label: "Mi perfil", icon: UserCircle },
 ];
@@ -241,7 +241,7 @@ export default function DashboardLayout() {
   });
   const [encuestaCerrada, setEncuestaCerrada] = useState(false);
 
-  const navItems = esEmpleado ? NAV_EMPLEADO : NAV_PROPIETARIO;
+  const navItems = esEmpleado ? navEmpleado(terms) : NAV_PROPIETARIO;
 
   useEffect(() => {
     if (

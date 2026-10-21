@@ -65,7 +65,7 @@ const ItemToast = forwardRef<HTMLDivElement, { toast: Toast }>(function ItemToas
       }}
       className={`pointer-events-auto flex items-center gap-3 pl-4 pr-1 py-1 min-h-[48px] rounded-xl shadow-2xl text-sm font-medium w-full sm:w-auto sm:max-w-sm ${
         t.tipo === "exito"
-          ? "bg-gray-900 text-white dark:bg-slate-700"
+          ? "bg-slate-900 text-white dark:bg-slate-700"
           : t.tipo === "error"
           ? "bg-red-700 text-white"
           : "bg-slate-800 text-white dark:bg-slate-700"

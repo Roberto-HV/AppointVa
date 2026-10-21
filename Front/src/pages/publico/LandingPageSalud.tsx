@@ -245,7 +245,7 @@ export function LandingPageSalud() {
             <div className="max-w-2xl">
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold mb-8" style={{ backgroundColor: "#FEF9EC", color: "#92701A", border: "1px solid #F3E0A0" }}>
                 <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: GOLD, boxShadow: `0 0 6px ${GOLD}` }} />
-                Para profesionales de la salud · México 🇲🇽
+                Para profesionales de la salud · México
               </div>
 
               <h1 className="font-black leading-[1.02] tracking-tight mb-7" style={{ fontSize: "clamp(3rem, 6vw, 4.25rem)" }}>
@@ -478,7 +478,7 @@ export function LandingPageSalud() {
             </div>
 
             <div className="border-t border-white/5 pt-6 flex flex-col md:flex-row items-center justify-between gap-3">
-              <p className="text-xs text-slate-600">© 2026 AppointVa · Hecho en México 🇲🇽</p>
+              <p className="text-xs text-slate-600">© 2026 AppointVa · Hecho en México</p>
               <p className="text-xs text-slate-600">Sistema de gestión de citas para negocios de servicios</p>
             </div>
           </div>

@@ -16,7 +16,7 @@ export default function PasswordStrengthBar({ password }: Props) {
           <div
             key={i}
             className={`h-1 flex-1 rounded-full transition-all duration-300 ${
-              i <= score ? BARS[score] : "bg-gray-200"
+              i <= score ? BARS[score] : "bg-slate-200"
             }`}
           />
         ))}

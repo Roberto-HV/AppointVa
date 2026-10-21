@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { ESTADO_CITA, ESTADOS_CITA, estiloEstadoCita, citaAbierta, citaPorCerrar } from "./estadoCita";
+import { ESTADO_CITA, ESTADOS_CITA, estiloEstadoCita, citaAbierta, citaPorCerrar, codigoCitaAbierta, CODIGO_ESTADO_CITA } from "./estadoCita";
 
 const TOKEN: Record<string, string> = {
   Pendiente: "pending",
@@ -59,5 +59,15 @@ describe("estadoCita — mapa único de estados", () => {
     expect(citaPorCerrar({ estadoTexto: "Pendiente", finEn: "2026-10-21T11:59:00" }, ahora)).toBe(true);
     expect(citaPorCerrar({ estadoTexto: "Completada", finEn: "2026-10-21T11:00:00" }, ahora)).toBe(false);
     expect(citaPorCerrar({ estadoTexto: "Confirmada", finEn: "2026-10-21T13:00:00" }, ahora)).toBe(false);
+  });
+});
+
+describe("codigoCitaAbierta", () => {
+  it("solo Pendiente y Confirmada admiten acciones", () => {
+    expect(codigoCitaAbierta(CODIGO_ESTADO_CITA.Pendiente)).toBe(true);
+    expect(codigoCitaAbierta(CODIGO_ESTADO_CITA.Confirmada)).toBe(true);
+    expect(codigoCitaAbierta(CODIGO_ESTADO_CITA.Completada)).toBe(false);
+    expect(codigoCitaAbierta(CODIGO_ESTADO_CITA.Cancelada)).toBe(false);
+    expect(codigoCitaAbierta(CODIGO_ESTADO_CITA.Inasistencia)).toBe(false);
   });
 });

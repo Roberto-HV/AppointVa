@@ -56,13 +56,13 @@ describe("BarraProgreso", () => {
     expect(aviso.textContent).not.toContain("restantes");
   });
 
-  it("muestra '⛔ Límite alcanzado' cuando valor iguala al máximo", () => {
+  it("muestra 'Límite alcanzado' (sin emoji) cuando valor iguala al máximo", () => {
     render(<BarraProgreso valor={10} maximo={10} label="Citas" />);
     const aviso = screen.getByTestId("aviso-restantes");
-    expect(aviso.textContent).toContain("Límite alcanzado");
+    expect(aviso.textContent).toBe("Límite alcanzado");
   });
 
-  it("muestra '⛔ Límite alcanzado' cuando valor supera al máximo", () => {
+  it("muestra 'Límite alcanzado' cuando valor supera al máximo", () => {
     render(<BarraProgreso valor={15} maximo={10} label="Citas" />);
     const aviso = screen.getByTestId("aviso-restantes");
     expect(aviso.textContent).toContain("Límite alcanzado");

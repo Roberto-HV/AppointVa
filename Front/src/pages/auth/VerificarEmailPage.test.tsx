@@ -115,8 +115,20 @@ describe("VerificarEmailPage (AP-03)", () => {
     await user.click(screen.getByRole("button", { name: "Usar otro correo" }));
     const campo = screen.getByLabelText("Correo con el que te registraste");
     expect(campo).toHaveValue("ana@ejemplo.com");
-    // La espera sigue vigente para cualquier correo.
+    // La espera sigue vigente para el mismo correo (también con otras mayúsculas)...
     expect(screen.getByRole("button", { name: /Reenviar enlace en \d+ s/ })).toBeDisabled();
+    await user.clear(campo);
+    await user.type(campo, " ANA@ejemplo.com ");
+    expect(screen.getByRole("button", { name: /Reenviar enlace en \d+ s/ })).toBeDisabled();
+
+    // ...pero otro correo puede recibir el enlace al momento.
+    await user.clear(campo);
+    await user.type(campo, "otra@ejemplo.com");
+    const enviarOtro = screen.getByRole("button", { name: "Reenviar enlace" });
+    expect(enviarOtro).toBeEnabled();
+    await user.click(enviarOtro);
+    await waitFor(() => expect(reenviarVerificacion).toHaveBeenLastCalledWith("otra@ejemplo.com"));
+    expect(await screen.findByRole("button", { name: /Reenviar de nuevo en \d+ s/ })).toBeDisabled();
     vi.useRealTimers();
   });
 });

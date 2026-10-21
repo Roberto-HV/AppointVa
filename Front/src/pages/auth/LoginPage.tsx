@@ -106,9 +106,9 @@ export default function LoginPage() {
       {/* ── Panel izquierdo — formulario ── */}
       <div className="flex-1 flex flex-col justify-center items-center bg-white px-8 py-12 sm:px-12 relative overflow-hidden">
         {/* Decoración mobile — oculta en desktop donde el panel derecho ya tiene los elementos */}
-        <div className="absolute -top-16 -right-16 w-52 h-52 bg-blue-100/60 rounded-full md:hidden" />
-        <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-slate-100/80 rounded-full md:hidden" />
-        <div className="absolute top-1/3 -right-8 w-20 h-20 bg-blue-50/80 rounded-full md:hidden" />
+        <div className="absolute -top-16 -right-16 w-52 h-52 bg-slate-100/80 rounded-full md:hidden" aria-hidden="true" />
+        <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-slate-100/80 rounded-full md:hidden" aria-hidden="true" />
+        <div className="absolute top-1/3 -right-8 w-20 h-20 bg-slate-50 rounded-full md:hidden" aria-hidden="true" />
 
         <div className="w-full max-w-sm relative z-10">
 
@@ -152,8 +152,8 @@ export default function LoginPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
                   </svg>
                 </div>
-                <h2 className="text-2xl font-bold text-gray-900">Verificación en dos pasos</h2>
-                <p className="text-sm text-gray-500 mt-1">Ingresa el código de 6 dígitos de tu app autenticadora</p>
+                <h1 className="text-2xl font-bold text-slate-900">Verificación en dos pasos</h1>
+                <p className="text-sm text-slate-500 mt-1">Ingresa el código de 6 dígitos de tu app autenticadora</p>
               </div>
               <form onSubmit={onVerificar2FA} className="space-y-4">
                 <input
@@ -164,7 +164,7 @@ export default function LoginPage() {
                   value={codigo2FA}
                   onChange={(e) => setCodigo2FA(e.target.value.replace(/\D/g, ""))}
                   placeholder="000000"
-                  className="w-full px-4 py-3 text-center text-2xl font-mono tracking-[0.5em] rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-slate-700/30 focus:border-slate-700"
+                  className="w-full px-4 py-3 text-center text-2xl font-mono tracking-[0.5em] rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-slate-700/30 focus:border-slate-700"
                   autoFocus
                 />
                 {errorGeneral && (
@@ -182,7 +182,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => { setChallengeToken(null); setCodigo2FA(""); setErrorGeneral(""); }}
-                  className="w-full text-sm text-gray-400 hover:text-gray-600 transition"
+                  className="w-full text-sm text-slate-400 hover:text-slate-600 transition"
                 >
                   ← Volver al inicio de sesión
                 </button>
@@ -191,19 +191,19 @@ export default function LoginPage() {
           ) : (
             /* ── Login normal ── */
             <>
-              <h2 className="text-2xl font-bold text-gray-900 mb-1">Bienvenido de nuevo</h2>
-              <p className="text-sm text-gray-400 mb-8">Ingresa tus datos para continuar</p>
+              <h1 className="text-2xl font-bold text-slate-900 mb-1">Inicia sesión</h1>
+              <p className="text-sm text-slate-500 mb-8">Ingresa tus datos para continuar</p>
 
               <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-5">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Correo electrónico</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Correo electrónico</label>
                   <input
                     type="email"
                     autoComplete="email"
                     {...register("email")}
                     className={`w-full px-4 py-3 rounded-xl border text-sm outline-none transition
                       focus:ring-2 focus:ring-slate-700/30 focus:border-slate-700
-                      ${errors.email ? "border-red-400 bg-red-50" : "border-gray-200"}`}
+                      ${errors.email ? "border-red-400 bg-red-50" : "border-slate-200"}`}
                     placeholder="correo@ejemplo.com"
                   />
                   {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}
@@ -211,7 +211,7 @@ export default function LoginPage() {
 
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-sm font-medium text-gray-700">Contraseña</label>
+                    <label className="text-sm font-medium text-slate-700">Contraseña</label>
                     <Link to="/recuperar-contrasena" className="text-xs text-slate-600 hover:underline">
                       ¿Olvidaste tu contraseña?
                     </Link>
@@ -223,13 +223,13 @@ export default function LoginPage() {
                       {...register("contrasena")}
                       className={`w-full px-4 py-3 pr-11 rounded-xl border text-sm outline-none transition
                         focus:ring-2 focus:ring-slate-700/30 focus:border-slate-700
-                        ${errors.contrasena ? "border-red-400 bg-red-50" : "border-gray-200"}`}
+                        ${errors.contrasena ? "border-red-400 bg-red-50" : "border-slate-200"}`}
                       placeholder="••••••••"
                     />
                     <button
                       type="button"
                       onMouseDown={(e) => { e.preventDefault(); setMostrarPassword((v) => !v); }}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition"
                       tabIndex={-1}
                     >
                       {mostrarPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -254,7 +254,7 @@ export default function LoginPage() {
               </form>
 
               {/* Link registro — solo mobile (md oculta porque está en el panel derecho) */}
-              <p className="text-center text-sm text-gray-500 mt-6 md:hidden">
+              <p className="text-center text-sm text-slate-500 mt-6 md:hidden">
                 ¿No tienes cuenta?{" "}
                 <Link to="/registro" className="text-slate-700 hover:underline font-medium">
                   Registra tu negocio
@@ -263,10 +263,10 @@ export default function LoginPage() {
             </>
           )}
 
-          <p className="text-xs text-gray-400 mt-10 space-x-2 text-center">
-            <Link to="/privacidad" className="hover:underline hover:text-gray-600 transition">Privacidad</Link>
+          <p className="text-xs text-slate-400 mt-10 space-x-2 text-center">
+            <Link to="/privacidad" className="hover:underline hover:text-slate-600 transition">Privacidad</Link>
             <span>·</span>
-            <Link to="/terminos" className="hover:underline hover:text-gray-600 transition">Términos</Link>
+            <Link to="/terminos" className="hover:underline hover:text-slate-600 transition">Términos</Link>
           </p>
         </div>
       </div>

@@ -1,3 +1,4 @@
+import { AlertTriangle, Ban } from "lucide-react";
 interface Props {
   valor: number;
   maximo: number;
@@ -11,19 +12,19 @@ export default function BarraProgreso({ valor, maximo, label }: Props) {
     ? "text-red-600 dark:text-red-400 font-semibold"
     : pct >= 60
     ? "text-amber-600 dark:text-amber-400 font-semibold"
-    : "text-gray-500 dark:text-slate-400";
+    : "text-slate-500 dark:text-slate-400";
   const restantes = maximo - valor;
   return (
     <div className="mb-2.5">
       <div className="flex justify-between text-xs mb-1">
-        <span className="text-gray-400 dark:text-slate-500">{label}</span>
+        <span className="text-slate-400 dark:text-slate-500">{label}</span>
         <span className={colorTexto}>
-          {valor} / {maximo} <span className="text-gray-400 dark:text-slate-500">({pct}%)</span>
+          {valor} / {maximo} <span className="text-slate-400 dark:text-slate-500">({pct}%)</span>
         </span>
       </div>
       {/* El carril sin variante oscura quedaba casi blanco sobre la tarjeta
           oscura y se leía como barra llena al 100%. */}
-      <div className="h-1.5 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden">
+      <div className="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
         <div
           data-testid="barra-fill"
           className={`h-full rounded-full transition-all duration-500 ${colorBarra}`}
@@ -41,7 +42,9 @@ export default function BarraProgreso({ valor, maximo, label }: Props) {
               : "text-amber-600 dark:text-amber-400"
           }`}
         >
-          {pct >= 100 ? "⛔ Límite alcanzado" : `⚠️ ${restantes} restante${restantes !== 1 ? "s" : ""}`}
+          {pct >= 100
+            ? <><Ban size={11} className="inline -mt-px mr-1" aria-hidden="true" />Límite alcanzado</>
+            : <><AlertTriangle size={11} className="inline -mt-px mr-1" aria-hidden="true" />{`${restantes} restante${restantes !== 1 ? "s" : ""}`}</>}
         </p>
       )}
     </div>

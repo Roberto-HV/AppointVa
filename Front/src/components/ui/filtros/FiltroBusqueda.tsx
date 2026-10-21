@@ -70,7 +70,7 @@ export default function FiltroBusqueda({
         <Search
           size={16}
           aria-hidden="true"
-          className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500 pointer-events-none"
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 pointer-events-none"
         />
         <input
           id={id}
@@ -81,9 +81,9 @@ export default function FiltroBusqueda({
           className={cn(
             "w-full min-h-[44px] pl-9 pr-9 py-2 rounded-xl border shadow-sm transition-colors",
             "text-base lg:text-sm",
-            "bg-white dark:bg-slate-800 text-gray-800 dark:text-gray-100",
-            "border-gray-200 dark:border-slate-600 hover:border-gray-300 dark:hover:border-slate-500",
-            "placeholder:text-gray-400 dark:placeholder:text-slate-500",
+            "bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100",
+            "border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500",
+            "placeholder:text-slate-400 dark:placeholder:text-slate-500",
             "focus:outline-none focus:border-slate-700 focus:ring-2 focus:ring-slate-700/20",
             "dark:focus:border-slate-400 dark:focus:ring-slate-400/20",
             // Safari dibuja su propia X en `type=search`; usamos la nuestra.
@@ -98,7 +98,7 @@ export default function FiltroBusqueda({
             className={cn(
               "absolute right-1 top-1/2 -translate-y-1/2 min-h-[40px] min-w-[40px]",
               "flex items-center justify-center rounded-lg transition-colors",
-              "text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300",
+              "text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40"
             )}
           >

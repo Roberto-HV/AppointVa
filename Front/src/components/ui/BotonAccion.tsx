@@ -5,7 +5,7 @@ import { cn } from "../../lib/utils";
 /**
  * Acción del encabezado de página: arriba a la derecha, junto al título.
  *
- * Había una variante por pantalla —`bg-gray-900` en Galería, `rounded-xl` en
+ * Había una variante por pantalla —`bg-slate-900` en Galería, `rounded-xl` en
  * Descuentos y Cuestionario, `rounded-lg` en Empleados y Servicios, `text-xs`
  * con borde en Clientes— y ninguna con clases `dark:`. Aquí viven el tamaño, el
  * relleno, el radio y el foco una sola vez.
@@ -33,10 +33,10 @@ const VARIANTES: Record<Variante, string> = {
     "bg-slate-700 hover:bg-slate-800 text-white " +
     "dark:bg-slate-600 dark:hover:bg-slate-500",
   secundaria:
-    "bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-300 " +
-    "border border-gray-200 dark:border-slate-600 " +
-    "hover:bg-gray-50 dark:hover:bg-slate-700 " +
-    "hover:border-gray-300 dark:hover:border-slate-500",
+    "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 " +
+    "border border-slate-200 dark:border-slate-600 " +
+    "hover:bg-slate-50 dark:hover:bg-slate-700 " +
+    "hover:border-slate-300 dark:hover:border-slate-500",
 };
 
 export function clasesBotonAccion(variante: Variante = "primaria", className?: string) {

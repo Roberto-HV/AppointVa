@@ -87,11 +87,11 @@ export default function TicketRecibo({ cita, negocioNombre, negocioLogo, onClose
 <div id="ticket-recibo-wrapper">
         <div
           id="ticket-recibo"
-          className="bg-white text-gray-900 font-mono text-xs leading-relaxed p-4"
+          className="bg-white text-slate-900 font-mono text-xs leading-relaxed p-4"
           style={{ width: "100%", maxWidth: "302px", margin: "0 auto" }}
         >
           {/* Header */}
-          <div className="text-center mb-3 border-b border-dashed border-gray-300 pb-3">
+          <div className="text-center mb-3 border-b border-dashed border-slate-300 pb-3">
             {negocioLogo && (
               <img
                 src={negocioLogo}
@@ -100,62 +100,62 @@ export default function TicketRecibo({ cita, negocioNombre, negocioLogo, onClose
               />
             )}
             <p className="font-bold text-sm">{negocioNombre}</p>
-            <p className="text-gray-500 text-[10px]">Comprobante de pago</p>
+            <p className="text-slate-500 text-[10px]">Comprobante de pago</p>
           </div>
 
           {/* Appointment details */}
           <table className="w-full mb-3">
             <tbody>
               <tr>
-                <td className="text-gray-500 pr-2">Cliente</td>
+                <td className="text-slate-500 pr-2">Cliente</td>
                 <td className="text-right font-medium">{cita.nombreCliente}</td>
               </tr>
               <tr>
-                <td className="text-gray-500 pr-2">Servicio</td>
+                <td className="text-slate-500 pr-2">Servicio</td>
                 <td className="text-right">{cita.nombreServicio}</td>
               </tr>
               {cita.nombreEmpleado && (
                 <tr>
-                  <td className="text-gray-500 pr-2">Atendió</td>
+                  <td className="text-slate-500 pr-2">Atendió</td>
                   <td className="text-right">{cita.nombreEmpleado}</td>
                 </tr>
               )}
               <tr>
-                <td className="text-gray-500 pr-2">Fecha</td>
+                <td className="text-slate-500 pr-2">Fecha</td>
                 <td className="text-right">{fecha}</td>
               </tr>
             </tbody>
           </table>
 
           {/* Amounts */}
-          <div className="border-t border-dashed border-gray-300 pt-3 mb-3">
+          <div className="border-t border-dashed border-slate-300 pt-3 mb-3">
             <table className="w-full">
               <tbody>
                 <tr>
-                  <td className="text-gray-500 pr-2">Método</td>
+                  <td className="text-slate-500 pr-2">Método</td>
                   <td className="text-right">{cita.metodoPago}</td>
                 </tr>
                 <tr>
-                  <td className="text-gray-500 pr-2">Total</td>
+                  <td className="text-slate-500 pr-2">Total</td>
                   <td className="text-right font-bold">
                     ${(cita.montoCobrado ?? cita.precio).toFixed(2)}
                   </td>
                 </tr>
                 {cita.montoRecibido != null && (
                   <tr>
-                    <td className="text-gray-500 pr-2">Recibido</td>
+                    <td className="text-slate-500 pr-2">Recibido</td>
                     <td className="text-right">${cita.montoRecibido.toFixed(2)}</td>
                   </tr>
                 )}
                 {mostrarCambio && (
                   <tr>
-                    <td className="text-gray-500 pr-2">Cambio</td>
+                    <td className="text-slate-500 pr-2">Cambio</td>
                     <td className="text-right font-bold">${cita.cambio!.toFixed(2)}</td>
                   </tr>
                 )}
                 {cita.propina && cita.propina > 0 && (
                   <tr>
-                    <td className="text-gray-500 pr-2">Propina</td>
+                    <td className="text-slate-500 pr-2">Propina</td>
                     <td className="text-right">${cita.propina.toFixed(2)}</td>
                   </tr>
                 )}
@@ -164,7 +164,7 @@ export default function TicketRecibo({ cita, negocioNombre, negocioLogo, onClose
           </div>
 
           {/* Footer */}
-          <div className="text-center text-[10px] text-gray-400 border-t border-dashed border-gray-300 pt-3">
+          <div className="text-center text-[10px] text-slate-400 border-t border-dashed border-slate-300 pt-3">
             <p>Gracias por su visita</p>
             <p>AppointVa</p>
           </div>
@@ -175,7 +175,7 @@ export default function TicketRecibo({ cita, negocioNombre, negocioLogo, onClose
       <div className="print:hidden flex gap-2 mt-4 justify-end">
         <button
           onClick={handlePrint}
-          className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 transition"
+          className="flex items-center gap-2 px-3 py-2 text-sm border border-slate-200 rounded-lg hover:bg-slate-50 transition"
         >
           <Printer size={15} /> Imprimir ticket
         </button>
@@ -188,7 +188,7 @@ export default function TicketRecibo({ cita, negocioNombre, negocioLogo, onClose
         </button>
         <button
           onClick={onClose}
-          className="px-3 py-2 text-sm text-gray-500 hover:text-gray-700 transition"
+          className="px-3 py-2 text-sm text-slate-500 hover:text-slate-700 transition"
         >
           Cerrar
         </button>

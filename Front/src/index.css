@@ -57,6 +57,18 @@
 
   /* ── Calificaciones (estrellas de reseñas): nunca el dorado de marca ───── */
   --rating:               #F59E0B;  /* amber-500 */
+
+  /* ── Paleta categórica (series de gráficas, avatares de empleados) ───── */
+  /* Colores sin significado de estado. Texto blanco encima: ≥ 4.5:1
+     (en dark, texto slate-950: clase TEXTO_SOBRE_CATEGORIA). */
+  --categoria-1:          #4F46E5;  /* indigo-600 */
+  --categoria-2:          #7C3AED;  /* violet-600 */
+  --categoria-3:          #0E7490;  /* cyan-700 */
+  --categoria-4:          #047857;  /* emerald-700 */
+  --categoria-5:          #B45309;  /* amber-700 */
+  --categoria-6:          #BE123C;  /* rose-700 */
+  --categoria-7:          #A21CAF;  /* fuchsia-700 */
+  --categoria-8:          #0F766E;  /* teal-700 */
 }
 
 .dark {
@@ -108,6 +120,17 @@
   --sidebar-salud-fg:     #F1F5F9;
   --sidebar-salud-muted:  #A9C7DE;
   --sidebar-salud-active: #1B5A8A;
+
+  /* Paleta categórica (dark): tonos 400 para que líneas y barras se lean
+     sobre slate-800 (≥ 3:1). Texto encima en slate-950 (≥ 6:1), no blanco. */
+  --categoria-1:          #818CF8;  /* indigo-400 */
+  --categoria-2:          #A78BFA;  /* violet-400 */
+  --categoria-3:          #22D3EE;  /* cyan-400 */
+  --categoria-4:          #34D399;  /* emerald-400 */
+  --categoria-5:          #FBBF24;  /* amber-400 */
+  --categoria-6:          #FB7185;  /* rose-400 */
+  --categoria-7:          #E879F9;  /* fuchsia-400 */
+  --categoria-8:          #2DD4BF;  /* teal-400 */
   --sidebar-salud-hover:  rgba(255, 255, 255, 0.08);
 
   --rating:               #FBBF24;  /* amber-400 */

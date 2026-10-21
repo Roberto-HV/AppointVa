@@ -75,8 +75,8 @@ export default function DosFactoresPage() {
     return (
       <div className="p-6 max-w-lg mx-auto">
         <div className="animate-pulse space-y-4">
-          <div className="h-6 bg-gray-200 dark:bg-slate-700 rounded w-1/3" />
-          <div className="h-32 bg-gray-200 dark:bg-slate-700 rounded-xl" />
+          <div className="h-6 bg-slate-200 dark:bg-slate-700 rounded w-1/3" />
+          <div className="h-32 bg-slate-200 dark:bg-slate-700 rounded-xl" />
         </div>
       </div>
     );
@@ -84,7 +84,7 @@ export default function DosFactoresPage() {
 
   const inputCodigo = (
     <div>
-      <label htmlFor="codigo-2fa" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Código de verificación</label>
+      <label htmlFor="codigo-2fa" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Código de verificación</label>
       <input
         id="codigo-2fa"
         type="text"
@@ -96,7 +96,7 @@ export default function DosFactoresPage() {
         value={codigo}
         onChange={(e) => { setCodigo(e.target.value.replace(/\D/g, "")); setErrorCodigo(""); }}
         placeholder="000000"
-        className="w-full px-4 py-2.5 text-center text-xl font-mono tracking-[0.5em] rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 outline-none focus:border-slate-700"
+        className="w-full px-4 py-2.5 text-center text-xl font-mono tracking-[0.5em] rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 outline-none focus:border-slate-700"
       />
       {errorCodigo && <p id="codigo-2fa-error" role="alert" className="text-red-700 dark:text-red-400 text-xs mt-1 text-center">{errorCodigo}</p>}
     </div>
@@ -111,20 +111,20 @@ export default function DosFactoresPage() {
       <div className={`rounded-xl border p-5 flex items-center gap-4 ${
         estado?.habilitado
           ? "bg-emerald-50 border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-800"
-          : "bg-gray-50 dark:bg-slate-700 border-gray-100 dark:border-slate-700"
+          : "bg-slate-50 dark:bg-slate-700 border-slate-100 dark:border-slate-700"
       }`}>
         <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
           estado?.habilitado
             ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
-            : "bg-gray-200 dark:bg-slate-600 text-gray-500 dark:text-gray-300"
+            : "bg-slate-200 dark:bg-slate-600 text-slate-500 dark:text-slate-300"
         }`}>
           {estado?.habilitado ? <ShieldCheck size={20} /> : <Shield size={20} />}
         </div>
         <div>
-          <p className="font-semibold text-gray-900 dark:text-gray-100">
+          <p className="font-semibold text-slate-900 dark:text-slate-100">
             {estado?.habilitado ? "2FA activado" : "2FA desactivado"}
           </p>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             {estado?.habilitado
               ? "Tu cuenta está protegida con autenticación de dos factores."
               : "Activa 2FA para mayor seguridad en tu cuenta."}
@@ -134,9 +134,9 @@ export default function DosFactoresPage() {
 
       {/* ── Si 2FA está desactivado ── */}
       {!estado?.habilitado && paso === "idle" && (
-        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5 space-y-4">
-          <h2 className="font-semibold text-gray-800 dark:text-gray-200">¿Cómo funciona?</h2>
-          <ol className="text-sm text-gray-600 dark:text-gray-400 space-y-2 list-decimal list-inside">
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 p-5 space-y-4">
+          <h2 className="font-semibold text-slate-800 dark:text-slate-200">¿Cómo funciona?</h2>
+          <ol className="text-sm text-slate-600 dark:text-slate-400 space-y-2 list-decimal list-inside">
             <li>Descarga una app autenticadora (Google Authenticator, Authy, etc.)</li>
             <li>Escanea el código QR que te mostraremos</li>
             <li>Ingresa el código de 6 dígitos para confirmar</li>
@@ -162,22 +162,22 @@ export default function DosFactoresPage() {
         // Formulario: Enter con el código escrito confirma la activación.
         <form
           onSubmit={(e) => { e.preventDefault(); if (!activando && codigo.length === 6) activar(); }}
-          className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5 space-y-5"
+          className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 p-5 space-y-5"
         >
           <div>
-            <h2 className="font-semibold text-gray-800 dark:text-gray-200 mb-1">Escanea el código QR</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Abre tu app autenticadora y escanea este código.</p>
+            <h2 className="font-semibold text-slate-800 dark:text-slate-200 mb-1">Escanea el código QR</h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Abre tu app autenticadora y escanea este código.</p>
           </div>
 
           <div className="flex justify-center">
-            <div className="p-3 bg-white border-2 border-gray-100 rounded-xl inline-block">
+            <div className="p-3 bg-white border-2 border-slate-100 rounded-xl inline-block">
               <QRCodeSVG value={uri} size={180} />
             </div>
           </div>
 
           <div>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1 text-center">O ingresa la clave manualmente:</p>
-            <p className="text-center font-mono text-sm font-semibold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-slate-700 rounded-lg px-4 py-2 tracking-widest select-all">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-1 text-center">O ingresa la clave manualmente:</p>
+            <p className="text-center font-mono text-sm font-semibold text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-700 rounded-lg px-4 py-2 tracking-widest select-all">
               {llave}
             </p>
             <p className="text-xs text-muted-foreground mt-2 text-center">
@@ -191,7 +191,7 @@ export default function DosFactoresPage() {
             <button
               type="button"
               onClick={() => { setPaso("idle"); setCodigo(""); setErrorCodigo(""); }}
-              className="flex-1 py-2.5 rounded-xl border-2 border-gray-200 dark:border-slate-600 text-sm font-medium text-gray-600 dark:text-gray-400 hover:border-gray-300 transition"
+              className="flex-1 py-2.5 rounded-xl border-2 border-slate-200 dark:border-slate-600 text-sm font-medium text-slate-600 dark:text-slate-400 hover:border-slate-300 transition"
             >
               Cancelar
             </button>
@@ -217,12 +217,12 @@ export default function DosFactoresPage() {
 
       {/* ── Si 2FA está activado, opción de desactivar ── */}
       {estado?.habilitado && paso !== 'activado' && (
-        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5 space-y-4">
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 p-5 space-y-4">
           <div className="flex items-center gap-2 text-red-600">
             <ShieldOff size={18} />
             <h2 className="font-semibold">Desactivar autenticación en dos pasos</h2>
           </div>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             Para desactivar 2FA, ingresa un código válido de tu app autenticadora.
           </p>
 

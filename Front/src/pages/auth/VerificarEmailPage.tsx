@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { api } from "../../api/axios";
 import { reenviarVerificacion } from "../../api/auth";
 import LogoMarca from "../../components/LogoMarca";
+import { BOTON_PRIMARIO_AUTH, BOTON_SECUNDARIO_AUTH, FONDO_AUTH, TARJETA_AUTH, TITULO_AUTH, campoAuth } from "../../lib/clasesAuth";
 import { esErrorTemporal, estadoHttp, mensajeError } from "../../utils/errores";
 import { CORREO_SOPORTE } from "../../lib/activacion";
 import { useTituloPagina } from "../../hooks/useTituloPagina";
@@ -15,8 +16,11 @@ type Estado = "cargando" | "ok" | "error" | "temporal";
 
 const MENSAJE_INVALIDO = "El enlace de verificación es inválido o ha expirado.";
 
-/** Segundos de espera antes de permitir otro reenvío desde esta pantalla. */
+/** Segundos de espera antes de permitir otro reenvío al mismo correo. */
 export const ESPERA_REENVIO_SEGUNDOS = 60;
+
+/** La espera es por dirección: "Usar otro correo" puede enviar al momento. */
+const claveCorreo = (correo: string) => correo.trim().toLowerCase();
 
 export default function VerificarEmailPage() {
   useTituloPagina("Verificar correo");
@@ -30,15 +34,24 @@ export default function VerificarEmailPage() {
   const [reenviando, setReenviando] = useState(false);
   const [reenvioMensaje, setReenvioMensaje] = useState("");
   const [reenvioError, setReenvioError] = useState("");
-  const [espera, setEspera] = useState(0);
+  /** Segundos restantes por correo (clave normalizada). */
+  const [esperas, setEsperas] = useState<Record<string, number>>({});
+  const espera = esperas[claveCorreo(email)] ?? 0;
+  const hayEspera = Object.values(esperas).some((s) => s > 0);
 
-  // Cuenta atrás del reenvío: evita pedir enlaces en ráfaga, pero no deja al
-  // usuario sin salida si el primero no llega.
+  // Cuenta atrás del reenvío: evita pedir enlaces en ráfaga al mismo correo,
+  // pero no deja al usuario sin salida si el primero no llega.
   useEffect(() => {
-    if (espera <= 0) return;
-    const t = setTimeout(() => setEspera((s) => s - 1), 1000);
+    if (!hayEspera) return;
+    const t = setTimeout(() => {
+      setEsperas((prev) => {
+        const sig: Record<string, number> = {};
+        for (const [clave, s] of Object.entries(prev)) if (s > 1) sig[clave] = s - 1;
+        return sig;
+      });
+    }, 1000);
     return () => clearTimeout(t);
-  }, [espera]);
+  }, [esperas, hayEspera]);
 
   useEffect(() => {
     const userId = searchParams.get("userId");
@@ -85,7 +98,7 @@ export default function VerificarEmailPage() {
       setReenvioMensaje(
         respuesta || "Si el correo está registrado y pendiente de verificación, recibirás un email."
       );
-      setEspera(ESPERA_REENVIO_SEGUNDOS);
+      setEsperas((prev) => ({ ...prev, [claveCorreo(correo)]: ESPERA_REENVIO_SEGUNDOS }));
     } catch (err) {
       setReenvioError(mensajeError(err, "No se pudo enviar el enlace. Revisa tu conexión e intenta de nuevo."));
     } finally {
@@ -94,15 +107,15 @@ export default function VerificarEmailPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+    <div className={FONDO_AUTH}>
       <div className="w-full max-w-md text-center">
         <LogoMarca prioridad className="h-20 mx-auto mb-6" />
 
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+        <div className={TARJETA_AUTH}>
           {estado === "cargando" && (
             <div role="status">
               <div className="w-12 h-12 border-4 border-slate-700 border-t-transparent rounded-full animate-spin mx-auto mb-4" aria-hidden="true" />
-              <p className="text-gray-500">Verificando tu correo...</p>
+              <p className="text-slate-500">Verificando tu correo...</p>
             </div>
           )}
 
@@ -113,11 +126,11 @@ export default function VerificarEmailPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h1 className="text-xl font-semibold text-gray-800 mb-2">¡Correo verificado!</h1>
-              <p className="text-gray-500 text-sm mb-6">{mensaje}</p>
+              <h1 className={TITULO_AUTH}>¡Correo verificado!</h1>
+              <p className="text-slate-500 text-sm mb-6">{mensaje}</p>
               <Link
                 to="/login"
-                className="inline-block w-full bg-slate-700 hover:bg-slate-800 text-white font-semibold py-2.5 rounded-lg transition text-sm"
+                className={`inline-flex items-center justify-center ${BOTON_PRIMARIO_AUTH}`}
               >
                 Iniciar sesión
               </Link>
@@ -126,8 +139,8 @@ export default function VerificarEmailPage() {
 
           {estado === "temporal" && (
             <div role="alert">
-              <h1 className="text-xl font-semibold text-gray-800 mb-2">No pudimos comprobar el enlace</h1>
-              <p className="text-gray-500 text-sm mb-6">
+              <h1 className={TITULO_AUTH}>No pudimos comprobar el enlace</h1>
+              <p className="text-slate-500 text-sm mb-6">
                 {sinRespuesta
                   ? "No hubo respuesta del servidor. Revisa tu conexión: tu enlace puede seguir siendo válido."
                   : "El servidor no pudo responder en este momento. Tu enlace puede seguir siendo válido; intenta de nuevo en unos minutos."}
@@ -135,7 +148,7 @@ export default function VerificarEmailPage() {
               <button
                 type="button"
                 onClick={reintentar}
-                className="w-full bg-slate-700 hover:bg-slate-800 text-white font-semibold py-2.5 rounded-lg transition text-sm"
+                className={BOTON_PRIMARIO_AUTH}
               >
                 Reintentar
               </button>
@@ -149,14 +162,14 @@ export default function VerificarEmailPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </div>
-              <h1 className="text-xl font-semibold text-gray-800 mb-2">Enlace inválido o vencido</h1>
-              <p className="text-gray-500 text-sm mb-6">{mensaje} Los enlaces vencen a las 24 horas; puedes pedir uno nuevo.</p>
+              <h1 className={TITULO_AUTH}>Enlace inválido o vencido</h1>
+              <p className="text-slate-500 text-sm mb-6">{mensaje} Los enlaces vencen a las 24 horas; puedes pedir uno nuevo.</p>
 
               {reenvioMensaje ? (
                 <div className="mb-6 space-y-3">
                   <p role="status" className="text-sm text-green-700 font-medium">{reenvioMensaje}</p>
-                  <p className="text-xs text-gray-500">
-                    Enviado a <span className="font-medium text-gray-700 break-all">{email.trim()}</span>.
+                  <p className="text-xs text-slate-500">
+                    Enviado a <span className="font-medium text-slate-700 break-all">{email.trim()}</span>.
                   </p>
                   {reenvioError && <p role="alert" className="text-red-600 text-xs">{reenvioError}</p>}
                   <div className="flex flex-col sm:flex-row gap-2">
@@ -164,14 +177,14 @@ export default function VerificarEmailPage() {
                       type="button"
                       onClick={() => void onReenviar()}
                       disabled={reenviando || espera > 0}
-                      className="flex-1 min-h-[44px] px-4 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60 transition"
+                      className={`flex-1 ${BOTON_SECUNDARIO_AUTH}`}
                     >
                       {reenviando ? "Enviando..." : espera > 0 ? `Reenviar de nuevo en ${espera} s` : "Reenviar de nuevo"}
                     </button>
                     <button
                       type="button"
                       onClick={() => { setReenvioMensaje(""); setReenvioError(""); }}
-                      className="flex-1 min-h-[44px] px-4 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
+                      className={`flex-1 ${BOTON_SECUNDARIO_AUTH}`}
                     >
                       Usar otro correo
                     </button>
@@ -179,7 +192,7 @@ export default function VerificarEmailPage() {
                 </div>
               ) : (
                 <form onSubmit={onReenviar} noValidate className="text-left space-y-3 mb-6">
-                  <label htmlFor="email-reenvio" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="email-reenvio" className="block text-sm font-medium text-slate-700">
                     Correo con el que te registraste
                   </label>
                   <input
@@ -191,7 +204,7 @@ export default function VerificarEmailPage() {
                     aria-invalid={reenvioError ? true : undefined}
                     aria-describedby={reenvioError ? "email-reenvio-error" : undefined}
                     placeholder="correo@ejemplo.com"
-                    className="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm outline-none transition focus:ring-2 focus:ring-slate-700/40 focus:border-slate-700"
+                    className={campoAuth(!!reenvioError)}
                   />
                   {reenvioError && (
                     <p id="email-reenvio-error" role="alert" className="text-red-600 text-xs">{reenvioError}</p>
@@ -199,14 +212,14 @@ export default function VerificarEmailPage() {
                   <button
                     type="submit"
                     disabled={reenviando || espera > 0}
-                    className="w-full bg-slate-700 hover:bg-slate-800 disabled:opacity-60 text-white font-semibold py-2.5 rounded-lg transition text-sm"
+                    className={BOTON_PRIMARIO_AUTH}
                   >
                     {reenviando ? "Enviando..." : espera > 0 ? `Reenviar enlace en ${espera} s` : "Reenviar enlace"}
                   </button>
                 </form>
               )}
 
-              <p className="text-xs text-gray-500 mb-4">
+              <p className="text-xs text-slate-500 mb-4">
                 ¿Te registraste con un correo equivocado? Escríbenos a{" "}
                 <a href={`mailto:${CORREO_SOPORTE}`} className="underline text-slate-700">{CORREO_SOPORTE}</a>.
               </p>
@@ -217,7 +230,7 @@ export default function VerificarEmailPage() {
           )}
         </div>
 
-        <p className="text-center text-xs text-gray-500 mt-6">© {new Date().getFullYear()} AppointVa · Agiliza tu negocio</p>
+        <p className="text-center text-xs text-slate-500 mt-6">© {new Date().getFullYear()} AppointVa · Agiliza tu negocio</p>
       </div>
     </div>
   );

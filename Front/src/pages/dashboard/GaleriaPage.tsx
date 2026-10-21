@@ -111,7 +111,7 @@ export default function GaleriaPage() {
         subtitulo={
           <>
             Fotos de tus trabajos visibles en tu página de reservas
-            <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">({imagenes.length}/{MAX_FOTOS})</span>
+            <span className="ml-2 text-xs text-slate-400 dark:text-slate-500">({imagenes.length}/{MAX_FOTOS})</span>
           </>
         }
         acciones={
@@ -143,7 +143,7 @@ export default function GaleriaPage() {
             focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
               arrastrando
                 ? "border-primary bg-muted text-foreground"
-                : "border-gray-200 dark:border-slate-600 text-gray-500 dark:text-gray-400 hover:border-gray-300 hover:text-gray-600 dark:hover:text-gray-300"
+                : "border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:border-slate-300 hover:text-slate-600 dark:hover:text-slate-300"
             }`}
         >
           <ImageIcon size={40} strokeWidth={1.2} aria-hidden="true" />
@@ -158,7 +158,7 @@ export default function GaleriaPage() {
       {isLoading ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-3">
           {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="aspect-square rounded-xl bg-gray-100 dark:bg-slate-700 animate-pulse" />
+            <div key={i} className="aspect-square rounded-xl bg-slate-100 dark:bg-slate-700 animate-pulse" />
           ))}
         </div>
       ) : isError ? (
@@ -174,7 +174,7 @@ export default function GaleriaPage() {
             {...zonaArrastre}
           >
             {imagenes.map((img, i) => (
-              <div key={img.id} className="group relative aspect-square rounded-xl overflow-hidden bg-gray-100 dark:bg-slate-700">
+              <div key={img.id} className="group relative aspect-square rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-700">
                 <button
                   type="button"
                   onClick={() => setLightbox(img.url)}
@@ -220,7 +220,7 @@ export default function GaleriaPage() {
               <button
                 type="button"
                 onClick={() => inputRef.current?.click()}
-                className="aspect-square rounded-xl border-2 border-dashed border-gray-200 dark:border-slate-600 hover:border-gray-300 flex flex-col items-center justify-center gap-2 text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition
+                className="aspect-square rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-600 hover:border-slate-300 flex flex-col items-center justify-center gap-2 text-slate-500 dark:text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition
                   focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <Upload size={22} strokeWidth={1.5} aria-hidden="true" />
@@ -229,7 +229,7 @@ export default function GaleriaPage() {
             )}
           </div>
 
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-3">
             {`Arrastra imágenes al grid para agregar más · ${TEXTO_FORMATOS_IMAGEN} · Las fotos se muestran en tu página de reservas en el mismo orden.`}
           </p>
         </>

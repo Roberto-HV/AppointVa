@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, CalendarDays, List } from "lucide-react";
+import { getSectorTerms, type SectorTerms } from "../../hooks/useSectorTerms";
 import { citasApi } from "../../api/citas";
 import type { CitaDto } from "../../types";
 import { toUtcDate } from "../../utils/formatters";
@@ -49,11 +50,13 @@ function vistaInicial(): VistaCalendario {
 
 interface Props {
   empleadoId: string;
+  /** Vocabulario del sector ("consultas" en salud) (DC-34). */
+  terms?: SectorTerms;
   onCitaClick: (cita: CitaDto) => void;
   onReagendar?: (cita: CitaDto, nuevoInicio: string) => void;
 }
 
-export default function CalendarioCitas({ empleadoId, onCitaClick, onReagendar }: Props) {
+export default function CalendarioCitas({ empleadoId, onCitaClick, onReagendar, terms = getSectorTerms(null) }: Props) {
   const [vista, setVistaEstado] = useState<VistaCalendario>(vistaInicial);
   const setVista = (v: VistaCalendario) => {
     setVistaEstado(v);
@@ -123,7 +126,7 @@ export default function CalendarioCitas({ empleadoId, onCitaClick, onReagendar }
     return <span className={`text-[10px] font-semibold mt-0.5 ${color}`}>{count}</span>;
   };
 
-  const NAV_BTN = "flex items-center justify-center gap-1.5 px-3 min-h-[44px] min-w-[44px] lg:min-h-[36px] lg:min-w-[36px] text-sm border border-gray-200 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-300 transition w-fit";
+  const NAV_BTN = "flex items-center justify-center gap-1.5 px-3 min-h-[44px] min-w-[44px] lg:min-h-[36px] lg:min-w-[36px] text-sm border border-slate-200 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition w-fit";
 
   // Citas que se solapan se dibujan lado a lado; cada una se puede tocar.
   // Las canceladas e inasistencias no ocupan carril: van detrás (z-0) a todo el
@@ -180,7 +183,7 @@ export default function CalendarioCitas({ empleadoId, onCitaClick, onReagendar }
               <span className="hidden sm:inline">Anterior</span>
             </button>
             <div className="flex flex-col items-center gap-0.5">
-              <span className="text-sm font-semibold text-gray-800 dark:text-slate-200 text-center">{semanaLabel}</span>
+              <span className="text-sm font-semibold text-slate-800 dark:text-slate-200 text-center">{semanaLabel}</span>
               <button onClick={() => setLunes(getLunesDeEstaSemana(new Date()))} className="min-h-[44px] lg:min-h-[28px] px-3 text-xs text-slate-700 dark:text-slate-300 hover:underline font-medium">Hoy</button>
             </div>
             <div className="flex justify-end">
@@ -200,7 +203,7 @@ export default function CalendarioCitas({ empleadoId, onCitaClick, onReagendar }
               <ChevronLeft size={15} />
             </button>
             <div className="flex flex-col items-center gap-0.5">
-              <span className="text-sm font-semibold text-gray-800 dark:text-slate-200 text-center">{diaActivoLabel}</span>
+              <span className="text-sm font-semibold text-slate-800 dark:text-slate-200 text-center">{diaActivoLabel}</span>
               <button onClick={() => abrirDia(new Date())} className="min-h-[44px] lg:min-h-[28px] px-3 text-xs text-slate-700 dark:text-slate-300 hover:underline font-medium">Hoy</button>
             </div>
             <div className="flex justify-end">
@@ -216,15 +219,15 @@ export default function CalendarioCitas({ empleadoId, onCitaClick, onReagendar }
         )}
 
         {/* Toggle semana/día */}
-        <div className="flex bg-gray-100 dark:bg-slate-700 rounded-lg p-0.5 gap-0.5 shrink-0" role="group" aria-label="Vista del calendario">
+        <div className="flex bg-slate-100 dark:bg-slate-700 rounded-lg p-0.5 gap-0.5 shrink-0" role="group" aria-label="Vista del calendario">
           <button
             onClick={() => setVista("semana")}
             aria-pressed={vista === "semana"}
             aria-label="Vista semana"
             className={`flex items-center justify-center gap-1 px-2.5 min-h-[44px] min-w-[44px] lg:min-h-[32px] lg:min-w-0 text-xs font-medium rounded-md transition ${
               vista === "semana"
-                ? "bg-white dark:bg-slate-600 text-gray-800 dark:text-slate-100 shadow-sm"
-                : "text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200"
+                ? "bg-white dark:bg-slate-600 text-slate-800 dark:text-slate-100 shadow-sm"
+                : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
             }`}
           >
             <CalendarDays size={13} />
@@ -236,8 +239,8 @@ export default function CalendarioCitas({ empleadoId, onCitaClick, onReagendar }
             aria-label="Vista día"
             className={`flex items-center justify-center gap-1 px-2.5 min-h-[44px] min-w-[44px] lg:min-h-[32px] lg:min-w-0 text-xs font-medium rounded-md transition ${
               vista === "dia"
-                ? "bg-white dark:bg-slate-600 text-gray-800 dark:text-slate-100 shadow-sm"
-                : "text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200"
+                ? "bg-white dark:bg-slate-600 text-slate-800 dark:text-slate-100 shadow-sm"
+                : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
             }`}
           >
             <List size={13} />
@@ -274,10 +277,10 @@ export default function CalendarioCitas({ empleadoId, onCitaClick, onReagendar }
 
       {/* ── Vista Semana ── */}
       {vista === "semana" && (
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-gray-100 dark:border-slate-700 overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-700 overflow-hidden">
         <div ref={scrollRef} className="overflow-y-auto" style={{ maxHeight: 620 }}>
         {/* Cabecera días */}
-        <div className="flex border-b border-gray-100 dark:border-slate-700 sticky top-0 bg-white dark:bg-slate-900 z-10">
+        <div className="flex border-b border-slate-100 dark:border-slate-700 sticky top-0 bg-white dark:bg-slate-900 z-10">
           <div className="w-12 shrink-0" />
           {dias.map((dia, i) => {
             const esHoy = dia.toDateString() === hoy.toDateString();
@@ -286,11 +289,11 @@ export default function CalendarioCitas({ empleadoId, onCitaClick, onReagendar }
               <button
                 key={i}
                 onClick={() => abrirDia(dia)}
-                className="flex-1 py-2 text-center border-l border-gray-100 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 transition flex flex-col items-center"
+                className="flex-1 py-2 text-center border-l border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition flex flex-col items-center"
               >
-                <p className="text-xs text-gray-400 dark:text-slate-500 uppercase">{DIAS_CORTOS[dia.getDay()]}</p>
+                <p className="text-xs text-slate-400 dark:text-slate-500 uppercase">{DIAS_CORTOS[dia.getDay()]}</p>
                 <div className={`w-7 h-7 rounded-full flex items-center justify-center mt-0.5 ${esHoy ? "bg-slate-700 dark:bg-slate-500" : ""}`}>
-                  <span className={`text-sm font-semibold ${esHoy ? "text-white" : "text-gray-700 dark:text-slate-300"}`}>{dia.getDate()}</span>
+                  <span className={`text-sm font-semibold ${esHoy ? "text-white" : "text-slate-700 dark:text-slate-300"}`}>{dia.getDate()}</span>
                 </div>
                 {badgeOcupacion(count)}
               </button>
@@ -304,7 +307,7 @@ export default function CalendarioCitas({ empleadoId, onCitaClick, onReagendar }
           <div className="w-12 shrink-0 relative bg-white dark:bg-slate-900" style={{ height: GRID_HEIGHT }}>
             {horas.map((h) => (
               <div key={h} className="absolute w-full pr-1.5" style={{ top: h === HORA_INICIO ? 2 : (h - HORA_INICIO) * PX_POR_HORA - 8 }}>
-                <span className="text-xs text-gray-400 dark:text-slate-600 float-right">{h === 12 ? "12 PM" : h > 12 ? `${h - 12} PM` : `${h} AM`}</span>
+                <span className="text-xs text-slate-400 dark:text-slate-600 float-right">{h === 12 ? "12 PM" : h > 12 ? `${h - 12} PM` : `${h} AM`}</span>
               </div>
             ))}
           </div>
@@ -316,7 +319,7 @@ export default function CalendarioCitas({ empleadoId, onCitaClick, onReagendar }
             return (
               <div
                 key={colIdx}
-                className={`flex-1 relative border-l border-gray-100 dark:border-slate-700/50 ${arrastrando && esDropTarget ? "bg-slate-700/5 dark:bg-slate-600/10" : ""}`}
+                className={`flex-1 relative border-l border-slate-100 dark:border-slate-700/50 ${arrastrando && esDropTarget ? "bg-slate-700/5 dark:bg-slate-600/10" : ""}`}
                 style={{ height: GRID_HEIGHT }}
                 onDragOver={(e) => {
                   if (!arrastrando) return;
@@ -340,7 +343,7 @@ export default function CalendarioCitas({ empleadoId, onCitaClick, onReagendar }
                 }}
               >
                 {horas.map((h) => (
-                  <div key={h} className="absolute w-full border-t border-gray-100 dark:border-slate-700/50" style={{ top: (h - HORA_INICIO) * PX_POR_HORA }} />
+                  <div key={h} className="absolute w-full border-t border-slate-100 dark:border-slate-700/50" style={{ top: (h - HORA_INICIO) * PX_POR_HORA }} />
                 ))}
                 {hoyEnSemana && indiceDiaHoy === colIdx && horaActualTop > 0 && horaActualTop < GRID_HEIGHT && (
                   <div className="absolute w-full z-20 pointer-events-none" style={{ top: horaActualTop }}>
@@ -370,16 +373,16 @@ export default function CalendarioCitas({ empleadoId, onCitaClick, onReagendar }
 
       {/* ── Vista Día ── */}
       {vista === "dia" && (
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-gray-100 dark:border-slate-700 overflow-hidden">
-          <div className="flex border-b border-gray-100 dark:border-slate-700 sticky top-0 bg-white dark:bg-slate-900 z-10">
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-700 overflow-hidden">
+          <div className="flex border-b border-slate-100 dark:border-slate-700 sticky top-0 bg-white dark:bg-slate-900 z-10">
             <div className="w-12 shrink-0" />
-            <div className="flex-1 py-3 text-center border-l border-gray-100 dark:border-slate-700">
-              <p className={`text-sm font-semibold ${diaActivo.toDateString() === hoy.toDateString() ? "text-slate-700 dark:text-slate-300" : "text-gray-800 dark:text-slate-200"}`}>
+            <div className="flex-1 py-3 text-center border-l border-slate-100 dark:border-slate-700">
+              <p className={`text-sm font-semibold ${diaActivo.toDateString() === hoy.toDateString() ? "text-slate-700 dark:text-slate-300" : "text-slate-800 dark:text-slate-200"}`}>
                 {diaActivoLabel}
               </p>
               {(() => {
                 const n = citasDelDia(diaActivo).length;
-                return <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">{n} {n === 1 ? "cita" : "citas"}</p>;
+                return <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{n} {(n === 1 ? terms.cita : terms.citas).toLowerCase()}</p>;
               })()}
             </div>
           </div>
@@ -388,14 +391,14 @@ export default function CalendarioCitas({ empleadoId, onCitaClick, onReagendar }
             <div className="w-12 shrink-0 relative bg-white dark:bg-slate-900" style={{ height: GRID_HEIGHT }}>
               {horas.map((h) => (
                 <div key={h} className="absolute w-full pr-1.5" style={{ top: (h - HORA_INICIO) * PX_POR_HORA - 8 }}>
-                  <span className="text-xs text-gray-400 dark:text-slate-600 float-right">{h === 12 ? "12 PM" : h > 12 ? `${h - 12} PM` : `${h} AM`}</span>
+                  <span className="text-xs text-slate-400 dark:text-slate-600 float-right">{h === 12 ? "12 PM" : h > 12 ? `${h - 12} PM` : `${h} AM`}</span>
                 </div>
               ))}
             </div>
 
-            <div className="flex-1 relative border-l border-gray-100 dark:border-slate-700/50" style={{ height: GRID_HEIGHT }}>
+            <div className="flex-1 relative border-l border-slate-100 dark:border-slate-700/50" style={{ height: GRID_HEIGHT }}>
               {horas.map((h) => (
-                <div key={h} className="absolute w-full border-t border-gray-100 dark:border-slate-700/50" style={{ top: (h - HORA_INICIO) * PX_POR_HORA }} />
+                <div key={h} className="absolute w-full border-t border-slate-100 dark:border-slate-700/50" style={{ top: (h - HORA_INICIO) * PX_POR_HORA }} />
               ))}
               {diaActivo.toDateString() === hoy.toDateString() && horaActualTop > 0 && horaActualTop < GRID_HEIGHT && (
                 <div className="absolute w-full z-20 pointer-events-none" style={{ top: horaActualTop }}>

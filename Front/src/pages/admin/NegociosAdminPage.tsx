@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useDisponibilidadSlug } from "../../hooks/useDisponibilidadSlug";
 import { useQuery, useMutation, useMutationState, useQueryClient } from "@tanstack/react-query";
 import Select from "../../components/ui/Select";
 import { useForm, type Resolver } from "react-hook-form";
@@ -39,7 +40,7 @@ const ESTADO_BADGE: Record<string, { label: string; className: string }> = {
   Activa: { label: 'Activa', className: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
   PorVencer: { label: 'Por vencer', className: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
   Vencida: { label: 'Vencida', className: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
-  SinSuscripcion: { label: 'Sin suscripción', className: 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400' },
+  SinSuscripcion: { label: 'Sin suscripción', className: 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400' },
 };
 
 const PRECIO_EXTRA_EMP = 50;
@@ -76,10 +77,10 @@ const ACCION_TARJETA =
 /** Campo de texto de los modales: mismo alto táctil y mismo modo oscuro. */
 const CAMPO_MODAL =
   "w-full min-h-[44px] px-3 py-2 rounded-lg border text-sm outline-none transition-colors " +
-  "bg-white dark:bg-slate-800 text-gray-800 dark:text-gray-100 " +
-  "placeholder:text-gray-400 dark:placeholder:text-slate-500 " +
+  "bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 " +
+  "placeholder:text-slate-400 dark:placeholder:text-slate-500 " +
   "focus:border-slate-700 dark:focus:border-slate-400";
-const CAMPO_OK = "border-gray-200 dark:border-slate-600";
+const CAMPO_OK = "border-slate-200 dark:border-slate-600";
 /** Clave compartida por activar/desactivar, para saber qué tarjetas están en curso. */
 const CLAVE_ESTADO_NEGOCIO = ["admin", "estado-negocio"] as const;
 const CAMPO_ERROR = "border-red-400 bg-red-50 dark:bg-red-950/30";
@@ -91,8 +92,8 @@ const BOTON_PIE =
   "disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 " +
   "focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40";
 const BOTON_PIE_SECUNDARIO =
-  `${BOTON_PIE} border-2 font-medium border-gray-200 dark:border-slate-600 ` +
-  "text-gray-600 dark:text-slate-300 hover:border-gray-300 dark:hover:border-slate-500";
+  `${BOTON_PIE} border-2 font-medium border-slate-200 dark:border-slate-600 ` +
+  "text-slate-600 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-500";
 const BOTON_PIE_PRIMARIO =
   `${BOTON_PIE} font-semibold bg-slate-700 hover:bg-slate-800 text-white ` +
   "dark:bg-slate-600 dark:hover:bg-slate-500";
@@ -187,7 +188,7 @@ function BadgeSuscripcion({
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 dark:bg-slate-700 dark:text-slate-400">
+    <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400">
       <Clock size={10} aria-hidden="true" /> Sin suscripción
     </span>
   );
@@ -355,9 +356,9 @@ function ModalSuscripcion({
     <div className="space-y-4">
 
       {/* ── Status header — always visible ── */}
-      <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 flex items-center justify-between gap-3">
+      <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 flex items-center justify-between gap-3">
         <div>
-          <p className="text-xs text-gray-400 mb-1">Estado de suscripción</p>
+          <p className="text-xs text-slate-400 mb-1">Estado de suscripción</p>
           <BadgeSuscripcion
             estado={estado}
             dias={suscripcion?.diasRestantes ?? null}
@@ -366,8 +367,8 @@ function ModalSuscripcion({
         </div>
         {vencimiento && (
           <div className="text-right">
-            <p className="text-xs text-gray-400">Vence</p>
-            <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+            <p className="text-xs text-slate-400">Vence</p>
+            <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
               {esPermanente ? "Sin vencimiento" : formatFechaMx(vencimiento)}
             </p>
           </div>
@@ -390,7 +391,7 @@ function ModalSuscripcion({
         <div className="space-y-4">
           {/* Plan selector */}
           <div>
-            <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Plan</p>
+            <p className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">Plan</p>
             <div className="flex gap-2 flex-wrap">
               {planes.map(p => (
                 <button
@@ -401,22 +402,22 @@ function ModalSuscripcion({
                   aria-pressed={negocio.planId === p.id}
                   className={`min-h-[44px] lg:min-h-[36px] px-3.5 rounded-full text-xs font-medium border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40 ${
                     negocio.planId === p.id
-                      ? 'bg-gray-900 text-white border-gray-900 dark:bg-gray-100 dark:text-gray-900 dark:border-gray-100'
-                      : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-gray-500'
+                      ? 'bg-slate-900 text-white border-slate-900 dark:bg-slate-100 dark:text-slate-900 dark:border-slate-100'
+                      : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-600 hover:border-slate-500'
                   }`}
                 >
                   {p.nombre}
                 </button>
               ))}
               {planes.length === 0 && (
-                <span className="text-xs text-gray-400">Cargando planes…</span>
+                <span className="text-xs text-slate-400">Cargando planes…</span>
               )}
             </div>
           </div>
 
           {/* Sector selector */}
           <div>
-            <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Sector</p>
+            <p className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">Sector</p>
             <div className="flex gap-2">
               {(['belleza', 'salud'] as const).map(s => (
                 <button
@@ -427,8 +428,8 @@ function ModalSuscripcion({
                   aria-pressed={suscripcion?.sector === s}
                   className={`min-h-[44px] lg:min-h-[36px] px-3.5 rounded-full text-xs font-medium border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40 ${
                     suscripcion?.sector === s
-                      ? 'bg-gray-900 text-white border-gray-900 dark:bg-gray-100 dark:text-gray-900 dark:border-gray-100'
-                      : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-indigo-400'
+                      ? 'bg-slate-900 text-white border-slate-900 dark:bg-slate-100 dark:text-slate-900 dark:border-slate-100'
+                      : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-600 hover:border-indigo-400'
                   }`}
                 >
                   {s === 'salud' ? 'Salud' : 'Belleza'}
@@ -446,7 +447,7 @@ function ModalSuscripcion({
                     type="button"
                     onClick={() => handleSetSector(sectorPorConfirmar)}
                     disabled={guardandoSector}
-                    className="min-h-[44px] lg:min-h-[36px] px-3.5 rounded-lg bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900 font-semibold disabled:opacity-50"
+                    className="min-h-[44px] lg:min-h-[36px] px-3.5 rounded-lg bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 font-semibold disabled:opacity-50"
                   >
                     {guardandoSector ? 'Guardando…' : 'Cambiar sector'}
                   </button>
@@ -454,7 +455,7 @@ function ModalSuscripcion({
                     type="button"
                     onClick={() => setSectorPorConfirmar(null)}
                     disabled={guardandoSector}
-                    className="min-h-[44px] lg:min-h-[36px] px-3.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300"
+                    className="min-h-[44px] lg:min-h-[36px] px-3.5 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300"
                   >
                     Volver
                   </button>
@@ -464,21 +465,21 @@ function ModalSuscripcion({
           </div>
 
           {/* Billing summary */}
-          <div data-testid="billing-summary" className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 space-y-2 text-sm">
+          <div data-testid="billing-summary" className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-gray-500 dark:text-gray-400">Plan</span>
-              <span className="font-medium text-gray-800 dark:text-gray-200">
+              <span className="text-slate-500 dark:text-slate-400">Plan</span>
+              <span className="font-medium text-slate-800 dark:text-slate-200">
                 {suscripcion?.planNombre ?? '—'} · {formatPrecio(precioBase)}/mes
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500 dark:text-gray-400">Emp. base</span>
-              <span className="font-medium text-gray-800 dark:text-gray-200">
+              <span className="text-slate-500 dark:text-slate-400">Emp. base</span>
+              <span className="font-medium text-slate-800 dark:text-slate-200">
                 {suscripcion?.maxEmpleadosBase ?? 0}
               </span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-gray-500 dark:text-gray-400">Emp. extra</span>
+              <span className="text-slate-500 dark:text-slate-400">Emp. extra</span>
               <div className="flex items-center gap-2">
                 <input
                   type="number"
@@ -494,16 +495,16 @@ function ModalSuscripcion({
                   }}
                   onBlur={e => guardarEmpleadosExtra(Math.max(0, Number(e.target.value)))}
                   disabled={mutarEmpleadosExtra.isPending}
-                  className="w-16 text-right rounded-lg border border-gray-300 dark:border-gray-600 px-2 py-0.5 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                  className="w-16 text-right rounded-lg border border-slate-300 dark:border-slate-600 px-2 py-0.5 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200"
                 />
                 {empleadosExtra > 0 && (
-                  <span className="text-xs text-gray-400">+{formatPrecio(empleadosExtra * PRECIO_EXTRA_EMP)}/mes</span>
+                  <span className="text-xs text-slate-400">+{formatPrecio(empleadosExtra * PRECIO_EXTRA_EMP)}/mes</span>
                 )}
               </div>
             </div>
-            <div className="border-t border-gray-200 dark:border-gray-700 pt-2 flex justify-between font-semibold">
-              <span className="text-gray-700 dark:text-gray-300">Total mensual</span>
-              <span className="text-gray-900 dark:text-gray-100">{formatPrecio(totalMensual)}/mes</span>
+            <div className="border-t border-slate-200 dark:border-slate-700 pt-2 flex justify-between font-semibold">
+              <span className="text-slate-700 dark:text-slate-300">Total mensual</span>
+              <span className="text-slate-900 dark:text-slate-100">{formatPrecio(totalMensual)}/mes</span>
             </div>
           </div>
         </div>
@@ -514,7 +515,7 @@ function ModalSuscripcion({
         <div className="space-y-5">
           {/* Meses selector */}
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-3">Registrar pago</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-3">Registrar pago</p>
             <div className="flex gap-2 mb-2">
               {[1, 3, 6, 12].map((m) => (
                 <button
@@ -524,8 +525,8 @@ function ModalSuscripcion({
                   aria-pressed={meses === m}
                   className={`flex-1 min-h-[44px] lg:min-h-[36px] rounded-lg text-xs font-bold border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40 ${
                     meses === m
-                      ? "bg-gray-900 text-white border-gray-900 dark:bg-gray-100 dark:text-gray-900 dark:border-gray-100"
-                      : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:border-gray-400"
+                      ? "bg-slate-900 text-white border-slate-900 dark:bg-slate-100 dark:text-slate-900 dark:border-slate-100"
+                      : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-slate-400"
                   }`}
                 >
                   {m === 12 ? "1 año" : `${m} mes${m > 1 ? "es" : ""}`}
@@ -539,7 +540,7 @@ function ModalSuscripcion({
               className={`w-full min-h-[44px] lg:min-h-[36px] rounded-lg text-xs font-bold border transition mb-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40 ${
                 meses === LIFETIME_SENTINEL
                   ? "bg-amber-600 text-white border-amber-600"
-                  : "bg-white dark:bg-gray-800 text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/20"
+                  : "bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/20"
               }`}
             >
               De por vida
@@ -547,7 +548,7 @@ function ModalSuscripcion({
 
             <div className="grid grid-cols-2 gap-3 mb-3">
               <div>
-                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Monto (MXN)</label>
+                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Monto (MXN)</label>
                 <input
                   type="text"
                   inputMode="decimal"
@@ -560,7 +561,7 @@ function ModalSuscripcion({
                 )}
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Método / Notas</label>
+                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Método / Notas</label>
                 <input
                   type="text"
                   value={notas}
@@ -587,59 +588,59 @@ function ModalSuscripcion({
 
           {/* Historial */}
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Historial de pagos</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2">Historial de pagos</p>
             {cargandoHistorial ? (
-              <p className="text-xs text-gray-400 py-4 text-center">Cargando historial…</p>
+              <p className="text-xs text-slate-400 py-4 text-center">Cargando historial…</p>
             ) : historial.length === 0 ? (
-              <p className="text-xs text-gray-400 py-4 text-center">Sin pagos registrados</p>
+              <p className="text-xs text-slate-400 py-4 text-center">Sin pagos registrados</p>
             ) : (
-              <div className="divide-y divide-gray-100 dark:divide-gray-700 border border-gray-100 dark:border-gray-700 rounded-xl overflow-hidden">
+              <div className="divide-y divide-slate-100 dark:divide-slate-700 border border-slate-100 dark:border-slate-700 rounded-xl overflow-hidden">
                 {paginaHistorial.visibles.map((pago) => {
                   const enEdicion = editandoId === pago.id;
                   const enConfirmar = confirmandoEliminarId === pago.id;
 
                   if (enEdicion) {
                     return (
-                      <div key={pago.id} className="px-4 py-3 bg-gray-50 dark:bg-gray-800/60 space-y-2">
+                      <div key={pago.id} className="px-4 py-3 bg-slate-50 dark:bg-slate-800/60 space-y-2">
                         <div className="grid grid-cols-2 gap-2">
                           <div>
-                            <label className="block text-[10px] font-medium text-gray-500 dark:text-gray-400 mb-0.5">Monto (MXN)</label>
+                            <label className="block text-[10px] font-medium text-slate-500 dark:text-slate-400 mb-0.5">Monto (MXN)</label>
                             <input
                               type="text"
                               inputMode="decimal"
                               value={editForm.monto}
                               onChange={e => setEditForm(f => ({ ...f, monto: e.target.value }))}
-                              className="w-full px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs outline-none focus:border-gray-400"
+                              className="w-full px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs outline-none focus:border-slate-400"
                             />
                           </div>
                           <div>
-                            <label className="block text-[10px] font-medium text-gray-500 dark:text-gray-400 mb-0.5">Notas</label>
+                            <label className="block text-[10px] font-medium text-slate-500 dark:text-slate-400 mb-0.5">Notas</label>
                             <input
                               type="text"
                               value={editForm.notas}
                               onChange={e => setEditForm(f => ({ ...f, notas: e.target.value }))}
                               placeholder="Efectivo, transferencia…"
-                              className="w-full px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs outline-none focus:border-gray-400"
+                              className="w-full px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs outline-none focus:border-slate-400"
                             />
                           </div>
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                           <div>
-                            <label className="block text-[10px] font-medium text-gray-500 dark:text-gray-400 mb-0.5">Período desde</label>
+                            <label className="block text-[10px] font-medium text-slate-500 dark:text-slate-400 mb-0.5">Período desde</label>
                             <input
                               type="date"
                               value={editForm.desde}
                               onChange={e => setEditForm(f => ({ ...f, desde: e.target.value }))}
-                              className="w-full px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs outline-none focus:border-gray-400"
+                              className="w-full px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs outline-none focus:border-slate-400"
                             />
                           </div>
                           <div>
-                            <label className="block text-[10px] font-medium text-gray-500 dark:text-gray-400 mb-0.5">Período hasta</label>
+                            <label className="block text-[10px] font-medium text-slate-500 dark:text-slate-400 mb-0.5">Período hasta</label>
                             <input
                               type="date"
                               value={editForm.hasta}
                               onChange={e => setEditForm(f => ({ ...f, hasta: e.target.value }))}
-                              className="w-full px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs outline-none focus:border-gray-400"
+                              className="w-full px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs outline-none focus:border-slate-400"
                             />
                           </div>
                         </div>
@@ -658,13 +659,13 @@ function ModalSuscripcion({
                               },
                             })}
                             disabled={mutarEditar.isPending || !!errorEdicion}
-                            className="flex-1 py-1.5 rounded-lg bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-xs font-semibold hover:bg-gray-700 dark:hover:bg-gray-200 disabled:opacity-50 transition"
+                            className="flex-1 py-1.5 rounded-lg bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-xs font-semibold hover:bg-slate-700 dark:hover:bg-slate-200 disabled:opacity-50 transition"
                           >
                             {mutarEditar.isPending ? "Guardando…" : "Guardar cambios"}
                           </button>
                           <button
                             onClick={() => setEditandoId(null)}
-                            className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 text-xs hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+                            className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-400 text-xs hover:bg-slate-50 dark:hover:bg-slate-700 transition"
                           >
                             Cancelar
                           </button>
@@ -674,22 +675,22 @@ function ModalSuscripcion({
                   }
 
                   return (
-                    <div key={pago.id} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition">
+                    <div key={pago.id} className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-bold font-mono bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 px-1.5 py-0.5 rounded">
+                          <span className="text-[10px] font-bold font-mono bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded">
                             #{String(pago.numeroPago).padStart(3, "0")}
                           </span>
-                          <span className="text-xs font-semibold text-gray-800 dark:text-gray-200">
+                          <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
                             ${pago.monto.toLocaleString("es-MX", { minimumFractionDigits: 2 })} MXN
                           </span>
-                          <span className="text-[10px] text-gray-400">
+                          <span className="text-[10px] text-slate-400">
                             · {pago.mesesPagados >= 600 ? "De por vida" : pago.mesesPagados === 1 ? "1 mes" : `${pago.mesesPagados} meses`}
                           </span>
                         </div>
-                        <p className="text-[11px] text-gray-400 mt-0.5">
+                        <p className="text-[11px] text-slate-400 mt-0.5">
                           {formatFechaMx(pago.periodoDesde)} – {formatFechaMx(pago.periodoHasta)}
-                          {pago.notas && <span className="ml-2 text-gray-400">· {pago.notas}</span>}
+                          {pago.notas && <span className="ml-2 text-slate-400">· {pago.notas}</span>}
                         </p>
                         {enConfirmar && (
                           <div className="flex items-center gap-2 mt-2">
@@ -703,7 +704,7 @@ function ModalSuscripcion({
                             </button>
                             <button
                               onClick={() => setConfirmandoEliminarId(null)}
-                              className="text-[11px] text-gray-400 hover:underline"
+                              className="text-[11px] text-slate-400 hover:underline"
                             >
                               Cancelar
                             </button>
@@ -715,7 +716,7 @@ function ModalSuscripcion({
                           onClick={() => imprimirComprobante(pago)}
                           aria-label={`Imprimir comprobante del pago ${pago.numeroPago}`}
                           title="Imprimir comprobante"
-                          className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+                          className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
                         >
                           <Printer size={14} />
                         </button>
@@ -723,7 +724,7 @@ function ModalSuscripcion({
                           onClick={() => iniciarEdicion(pago)}
                           aria-label={`Editar el pago ${pago.numeroPago}`}
                           title="Editar pago"
-                          className="text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+                          className="text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
                         >
                           <Pencil size={14} />
                         </button>
@@ -734,10 +735,10 @@ function ModalSuscripcion({
                           }}
                           aria-label={`Eliminar el pago ${pago.numeroPago}`}
                           title="Eliminar pago"
-                          className={`transition p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 ${
+                          className={`transition p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 ${
                             enConfirmar
                               ? "text-red-500 dark:text-red-400"
-                              : "text-gray-400 hover:text-red-500 dark:hover:text-red-400"
+                              : "text-slate-400 hover:text-red-500 dark:hover:text-red-400"
                           }`}
                         >
                           <Trash2 size={14} />
@@ -798,7 +799,7 @@ function TarjetaNegocio({
   const iniciales = negocio.nombre.split(" ").slice(0, 2).map((p) => p[0]).join("").toUpperCase();
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden flex flex-col">
+    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col">
       {/* Header */}
       <div className="p-4 flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center overflow-hidden shrink-0">
@@ -809,8 +810,8 @@ function TarjetaNegocio({
           )}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-gray-900 dark:text-white text-sm truncate">{negocio.nombre}</p>
-          <p className="text-xs text-gray-400 truncate">{negocio.slug}</p>
+          <p className="font-semibold text-slate-900 dark:text-white text-sm truncate">{negocio.nombre}</p>
+          <p className="text-xs text-slate-400 truncate">{negocio.slug}</p>
         </div>
         <span
           className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
@@ -864,14 +865,14 @@ function TarjetaNegocio({
           <BarraProgreso valor={negocio.empleadosActivos} maximo={negocio.maxEmpleados} label="Empleados" />
         )}
         <div className="flex items-center gap-1.5 mt-1">
-          <span className="text-xs text-gray-400">Emails este mes:</span>
+          <span className="text-xs text-slate-400">Emails este mes:</span>
           <span
             className={`text-xs font-semibold ${
               negocio.emailsMes > 200
                 ? "text-red-600 dark:text-red-400"
                 : negocio.emailsMes > 100
                 ? "text-amber-600 dark:text-amber-400"
-                : "text-gray-600 dark:text-slate-300"
+                : "text-slate-600 dark:text-slate-300"
             }`}
           >
             {negocio.emailsMes}
@@ -885,7 +886,7 @@ function TarjetaNegocio({
           alta/baja arriba, lo cosmético abajo— y "Eliminar" sale de la rejilla
           a su propio renglón: es la única irreversible y no debe quedar a un
           dedo de distancia de las demás mientras se recorre la tarjeta. */}
-      <div className="border-t border-gray-100 dark:border-gray-700 px-4 py-3 space-y-1.5">
+      <div className="border-t border-slate-100 dark:border-slate-700 px-4 py-3 space-y-1.5">
         <div className="grid grid-cols-2 gap-1.5">
           <button
             onClick={onSuscripcion}
@@ -946,7 +947,7 @@ function TarjetaNegocio({
       </div>
 
       {/* Interruptores: una sola fila en vez de dos renglones con borde cada uno. */}
-      <div className="grid grid-cols-2 gap-x-3 px-4 py-2 border-t border-gray-100 dark:border-gray-700">
+      <div className="grid grid-cols-2 gap-x-3 px-4 py-2 border-t border-slate-100 dark:border-slate-700">
         <InterruptorTarjeta
           etiqueta="Módulo pagos"
           activo={!!negocio.moduloPagosHabilitado}
@@ -992,13 +993,13 @@ function InterruptorTarjeta({
       role="switch"
       aria-checked={activo}
       onClick={onToggle}
-      className={`flex items-center gap-2 min-h-[44px] lg:min-h-[36px] rounded-lg px-1 -mx-1 text-left transition-colors hover:bg-gray-50 dark:hover:bg-slate-700/40 focus-visible:outline-none focus-visible:ring-2 ${anillo}`}
+      className={`flex items-center gap-2 min-h-[44px] lg:min-h-[36px] rounded-lg px-1 -mx-1 text-left transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/40 focus-visible:outline-none focus-visible:ring-2 ${anillo}`}
     >
-      <span className="text-xs text-gray-500 dark:text-slate-400 flex-1 min-w-0 truncate">{etiqueta}</span>
+      <span className="text-xs text-slate-500 dark:text-slate-400 flex-1 min-w-0 truncate">{etiqueta}</span>
       <span
         aria-hidden="true"
         className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
-          activo ? colorActivo : "bg-gray-200 dark:bg-gray-700"
+          activo ? colorActivo : "bg-slate-200 dark:bg-slate-700"
         }`}
       >
         <span
@@ -1088,6 +1089,8 @@ export default function NegociosAdminPage() {
   });
 
   const formNegocio = useForm<NegocioForm>({ resolver: zodResolver(schemaNegocio) });
+  // Misma comprobación en vivo que el registro público (AP-23).
+  const slugNuevo = useDisponibilidadSlug(modalNegocio ? formNegocio.watch("slug") : undefined);
   const formPropietario = useForm<PropietarioForm>({ resolver: zodResolver(schemaPropietario) as Resolver<PropietarioForm> });
 
   const invalidar = () => {
@@ -1335,13 +1338,13 @@ export default function NegociosAdminPage() {
       {!isLoading && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
           {[
-            { label: "Total", value: String(metricas.length), color: "text-gray-700 dark:text-gray-200" },
+            { label: "Total", value: String(metricas.length), color: "text-slate-700 dark:text-slate-200" },
             { label: "Activos", value: String(metricas.filter(n => n.activo === 1).length), color: "text-emerald-600 dark:text-emerald-400" },
             { label: "Con plan", value: String(conPlan), color: "text-amber-600 dark:text-amber-400" },
-            { label: "Ingresos est.", value: formatPrecio(totalEstimado) + "/mes", color: "text-gray-900 dark:text-gray-100" },
+            { label: "Ingresos est.", value: formatPrecio(totalEstimado) + "/mes", color: "text-slate-900 dark:text-slate-100" },
           ].map(({ label, value, color }) => (
-            <div key={label} className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 px-4 py-3 min-w-0">
-              <p className="text-xs text-gray-400 dark:text-slate-400 mb-0.5 truncate">{label}</p>
+            <div key={label} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 px-4 py-3 min-w-0">
+              <p className="text-xs text-slate-400 dark:text-slate-400 mb-0.5 truncate">{label}</p>
               <p className={`text-lg font-bold truncate ${color}`}>{value}</p>
             </div>
           ))}
@@ -1405,9 +1408,9 @@ export default function NegociosAdminPage() {
         <>
           {/* Grid de tarjetas */}
           {isLoading ? (
-            <p className="text-gray-400 dark:text-slate-500">Cargando negocios...</p>
+            <p className="text-slate-400 dark:text-slate-500">Cargando negocios...</p>
           ) : metricasFiltradas.length === 0 ? (
-            <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700">
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700">
               {hayFiltros ? (
                 <EmptyState
                   variante="sinResultados"
@@ -1449,7 +1452,7 @@ export default function NegociosAdminPage() {
                 ))}
               </div>
               {paginaNegocios.totalPaginas > 1 && (
-                <div className="mt-2 bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700">
+                <div className="mt-2 bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700">
                   <Pagination
                     pagina={paginaNegocios.pagina}
                     totalPaginas={paginaNegocios.totalPaginas}
@@ -1468,7 +1471,7 @@ export default function NegociosAdminPage() {
       {tab === 'facturacion' && (
         <div>
           {suscripcionesFiltradas.length === 0 ? (
-            <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700">
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700">
               {hayFiltros ? (
                 <EmptyState
                   variante="sinResultados"
@@ -1485,11 +1488,11 @@ export default function NegociosAdminPage() {
               )}
             </div>
           ) : (
-            <div className="rounded-xl border border-gray-100 dark:border-slate-700 overflow-hidden">
+            <div className="rounded-xl border border-slate-100 dark:border-slate-700 overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="bg-gray-50 dark:bg-slate-800 text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wide">
+                  <tr className="bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wide">
                     <th className="px-4 py-3 text-left">Negocio</th>
                     <th className="px-4 py-3 text-left">Plan</th>
                     <th className="px-4 py-3 text-center">Emp. base</th>
@@ -1500,18 +1503,18 @@ export default function NegociosAdminPage() {
                     <th className="px-4 py-3"></th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                   {paginaFacturacion.visibles.map(s => {
                     const badge = ESTADO_BADGE[s.estado] ?? ESTADO_BADGE.SinSuscripcion;
                     return (
-                      <tr key={s.negocioId} className="bg-white dark:bg-slate-900 hover:bg-gray-50 dark:hover:bg-slate-800/60 transition">
+                      <tr key={s.negocioId} className="bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition">
                         {/* `whitespace-nowrap`: la tabla ya se desplaza en
                             horizontal; sin esto, a 390px el nombre se parte en
                             cuatro líneas y estira la fila en vez de aprovechar
                             el desplazamiento que ya existe. */}
-                        <td className="px-4 py-3 font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap">{s.negocioNombre}</td>
-                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400 whitespace-nowrap">{s.planNombre ?? '—'}</td>
-                        <td className="px-4 py-3 text-center text-gray-600 dark:text-gray-400">{s.maxEmpleadosBase}</td>
+                        <td className="px-4 py-3 font-medium text-slate-800 dark:text-slate-200 whitespace-nowrap">{s.negocioNombre}</td>
+                        <td className="px-4 py-3 text-slate-600 dark:text-slate-400 whitespace-nowrap">{s.planNombre ?? '—'}</td>
+                        <td className="px-4 py-3 text-center text-slate-600 dark:text-slate-400">{s.maxEmpleadosBase}</td>
                         <td className="px-4 py-3 text-center">
                           <input
                             type="number"
@@ -1530,13 +1533,13 @@ export default function NegociosAdminPage() {
                                   toast('No se pudo actualizar los empleados extra', 'error');
                                 });
                             }}
-                            className="w-14 text-center rounded-lg border border-gray-200 dark:border-gray-600 px-1.5 py-0.5 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-sm"
+                            className="w-14 text-center rounded-lg border border-slate-200 dark:border-slate-600 px-1.5 py-0.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-sm"
                           />
                         </td>
-                        <td className="px-4 py-3 text-right font-semibold text-gray-900 dark:text-gray-100">
+                        <td className="px-4 py-3 text-right font-semibold text-slate-900 dark:text-slate-100">
                           {formatPrecio(s.totalMensual)}
                         </td>
-                        <td className="px-4 py-3 text-center text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                        <td className="px-4 py-3 text-center text-slate-500 dark:text-slate-400 whitespace-nowrap">
                           {/* Un acceso de por vida vence el año 2126: la fecha
                               es cierta y no dice nada. */}
                           {(s.diasRestantes ?? 0) >= DIAS_DE_POR_VIDA
@@ -1571,11 +1574,11 @@ export default function NegociosAdminPage() {
                       y recortarlo al filtro haría que el mismo rótulo
                       significara cosas distintas según lo que esté escrito en
                       el buscador. */}
-                  <tr className="bg-gray-50 dark:bg-slate-800 font-semibold text-gray-700 dark:text-gray-300">
-                    <td colSpan={4} className="px-4 py-3 text-right text-xs uppercase tracking-wide text-gray-400 dark:text-slate-500">
+                  <tr className="bg-slate-50 dark:bg-slate-800 font-semibold text-slate-700 dark:text-slate-300">
+                    <td colSpan={4} className="px-4 py-3 text-right text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500">
                       Total estimado · {negociosConPlan} negocio{negociosConPlan !== 1 ? 's' : ''} con suscripción
                     </td>
-                    <td className="px-4 py-3 text-right text-gray-900 dark:text-gray-100 whitespace-nowrap">{formatPrecio(totalEstimado)}</td>
+                    <td className="px-4 py-3 text-right text-slate-900 dark:text-slate-100 whitespace-nowrap">{formatPrecio(totalEstimado)}</td>
                     <td colSpan={3}></td>
                   </tr>
                 </tfoot>
@@ -1637,7 +1640,7 @@ export default function NegociosAdminPage() {
       <Modal abierto={modalNegocio} onCerrar={() => setModalNegocio(false)} titulo="Nuevo negocio">
         <form onSubmit={formNegocio.handleSubmit((d) => crearNegocio(d))} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre *</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nombre *</label>
             <input
               {...formNegocio.register("nombre")}
               placeholder="Barbería Luis"
@@ -1649,9 +1652,9 @@ export default function NegociosAdminPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               Slug *{" "}
-              <span className="font-normal text-gray-400">
+              <span className="font-normal text-slate-400">
                 (aparece en la URL: /b/<strong>slug</strong>)
               </span>
             </label>
@@ -1660,21 +1663,35 @@ export default function NegociosAdminPage() {
               placeholder="barberia-luis"
               className={`${CAMPO_MODAL} font-mono ${formNegocio.formState.errors.slug ? CAMPO_ERROR : CAMPO_OK}`}
             />
-            {formNegocio.formState.errors.slug && (
-              <p className="text-red-500 text-xs mt-1">{formNegocio.formState.errors.slug.message}</p>
+            {formNegocio.formState.errors.slug ? (
+              <p className="text-red-600 dark:text-red-400 text-xs mt-1">{formNegocio.formState.errors.slug.message}</p>
+            ) : (
+              <p className="text-xs mt-1 min-h-[1rem]" aria-live="polite">
+                {slugNuevo === "checking" && <span className="text-muted-foreground">Verificando…</span>}
+                {slugNuevo === "available" && (
+                  <span className="inline-flex items-center gap-1 text-green-700 dark:text-green-400">
+                    <CheckCircle size={12} aria-hidden="true" /> Disponible
+                  </span>
+                )}
+                {slugNuevo === "taken" && (
+                  <span className="inline-flex items-center gap-1 text-red-600 dark:text-red-400">
+                    <XCircle size={12} aria-hidden="true" /> Ya está en uso — elige otro
+                  </span>
+                )}
+              </p>
             )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Teléfono</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Teléfono</label>
               <input
                 {...formNegocio.register("telefono")}
                 className={`${CAMPO_MODAL} ${CAMPO_OK}`}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Correo</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Correo</label>
               <input
                 type="email"
                 {...formNegocio.register("email")}
@@ -1684,7 +1701,7 @@ export default function NegociosAdminPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Plan</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Plan</label>
             <Select {...formNegocio.register("planId")} className="w-full">
               <option value="">Sin plan asignado</option>
               {planes.map((p: PlanDto) => (
@@ -1696,7 +1713,7 @@ export default function NegociosAdminPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Descripción</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Descripción</label>
             <textarea
               rows={2}
               {...formNegocio.register("descripcion")}
@@ -1706,7 +1723,7 @@ export default function NegociosAdminPage() {
 
           <button
             type="submit"
-            disabled={creandoNegocio}
+            disabled={creandoNegocio || slugNuevo === "taken" || slugNuevo === "checking"}
             className={`${BOTON_PIE_PRIMARIO} w-full`}
           >
             {creandoNegocio ? "Creando..." : "Crear negocio"}
@@ -1742,11 +1759,11 @@ export default function NegociosAdminPage() {
 
                 {/* Password reset section */}
                 <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">
                     Establece una nueva contraseña para el acceso de{" "}
-                    <strong className="text-gray-700 dark:text-gray-200">{negocioSel.nombre}</strong>.
+                    <strong className="text-slate-700 dark:text-slate-200">{negocioSel.nombre}</strong>.
                   </p>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                     Nueva contraseña
                   </label>
                   <div className="relative mb-3">
@@ -1762,13 +1779,13 @@ export default function NegociosAdminPage() {
                       onMouseDown={e => e.preventDefault()}
                       onClick={() => setMostrarNuevaPassword(v => !v)}
                       aria-label={mostrarNuevaPassword ? "Ocultar la nueva contraseña" : "Mostrar la nueva contraseña"}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
                       tabIndex={-1}
                     >
                       {mostrarNuevaPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   </div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                     Confirmar contraseña
                   </label>
                   <div className="relative mb-3">
@@ -1784,7 +1801,7 @@ export default function NegociosAdminPage() {
                       onMouseDown={e => e.preventDefault()}
                       onClick={() => setMostrarConfirmarPassword(v => !v)}
                       aria-label={mostrarConfirmarPassword ? "Ocultar la confirmación" : "Mostrar la confirmación"}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
                       tabIndex={-1}
                     >
                       {mostrarConfirmarPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -1806,14 +1823,14 @@ export default function NegociosAdminPage() {
               </>
             ) : (
               <>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
+                <p className="text-sm text-slate-500 dark:text-slate-400">
                   Crea la cuenta de acceso para el propietario de{" "}
-                  <strong className="text-gray-700 dark:text-gray-200">{negocioSel.nombre}</strong>.
+                  <strong className="text-slate-700 dark:text-slate-200">{negocioSel.nombre}</strong>.
                 </p>
                 <form onSubmit={formPropietario.handleSubmit((d) => crearPropietario(d))} className="space-y-4">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre *</label>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nombre *</label>
                       <input
                         {...formPropietario.register("nombre")}
                         className={`${CAMPO_MODAL} ${formPropietario.formState.errors.nombre ? CAMPO_ERROR : CAMPO_OK}`}
@@ -1823,7 +1840,7 @@ export default function NegociosAdminPage() {
                       )}
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Apellido</label>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Apellido</label>
                       <input
                         {...formPropietario.register("apellido")}
                         className={`${CAMPO_MODAL} ${CAMPO_OK}`}
@@ -1831,7 +1848,7 @@ export default function NegociosAdminPage() {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Correo de acceso *</label>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Correo de acceso *</label>
                     <input
                       type="email"
                       {...formPropietario.register("email")}
@@ -1842,7 +1859,7 @@ export default function NegociosAdminPage() {
                     )}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Contraseña inicial *</label>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Contraseña inicial *</label>
                     <div className="relative">
                       <input
                         type={mostrarPasswordProp ? "text" : "password"}
@@ -1854,7 +1871,7 @@ export default function NegociosAdminPage() {
                         onMouseDown={e => e.preventDefault()}
                         onClick={() => setMostrarPasswordProp(v => !v)}
                         aria-label={mostrarPasswordProp ? "Ocultar la contraseña" : "Mostrar la contraseña"}
-                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
                         tabIndex={-1}
                       >
                         {mostrarPasswordProp ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -1892,11 +1909,11 @@ export default function NegociosAdminPage() {
       >
         {negocioSel && pasoEliminar === 1 && (
           <div className="space-y-4">
-            <p className="text-sm text-gray-600 dark:text-gray-400">
+            <p className="text-sm text-slate-600 dark:text-slate-400">
               Esta acción es permanente y eliminará todos los datos del negocio.
             </p>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 Escribe el nombre del negocio para confirmar:
               </label>
               <input
@@ -1919,7 +1936,7 @@ export default function NegociosAdminPage() {
                 disabled={nombreConfirmacion !== negocioSel.nombre}
                 className={BOTON_PIE_PRIMARIO}
               >
-                Continuar →
+                Continuar
               </button>
             </div>
           </div>
@@ -1927,12 +1944,12 @@ export default function NegociosAdminPage() {
         {negocioSel && pasoEliminar === 2 && (
           <div className="space-y-4">
             <div className="bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 rounded-xl p-4 text-center">
-              <p className="text-2xl mb-2">⚠️</p>
+              <AlertTriangle size={28} className="mx-auto mb-2 text-red-600 dark:text-red-400" aria-hidden="true" />
               <p className="text-sm font-semibold text-red-700 dark:text-red-400">Última oportunidad</p>
             </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
+            <p className="text-sm text-slate-600 dark:text-slate-400 text-center">
               Estás a punto de eliminar permanentemente{" "}
-              <strong className="text-gray-900 dark:text-white">"{negocioSel.nombre}"</strong>.{" "}
+              <strong className="text-slate-900 dark:text-white">"{negocioSel.nombre}"</strong>.{" "}
               Esta acción <strong>NO se puede deshacer</strong>.
             </p>
             <div className="flex gap-3">
@@ -1940,7 +1957,7 @@ export default function NegociosAdminPage() {
                 onClick={() => setPasoEliminar(1)}
                 className={BOTON_PIE_SECUNDARIO}
               >
-                ← Volver
+                Volver
               </button>
               <button
                 onClick={() => eliminarNegocio(negocioSel.id)}
@@ -1958,24 +1975,24 @@ export default function NegociosAdminPage() {
       <Modal abierto={modalColores} onCerrar={() => setModalColores(false)} titulo="Colores del negocio" ancho="sm">
         {negocioSel && (
           <div className="space-y-5">
-            <p className="text-sm text-gray-500 dark:text-slate-400">
+            <p className="text-sm text-slate-500 dark:text-slate-400">
               Personaliza los colores del panel de{" "}
-              <span className="font-semibold text-gray-800 dark:text-slate-200">{negocioSel.nombre}</span>.
+              <span className="font-semibold text-slate-800 dark:text-slate-200">{negocioSel.nombre}</span>.
             </p>
             <div>
-              <label htmlFor="color-primario" className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+              <label htmlFor="color-primario" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                 Color primario
               </label>
               <div className="flex gap-3 items-center">
                 <input id="color-primario" type="color" value={colorPrimario} onChange={(e) => setColorPrimario(e.target.value)}
-                  className="w-12 h-12 shrink-0 rounded-lg cursor-pointer border border-gray-200 dark:border-slate-600 p-0.5 bg-white dark:bg-slate-800" />
+                  className="w-12 h-12 shrink-0 rounded-lg cursor-pointer border border-slate-200 dark:border-slate-600 p-0.5 bg-white dark:bg-slate-800" />
                 <input type="text" value={colorPrimario} onChange={(e) => setColorPrimario(e.target.value)}
                   aria-label="Color primario en hexadecimal"
                   aria-invalid={!esColorHexValido(colorPrimario) || undefined}
                   aria-describedby={!esColorHexValido(colorPrimario) ? "color-primario-error" : undefined}
                   className={`${CAMPO_MODAL} ${esColorHexValido(colorPrimario) ? CAMPO_OK : CAMPO_ERROR} flex-1 min-w-0 font-mono uppercase`}
                   maxLength={7} placeholder="#334155" />
-                <div aria-hidden="true" className="w-10 h-10 rounded-lg border border-gray-200 dark:border-slate-600 shrink-0" style={{ backgroundColor: colorPrimario }} />
+                <div aria-hidden="true" className="w-10 h-10 rounded-lg border border-slate-200 dark:border-slate-600 shrink-0" style={{ backgroundColor: colorPrimario }} />
               </div>
               {!esColorHexValido(colorPrimario) && (
                 <p id="color-primario-error" role="alert" className="mt-1.5 text-xs text-red-700 dark:text-red-400">
@@ -1983,8 +2000,8 @@ export default function NegociosAdminPage() {
                 </p>
               )}
             </div>
-            <div className="rounded-xl border border-gray-100 dark:border-slate-700 p-3 bg-gray-50 dark:bg-slate-800/60">
-              <p className="text-xs text-gray-400 dark:text-slate-500 mb-2">Vista previa</p>
+            <div className="rounded-xl border border-slate-100 dark:border-slate-700 p-3 bg-slate-50 dark:bg-slate-800/60">
+              <p className="text-xs text-slate-400 dark:text-slate-500 mb-2">Vista previa</p>
               <div className="flex flex-col gap-1">
                 {["Inicio", "Citas", "Empleados", "Servicios"].map((item, i) => (
                   <div key={item} className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium"

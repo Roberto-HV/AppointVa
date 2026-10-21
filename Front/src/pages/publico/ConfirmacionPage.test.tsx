@@ -16,6 +16,7 @@ vi.mock("react-router-dom", async (importOriginal) => {
 vi.mock("../../api/publico", () => ({
   publicoApi: {
     obtenerCita: vi.fn(),
+    obtenerNegocio: vi.fn(),
     cancelarCita: vi.fn(),
     reagendarCita: vi.fn(),
   },
@@ -185,6 +186,32 @@ describe("ConfirmacionPage — banner sin email", () => {
     );
   });
 
+  it("si el portapapeles falla muestra el enlace para copiarlo a mano (BF-27)", async () => {
+    vi.mocked(navigator.clipboard.writeText).mockRejectedValue(new Error("denegado"));
+    vi.mocked(publicoApi.obtenerCita).mockResolvedValue({ ...mockCitaBase, emailCliente: undefined } as never);
+    renderConQuery();
+
+    fireEvent.click(await screen.findByRole("button", { name: "Copiar enlace de la cita" }));
+
+    const campo = await screen.findByLabelText(/No se pudo copiar/);
+    expect(campo).toHaveValue(`${window.location.origin}/cita/ABC123`);
+    expect(campo).toHaveAttribute("readonly");
+    expect(screen.queryByText("¡Enlace copiado!")).not.toBeInTheDocument();
+  });
+
+  it("el título de la pestaña nombra al negocio con el formato común", async () => {
+    vi.mocked(publicoApi.obtenerCita).mockResolvedValue({ ...mockCitaBase, emailCliente: "juan@test.com" } as never);
+    renderConQuery();
+    await waitFor(() => expect(document.title).toBe("Tu cita en Salón Test · AppointVa"));
+  });
+
+  it("usa el término del sector para quien atiende (BF-25)", async () => {
+    vi.mocked(publicoApi.obtenerNegocio).mockResolvedValue({ sector: "salud" } as never);
+    vi.mocked(publicoApi.obtenerCita).mockResolvedValue({ ...mockCitaBase, emailCliente: "juan@test.com" } as never);
+    renderConQuery();
+    expect(await screen.findByText("Profesional")).toBeInTheDocument();
+  });
+
   it("el enlace Ver mis citas apunta a /b/salon-test/mis-citas", async () => {
     vi.mocked(publicoApi.obtenerCita).mockResolvedValue({
       ...mockCitaBase,
@@ -280,7 +307,9 @@ describe("ConfirmacionPage — badge de estado", () => {
   it("confirmada usa los tokens de estado confirmado", async () => {
     vi.mocked(publicoApi.obtenerCita).mockResolvedValue({ ...mockCitaBase, emailCliente: "juan@test.com" } as never);
     renderConQuery();
-    const badge = await screen.findByText("✓ Confirmada");
+    const badge = (await screen.findByText("Estado")).nextElementSibling;
+    expect(badge).toHaveTextContent(/^Confirmada$/);
+    expect(badge?.textContent).not.toMatch(/[✓⏳]/);
     expect(badge).toHaveClass("bg-status-confirmed-bg", "text-status-confirmed-fg");
   });
 
@@ -289,7 +318,8 @@ describe("ConfirmacionPage — badge de estado", () => {
       ...mockCitaBase, emailCliente: "juan@test.com", estadoTexto: "Pendiente", estado: 0,
     } as never);
     renderConQuery();
-    const badge = await screen.findByText("⏳ Pendiente confirmación");
+    const badge = (await screen.findByText("Estado")).nextElementSibling;
+    expect(badge).toHaveTextContent(/^Pendiente$/);
     expect(badge).toHaveClass("bg-status-pending-bg", "text-status-pending-fg");
   });
 });

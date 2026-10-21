@@ -1,3 +1,4 @@
+import { Bell, Scissors, Check } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState, useEffect, useRef, useId, type ReactNode, type RefObject } from "react";
 import { precioVisible, formatMonto } from "../../lib/precios";
@@ -110,7 +111,7 @@ function PhoneMockup() {
       <div className="absolute inset-0 blur-3xl opacity-25 scale-90 -z-10" style={{ backgroundColor: GOLD, borderRadius: "50%" }} />
 
       <div className="absolute -top-5 -right-4 z-20 bg-white rounded-2xl shadow-2xl shadow-slate-200 px-3.5 py-2.5 flex items-center gap-2.5 min-w-max">
-        <div className="w-7 h-7 rounded-full bg-emerald-50 flex items-center justify-center text-sm">🔔</div>
+        <div className="w-7 h-7 rounded-full bg-emerald-50 flex items-center justify-center"><Bell size={14} className="text-emerald-700" aria-hidden="true" /></div>
         <div>
           <p className="text-[11px] font-bold text-slate-800 leading-none mb-0.5">Nueva cita confirmada</p>
           <p className="text-[10px] text-slate-400">Hace 2 minutos</p>
@@ -158,7 +159,7 @@ function PhoneMockup() {
           <div className="flex-1 px-4 flex flex-col min-h-0">
             <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest mb-2">Elige tu horario</p>
             <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl mb-3 self-start" style={{ backgroundColor: "#FEF9EC", border: "1px solid #F3E0A0" }}>
-              <span className="text-[10px]">✂</span>
+              <Scissors size={11} aria-hidden="true" style={{ color: "#92701A" }} />
               <span className="text-[10px] font-bold" style={{ color: "#92701A" }}>Corte · 45 min · $250 MXN</span>
             </div>
 
@@ -189,7 +190,7 @@ function PhoneMockup() {
                 <p className="text-[10px] font-bold text-slate-800 leading-none mb-0.5">Luis García</p>
                 <p className="text-[9px] text-slate-400">Tu barbero favorito</p>
               </div>
-              <div className="ml-auto"><span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600">✓</span></div>
+              <div className="ml-auto"><span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600"><Check size={10} strokeWidth={3} aria-hidden="true" /></span></div>
             </div>
           </div>
 
@@ -428,7 +429,7 @@ export default function LandingPage() {
               <div>
                 <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold mb-8" style={{ backgroundColor: "#FEF9EC", color: "#92701A", border: "1px solid #F3E0A0" }}>
                   <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: GOLD, boxShadow: `0 0 6px ${GOLD}` }} />
-                  Para negocios de servicios · México 🇲🇽
+                  Para negocios de servicios · México
                 </div>
 
                 <h1 className="font-black leading-[1.02] tracking-tight mb-7" style={{ fontSize: "clamp(3rem, 6vw, 4.25rem)" }}>
@@ -730,7 +731,7 @@ export default function LandingPage() {
             </div>
 
             <div className="border-t border-white/5 pt-6 flex flex-col md:flex-row items-center justify-between gap-3">
-              <p className="text-xs text-slate-600">© 2026 AppointVa · Hecho en México 🇲🇽</p>
+              <p className="text-xs text-slate-600">© 2026 AppointVa · Hecho en México</p>
               <p className="text-xs text-slate-600">Sistema de gestión de citas para negocios de servicios</p>
             </div>
           </div>

@@ -1,7 +1,7 @@
 # Audit: Dashboard Core (shared Propietario / Empleado screens)
 
 - **Date:** 2026-10-20
-- **Status:** All severity-4 and severity-3 findings fixed in the working tree (pending commit, not yet verified in a rendered build), except the decision parts of DC-03 and DC-13. Severity-2 batch (2026-10-21, pending commit): DC-15–DC-19, DC-21–DC-27 and DC-31–DC-33 fixed; DC-20 partially (categorical chart/employee palette open); DC-14, DC-28, DC-29 and DC-30 only their non-decision parts. Toasts now carry actions (undo). Not rendered yet. Each finding carries its own **Status** line. Review follow-ups to fa0d25f (pending commit): Gantt stale-data banner, kiosk employee recovery, validated Citas URL params, separate pointer/focus toast pauses, `comoUtc` moved to `src/utils/fechas.ts`, remaining `data?.mensaje` casts in CitasPage and NegociosAdminPage replaced by `mensajeError`.
+- **Status:** All severity-4 and severity-3 findings fixed in the working tree (pending commit, not yet verified in a rendered build), except the decision parts of DC-03 and DC-13. Severity-2 batch (2026-10-21, pending commit): DC-15–DC-19, DC-21–DC-27 and DC-31–DC-33 fixed; DC-20 partially (categorical chart/employee palette open); DC-14, DC-28, DC-29 and DC-30 only their non-decision parts. Toasts now carry actions (undo). Not rendered yet. Each finding carries its own **Status** line. Review follow-ups to fa0d25f (pending commit): Gantt stale-data banner, kiosk employee recovery, validated Citas URL params, separate pointer/focus toast pauses, `comoUtc` moved to `src/utils/fechas.ts`, remaining `data?.mensaje` casts in CitasPage and NegociosAdminPage replaced by `mensajeError`. Severity-1 batch (2026-10-21, pending commit, not rendered): DC-34, DC-35 and DC-36 fixed; DC-20 finished (documented categorical palette). Still open: decision parts of DC-03, DC-13, DC-14, DC-28, DC-29, DC-30, and the backend-bound parts of DC-07/DC-33.
 - **Type:** Code-based audit. **Nothing was rendered.** No browser, screenshots, emulated viewports or assistive technology were used. Contrast ratios are calculated from the Tailwind/hex values in the source. Layout, touch and dark-mode behavior are inferred from class names and the token definitions in `src/index.css` / `tailwind.config.js`. Verify visual findings in a running build, in light and dark mode, before fixing them.
 
 ## Scope
@@ -240,7 +240,7 @@ Line numbers point to the current working tree. Findings marked **DECISION NEEDE
 - **Fix:** Create one `Campo` primitive (label + input + hint + error with generated ids) and migrate these forms. Move the ad-hoc `useState` forms in `CitasPage` to react-hook-form + zod like `MiPerfilPage`.
 
 ### DC-20: Off-system colors for primary actions and row tools
-- **Status:** Partially fixed (pending commit) — "Confirmar pago" and the push banner's "Activar notificaciones" use `bg-primary` (slate); earlier: reschedule/complete CTAs, "Guardar cierre", neutral row tools. Open: the chart (violet/teal) and employee hex palettes (Gantt, kiosk) still need a documented categorical token set in `src/index.css` + `docs/design-system.css`.
+- **Status:** Fixed (pending commit) — "Confirmar pago" and the push banner's "Activar notificaciones" use `bg-primary` (slate); earlier: reschedule/complete CTAs, "Guardar cierre", neutral row tools. Severity-1 batch: a documented categorical palette `--categoria-1…8` in `src/index.css` (light: 600/700 shades, white text ≥ 4.5:1; dark: 400 shades, slate-950 text), `tailwind.config.js` (`bg-categoria-N`) and `docs/design-system.css`; `COLORES_CATEGORIA`, `colorCategoria(i)` and `TEXTO_SOBRE_CATEGORIA` in `src/lib/temaGraficas.ts`. Used by the Gantt and kiosk employee avatars (same colour per position in both), the home trend chart (axes/grid from `EJE_TICK`/`REJILLA`), Reportes payment methods and the new/returning bars. The kiosk background is `bg-slate-950`. Test in `temaGraficas.test.ts`. Not rendered: check both themes.
 - **Principle:** Project rule (primary is slate); Refactoring UI "systems over one-offs"; impeccable Theming
 - **Location:** `src/pages/dashboard/CitasPage.tsx:1211`, `:1225`, `:1331` (violet reschedule CTA), `:922` (blue-600 complete), `:700-794` (green, blue, violet, slate, yellow, emerald, indigo, cyan and amber icon buttons in one row); `src/pages/dashboard/PagosPage.tsx:990` (blue-600 "Guardar cierre"), `:1162` (emerald "Confirmar pago"); `src/pages/dashboard/InicioPage.tsx:494-519` (violet/teal chart); `src/components/ui/NotificacionBanner.tsx:38`; `src/components/dashboard/GanttCitas.tsx:32-35`, `KioskPage.tsx:11-14` (employee hex palette), `KioskPage.tsx:87` (`#060C1A`, indigo)
 - **User impact:** Nine hues in one toolbar compete with the status colors that should carry meaning (DC-06). Primary buttons change color per modal, so "the button that commits" is not recognizable.
@@ -342,7 +342,7 @@ Line numbers point to the current working tree. Findings marked **DECISION NEEDE
 ## Severity 1: Cosmetic
 
 ### DC-34: Copy and terminology refinements
-- **Status:** Open
+- **Status:** Fixed (pending commit) — CitasPage uses `terms.empleado` (filter, table header, new/repeat modals) and `terms.cliente`/`terms.cita` in the edit-client copy ("otro cliente", "del cliente"); the employee nav reads "Mis {citas}"; calendar and Gantt counts take `terms` from CitasPage ("3 consultas" in salud); "No tienes citas hoy."; `dialog.tsx` `sr-only` "Cerrar"; typographic arrows removed from "Continuar", "Atrás", "Abrir imagen completa", admin delete steps, the detail page, kiosk exit and `Pagination` (lucide chevrons). The quick-action grid was already removed (DC-05). `impeccable clarify` was not run. Test in `CitasPage.test.tsx`.
 - **Principle:** Krug "get rid of half the words"; H4 Consistency; project rule (neutral professional Spanish)
 - **Location:**
   - Hard-coded terms that ignore `useSectorTerms`: "Profesional" (`CitasPage.tsx:367`, `:587`, `:909`, `:1007`), quick actions "Citas/Servicios/Clientes" (`InicioPage.tsx:357-360`), "Mis citas" (`DashboardLayout.tsx:122`), "cita/citas" (`CalendarioCitas.tsx:322`, `GanttCitas.tsx:157`)
@@ -352,13 +352,13 @@ Line numbers point to the current working tree. Findings marked **DECISION NEEDE
 - **Fix:** Apply the edits; run `impeccable clarify` across the dashboard once.
 
 ### DC-35: Emoji used as interface icons
-- **Status:** Partially fixed — 🧾, ⚠ (CitasPage) and 📅 (InicioPage) replaced with lucide icons.
+- **Status:** Fixed (pending commit) — earlier 🧾, ⚠ and 📅; now 🖥 "Recepción" (`Monitor`), kiosk "● En curso" / "✓ Lista" (dot + `Check`), the ranking medals in Reportes (position number), the usage bar's ⛔/⚠️ (`Ban`/`AlertTriangle`) and the satisfaction survey's 🎉 (`CheckCircle2`). The bell had been done in DC-18. Emoji remain only inside WhatsApp message texts (`utils/whatsapp.ts`), which are message content, not interface icons.
 - **Principle:** impeccable craft floor
 - **Location:** `CitasPage.tsx:488` (🖥), `:640` (🧾), `:878`, `:1136`, `:1410` (⚠); `InicioPage.tsx:543` (📅); `NotificacionesBell.tsx:106` (🗓 ❌); `KioskPage.tsx:200` (● ✓)
 - **Fix:** Use lucide `Monitor`, `Receipt`, `AlertTriangle`, `CalendarDays`, `XCircle`, `Check` (already a dependency), with text where meaning matters.
 
 ### DC-36: Three color vocabularies mixed in the same screens
-- **Status:** Open
+- **Status:** Fixed (pending commit) — every `gray-*` utility in the dashboard, admin, auth, layouts, shared components, lib and hooks became the same `slate-*` step (about 1,900 class names in 51 files, tests included); a search for gray utilities in `src` now only hits the public booking/landing files outside this audit and comments in `index.css`. Surfaces were not moved to shadcn tokens one by one. Not rendered: a visual pass in light and dark is still needed.
 - **Principle:** impeccable Implementation integrity
 - **Location:** `PagosPage.tsx:490-509` (shadcn `bg-card`/`text-muted-foreground`) next to `:677-700` (`bg-slate-800`, `text-gray-500`, `text-teal-600`); `gray-*` and `slate-*` alternate inside single components (`InicioPage.tsx:615-656`, `CitasPage.tsx` modals, `PagosPage.tsx:874-905` `dark:bg-gray-800`)
 - **Fix:** Standardize on shadcn tokens for surfaces and text and slate for the rest; gray should disappear from the dashboard. Fold this into the DC-11 theming pass.

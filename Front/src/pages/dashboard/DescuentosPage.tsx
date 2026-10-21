@@ -172,7 +172,7 @@ export default function DescuentosPage() {
         <form noValidate onSubmit={handleSubmit((d) => mutCrear.mutate(d))} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label htmlFor={id("codigo")} className="text-sm font-medium text-gray-700 dark:text-gray-300">Código</label>
+              <label htmlFor={id("codigo")} className="text-sm font-medium text-slate-700 dark:text-slate-300">Código</label>
               <input
                 id={id("codigo")}
                 value={codigo}
@@ -186,7 +186,7 @@ export default function DescuentosPage() {
               {errorDe("codigo")}
             </div>
             <div>
-              <label htmlFor={id("descripcion")} className="text-sm font-medium text-gray-700 dark:text-gray-300">Descripción (opcional)</label>
+              <label htmlFor={id("descripcion")} className="text-sm font-medium text-slate-700 dark:text-slate-300">Descripción (opcional)</label>
               <input
                 id={id("descripcion")}
                 {...register("descripcion")}
@@ -198,13 +198,13 @@ export default function DescuentosPage() {
               {errorDe("descripcion")}
             </div>
             <div>
-              <label htmlFor={id("tipo")} className="text-sm font-medium text-gray-700 dark:text-gray-300">Tipo</label>
+              <label htmlFor={id("tipo")} className="text-sm font-medium text-slate-700 dark:text-slate-300">Tipo</label>
               <Select id={id("tipo")} {...register("tipo")} value={tipo} className="mt-1 w-full">
                 {TIPOS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
               </Select>
             </div>
             <div>
-              <label htmlFor={id("valor")} className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label htmlFor={id("valor")} className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Valor {tipo === "Porcentaje" ? "(%)" : "($)"}
               </label>
               <input
@@ -221,7 +221,7 @@ export default function DescuentosPage() {
               {errorDe("valor")}
             </div>
             <div>
-              <label htmlFor={id("usoMaximo")} className="text-sm font-medium text-gray-700 dark:text-gray-300">Límite de usos (opcional)</label>
+              <label htmlFor={id("usoMaximo")} className="text-sm font-medium text-slate-700 dark:text-slate-300">Límite de usos (opcional)</label>
               <input
                 id={id("usoMaximo")}
                 type="number"
@@ -235,7 +235,7 @@ export default function DescuentosPage() {
               {errorDe("usoMaximo")}
             </div>
             <div>
-              <span id={id("fecha-etiqueta")} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <span id={id("fecha-etiqueta")} className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 Válido hasta (incluido, opcional)
               </span>
               <DatePicker
@@ -276,7 +276,7 @@ export default function DescuentosPage() {
       ) : isError ? (
         <ErrorCarga mensaje="No se pudieron cargar los cupones." onReintentar={() => refetch()} reintentando={isFetching} />
       ) : descuentos.length === 0 ? (
-        <div className="text-center py-16 text-gray-500 dark:text-gray-400">
+        <div className="text-center py-16 text-slate-500 dark:text-slate-400">
           <Tag size={40} className="mx-auto mb-3 opacity-30" aria-hidden="true" />
           <p className="font-medium">No hay cupones configurados</p>
           <p className="text-sm mt-1">Crea cupones para ofrecer descuentos a tus clientes</p>
@@ -285,7 +285,7 @@ export default function DescuentosPage() {
         <>
           {activosVisibles.length > 0 && (
             <div className="space-y-3">
-              <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Activos · {activos.length} en total</h2>
+              <h2 className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Activos · {activos.length} en total</h2>
               {activosVisibles.map((d) => (
                 <DescuentoRow
                   key={d.id}
@@ -299,7 +299,7 @@ export default function DescuentosPage() {
           )}
           {inactivosVisibles.length > 0 && (
             <div className="space-y-3">
-              <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Inactivos / expirados · {inactivos.length} en total</h2>
+              <h2 className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Inactivos / expirados · {inactivos.length} en total</h2>
               {inactivosVisibles.map((d) => (
                 <DescuentoRow
                   key={d.id}
@@ -312,7 +312,7 @@ export default function DescuentosPage() {
             </div>
           )}
           {paginados.totalPaginas > 1 && (
-            <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-xl">
+            <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl">
               <Pagination
                 pagina={paginados.pagina}
                 totalPaginas={paginados.totalPaginas}
@@ -357,18 +357,18 @@ function DescuentoRow({
 }) {
   const inactivo = d.agotado || d.expirado;
   return (
-    <div className={`bg-white dark:bg-slate-800 border rounded-xl p-4 flex items-center gap-4 ${inactivo ? "border-gray-100 dark:border-slate-700 opacity-60" : "border-gray-200 dark:border-slate-600"}`}>
+    <div className={`bg-white dark:bg-slate-800 border rounded-xl p-4 flex items-center gap-4 ${inactivo ? "border-slate-100 dark:border-slate-700 opacity-60" : "border-slate-200 dark:border-slate-600"}`}>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-mono font-bold text-gray-900 dark:text-gray-100 text-sm">{d.codigo}</span>
+          <span className="font-mono font-bold text-slate-900 dark:text-slate-100 text-sm">{d.codigo}</span>
           <span className="text-xs bg-muted text-foreground px-2 py-0.5 rounded-full font-medium">
             {formatDescuento(d)}
           </span>
           {d.agotado && <span className="text-xs bg-status-cancelled-bg text-status-cancelled-fg px-2 py-0.5 rounded-full">Agotado</span>}
           {d.expirado && <span className="text-xs bg-status-absent-bg text-status-absent-fg px-2 py-0.5 rounded-full">Expirado</span>}
         </div>
-        {d.descripcion && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{d.descripcion}</p>}
-        <div className="flex flex-wrap gap-3 text-xs text-gray-500 dark:text-gray-400 mt-1">
+        {d.descripcion && <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{d.descripcion}</p>}
+        <div className="flex flex-wrap gap-3 text-xs text-slate-500 dark:text-slate-400 mt-1">
           <span>Usos: {d.usoActual}{d.usoMaximo ? ` / ${d.usoMaximo}` : ""}</span>
           {d.fechaExpiracion && (
             // El backend guarda la expiración en UTC sin "Z".
@@ -382,7 +382,7 @@ function DescuentoRow({
           onClick={onCopiar}
           aria-label={copiado ? `Código ${d.codigo} copiado` : `Copiar código ${d.codigo}`}
           title="Copiar código"
-          className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] lg:min-h-[36px] lg:min-w-[36px] text-gray-500 dark:text-gray-400 hover:text-foreground hover:bg-muted rounded-lg transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] lg:min-h-[36px] lg:min-w-[36px] text-slate-500 dark:text-slate-400 hover:text-foreground hover:bg-muted rounded-lg transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           {copiado ? <Check size={15} className="text-green-600 dark:text-green-400" aria-hidden="true" /> : <Copy size={15} aria-hidden="true" />}
         </button>
@@ -391,7 +391,7 @@ function DescuentoRow({
           onClick={onEliminar}
           aria-label={`Eliminar cupón ${d.codigo}`}
           title="Eliminar"
-          className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] lg:min-h-[36px] lg:min-w-[36px] text-gray-500 dark:text-gray-400 hover:text-red-700 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] lg:min-h-[36px] lg:min-w-[36px] text-slate-500 dark:text-slate-400 hover:text-red-700 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <Trash2 size={15} aria-hidden="true" />
         </button>

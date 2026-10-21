@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Link, useLocation } from "react-router-dom";
 import LogoMarca from "../../components/LogoMarca";
+import { BOTON_PRIMARIO_AUTH, FONDO_AUTH, TARJETA_AUTH, TITULO_AUTH, campoAuth } from "../../lib/clasesAuth";
 import { authApi } from "../../api/auth";
 import { useTituloPagina } from "../../hooks/useTituloPagina";
 
@@ -39,22 +40,22 @@ export default function RecuperarContrasenaPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+    <div className={FONDO_AUTH}>
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <LogoMarca prioridad className="h-20 mx-auto" />
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8">
+        <div className={TARJETA_AUTH}>
           {enviado ? (
             <div className="text-center py-4">
               <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-7 h-7 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-7 h-7 text-green-600" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h2 className="text-lg font-semibold text-gray-800 mb-2">Revisa tu correo</h2>
-              <p className="text-sm text-gray-500 mb-6">
+              <h1 className={TITULO_AUTH}>Revisa tu correo</h1>
+              <p className="text-sm text-slate-500 mb-6">
                 Si el correo está registrado, recibirás un enlace para restablecer tu contraseña en los próximos minutos.
               </p>
               <Link to="/login" className="text-sm text-slate-700 hover:underline">
@@ -63,14 +64,14 @@ export default function RecuperarContrasenaPage() {
             </div>
           ) : (
             <>
-              <h2 className="text-xl font-semibold text-gray-800 mb-2">¿Olvidaste tu contraseña?</h2>
-              <p className="text-sm text-gray-500 mb-6">
+              <h1 className={TITULO_AUTH}>¿Olvidaste tu contraseña?</h1>
+              <p className="text-sm text-slate-500 mb-6">
                 Ingresa tu correo y te enviaremos un enlace para restablecerla.
               </p>
 
               <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-5">
                 <div>
-                  <label htmlFor="recuperar-email" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="recuperar-email" className="block text-sm font-medium text-slate-700 mb-1">
                     Correo electrónico
                   </label>
                   <input
@@ -78,24 +79,23 @@ export default function RecuperarContrasenaPage() {
                     type="email"
                     autoComplete="email"
                     {...register("email")}
-                    className={`w-full px-4 py-2.5 rounded-lg border text-sm outline-none transition
-                      focus:ring-2 focus:ring-slate-700/40 focus:border-slate-700
-                      ${errors.email ? "border-red-400 bg-red-50" : "border-gray-300"}`}
+                    aria-invalid={errors.email ? true : undefined}
+                    aria-describedby={errors.email ? "recuperar-email-error" : undefined}
+                    className={campoAuth(!!errors.email)}
                     placeholder="correo@ejemplo.com"
                   />
                   {errors.email && (
-                    <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>
+                    <p id="recuperar-email-error" className="text-red-600 text-xs mt-1">{errors.email.message}</p>
                   )}
                 </div>
 
                 {errorGeneral && (
-                  <p className="text-red-500 text-sm text-center -mt-2">{errorGeneral}</p>
+                  <p role="alert" className="text-red-600 text-sm text-center -mt-2">{errorGeneral}</p>
                 )}
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full bg-slate-700 hover:bg-slate-800 disabled:opacity-60 disabled:cursor-not-allowed
-                    text-white font-semibold py-2.5 rounded-lg transition text-sm"
+                  className={BOTON_PRIMARIO_AUTH}
                 >
                   {isSubmitting ? "Enviando..." : "Enviar enlace"}
                 </button>
@@ -105,7 +105,7 @@ export default function RecuperarContrasenaPage() {
         </div>
 
         {!enviado && (
-          <p className="text-center text-sm text-gray-500 mt-5">
+          <p className="text-center text-sm text-slate-500 mt-5">
             <Link to="/login" className="text-slate-700 hover:underline">
               Volver al inicio de sesión
             </Link>

@@ -3,7 +3,7 @@ import { useQueries, useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { publicoApi } from "../../api/publico";
 import type { SlotDisponible } from "../../types";
-import { brandAccent } from "../../lib/colorUtils";
+import { brandAccent, DEFAULT_COLOR } from "../../lib/colorUtils";
 import { fechaLocal } from "../../utils/fechas";
 import { ChevronLeft, ChevronRight, Sun, Sunrise, Moon } from "lucide-react";
 
@@ -72,7 +72,7 @@ function textoMesSemana(dias: Date[]): string {
   return `${MESES[mes0]} ${anio}`;
 }
 
-export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, onSeleccionar, onLimpiarSlot, color = "#334155", diasAnticipacionMinima = 0, enlaceListaEspera }: Props) {
+export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, onSeleccionar, onLimpiarSlot, color = DEFAULT_COLOR, diasAnticipacionMinima = 0, enlaceListaEspera }: Props) {
   // Al volver a este paso con un horario ya elegido, su día sigue a la vista.
   const [semanaRef, setSemanaRef] = useState(() =>
     lunesDeSemanaDe(seleccionado ? new Date(seleccionado.inicio) : new Date())
@@ -289,7 +289,7 @@ export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, on
                 ${sinHorarios ? "opacity-50" : ""}`}
               style={
                 seleccionada
-                  ? { background: acento, color: "#fff", boxShadow: `0 4px 12px ${acento}40` }
+                  ? { background: acento, color: "white", boxShadow: `0 4px 12px ${acento}40` }
                   : esHoy && !seleccionada
                   ? { borderColor: acento }
                   : undefined
@@ -310,7 +310,7 @@ export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, on
                 className={`mt-1 h-1 w-1 rounded-full ${disponibilidad === "error" ? (seleccionada ? "bg-white" : "bg-red-600") : ""}`}
                 style={disponibilidad === "error" ? undefined : {
                   background: disponibilidad === "con-horarios"
-                    ? (seleccionada ? "#fff" : acento)
+                    ? (seleccionada ? "white" : acento)
                     : "transparent",
                 }}
               />
@@ -379,10 +379,12 @@ export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, on
                           type="button"
                           onClick={() => onSeleccionar(slot)}
                           aria-pressed={activo}
-                          className="min-h-[44px] px-1 rounded-xl text-xs font-semibold border-2 transition-all flex items-center justify-center"
+                          className={`min-h-[44px] px-1 rounded-xl text-xs font-semibold border-2 transition-all flex items-center justify-center ${
+                            activo ? "text-white" : "border-slate-100 bg-white text-slate-600 hover:border-slate-300"
+                          }`}
                           style={activo
-                            ? { borderColor: acento, background: acento, color: "#fff", boxShadow: `0 2px 8px ${acento}40` }
-                            : { borderColor: "#f1f5f9", background: "#fff", color: "#475569" }}
+                            ? { borderColor: acento, background: acento, boxShadow: `0 2px 8px ${acento}40` }
+                            : undefined}
                         >
                           {slot.horaTexto}
                         </button>

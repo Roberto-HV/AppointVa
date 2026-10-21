@@ -101,3 +101,8 @@ export const CODIGO_ESTADO_CITA = {
   Cancelada: 4,
   Inasistencia: 5,
 } as const satisfies Record<EstadoCita, number>;
+
+/** `citaAbierta` para el código numérico: Pendiente o Confirmada. */
+export function codigoCitaAbierta(estado: number): boolean {
+  return estado === CODIGO_ESTADO_CITA.Pendiente || estado === CODIGO_ESTADO_CITA.Confirmada;
+}

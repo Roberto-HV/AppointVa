@@ -1,7 +1,9 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Users } from "lucide-react";
 import type { EmpleadoPublico } from "../../types";
 import { getSectorTerms } from "../../hooks/useSectorTerms";
-import { brandAccent, brandTint } from "../../lib/colorUtils";
+import { brandAccent, brandTint, DEFAULT_COLOR } from "../../lib/colorUtils";
+import FilaSeleccion from "./FilaSeleccion";
 
 export const SIN_PREFERENCIA_ID = "sin-preferencia";
 
@@ -22,7 +24,26 @@ interface Props {
   sector?: string;
 }
 
-export default function PasoEmpleado({ empleados, servicioId, seleccionado, onSeleccionar, color = "#334155", sector }: Props) {
+/** Foto del empleado o, si no hay (o no carga), su inicial. */
+function Avatar({ empleado }: { empleado: EmpleadoPublico }) {
+  const [fallo, setFallo] = useState(false);
+  return (
+    <span className="w-12 h-12 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center shrink-0" aria-hidden="true">
+      {empleado.fotoUrl && !fallo ? (
+        <img src={empleado.fotoUrl} alt="" className="w-full h-full object-cover" onError={() => setFallo(true)} />
+      ) : (
+        <span className="text-lg font-bold text-slate-500">{empleado.nombre.charAt(0)}</span>
+      )}
+    </span>
+  );
+}
+
+/**
+ * Mismo patrón de selección que el paso de servicio (BF-23): filas
+ * `FilaSeleccion` con anillo interior y marca de verificación, el avatar en el
+ * slot inicial. Antes este paso tenía dos tarjetas propias con hex sueltos.
+ */
+export default function PasoEmpleado({ empleados, servicioId, seleccionado, onSeleccionar, color = DEFAULT_COLOR, sector }: Props) {
   const terms = getSectorTerms(sector);
   const disponibles = empleados.filter((e) => e.servicioIds.includes(servicioId));
   // Derivados del color de marca: el hex crudo a baja opacidad es invisible en tonos
@@ -35,96 +56,44 @@ export default function PasoEmpleado({ empleados, servicioId, seleccionado, onSe
     if (disponibles.length === 0) onSeleccionar(SIN_PREFERENCIA);
   }, [disponibles.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const activoSinPreferencia = seleccionado?.id === SIN_PREFERENCIA_ID;
-
   return (
     <div>
       <h2 tabIndex={-1} className="text-xl font-bold text-slate-900 mb-1 outline-none">¿Con quién?</h2>
       <p className="text-sm text-slate-500 mb-5">{`Elige un ${terms.empleado.toLowerCase()} o deja que asignemos el más disponible`}</p>
 
-      {/* Opción sin preferencia — solo cuando hay empleados disponibles */}
-      {disponibles.length > 0 && <button
-        onClick={() => onSeleccionar(SIN_PREFERENCIA)}
-        aria-pressed={activoSinPreferencia}
-        className="w-full mb-3 p-4 rounded-2xl border-2 flex items-center gap-4 transition-all text-left bg-white"
-        style={activoSinPreferencia ? { borderColor: acento, background: tinte } : { borderColor: "#f1f5f9" }}
-      >
-        <div
-          className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition"
-          style={{ background: activoSinPreferencia ? tinte : "#f1f5f9" }}
-        >
-          <svg
-            className="w-5 h-5"
-            style={{ color: activoSinPreferencia ? acento : "#94a3b8" }}
-            fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a4 4 0 00-5.196-3.793M9 20H4v-2a4 4 0 015.196-3.793M15 7a4 4 0 11-8 0 4 4 0 018 0zm6 4a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold" style={{ color: activoSinPreferencia ? acento : "#1e293b" }}>
-            Sin preferencia
-          </p>
-          <p className="text-xs text-slate-400">Muestra todos los horarios disponibles</p>
-        </div>
-        {activoSinPreferencia && (
-          <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0" style={{ background: acento }}>
-            <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="currentColor">
-              <path d="M10 3L5 8.5 2 5.5" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </div>
-        )}
-      </button>}
-
-      <div className="grid grid-cols-2 gap-2.5">
-        {disponibles.length === 0 && (
-          <p className="col-span-2 text-slate-400 text-sm text-center py-4">
-            {`No hay ${terms.empleados.toLowerCase()} asignados a este servicio.`}
-          </p>
-        )}
-        {disponibles.map((emp) => {
-          const activo = seleccionado?.id === emp.id;
-          return (
-            <button
+      {disponibles.length === 0 ? (
+        <p className="text-slate-500 text-sm text-center py-4">
+          {`No hay ${terms.empleados.toLowerCase()} asignados a este ${terms.servicio.toLowerCase()}.`}
+        </p>
+      ) : (
+        <div className="space-y-2">
+          <FilaSeleccion
+            activo={seleccionado?.id === SIN_PREFERENCIA_ID}
+            onSeleccionar={() => onSeleccionar(SIN_PREFERENCIA)}
+            acento={acento}
+            tinte={tinte}
+            titulo="Sin preferencia"
+            descripcion="Muestra todos los horarios disponibles"
+            inicio={
+              <span className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center shrink-0" aria-hidden="true">
+                <Users size={20} className="text-slate-500" />
+              </span>
+            }
+          />
+          {disponibles.map((emp) => (
+            <FilaSeleccion
               key={emp.id}
-              onClick={() => onSeleccionar(emp)}
-              aria-pressed={activo}
-              className="p-4 rounded-2xl border-2 text-center transition-all bg-white"
-              style={activo
-                ? { borderColor: acento, background: tinte, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }
-                : { borderColor: "#f1f5f9" }}
-            >
-              <div className="w-16 h-16 rounded-full mx-auto mb-3 overflow-hidden bg-slate-100 flex items-center justify-center">
-                {emp.fotoUrl ? (
-                  <img
-                    src={emp.fotoUrl}
-                    alt={emp.nombre}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      e.currentTarget.style.display = "none";
-                      const parent = e.currentTarget.parentElement;
-                      if (parent) {
-                        const span = document.createElement("span");
-                        span.className = "text-2xl font-bold text-slate-300";
-                        span.textContent = emp.nombre.charAt(0);
-                        parent.appendChild(span);
-                      }
-                    }}
-                  />
-                ) : (
-                  <span className="text-2xl font-bold text-slate-300">{emp.nombre.charAt(0)}</span>
-                )}
-              </div>
-              <p className="text-sm font-semibold" style={{ color: activo ? acento : "#1e293b" }}>
-                {emp.nombre}
-              </p>
-              {emp.biografia && (
-                <p className="text-xs text-slate-400 mt-1.5 line-clamp-2 leading-relaxed">{emp.biografia}</p>
-              )}
-            </button>
-          );
-        })}
-      </div>
+              activo={seleccionado?.id === emp.id}
+              onSeleccionar={() => onSeleccionar(emp)}
+              acento={acento}
+              tinte={tinte}
+              titulo={emp.nombre}
+              descripcion={emp.biografia}
+              inicio={<Avatar empleado={emp} />}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import EmpleadosPage from "./EmpleadosPage";
 
 vi.mock("framer-motion", () => ({
+  useReducedMotion: () => false,
   motion: {
     div: ({ children, ...rest }: { children?: React.ReactNode; [key: string]: unknown }) => (
       <div {...(rest as object)}>{children}</div>

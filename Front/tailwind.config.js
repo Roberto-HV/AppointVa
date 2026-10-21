@@ -66,6 +66,10 @@ export default {
         },
         // ── Estrellas de reseñas (el dorado de marca es solo para el logo) ────
         rating: "var(--rating)",
+        // ── Paleta categórica (series, avatares): bg-categoria-1 … bg-categoria-8 ──
+        categoria: Object.fromEntries(
+          [1, 2, 3, 4, 5, 6, 7, 8].map((n) => [n, `var(--categoria-${n})`])
+        ),
       },
       borderRadius: {
         lg: "var(--radius)",

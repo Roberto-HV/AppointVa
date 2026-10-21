@@ -9,6 +9,7 @@ import { formatPrecio, formatFechaHoraResumen as formatFecha } from "../../utils
 import PublicFooter from "../../components/PublicFooter";
 import { useTituloPagina } from "../../hooks/useTituloPagina";
 import { esErrorTemporal, mensajeError } from "../../utils/errores";
+import { codigoCitaAbierta } from "../../lib/estadoCita";
 
 // Acciones secundarias de cada cita: botones de 44px, no enlaces de 12px (AP-25).
 const BOTON_SECUNDARIO =
@@ -172,12 +173,10 @@ export default function MisCitasPage() {
   };
 
   const now = useMemo(() => new Date(), [citas]);
-  const proximas = (citas ?? []).filter(
-    (c) => (c.estado === 1 || c.estado === 2) && new Date(c.inicioEn) >= now
-  );
-  const historial = (citas ?? []).filter(
-    (c) => !((c.estado === 1 || c.estado === 2) && new Date(c.inicioEn) >= now)
-  );
+  const esProxima = (c: { estado: number; inicioEn: string }) =>
+    codigoCitaAbierta(c.estado) && new Date(c.inicioEn) >= now;
+  const proximas = (citas ?? []).filter(esProxima);
+  const historial = (citas ?? []).filter((c) => !esProxima(c));
 
   return (
     <div className="min-h-screen bg-slate-50">

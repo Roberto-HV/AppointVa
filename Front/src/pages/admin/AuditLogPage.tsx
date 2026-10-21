@@ -91,7 +91,7 @@ export default function AuditLogPage() {
   const badgeColor = (a: string) => {
     if (a.includes("Fallido") || a.includes("Eliminar")) return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400";
     if (a === "Login") return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400";
-    if (a === "Logout") return "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300";
+    if (a === "Logout") return "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300";
     return "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400";
   };
 
@@ -140,23 +140,23 @@ export default function AuditLogPage() {
       )}
 
       {/* Tabla */}
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-gray-100 dark:border-slate-700 overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-700 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 dark:bg-slate-800 border-b border-gray-100 dark:border-slate-700">
+            <thead className="bg-slate-50 dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700">
               <tr>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide whitespace-nowrap">Fecha</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">Acción</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">Usuario</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">Entidad</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">Detalles</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">IP</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide whitespace-nowrap">Fecha</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Acción</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Usuario</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Entidad</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Detalles</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">IP</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50 dark:divide-slate-700">
+            <tbody className="divide-y divide-slate-50 dark:divide-slate-700">
               {isLoading && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-sm text-gray-400 dark:text-slate-500">Cargando…</td>
+                  <td colSpan={6} className="px-4 py-8 text-center text-sm text-slate-400 dark:text-slate-500">Cargando…</td>
                 </tr>
               )}
               {isError && (
@@ -166,7 +166,7 @@ export default function AuditLogPage() {
                     <button
                       type="button"
                       onClick={() => refetch()}
-                      className="mt-3 min-h-[44px] lg:min-h-[36px] px-4 rounded-lg border border-gray-200 dark:border-slate-600 text-sm font-medium text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40"
+                      className="mt-3 min-h-[44px] lg:min-h-[36px] px-4 rounded-lg border border-slate-200 dark:border-slate-600 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40"
                     >
                       Reintentar
                     </button>
@@ -198,8 +198,8 @@ export default function AuditLogPage() {
                 const idDetalle = `detalle-${log.id}`;
                 return (
                   <Fragment key={log.id}>
-                    <tr className="hover:bg-gray-50 dark:hover:bg-slate-800/50 transition">
-                      <td className="px-4 py-3 text-xs text-gray-500 dark:text-slate-400 whitespace-nowrap tabular-nums">
+                    <tr className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
+                      <td className="px-4 py-3 text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap tabular-nums">
                         {formatFecha(log.fechaEn)}
                       </td>
                       <td className="px-4 py-3">
@@ -207,15 +207,15 @@ export default function AuditLogPage() {
                           {etiquetaAccion(log.accion)}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-xs text-gray-700 dark:text-slate-200">
+                      <td className="px-4 py-3 text-xs text-slate-700 dark:text-slate-200">
                         <div className="truncate max-w-[180px]">
-                          {log.usuarioEmail ?? <span className="text-gray-500 dark:text-slate-400">{log.usuarioId ? "Usuario sin correo" : "—"}</span>}
+                          {log.usuarioEmail ?? <span className="text-slate-500 dark:text-slate-400">{log.usuarioId ? "Usuario sin correo" : "—"}</span>}
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-xs text-gray-500 dark:text-slate-400">
+                      <td className="px-4 py-3 text-xs text-slate-500 dark:text-slate-400">
                         {log.entidad ?? "—"}
                       </td>
-                      <td className="px-4 py-3 text-xs text-gray-500 dark:text-slate-400">
+                      <td className="px-4 py-3 text-xs text-slate-500 dark:text-slate-400">
                         <div className="flex items-center gap-2">
                           <span className="max-w-[160px] truncate">{log.detalles ?? "—"}</span>
                           <button
@@ -223,26 +223,26 @@ export default function AuditLogPage() {
                             onClick={() => setAbierto(expandido ? null : log.id)}
                             aria-expanded={expandido}
                             aria-controls={idDetalle}
-                            className="inline-flex items-center gap-1 min-h-[44px] lg:min-h-[36px] px-2 rounded-lg font-medium text-slate-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40"
+                            className="inline-flex items-center gap-1 min-h-[44px] lg:min-h-[36px] px-2 rounded-lg font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40"
                           >
                             {expandido ? "Ocultar" : "Ver detalle"}
                             <ChevronDown size={14} aria-hidden="true" className={expandido ? "rotate-180" : ""} />
                           </button>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-xs text-gray-500 dark:text-slate-400 font-mono">{log.ipAddress ?? "—"}</td>
+                      <td className="px-4 py-3 text-xs text-slate-500 dark:text-slate-400 font-mono">{log.ipAddress ?? "—"}</td>
                     </tr>
                     {expandido && (
-                      <tr id={idDetalle} className="bg-gray-50 dark:bg-slate-800/60">
-                        <td colSpan={6} className="px-4 py-3 text-xs text-gray-700 dark:text-slate-200">
+                      <tr id={idDetalle} className="bg-slate-50 dark:bg-slate-800/60">
+                        <td colSpan={6} className="px-4 py-3 text-xs text-slate-700 dark:text-slate-200">
                           <dl className="grid sm:grid-cols-[max-content_1fr] gap-x-4 gap-y-1.5">
-                            <dt className="font-semibold text-gray-500 dark:text-slate-400">Detalles</dt>
+                            <dt className="font-semibold text-slate-500 dark:text-slate-400">Detalles</dt>
                             <dd className="whitespace-pre-wrap break-words">{log.detalles ?? "—"}</dd>
-                            <dt className="font-semibold text-gray-500 dark:text-slate-400">ID de usuario</dt>
+                            <dt className="font-semibold text-slate-500 dark:text-slate-400">ID de usuario</dt>
                             <dd className="font-mono break-all">{log.usuarioId ?? "—"}</dd>
                             {log.entidad && (
                               <>
-                                <dt className="font-semibold text-gray-500 dark:text-slate-400">Entidad</dt>
+                                <dt className="font-semibold text-slate-500 dark:text-slate-400">Entidad</dt>
                                 <dd className="font-mono break-all">{log.entidad}{log.entidadId ? ` · ${log.entidadId}` : ""}</dd>
                               </>
                             )}
@@ -251,7 +251,7 @@ export default function AuditLogPage() {
                             <button
                               type="button"
                               onClick={() => { setUsuarioId(log.usuarioId!); setPagina(1); setAbierto(null); }}
-                              className="mt-3 min-h-[44px] lg:min-h-[36px] px-3 rounded-lg border border-gray-200 dark:border-slate-600 font-medium text-gray-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40"
+                              className="mt-3 min-h-[44px] lg:min-h-[36px] px-3 rounded-lg border border-slate-200 dark:border-slate-600 font-medium text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40"
                             >
                               Ver solo los eventos de este usuario
                             </button>

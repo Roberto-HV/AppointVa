@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { useSectorTerms } from "../../hooks/useSectorTerms";
 
 import { hoy, inicioSemana, finSemana, inicioMes, finMes } from "../../utils/fechas";
-import { Calendar, CheckCircle2, RotateCcw, StickyNote, Receipt, Banknote, Star, Pencil, AlertTriangle } from "lucide-react";
+import { Calendar, CheckCircle2, RotateCcw, StickyNote, Receipt, Banknote, Star, Pencil, AlertTriangle, Monitor } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { citasApi, ESTADOS } from "../../api/citas";
 import Tabs from "../../components/ui/Tabs";
@@ -254,7 +254,7 @@ export default function CitasPage() {
     onError: (err: unknown) => {
       const duplicado = isAxiosError(err) && err.response?.status === 409;
       toast(mensajeError(err, duplicado
-          ? "Ese teléfono o correo ya está registrado con otra clienta"
+          ? `Ese teléfono o correo ya está registrado con otro ${terms.cliente.toLowerCase()}`
           : "No se pudo actualizar el cliente"), "error");
     },
   });
@@ -362,7 +362,7 @@ export default function CitasPage() {
   const campoEmpleado: CampoFiltro = {
     tipo: "select",
     id: "empleado",
-    etiqueta: "Profesional",
+    etiqueta: terms.empleado,
     valor: empleadoId,
     onChange: (v) => filtrar({ empleadoId: v || null }),
     opciones: empleados.map((e) => ({ valor: e.id, etiqueta: e.nombre })),
@@ -483,7 +483,8 @@ export default function CitasPage() {
                 rel="noopener noreferrer"
                 className="hidden sm:inline-flex"
               >
-                🖥 Recepción
+                <Monitor size={16} aria-hidden="true" />
+                Recepción
               </EnlaceAccion>
               {citas.length > 0 && vista === "lista" && (
                 <BotonAccion
@@ -538,6 +539,7 @@ export default function CitasPage() {
       {vista === "calendario" && (
         <CalendarioCitas
           empleadoId={empleadoId}
+          terms={terms}
           onCitaClick={(c: CitaDto) => abrirAcciones(c)}
           onReagendar={(cita, nuevoInicio) => {
             const nueva = new Date(nuevoInicio).toLocaleString("es-MX", {
@@ -551,7 +553,7 @@ export default function CitasPage() {
 
       {/* Vista línea de tiempo (Gantt) */}
       {vista === "gantt" && (
-        <GanttCitas onCitaClick={(c: CitaDto) => abrirAcciones(c)} />
+        <GanttCitas onCitaClick={(c: CitaDto) => abrirAcciones(c)} terms={terms} />
       )}
 
       {/* Un fallo al refrescar no borra la lista que ya se ve, pero se avisa. */}
@@ -567,14 +569,14 @@ export default function CitasPage() {
       {/* Vista lista */}
       {vista === "lista" && (
         isLoading ? (
-          <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 overflow-x-auto">
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 overflow-x-auto">
             <table className="w-full text-sm">
               <tbody><SkeletonTableRows filas={6} columnas={5} /></tbody>
             </table>
           </div>
         ) : errorCitas && citas.length === 0 ? (
           // Un fallo no debe leerse como "no hay citas": es lo más engañoso para una agenda.
-          <div role="alert" className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 px-4 py-10 text-center">
+          <div role="alert" className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 px-4 py-10 text-center">
             <AlertTriangle size={28} className="mx-auto mb-2 text-red-700 dark:text-red-400" aria-hidden="true" />
             <p className="text-sm font-medium text-foreground">{`No se pudieron cargar las ${terms.citas.toLowerCase()}.`}</p>
             <p className="text-sm text-muted-foreground mb-4">Revisa tu conexión e intenta de nuevo.</p>
@@ -583,7 +585,7 @@ export default function CitasPage() {
             </BotonAccion>
           </div>
         ) : citas.length === 0 ? (
-          <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700">
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700">
             <EmptyState
               variante={hayFiltrosActivos ? "sinResultados" : "vacio"}
               icon={hayFiltrosActivos ? undefined : <Calendar size={40} strokeWidth={1.5} />}
@@ -598,8 +600,8 @@ export default function CitasPage() {
         ) : esMovil ? (
           // Teléfono: tarjetas apiladas con las acciones a la vista. La tabla medía
           // 482px a 375px y dejaba WhatsApp y "Acciones" fuera de la pantalla.
-          <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700">
-            <ul className="divide-y divide-gray-100 dark:divide-slate-700" aria-label={terms.citas}>
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700">
+            <ul className="divide-y divide-slate-100 dark:divide-slate-700" aria-label={terms.citas}>
               {citas.map((c) => (
                 <li key={c.id}>
                   <TarjetaCita
@@ -623,13 +625,13 @@ export default function CitasPage() {
             />
           </div>
         ) : (
-          <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 overflow-x-auto">
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-100 dark:border-slate-700 text-xs text-muted-foreground uppercase tracking-wide">
+                <tr className="border-b border-slate-100 dark:border-slate-700 text-xs text-muted-foreground uppercase tracking-wide">
                   <th className="text-left px-4 py-3 font-medium">Cliente</th>
                   <th className="text-left px-4 py-3 font-medium hidden sm:table-cell">Servicio</th>
-                  <th className="text-left px-4 py-3 font-medium hidden sm:table-cell">Profesional</th>
+                  <th className="text-left px-4 py-3 font-medium hidden sm:table-cell">{terms.empleado}</th>
                   <th className="text-left px-4 py-3 font-medium">Fecha y hora</th>
                   <th className="text-right px-4 py-3 font-medium hidden sm:table-cell">Precio</th>
                   {tienePagos && <th className="text-center px-4 py-3 font-medium hidden sm:table-cell">Pago</th>}
@@ -639,18 +641,18 @@ export default function CitasPage() {
               </thead>
               <tbody>
                 {citas.map((c) => (
-                  <tr key={c.id} className="border-b border-gray-50 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 transition">
+                  <tr key={c.id} className="border-b border-slate-50 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition">
                     <td className="px-4 py-3">
-                      <p className="font-medium text-gray-800 dark:text-gray-200">{c.nombreCliente}</p>
+                      <p className="font-medium text-slate-800 dark:text-slate-200">{c.nombreCliente}</p>
                       <p className="text-xs text-muted-foreground">{c.telefonoCliente}</p>
                     </td>
-                    <td className="px-4 py-3 text-gray-700 dark:text-gray-300 hidden sm:table-cell">{c.nombreServicio}</td>
-                    <td className="px-4 py-3 text-gray-700 dark:text-gray-300 hidden sm:table-cell">{c.nombreEmpleado}</td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-400 text-xs sm:text-sm whitespace-nowrap">
+                    <td className="px-4 py-3 text-slate-700 dark:text-slate-300 hidden sm:table-cell">{c.nombreServicio}</td>
+                    <td className="px-4 py-3 text-slate-700 dark:text-slate-300 hidden sm:table-cell">{c.nombreEmpleado}</td>
+                    <td className="px-4 py-3 text-slate-600 dark:text-slate-400 text-xs sm:text-sm whitespace-nowrap">
                       <p>{formatFechaCorta(c.inicioEn)}</p>
                       <p className="text-muted-foreground">{formatHora(c.inicioEn)}</p>
                     </td>
-                    <td className="px-4 py-3 text-right font-medium text-gray-800 dark:text-gray-200 hidden sm:table-cell">{formatPrecio(c.precio)}</td>
+                    <td className="px-4 py-3 text-right font-medium text-slate-800 dark:text-slate-200 hidden sm:table-cell">{formatPrecio(c.precio)}</td>
 
                     {/* Columna de pago — solo lectura */}
                     {tienePagos && (
@@ -704,7 +706,7 @@ export default function CitasPage() {
         {citaEditar && (
           <div className="space-y-4">
             <div>
-              <label htmlFor="editar-nombre" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label htmlFor="editar-nombre" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 Nombre <span className="text-red-700 dark:text-red-400" aria-hidden="true">*</span>
               </label>
               <input
@@ -714,14 +716,14 @@ export default function CitasPage() {
                 value={fEditar.nombre}
                 onChange={(e) => setFEditar((p) => ({ ...p, nombre: e.target.value }))}
                 placeholder="Nombre completo"
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700"
+                className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm outline-none focus:border-slate-700"
               />
             </div>
             <div>
-              <label htmlFor="editar-telefono" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label htmlFor="editar-telefono" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 Teléfono{" "}
-                <span className="text-gray-400 dark:text-gray-500 font-normal">
-                  {fEditar.telefono ? "(vaciar para desvincular esta cita de la cliente)" : "(sin teléfono — cita independiente)"}
+                <span className="text-slate-400 dark:text-slate-500 font-normal">
+                  {fEditar.telefono ? `(vaciar para desvincular esta ${terms.cita.toLowerCase()} del ${terms.cliente.toLowerCase()})` : "(sin teléfono — cita independiente)"}
                 </span>
               </label>
               <input
@@ -730,11 +732,11 @@ export default function CitasPage() {
                 value={fEditar.telefono}
                 onChange={(e) => setFEditar((p) => ({ ...p, telefono: e.target.value }))}
                 placeholder="Sin teléfono"
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700"
+                className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm outline-none focus:border-slate-700"
               />
             </div>
             <div>
-              <label htmlFor="editar-email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label htmlFor="editar-email" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 Correo <span className="text-muted-foreground font-normal">(opcional)</span>
               </label>
               <input
@@ -748,20 +750,20 @@ export default function CitasPage() {
                   setEmailEditarError(validarEmailCliente(e.target.value));
                 }}
                 placeholder="correo@ejemplo.com"
-                className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100 ${
-                  emailEditarError ? "border-red-400 bg-red-50 dark:bg-red-900/20" : "border-gray-200 dark:border-slate-600"
+                className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-slate-100 ${
+                  emailEditarError ? "border-red-400 bg-red-50 dark:bg-red-900/20" : "border-slate-200 dark:border-slate-600"
                 }`}
               />
               {emailEditarError && <p id="editar-email-error" className="text-red-700 dark:text-red-400 text-xs mt-1 flex items-center gap-1"><AlertTriangle size={12} aria-hidden="true" /> {emailEditarError}</p>}
             </div>
             <p className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded-lg px-3 py-2">
-              Esto actualiza los datos de la cliente en todas sus citas.
+              {`Esto actualiza los datos del ${terms.cliente.toLowerCase()} en todas sus ${terms.citas.toLowerCase()}.`}
             </p>
             <div className="flex gap-2">
               <button
                 type="button"
                 onClick={() => setCitaEditar(null)}
-                className="px-4 py-2.5 border border-gray-200 dark:border-slate-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700 rounded-xl text-sm transition"
+                className="px-4 py-2.5 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl text-sm transition"
               >
                 Volver
               </button>
@@ -781,13 +783,13 @@ export default function CitasPage() {
       <Modal abierto={!!citaNotas} onCerrar={() => setCitaNotas(null)} titulo="Nota interna" ancho="sm">
         {citaNotas && (
           <div className="space-y-4">
-            <div className="bg-gray-50 dark:bg-slate-700 rounded-lg p-3 text-sm space-y-1">
-              <p><span className="text-gray-500 dark:text-gray-400">Cliente:</span> <span className="font-medium dark:text-gray-200">{citaNotas.nombreCliente}</span></p>
-              <p><span className="text-gray-500 dark:text-gray-400">Servicio:</span> <span className="font-medium dark:text-gray-200">{citaNotas.nombreServicio}</span></p>
+            <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-3 text-sm space-y-1">
+              <p><span className="text-slate-500 dark:text-slate-400">Cliente:</span> <span className="font-medium dark:text-slate-200">{citaNotas.nombreCliente}</span></p>
+              <p><span className="text-slate-500 dark:text-slate-400">Servicio:</span> <span className="font-medium dark:text-slate-200">{citaNotas.nombreServicio}</span></p>
             </div>
             <div>
-              <label htmlFor="nota-interna" className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-                Nota interna <span className="text-gray-400 dark:text-gray-500">(solo visible para el negocio)</span>
+              <label htmlFor="nota-interna" className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
+                Nota interna <span className="text-slate-400 dark:text-slate-500">(solo visible para el negocio)</span>
               </label>
               <textarea
                 id="nota-interna"
@@ -796,9 +798,9 @@ export default function CitasPage() {
                 rows={4}
                 maxLength={1000}
                 placeholder="Preferencias del cliente, indicaciones especiales, alergias..."
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 text-sm outline-none focus:border-slate-700 resize-none"
+                className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm outline-none focus:border-slate-700 resize-none"
               />
-              <p className="text-xs text-gray-500 dark:text-gray-400 text-right mt-1">{notasTexto.length}/1000</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 text-right mt-1">{notasTexto.length}/1000</p>
             </div>
             <div className="flex gap-2">
               {citaNotas.notas && (
@@ -829,8 +831,8 @@ export default function CitasPage() {
           <div className="space-y-4">
             {/* Servicio */}
             <div>
-              <p id="nueva-servicio" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Servicio</p>
-              <div role="group" aria-labelledby="nueva-servicio" className="max-h-48 overflow-y-auto border border-gray-200 dark:border-slate-600 rounded-lg divide-y divide-gray-100 dark:divide-slate-600">
+              <p id="nueva-servicio" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Servicio</p>
+              <div role="group" aria-labelledby="nueva-servicio" className="max-h-48 overflow-y-auto border border-slate-200 dark:border-slate-600 rounded-lg divide-y divide-slate-100 dark:divide-slate-600">
                 {servicios.filter((s) => s.activo).map((s) => (
                   <button
                     key={s.id}
@@ -840,11 +842,11 @@ export default function CitasPage() {
                     className={`w-full text-left px-3 py-2.5 text-sm transition ${
                       svcSel === s.id
                         ? "bg-slate-700 text-white"
-                        : "hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200"
+                        : "hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200"
                     }`}
                   >
                     <span className="font-medium">{s.nombre}</span>
-                    <span className={`ml-2 text-xs ${svcSel === s.id ? "text-slate-300" : "text-gray-400 dark:text-gray-500"}`}>
+                    <span className={`ml-2 text-xs ${svcSel === s.id ? "text-slate-300" : "text-slate-400 dark:text-slate-500"}`}>
                       {s.duracionMinutos} min · {formatPrecio(s.precio)}
                     </span>
                   </button>
@@ -855,11 +857,11 @@ export default function CitasPage() {
             {/* Empleado */}
             {svcSel && (
               <div>
-                <p id="nueva-profesional" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Profesional</p>
+                <p id="nueva-profesional" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{terms.empleado}</p>
                 {empleadosFiltrados.length === 0 ? (
-                  <p className="text-sm text-gray-400 dark:text-gray-500">Ningún empleado ofrece este servicio</p>
+                  <p className="text-sm text-slate-400 dark:text-slate-500">Ningún empleado ofrece este servicio</p>
                 ) : (
-                  <div role="group" aria-labelledby="nueva-profesional" className="max-h-36 overflow-y-auto border border-gray-200 dark:border-slate-600 rounded-lg divide-y divide-gray-100 dark:divide-slate-600">
+                  <div role="group" aria-labelledby="nueva-profesional" className="max-h-36 overflow-y-auto border border-slate-200 dark:border-slate-600 rounded-lg divide-y divide-slate-100 dark:divide-slate-600">
                     {empleadosFiltrados.map((e) => (
                       <button
                         key={e.id}
@@ -869,7 +871,7 @@ export default function CitasPage() {
                         className={`w-full text-left px-3 py-2.5 text-sm transition ${
                           empSel === e.id
                             ? "bg-slate-700 text-white"
-                            : "hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200"
+                            : "hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200"
                         }`}
                       >
                         {e.nombre}
@@ -895,9 +897,9 @@ export default function CitasPage() {
             {/* Slots */}
             {svcSel && empSel && fechaNueva && (
               <div>
-                <p id="nueva-horario" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Horario disponible</p>
+                <p id="nueva-horario" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Horario disponible</p>
                 {cargandoSlotsNueva ? (
-                  <p className="text-sm text-gray-400 dark:text-gray-500">Cargando horarios...</p>
+                  <p className="text-sm text-slate-400 dark:text-slate-500">Cargando horarios...</p>
                 ) : errorSlotsNueva ? (
                   <p className="text-xs text-red-700 dark:text-red-400 text-center py-2" role="alert">Error al cargar horarios. Intenta de nuevo.</p>
                 ) : slotsNueva.length === 0 ? (
@@ -913,7 +915,7 @@ export default function CitasPage() {
                         className={`py-2 text-sm rounded-lg border transition ${
                           slotNuevo === s.inicio
                             ? "bg-slate-700 text-white border-slate-700"
-                            : "border-gray-200 dark:border-slate-600 text-gray-700 dark:text-gray-300 hover:border-slate-700 dark:hover:border-slate-400"
+                            : "border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:border-slate-700 dark:hover:border-slate-400"
                         }`}
                       >
                         {s.horaTexto}
@@ -929,7 +931,7 @@ export default function CitasPage() {
               disabled={!slotNuevo}
               className="w-full bg-slate-700 hover:bg-slate-800 disabled:opacity-40 text-white font-semibold py-2.5 rounded-xl transition"
             >
-              Continuar →
+              Continuar
             </button>
           </div>
         )}
@@ -938,14 +940,14 @@ export default function CitasPage() {
         {pasoCita === 2 && (
           <div className="space-y-4">
             {/* Resumen */}
-            <div className="bg-gray-50 dark:bg-slate-700 rounded-lg p-3 text-sm space-y-1">
-              <p><span className="text-gray-500 dark:text-gray-400">Servicio:</span> <span className="font-medium dark:text-gray-200">{servicios.find((s) => s.id === svcSel)?.nombre}</span></p>
-              <p><span className="text-gray-500 dark:text-gray-400">Profesional:</span> <span className="font-medium dark:text-gray-200">{empleados.find((e) => e.id === empSel)?.nombre}</span></p>
-              <p><span className="text-gray-500 dark:text-gray-400">Hora:</span> <span className="font-medium dark:text-gray-200">{slotNuevo ? formatFechaHora(slotNuevo) : ""}</span></p>
+            <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-3 text-sm space-y-1">
+              <p><span className="text-slate-500 dark:text-slate-400">Servicio:</span> <span className="font-medium dark:text-slate-200">{servicios.find((s) => s.id === svcSel)?.nombre}</span></p>
+              <p><span className="text-slate-500 dark:text-slate-400">{`${terms.empleado}:`}</span> <span className="font-medium dark:text-slate-200">{empleados.find((e) => e.id === empSel)?.nombre}</span></p>
+              <p><span className="text-slate-500 dark:text-slate-400">Hora:</span> <span className="font-medium dark:text-slate-200">{slotNuevo ? formatFechaHora(slotNuevo) : ""}</span></p>
             </div>
 
             <div>
-              <label htmlFor="nueva-nombre" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre del cliente <span className="text-red-700 dark:text-red-400" aria-hidden="true">*</span></label>
+              <label htmlFor="nueva-nombre" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nombre del cliente <span className="text-red-700 dark:text-red-400" aria-hidden="true">*</span></label>
               <input
                 id="nueva-nombre"
                 type="text"
@@ -953,12 +955,12 @@ export default function CitasPage() {
                 value={fCliente.nombre}
                 onChange={(e) => setFCliente((p) => ({ ...p, nombre: e.target.value }))}
                 placeholder="Nombre completo"
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700"
+                className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm outline-none focus:border-slate-700"
               />
             </div>
 
             <div>
-              <label htmlFor="nueva-telefono" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label htmlFor="nueva-telefono" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 Teléfono <span className="text-muted-foreground font-normal">(opcional)</span>
               </label>
               <input
@@ -967,12 +969,12 @@ export default function CitasPage() {
                 value={fCliente.telefono}
                 onChange={(e) => setFCliente((p) => ({ ...p, telefono: e.target.value }))}
                 placeholder="10 dígitos"
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700"
+                className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm outline-none focus:border-slate-700"
               />
             </div>
 
             <div>
-              <label htmlFor="nueva-email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label htmlFor="nueva-email" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 Email <span className="text-muted-foreground font-normal">(opcional — para recordatorio)</span>
               </label>
               <input
@@ -987,8 +989,8 @@ export default function CitasPage() {
                 }}
                 onBlur={() => setEmailClienteError(validarEmailCliente(fCliente.email))}
                 placeholder="correo@ejemplo.com"
-                className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100 ${
-                  emailClienteError ? "border-red-400 bg-red-50 dark:bg-red-900/20" : "border-gray-200 dark:border-slate-600"
+                className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-slate-100 ${
+                  emailClienteError ? "border-red-400 bg-red-50 dark:bg-red-900/20" : "border-slate-200 dark:border-slate-600"
                 }`}
               />
               {emailClienteError && (
@@ -999,7 +1001,7 @@ export default function CitasPage() {
             </div>
 
             <div>
-              <label htmlFor="nueva-nota" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label htmlFor="nueva-nota" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 Nota interna <span className="text-muted-foreground font-normal">(opcional)</span>
               </label>
               <textarea
@@ -1008,16 +1010,16 @@ export default function CitasPage() {
                 onChange={(e) => setFCliente((p) => ({ ...p, notas: e.target.value }))}
                 rows={2}
                 placeholder="Preferencias, indicaciones..."
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700 resize-none"
+                className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm outline-none focus:border-slate-700 resize-none"
               />
             </div>
 
             <div className="flex gap-2">
               <button
                 onClick={() => setPasoCita(1)}
-                className="px-4 py-2.5 border border-gray-200 dark:border-slate-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700 rounded-xl text-sm transition"
+                className="px-4 py-2.5 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl text-sm transition"
               >
-                ← Atrás
+                Atrás
               </button>
               <button
                 onClick={() => {
@@ -1042,7 +1044,7 @@ export default function CitasPage() {
             <img
               src={urlComprobante}
               alt="Comprobante de anticipo"
-              className="w-full rounded-xl border border-gray-100 object-contain max-h-[60vh]"
+              className="w-full rounded-xl border border-slate-100 object-contain max-h-[60vh]"
             />
             <a
               href={urlComprobante}
@@ -1050,7 +1052,7 @@ export default function CitasPage() {
               rel="noreferrer"
               className="block text-center text-sm text-slate-700 hover:underline font-medium"
             >
-              Abrir imagen completa →
+              Abrir imagen completa
             </a>
           </div>
         )}
@@ -1106,12 +1108,12 @@ export default function CitasPage() {
             {/* Paso 1 — elegir nueva fecha y slot */}
             {pasoRepetir === 1 && (
               <div className="space-y-4">
-                <div className="bg-gray-50 dark:bg-slate-700 rounded-lg p-3 text-sm space-y-1">
-                  <p><span className="text-gray-500 dark:text-gray-400">Servicio:</span> <span className="font-medium dark:text-gray-200">{citaRepetir.nombreServicio}</span></p>
-                  <p><span className="text-gray-500 dark:text-gray-400">Profesional:</span> <span className="font-medium dark:text-gray-200">{citaRepetir.nombreEmpleado}</span></p>
-                  <p><span className="text-gray-500 dark:text-gray-400">Cliente:</span> <span className="font-medium dark:text-gray-200">{citaRepetir.nombreCliente}</span></p>
+                <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-3 text-sm space-y-1">
+                  <p><span className="text-slate-500 dark:text-slate-400">Servicio:</span> <span className="font-medium dark:text-slate-200">{citaRepetir.nombreServicio}</span></p>
+                  <p><span className="text-slate-500 dark:text-slate-400">{`${terms.empleado}:`}</span> <span className="font-medium dark:text-slate-200">{citaRepetir.nombreEmpleado}</span></p>
+                  <p><span className="text-slate-500 dark:text-slate-400">Cliente:</span> <span className="font-medium dark:text-slate-200">{citaRepetir.nombreCliente}</span></p>
                 </div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Selecciona la nueva fecha y horario:</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Selecciona la nueva fecha y horario:</p>
                 <PasoFechaHora
                   servicioId={citaRepetir.servicioId}
                   empleadoId={citaRepetir.empleadoId}
@@ -1123,7 +1125,7 @@ export default function CitasPage() {
                   disabled={!slotRepetir}
                   className="w-full bg-slate-700 hover:bg-slate-800 disabled:opacity-40 text-white font-semibold py-2.5 rounded-xl transition"
                 >
-                  Continuar →
+                  Continuar
                 </button>
               </div>
             )}
@@ -1131,35 +1133,35 @@ export default function CitasPage() {
             {/* Paso 2 — confirmar datos del cliente */}
             {pasoRepetir === 2 && (
               <div className="space-y-4">
-                <div className="bg-gray-50 dark:bg-slate-700 rounded-lg p-3 text-sm space-y-1">
-                  <p><span className="text-gray-500 dark:text-gray-400">Servicio:</span> <span className="font-medium dark:text-gray-200">{citaRepetir.nombreServicio}</span></p>
-                  <p><span className="text-gray-500 dark:text-gray-400">Profesional:</span> <span className="font-medium dark:text-gray-200">{citaRepetir.nombreEmpleado}</span></p>
-                  <p><span className="text-gray-500 dark:text-gray-400">Hora:</span> <span className="font-medium dark:text-gray-200">{slotRepetir ? formatFechaHora(slotRepetir.inicio) : ""}</span></p>
+                <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-3 text-sm space-y-1">
+                  <p><span className="text-slate-500 dark:text-slate-400">Servicio:</span> <span className="font-medium dark:text-slate-200">{citaRepetir.nombreServicio}</span></p>
+                  <p><span className="text-slate-500 dark:text-slate-400">{`${terms.empleado}:`}</span> <span className="font-medium dark:text-slate-200">{citaRepetir.nombreEmpleado}</span></p>
+                  <p><span className="text-slate-500 dark:text-slate-400">Hora:</span> <span className="font-medium dark:text-slate-200">{slotRepetir ? formatFechaHora(slotRepetir.inicio) : ""}</span></p>
                 </div>
                 <div>
-                  <label htmlFor="repetir-nombre" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre del cliente <span className="text-red-700 dark:text-red-400" aria-hidden="true">*</span></label>
+                  <label htmlFor="repetir-nombre" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nombre del cliente <span className="text-red-700 dark:text-red-400" aria-hidden="true">*</span></label>
                   <input
                     id="repetir-nombre"
                     type="text"
                     required
                     value={fClienteRepetir.nombre}
                     onChange={(e) => setFClienteRepetir((p) => ({ ...p, nombre: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm outline-none focus:border-slate-700"
                   />
                 </div>
                 <div>
-                  <label htmlFor="repetir-telefono" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Teléfono <span className="text-red-700 dark:text-red-400" aria-hidden="true">*</span></label>
+                  <label htmlFor="repetir-telefono" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Teléfono <span className="text-red-700 dark:text-red-400" aria-hidden="true">*</span></label>
                   <input
                     id="repetir-telefono"
                     type="tel"
                     required
                     value={fClienteRepetir.telefono}
                     onChange={(e) => setFClienteRepetir((p) => ({ ...p, telefono: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm outline-none focus:border-slate-700"
                   />
                 </div>
                 <div>
-                  <label htmlFor="repetir-email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label htmlFor="repetir-email" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                     Email <span className="text-muted-foreground font-normal">(opcional)</span>
                   </label>
                   <input
@@ -1173,8 +1175,8 @@ export default function CitasPage() {
                       if (emailRepetirError) setEmailRepetirError(validarEmailCliente(e.target.value));
                     }}
                     onBlur={() => setEmailRepetirError(validarEmailCliente(fClienteRepetir.email))}
-                    className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100 ${
-                      emailRepetirError ? "border-red-400 bg-red-50 dark:bg-red-900/20" : "border-gray-200 dark:border-slate-600"
+                    className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-slate-100 ${
+                      emailRepetirError ? "border-red-400 bg-red-50 dark:bg-red-900/20" : "border-slate-200 dark:border-slate-600"
                     }`}
                   />
                   {emailRepetirError && (
@@ -1184,7 +1186,7 @@ export default function CitasPage() {
                   )}
                 </div>
                 <div>
-                  <label htmlFor="repetir-nota" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label htmlFor="repetir-nota" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                     Nota interna <span className="text-muted-foreground font-normal">(opcional)</span>
                   </label>
                   <textarea
@@ -1192,15 +1194,15 @@ export default function CitasPage() {
                     value={fClienteRepetir.notas}
                     onChange={(e) => setFClienteRepetir((p) => ({ ...p, notas: e.target.value }))}
                     rows={2}
-                    className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700 resize-none"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm outline-none focus:border-slate-700 resize-none"
                   />
                 </div>
                 <div className="flex gap-2">
                   <button
                     onClick={() => setPasoRepetir(1)}
-                    className="px-4 py-2.5 border border-gray-200 dark:border-slate-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700 rounded-xl text-sm transition"
+                    className="px-4 py-2.5 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl text-sm transition"
                   >
-                    ← Atrás
+                    Atrás
                   </button>
                   <button
                     onClick={() => {

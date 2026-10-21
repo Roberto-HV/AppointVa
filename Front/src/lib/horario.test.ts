@@ -84,6 +84,23 @@ describe("aplicarATodosLosAbiertos", () => {
     expect(avisoAplicar(aplicarATodosLosAbiertos(horarios, 1, () => [{ horaInicio: "08:00", horaFin: "20:00" }]))).toBeNull();
   });
 
+  it("con horario del negocio, un día de origen sin intervalos vacía los demás días abiertos sin avisar 'fuera del horario'", () => {
+    const horarios = [
+      { diaSemana: 1, activo: true, intervalos: [] },
+      { diaSemana: 2, activo: true, intervalos: [{ horaInicio: "10:00", horaFin: "12:00" }] },
+      { diaSemana: 0, activo: true, intervalos: [{ horaInicio: "10:00", horaFin: "11:00" }] },
+      { diaSemana: 3, activo: false, intervalos: [] },
+    ];
+    const r = aplicarATodosLosAbiertos(horarios, 1, (d) => (d === 0 ? null : [{ horaInicio: "09:00", horaFin: "19:00" }]));
+    expect(r.horarios[1].intervalos).toEqual([]);
+    expect(r.horarios[2].intervalos).toEqual([]);
+    expect(r.horarios[3]).toBe(horarios[3]);
+    expect(r).toMatchObject({ copiados: [2, 0], recortados: [], omitidos: [] });
+    expect(avisoAplicar(r)).toBeNull();
+    // Igual que el modo sin recorte.
+    expect(aplicarATodosLosAbiertos(horarios, 1).horarios).toEqual(r.horarios);
+  });
+
   it("recortarAIntervalos parte un intervalo que cruza la pausa del negocio", () => {
     expect(
       recortarAIntervalos(

@@ -51,7 +51,7 @@ function Tarjeta({
         className={`${CLASES_TARJETA} ${
           seleccionado
             ? "border-slate-800 dark:border-slate-200"
-            : "border-transparent hover:border-gray-300 dark:hover:border-slate-500"
+            : "border-transparent hover:border-slate-300 dark:hover:border-slate-500"
         }`}
       >
         <span className="block aspect-[2/1] relative">
@@ -67,8 +67,8 @@ function Tarjeta({
       <span
         className={`block text-[11px] mt-1 text-center ${
           seleccionado
-            ? "font-semibold text-gray-800 dark:text-gray-100"
-            : "text-gray-500 dark:text-gray-400"
+            ? "font-semibold text-slate-800 dark:text-slate-100"
+            : "text-slate-500 dark:text-slate-400"
         }`}
       >
         {nombre}
@@ -137,8 +137,8 @@ export default function SelectorFondoPortada({
 
       {FAMILIAS_PORTADA.map((familia) => (
         <div key={familia.familia} className="mb-5 last:mb-0">
-          <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300">{familia.titulo}</h3>
-          <p className="text-[11px] text-gray-400 dark:text-gray-500 mb-2">{familia.descripcion}</p>
+          <h3 className="text-xs font-semibold text-slate-700 dark:text-slate-300">{familia.titulo}</h3>
+          <p className="text-[11px] text-slate-400 dark:text-slate-500 mb-2">{familia.descripcion}</p>
           <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
             {presetsPorFamilia(familia.familia).map((preset) => (
               <Tarjeta

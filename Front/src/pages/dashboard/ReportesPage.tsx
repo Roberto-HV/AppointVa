@@ -24,7 +24,7 @@ import { negociosApi } from "../../api/negocios";
 import { useToastStore } from "../../store/toastStore";
 import ErrorCarga from "../../components/ui/ErrorCarga";
 import TablaDatosOculta from "../../components/ui/TablaDatosOculta";
-import { COLOR_SERIE, EJE_LINEA, EJE_TICK, REJILLA, TOOLTIP } from "../../lib/temaGraficas";
+import { COLOR_SERIE, EJE_LINEA, EJE_TICK, REJILLA, TOOLTIP, colorCategoria } from "../../lib/temaGraficas";
 import { horasVisiblesHeatmap } from "../../lib/heatmap";
 
 type Tab = "citas" | "ingresos" | "empleados" | "heatmap" | "retencion";
@@ -354,21 +354,21 @@ export default function ReportesPage() {
             const transferencia = Math.max(0, reporteCitas.totalIngresos - efectivo - tarjeta);
             const total = efectivo + tarjeta + transferencia;
             const items = [
-              { label: "Efectivo", valor: efectivo, color: "#10b981" },
-              { label: "Tarjeta", valor: tarjeta, color: "#3b82f6" },
-              { label: "Transferencia", valor: transferencia, color: "#8b5cf6" },
+              { label: "Efectivo", valor: efectivo, color: colorCategoria(3) },
+              { label: "Tarjeta", valor: tarjeta, color: colorCategoria(0) },
+              { label: "Transferencia", valor: transferencia, color: colorCategoria(1) },
             ].filter((i) => i.valor > 0);
             return (
-              <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4">
-                <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Métodos de pago</h2>
+              <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 p-4">
+                <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Métodos de pago</h2>
                 <div className="flex gap-4 flex-wrap mb-3">
                   {items.map((item) => (
                     <div key={item.label} className="flex items-center gap-2 min-w-32">
                       <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
                       <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">{item.label}</p>
-                        <p className="text-sm font-bold text-gray-900 dark:text-gray-100">{formatPrecio(item.valor)}</p>
-                        <p className="text-xs text-gray-400 dark:text-gray-500">{total > 0 ? `${((item.valor / total) * 100).toFixed(0)}%` : "0%"}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">{item.label}</p>
+                        <p className="text-sm font-bold text-slate-900 dark:text-slate-100">{formatPrecio(item.valor)}</p>
+                        <p className="text-xs text-slate-400 dark:text-slate-500">{total > 0 ? `${((item.valor / total) * 100).toFixed(0)}%` : "0%"}</p>
                       </div>
                     </div>
                   ))}
@@ -387,12 +387,12 @@ export default function ReportesPage() {
           })()}
 
           {/* Tabla */}
-          <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 overflow-x-auto">
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-100 dark:border-slate-700">
+                <tr className="border-b border-slate-100 dark:border-slate-700">
                   {["Código", "Cliente", "Servicio", "Empleado", "Fecha", "Precio", "Pagada", "Estado"].map((h) => (
-                    <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">
+                    <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide whitespace-nowrap">
                       {h}
                     </th>
                   ))}
@@ -414,7 +414,7 @@ export default function ReportesPage() {
                   </tr>
                 ) : !reporteCitas?.citas.length ? (
                   <tr>
-                    <td colSpan={8} className="px-4 py-10 text-center text-gray-400 dark:text-gray-500 text-sm">
+                    <td colSpan={8} className="px-4 py-10 text-center text-slate-400 dark:text-slate-500 text-sm">
                       {`No hay ${terms.citas.toLowerCase()} en el rango seleccionado.`}
                     </td>
                   </tr>
@@ -422,17 +422,17 @@ export default function ReportesPage() {
                   reporteCitas.citas
                     .slice((reportePagina - 1) * REPORTE_PAGE_SIZE, reportePagina * REPORTE_PAGE_SIZE)
                     .map((c) => (
-                      <tr key={c.id} className="border-b border-gray-50 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 transition">
-                        <td className="px-4 py-3 font-mono text-xs text-gray-400 dark:text-gray-500">{c.codigoConfirmacion}</td>
-                        <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100 whitespace-nowrap">{c.nombreCliente}</td>
-                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400 whitespace-nowrap">{c.nombreServicio}</td>
-                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400 whitespace-nowrap">{c.nombreEmpleado}</td>
-                        <td className="px-4 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap">{formatFecha(c.inicioEn)}</td>
-                        <td className="px-4 py-3 font-semibold text-gray-900 dark:text-gray-100 whitespace-nowrap">{formatPrecio(c.precio)}</td>
+                      <tr key={c.id} className="border-b border-slate-50 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition">
+                        <td className="px-4 py-3 font-mono text-xs text-slate-400 dark:text-slate-500">{c.codigoConfirmacion}</td>
+                        <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100 whitespace-nowrap">{c.nombreCliente}</td>
+                        <td className="px-4 py-3 text-slate-600 dark:text-slate-400 whitespace-nowrap">{c.nombreServicio}</td>
+                        <td className="px-4 py-3 text-slate-600 dark:text-slate-400 whitespace-nowrap">{c.nombreEmpleado}</td>
+                        <td className="px-4 py-3 text-slate-500 dark:text-slate-400 whitespace-nowrap">{formatFecha(c.inicioEn)}</td>
+                        <td className="px-4 py-3 font-semibold text-slate-900 dark:text-slate-100 whitespace-nowrap">{formatPrecio(c.precio)}</td>
                         <td className="px-4 py-3 text-center">
                           {c.pagada
                             ? <span className="text-green-600 font-semibold text-xs">{c.metodoPago ?? "Sí"}</span>
-                            : <span className="text-gray-300 dark:text-gray-600 text-xs">—</span>}
+                            : <span className="text-slate-300 dark:text-slate-600 text-xs">—</span>}
                         </td>
                         <td className="px-4 py-3">
                           <EstadoBadge estado={c.estadoTexto} />
@@ -459,13 +459,13 @@ export default function ReportesPage() {
       {tab === "empleados" && (
         <>
           {cargandoIngresos ? (
-            <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-8 flex items-center justify-center">
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 p-8 flex items-center justify-center">
               <div className="animate-spin w-6 h-6 border-2 border-slate-700 border-t-transparent rounded-full" />
             </div>
           ) : errorIngresos ? (
             errorIngresosEnLinea
           ) : !reporteIngresos?.porEmpleado.length ? (
-            <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-10 text-center text-sm text-gray-400 dark:text-gray-500">
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 p-10 text-center text-sm text-slate-400 dark:text-slate-500">
               No hay datos de empleados en el rango seleccionado.
             </div>
           ) : (
@@ -485,8 +485,8 @@ export default function ReportesPage() {
               })()}
 
               {/* Gráfica de barras por empleado */}
-              <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
-                <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Ingresos por empleado</h2>
+              <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 p-5">
+                <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4">Ingresos por empleado</h2>
                 <ResponsiveContainer width="100%" height={Math.max(200, reporteIngresos.porEmpleado.length * 52)}>
                   <BarChart
                     accessibilityLayer
@@ -509,16 +509,16 @@ export default function ReportesPage() {
               </div>
 
               {/* Tabla detallada por empleado */}
-              <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 overflow-hidden">
+              <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 overflow-hidden">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-gray-100 dark:border-slate-700">
+                    <tr className="border-b border-slate-100 dark:border-slate-700">
                       <th className="px-3 py-3 w-8"></th>
-                      <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Empleado</th>
-                      <th className="px-5 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Citas</th>
-                      <th className="px-5 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Ingresos</th>
-                      <th className="px-5 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide hidden sm:table-cell">Ticket prom.</th>
-                      <th className="px-5 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">% del total</th>
+                      <th className="px-5 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Empleado</th>
+                      <th className="px-5 py-3 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Citas</th>
+                      <th className="px-5 py-3 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Ingresos</th>
+                      <th className="px-5 py-3 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide hidden sm:table-cell">Ticket prom.</th>
+                      <th className="px-5 py-3 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">% del total</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -527,7 +527,6 @@ export default function ReportesPage() {
                       const ticketPromedioEquipo = reporteIngresos.porEmpleado.reduce((s, e) => s + e.totalCitas, 0) > 0
                         ? totalEquipoIngresos / reporteIngresos.porEmpleado.reduce((s, e) => s + e.totalCitas, 0)
                         : 0;
-                      const MEDALLAS = ["🥇", "🥈", "🥉"];
                       return reporteIngresos.porEmpleado
                         .slice()
                         .sort((a, b) => b.totalIngresos - a.totalIngresos)
@@ -537,9 +536,12 @@ export default function ReportesPage() {
                           const vsPromedio = ticketPromedioEquipo > 0 ? ((ticket - ticketPromedioEquipo) / ticketPromedioEquipo) * 100 : 0;
                           const iniciales = e.nombreEmpleado.split(" ").slice(0, 2).map((p) => p[0]).join("").toUpperCase();
                           return (
-                            <tr key={e.empleadoId} className={`border-b border-gray-50 dark:border-slate-700 last:border-0 hover:bg-gray-50 dark:hover:bg-slate-700 transition ${i === 0 ? "bg-amber-50/40 dark:bg-amber-900/10" : ""}`}>
-                              <td className="px-3 py-3 text-center text-base">
-                                {i < 3 ? MEDALLAS[i] : <span className="text-xs text-gray-400">#{i + 1}</span>}
+                            <tr key={e.empleadoId} className={`border-b border-slate-50 dark:border-slate-700 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-700 transition ${i === 0 ? "bg-amber-50/40 dark:bg-amber-900/10" : ""}`}>
+                              {/* Posición en número, no con medallas emoji (OM-32 / DC-35). */}
+                              <td className="px-3 py-3 text-center">
+                                <span className={`text-xs tabular-nums ${i === 0 ? "font-bold text-foreground" : "text-muted-foreground"}`}>
+                                  <span className="sr-only">Posición </span>{i + 1}
+                                </span>
                               </td>
                               <td className="px-5 py-3">
                                 <div className="flex items-center gap-3">
@@ -549,14 +551,14 @@ export default function ReportesPage() {
                                   >
                                     {iniciales}
                                   </div>
-                                  <span className="font-medium text-gray-900 dark:text-gray-100">{e.nombreEmpleado}</span>
+                                  <span className="font-medium text-slate-900 dark:text-slate-100">{e.nombreEmpleado}</span>
                                 </div>
                               </td>
-                              <td className="px-5 py-3 text-right text-gray-600 dark:text-gray-400">{e.totalCitas}</td>
-                              <td className="px-5 py-3 text-right font-semibold text-gray-900 dark:text-gray-100">{formatPrecio(e.totalIngresos)}</td>
+                              <td className="px-5 py-3 text-right text-slate-600 dark:text-slate-400">{e.totalCitas}</td>
+                              <td className="px-5 py-3 text-right font-semibold text-slate-900 dark:text-slate-100">{formatPrecio(e.totalIngresos)}</td>
                               <td className="px-5 py-3 text-right hidden sm:table-cell">
                                 <div>
-                                  <span className="text-gray-600 dark:text-gray-400">{formatPrecio(ticket)}</span>
+                                  <span className="text-slate-600 dark:text-slate-400">{formatPrecio(ticket)}</span>
                                   {ticketPromedioEquipo > 0 && (
                                     <span className={`ml-1.5 text-xs font-semibold ${vsPromedio >= 0 ? "text-emerald-500" : "text-red-400"}`}>
                                       {vsPromedio >= 0 ? "↑" : "↓"}{Math.abs(vsPromedio).toFixed(0)}%
@@ -566,13 +568,13 @@ export default function ReportesPage() {
                               </td>
                               <td className="px-5 py-3 text-right">
                                 <div className="flex items-center justify-end gap-2">
-                                  <div className="w-16 h-1.5 bg-gray-100 dark:bg-slate-600 rounded-full overflow-hidden">
+                                  <div className="w-16 h-1.5 bg-slate-100 dark:bg-slate-600 rounded-full overflow-hidden">
                                     <div
                                       className="h-full rounded-full"
                                       style={{ width: `${pct}%`, backgroundColor: COLOR_SERIE }}
                                     />
                                   </div>
-                                  <span className="text-xs text-gray-500 dark:text-gray-400 w-10 text-right tabular-nums">{pct.toFixed(1)}%</span>
+                                  <span className="text-xs text-slate-500 dark:text-slate-400 w-10 text-right tabular-nums">{pct.toFixed(1)}%</span>
                                 </div>
                               </td>
                             </tr>
@@ -598,7 +600,7 @@ export default function ReportesPage() {
           </div>
 
           {cargandoIngresos ? (
-            <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-8 flex items-center justify-center">
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 p-8 flex items-center justify-center">
               <div className="animate-spin w-6 h-6 border-2 border-slate-700 border-t-transparent rounded-full" />
             </div>
           ) : errorIngresos ? (
@@ -606,10 +608,10 @@ export default function ReportesPage() {
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Ingresos por servicio */}
-              <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
-                <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">{`Ingresos por ${terms.servicios.toLowerCase()}`}</h2>
+              <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 p-5">
+                <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4">{`Ingresos por ${terms.servicios.toLowerCase()}`}</h2>
                 {!reporteIngresos?.porServicio.length ? (
-                  <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-6">Sin datos</p>
+                  <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-6">Sin datos</p>
                 ) : (
                   <>
                     <ResponsiveContainer width="100%" height={220}>
@@ -631,10 +633,10 @@ export default function ReportesPage() {
               </div>
 
               {/* Ingresos por día */}
-              <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
-                <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Ingresos por día</h2>
+              <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 p-5">
+                <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4">Ingresos por día</h2>
                 {!reporteIngresos?.porDia.length ? (
-                  <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-6">Sin datos</p>
+                  <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-6">Sin datos</p>
                 ) : (
                   <>
                     <ResponsiveContainer width="100%" height={220}>
@@ -656,26 +658,26 @@ export default function ReportesPage() {
               </div>
 
               {/* Tabla por empleado */}
-              <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 overflow-hidden lg:col-span-2">
+              <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 overflow-hidden lg:col-span-2">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-gray-100 dark:border-slate-700">
-                      <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Empleado</th>
-                      <th className="px-5 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Citas</th>
-                      <th className="px-5 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Ingresos</th>
+                    <tr className="border-b border-slate-100 dark:border-slate-700">
+                      <th className="px-5 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Empleado</th>
+                      <th className="px-5 py-3 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Citas</th>
+                      <th className="px-5 py-3 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Ingresos</th>
                     </tr>
                   </thead>
                   <tbody>
                     {!reporteIngresos?.porEmpleado.length ? (
                       <tr>
-                        <td colSpan={3} className="px-5 py-8 text-center text-gray-400 dark:text-gray-500 text-sm">Sin datos</td>
+                        <td colSpan={3} className="px-5 py-8 text-center text-slate-400 dark:text-slate-500 text-sm">Sin datos</td>
                       </tr>
                     ) : (
                       reporteIngresos.porEmpleado.map((e) => (
-                        <tr key={e.empleadoId} className="border-b border-gray-50 dark:border-slate-700 last:border-0">
-                          <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100">{e.nombreEmpleado}</td>
-                          <td className="px-5 py-3 text-right text-gray-600 dark:text-gray-400">{e.totalCitas}</td>
-                          <td className="px-5 py-3 text-right font-semibold text-gray-900 dark:text-gray-100">{formatPrecio(e.totalIngresos)}</td>
+                        <tr key={e.empleadoId} className="border-b border-slate-50 dark:border-slate-700 last:border-0">
+                          <td className="px-5 py-3 font-medium text-slate-900 dark:text-slate-100">{e.nombreEmpleado}</td>
+                          <td className="px-5 py-3 text-right text-slate-600 dark:text-slate-400">{e.totalCitas}</td>
+                          <td className="px-5 py-3 text-right font-semibold text-slate-900 dark:text-slate-100">{formatPrecio(e.totalIngresos)}</td>
                         </tr>
                       ))
                     )}
@@ -691,7 +693,7 @@ export default function ReportesPage() {
       {tab === "heatmap" && (
         <>
           {cargandoHeatmap ? (
-            <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-8 flex items-center justify-center">
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 p-8 flex items-center justify-center">
               <div className="animate-spin w-6 h-6 border-2 border-slate-700 border-t-transparent rounded-full" />
             </div>
           ) : errorHeatmap ? (
@@ -701,7 +703,7 @@ export default function ReportesPage() {
               reintentando={actualizandoHeatmap}
             />
           ) : !heatmap || heatmap.totalCitas === 0 ? (
-            <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-10 text-center text-sm text-gray-400 dark:text-gray-500">
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 p-10 text-center text-sm text-slate-400 dark:text-slate-500">
               {`No hay ${terms.citas.toLowerCase()} en el rango seleccionado.`}
             </div>
           ) : (
@@ -712,8 +714,8 @@ export default function ReportesPage() {
                 <Tarjeta label="Día pico" valor={heatmap.diaPico} subvalor="día con más demanda" icono={<CheckCircle size={18} />} />
               </div>
 
-              <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
-                <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Ocupación por hora y día</h2>
+              <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 p-5">
+                <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Ocupación por hora y día</h2>
                 <p className="text-xs text-muted-foreground mb-4">{`Número de ${terms.citas.toLowerCase()} por franja horaria, dentro del horario de atención.`}</p>
                 <div className="overflow-x-auto">
                   <div className="min-w-[480px]" role="table" aria-label={`${terms.citas} por hora y día de la semana`}>
@@ -783,7 +785,7 @@ export default function ReportesPage() {
       {tab === "retencion" && (
         <>
           {cargandoRetencion ? (
-            <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-8 flex items-center justify-center">
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 p-8 flex items-center justify-center">
               <div className="animate-spin w-6 h-6 border-2 border-slate-700 border-t-transparent rounded-full" />
             </div>
           ) : errorRetencion ? (
@@ -793,7 +795,7 @@ export default function ReportesPage() {
               reintentando={actualizandoRetencion}
             />
           ) : !retencion || retencion.totalClientes === 0 ? (
-            <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-10 text-center text-sm text-gray-400 dark:text-gray-500">
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 p-10 text-center text-sm text-slate-400 dark:text-slate-500">
               {`No hay datos de ${terms.clientes.toLowerCase()} en el rango seleccionado.`}
             </div>
           ) : (
@@ -806,8 +808,8 @@ export default function ReportesPage() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
-                  <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Nuevos vs recurrentes</h2>
+                <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 p-5">
+                  <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4">Nuevos vs recurrentes</h2>
                   {(() => {
                     const total = retencion.totalClientes;
                     const pctNuevos = total > 0 ? (retencion.clientesNuevos / total) * 100 : 0;
@@ -816,20 +818,20 @@ export default function ReportesPage() {
                       <div className="space-y-3">
                         <div>
                           <div className="flex justify-between text-xs mb-1">
-                            <span className="font-medium text-slate-700 dark:text-gray-300">Nuevos</span>
-                            <span className="text-gray-500 dark:text-gray-400">{retencion.clientesNuevos} ({pctNuevos.toFixed(1)}%)</span>
+                            <span className="font-medium text-slate-700 dark:text-slate-300">Nuevos</span>
+                            <span className="text-slate-500 dark:text-slate-400">{retencion.clientesNuevos} ({pctNuevos.toFixed(1)}%)</span>
                           </div>
-                          <div className="h-3 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                            <div className="h-full bg-sky-400 rounded-full" style={{ width: `${pctNuevos}%` }} />
+                          <div className="h-3 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                            <div className="h-full bg-categoria-3 rounded-full" style={{ width: `${pctNuevos}%` }} />
                           </div>
                         </div>
                         <div>
                           <div className="flex justify-between text-xs mb-1">
-                            <span className="font-medium text-slate-700 dark:text-gray-300">Recurrentes</span>
-                            <span className="text-gray-500 dark:text-gray-400">{retencion.clientesRecurrentes} ({pctRecurrentes.toFixed(1)}%)</span>
+                            <span className="font-medium text-slate-700 dark:text-slate-300">Recurrentes</span>
+                            <span className="text-slate-500 dark:text-slate-400">{retencion.clientesRecurrentes} ({pctRecurrentes.toFixed(1)}%)</span>
                           </div>
-                          <div className="h-3 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                            <div className="h-full bg-emerald-400 rounded-full" style={{ width: `${pctRecurrentes}%` }} />
+                          <div className="h-3 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                            <div className="h-full bg-categoria-4 rounded-full" style={{ width: `${pctRecurrentes}%` }} />
                           </div>
                         </div>
                       </div>
@@ -837,30 +839,30 @@ export default function ReportesPage() {
                   })()}
                 </div>
 
-                <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
-                  <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Proyección del mes</h2>
+                <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 p-5">
+                  <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4">Proyección del mes</h2>
                   <div className="space-y-3">
-                    <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
+                    <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400">
                       <span>Ingreso actual</span>
-                      <span className="font-semibold text-gray-900 dark:text-gray-100">{formatPrecio(retencion.ingresoMesActual)}</span>
+                      <span className="font-semibold text-slate-900 dark:text-slate-100">{formatPrecio(retencion.ingresoMesActual)}</span>
                     </div>
-                    <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
+                    <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400">
                       <span>Agendado pendiente</span>
-                      <span className="font-semibold text-gray-900 dark:text-gray-100">{formatPrecio(retencion.ingresoAgendado)}</span>
+                      <span className="font-semibold text-slate-900 dark:text-slate-100">{formatPrecio(retencion.ingresoAgendado)}</span>
                     </div>
-                    <div className="border-t border-gray-100 dark:border-slate-700 pt-2 flex justify-between text-sm">
-                      <span className="font-semibold text-gray-700 dark:text-gray-300">Proyección total</span>
-                      <span className="font-bold text-slate-900 dark:text-gray-100">{formatPrecio(retencion.proyeccionMes)}</span>
+                    <div className="border-t border-slate-100 dark:border-slate-700 pt-2 flex justify-between text-sm">
+                      <span className="font-semibold text-slate-700 dark:text-slate-300">Proyección total</span>
+                      <span className="font-bold text-slate-900 dark:text-slate-100">{formatPrecio(retencion.proyeccionMes)}</span>
                     </div>
                     {retencion.proyeccionMes > 0 && (
                       <div>
-                        <div className="h-2 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                        <div className="h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
                           <div
                             className="h-full bg-slate-700 rounded-full"
                             style={{ width: `${Math.min(100, (retencion.ingresoMesActual / retencion.proyeccionMes) * 100)}%` }}
                           />
                         </div>
-                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 text-right">
+                        <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 text-right">
                           {retencion.diasRestantesMes} días restantes en el mes
                         </p>
                       </div>

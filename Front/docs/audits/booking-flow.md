@@ -1,7 +1,7 @@
 # Audit: Public Booking Flow
 
 - **Date:** 2026-10-20
-- **Status:** Fixes in progress. Severity 3 (BF-01 … BF-09) is fixed in commit `1e21323`. Severity 2 (BF-10 … BF-22) is fixed in the working tree, pending commit. Severity 1 (BF-23 … BF-27) is open. Each finding carries its own **Status** line.
+- **Status:** Fixes in progress. Severity 3 (BF-01 … BF-09) is fixed in commit `1e21323`. Severity 2 (BF-10 … BF-22) is fixed in the working tree, pending commit. Severity 1 (BF-23 … BF-27) is fixed in the working tree (2026-10-21, pending commit, not rendered). Each finding carries its own **Status** line.
 - **Type:** Code-based audit. **Nothing was rendered.** No browser, screenshots, emulated viewports or assistive technology were used. Contrast ratios are calculated from the Tailwind/hex values in the source. Layout and touch behavior are inferred from class names. Verify visual findings in a running build before fixing them.
 
 ## Scope
@@ -32,7 +32,7 @@ Line numbers point to the tree as audited, before any fix; the code has moved si
 | 4 Catastrophic | 0 | — | — |
 | 3 Major | 9 | BF-01 … BF-09 | Fixed in `1e21323` |
 | 2 Minor | 13 | BF-10 … BF-22 | Fixed (pending commit) |
-| 1 Cosmetic | 5 | BF-23 … BF-27 | Open |
+| 1 Cosmetic | 5 | BF-23 … BF-27 | Fixed (pending commit) |
 | **Total** | **27** | | |
 
 | Framework | Score | Main reasons |
@@ -224,19 +224,19 @@ Line numbers point to the tree as audited, before any fix; the code has moved si
 ## Severity 1: Cosmetic
 
 ### BF-23: Selection patterns differ between steps, and colors are hard-coded hex
-- **Status:** Open.
+- **Status:** Fixed (pending commit). `PasoEmpleado` now renders "Sin preferencia" and every staff member as `FilaSeleccion` rows (inset ring + check mark, avatar or initial in `inicio`, biography as the description), the same pattern as step 1; the two custom cards and their hex values are gone. Static hex replaced by Tailwind/tokens: `FilaSeleccion` idle ring uses `hsl(var(--border))`, `IndicadorPasos` strip is `bg-zinc-900`, slot buttons use classes, gallery dots `bg-slate-700/300`, the photo header and confirmation code band `bg-zinc-950`, the confirmation page `bg-slate-50`; `color = "#334155"` defaults use `DEFAULT_COLOR`. Remaining inline colours are brand-derived (`brandAccent`/`brandTint`) and the WhatsApp brand green.
 - **Principle:** H4 Consistency; Refactoring UI "systems over one-offs"
 - **Location:** Step 1 uses `FilaSeleccion` rows (inset ring and check mark). Step 2 uses a different two-column card with `border-2` and no check mark (`PasoEmpleado.tsx:88-124`), and its "Sin preferencia" card is a third variant (`:46-77`). Hex literals: `PasoEmpleado.tsx:50`, `:54`, `:58`, `:65`, `:95`, `:118`; `PasoFechaHora.tsx:225`; `FilaSeleccion.tsx:62`; `IndicadorPasos.tsx:12`; `ConfirmacionPage.tsx:193`, `:209`, `:270`; `BookingPage.tsx:236`.
 - **Fix:** Reuse `FilaSeleccion` (with the avatar in `inicio`) for staff, or extract one selectable-card primitive. Replace hex values with tokens. This is also a prerequisite for BF-07.
 
 ### BF-24: Emoji used as interface icons
-- **Status:** Open.
+- **Status:** Fixed (pending commit). The header without a logo shows the business initial; the address uses lucide `MapPin`; the confirmation status badge uses `Check`/`Clock` with text ("Confirmada", "Pendiente"); the reschedule success banner uses `CheckCircle2` (and lost its dead `dark:` classes). Tests in `BookingPage.test.tsx`, `ConfirmacionPage.test.tsx`.
 - **Principle:** impeccable craft floor (no generic or emoji iconography in product UI)
 - **Location:** `BookingPage.tsx:1074` (🏪 fallback logo), `:1112` (📍 address); `ConfirmacionPage.tsx:256` (✓), `:288-289` (✓, ⏳ inside the status badge).
 - **Fix:** Use lucide `Store`, `MapPin`, `Check` and `Clock` (already a dependency). For the fallback logo, use the business initial, consistent with staff avatars.
 
 ### BF-25: Copy and wording refinements
-- **Status:** Open.
+- **Status:** Fixed (pending commit). The "Reserva tu cita" eyebrow was removed; intake reads "Unas preguntas rápidas" / "Nos ayudan a preparar tu cita."; the review pill is hidden when there are no reviews (and its value has an `sr-only` "Calificación"); the confirmation receipt labels the staff member with `getSectorTerms(sector).empleado`, reading the sector from the cached public business query (`["negocio", slug]`, because `/publico/citas/{codigo}` does not send it); `PasoEmpleado`'s empty message uses `terms.servicio`. `impeccable clarify` was not run.
 - **Principle:** Krug "get rid of half the words"; H4 Consistency
 - **Location:**
   - `BookingPage.tsx:1181`: the eyebrow "Reserva tu cita" in slate-400 repeats the `<h2>` right below it
@@ -247,12 +247,12 @@ Line numbers point to the tree as audited, before any fix; the code has moved si
 - **Fix:** Apply the edits above. Run `impeccable clarify` on the full flow once.
 
 ### BF-26: "Mis citas" links reload the whole app
-- **Status:** Open.
+- **Status:** Fixed (pending commit). `IndicadorPasos` and the confirmation page's no-email banner use `Link`.
 - **Location:** `IndicadorPasos.tsx:43-51`, `ConfirmacionPage.tsx:244-249` use `<a href>` instead of `Link`.
 - **Fix:** Use `Link` from `react-router-dom` to avoid a full reload and refetch.
 
 ### BF-27: Clipboard failures are silent
-- **Status:** Open.
+- **Status:** Fixed (pending commit). When the clipboard is missing or rejects, the link appears in a read-only field (selected on focus) under the button that failed, announced with `role="alert"`. Test in `ConfirmacionPage.test.tsx`.
 - **Heuristic:** H1 Visibility
 - **Location:** `ConfirmacionPage.tsx:94`, `:102` (`catch {}`)
 - **User impact:** Low on its own, but visitors without an email depend on this link (`:227-235`).

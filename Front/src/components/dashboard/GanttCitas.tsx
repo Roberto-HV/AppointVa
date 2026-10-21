@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { getSectorTerms, type SectorTerms } from "../../hooks/useSectorTerms";
+import { colorCategoria, TEXTO_SOBRE_CATEGORIA } from "../../lib/temaGraficas";
 import { citasApi } from "../../api/citas";
 import { empleadosApi } from "../../api/empleados";
 import { useAuthStore } from "../../store/authStore";
@@ -14,14 +16,10 @@ import { dentroDelRango, ocupaAgenda, rangoHoras } from "../../lib/carrilesCitas
 const PX_POR_HORA = 56;
 const BOTON_ICONO =
   "inline-flex items-center justify-center min-h-[44px] min-w-[44px] lg:min-h-[36px] lg:min-w-[36px] rounded-lg " +
-  "hover:bg-gray-100 dark:hover:bg-slate-700 transition text-gray-600 dark:text-slate-300 " +
+  "hover:bg-slate-100 dark:hover:bg-slate-700 transition text-slate-600 dark:text-slate-300 " +
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 const COL_MIN_W = 148;
 
-const EMP_COLORS = [
-  "#4F46E5", "#7C3AED", "#0891B2", "#059669",
-  "#D97706", "#DC2626", "#DB2777", "#0F766E",
-];
 
 
 function horaLabel(h: number): string {
@@ -48,9 +46,12 @@ function navFecha(base: string, delta: number): string {
 
 interface Props {
   onCitaClick: (cita: CitaDto) => void;
+  /** Vocabulario del sector ("consultas" en salud) (DC-34). */
+  terms?: SectorTerms;
 }
 
-export default function GanttCitas({ onCitaClick }: Props) {
+export default function GanttCitas({ onCitaClick, terms = getSectorTerms(null) }: Props) {
+  const contar = (n: number) => `${n} ${(n === 1 ? terms.cita : terms.citas).toLowerCase()}`;
   const hoy = hoyLocal();
   const [fecha, setFecha] = useState(hoy);
   const [nowTop, setNowTop] = useState<number | null>(null);
@@ -121,9 +122,9 @@ export default function GanttCitas({ onCitaClick }: Props) {
   const citasActivas = citas.filter((c) => c.estadoTexto !== "Cancelada" && c.estadoTexto !== "Inasistencia");
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-xl border border-gray-100 dark:border-slate-700 overflow-hidden">
+    <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-700 overflow-hidden">
       {/* Toolbar */}
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100 dark:border-slate-700 flex-wrap">
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-100 dark:border-slate-700 flex-wrap">
         <div className="flex items-center gap-1">
           <button
             onClick={() => setFecha(navFecha(fecha, -1))}
@@ -152,13 +153,13 @@ export default function GanttCitas({ onCitaClick }: Props) {
         </button>
         <div className="ml-auto flex items-center gap-4">
           <span className="text-xs text-muted-foreground">
-            {isLoading ? "Cargando..." : sinDatos ? "Sin datos" : `${citasActivas.length} cita${citasActivas.length !== 1 ? "s" : ""}`}
+            {isLoading ? "Cargando..." : sinDatos ? "Sin datos" : contar(citasActivas.length)}
           </span>
           <ul className="hidden sm:flex items-center gap-3" aria-label="Leyenda de estados">
             {ESTADOS_CITA.map((estado) => (
               <li key={estado} className="flex items-center gap-1.5">
                 <span className={`w-2.5 h-2.5 rounded-sm ${ESTADO_CITA[estado].punto}`} aria-hidden="true" />
-                <span className="text-xs text-gray-600 dark:text-slate-300">{ESTADO_CITA[estado].etiqueta}</span>
+                <span className="text-xs text-slate-600 dark:text-slate-300">{ESTADO_CITA[estado].etiqueta}</span>
               </li>
             ))}
           </ul>
@@ -205,8 +206,8 @@ export default function GanttCitas({ onCitaClick }: Props) {
           <div style={{ minWidth: 56 + emps.length * COL_MIN_W }}>
 
             {/* Employee header row */}
-            <div className="flex border-b border-gray-100 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-800/50 sticky top-0 z-10">
-              <div className="w-14 flex-shrink-0 border-r border-gray-100 dark:border-slate-700" />
+            <div className="flex border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 sticky top-0 z-10">
+              <div className="w-14 flex-shrink-0 border-r border-slate-100 dark:border-slate-700" />
               {emps.map((emp, i) => {
                 const empCitas = (porEmp.get(emp.id) ?? []).filter(
                   (c) => c.estadoTexto !== "Cancelada" && c.estadoTexto !== "Inasistencia"
@@ -214,22 +215,22 @@ export default function GanttCitas({ onCitaClick }: Props) {
                 return (
                   <div
                     key={emp.id}
-                    className="flex-1 flex flex-col items-center py-3 border-r border-gray-100 dark:border-slate-700 last:border-r-0"
+                    className="flex-1 flex flex-col items-center py-3 border-r border-slate-100 dark:border-slate-700 last:border-r-0"
                     style={{ minWidth: COL_MIN_W }}
                   >
                     <div
-                      className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold mb-1.5 flex-shrink-0"
-                      style={{ background: EMP_COLORS[i % EMP_COLORS.length] }}
+                      className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold mb-1.5 flex-shrink-0 ${TEXTO_SOBRE_CATEGORIA}`}
+                      style={{ background: colorCategoria(i) }}
                     >
                       {emp.nombre.charAt(0).toUpperCase()}
                     </div>
-                    <span className="text-xs font-semibold text-gray-800 dark:text-slate-200 truncate max-w-[120px] px-1 leading-tight">
+                    <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate max-w-[120px] px-1 leading-tight">
                       {emp.nombre}
                     </span>
                     <span className="text-xs text-muted-foreground mt-0.5">
                       {empCitas.length > 0
-                        ? `${empCitas.length} cita${empCitas.length !== 1 ? "s" : ""}`
-                        : "Sin citas"}
+                        ? contar(empCitas.length)
+                        : `Sin ${terms.citas.toLowerCase()}`}
                     </span>
                   </div>
                 );
@@ -240,14 +241,14 @@ export default function GanttCitas({ onCitaClick }: Props) {
             <div className="flex relative" style={{ height: GRID_H }}>
 
               {/* Time labels */}
-              <div className="w-14 flex-shrink-0 border-r border-gray-100 dark:border-slate-700 relative">
+              <div className="w-14 flex-shrink-0 border-r border-slate-100 dark:border-slate-700 relative">
                 {horas.map((h) => (
                   <div
                     key={h}
                     className="absolute left-0 right-0 flex justify-end pr-2"
                     style={{ top: (h - HORA_INICIO) * PX_POR_HORA - 7 }}
                   >
-                    <span className="text-[10px] text-gray-400 dark:text-slate-600 font-medium">{horaLabel(h)}</span>
+                    <span className="text-[10px] text-slate-400 dark:text-slate-600 font-medium">{horaLabel(h)}</span>
                   </div>
                 ))}
               </div>
@@ -257,14 +258,14 @@ export default function GanttCitas({ onCitaClick }: Props) {
                 {horas.map((h) => (
                   <div
                     key={h}
-                    className="absolute left-0 right-0 border-t border-gray-100 dark:border-slate-700/50"
+                    className="absolute left-0 right-0 border-t border-slate-100 dark:border-slate-700/50"
                     style={{ top: (h - HORA_INICIO) * PX_POR_HORA }}
                   />
                 ))}
                 {horas.map((h) => (
                   <div
                     key={h + 0.5}
-                    className="absolute left-0 right-0 border-t border-gray-50 dark:border-slate-800"
+                    className="absolute left-0 right-0 border-t border-slate-50 dark:border-slate-800"
                     style={{ top: (h - HORA_INICIO + 0.5) * PX_POR_HORA }}
                   />
                 ))}
@@ -274,7 +275,7 @@ export default function GanttCitas({ onCitaClick }: Props) {
               {emps.map((emp) => (
                 <div
                   key={emp.id}
-                  className="flex-1 relative border-r border-gray-100 dark:border-slate-700 last:border-r-0"
+                  className="flex-1 relative border-r border-slate-100 dark:border-slate-700 last:border-r-0"
                   style={{ minWidth: COL_MIN_W }}
                 >
                   {(porEmp.get(emp.id) ?? []).map((cita) => {

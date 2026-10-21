@@ -19,6 +19,11 @@ vi.mock('../../api/admin', () => ({
   },
 }));
 
+vi.mock('../../api/auth', () => ({
+  verificarSlug: vi.fn().mockResolvedValue({ disponible: true }),
+}));
+import { verificarSlug } from '../../api/auth';
+
 const toastMock = vi.hoisted(() => vi.fn());
 vi.mock('../../store/toastStore', () => ({
   useToastStore: () => ({ success: vi.fn(), error: vi.fn(), toast: toastMock }),
@@ -536,5 +541,24 @@ describe('NegociosAdminPage — KPI "Con plan"', () => {
     const tarjeta = (await screen.findByText('Con plan')).closest('div')!;
     // Dos suscripciones con plan, pero una es de un negocio tester.
     expect(within(tarjeta).getByText('1')).toBeInTheDocument();
+  });
+});
+
+describe('NegociosAdminPage — Nuevo negocio (AP-23)', () => {
+  it('comprueba el slug en vivo y no deja crear con uno ocupado', async () => {
+    const user = userEvent.setup();
+    vi.mocked(adminModule.adminApi.obtenerMetricas).mockResolvedValue([]);
+    vi.mocked(adminModule.adminApi.obtenerSuscripciones).mockResolvedValue([]);
+    vi.mocked(adminModule.adminApi.obtenerPlanes).mockResolvedValue([]);
+    vi.mocked(verificarSlug).mockResolvedValue({ disponible: false });
+    renderPage();
+
+    await user.click(await screen.findByRole('button', { name: '+ Nuevo negocio' }));
+    const dialogo = await screen.findByRole('dialog');
+    await user.type(within(dialogo).getByPlaceholderText('barberia-luis'), 'barberia-luis');
+
+    expect(await within(dialogo).findByText(/Ya está en uso/, {}, { timeout: 2000 })).toBeInTheDocument();
+    expect(verificarSlug).toHaveBeenLastCalledWith('barberia-luis');
+    expect(within(dialogo).getByRole('button', { name: 'Crear negocio' })).toBeDisabled();
   });
 });

@@ -77,7 +77,7 @@ function CampoContrasena({ id, etiqueta, autoComplete, placeholder, visible, onA
   const idError = `${id}-error`;
   return (
     <>
-      <label htmlFor={id} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{etiqueta}</label>
+      <label htmlFor={id} className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{etiqueta}</label>
       <div className="relative">
         <input
           id={id}
@@ -87,7 +87,7 @@ function CampoContrasena({ id, etiqueta, autoComplete, placeholder, visible, onA
           aria-invalid={!!error || undefined}
           aria-describedby={error ? idError : undefined}
           {...registro}
-          className={`w-full min-h-[44px] lg:min-h-[36px] px-3 py-2 pr-12 rounded-lg border text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-gray-100 ${error ? "border-red-400 bg-red-50 dark:bg-red-900/20" : "border-gray-200 dark:border-slate-600"}`}
+          className={`w-full min-h-[44px] lg:min-h-[36px] px-3 py-2 pr-12 rounded-lg border text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-slate-100 ${error ? "border-red-400 bg-red-50 dark:bg-red-900/20" : "border-slate-200 dark:border-slate-600"}`}
         />
         <button
           type="button"
@@ -95,7 +95,7 @@ function CampoContrasena({ id, etiqueta, autoComplete, placeholder, visible, onA
           onMouseDown={(e) => e.preventDefault()}
           aria-label={visible ? `Ocultar ${etiqueta.toLowerCase()}` : `Mostrar ${etiqueta.toLowerCase()}`}
           aria-pressed={visible}
-          className="absolute right-0 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-11 h-11 lg:w-9 lg:h-9 rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="absolute right-0 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-11 h-11 lg:w-9 lg:h-9 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           {visible ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
         </button>
@@ -279,12 +279,12 @@ export default function MiPerfilPage() {
       <div className="flex flex-col lg:flex-row gap-6 items-start">
 
         {/* ── Columna izquierda: identidad ── */}
-        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-6 flex flex-col items-center text-center gap-3 w-full lg:w-64 shrink-0">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-6 flex flex-col items-center text-center gap-3 w-full lg:w-64 shrink-0">
           <div className="relative">
             <div className="w-24 h-24 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center overflow-hidden">
               {usuario?.fotoUrl
                 ? <img src={usuario.fotoUrl} alt="Foto de perfil" className="w-full h-full object-cover" />
-                : <span className="text-3xl font-bold text-slate-600 dark:text-gray-400">{iniciales}</span>
+                : <span className="text-3xl font-bold text-slate-600 dark:text-slate-400">{iniciales}</span>
               }
             </div>
             <button
@@ -311,24 +311,24 @@ export default function MiPerfilPage() {
             />
           </div>
           <div>
-            <p className="font-semibold text-gray-900 dark:text-gray-100 text-base">{usuario?.nombreCompleto}</p>
-            <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">{usuario?.email}</p>
+            <p className="font-semibold text-slate-900 dark:text-slate-100 text-base">{usuario?.nombreCompleto}</p>
+            <p className="text-sm text-slate-400 dark:text-slate-500 mt-0.5">{usuario?.email}</p>
           </div>
-          <span className="text-xs bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-gray-400 font-semibold px-3 py-1 rounded-full">
+          <span className="text-xs bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 font-semibold px-3 py-1 rounded-full">
             {usuario?.rol}
           </span>
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Haz clic en el ícono de cámara para cambiar tu foto</p>
+          <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Haz clic en el ícono de cámara para cambiar tu foto</p>
         </div>
 
         {/* ── Columna derecha: contraseña ── */}
         <div className="flex-1 min-w-0">
           <form
             onSubmit={handleSubmit((d) => { setMensaje(null); cambiarPassword(d); })}
-            className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-6 space-y-4"
+            className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-6 space-y-4"
           >
             <div>
-              <h2 className="text-base font-semibold text-gray-800 dark:text-gray-200">Cambiar contraseña</h2>
-              <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">Usa una contraseña segura con mayúsculas y números</p>
+              <h2 className="text-base font-semibold text-slate-800 dark:text-slate-200">Cambiar contraseña</h2>
+              <p className="text-sm text-slate-400 dark:text-slate-500 mt-0.5">Usa una contraseña segura con mayúsculas y números</p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -381,7 +381,7 @@ export default function MiPerfilPage() {
             <button
               type="submit"
               disabled={isPending}
-              className="w-full bg-gray-800 hover:bg-gray-700 disabled:opacity-40 text-white font-semibold py-2.5 rounded-xl transition text-sm"
+              className="w-full bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-white font-semibold py-2.5 rounded-xl transition text-sm"
             >
               {isPending ? "Actualizando..." : "Cambiar contraseña"}
             </button>
@@ -391,9 +391,9 @@ export default function MiPerfilPage() {
       </div>
 
       {/* ── Seguridad: antes los empleados no tenían forma de llegar a la verificación en dos pasos ── */}
-      <div className="mt-6 bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-5 flex flex-wrap items-center justify-between gap-3">
+      <div className="mt-6 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-5 flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="text-base font-semibold text-gray-800 dark:text-gray-200">Seguridad</h2>
+          <h2 className="text-base font-semibold text-slate-800 dark:text-slate-200">Seguridad</h2>
           <p className="text-sm text-muted-foreground">Verificación en dos pasos para proteger tu cuenta.</p>
         </div>
         <Link
@@ -406,7 +406,7 @@ export default function MiPerfilPage() {
 
       {/* ── Notificaciones push ── */}
       <div className="mt-6">
-        <h2 className="text-base font-semibold text-gray-800 dark:text-gray-200 mb-3">Notificaciones</h2>
+        <h2 className="text-base font-semibold text-slate-800 dark:text-slate-200 mb-3">Notificaciones</h2>
         <NotificacionPerfilSection />
       </div>
 
@@ -414,12 +414,12 @@ export default function MiPerfilPage() {
       {esEmpleado && (
         <div className="mt-6">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-semibold text-gray-800 dark:text-gray-200">Mis bloqueos de horario</h2>
+            <h2 className="text-base font-semibold text-slate-800 dark:text-slate-200">Mis bloqueos de horario</h2>
             {!mostrarForm && (
               <button
                 type="button"
                 onClick={() => setMostrarForm(true)}
-                className="flex items-center gap-1.5 text-sm font-medium text-slate-700 dark:text-gray-300 hover:text-slate-900 dark:hover:text-gray-200 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 px-3 py-1.5 rounded-lg transition"
+                className="flex items-center gap-1.5 text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-200 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 px-3 py-1.5 rounded-lg transition"
               >
                 <Plus size={14} />
                 Agregar
@@ -431,12 +431,12 @@ export default function MiPerfilPage() {
           {mostrarForm && (
             <form
               onSubmit={formB.handleSubmit((d) => crearBloqueo(d))}
-              className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-5 mb-4 space-y-4"
+              className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-5 mb-4 space-y-4"
             >
-              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Nuevo bloqueo</h3>
+              <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Nuevo bloqueo</h3>
 
               <div>
-                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wide">Inicio</p>
+                <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wide">Inicio</p>
                 <div className="grid grid-cols-2 gap-3">
                   <DatePicker
                     label="Fecha"
@@ -460,7 +460,7 @@ export default function MiPerfilPage() {
               </div>
 
               <div>
-                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wide">Fin</p>
+                <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wide">Fin</p>
                 <div className="grid grid-cols-2 gap-3">
                   <DatePicker
                     label="Fecha"
@@ -484,12 +484,12 @@ export default function MiPerfilPage() {
               </div>
 
               <div>
-                <label htmlFor="bloqueo-motivo" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Motivo (opcional)</label>
+                <label htmlFor="bloqueo-motivo" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Motivo (opcional)</label>
                 <input
                   id="bloqueo-motivo"
                   {...formB.register("motivo")}
                   placeholder="Cita médica, día personal..."
-                  className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 text-sm outline-none focus:border-slate-700"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm outline-none focus:border-slate-700"
                 />
               </div>
 
@@ -504,7 +504,7 @@ export default function MiPerfilPage() {
                 <button
                   type="button"
                   onClick={() => { setMostrarForm(false); formB.reset(); }}
-                  className="px-4 py-2 rounded-xl border border-gray-200 dark:border-slate-600 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700 transition"
+                  className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-600 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition"
                 >
                   Cancelar
                 </button>
@@ -514,18 +514,18 @@ export default function MiPerfilPage() {
 
           {/* Lista de bloqueos */}
           {bloqueos.length === 0 && !mostrarForm ? (
-            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-6 text-center text-sm text-gray-400 dark:text-gray-500">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-6 text-center text-sm text-slate-400 dark:text-slate-500">
               Sin bloqueos. Usa <strong>Agregar</strong> para registrar uno.
             </div>
           ) : bloqueos.length > 0 ? (
-            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 divide-y divide-gray-50 dark:divide-slate-700">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 divide-y divide-slate-50 dark:divide-slate-700">
               {bloqueos.map((b) => (
                 <div key={b.id} className="flex items-start justify-between gap-3 px-4 py-3">
                   <div>
-                    <p className="text-sm text-gray-800 dark:text-gray-200 font-medium">
+                    <p className="text-sm text-slate-800 dark:text-slate-200 font-medium">
                       {fmtBloqueo(b.inicioEn)} — {fmtBloqueo(b.finEn)}
                     </p>
-                    {b.motivo && <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{b.motivo}</p>}
+                    {b.motivo && <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{b.motivo}</p>}
                   </div>
                   <button
                     type="button"

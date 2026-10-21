@@ -59,7 +59,7 @@ export default function FilaSeleccion({
         background: activo ? tinte : undefined,
         // Anillo interior: 1px de borde → 2px de acento no mueve nada al seleccionar,
         // a diferencia de un border que sí ocupa espacio.
-        boxShadow: activo ? `inset 0 0 0 2px ${acento}` : "inset 0 0 0 1px #e2e8f0",
+        boxShadow: activo ? `inset 0 0 0 2px ${acento}` : "inset 0 0 0 1px hsl(var(--border))",
       }}
     >
       {inicio}

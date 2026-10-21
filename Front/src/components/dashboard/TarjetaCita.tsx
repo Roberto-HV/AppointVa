@@ -68,8 +68,8 @@ export default function TarjetaCita({ cita, accionesExtra, nombreNegocio, mostra
     <article aria-label={`${terms.cita} de ${cita.nombreCliente}`} className="px-4 py-3 space-y-2">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="font-medium text-gray-800 dark:text-gray-200 truncate">{cita.nombreCliente}</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+          <p className="font-medium text-slate-800 dark:text-slate-200 truncate">{cita.nombreCliente}</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
             {cita.nombreServicio} · {cita.nombreEmpleado}
           </p>
         </div>
@@ -78,12 +78,12 @@ export default function TarjetaCita({ cita, accionesExtra, nombreNegocio, mostra
         </div>
       </div>
 
-      <p className="text-sm text-gray-600 dark:text-gray-400">
+      <p className="text-sm text-slate-600 dark:text-slate-400">
         {formatFechaCorta(cita.inicioEn)} · {formatHora(cita.inicioEn)}
-        <span className="text-gray-300 dark:text-gray-600" aria-hidden="true"> · </span>
-        <span className="font-medium text-gray-800 dark:text-gray-200">{formatPrecio(cita.precio)}</span>
+        <span className="text-slate-300 dark:text-slate-600" aria-hidden="true"> · </span>
+        <span className="font-medium text-slate-800 dark:text-slate-200">{formatPrecio(cita.precio)}</span>
         {mostrarPago && (
-          <span className={cita.pagada ? "text-emerald-700 dark:text-emerald-300" : "text-gray-400 dark:text-gray-500"}>
+          <span className={cita.pagada ? "text-emerald-700 dark:text-emerald-300" : "text-slate-400 dark:text-slate-500"}>
             {cita.pagada ? ` · ${cita.metodoPago ?? "Pagado"}` : " · Por pagar"}
           </span>
         )}

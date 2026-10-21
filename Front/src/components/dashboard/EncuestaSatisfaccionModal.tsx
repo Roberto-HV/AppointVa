@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Star } from "lucide-react";
+import { Star, CheckCircle2 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { encuestaApi } from "../../api/encuesta";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
@@ -49,7 +49,7 @@ export function EncuestaSatisfaccionModal({ onCerrar }: Props) {
 
         {enviado ? (
           <div className="py-8 text-center">
-            <p className="text-4xl mb-3">🎉</p>
+            <CheckCircle2 size={40} className="mx-auto mb-3 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
             <p className="text-base font-semibold text-slate-700 dark:text-slate-200">
               ¡Gracias por tu valoración!
             </p>

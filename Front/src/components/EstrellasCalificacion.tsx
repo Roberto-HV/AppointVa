@@ -84,7 +84,7 @@ export default function EstrellasCalificacion({ valor, onCambiar, etiquetadoPor 
               size={36}
               strokeWidth={1.5}
               aria-hidden="true"
-              className={`transition-colors ${llena ? "text-rating fill-rating" : "text-gray-300 fill-transparent"}`}
+              className={`transition-colors ${llena ? "text-rating fill-rating" : "text-slate-300 fill-transparent"}`}
             />
           </button>
         );

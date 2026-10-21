@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import ServiciosPage from "./ServiciosPage";
 
 vi.mock("framer-motion", () => ({
+  useReducedMotion: () => false,
   motion: {
     div: ({ children, ...rest }: { children?: React.ReactNode; [key: string]: unknown }) => (
       <div {...(rest as object)}>{children}</div>
@@ -274,7 +275,7 @@ describe("ServiciosPage — precio y campos numéricos (OM-05)", () => {
     llenarNombre();
 
     fireEvent.change(screen.getByLabelText("Duración (min) *"), { target: { value: "2" } });
-    fireEvent.change(screen.getByLabelText(/Buffer/), { target: { value: "500" } });
+    fireEvent.change(screen.getByLabelText(/Descanso tras la cita/), { target: { value: "500" } });
     fireEvent.change(screen.getByLabelText("Precio (MXN) *"), { target: { value: "10.555" } });
     fireEvent.change(screen.getByLabelText("Orden"), { target: { value: "0" } });
     fireEvent.click(screen.getByRole("button", { name: "Crear servicio" }));

@@ -86,6 +86,21 @@
   /* --- Rating stars (reviews) — never brand gold --- */
   --rating:     #F59E0B;  /* amber-500 — Tailwind: text-rating fill-rating */
 
+  /* --- Categorical palette (chart series, employee avatars) — DC-20 ---
+   * Carries no status meaning: never use it for appointment states.
+   * Light: white text on every swatch is >= 4.5:1. Order is stable so an employee
+   * keeps the same colour across Gantt and kiosk.
+   * Tailwind: bg-categoria-1 … bg-categoria-8; JS: COLORES_CATEGORIA /
+   * colorCategoria(i) in src/lib/temaGraficas.ts. */
+  --categoria-1: #4F46E5;  /* indigo-600 */
+  --categoria-2: #7C3AED;  /* violet-600 */
+  --categoria-3: #0E7490;  /* cyan-700 */
+  --categoria-4: #047857;  /* emerald-700 */
+  --categoria-5: #B45309;  /* amber-700 */
+  --categoria-6: #BE123C;  /* rose-700 */
+  --categoria-7: #A21CAF;  /* fuchsia-700 */
+  --categoria-8: #0F766E;  /* teal-700 */
+
   /* --- Role chips (user menu) --- */
   --chip-employee-bg:    #DBEAFE;   /* blue-100 */
   --chip-employee-fg:    #1D4ED8;   /* blue-700 */
@@ -185,6 +200,18 @@
   --sidebar-salud-hover:  rgba(255, 255, 255, 0.08);
 
   --rating: #FBBF24;                               /* amber-400 */
+
+  /* Categorical palette (dark): 400 shades so lines/bars read on slate-800
+   * (>= 3:1). Text on a swatch is slate-950 in dark (>= 6:1), not white:
+   * use TEXTO_SOBRE_CATEGORIA ("text-white dark:text-slate-950"). */
+  --categoria-1: #818CF8;  /* indigo-400 */
+  --categoria-2: #A78BFA;  /* violet-400 */
+  --categoria-3: #22D3EE;  /* cyan-400 */
+  --categoria-4: #34D399;  /* emerald-400 */
+  --categoria-5: #FBBF24;  /* amber-400 */
+  --categoria-6: #FB7185;  /* rose-400 */
+  --categoria-7: #E879F9;  /* fuchsia-400 */
+  --categoria-8: #2DD4BF;  /* teal-400 */
 
   /* --- Role chips (dark) --- */
   --chip-employee-bg:    rgba(37, 99, 235, 0.2);

@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import IndicadorPasos from "./IndicadorPasos";
 
 const PASOS = ["Servicio", "Profesional", "Fecha y hora", "Tus datos"];
@@ -14,7 +15,7 @@ describe("IndicadorPasos", () => {
   // A 375px el nombre se cortaba junto a "Mis citas" ("Fecha y h…"): ahora va
   // en su propia línea, sin truncar.
   it("muestra el nombre completo del paso, sin truncarlo, junto a 'Mis citas'", () => {
-    render(<IndicadorPasos pasoActual={3} pasos={PASOS} slug="salon-test" />);
+    render(<MemoryRouter><IndicadorPasos pasoActual={3} pasos={PASOS} slug="salon-test" /></MemoryRouter>);
     const etiqueta = screen.getByText(/Paso 3 de 4/);
     expect(etiqueta).toHaveTextContent("Paso 3 de 4 · Fecha y hora");
     expect(etiqueta).not.toHaveClass("truncate");

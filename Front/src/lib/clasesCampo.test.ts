@@ -11,7 +11,7 @@ describe("claseCampo (OM-23)", () => {
 
   it("sin error usa el borde neutro en los dos temas", () => {
     const c = claseCampo(false, "pr-10");
-    expect(c).toContain("border-gray-200");
+    expect(c).toContain("border-slate-200");
     expect(c).toContain("dark:border-slate-600");
     expect(c).not.toContain("border-red");
     expect(c.endsWith("pr-10")).toBe(true);

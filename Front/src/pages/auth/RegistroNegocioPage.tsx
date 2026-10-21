@@ -1,14 +1,16 @@
-﻿import { useState, useEffect } from "react";
+﻿import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Link, useSearchParams } from "react-router-dom";
 import { Eye, EyeOff, Scissors, HeartPulse, CheckCircle, XCircle } from "lucide-react";
 import { api } from "../../api/axios";
-import { verificarSlug, reenviarVerificacion } from "../../api/auth";
+import { reenviarVerificacion } from "../../api/auth";
+import { useDisponibilidadSlug } from "../../hooks/useDisponibilidadSlug";
 import PasswordStrengthBar from "../../components/PasswordStrengthBar";
 import ReglasContrasena from "../../components/ReglasContrasena";
 import LogoMarca from "../../components/LogoMarca";
+import { FONDO_AUTH, TITULO_AUTH } from "../../lib/clasesAuth";
 import { esquemaContrasena, traducirErroresIdentity } from "../../utils/contrasena";
 import { mensajeError } from "../../utils/errores";
 import { ACTIVACION_PASOS, CORREO_SOPORTE } from "../../lib/activacion";
@@ -65,7 +67,6 @@ export default function RegistroNegocioPage() {
   const [reenvioError, setReenvioError] = useState("");
   const [slugRegistrado, setSlugRegistrado] = useState("");
   const [slugEditado, setSlugEditado] = useState(false);
-  const [slugEstado, setSlugEstado] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
   const [registroExitoso, setRegistroExitoso] = useState(false);
   const [emailRegistrado, setEmailRegistrado] = useState("");
   const [reenvioEnviado, setReenvioEnviado] = useState(false);
@@ -99,27 +100,7 @@ export default function RegistroNegocioPage() {
   const contrasenaValor = watch("contrasena", "");
   const slugValue = watch("slug");
 
-  useEffect(() => {
-    const slug = slugValue?.trim();
-    if (!slug || slug.length < 2) {
-      setSlugEstado('idle');
-      return;
-    }
-    if (!/^[a-z0-9-]+$/.test(slug)) {
-      setSlugEstado('idle');
-      return;
-    }
-    setSlugEstado('checking');
-    const timer = setTimeout(async () => {
-      try {
-        const { disponible } = await verificarSlug(slug);
-        setSlugEstado(disponible ? 'available' : 'taken');
-      } catch {
-        setSlugEstado('idle');
-      }
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [slugValue]);
+  const slugEstado = useDisponibilidadSlug(slugValue);
 
   // Se encadena el `onChange` de react-hook-form en vez de reemplazarlo, para
   // que el error "Mínimo 2 caracteres" desaparezca al corregir (AP-13).
@@ -130,7 +111,6 @@ export default function RegistroNegocioPage() {
     void nombreRegistro.onChange(e);
     if (!slugEditado) {
       setValue("slug", derivarSlug(e.target.value), { shouldValidate: isSubmitted });
-      setSlugEstado('idle');
     }
   };
 
@@ -175,19 +155,19 @@ export default function RegistroNegocioPage() {
 
   if (registroExitoso) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center p-4">
+      <div className={FONDO_AUTH}>
         <div className="w-full max-w-md text-center">
           <LogoMarca prioridad className="h-20 mx-auto mb-6" />
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8">
             <div className="w-14 h-14 bg-slate-700/10 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg className="w-7 h-7 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
               </svg>
             </div>
-            <h1 className="text-xl font-semibold text-gray-800 mb-2">¡Revisa tu correo!</h1>
-            <p className="text-gray-500 text-sm mb-1">Enviamos un enlace de verificación a:</p>
-            <p className="font-semibold text-gray-800 mb-4 break-all">{emailRegistrado}</p>
-            <p className="text-sm text-gray-500 mb-5">Si no lo ves, revisa la carpeta de spam.</p>
+            <h1 className={TITULO_AUTH}>¡Revisa tu correo!</h1>
+            <p className="text-slate-500 text-sm mb-1">Enviamos un enlace de verificación a:</p>
+            <p className="font-semibold text-slate-800 mb-4 break-all">{emailRegistrado}</p>
+            <p className="text-sm text-slate-500 mb-5">Si no lo ves, revisa la carpeta de spam.</p>
 
             <div className="text-left bg-slate-50 border border-slate-200 rounded-xl p-4 mb-5">
               <h2 className="text-sm font-semibold text-slate-800 mb-2">Qué sigue</h2>
@@ -210,43 +190,43 @@ export default function RegistroNegocioPage() {
             )}
             {reenvioError && <p role="alert" className="text-sm text-red-600 mb-4">{reenvioError}</p>}
 
-            <p className="text-xs text-gray-500 mb-5">
+            <p className="text-xs text-slate-500 mb-5">
               ¿Escribiste mal tu correo? No se puede cambiar desde aquí. Escríbenos a{" "}
               <a href={`mailto:${CORREO_SOPORTE}`} className="underline text-slate-700">{CORREO_SOPORTE}</a>{" "}
               indicando el identificador <span className="font-medium text-slate-700">{slugRegistrado}</span> y el correo correcto.
             </p>
             <Link
               to="/login"
-              className="inline-block w-full border border-gray-200 hover:bg-gray-50 text-gray-700 font-medium py-3 rounded-xl transition text-sm"
+              className="inline-block w-full border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium py-3 rounded-xl transition text-sm"
             >
               Ir al inicio de sesión
             </Link>
           </div>
-          <p className="text-center text-xs text-gray-400 mt-6">© {new Date().getFullYear()} AppointVa · Agiliza Tu Negocio</p>
+          <p className="text-center text-xs text-slate-400 mt-6">© {new Date().getFullYear()} AppointVa · Agiliza tu negocio</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center p-4">
+    <div className={FONDO_AUTH}>
       <div className="w-full max-w-lg">
         <div className="text-center mb-8">
           <LogoMarca prioridad className="h-20 mx-auto mb-2 rounded-xl" />
-          <p className="text-gray-500 text-sm">Registra tu negocio</p>
+          <p className="text-slate-500 text-sm">Registra tu negocio</p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-1">Crear cuenta</h2>
-          <p className="text-sm text-gray-400 mb-6">Completa los datos para registrar tu negocio</p>
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 sm:p-8">
+          <h1 className="text-2xl font-bold text-slate-900 mb-1">Crear cuenta</h1>
+          <p className="text-sm text-slate-500 mb-6">Completa los datos para registrar tu negocio</p>
 
           <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-5">
-            <p className="text-xs text-gray-500">Todos los campos son obligatorios salvo los marcados como opcionales.</p>
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Tu negocio</p>
+            <p className="text-xs text-slate-500">Todos los campos son obligatorios salvo los marcados como opcionales.</p>
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tu negocio</p>
 
             {/* Nombre del negocio */}
             <div>
-              <label htmlFor="registro-nombre-negocio" className="block text-sm font-medium text-gray-700 mb-1">Nombre del negocio</label>
+              <label htmlFor="registro-nombre-negocio" className="block text-sm font-medium text-slate-700 mb-1">Nombre del negocio</label>
               <input
                 id="registro-nombre-negocio"
                 type="text"
@@ -254,33 +234,33 @@ export default function RegistroNegocioPage() {
                 {...nombreRegistro}
                 onChange={onNombreChange}
                 placeholder="Ej. Salón Belleza Luna"
-                className={`w-full px-4 py-3 rounded-xl border text-sm outline-none transition focus:ring-2 focus:ring-slate-700/30 focus:border-slate-700 ${errors.nombreNegocio ? "border-red-400 bg-red-50" : "border-gray-200"}`}
+                className={`w-full px-4 py-3 rounded-xl border text-sm outline-none transition focus:ring-2 focus:ring-slate-700/30 focus:border-slate-700 ${errors.nombreNegocio ? "border-red-400 bg-red-50" : "border-slate-200"}`}
               />
               {errors.nombreNegocio && <p className="text-red-500 text-xs mt-1">{errors.nombreNegocio.message}</p>}
             </div>
 
             {/* Slug */}
             <div>
-              <label htmlFor="registro-slug" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="registro-slug" className="block text-sm font-medium text-slate-700 mb-1">
                 Identificador (URL)
-                <span className="text-gray-500 font-normal ml-1">— tu link de reservas</span>
+                <span className="text-slate-500 font-normal ml-1">— tu link de reservas</span>
               </label>
-              <div className="flex items-center border rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-slate-700/30 focus-within:border-slate-700 border-gray-200">
-                <span className="px-3 py-2.5 bg-gray-50 text-gray-400 text-sm border-r border-gray-200 whitespace-nowrap">{PREFIJO_ENLACE}</span>
+              <div className="flex items-center border rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-slate-700/30 focus-within:border-slate-700 border-slate-200">
+                <span className="px-3 py-2.5 bg-slate-50 text-slate-400 text-sm border-r border-slate-200 whitespace-nowrap">{PREFIJO_ENLACE}</span>
                 <input
                   id="registro-slug"
                   type="text"
                   autoComplete="off"
                   {...slugRegistro}
-                  onChange={(e) => { setSlugEditado(true); void slugRegistro.onChange(e); setSlugEstado('idle'); }}
+                  onChange={(e) => { setSlugEditado(true); void slugRegistro.onChange(e); }}
                   className={`flex-1 px-3 py-2.5 text-sm outline-none bg-white ${errors.slug ? "bg-red-50" : ""}`}
                   placeholder="salon-belleza-luna"
                 />
               </div>
               {errors.slug && <p className="text-red-500 text-xs mt-1">{errors.slug.message}</p>}
               {slugEstado === 'checking' && (
-                <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
-                  <span className="inline-block w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                <p className="text-xs text-slate-400 mt-1 flex items-center gap-1">
+                  <span className="inline-block w-3 h-3 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
                   Verificando…
                 </p>
               )}
@@ -300,7 +280,7 @@ export default function RegistroNegocioPage() {
 
             {/* Giro del negocio */}
             <div>
-              <p id="etiqueta-sector" className="block text-sm font-medium text-gray-700 mb-2">
+              <p id="etiqueta-sector" className="block text-sm font-medium text-slate-700 mb-2">
                 Giro del negocio
               </p>
               <div role="radiogroup" aria-labelledby="etiqueta-sector" aria-describedby="ayuda-sector" className="grid grid-cols-2 gap-3">
@@ -319,7 +299,7 @@ export default function RegistroNegocioPage() {
                       className={`flex flex-col items-center gap-2 py-4 rounded-xl border-2 text-sm font-medium transition cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 ${
                         elegido
                           ? "border-slate-700 bg-slate-50 text-slate-700"
-                          : "border-gray-200 text-gray-500 hover:border-gray-300"
+                          : "border-slate-200 text-slate-500 hover:border-slate-300"
                       }`}
                     >
                       <Icon size={22} aria-hidden="true" />
@@ -328,15 +308,15 @@ export default function RegistroNegocioPage() {
                   );
                 })}
               </div>
-              <p id="ayuda-sector" className="text-xs text-gray-500 mt-1.5">
+              <p id="ayuda-sector" className="text-xs text-slate-500 mt-1.5">
                 Define el vocabulario y los módulos de tu panel. Clínicas y consultorios: elige Salud.
               </p>
             </div>
 
             {/* Teléfono */}
             <div>
-              <label htmlFor="registro-telefono" className="block text-sm font-medium text-gray-700 mb-1">
-                Teléfono <span className="text-gray-500 font-normal">(opcional)</span>
+              <label htmlFor="registro-telefono" className="block text-sm font-medium text-slate-700 mb-1">
+                Teléfono <span className="text-slate-500 font-normal">(opcional)</span>
               </label>
               <input
                 id="registro-telefono"
@@ -344,43 +324,43 @@ export default function RegistroNegocioPage() {
                 autoComplete="tel"
                 {...register("telefono")}
                 placeholder="+52 55 1234 5678"
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm outline-none transition focus:ring-2 focus:ring-slate-700/30 focus:border-slate-700"
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none transition focus:ring-2 focus:ring-slate-700/30 focus:border-slate-700"
               />
             </div>
 
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider pt-2">Tu cuenta</p>
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider pt-2">Tu cuenta</p>
 
             {/* Nombre del propietario */}
             <div>
-              <label htmlFor="registro-propietario" className="block text-sm font-medium text-gray-700 mb-1">Tu nombre completo</label>
+              <label htmlFor="registro-propietario" className="block text-sm font-medium text-slate-700 mb-1">Tu nombre completo</label>
               <input
                 id="registro-propietario"
                 type="text"
                 autoComplete="name"
                 {...register("nombrePropietario")}
                 placeholder="Nombre y apellido"
-                className={`w-full px-4 py-3 rounded-xl border text-sm outline-none transition focus:ring-2 focus:ring-slate-700/30 focus:border-slate-700 ${errors.nombrePropietario ? "border-red-400 bg-red-50" : "border-gray-200"}`}
+                className={`w-full px-4 py-3 rounded-xl border text-sm outline-none transition focus:ring-2 focus:ring-slate-700/30 focus:border-slate-700 ${errors.nombrePropietario ? "border-red-400 bg-red-50" : "border-slate-200"}`}
               />
               {errors.nombrePropietario && <p className="text-red-500 text-xs mt-1">{errors.nombrePropietario.message}</p>}
             </div>
 
             {/* Email */}
             <div>
-              <label htmlFor="registro-email" className="block text-sm font-medium text-gray-700 mb-1">Correo electrónico</label>
+              <label htmlFor="registro-email" className="block text-sm font-medium text-slate-700 mb-1">Correo electrónico</label>
               <input
                 id="registro-email"
                 type="email"
                 autoComplete="email"
                 {...register("email")}
                 placeholder="correo@ejemplo.com"
-                className={`w-full px-4 py-3 rounded-xl border text-sm outline-none transition focus:ring-2 focus:ring-slate-700/30 focus:border-slate-700 ${errors.email ? "border-red-400 bg-red-50" : "border-gray-200"}`}
+                className={`w-full px-4 py-3 rounded-xl border text-sm outline-none transition focus:ring-2 focus:ring-slate-700/30 focus:border-slate-700 ${errors.email ? "border-red-400 bg-red-50" : "border-slate-200"}`}
               />
               {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}
             </div>
 
             {/* Contraseña */}
             <div>
-              <label htmlFor="registro-contrasena" className="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
+              <label htmlFor="registro-contrasena" className="block text-sm font-medium text-slate-700 mb-1">Contraseña</label>
               <div className="relative">
                 <input
                   id="registro-contrasena"
@@ -388,13 +368,13 @@ export default function RegistroNegocioPage() {
                   autoComplete="new-password"
                   {...register("contrasena")}
                   aria-describedby="reglas-contrasena"
-                  className={`w-full px-4 py-3 pr-11 rounded-xl border text-sm outline-none transition focus:ring-2 focus:ring-slate-700/30 focus:border-slate-700 ${errors.contrasena ? "border-red-400 bg-red-50" : "border-gray-200"}`}
+                  className={`w-full px-4 py-3 pr-11 rounded-xl border text-sm outline-none transition focus:ring-2 focus:ring-slate-700/30 focus:border-slate-700 ${errors.contrasena ? "border-red-400 bg-red-50" : "border-slate-200"}`}
                 />
                 <button
                   type="button"
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => setMostrarContrasena((v) => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                   tabIndex={-1}
                 >
                   {mostrarContrasena ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -407,7 +387,7 @@ export default function RegistroNegocioPage() {
 
             {/* Confirmar contraseña */}
             <div>
-              <label htmlFor="registro-confirmar" className="block text-sm font-medium text-gray-700 mb-1">Confirmar contraseña</label>
+              <label htmlFor="registro-confirmar" className="block text-sm font-medium text-slate-700 mb-1">Confirmar contraseña</label>
               <div className="relative">
                 <input
                   id="registro-confirmar"
@@ -415,13 +395,13 @@ export default function RegistroNegocioPage() {
                   autoComplete="new-password"
                   {...register("confirmarContrasena")}
                   placeholder="Repite tu contraseña"
-                  className={`w-full px-4 py-3 pr-11 rounded-xl border text-sm outline-none transition focus:ring-2 focus:ring-slate-700/30 focus:border-slate-700 ${errors.confirmarContrasena ? "border-red-400 bg-red-50" : "border-gray-200"}`}
+                  className={`w-full px-4 py-3 pr-11 rounded-xl border text-sm outline-none transition focus:ring-2 focus:ring-slate-700/30 focus:border-slate-700 ${errors.confirmarContrasena ? "border-red-400 bg-red-50" : "border-slate-200"}`}
                 />
                 <button
                   type="button"
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => setMostrarConfirmar((v) => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                   tabIndex={-1}
                 >
                   {mostrarConfirmar ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -449,19 +429,19 @@ export default function RegistroNegocioPage() {
               {isSubmitting ? "Creando cuenta..." : "Crear cuenta"}
             </button>
 
-            <p className="text-xs text-gray-400 text-center leading-relaxed">
+            <p className="text-xs text-slate-400 text-center leading-relaxed">
               Al crear tu cuenta, aceptas nuestros{" "}
-              <Link to="/terminos" target="_blank" className="underline hover:text-gray-600 transition">
+              <Link to="/terminos" target="_blank" className="underline hover:text-slate-600 transition">
                 Términos de uso
               </Link>{" "}
               y nuestra{" "}
-              <Link to="/privacidad" target="_blank" className="underline hover:text-gray-600 transition">
+              <Link to="/privacidad" target="_blank" className="underline hover:text-slate-600 transition">
                 Política de privacidad
               </Link>.
             </p>
           </form>
 
-          <p className="text-center text-sm text-gray-500 mt-5">
+          <p className="text-center text-sm text-slate-500 mt-5">
             ¿Ya tienes cuenta?{" "}
             <Link to="/login" className="text-slate-700 hover:underline font-medium">
               Iniciar sesión
@@ -469,7 +449,7 @@ export default function RegistroNegocioPage() {
           </p>
         </div>
 
-        <p className="text-center text-xs text-gray-400 mt-6">© {new Date().getFullYear()} AppointVa · Agiliza Tu Negocio</p>
+        <p className="text-center text-xs text-slate-400 mt-6">© {new Date().getFullYear()} AppointVa · Agiliza tu negocio</p>
       </div>
     </div>
   );

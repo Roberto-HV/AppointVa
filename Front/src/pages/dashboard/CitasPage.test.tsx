@@ -515,8 +515,8 @@ describe("CitasPage — paginación", () => {
   });
 });
 
-describe("CitasPage — filtro de Profesional", () => {
-  it("muestra el dropdown de Profesional en la vista de lista", async () => {
+describe("CitasPage — filtro por empleado", () => {
+  it("muestra el dropdown con el término del sector en la vista de lista (DC-34)", async () => {
     vi.mocked(citasApi.obtenerTodas).mockResolvedValue({
       datos: [],
       total: 0,
@@ -524,9 +524,12 @@ describe("CitasPage — filtro de Profesional", () => {
       tamano: 15,
     });
     const { container } = renderConQuery();
+    // Sin sector en el perfil se usa el vocabulario por defecto ("Empleado");
+    // "Profesional" solo aparece en salud.
     await waitFor(() =>
-      expect(screen.getByText("Profesional")).toBeInTheDocument()
+      expect(screen.getAllByText("Empleado").length).toBeGreaterThan(0)
     );
+    expect(screen.queryByText("Profesional")).not.toBeInTheDocument();
     expect(container.querySelector("select")).toBeInTheDocument();
   });
 });

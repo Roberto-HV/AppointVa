@@ -174,7 +174,7 @@ export default function IntakePage() {
         <form noValidate onSubmit={guardar} className="space-y-4">
           <div className="space-y-3">
             <div>
-              <label htmlFor={id("etiqueta")} className="text-sm font-medium text-gray-700 dark:text-gray-300">Pregunta / etiqueta</label>
+              <label htmlFor={id("etiqueta")} className="text-sm font-medium text-slate-700 dark:text-slate-300">Pregunta / etiqueta</label>
               <input
                 id={id("etiqueta")}
                 value={form.etiqueta}
@@ -185,7 +185,7 @@ export default function IntakePage() {
             </div>
 
             <div>
-              <label htmlFor={id("tipo")} className="text-sm font-medium text-gray-700 dark:text-gray-300">Tipo de respuesta</label>
+              <label htmlFor={id("tipo")} className="text-sm font-medium text-slate-700 dark:text-slate-300">Tipo de respuesta</label>
               <select
                 id={id("tipo")}
                 value={form.tipo}
@@ -200,7 +200,7 @@ export default function IntakePage() {
 
             {form.tipo === "Seleccion" && (
               <fieldset aria-describedby={errorOpciones ? id("opciones-error") : undefined}>
-                <legend className="text-sm font-medium text-gray-700 dark:text-gray-300">Opciones</legend>
+                <legend className="text-sm font-medium text-slate-700 dark:text-slate-300">Opciones</legend>
                 <ul className="mt-1 space-y-2">
                   {form.opciones.map((op, i) => (
                     <li key={i} className="flex items-center gap-2">
@@ -237,15 +237,15 @@ export default function IntakePage() {
             )}
 
             <div>
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Servicios (opcional — deja vacío para todos)
               </span>
               {servicios.length === 0 ? (
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">No hay servicios configurados</p>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">No hay servicios configurados</p>
               ) : (
-                <div className="mt-1 space-y-1 max-h-36 overflow-y-auto border border-gray-200 dark:border-slate-600 rounded-lg p-2">
+                <div className="mt-1 space-y-1 max-h-36 overflow-y-auto border border-slate-200 dark:border-slate-600 rounded-lg p-2">
                   {servicios.map((s) => (
-                    <label key={s.id} className="flex items-center gap-2 cursor-pointer px-1 py-0.5 rounded hover:bg-gray-50 dark:hover:bg-slate-700/40">
+                    <label key={s.id} className="flex items-center gap-2 cursor-pointer px-1 py-0.5 rounded hover:bg-slate-50 dark:hover:bg-slate-700/40">
                       <input
                         type="checkbox"
                         className="accent-slate-700 w-4 h-4"
@@ -257,7 +257,7 @@ export default function IntakePage() {
                           setForm({ ...form, servicioIds: next });
                         }}
                       />
-                      <span className="text-sm text-gray-700 dark:text-gray-300">{s.nombre}</span>
+                      <span className="text-sm text-slate-700 dark:text-slate-300">{s.nombre}</span>
                     </label>
                   ))}
                 </div>
@@ -271,7 +271,7 @@ export default function IntakePage() {
                 onChange={(e) => setForm({ ...form, requerido: e.target.checked })}
                 className="accent-slate-700 w-4 h-4"
               />
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Respuesta obligatoria</span>
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Respuesta obligatoria</span>
             </label>
 
             <VistaPrevia form={form} />
@@ -305,7 +305,7 @@ export default function IntakePage() {
       ) : isError ? (
         <ErrorCarga mensaje="No se pudieron cargar las preguntas." onReintentar={() => refetch()} reintentando={isFetching} />
       ) : campos.length === 0 ? (
-        <div className="text-center py-16 text-gray-500 dark:text-gray-400">
+        <div className="text-center py-16 text-slate-500 dark:text-slate-400">
           <ClipboardList size={40} className="mx-auto mb-3 opacity-30" aria-hidden="true" />
           <p className="font-medium">No hay preguntas configuradas</p>
           <p className="text-sm mt-1">
@@ -327,7 +327,7 @@ export default function IntakePage() {
       )}
 
       {campos.length > 0 && (
-        <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
+        <p className="text-xs text-slate-500 dark:text-slate-400 text-center">
           {campos.length} pregunta{campos.length !== 1 ? "s" : ""} — aparecen en el formulario de reserva en orden mostrado
         </p>
       )}
@@ -394,11 +394,11 @@ function CampoRow({
   const tipoLabel = TIPOS.find((t) => t.value === campo.tipo)?.label ?? campo.tipo;
 
   return (
-    <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl px-4 py-3 flex items-center gap-3">
-      <span className="text-xs text-gray-500 dark:text-gray-400 w-5 shrink-0">{orden}</span>
+    <div className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl px-4 py-3 flex items-center gap-3">
+      <span className="text-xs text-slate-500 dark:text-slate-400 w-5 shrink-0">{orden}</span>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <p className="font-medium text-gray-800 dark:text-gray-200 text-sm truncate">{campo.etiqueta}</p>
+          <p className="font-medium text-slate-800 dark:text-slate-200 text-sm truncate">{campo.etiqueta}</p>
           {/* Neutra: el rojo es para errores, no para "obligatoria". */}
           {campo.requerido && (
             <span className="text-xs bg-muted text-foreground px-1.5 py-0.5 rounded font-medium">
@@ -406,7 +406,7 @@ function CampoRow({
             </span>
           )}
         </div>
-        <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+        <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
           <span>{tipoLabel}</span>
           {campo.servicioNombres && campo.servicioNombres.length > 0 ? (
             <span>Solo para: {campo.servicioNombres.join(", ")}</span>
@@ -421,7 +421,7 @@ function CampoRow({
           onClick={onEditar}
           aria-label={`Editar pregunta "${campo.etiqueta}"`}
           title="Editar"
-          className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] lg:min-h-[36px] lg:min-w-[36px] text-gray-500 dark:text-gray-400 hover:text-foreground hover:bg-muted rounded-lg transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] lg:min-h-[36px] lg:min-w-[36px] text-slate-500 dark:text-slate-400 hover:text-foreground hover:bg-muted rounded-lg transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <Pencil size={15} aria-hidden="true" />
         </button>
@@ -430,7 +430,7 @@ function CampoRow({
           onClick={onEliminar}
           aria-label={`Eliminar pregunta "${campo.etiqueta}"`}
           title="Eliminar"
-          className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] lg:min-h-[36px] lg:min-w-[36px] text-gray-500 dark:text-gray-400 hover:text-red-700 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] lg:min-h-[36px] lg:min-w-[36px] text-slate-500 dark:text-slate-400 hover:text-red-700 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <Trash2 size={15} aria-hidden="true" />
         </button>

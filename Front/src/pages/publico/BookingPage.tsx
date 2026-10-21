@@ -16,8 +16,9 @@ import PasoServicio from "../../components/booking/PasoServicio";
 import PasoEmpleado, { SIN_PREFERENCIA_ID } from "../../components/booking/PasoEmpleado";
 import PasoFechaHora from "../../components/booking/PasoFechaHora";
 import PasoDatosCliente, { type DatosClienteForm } from "../../components/booking/PasoDatosCliente";
-import { Star, X, Tag, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react";
+import { Star, X, Tag, AlertCircle, ChevronLeft, ChevronRight, MapPin } from "lucide-react";
 import PublicFooter from "../../components/PublicFooter";
+import { useTituloPagina } from "../../hooks/useTituloPagina";
 
 import { hexToChannels, DEFAULT_COLOR, brandSolid } from "../../lib/colorUtils";
 import { fondoPortada } from "../../lib/portadaPresets";
@@ -297,11 +298,10 @@ function GaleriaSection({ imagenes }: { imagenes: ImagenGaleria[] }) {
         >
           <span
             aria-hidden="true"
-            className="rounded-full transition-all"
+            className={`rounded-full transition-all ${isActive ? "bg-slate-700" : "bg-slate-300"}`}
             style={{
               width: isActive ? 16 : 6,
               height: isEdge ? 4 : 6,
-              background: isActive ? "#334155" : "#cbd5e1",
               opacity: isEdge ? 0.45 : 1,
             }}
           />
@@ -778,11 +778,13 @@ export default function BookingPage() {
     else setSearchParams(paramsConPaso(searchParams, destino), { replace: true });
   };
 
-  // SEO + Open Graph dinámico
+  // Título de la pestaña: el mismo hook (y el mismo título por defecto) que el resto.
+  useTituloPagina(negocio ? `Reservar en ${negocio.nombre}` : null);
+
+  // Open Graph dinámico
   useEffect(() => {
     if (!negocio) return;
-    const titulo = `Reservar en ${negocio.nombre} — AppointVa`;
-    document.title = titulo;
+    const titulo = `Reservar en ${negocio.nombre} · AppointVa`;
 
     const setMeta = (property: string, content: string) => {
       let el = document.querySelector<HTMLMetaElement>(`meta[property="${property}"]`);
@@ -801,8 +803,6 @@ export default function BookingPage() {
     setMeta("og:url", window.location.href);
     if (negocio.portadaUrl || negocio.logoUrl)
       setMeta("og:image", (negocio.portadaUrl || negocio.logoUrl)!);
-
-    return () => { document.title = "AppointVa"; };
   }, [negocio]);
 
   // Pre-seleccionar servicio y empleado desde URL params (flujo "Repetir cita")
@@ -1046,8 +1046,8 @@ export default function BookingPage() {
     : paso;
 
   const textos = negocio.sector === 'salud'
-    ? { cta: 'Agenda tu consulta', cita: 'consulta' }
-    : { cta: 'Reserva tu cita',    cita: 'cita'     };
+    ? { cita: 'consulta' }
+    : { cita: 'cita' };
 
   // Código de descuento: vive dentro del formulario del paso 4, justo antes del
   // resumen, para que el total que se ve ya sea el que se paga. Sus botones son
@@ -1255,8 +1255,8 @@ export default function BookingPage() {
       {/* Header oscuro del negocio */}
       <div
         data-testid="portada-negocio"
-        className="relative overflow-hidden min-h-[180px] sm:min-h-[260px] lg:min-h-[300px] xl:min-h-[340px] flex flex-col justify-end"
-        style={mostrarFoto ? { background: "#0C0C0F" } : fondoDePortada}
+        className={`relative overflow-hidden min-h-[180px] sm:min-h-[260px] lg:min-h-[300px] xl:min-h-[340px] flex flex-col justify-end ${mostrarFoto ? "bg-zinc-950" : ""}`}
+        style={mostrarFoto ? undefined : fondoDePortada}
       >
         {/* Portada visible, a opacidad completa: el contraste lo sostiene el velo de abajo */}
         {mostrarFoto && (
@@ -1311,14 +1311,16 @@ export default function BookingPage() {
                   />
                 </button>
               ) : (
+                // Sin logo, la inicial del negocio (como los avatares del equipo), no un emoji (BF-24).
                 <div
-                  className="w-14 h-14 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl flex items-center justify-center text-2xl sm:text-4xl"
+                  aria-hidden="true"
+                  className="w-14 h-14 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl flex items-center justify-center text-2xl sm:text-4xl font-black text-white"
                   style={{
                     background: `rgb(${hexToChannels(color)} / 0.18)`,
                     border: `1.5px solid rgb(${hexToChannels(color)} / 0.40)`,
                   }}
                 >
-                  🏪
+                  {negocio.nombre.trim().charAt(0).toUpperCase()}
                 </div>
               )}
             </div>
@@ -1331,17 +1333,17 @@ export default function BookingPage() {
                 >
                   {negocio.nombre}
                 </h1>
-                <div
-                  className="flex items-center gap-1 rounded-full px-2 py-0.5"
-                  style={{ background: "rgba(12,12,15,0.38)" }}
-                >
-                  <Star size={9} strokeWidth={0} className="fill-rating text-rating" />
-                  <span className="text-[10px] sm:text-xs" style={{ color: "rgba(255,255,255,0.86)" }}>
-                    {(negocio.totalResenas ?? 0) > 0
-                      ? (negocio.promedioResenas ?? 0).toFixed(1)
-                      : "Sin reseñas"}
-                  </span>
-                </div>
+                {/* Sin reseñas no se muestra la píldora: una estrella junto a
+                    "Sin reseñas" se lee como una mala nota (BF-25). */}
+                {(negocio.totalResenas ?? 0) > 0 && (
+                  <div className="flex items-center gap-1 rounded-full px-2 py-0.5 bg-zinc-950/40">
+                    <Star size={9} strokeWidth={0} className="fill-rating text-rating" aria-hidden="true" />
+                    <span className="text-[10px] sm:text-xs text-white/85">
+                      <span className="sr-only">Calificación </span>
+                      {(negocio.promedioResenas ?? 0).toFixed(1)}
+                    </span>
+                  </div>
+                )}
               </div>
               {negocio.descripcion && (
                 <p
@@ -1353,10 +1355,11 @@ export default function BookingPage() {
               )}
               {negocio.direccion && (
                 <p
-                  className="text-xs sm:text-sm mt-2 leading-snug"
+                  className="flex items-start gap-1 text-xs sm:text-sm mt-2 leading-snug"
                   style={{ color: "rgba(255,255,255,0.80)", textShadow: SOMBRA_TEXTO_PORTADA }}
                 >
-                  📍 {negocio.direccion}
+                  <MapPin size={14} className="shrink-0 mt-px" aria-hidden="true" />
+                  <span>{negocio.direccion}</span>
                 </p>
               )}
             </div>
@@ -1436,8 +1439,6 @@ export default function BookingPage() {
         {/* Paso 1 */}
         {paso === 1 && (
           <>
-            <p className="text-sm font-medium text-slate-400 mb-4">{textos.cta}</p>
-
             <PasoServicio
               servicios={negocio.servicios}
               seleccionado={servicio}
@@ -1551,9 +1552,9 @@ export default function BookingPage() {
         {paso === 3 && mostrarIntake && camposIntake.length > 0 && (
           <>
             <div className="mb-5">
-              <h2 tabIndex={-1} className="text-xl font-bold text-slate-900 outline-none">Antes de continuar…</h2>
+              <h2 tabIndex={-1} className="text-xl font-bold text-slate-900 outline-none">Unas preguntas rápidas</h2>
               <p className="text-sm text-slate-500 mt-1">
-                Por favor responde estas preguntas adicionales para tu cita.
+                {`Nos ayudan a preparar tu ${textos.cita}.`}
               </p>
             </div>
             <div className="space-y-4">

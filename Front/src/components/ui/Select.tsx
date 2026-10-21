@@ -130,18 +130,18 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
             "bg-white dark:bg-slate-800",
             open
               ? "border-slate-700 ring-2 ring-slate-700/20 dark:border-slate-500 dark:ring-slate-500/20"
-              : "border-gray-200 hover:border-gray-300 dark:border-slate-600 dark:hover:border-slate-500",
+              : "border-slate-200 hover:border-slate-300 dark:border-slate-600 dark:hover:border-slate-500",
             disabled
-              ? "bg-gray-50 dark:bg-slate-700 text-gray-400 dark:text-slate-500 cursor-not-allowed opacity-60"
+              ? "bg-slate-50 dark:bg-slate-700 text-slate-400 dark:text-slate-500 cursor-not-allowed opacity-60"
               : "cursor-pointer",
           ].join(" ")}
         >
-          <span className={isPlaceholder ? "text-gray-400 dark:text-slate-500" : "text-gray-700 dark:text-slate-200"}>
+          <span className={isPlaceholder ? "text-slate-400 dark:text-slate-500" : "text-slate-700 dark:text-slate-200"}>
             {isPlaceholder ? (selected?.label ?? "Seleccionar...") : selected!.label}
           </span>
           <ChevronDown
             size={16}
-            className={`shrink-0 ml-2 text-gray-400 dark:text-slate-500 transition-transform duration-200 ${
+            className={`shrink-0 ml-2 text-slate-400 dark:text-slate-500 transition-transform duration-200 ${
               open ? "rotate-180" : ""
             }`}
           />
@@ -149,7 +149,7 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
 
         {/* Dropdown panel */}
         {open && (
-          <div className="absolute z-[200] top-full mt-1.5 left-0 right-0 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden">
+          <div className="absolute z-[200] top-full mt-1.5 left-0 right-0 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden">
             <ul role="listbox" aria-label={props["aria-label"]} className="py-1.5 max-h-60 overflow-y-auto">
               {options.map((opt) => {
                 const isSelected = opt.value === displayValue;
@@ -164,10 +164,10 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
                       className={[
                         "w-full min-h-[44px] flex items-center justify-between px-4 py-2.5 text-sm text-left transition-colors",
                         opt.disabled
-                          ? "text-gray-300 dark:text-slate-600 cursor-not-allowed"
+                          ? "text-slate-300 dark:text-slate-600 cursor-not-allowed"
                           : isSelected
                           ? "bg-slate-700/10 dark:bg-slate-600/30 text-slate-700 dark:text-slate-200 font-medium"
-                          : "text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700/50 cursor-pointer",
+                          : "text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer",
                       ].join(" ")}
                     >
                       <span>{opt.label}</span>

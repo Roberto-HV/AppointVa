@@ -1,3 +1,6 @@
+import { Link } from "react-router-dom";
+import { ArrowRight } from "lucide-react";
+
 interface Props {
   pasoActual: number;
   pasos: string[];
@@ -13,10 +16,7 @@ const BARRA_PENDIENTE = "rgba(255,255,255,0.15)";
 export default function IndicadorPasos({ pasoActual, pasos, slug }: Props) {
   const nombrePaso = pasos[pasoActual - 1];
   return (
-    <div
-      className="flex items-center justify-between gap-3 px-4 py-3"
-      style={{ background: "#18181B", borderBottom: "1px solid rgba(255,255,255,0.05)" }}
-    >
+    <div className="flex items-center justify-between gap-3 px-4 py-3 bg-zinc-900 border-b border-white/5">
       {/* Barras de progreso y, debajo, el paso actual con su nombre. En una sola
           fila junto a "Mis citas" el nombre se cortaba a 375px ("Fecha y h…"). */}
       <div className="flex min-w-0 flex-col gap-1.5">
@@ -44,7 +44,7 @@ export default function IndicadorPasos({ pasoActual, pasos, slug }: Props) {
             );
           })}
         </ol>
-        <p className="text-xs leading-snug" style={{ color: "rgba(255,255,255,0.7)" }}>
+        <p className="text-xs leading-snug text-white/70">
           {`Paso ${pasoActual} de ${pasos.length}`}
           {nombrePaso && <span className="font-semibold text-white/90">{` · ${nombrePaso}`}</span>}
         </p>
@@ -52,15 +52,13 @@ export default function IndicadorPasos({ pasoActual, pasos, slug }: Props) {
 
       {/* Mis citas */}
       {slug && (
-        <a
-          href={`/b/${slug}/mis-citas`}
+        <Link
+          to={`/b/${slug}/mis-citas`}
           className="shrink-0 text-xs font-medium text-white/60 hover:text-white/90 transition flex items-center gap-1"
         >
           Mis citas
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M5 12h14M12 5l7 7-7 7" />
-          </svg>
-        </a>
+          <ArrowRight size={12} strokeWidth={2.5} aria-hidden="true" />
+        </Link>
       )}
     </div>
   );

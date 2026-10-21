@@ -129,7 +129,7 @@ export default function FiltroBarra({
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40",
               activosColapsados > 0
                 ? "bg-slate-700 text-white border-slate-700 dark:bg-slate-600 dark:border-slate-600"
-                : "bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-300 border-gray-200 dark:border-slate-600"
+                : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600"
             )}
           >
             <SlidersHorizontal size={16} aria-hidden="true" />
@@ -166,7 +166,7 @@ export default function FiltroBarra({
               <div key={campo.id} className="w-full lg:w-auto min-w-0">
                 <span
                   id={idLabel}
-                  className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-1.5"
+                  className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5"
                 >
                   {campo.etiqueta}
                 </span>
@@ -183,7 +183,7 @@ export default function FiltroBarra({
                 className={cn(
                   "min-h-[44px] lg:min-h-[36px] px-3 inline-flex items-center gap-1.5 rounded-lg",
                   "text-sm font-medium transition-colors",
-                  "text-slate-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700",
+                  "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40"
                 )}
               >

@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import type { ServicioPublico } from "../../types";
 import { formatPrecio } from "../../utils/formatters";
 import { getSectorTerms } from "../../hooks/useSectorTerms";
-import { brandAccent, brandTint } from "../../lib/colorUtils";
+import { brandAccent, brandTint, DEFAULT_COLOR } from "../../lib/colorUtils";
 import FilaSeleccion, { GrupoFilas } from "./FilaSeleccion";
 import { Clock } from "lucide-react";
 
@@ -60,7 +60,7 @@ function agrupar(servicios: ServicioPublico[]): Grupo[] {
   return grupos;
 }
 
-export default function PasoServicio({ servicios, seleccionado, onSeleccionar, color = "#334155", sector }: Props) {
+export default function PasoServicio({ servicios, seleccionado, onSeleccionar, color = DEFAULT_COLOR, sector }: Props) {
   const terms = getSectorTerms(sector);
   const acento = useMemo(() => brandAccent(color), [color]);
   const tinte = useMemo(() => brandTint(color), [color]);
