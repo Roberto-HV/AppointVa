@@ -224,3 +224,81 @@ public class CodigosRecuperacionGestionTests : CodigosRecuperacionTestBase
         resp.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 }
+
+/// <summary>
+/// An access token alone must not reset an active 2FA or mint recovery codes: configurar
+/// and activar refuse while 2FA is on, and desactivar needs a current TOTP code.
+/// </summary>
+public class DosFactoresReautenticacionTests : CodigosRecuperacionTestBase
+{
+    public DosFactoresReautenticacionTests(CustomWebApplicationFactory factory) : base(factory) { }
+
+    private async Task<string?> LlaveAsync(Guid usuarioId)
+    {
+        await using var scope = Factory.Services.CreateAsyncScope();
+        var um = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        return await um.GetAuthenticatorKeyAsync((await um.FindByIdAsync(usuarioId.ToString()))!);
+    }
+
+    [Fact]
+    public async Task Configurar_Con2FAActivo_Retorna409_YNoCambiaLaLlave()
+    {
+        var usuario = await CrearUsuarioAsync();
+        await HabilitarConCodigosAsync(usuario);
+        var llaveAntes = await LlaveAsync(usuario.Id);
+
+        var resp = await NewClient(TokenDe(usuario)).PostAsync("/api/auth/2fa/configurar", null);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        (await resp.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("mensaje").GetString()
+            .Should().Contain("ya está activa");
+        (await LlaveAsync(usuario.Id)).Should().Be(llaveAntes);
+    }
+
+    [Fact]
+    public async Task Activar_Con2FAActivo_Retorna409_SinCodigosNuevos()
+    {
+        var usuario = await CrearUsuarioAsync();
+        await HabilitarConCodigosAsync(usuario);
+        var guardadoAntes = await ValorGuardadoAsync(usuario.Id);
+
+        var resp = await NewClient(TokenDe(usuario))
+            .PostAsJsonAsync("/api/auth/2fa/activar", new { codigo = await CodigoTotpAsync(usuario.Id) });
+
+        resp.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        body.TryGetProperty("codigosRecuperacion", out _).Should().BeFalse();
+        body.GetProperty("mensaje").GetString().Should().Contain("Generar códigos nuevos");
+        (await ValorGuardadoAsync(usuario.Id)).Should().Be(guardadoAntes);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("000000")]
+    public async Task Desactivar_SinCodigoTotpValido_NoDesactiva(string codigo)
+    {
+        var usuario = await CrearUsuarioAsync();
+        await HabilitarConCodigosAsync(usuario);
+        var cliente = NewClient(TokenDe(usuario));
+        // Make sure the guess is not, by chance, the current code.
+        if (codigo == await CodigoTotpAsync(usuario.Id)) codigo = "999999";
+
+        var resp = await cliente.PostAsJsonAsync("/api/auth/2fa/desactivar", new { codigo });
+
+        resp.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await cliente.GetFromJsonAsync<JsonElement>("/api/auth/2fa/estado"))
+            .GetProperty("habilitado").GetBoolean().Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData(nameof(AppointVaAPI.Controllers.V1.AutenticacionController.Activar2FA), AppointVaAPI.Constants.Politicas.LimiteGestion2FA)]
+    [InlineData(nameof(AppointVaAPI.Controllers.V1.AutenticacionController.Desactivar2FA), AppointVaAPI.Constants.Politicas.LimiteGestion2FA)]
+    [InlineData(nameof(AppointVaAPI.Controllers.V1.AutenticacionController.Configurar2FA), "Auth")]
+    public void Endpoints2FA_EstanLimitados(string accion, string politica)
+    {
+        typeof(AppointVaAPI.Controllers.V1.AutenticacionController).GetMethod(accion)!
+            .GetCustomAttributes(typeof(Microsoft.AspNetCore.RateLimiting.EnableRateLimitingAttribute), inherit: true)
+            .Cast<Microsoft.AspNetCore.RateLimiting.EnableRateLimitingAttribute>()
+            .Should().ContainSingle().Which.PolicyName.Should().Be(politica);
+    }
+}

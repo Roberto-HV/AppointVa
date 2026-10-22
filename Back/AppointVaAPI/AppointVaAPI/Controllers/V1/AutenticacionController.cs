@@ -311,8 +311,14 @@ namespace AppointVaAPI.Controllers.V1
             });
         }
 
+        public const string Mensaje2FAYaActivo =
+            "La verificación en dos pasos ya está activa. Para cambiar de app autenticadora, desactívala primero con un código de tu app y vuelve a activarla.";
+
         // POST api/auth/2fa/configurar — genera/renueva la clave TOTP y devuelve el URI
+        // Only while 2FA is off: resetting the key of an active 2FA would let a stolen
+        // access token take over the second factor without knowing it.
         [Authorize]
+        [EnableRateLimiting("Auth")]
         [HttpPost("2fa/configurar")]
         public async Task<IActionResult> Configurar2FA()
         {
@@ -321,6 +327,9 @@ namespace AppointVaAPI.Controllers.V1
 
             var usuario = await _userManager.FindByIdAsync(usuarioId);
             if (usuario is null) return NotFound();
+
+            if (await _userManager.GetTwoFactorEnabledAsync(usuario))
+                return Conflict(new { mensaje = Mensaje2FAYaActivo });
 
             await _userManager.ResetAuthenticatorKeyAsync(usuario);
             var llave = await _userManager.GetAuthenticatorKeyAsync(usuario);
@@ -341,7 +350,10 @@ namespace AppointVaAPI.Controllers.V1
         }
 
         // POST api/auth/2fa/activar — verifica el código y habilita 2FA
+        // Only while 2FA is off: once active, new recovery codes come from
+        // 2fa/codigos-recuperacion, which asks for the password or a TOTP code.
         [Authorize]
+        [EnableRateLimiting(AppointVaAPI.Constants.Politicas.LimiteGestion2FA)]
         [HttpPost("2fa/activar")]
         public async Task<IActionResult> Activar2FA([FromBody] ActivarDosFactoresDto dto)
         {
@@ -350,6 +362,12 @@ namespace AppointVaAPI.Controllers.V1
 
             var usuario = await _userManager.FindByIdAsync(usuarioId);
             if (usuario is null) return NotFound();
+
+            if (await _userManager.GetTwoFactorEnabledAsync(usuario))
+                return Conflict(new
+                {
+                    mensaje = "La verificación en dos pasos ya está activa. Si necesitas códigos de recuperación nuevos, usa \"Generar códigos nuevos\" con tu contraseña o un código de tu app."
+                });
 
             var codigoLimpio = dto.Codigo.Replace(" ", "").Replace("-", "");
             var valido = await _userManager.VerifyTwoFactorTokenAsync(
@@ -416,7 +434,9 @@ namespace AppointVaAPI.Controllers.V1
         }
 
         // POST api/auth/2fa/desactivar — deshabilita 2FA
+        // Requires a current TOTP code (re-authentication), rate limited against guessing.
         [Authorize]
+        [EnableRateLimiting(AppointVaAPI.Constants.Politicas.LimiteGestion2FA)]
         [HttpPost("2fa/desactivar")]
         public async Task<IActionResult> Desactivar2FA([FromBody] ActivarDosFactoresDto dto)
         {

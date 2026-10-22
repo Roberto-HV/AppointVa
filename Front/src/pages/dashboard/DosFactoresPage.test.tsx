@@ -259,3 +259,34 @@ describe("DosFactoresPage — códigos de recuperación (B8)", () => {
     expect(await screen.findByText("La contraseña o el código no son correctos.")).toBeInTheDocument();
   });
 });
+
+describe("DosFactoresPage — 409: 2FA ya activo en el servidor", () => {
+  it("configurar con 409 muestra el mensaje y refresca el estado a 'activado'", async () => {
+    vi.mocked(authApi.obtenerEstado2FA)
+      .mockResolvedValueOnce({ habilitado: false, tieneConfiguracion: false, codigosRecuperacionRestantes: 0 })
+      .mockResolvedValue({ habilitado: true, tieneConfiguracion: true, codigosRecuperacionRestantes: 10 });
+    vi.mocked(authApi.configurar2FA).mockRejectedValue({
+      response: { status: 409, data: { mensaje: "La verificación en dos pasos ya está activa." } },
+    });
+    renderConQuery();
+    fireEvent.click(await screen.findByRole("button", { name: "Activar autenticación en dos pasos" }));
+    await screen.findByText("2FA activado");
+    expect(authApi.obtenerEstado2FA).toHaveBeenCalledTimes(2);
+  });
+
+  it("activar con 409 sale del paso de QR y refresca el estado", async () => {
+    vi.mocked(authApi.obtenerEstado2FA)
+      .mockResolvedValueOnce({ habilitado: false, tieneConfiguracion: false, codigosRecuperacionRestantes: 0 })
+      .mockResolvedValue({ habilitado: true, tieneConfiguracion: true, codigosRecuperacionRestantes: 10 });
+    vi.mocked(authApi.configurar2FA).mockResolvedValue({ uri: "otpauth://totp/test?secret=ABCD1234", llave: "ABCD1234" });
+    vi.mocked(authApi.activar2FA).mockRejectedValue({
+      response: { status: 409, data: { mensaje: "La verificación en dos pasos ya está activa." } },
+    });
+    renderConQuery();
+    fireEvent.click(await screen.findByRole("button", { name: "Activar autenticación en dos pasos" }));
+    fireEvent.change(await screen.findByPlaceholderText("000000"), { target: { value: "123456" } });
+    fireEvent.click(screen.getByRole("button", { name: "Confirmar activación" }));
+    await screen.findByText("2FA activado");
+    expect(screen.queryByRole("button", { name: "Confirmar activación" })).not.toBeInTheDocument();
+  });
+});

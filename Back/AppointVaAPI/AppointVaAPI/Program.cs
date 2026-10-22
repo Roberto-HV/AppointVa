@@ -281,6 +281,21 @@ builder.Services.AddRateLimiter(options =>
                 QueueLimit = 0
             }));
 
+    // Activar o desactivar 2FA con sesión iniciada: 5 cada 5 minutos por usuario. Cada intento
+    // exige un código TOTP válido; un tope por usuario frena la fuerza bruta con una sesión
+    // robada sin compartir el cupo por IP de la verificación del login.
+    options.AddPolicy(Politicas.LimiteGestion2FA, httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.User.FindFirst(AppointVaAPI.Constants.ClaimsTipos.UsuarioId)?.Value
+                ?? httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                Window = TimeSpan.FromMinutes(5),
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0
+            }));
+
     // Salida del modo recepción: 10/min por negocio. El limitador propio (3 fallos cada 5 min
     // por negocio) decide el bloqueo; este tope solo frena el martilleo de un dispositivo antes
     // de que llegue a la base de datos. Se particiona por el negocio del token y no por IP:

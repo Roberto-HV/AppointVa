@@ -24,5 +24,11 @@ namespace AppointVaAPI.Constants
 
         /// <summary>Rate limit policy (not an authorization policy) for client-data exports (B18 / S7).</summary>
         public const string LimiteExportacion = "Exportacion";
+
+        /// <summary>
+        /// Rate limit policy for turning 2FA on or off while signed in. Partitioned per user so it
+        /// does not share the per-IP login-verification bucket ("TwoFA") with other staff on the same network.
+        /// </summary>
+        public const string LimiteGestion2FA = "Gestion2FA";
     }
 }

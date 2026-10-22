@@ -55,12 +55,14 @@ namespace AppointVaAPI.Controllers.V1
         {
             if (_contexto.NegocioId is null) return Unauthorized();
             var dto = await ConstruirReporteCitasAsync(_contexto.NegocioId.Value, desde, hasta, empleadoId, servicioId, estado);
-            await RegistrarExportacionAsync("reporte de citas", dto.Citas.Count, "xlsx");
+            if (!await RegistrarExportacionAsync("reporte de citas", dto.Citas.Count, "xlsx"))
+                return ClientesController.ExportacionNoDisponible(this);
             return Ok(dto);
         }
 
-        private Task RegistrarExportacionAsync(string origen, int filas, string formato) =>
-            _audit.RegistrarAsync(ClientesController.AccionExportarClientes, "Negocio", _contexto.NegocioId.ToString(),
+        // Fail closed (S7): false means no audit row, and the caller must not serve the data.
+        private Task<bool> RegistrarExportacionAsync(string origen, int filas, string formato) =>
+            _audit.RegistrarObligatorioAsync(ClientesController.AccionExportarClientes, "Negocio", _contexto.NegocioId.ToString(),
                 $"Origen: {origen}; Filas: {filas}; Formato: {formato}");
 
         private async Task<ReporteCitasDto> ConstruirReporteCitasAsync(
@@ -198,7 +200,8 @@ namespace AppointVaAPI.Controllers.V1
                 sb.AppendLine(string.Join(",", campos));
             }
 
-            await RegistrarExportacionAsync("citas (CSV)", citas.Count, "csv");
+            if (!await RegistrarExportacionAsync("citas (CSV)", citas.Count, "csv"))
+                return ClientesController.ExportacionNoDisponible(this);
 
             var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
             var nombreArchivo = $"citas_{desdeUtc:yyyyMMdd}_{hastaUtc.AddDays(-1):yyyyMMdd}.csv";

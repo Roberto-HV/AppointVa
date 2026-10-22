@@ -119,11 +119,20 @@ namespace AppointVaAPI.Controllers.V1
                 .ToListAsync();
 
             var filtro = string.IsNullOrWhiteSpace(buscar) ? "directorio completo" : "búsqueda";
-            await _audit.RegistrarAsync(AccionExportarClientes, "Negocio", _contexto.NegocioId.ToString(),
-                $"Origen: clientes; Filas: {clientes.Count}; Formato: xlsx; Filtro: {filtro}");
+            // Fail closed: an export that left no audit row is not served.
+            if (!await _audit.RegistrarObligatorioAsync(AccionExportarClientes, "Negocio", _contexto.NegocioId.ToString(),
+                    $"Origen: clientes; Filas: {clientes.Count}; Formato: xlsx; Filtro: {filtro}"))
+                return ExportacionNoDisponible(this);
 
             return Ok(clientes);
         }
+
+        public const string MensajeExportacionNoDisponible =
+            "No pudimos registrar la exportación, así que no se generó el archivo. Intenta de nuevo en unos minutos.";
+
+        /// <summary>503 for an export whose mandatory audit row could not be written.</summary>
+        internal static IActionResult ExportacionNoDisponible(ControllerBase controlador) =>
+            controlador.StatusCode(StatusCodes.Status503ServiceUnavailable, new { mensaje = MensajeExportacionNoDisponible });
 
         // GET api/clientes/resumen-actividad?buscar=&dias=60
         // Los tres grupos del directorio completo: el listado está paginado y la

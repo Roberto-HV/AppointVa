@@ -8,7 +8,7 @@ import CodigosRecuperacion from "../../components/dashboard/CodigosRecuperacion"
 import { quedanPocosCodigos } from "../../utils/codigosRecuperacion";
 import { useToastStore } from "../../store/toastStore";
 import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
-import { mensajeError } from "../../utils/errores";
+import { estadoHttp, mensajeError } from "../../utils/errores";
 
 type Paso = "idle" | "configurando" | "activado";
 
@@ -47,6 +47,9 @@ export default function DosFactoresPage() {
     onMutate: () => setErrorConfig(""),
     onError: (err: unknown) => {
       const msg = mensajeError(err, "No se pudo iniciar la configuración de 2FA. Intenta de nuevo.");
+      // 409: 2FA ya está activo (p. ej. se activó en otra pestaña). Refrescar el estado
+      // muestra la vista de "activado"; cambiar de app requiere desactivar primero.
+      if (estadoHttp(err) === 409) qc.invalidateQueries({ queryKey: ["2fa-estado"] });
       setErrorConfig(msg);
       toast(msg, "error");
     },
@@ -61,7 +64,16 @@ export default function DosFactoresPage() {
       toast("Autenticación de dos factores activada");
     },
     onError: (err: unknown) => {
-      setErrorCodigo(mensajeError(err, "Código incorrecto"));
+      const msg = mensajeError(err, "Código incorrecto");
+      if (estadoHttp(err) === 409) {
+        // Ya estaba activo: volver a la vista normal con el estado real.
+        qc.invalidateQueries({ queryKey: ["2fa-estado"] });
+        setPaso("idle");
+        setCodigo("");
+        toast(msg, "error");
+        return;
+      }
+      setErrorCodigo(msg);
     },
   });
 

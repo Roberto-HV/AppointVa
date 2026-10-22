@@ -9,6 +9,10 @@ using FluentAssertions;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.AspNetCore.TestHost;
+using AppointVaAPI.Services.IServices;
+using NSubstitute;
 
 namespace AppointVaAPI.Tests.Controllers.Integration;
 
@@ -184,5 +188,44 @@ public class EscaparCsvTests
     public void Escapar_NeutralizaFormulas_SinTocarTelefonos(string entrada, string esperado)
     {
         ReportesController.Escapar(entrada).Should().Be(esperado);
+    }
+}
+
+/// <summary>
+/// S7 fail-closed: an export whose audit row could not be written is not served (503).
+/// </summary>
+public class ExportacionSinAuditoriaTests : IntegrationTestBase
+{
+    public ExportacionSinAuditoriaTests(CustomWebApplicationFactory factory) : base(factory) { }
+
+    private HttpClient ClienteConAuditoriaCaida(Guid negocioId)
+    {
+        var audit = Substitute.For<IAuditService>();
+        audit.RegistrarObligatorioAsync(default!).ReturnsForAnyArgs(false);
+
+        var cliente = Factory.WithWebHostBuilder(b => b.ConfigureTestServices(s =>
+        {
+            s.RemoveAll<IAuditService>();
+            s.AddScoped(_ => audit);
+        })).CreateClient();
+        cliente.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue(
+            "Bearer", TestTokenHelper.GenerarToken("Propietario", negocioId, Guid.NewGuid()));
+        return cliente;
+    }
+
+    [Theory]
+    [InlineData("/api/clientes/exportar")]
+    [InlineData("/api/reportes/citas/exportacion?desde=2026-03-01&hasta=2026-03-31")]
+    [InlineData("/api/reportes/citas/exportar?desde=2026-03-01&hasta=2026-03-31")]
+    public async Task Exportacion_SiNoSePuedeAuditar_Retorna503_SinDatos(string url)
+    {
+        var negocioId = Guid.NewGuid();
+        await Factory.SeedNegocioAsync(negocioId);
+
+        var resp = await ClienteConAuditoriaCaida(negocioId).GetAsync(url);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.ServiceUnavailable);
+        var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        body.GetProperty("mensaje").GetString().Should().Be(ClientesController.MensajeExportacionNoDisponible);
     }
 }
