@@ -40,20 +40,27 @@ export default function DialogoEliminarConCitas({
     queryKey: ["citas-futuras", clave],
     queryFn: () => contarCitasFuturas(filtro!),
     enabled: abierto && !!filtro,
+    // Sin caché: cada apertura vuelve a contar (una cita pudo crearse entre medias).
     staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
   });
 
-  const bloqueado = !!conteo && conteo.total > 0;
-  const puedeEliminar = !!conteo && conteo.total === 0;
+  // Falla cerrada: solo se puede eliminar con un conteo fresco, completo y en cero.
+  const verificado = !!conteo && !isFetching && !isError;
+  const bloqueado = verificado && conteo.total > 0;
+  const sinVerificar = verificado && conteo.total === 0 && !conteo.completo;
+  const puedeEliminar = verificado && conteo.total === 0 && conteo.completo;
+  const cargando = isLoading || (isFetching && !isError);
   const enlace = enlaceCitasFuturas(filtro && "empleadoId" in filtro ? filtro.empleadoId : undefined);
   const nCitas = conteo?.total ?? 0;
   const textoCitas = `${conteo && !conteo.completo ? "al menos " : ""}${nCitas} ${nCitas === 1 ? terminoCitas.singular : terminoCitas.plural}`;
 
   return (
-    <Modal abierto={abierto} onCerrar={onCerrar} titulo={bloqueado ? "No se puede eliminar todavía" : titulo} ancho="sm">
+    <Modal abierto={abierto} onCerrar={onCerrar} titulo={bloqueado || sinVerificar ? "No se puede eliminar todavía" : titulo} ancho="sm">
       <div className="space-y-5">
         <div className="text-sm text-muted-foreground space-y-2">
-          {isLoading ? (
+          {cargando ? (
             <p role="status">{`Revisando ${terminoCitas.plural} futuras…`}</p>
           ) : isError ? (
             <div role="alert" className="space-y-2">
@@ -71,10 +78,19 @@ export default function DialogoEliminarConCitas({
                 {filtro && "empleadoId" in filtro ? `Ver sus ${terminoCitas.plural}` : `Ver ${terminoCitas.plural} desde hoy`}
               </Link>
             </div>
+          ) : sinVerificar ? (
+            <div role="alert" className="space-y-2">
+              <p>
+                {`No pudimos verificar todas las ${terminoCitas.plural} futuras, así que no se puede eliminar desde aquí. ${alternativa ? "Ocúltalo de reservas o revisa" : "Revisa"} sus ${terminoCitas.plural} en Citas.`}
+              </p>
+              <Link to={enlace} onClick={onCerrar} className="inline-flex min-h-[44px] items-center font-semibold text-foreground underline underline-offset-2">
+                {`Ver ${terminoCitas.plural} desde hoy`}
+              </Link>
+            </div>
           ) : (
             mensaje
           )}
-          {alternativa && !isLoading && <p>{alternativa.descripcion}</p>}
+          {alternativa && !cargando && <p>{alternativa.descripcion}</p>}
         </div>
         <div className="flex flex-col-reverse sm:flex-row gap-2">
           <button type="button" onClick={onCerrar} className={`${BOTON} border border-border font-medium text-foreground hover:bg-muted`}>

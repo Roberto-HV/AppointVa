@@ -20,6 +20,7 @@ import ReglasContrasena from "../../components/ReglasContrasena";
 import { esquemaContrasena } from "../../utils/contrasena";
 import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
 import { useAuthStore } from "../../store/authStore";
+import { usePermisos } from "../../hooks/usePermisos";
 import { useToastStore } from "../../store/toastStore";
 import { NotificacionPerfilSection } from "../../components/ui/NotificacionBanner";
 import { hoy as hoyLocal } from "../../utils/fechas";
@@ -112,7 +113,7 @@ export default function MiPerfilPage() {
   const { toast }      = useToastStore();
   const qc             = useQueryClient();
   const fotoInputRef   = useRef<HTMLInputElement>(null);
-  const esEmpleado     = usuario?.rol === "Empleado";
+  const { esEmpleado, esPropietario } = usePermisos();
 
   const [mostrarActual,    setMostrarActual]    = useState(false);
   const [mostrarNueva,     setMostrarNueva]     = useState(false);
@@ -277,7 +278,7 @@ export default function MiPerfilPage() {
         }
       />
 
-      {usuario?.rol === "Propietario" && <AvisoDosFactores usuarioId={usuario.id} />}
+      {esPropietario && usuario && <AvisoDosFactores usuarioId={usuario.id} />}
 
       <div className="flex flex-col lg:flex-row gap-6 items-start">
 

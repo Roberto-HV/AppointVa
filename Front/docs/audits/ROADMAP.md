@@ -201,7 +201,7 @@ Severity values are estimates. Route the open items to a `review-risk` pass.
 - [ ] Kiosk: long press with a finger and with Enter, the hint, wrong password stays, right password returns to Citas; check that the account is not locked after a couple of wrong tries in normal use.
 - [ ] Citas "Confirmar seleccionadas": checkboxes on table and cards, sticky bar above the safe area at 375px, progress text, toast with "Reintentar", in light and dark mode; as Empleado.
 - [ ] Empleado: no Exportar, no Revertir, no Corte del día, no "Editar datos del cliente", no "Anular anticipo"; can still charge and register a deposit.
-- [ ] Waitlist "Avisar por WhatsApp" opens WhatsApp with the right text and marks the entry "Avisado".
+- [ ] Waitlist "Avisar por WhatsApp" opens WhatsApp with the right text and marks the entry "Notificado".
 - [ ] Deleting an employee/service with future appointments shows the block and the link opens Citas filtered.
 - [ ] Cuestionario "Subir"/"Bajar" with keyboard and screen reader; order persists after reload.
 - [ ] Mi perfil 2FA card for an owner without 2FA, dismiss, reload.

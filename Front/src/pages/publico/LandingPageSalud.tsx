@@ -1,187 +1,16 @@
 import { Link } from "react-router-dom";
-import { useState, useEffect, type ReactNode } from "react";
-import { precioVisible, formatMonto, PRECIOS_PLANES } from "../../lib/precios";
-import { useFadeInUp } from "../../components/landing/useFadeInUp";
+import { useState } from "react";
+import { PRECIOS_PLANES } from "../../lib/precios";
 import { ACTIVACION_FAQ, ACTIVACION_PLAZO, ACTIVACION_RESUMEN } from "../../lib/activacion";
 import { AVISO_NOTIFICACIONES } from "../../lib/notificaciones";
 import { FaqItem } from "../../components/landing/FaqItem";
 import { CtaFinal } from "../../components/landing/CtaFinal";
-
-// Dorado de la marca: SOLO en el logo ("Va"). Acentos y decoración en slate (AP-09).
-const GOLD = "#C8A961";
-const ACENTO = "#475569";
-const SLATE_700 = "#334155";
-const DARK = "#0F172A";
-
-const Ico = ({ d, className = "w-5 h-5" }: { d: string; className?: string }) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className={className}>
-    <path strokeLinecap="round" strokeLinejoin="round" d={d} />
-  </svg>
-);
-
-const dCalendar = "M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5";
-const dBell = "M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0";
-const dUsers = "M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z";
-const dCheck = "M4.5 12.75l6 6 9-13.5";
-const dArrow = "M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3";
-const dMenu = "M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5";
-const dClose = "M6 18L18 6M6 6l12 12";
-const dShield = "M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z";
-
-// ─── Navbar ───────────────────────────────────────────────────────────────────
-function Navbar() {
-  const [scrolled, setScrolled] = useState(false);
-  const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    const fn = () => setScrolled(window.scrollY > 24);
-    window.addEventListener("scroll", fn, { passive: true });
-    return () => window.removeEventListener("scroll", fn);
-  }, []);
-
-  return (
-    <nav
-      className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${
-        scrolled || open ? "bg-white/95 backdrop-blur-lg shadow-sm" : "bg-transparent"
-      }`}
-    >
-      <div className="max-w-6xl mx-auto px-6 h-[68px] flex items-center justify-between">
-        <Link to="/" className="text-xl font-black tracking-tight select-none">
-          <span className="text-slate-900">Appoint</span>
-          <span style={{ color: GOLD }}>Va</span>
-        </Link>
-
-        <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-500">
-          <a href="#caracteristicas" className="hover:text-slate-900 transition-colors">Características</a>
-          <a href="#preguntas" className="hover:text-slate-900 transition-colors">Preguntas</a>
-          <a href="#precios" className="hover:text-slate-900 transition-colors">Precios</a>
-          <span className="text-slate-200">·</span>
-          <Link to="/" className="text-sm text-slate-500 hover:text-slate-700 transition-colors">
-            ¿Tienes un salón o barbería?
-          </Link>
-        </div>
-
-        <div className="hidden md:flex items-center gap-2">
-          <Link to="/login" className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors rounded-lg">
-            Iniciar sesión
-          </Link>
-          <Link
-            to="/registro?sector=salud"
-            className="px-5 py-2 text-sm font-bold text-white rounded-xl transition-colors"
-            style={{ backgroundColor: SLATE_700 }}
-          >
-            Crear mi cuenta
-          </Link>
-        </div>
-
-        <button
-          type="button"
-          className="md:hidden p-2 -mr-2 text-slate-600 hover:text-slate-900 transition-colors"
-          onClick={() => setOpen(v => !v)}
-          aria-label={open ? "Cerrar menú" : "Abrir menú"}
-          aria-expanded={open}
-          aria-controls="menu-movil-landing"
-        >
-          <Ico d={open ? dClose : dMenu} />
-        </button>
-      </div>
-
-      {open && (
-        <div id="menu-movil-landing" className="md:hidden bg-white border-t border-slate-100 px-6 py-4 flex flex-col gap-3 shadow-lg">
-          <a href="#caracteristicas" className="py-2 text-sm font-medium text-slate-700" onClick={() => setOpen(false)}>Características</a>
-          <a href="#preguntas" className="py-2 text-sm font-medium text-slate-700" onClick={() => setOpen(false)}>Preguntas</a>
-          <a href="#precios" className="py-2 text-sm font-medium text-slate-700" onClick={() => setOpen(false)}>Precios</a>
-          <Link to="/" className="py-2 text-sm font-medium text-slate-500 hover:text-slate-700 transition-colors" onClick={() => setOpen(false)}>¿Tienes un salón o barbería?</Link>
-          <div className="border-t border-slate-100 pt-3 flex flex-col gap-2">
-            <Link to="/login" className="py-2.5 text-sm font-medium text-center text-slate-600 border border-slate-200 rounded-xl">Iniciar sesión</Link>
-            <Link to="/registro?sector=salud" className="py-2.5 text-sm font-bold text-center text-white rounded-xl" style={{ backgroundColor: SLATE_700 }}>Crear mi cuenta</Link>
-          </div>
-        </div>
-      )}
-    </nav>
-  );
-}
-
-// ─── Feature card ─────────────────────────────────────────────────────────────
-function FeatureCard({ icon, title, desc, delay }: { icon: ReactNode; title: string; desc: string; delay?: number }) {
-  const fade = useFadeInUp(delay);
-  return (
-    <div ref={fade.ref} style={fade.style} className="group p-6 rounded-2xl border border-slate-100 bg-white hover:border-slate-300 hover:shadow-lg hover:shadow-slate-100 transition-all duration-300">
-      <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-5 transition-transform duration-300 group-hover:scale-110" style={{ backgroundColor: "#F1F5F9", color: ACENTO }}>
-        {icon}
-      </div>
-      <h3 className="font-bold text-slate-900 mb-2 text-[15px]">{title}</h3>
-      <p className="text-sm text-slate-500 leading-relaxed">{desc}</p>
-    </div>
-  );
-}
-
-// ─── Pricing card ─────────────────────────────────────────────────────────────
-function PricingCard({
-  name, price, annualPrice, employees, features, highlighted = false, delay = 0, comingSoon = false, billedAnnually = false,
-}: {
-  name: string; price: number; annualPrice?: number; employees: number;
-  features: string[]; highlighted?: boolean; delay?: number; comingSoon?: boolean; billedAnnually?: boolean;
-}) {
-  const fade = useFadeInUp(delay);
-  // Un plan que aún no se puede contratar no lleva nota de facturación anual.
-  const precio = precioVisible({ mensual: price, anual: annualPrice, disponible: !comingSoon }, billedAnnually);
-  return (
-    <div
-      ref={fade.ref}
-      style={{ ...fade.style, backgroundColor: highlighted ? DARK : "white", transform: `${fade.style.transform} ${highlighted ? "scale(1.04)" : ""}` }}
-      className={`relative flex flex-col p-7 rounded-2xl border transition-all duration-300 ${highlighted ? "border-transparent shadow-2xl" : "border-slate-200 hover:border-slate-300 hover:shadow-md"}`}
-    >
-      {highlighted && (
-        <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-[11px] font-black text-slate-900 whitespace-nowrap" style={{ backgroundColor: "#E2E8F0" }}>
-          Más popular
-        </div>
-      )}
-
-      <div className="mb-6">
-        <p className={`text-xs font-bold uppercase tracking-widest mb-3 ${highlighted ? "text-slate-300" : "text-slate-400"}`}>{name}</p>
-
-        <div className="flex items-baseline gap-1.5 mb-1">
-          <span className={`text-5xl font-black tabular-nums ${highlighted ? "text-white" : "text-slate-900"}`}>${formatMonto(precio.porMes)}</span>
-          <span className="text-sm text-slate-400">MXN/mes</span>
-        </div>
-        {precio.facturaAnual && (
-          <p className={`text-xs font-semibold mb-1 ${highlighted ? "text-slate-300" : "text-slate-600"}`}>
-            Facturado anual · Ahorras ${formatMonto(precio.ahorroAnual)} MXN/año
-          </p>
-        )}
-        {precio.sinPrecioAnual && (
-          <p className={`text-xs font-semibold mb-1 ${highlighted ? "text-slate-300" : "text-slate-500"}`}>
-            Sin descuento anual · Se factura mes a mes
-          </p>
-        )}
-        <p className="text-xs text-slate-400">
-          {employees} empleados
-          {comingSoon && <span className="ml-2 inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest" style={{ backgroundColor: "#F1F5F9", color: "#94A3B8", border: "1px solid #E2E8F0" }}>Próximamente</span>}
-        </p>
-      </div>
-
-      <ul className="flex flex-col gap-3 mb-8 flex-1">
-        {features.map(f => (
-          <li key={f} className="flex items-start gap-2.5">
-            <span className={`mt-0.5 flex-shrink-0 ${highlighted ? "text-slate-300" : "text-slate-500"}`}><Ico d={dCheck} className="w-3.5 h-3.5" /></span>
-            <span className={`text-sm leading-snug ${highlighted ? "text-slate-300" : "text-slate-600"}`}>{f}</span>
-          </li>
-        ))}
-      </ul>
-
-      {comingSoon ? (
-        <div className="block text-center py-3 rounded-xl text-sm font-bold cursor-not-allowed select-none" style={{ backgroundColor: highlighted ? "#1E293B" : "#F1F5F9", color: highlighted ? "#475569" : "#94A3B8", border: `1px solid ${highlighted ? "#334155" : "#E2E8F0"}` }}>
-          Próximamente disponible
-        </div>
-      ) : (
-        <Link to="/registro?sector=salud" className="block text-center py-3 rounded-xl text-sm font-bold transition-all hover:opacity-90 active:scale-95" style={{ backgroundColor: highlighted ? "#FFFFFF" : SLATE_700, color: highlighted ? DARK : "white" }}>
-          Empezar con {name}
-        </Link>
-      )}
-    </div>
-  );
-}
+import { Navbar } from "../../components/landing/Navbar";
+import { FeatureCard } from "../../components/landing/FeatureCard";
+import { PricingCard } from "../../components/landing/PricingCard";
+import { Ico } from "../../components/landing/Ico";
+import { dArrow, dBell, dCalendar, dShield, dUsers } from "../../components/landing/iconos";
+import { ACENTO, GOLD, SLATE_700 } from "../../components/landing/constantes";
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 export function LandingPageSalud() {
@@ -206,7 +35,15 @@ export function LandingPageSalud() {
       `}</style>
 
       <div className="min-h-screen bg-white text-slate-900 antialiased overflow-x-hidden">
-        <Navbar />
+        <Navbar
+          secciones={[
+            { href: "#caracteristicas", etiqueta: "Características" },
+            { href: "#preguntas", etiqueta: "Preguntas" },
+            { href: "#precios", etiqueta: "Precios" },
+          ]}
+          otraLanding={{ to: "/", etiqueta: "¿Tienes un salón o barbería?" }}
+          registro="/registro?sector=salud"
+        />
 
         {/* ── HERO ──────────────────────────────────────────────────────────── */}
         <section className="relative pt-36 pb-24 md:pt-44 md:pb-32 overflow-hidden">
@@ -347,11 +184,13 @@ export function LandingPageSalud() {
 
             <div className="grid md:grid-cols-3 gap-5 items-stretch">
               <PricingCard
+                registro="/registro?sector=salud"
                 delay={0} name="Básico" price={PRECIOS_PLANES.basico.mensual} annualPrice={PRECIOS_PLANES.basico.anual} employees={2}
                 billedAnnually={billedAnnually}
                 features={["Portal de reservas público", "2 empleados", "Notificaciones por email", "Dashboard y calendario", "Campana de notificaciones", "Gestión de clientes"]}
               />
               <PricingCard
+                registro="/registro?sector=salud"
                 delay={100} name="Pro" price={PRECIOS_PLANES.pro.mensual} annualPrice={PRECIOS_PLANES.pro.anual} employees={4}
                 highlighted billedAnnually={billedAnnually}
                 features={[
@@ -364,6 +203,7 @@ export function LandingPageSalud() {
                 ]}
               />
               <PricingCard
+                registro="/registro?sector=salud"
                 delay={200} name="Premium" price={PRECIOS_PLANES.premium.mensual} employees={50} comingSoon
                 billedAnnually={billedAnnually}
                 features={["Todo lo del plan Pro", "Formularios de admisión", "Reportes avanzados", "Soporte prioritario"]}

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import KioskPage from "./KioskPage";
@@ -126,6 +126,7 @@ function makeCita(overrides: Record<string, unknown> = {}) {
 beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: true });
   vi.clearAllMocks();
+  sessionStorage.clear();
   vi.mocked(citasApi.obtenerTodas).mockResolvedValue(emptyCitasResponse);
   vi.mocked(empleadosApi.obtenerTodos).mockResolvedValue([]);
   vi.mocked(negociosApi.obtenerPerfil).mockResolvedValue({
@@ -244,6 +245,63 @@ describe("KioskPage — salida protegida (DC-13)", () => {
     fireEvent.click(within(dialogo).getByRole("button", { name: "Salir" }));
     await vi.waitFor(() => expect(mockNavigate).toHaveBeenCalledWith("/dashboard/citas"));
     expect(authApi.logout).toHaveBeenCalledWith("r-nuevo");
+    expect(mockToast).not.toHaveBeenCalled();
+  });
+
+  it("si no se puede revocar la sesión de verificación avisa, pero sale igual", async () => {
+    vi.mocked(authApi.login).mockResolvedValue({ token: "t", refreshToken: "r-nuevo" } as never);
+    vi.mocked(authApi.logout).mockRejectedValueOnce(new Error("red"));
+    const aviso = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const dialogo = await abrirSalida();
+    fireEvent.change(within(dialogo).getByLabelText("Contraseña"), { target: { value: "buena" } });
+    fireEvent.click(within(dialogo).getByRole("button", { name: "Salir" }));
+    await vi.waitFor(() => expect(mockNavigate).toHaveBeenCalledWith("/dashboard/citas"));
+    expect(mockToast).toHaveBeenCalledWith("No se pudo cerrar la sesión de verificación", "info");
+    expect(aviso).toHaveBeenCalled();
+    aviso.mockRestore();
+  });
+
+  describe("límite de intentos", () => {
+    async function fallar(dialogo: HTMLElement, veces: number) {
+      const previas = vi.mocked(authApi.login).mock.calls.length;
+      for (let i = 0; i < veces; i++) {
+        fireEvent.change(within(dialogo).getByLabelText("Contraseña"), { target: { value: `mala${i}` } });
+        fireEvent.click(within(dialogo).getByRole("button", { name: "Salir" }));
+        await vi.waitFor(() => expect(authApi.login).toHaveBeenCalledTimes(previas + i + 1));
+        await vi.waitFor(() => expect(within(dialogo).getByLabelText("Contraseña")).toHaveValue(""));
+      }
+    }
+
+    it("tras 3 contraseñas incorrectas bloquea la salida 5 minutos con cuenta atrás", async () => {
+      vi.mocked(authApi.login).mockRejectedValue(error401());
+      const dialogo = await abrirSalida();
+      await fallar(dialogo, 2);
+      expect(within(dialogo).getByRole("alert")).toHaveTextContent("Queda 1 intento");
+      await fallar(dialogo, 1);
+      expect(await within(dialogo).findByText("5:00")).toBeInTheDocument();
+      expect(within(dialogo).getByRole("alert")).toHaveTextContent("Demasiados intentos incorrectos");
+      expect(within(dialogo).getByLabelText("Contraseña")).toBeDisabled();
+
+      act(() => { vi.advanceTimersByTime(60_000); });
+      expect(within(dialogo).getByText("4:00")).toBeInTheDocument();
+
+      act(() => { vi.advanceTimersByTime(4 * 60_000); });
+      await vi.waitFor(() => expect(within(dialogo).getByLabelText("Contraseña")).toBeEnabled());
+      expect(within(dialogo).queryByText(/Demasiados intentos/)).not.toBeInTheDocument();
+    });
+
+    it("el bloqueo sobrevive a recargar la página (sessionStorage)", async () => {
+      vi.mocked(authApi.login).mockRejectedValue(error401());
+      const dialogo = await abrirSalida();
+      await fallar(dialogo, 3);
+      await within(dialogo).findByText(/Demasiados intentos/);
+      cleanup();
+
+      const nuevo = await abrirSalida();
+      expect(within(nuevo).getByText(/Demasiados intentos/)).toBeInTheDocument();
+      expect(within(nuevo).getByLabelText("Contraseña")).toBeDisabled();
+      expect(authApi.login).toHaveBeenCalledTimes(3);
+    });
   });
 });
 

@@ -117,13 +117,21 @@ export function formatFechaHoraCompleta(iso: string): string {
   return capitalizarPrimera(s);
 }
 
+// Partículas de apellidos compuestos ("de la Cruz", "del Valle", "y Gasset").
+const PARTICULAS_APELLIDO = new Set(["de", "del", "la", "las", "los", "y"]);
+
 /**
- * Nombre de pila + inicial del apellido: "María García López" → "María G.".
+ * Nombre de pila + inicial del apellido: "María García López" → "María G.",
+ * "María de la Cruz" → "María C." (salta partículas).
  * Lo usa el modo recepción, que se ve desde la sala de espera (decisión 12, DC-28).
  */
 export function nombreConInicial(nombreCompleto: string | null | undefined): string {
   const partes = (nombreCompleto ?? "").trim().split(/\s+/).filter(Boolean);
   if (partes.length === 0) return "";
   if (partes.length === 1) return partes[0];
-  return `${partes[0]} ${partes[1].charAt(0).toLocaleUpperCase("es-MX")}.`;
+  // Limitación: no distingue nombres de pila compuestos ("Juan Carlos Pérez"
+  // da "Juan C."); toma siempre la primera palabra como nombre.
+  const apellido = partes.slice(1).find((p) => !PARTICULAS_APELLIDO.has(p.toLocaleLowerCase("es-MX")));
+  if (!apellido) return partes[0];
+  return `${partes[0]} ${apellido.charAt(0).toLocaleUpperCase("es-MX")}.`;
 }

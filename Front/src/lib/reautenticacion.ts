@@ -10,18 +10,31 @@ import { authApi } from "../api/auth";
 // correcta y el desafío se descarta.
 //
 // Limitación conocida: cada intento fallido cuenta para el bloqueo de la cuenta
-// (429 tras varios intentos). Un token de kiosco restringido es B9.
+// (429 tras varios intentos). El kiosco lo mitiga con un límite de intentos en
+// el cliente (`bloqueoSalidaKiosco.ts`); la solución real es un token de kiosco
+// restringido (B9).
 
-/** `true` si la contraseña es correcta, `false` si no. Otros errores se lanzan. */
-export async function verificarContrasena(email: string, contrasena: string): Promise<boolean> {
+export type ResultadoVerificacion =
+  | { correcta: false }
+  /** `sesionExtraRevocada: false` si el logout de la sesión de verificación falló. */
+  | { correcta: true; sesionExtraRevocada: boolean };
+
+/** Comprueba la contraseña. Errores distintos de 401 se lanzan. */
+export async function verificarContrasena(email: string, contrasena: string): Promise<ResultadoVerificacion> {
+  let respuesta: Awaited<ReturnType<typeof authApi.login>>;
   try {
-    const respuesta = await authApi.login(email, contrasena);
-    if (!respuesta.requiere2FA && respuesta.refreshToken) {
-      await authApi.logout(respuesta.refreshToken).catch(() => undefined);
-    }
-    return true;
+    respuesta = await authApi.login(email, contrasena);
   } catch (err) {
-    if (isAxiosError(err) && err.response?.status === 401) return false;
+    if (isAxiosError(err) && err.response?.status === 401) return { correcta: false };
     throw err;
+  }
+  if (respuesta.requiere2FA || !respuesta.refreshToken) return { correcta: true, sesionExtraRevocada: true };
+  try {
+    await authApi.logout(respuesta.refreshToken);
+    return { correcta: true, sesionExtraRevocada: true };
+  } catch (err) {
+    // La contraseña era correcta; solo queda viva una sesión extra hasta que caduque.
+    console.warn("No se pudo revocar la sesión de verificación", err);
+    return { correcta: true, sesionExtraRevocada: false };
   }
 }

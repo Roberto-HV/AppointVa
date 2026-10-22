@@ -189,4 +189,20 @@ describe("nombreConInicial (DC-28)", () => {
     expect(nombreConInicial("")).toBe("");
     expect(nombreConInicial(null)).toBe("");
   });
+
+  it("salta las partículas del apellido (de, del, la, las, los, y)", async () => {
+    const { nombreConInicial } = await import("./formatters");
+    expect(nombreConInicial("María de la Cruz")).toBe("María C.");
+    expect(nombreConInicial("Pedro del Valle")).toBe("Pedro V.");
+    expect(nombreConInicial("Luis De Los Santos")).toBe("Luis S.");
+    expect(nombreConInicial("Rosa y Gasset")).toBe("Rosa G.");
+    // Solo partículas tras el nombre: queda el nombre de pila.
+    expect(nombreConInicial("Ana de")).toBe("Ana");
+  });
+
+  it("limitación conocida: un nombre de pila compuesto toma la segunda palabra como apellido", async () => {
+    const { nombreConInicial } = await import("./formatters");
+    expect(nombreConInicial("Juan Carlos Pérez")).toBe("Juan C.");
+    expect(nombreConInicial("María José de la Torre")).toBe("María J.");
+  });
 });

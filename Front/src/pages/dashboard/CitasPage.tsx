@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+﻿import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useSectorTerms } from "../../hooks/useSectorTerms";
 
@@ -385,14 +385,19 @@ export default function CitasPage() {
   const alternarTodas = () =>
     setSeleccion(todasSeleccionadas ? new Set() : new Set(pendientesPagina.map((c) => c.id)));
 
+  // Un solo lote a la vez: el botón se deshabilita, pero el "Reintentar" del
+  // toast podría lanzar otro mientras el primero sigue en curso.
+  const loteEnCurso = useRef(false);
   const confirmarSeleccionadas = async (ids: string[]) => {
-    if (ids.length === 0) return;
+    if (ids.length === 0 || loteEnCurso.current) return;
+    loteEnCurso.current = true;
     setProgresoLote({ hechas: 0, total: ids.length });
     const resultado = await confirmarEnLote(
       ids,
       (id) => citasApi.cambiarEstado(id, { nuevoEstado: ESTADOS.Confirmada }),
       (hechas, total) => setProgresoLote({ hechas, total }),
     );
+    loteEnCurso.current = false;
     setProgresoLote(null);
     invalidarCitas(qc);
     // Las que fallaron siguen seleccionadas para reintentarlas.
@@ -465,6 +470,10 @@ export default function CitasPage() {
   // Lo que antes eran nueve iconos por fila vive en la hoja de acciones, con
   // texto. La fila solo deja WhatsApp, la acción principal y "Acciones".
   const anticipoEnCurso = (id: string) => mutAnticipo.isPending && mutAnticipo.variables?.id === id;
+  // Hay algo que hacer con el anticipo: registrarlo, o anularlo si el rol puede
+  // (el Empleado registra anticipos de sus citas, pero no los anula).
+  const puedeAccionarAnticipo = (c: CitaDto) =>
+    c.anticipoRequerido && !c.pagada && !(c.anticipoRecibido && !permisos.anularAnticipo);
 
   const accionesExtra = (c: CitaDto): AccionExtraCita[] => [
     {
@@ -478,8 +487,7 @@ export default function CitasPage() {
     ...(permisos.editarCliente
       ? [{ id: "editar", etiqueta: `Editar datos del ${terms.cliente.toLowerCase()}`, Icono: Pencil, onSelect: () => abrirEditar(c) }]
       : []),
-    // El Empleado registra anticipos de sus citas, pero no los anula.
-    ...(c.anticipoRequerido && !c.pagada && !(c.anticipoRecibido && !permisos.anularAnticipo)
+    ...(puedeAccionarAnticipo(c)
       ? [c.anticipoRecibido
           ? { id: "anticipo", etiqueta: "Anular anticipo", Icono: Banknote, onSelect: () => setCitaAnularAnticipo(c) }
           : {

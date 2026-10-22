@@ -8,10 +8,17 @@ import { useAuthStore } from "../store/authStore";
 //
 // Ocultar controles NO es seguridad: el backend debe aplicar la misma matriz
 // (B10). Hoy el backend ya limita estado, pago, anticipo y notas a las citas
-// propias del empleado, pero no bloquea exportar, el corte ni la reversión.
+// propias del empleado, pero NO bloquea al Empleado en:
+//   - exportar a Excel (Citas, Pagos, Clientes),
+//   - el corte de caja,
+//   - la reversión de un pago,
+//   - la anulación de un anticipo,
+//   - PATCH /citas/{id}/cliente (editar los datos del cliente).
 
 export interface Permisos {
   esEmpleado: boolean;
+  /** Dueño de la cuenta del negocio (p. ej. 2FA de la cuenta). */
+  esPropietario: boolean;
   /** Exportar a Excel (Citas, Pagos, Clientes). */
   exportar: boolean;
   /** Revertir un pago ya registrado. */
@@ -29,6 +36,7 @@ export function permisosPorRol(rol: string | null | undefined): Permisos {
   const completo = !esEmpleado;
   return {
     esEmpleado,
+    esPropietario: rol === "Propietario",
     exportar: completo,
     revertirPago: completo,
     anularAnticipo: completo,

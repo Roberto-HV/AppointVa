@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { ACTIVACION_FAQ, ACTIVACION_PASOS, ACTIVACION_RESUMEN } from "./activacion";
+import { ACTIVACION_AVISO, ACTIVACION_FAQ, ACTIVACION_PASOS, ACTIVACION_RESUMEN } from "./activacion";
 import AvisoActivacionPendiente from "../components/dashboard/AvisoActivacionPendiente";
 
 // AP-02: la FAQ de la landing, la pantalla de registro y el aviso del panel
@@ -17,9 +17,11 @@ describe("mensaje de activación", () => {
     for (const texto of [ACTIVACION_FAQ, ACTIVACION_RESUMEN, ACTIVACION_PASOS[2]]) {
       expect(texto).toContain("en menos de 24 horas hábiles");
     }
-    expect(ACTIVACION_FAQ).toMatch(/el aviso desaparece cuando tu negocio esté activo/);
+    // Una sola frase para la FAQ y el aviso del panel.
+    expect(ACTIVACION_AVISO).toMatch(/desaparece cuando tu negocio esté activo/);
+    expect(ACTIVACION_FAQ).toContain(ACTIVACION_AVISO);
     render(<AvisoActivacionPendiente />);
-    expect(screen.getByRole("status")).toHaveTextContent("Este aviso desaparece cuando tu negocio esté activo.");
+    expect(screen.getByRole("status")).toHaveTextContent(ACTIVACION_AVISO);
   });
 
   it("no promete lo que el backend no hace: ni aviso por correo ni activación inmediata", () => {

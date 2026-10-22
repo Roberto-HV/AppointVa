@@ -911,4 +911,28 @@ describe("CitasPage — Confirmar seleccionadas (DC-30, decisión 14)", () => {
     await waitFor(() => expect(vi.mocked(citasApi.cambiarEstado).mock.calls.at(-1)?.[0]).toBe("c2"));
     await waitFor(() => expect(useToastStore.getState().toasts.at(-1)?.mensaje).toBe("1 confirmada"));
   });
+
+  it("'Reintentar' no lanza un segundo lote mientras otro sigue en curso", async () => {
+    vi.mocked(citasApi.obtenerTodas).mockResolvedValue({ datos: pendientes(), total: 4, pagina: 1, tamano: 15 });
+    vi.mocked(citasApi.cambiarEstado).mockRejectedValue(new Error("409"));
+    renderConQuery();
+    fireEvent.click(await screen.findByRole("checkbox", { name: "Seleccionar cita de Ana Ruiz" }));
+    fireEvent.click(screen.getByRole("button", { name: "Confirmar seleccionadas" }));
+    await waitFor(() => expect(useToastStore.getState().toasts.at(-1)?.accion?.etiqueta).toBe("Reintentar"));
+    const reintentar = useToastStore.getState().toasts.at(-1)!.accion!.onClick;
+
+    // Un lote nuevo queda en curso (la llamada no responde todavía)…
+    let responder: () => void = () => {};
+    vi.mocked(citasApi.cambiarEstado).mockReset();
+    vi.mocked(citasApi.cambiarEstado).mockImplementation(() => new Promise((r) => { responder = () => r({} as never); }));
+    fireEvent.click(screen.getByRole("button", { name: "Confirmar seleccionadas" }));
+    await screen.findByText(/Confirmando 0 de 1/);
+    // …y el "Reintentar" del toast anterior no arranca otro en paralelo.
+    act(() => reintentar());
+    expect(citasApi.cambiarEstado).toHaveBeenCalledTimes(1);
+
+    act(() => responder());
+    await waitFor(() => expect(useToastStore.getState().toasts.at(-1)?.mensaje).toBe("1 confirmada"));
+    expect(citasApi.cambiarEstado).toHaveBeenCalledTimes(1);
+  });
 });

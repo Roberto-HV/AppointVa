@@ -13,7 +13,10 @@ const TAMANO_SERVICIO = 500;
 
 export interface ConteoCitasFuturas {
   total: number;
-  /** `false` si el conteo puede quedarse corto (solo servicios con muchas citas). */
+  /**
+   * `false` si el conteo puede quedarse corto (solo servicios con muchas citas).
+   * Quien lo use debe fallar cerrado: con `completo: false` no se permite borrar.
+   */
   completo: boolean;
 }
 

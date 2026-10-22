@@ -18,12 +18,17 @@
 
 export const CORREO_SOPORTE = "hola@appointva.com";
 
+/** Plazo comprometido de activación, en horas hábiles (decisión 1, AP-02). */
+export const ACTIVACION_PLAZO_HORAS = 24;
+export const ACTIVACION_PLAZO = `en menos de ${ACTIVACION_PLAZO_HORAS} horas hábiles`;
+
+/**
+ * Cómo se entera el propietario: la misma frase en la FAQ y en el aviso del
+ * panel. Sin correo de activación en el backend (B21).
+ */
+export const ACTIVACION_AVISO = "El aviso de activación pendiente de tu panel desaparece cuando tu negocio esté activo.";
+
 /** Frase central: idéntica en las tres superficies. */
-export const ACTIVACION_PLAZO = "en menos de 24 horas hábiles";
-
-/** Cómo se entera el propietario. Sin correo de activación en el backend (B21). */
-export const ACTIVACION_AVISO = "Revisa tu panel: el aviso desaparece cuando tu negocio esté activo.";
-
 export const ACTIVACION_RESUMEN =
   `Nuestro equipo revisa y activa cada negocio de forma manual, ${ACTIVACION_PLAZO}. Hasta entonces tu página de reservas no recibe citas, pero ya puedes configurar servicios y horarios desde tu panel.`;
 

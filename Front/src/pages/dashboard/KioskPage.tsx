@@ -9,6 +9,14 @@ import { ArrowLeft, Check } from "lucide-react";
 import Modal from "../../components/ui/Modal";
 import { usePulsacionLarga } from "../../hooks/usePulsacionLarga";
 import { verificarContrasena } from "../../lib/reautenticacion";
+import {
+  formatoCuentaAtras,
+  leerBloqueoSalida,
+  limpiarBloqueoSalida,
+  MAX_INTENTOS_SALIDA,
+  registrarFalloSalida,
+} from "../../lib/bloqueoSalidaKiosco";
+import { useToastStore } from "../../store/toastStore";
 import { mensajeError } from "../../utils/errores";
 import { colorCategoria, TEXTO_SOBRE_CATEGORIA } from "../../lib/temaGraficas";
 import { useAuthStore } from "../../store/authStore";
@@ -309,16 +317,37 @@ export default function KioskPage() {
 // ── Salida protegida (decisión 3, DC-13) ──────────────────────────────────────
 // Salir pide la contraseña de la cuenta con la que se abrió el modo recepción.
 // El control se mantiene pulsado 1.5 s (dedo, ratón, o Enter/Espacio con el
-// botón enfocado) para que un cliente no lo active por accidente.
+// botón enfocado) para que un cliente no lo active por accidente. Tras
+// `MAX_INTENTOS_SALIDA` contraseñas incorrectas se bloquea unos minutos para no
+// bloquear la cuenta del dueño (ver `bloqueoSalidaKiosco.ts`; solución real: B9).
 function SalidaProtegida({ email }: { email: string }) {
   const navigate = useNavigate();
+  const { toast } = useToastStore();
   const [abierto, setAbierto] = useState(false);
   const [contrasena, setContrasena] = useState("");
   const [error, setError] = useState("");
   const [verificando, setVerificando] = useState(false);
+  const [bloqueadoHasta, setBloqueadoHasta] = useState(() => leerBloqueoSalida().bloqueadoHasta);
+  const [ahoraMs, setAhoraMs] = useState(() => Date.now());
   const idPista = useId();
   const idError = useId();
+  const idBloqueo = useId();
   const pulsacion = usePulsacionLarga(() => setAbierto(true));
+  const restanteMs = bloqueadoHasta - ahoraMs;
+  const bloqueado = restanteMs > 0;
+
+  // Cuenta atrás visible mientras dure el bloqueo.
+  useEffect(() => {
+    if (!bloqueadoHasta) return;
+    const id = setInterval(() => {
+      const ahora = Date.now();
+      setAhoraMs(ahora);
+      if (ahora >= bloqueadoHasta) {
+        setBloqueadoHasta(leerBloqueoSalida(ahora).bloqueadoHasta);
+      }
+    }, 1000);
+    return () => clearInterval(id);
+  }, [bloqueadoHasta]);
 
   const cerrar = () => {
     setAbierto(false);
@@ -328,16 +357,28 @@ function SalidaProtegida({ email }: { email: string }) {
 
   const enviar = async (e: FormEvent) => {
     e.preventDefault();
-    if (!contrasena || verificando) return;
+    if (!contrasena || verificando || bloqueado) return;
     setVerificando(true);
     setError("");
     try {
-      const correcta = await verificarContrasena(email, contrasena);
-      if (correcta) {
+      const resultado = await verificarContrasena(email, contrasena);
+      if (resultado.correcta) {
+        limpiarBloqueoSalida();
+        if (!resultado.sesionExtraRevocada) {
+          toast("No se pudo cerrar la sesión de verificación", "info");
+        }
         navigate("/dashboard/citas");
         return;
       }
-      setError("Contraseña incorrecta.");
+      const estado = registrarFalloSalida();
+      setContrasena("");
+      if (estado.bloqueadoHasta) {
+        setAhoraMs(Date.now());
+        setBloqueadoHasta(estado.bloqueadoHasta);
+        return;
+      }
+      const quedan = MAX_INTENTOS_SALIDA - estado.intentos;
+      setError(`Contraseña incorrecta. ${quedan === 1 ? "Queda 1 intento" : `Quedan ${quedan} intentos`} antes de bloquear la salida unos minutos.`);
     } catch (err) {
       setError(mensajeError(err, "No se pudo verificar la contraseña. Intenta de nuevo."));
     } finally {
@@ -371,6 +412,12 @@ function SalidaProtegida({ email }: { email: string }) {
           <p className="text-sm text-muted-foreground">
             Escribe la contraseña de <strong className="text-foreground">{email}</strong> para volver al panel.
           </p>
+          {bloqueado && (
+            <p id={idBloqueo} role="alert" className="rounded-lg border border-status-pending-dot bg-status-pending-bg px-3 py-2 text-sm text-status-pending-fg">
+              {"Demasiados intentos incorrectos. Podrás volver a intentarlo en "}
+              <span className="font-semibold tabular-nums">{formatoCuentaAtras(restanteMs)}</span>.
+            </p>
+          )}
           <div>
             <label htmlFor="kiosko-contrasena" className="block text-sm font-medium text-foreground mb-1">
               Contraseña
@@ -380,11 +427,12 @@ function SalidaProtegida({ email }: { email: string }) {
               type="password"
               autoComplete="current-password"
               autoFocus
+              disabled={bloqueado}
               value={contrasena}
               onChange={(e) => { setContrasena(e.target.value); setError(""); }}
               aria-invalid={!!error}
-              aria-describedby={error ? idError : undefined}
-              className="w-full min-h-[44px] rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40"
+              aria-describedby={bloqueado ? idBloqueo : error ? idError : undefined}
+              className="w-full min-h-[44px] rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 text-sm text-foreground disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40"
             />
             {error && (
               <p id={idError} role="alert" className="mt-1.5 text-sm text-red-700 dark:text-red-400">{error}</p>
@@ -400,7 +448,7 @@ function SalidaProtegida({ email }: { email: string }) {
             </button>
             <button
               type="submit"
-              disabled={!contrasena || verificando}
+              disabled={!contrasena || verificando || bloqueado}
               className="min-h-[44px] px-4 rounded-lg bg-slate-700 hover:bg-slate-800 dark:bg-slate-600 dark:hover:bg-slate-500 text-sm font-semibold text-white disabled:opacity-40 transition"
             >
               {verificando ? "Verificando…" : "Salir"}

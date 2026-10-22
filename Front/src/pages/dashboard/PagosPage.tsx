@@ -7,7 +7,6 @@ import {
 import { citasApi, METODOS_PAGO } from "../../api/citas";
 import { pagosApi } from "../../api/pagos";
 import { negociosApi } from "../../api/negocios";
-import { useAuthStore } from "../../store/authStore";
 import { useToastStore } from "../../store/toastStore";
 import { exportarExcel } from "../../utils/exportarExcel";
 import { usePermisos } from "../../hooks/usePermisos";
@@ -71,11 +70,10 @@ function montoParaMetodo(cita: CitaDto, metodo: string): number {
 
 export default function PagosPage() {
   const qc = useQueryClient();
-  const { usuario } = useAuthStore();
   const { toast } = useToastStore();
-  const esEmpleado = usuario?.rol === "Empleado";
   // Empleado: cobra sus citas, pero no exporta, no revierte ni hace el corte (decisión 2).
   const permisos = usePermisos();
+  const { esEmpleado } = permisos;
 
   // ── Tab ──────────────────────────────────────────────────────────────────
   const [tab, setTab] = useState<Tab>("cobro");
