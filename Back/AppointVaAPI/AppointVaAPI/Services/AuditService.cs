@@ -35,9 +35,9 @@ namespace AppointVaAPI.Services
                         usuarioId = id;
                 }
 
-                // IP real (Render usa proxy; X-Forwarded-For contiene la IP del cliente)
-                var ip = ctx?.Request.Headers["X-Forwarded-For"].FirstOrDefault()
-                    ?? ctx?.Connection.RemoteIpAddress?.ToString();
+                // IP real: UseForwardedHeaders ya la resolvió desde el salto de confianza de
+                // Render. No leer X-Forwarded-For a mano: su primer valor lo elige el cliente.
+                var ip = ctx?.Connection.RemoteIpAddress?.ToString();
 
                 _db.AuditLogs.Add(new AuditLog
                 {

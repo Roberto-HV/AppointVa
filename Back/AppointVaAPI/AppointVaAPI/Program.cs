@@ -182,6 +182,14 @@ builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(opt =
     opt.MultipartBodyLengthLimit = 20 * 1024 * 1024;
 });
 
+// ── Proxy inverso (Render) ────────────────────────────────────────────────────
+// Sin esto RemoteIpAddress es la IP del proxy y todos los usuarios comparten el cupo
+// de cada política por IP. Ver ProxyReenvioOpciones para el porqué de cada ajuste.
+var usarEncabezadosReenviados = AppointVaAPI.Helpers.ProxyReenvioOpciones
+    .EstaHabilitado(builder.Configuration, builder.Environment);
+builder.Services.Configure<Microsoft.AspNetCore.Builder.ForwardedHeadersOptions>(
+    AppointVaAPI.Helpers.ProxyReenvioOpciones.Configurar);
+
 // ── Rate Limiting (por IP, políticas por endpoint) ────────────────────────────
 builder.Services.AddRateLimiter(options =>
 {
@@ -340,6 +348,11 @@ using (var scope = app.Services.CreateScope())
 }
 
 // ── Pipeline HTTP ─────────────────────────────────────────────────────────────
+// Primero de todo: fija la IP real del cliente y el esquema detrás del proxy de Render
+// antes de la redirección HTTPS, CORS, el limitador (particiona por IP) y la auditoría.
+if (usarEncabezadosReenviados)
+    app.UseForwardedHeaders();
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
