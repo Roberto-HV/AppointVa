@@ -13,6 +13,7 @@ public class PanelJobsAccesoServiceTests
 
     private readonly RelojManual _reloj = new();
     private PanelJobsAccesoService Crear() => new(_reloj);
+    private static readonly Func<Guid, Task<bool>> Autorizado = _ => Task.FromResult(true);
 
     [Fact]
     public void Ticket_EsAleatorio_YNoEsUnJwt()
@@ -27,7 +28,7 @@ public class PanelJobsAccesoServiceTests
     }
 
     [Fact]
-    public void Canjear_TicketValido_DevuelveSesionValida()
+    public async Task Canjear_TicketValido_DevuelveSesionValida()
     {
         var svc = Crear();
         var ticket = svc.EmitirTicket(Guid.NewGuid());
@@ -36,7 +37,7 @@ public class PanelJobsAccesoServiceTests
 
         sesion.Should().NotBeNullOrEmpty();
         sesion.Should().NotBe(ticket);
-        svc.SesionValida(sesion).Should().BeTrue();
+        (await svc.SesionValidaAsync(sesion, Autorizado)).Should().BeTrue();
     }
 
     [Fact]
@@ -72,24 +73,87 @@ public class PanelJobsAccesoServiceTests
     }
 
     [Fact]
-    public void Sesion_Expira()
+    public async Task Sesion_Expira()
     {
         var svc = Crear();
         var sesion = svc.CanjearTicket(svc.EmitirTicket(Guid.NewGuid()));
 
         _reloj.Ahora += svc.DuracionSesion + TimeSpan.FromSeconds(1);
 
-        svc.SesionValida(sesion).Should().BeFalse();
+        (await svc.SesionValidaAsync(sesion, Autorizado)).Should().BeFalse();
     }
 
     [Fact]
-    public void Sesion_NoSeAceptaComoTicket_NiTicketComoSesion()
+    public async Task Sesion_NoSeAceptaComoTicket_NiTicketComoSesion()
     {
         var svc = Crear();
         var ticket = svc.EmitirTicket(Guid.NewGuid());
 
-        svc.SesionValida(ticket).Should().BeFalse();
+        (await svc.SesionValidaAsync(ticket, Autorizado)).Should().BeFalse();
         var sesion = svc.CanjearTicket(ticket);
         svc.CanjearTicket(sesion).Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Sesion_UsuarioYaNoAutorizado_PierdeAccesoYSeRevocanSusSesiones()
+    {
+        var svc = Crear();
+        var usuario = Guid.NewGuid();
+        var s1 = svc.CanjearTicket(svc.EmitirTicket(usuario));
+        var s2 = svc.CanjearTicket(svc.EmitirTicket(usuario));
+        var pendiente = svc.EmitirTicket(usuario);
+        var autorizado = true;
+        Func<Guid, Task<bool>> verificar = _ => Task.FromResult(autorizado);
+
+        (await svc.SesionValidaAsync(s1, verificar)).Should().BeTrue();
+
+        // Demoted / deactivated / locked out: the next re-check after the cache window fails.
+        autorizado = false;
+        _reloj.Ahora += svc.IntervaloReverificacion + TimeSpan.FromSeconds(1);
+
+        (await svc.SesionValidaAsync(s1, verificar)).Should().BeFalse();
+        autorizado = true;
+        (await svc.SesionValidaAsync(s1, verificar)).Should().BeFalse();
+        (await svc.SesionValidaAsync(s2, verificar)).Should().BeFalse();
+        svc.CanjearTicket(pendiente).Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Sesion_VerificaAlPrimerUso_YCacheaDentroDelIntervalo()
+    {
+        var svc = Crear();
+        var usuario = Guid.NewGuid();
+        var sesion = svc.CanjearTicket(svc.EmitirTicket(usuario));
+        var llamadas = 0;
+        Func<Guid, Task<bool>> verificar = id =>
+        {
+            id.Should().Be(usuario);
+            llamadas++;
+            return Task.FromResult(true);
+        };
+
+        (await svc.SesionValidaAsync(sesion, verificar)).Should().BeTrue();
+        _reloj.Ahora += svc.IntervaloReverificacion - TimeSpan.FromSeconds(1);
+        (await svc.SesionValidaAsync(sesion, verificar)).Should().BeTrue();
+        llamadas.Should().Be(1);
+
+        _reloj.Ahora += TimeSpan.FromSeconds(2);
+        (await svc.SesionValidaAsync(sesion, verificar)).Should().BeTrue();
+        llamadas.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task RevocarSesionesDeUsuario_SoloAfectaAEseUsuario()
+    {
+        var svc = Crear();
+        var a = Guid.NewGuid();
+        var b = Guid.NewGuid();
+        var sesionA = svc.CanjearTicket(svc.EmitirTicket(a));
+        var sesionB = svc.CanjearTicket(svc.EmitirTicket(b));
+
+        svc.RevocarSesionesDeUsuario(a);
+
+        (await svc.SesionValidaAsync(sesionA, Autorizado)).Should().BeFalse();
+        (await svc.SesionValidaAsync(sesionB, Autorizado)).Should().BeTrue();
     }
 }

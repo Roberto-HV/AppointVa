@@ -3,6 +3,7 @@ using AppointVaAPI.Models;
 using AppointVaAPI.Models.Dtos.Autenticacion;
 using AppointVaAPI.Services.IServices;
 using AppointVaAPI.Constants;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -22,6 +23,7 @@ namespace AppointVaAPI.Controllers.V1
         private readonly IBlobStorageService _storage;
         private readonly IAuditService _audit;
         private readonly ApplicationDbContext _db;
+        private readonly IPanelJobsAccesoService _panelJobs;
 
         public AutenticacionController(
             UserManager<ApplicationUser> userManager,
@@ -30,7 +32,8 @@ namespace AppointVaAPI.Controllers.V1
             IConfiguration config,
             IBlobStorageService storage,
             IAuditService audit,
-            ApplicationDbContext db)
+            ApplicationDbContext db,
+            IPanelJobsAccesoService panelJobs)
         {
             _userManager = userManager;
             _jwtService = jwtService;
@@ -39,6 +42,7 @@ namespace AppointVaAPI.Controllers.V1
             _storage = storage;
             _audit = audit;
             _db = db;
+            _panelJobs = panelJobs;
         }
 
         // POST api/auth/login
@@ -153,6 +157,11 @@ namespace AppointVaAPI.Controllers.V1
         public async Task<IActionResult> Logout([FromBody] RefrescarTokenDto dto)
         {
             await _jwtService.RevocarRefreshTokenAsync(dto.RefreshToken);
+
+            var sub = User.FindFirst("sub")?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (Guid.TryParse(sub, out var usuarioId))
+                _panelJobs.RevocarSesionesDeUsuario(usuarioId);
+
             await _audit.RegistrarAsync("Logout");
             return NoContent();
         }

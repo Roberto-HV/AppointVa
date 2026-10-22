@@ -173,4 +173,18 @@ describe("AdminLayout — tareas programadas (Hangfire)", () => {
     expect(ventana.location.replace).not.toHaveBeenCalled();
     open.mockRestore();
   });
+
+  it("si el navegador bloquea la pestaña, no navega la pestaña admin ni gasta un ticket", async () => {
+    const open = vi.spyOn(window, "open").mockReturnValue(null);
+    const urlAntes = window.location.href;
+
+    renderizar();
+    fireEvent.click(boton());
+
+    expect(await screen.findByRole("alert", { hidden: true })).toHaveTextContent("Permite las ventanas emergentes");
+    expect(emitirTicketHangfire).not.toHaveBeenCalled();
+    expect(window.location.href).toBe(urlAntes);
+    expect(screen.getByText("Contenido admin")).toBeInTheDocument();
+    open.mockRestore();
+  });
 });

@@ -8,15 +8,19 @@ namespace AppointVaAPI.Services
     /// In-memory, singleton implementation of <see cref="IPanelJobsAccesoService"/>.
     /// ConcurrentDictionary.TryRemove makes the ticket exchange atomic, so two concurrent
     /// requests with the same ticket can never both succeed.
+    /// Its name omits "Hangfire" because the integration test factory strips every registration whose type name contains it.
     /// </summary>
     public class PanelJobsAccesoService : IPanelJobsAccesoService
     {
+        private sealed record Sesion(Guid UsuarioId, DateTimeOffset Expira, DateTimeOffset VerificadaHasta);
+
         private readonly TimeProvider _reloj;
         private readonly ConcurrentDictionary<string, (Guid UsuarioId, DateTimeOffset Expira)> _tickets = new();
-        private readonly ConcurrentDictionary<string, (Guid UsuarioId, DateTimeOffset Expira)> _sesiones = new();
+        private readonly ConcurrentDictionary<string, Sesion> _sesiones = new();
 
         public TimeSpan DuracionTicket { get; } = TimeSpan.FromSeconds(60);
         public TimeSpan DuracionSesion { get; } = TimeSpan.FromMinutes(60);
+        public TimeSpan IntervaloReverificacion { get; } = TimeSpan.FromSeconds(60);
 
         public PanelJobsAccesoService(TimeProvider reloj)
         {
@@ -35,22 +39,47 @@ namespace AppointVaAPI.Services
         {
             if (string.IsNullOrWhiteSpace(ticket)) return null;
             if (!_tickets.TryRemove(ticket, out var entrada)) return null;
-            if (entrada.Expira <= _reloj.GetUtcNow()) return null;
+            var ahora = _reloj.GetUtcNow();
+            if (entrada.Expira <= ahora) return null;
 
             Purgar();
             var sesion = GenerarValorAleatorio();
-            _sesiones[sesion] = (entrada.UsuarioId, _reloj.GetUtcNow() + DuracionSesion);
+            // VerificadaHasta = now: the first dashboard request re-checks the user.
+            _sesiones[sesion] = new Sesion(entrada.UsuarioId, ahora + DuracionSesion, ahora);
             return sesion;
         }
 
-        public bool SesionValida(string? sesionId)
+        public async Task<bool> SesionValidaAsync(string? sesionId, Func<Guid, Task<bool>> usuarioAutorizado)
         {
             if (string.IsNullOrWhiteSpace(sesionId)) return false;
             if (!_sesiones.TryGetValue(sesionId, out var entrada)) return false;
-            if (entrada.Expira > _reloj.GetUtcNow()) return true;
 
-            _sesiones.TryRemove(sesionId, out _);
-            return false;
+            var ahora = _reloj.GetUtcNow();
+            if (entrada.Expira <= ahora)
+            {
+                _sesiones.TryRemove(sesionId, out _);
+                return false;
+            }
+
+            if (entrada.VerificadaHasta > ahora) return true;
+
+            if (!await usuarioAutorizado(entrada.UsuarioId))
+            {
+                RevocarSesionesDeUsuario(entrada.UsuarioId);
+                return false;
+            }
+
+            // If a concurrent revoke removed the entry, TryUpdate fails and the next request is rejected.
+            _sesiones.TryUpdate(sesionId, entrada with { VerificadaHasta = ahora + IntervaloReverificacion }, entrada);
+            return true;
+        }
+
+        public void RevocarSesionesDeUsuario(Guid usuarioId)
+        {
+            foreach (var (clave, valor) in _tickets)
+                if (valor.UsuarioId == usuarioId) _tickets.TryRemove(clave, out _);
+            foreach (var (clave, valor) in _sesiones)
+                if (valor.UsuarioId == usuarioId) _sesiones.TryRemove(clave, out _);
         }
 
         private void Purgar()

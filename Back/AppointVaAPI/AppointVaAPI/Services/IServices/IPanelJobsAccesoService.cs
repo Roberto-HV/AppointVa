@@ -22,7 +22,17 @@ namespace AppointVaAPI.Services.IServices
         /// <summary>Consumes the ticket (valid or not, it can never be used again) and returns a new session id, or null.</summary>
         string? CanjearTicket(string? ticket);
 
-        /// <summary>True when the session id exists and has not expired.</summary>
-        bool SesionValida(string? sesionId);
+        /// <summary>How long a positive user re-check is trusted before running it again.</summary>
+        TimeSpan IntervaloReverificacion { get; }
+
+        /// <summary>
+        /// True when the session exists, has not expired, and its user still passes
+        /// <paramref name="usuarioAutorizado"/> (re-run at most once per <see cref="IntervaloReverificacion"/>).
+        /// A failed check revokes every session and ticket of that user.
+        /// </summary>
+        Task<bool> SesionValidaAsync(string? sesionId, Func<Guid, Task<bool>> usuarioAutorizado);
+
+        /// <summary>Drops every pending ticket and dashboard session of the user (e.g. on logout).</summary>
+        void RevocarSesionesDeUsuario(Guid usuarioId);
     }
 }

@@ -29,24 +29,27 @@ export default function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { theme, toggle } = useTheme();
 
-  const [errorHangfire, setErrorHangfire] = useState(false);
+  const [errorHangfire, setErrorHangfire] = useState<string | null>(null);
 
   // S2: the JWT never goes in a URL. The tab is opened synchronously (so the popup
   // blocker allows it) and pointed at /hangfire-session once the one-time ticket arrives.
+  // If the popup is blocked, no ticket is requested and the admin tab stays put.
   const abrirHangfire = async () => {
     cerrarSidebar();
-    setErrorHangfire(false);
+    setErrorHangfire(null);
     const ventana = window.open("about:blank", "_blank");
-    if (ventana) ventana.opener = null;
+    if (!ventana) {
+      setErrorHangfire("El navegador bloqueó la pestaña nueva. Permite las ventanas emergentes para este sitio e intenta de nuevo.");
+      return;
+    }
+    ventana.opener = null;
     try {
       const ticket = await adminApi.emitirTicketHangfire();
       const base = import.meta.env.VITE_API_URL?.replace("/api", "") ?? "";
-      const url = `${base}/hangfire-session?ticket=${encodeURIComponent(ticket)}`;
-      if (ventana) ventana.location.replace(url);
-      else window.location.assign(url);
+      ventana.location.replace(`${base}/hangfire-session?ticket=${encodeURIComponent(ticket)}`);
     } catch {
-      ventana?.close();
-      setErrorHangfire(true);
+      ventana.close();
+      setErrorHangfire("No se pudo abrir el panel de tareas. Intenta de nuevo.");
     }
   };
 
@@ -185,7 +188,7 @@ export default function AdminLayout() {
           </button>
           {errorHangfire && (
             <p role="alert" className="px-4 text-xs text-red-600 dark:text-red-400">
-              No se pudo abrir el panel de tareas. Intenta de nuevo.
+              {errorHangfire}
             </p>
           )}
         </nav>

@@ -315,7 +315,9 @@ if (app.Environment.IsDevelopment())
 if (!app.Environment.IsEnvironment("Testing"))
     app.UseHangfireDashboard("/hangfire", new DashboardOptions
     {
-        Authorization = [new HangfireAuthorizationFilter()],
+        // Empty sync list: the default would add LocalRequestsOnlyAuthorizationFilter.
+        Authorization = [],
+        AsyncAuthorization = [new HangfireAuthorizationFilter()],
         DashboardTitle = "AppointVa — Jobs",
         IsReadOnlyFunc = _ => false,
     });
