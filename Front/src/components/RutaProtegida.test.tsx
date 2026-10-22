@@ -54,6 +54,7 @@ function renderWithRoutes({
         <Route path="/login" element={<div>Login page</div>} />
         <Route path="/dashboard" element={<div>Dashboard fallback</div>} />
         <Route path="/admin" element={<div>Admin area</div>} />
+        <Route path="/dashboard/kiosk" element={<div>Kiosk screen</div>} />
         <Route element={<RutaProtegida roles={roles} />}>
           <Route path="/restricted" element={<div>Protected content</div>} />
         </Route>
@@ -104,6 +105,22 @@ describe("RutaProtegida — restricción por rol", () => {
       usuario: { rol: "Propietario" },
       roles: ["Propietario"],
     });
+    expect(screen.getByText("Protected content")).toBeInTheDocument();
+  });
+});
+
+describe("RutaProtegida — token de kiosco (B9)", () => {
+  it.each([[undefined], [["Propietario", "Empleado"]], [["SuperAdmin"]]])(
+    "con roles %j manda el token de kiosco a la pantalla de recepción",
+    (roles) => {
+      renderWithRoutes({ token: "tok", usuario: { rol: "Kiosco" }, roles });
+      expect(screen.queryByText("Protected content")).not.toBeInTheDocument();
+      expect(screen.getByText("Kiosk screen")).toBeInTheDocument();
+    }
+  );
+
+  it("deja pasar el token de kiosco donde se admite", () => {
+    renderWithRoutes({ token: "tok", usuario: { rol: "Kiosco" }, roles: ["Propietario", "Kiosco"] });
     expect(screen.getByText("Protected content")).toBeInTheDocument();
   });
 });

@@ -119,3 +119,57 @@ describe("useAuthStore — actualizarFoto", () => {
     expect(useAuthStore.getState().usuario).toBeNull();
   });
 });
+
+describe("useAuthStore — sesión de kiosco compartida entre pestañas (B9)", () => {
+  const usuarioKiosco = { ...usuarioMock, rol: "Kiosco" };
+  const guardarEnOtraPestana = (token: string | null, usuario: typeof usuarioMock | null) =>
+    localStorage.setItem("appointva-auth", JSON.stringify({
+      state: { token, refreshToken: null, usuario }, version: 0,
+    }));
+  const leerGuardado = () => JSON.parse(localStorage.getItem("appointva-auth") ?? "null")?.state;
+
+  it("un refresh fallido en otra pestaña no borra la sesión de kiosco guardada", async () => {
+    // Esta pestaña sigue con la sesión vieja del dueño; otra entró en modo recepción.
+    useAuthStore.setState({ token: "tok-dueno", refreshToken: "refresh-revocado", usuario: usuarioMock });
+    guardarEnOtraPestana("tok-kiosco", usuarioKiosco);
+
+    useAuthStore.getState().cerrarSesion();
+    await Promise.resolve();
+
+    expect(leerGuardado()).toMatchObject({ token: "tok-kiosco", usuario: { rol: "Kiosco" } });
+    expect(useAuthStore.getState().token).toBe("tok-kiosco");
+    expect(useAuthStore.getState().refreshToken).toBeNull();
+    expect(queryClient.clear).toHaveBeenCalledOnce();
+  });
+
+  it("la propia sesión de kiosco sí se cierra (token vencido)", () => {
+    useAuthStore.getState().iniciarSesionKiosco("tok-kiosco", usuarioKiosco);
+
+    useAuthStore.getState().cerrarSesion();
+
+    expect(useAuthStore.getState().token).toBeNull();
+    expect(leerGuardado()).toMatchObject({ token: null, usuario: null });
+  });
+
+  it("se actualiza cuando otra pestaña cambia la sesión guardada", async () => {
+    useAuthStore.setState({ token: "tok-dueno", refreshToken: "refresh-abc", usuario: usuarioMock });
+    guardarEnOtraPestana("tok-kiosco", usuarioKiosco);
+
+    window.dispatchEvent(new StorageEvent("storage", { key: "appointva-auth", storageArea: localStorage }));
+    await Promise.resolve();
+
+    expect(useAuthStore.getState().token).toBe("tok-kiosco");
+    expect(useAuthStore.getState().usuario?.rol).toBe("Kiosco");
+    expect(useAuthStore.getState().refreshToken).toBeNull();
+  });
+
+  it("ignora cambios de otras claves", async () => {
+    useAuthStore.setState({ token: "tok-dueno", refreshToken: "refresh-abc", usuario: usuarioMock });
+    guardarEnOtraPestana("tok-kiosco", usuarioKiosco);
+
+    window.dispatchEvent(new StorageEvent("storage", { key: "otra-clave", storageArea: localStorage }));
+    await Promise.resolve();
+
+    expect(useAuthStore.getState().token).toBe("tok-dueno");
+  });
+});

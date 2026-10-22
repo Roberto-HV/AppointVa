@@ -1,77 +1,51 @@
-// ── Límite de intentos para salir del modo recepción (DC-13) ─────────────────
+// ── Bloqueo de la salida del modo recepción (DC-13, B9) ──────────────────────
 //
-// La salida del kiosco reutiliza POST /auth/login (ver `reautenticacion.ts`), así
-// que cada contraseña incorrecta cuenta para el bloqueo de la cuenta del dueño.
-// Para que alguien en la sala no la bloquee probando contraseñas, tras
-// `MAX_INTENTOS_SALIDA` fallos el diálogo se bloquea `BLOQUEO_SALIDA_MS`. El
-// estado vive en sessionStorage para que recargar la página no lo reinicie.
-//
-// Es una mitigación del lado del cliente (borrar el almacenamiento la salta).
-// La solución real es un token de kiosco restringido que no exponga la cuenta
-// del dueño (B9).
-
-export const MAX_INTENTOS_SALIDA = 3;
-export const BLOQUEO_SALIDA_MS = 5 * 60 * 1000;
+// El límite real lo aplica el servidor (3 intentos cada 5 minutos por negocio,
+// POST /kiosco/salir). Cuando responde 429 indica cuánto esperar; aquí solo se
+// recuerda hasta cuándo para mostrar la cuenta atrás y deshabilitar el diálogo.
+// Vive en sessionStorage para que recargar la página no la borre; borrarlo no
+// salta nada, porque el servidor volvería a responder 429.
 
 const CLAVE = "kiosco-salida-bloqueo";
 
-export interface EstadoBloqueoSalida {
-  intentos: number;
-  /** Epoch ms hasta el que la salida está bloqueada; 0 si no lo está. */
-  bloqueadoHasta: number;
-}
-
-const LIBRE: EstadoBloqueoSalida = { intentos: 0, bloqueadoHasta: 0 };
-
 // Respaldo en memoria: si sessionStorage no está disponible (bloqueado por el
-// navegador), el límite sigue aplicando mientras la página no se recargue.
-let enMemoria: EstadoBloqueoSalida = LIBRE;
+// navegador), la cuenta atrás sigue mientras la página no se recargue.
+let enMemoria = 0;
 /** true si la última escritura no llegó a sessionStorage: la memoria manda. */
 let soloEnMemoria = false;
 
-function guardar(estado: EstadoBloqueoSalida) {
-  enMemoria = estado;
-  try {
-    sessionStorage.setItem(CLAVE, JSON.stringify(estado));
-    soloEnMemoria = false;
-  } catch {
-    soloEnMemoria = true;
-  }
+function vigente(bloqueadoHasta: number, ahora: number): number {
+  return bloqueadoHasta > ahora ? bloqueadoHasta : 0;
 }
 
-function vigente(estado: EstadoBloqueoSalida, ahora: number): EstadoBloqueoSalida {
-  // Un bloqueo vencido empieza de cero.
-  if (estado.bloqueadoHasta && estado.bloqueadoHasta <= ahora) return LIBRE;
-  return estado;
-}
-
-export function leerBloqueoSalida(ahora = Date.now()): EstadoBloqueoSalida {
-  // Si la última escritura falló, lo guardado está desactualizado.
+/** Epoch ms hasta el que la salida está bloqueada; 0 si no lo está. */
+export function leerBloqueoSalida(ahora = Date.now()): number {
   if (soloEnMemoria) return vigente(enMemoria, ahora);
   try {
     const crudo = sessionStorage.getItem(CLAVE);
-    if (!crudo) return LIBRE;
-    const estado = JSON.parse(crudo) as Partial<EstadoBloqueoSalida>;
-    const intentos = Number(estado.intentos) || 0;
-    const bloqueadoHasta = Number(estado.bloqueadoHasta) || 0;
-    return vigente({ intentos, bloqueadoHasta }, ahora);
+    if (!crudo) return 0;
+    const estado = JSON.parse(crudo) as { bloqueadoHasta?: unknown };
+    return vigente(Number(estado.bloqueadoHasta) || 0, ahora);
   } catch {
     return vigente(enMemoria, ahora);
   }
 }
 
-/** Registra una contraseña incorrecta y devuelve el estado resultante. */
-export function registrarFalloSalida(ahora = Date.now()): EstadoBloqueoSalida {
-  const intentos = leerBloqueoSalida(ahora).intentos + 1;
-  const estado = intentos >= MAX_INTENTOS_SALIDA
-    ? { intentos, bloqueadoHasta: ahora + BLOQUEO_SALIDA_MS }
-    : { intentos, bloqueadoHasta: 0 };
-  guardar(estado);
-  return estado;
+/** Registra el 429 del servidor y devuelve hasta cuándo dura. */
+export function registrarBloqueoSalida(esperaMs: number, ahora = Date.now()): number {
+  const bloqueadoHasta = ahora + Math.max(0, esperaMs);
+  enMemoria = bloqueadoHasta;
+  try {
+    sessionStorage.setItem(CLAVE, JSON.stringify({ bloqueadoHasta }));
+    soloEnMemoria = false;
+  } catch {
+    soloEnMemoria = true;
+  }
+  return bloqueadoHasta;
 }
 
 export function limpiarBloqueoSalida() {
-  enMemoria = LIBRE;
+  enMemoria = 0;
   soloEnMemoria = false;
   try {
     sessionStorage.removeItem(CLAVE);

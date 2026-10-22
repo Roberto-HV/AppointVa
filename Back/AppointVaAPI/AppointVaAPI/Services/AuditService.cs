@@ -7,6 +7,9 @@ namespace AppointVaAPI.Services
 {
     public class AuditService : IAuditService
     {
+        /// <summary>Time zone of <see cref="AuditLog.FechaEn"/> (stored as local time without offset).</summary>
+        public const string ZonaHorariaRegistro = "America/Mexico_City";
+
         private readonly ApplicationDbContext _db;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly ILogger<AuditService> _logger;
@@ -45,7 +48,7 @@ namespace AppointVaAPI.Services
                     EntidadId = entidadId,
                     Detalles  = detalles,
                     IpAddress = ip?[..Math.Min(ip.Length, 50)],
-                    FechaEn   = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, ZonaHorariaHelper.Resolver("America/Mexico_City"))
+                    FechaEn   = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, ZonaHorariaHelper.Resolver(ZonaHorariaRegistro))
                 });
 
                 await _db.SaveChangesAsync();

@@ -49,6 +49,42 @@ namespace AppointVaAPI.Services
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
+        public (string Token, DateTime Expiracion) GenerarTokenKiosco(ApplicationUser usuario, string rolOrigen, TimeSpan duracion)
+        {
+            var clave = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Clave"]!));
+            var credenciales = new SigningCredentials(clave, SecurityAlgorithms.HmacSha256);
+            var expiracion = DateTime.UtcNow.Add(duracion);
+
+            var claims = new[]
+            {
+                new Claim(ClaimsTipos.UsuarioId, usuario.Id.ToString()),
+                new Claim("email", usuario.Email!),
+                new Claim("jti", Guid.NewGuid().ToString()),
+                new Claim(ClaimsTipos.Rol, Roles.Kiosco),
+                new Claim(ClaimsTipos.NombreCompleto, $"{usuario.Nombre} {usuario.Apellido}".Trim()),
+                new Claim(ClaimsTipos.NegocioId, usuario.NegocioId!.Value.ToString()),
+                new Claim(ClaimsTipos.KioscoRolOrigen, rolOrigen),
+                new Claim(ClaimsTipos.KioscoSello, SelloKiosco(usuario.SecurityStamp))
+            };
+
+            var token = new JwtSecurityToken(
+                issuer: _config["Jwt:Emisor"],
+                audience: _config["Jwt:Audiencia"],
+                claims: claims,
+                expires: expiracion,
+                signingCredentials: credenciales
+            );
+
+            return (new JwtSecurityTokenHandler().WriteToken(token), expiracion);
+        }
+
+        /// <summary>
+        /// Hash of the security stamp carried by the kiosk token, so the stamp itself
+        /// never leaves the server. Identity rotates the stamp on password change/reset.
+        /// </summary>
+        public static string SelloKiosco(string? securityStamp) =>
+            Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(securityStamp ?? string.Empty)));
+
         public async Task<string> GenerarRefreshTokenAsync(Guid usuarioId)
         {
             var tokenAleatorio = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
@@ -116,7 +152,7 @@ namespace AppointVaAPI.Services
             var claims = new[]
             {
                 new Claim(ClaimsTipos.UsuarioId, usuarioId.ToString()),
-                new Claim("2fa_challenge", "true"),
+                new Claim(ClaimsTipos.Desafio2FA, "true"),
                 new Claim("jti", Guid.NewGuid().ToString())
             };
 
@@ -151,7 +187,7 @@ namespace AppointVaAPI.Services
                 }, out var tokenValidado);
 
                 var jwt = (JwtSecurityToken)tokenValidado;
-                var esChallenge = jwt.Claims.FirstOrDefault(c => c.Type == "2fa_challenge")?.Value == "true";
+                var esChallenge = jwt.Claims.FirstOrDefault(c => c.Type == ClaimsTipos.Desafio2FA)?.Value == "true";
                 if (!esChallenge) return null;
 
                 var idStr = jwt.Claims.FirstOrDefault(c => c.Type == ClaimsTipos.UsuarioId)?.Value;

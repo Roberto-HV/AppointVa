@@ -109,7 +109,25 @@ builder.Services.AddAuthentication(opt =>
 // ── Authorization policies ────────────────────────────────────────────────────
 // B10 / decision 2: the restricted Empleado role is denied these actions server-side.
 builder.Services.AddAuthorization(opt =>
-    opt.AddPolicy(Politicas.GestionCompleta, p => p.RequireRole(Politicas.RolesGestionCompleta)));
+{
+    opt.AddPolicy(Politicas.GestionCompleta, p => p.RequireRole(Politicas.RolesGestionCompleta));
+
+    // B9: the kiosk token only reaches endpoints that ask for this policy (KioscoController).
+    opt.AddPolicy(Politicas.Kiosco, p => p
+        .RequireAuthenticatedUser()
+        .RequireRole(Roles.Kiosco)
+        .RequireClaim(ClaimsTipos.NegocioId));
+
+    // Bare [Authorize] (no roles, no policy) uses this. It refuses the kiosk token and the
+    // 2FA challenge JWT, which are signed with the same key but are not a session.
+    // [Authorize(Roles = ...)] never matches them either: neither carries one of those roles.
+    opt.DefaultPolicy = new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .RequireAssertion(ctx =>
+            !ctx.User.IsInRole(Roles.Kiosco) &&
+            !ctx.User.HasClaim(c => c.Type == ClaimsTipos.Desafio2FA))
+        .Build();
+});
 
 // ── CORS ───────────────────────────────────────────────────────────────────────
 var origenesPermitidos = builder.Configuration["Cors:OrigenesPermitidos"]!.Split(',');
@@ -144,6 +162,7 @@ builder.Services.AddScoped<IRecordatorioService, RecordatorioService>();
 builder.Services.AddScoped<NotificacionJob>();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<IPanelJobsAccesoService, PanelJobsAccesoService>();
+builder.Services.AddSingleton<IKioscoSalidaLimitador, KioscoSalidaLimitador>();
 builder.Services.AddHttpClient("WhatsApp");
 builder.Services.AddHttpClient("WebPush");
 builder.Services.AddHttpClient("Brevo");
@@ -313,14 +332,7 @@ if (app.Environment.IsDevelopment())
 
 // Hangfire dashboard — protegido con la cookie de sesión validada por HangfireAuthorizationFilter
 if (!app.Environment.IsEnvironment("Testing"))
-    app.UseHangfireDashboard("/hangfire", new DashboardOptions
-    {
-        // Empty sync list: the default would add LocalRequestsOnlyAuthorizationFilter.
-        Authorization = [],
-        AsyncAuthorization = [new HangfireAuthorizationFilter()],
-        DashboardTitle = "AppointVa — Jobs",
-        IsReadOnlyFunc = _ => false,
-    });
+    app.UseHangfireDashboard("/hangfire", HangfireDashboardOpciones.Crear());
 
 // S2: canjea un ticket de un solo uso (POST /api/admin/hangfire/ticket, solo SuperAdmin)
 // por una cookie de sesión opaca del dashboard. Nunca recibe un JWT por la URL.

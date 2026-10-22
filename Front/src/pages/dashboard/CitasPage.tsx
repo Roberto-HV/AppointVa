@@ -563,10 +563,10 @@ export default function CitasPage() {
                mostrador y, con las tres visibles, a 390px la fila ocuparía más
                ancho que la pantalla. Crear la cita es la única que queda. */
             <>
+              {/* Misma pestaña: entrar al modo recepción cierra la sesión de
+                  este navegador (B9), y otra pestaña la seguiría usando. */}
               <EnlaceAccion
                 to="/dashboard/kiosk"
-                target="_blank"
-                rel="noopener noreferrer"
                 className="hidden sm:inline-flex"
               >
                 <Monitor size={16} aria-hidden="true" />

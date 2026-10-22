@@ -29,6 +29,7 @@ vi.mock("../../store/authStore", () => ({
 
 vi.mock("../../api/axios", () => ({
   api: { post: vi.fn(), get: vi.fn() },
+  MOTIVO_RECEPCION_VENCIDA: "recepcion-vencida",
 }));
 
 // ── lazy imports (after mocks) ──────────────────────────────────
@@ -36,10 +37,10 @@ import LoginPage from "./LoginPage";
 import { authApi } from "../../api/auth";
 
 // ── helpers ─────────────────────────────────────────────────────
-function renderLoginPage() {
+function renderLoginPage(ruta = "/login") {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[ruta]}>
       <QueryClientProvider client={qc}>
         <LoginPage />
       </QueryClientProvider>
@@ -159,5 +160,17 @@ describe("LoginPage — desafío 2FA", () => {
     await user.click(screen.getByRole("button", { name: "Iniciar sesión" }));
 
     await screen.findByPlaceholderText("000000");
+  });
+});
+
+describe("LoginPage — sesión de recepción vencida (B9)", () => {
+  it("explica que el modo recepción se cerró cuando llega con ?motivo=recepcion-vencida", () => {
+    renderLoginPage("/login?motivo=recepcion-vencida");
+    expect(screen.getByRole("status")).toHaveTextContent("Sesión de recepción vencida");
+  });
+
+  it("no muestra el aviso en un login normal", () => {
+    renderLoginPage();
+    expect(screen.queryByText("Sesión de recepción vencida")).not.toBeInTheDocument();
   });
 });

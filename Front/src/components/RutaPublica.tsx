@@ -20,5 +20,6 @@ export default function RutaPublica() {
   if (!token) return <Outlet />;
 
   if (usuario?.rol === "SuperAdmin") return <Navigate to="/admin" replace />;
+  if (usuario?.rol === "Kiosco") return <Navigate to="/dashboard/kiosk" replace />;
   return <Navigate to="/dashboard" replace />;
 }

@@ -24,6 +24,11 @@ export default function RutaProtegida({ roles }: Props) {
 
   if (!token) return <Navigate to="/login" state={{ returnUrl: location.pathname }} replace />;
 
+  // El token de kiosco (B9) solo sirve en la pantalla de recepción.
+  if (usuario?.rol === "Kiosco" && !roles?.includes("Kiosco")) {
+    return <Navigate to="/dashboard/kiosk" replace />;
+  }
+
   if (roles && !roles.includes(usuario?.rol ?? "")) {
     // Redirige a la home correcta según rol — evita loops infinitos
     if (usuario?.rol === "SuperAdmin") return <Navigate to="/admin" replace />;

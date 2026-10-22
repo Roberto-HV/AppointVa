@@ -6,6 +6,9 @@ export const api = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
+/** `/login?motivo=…` cuando la sesión de recepción (kiosco) deja de valer. */
+export const MOTIVO_RECEPCION_VENCIDA = "recepcion-vencida";
+
 // Cola de requests que fallaron por 401 mientras se estaba refrescando el token
 let refrescando = false;
 let cola: Array<{ resolve: (token: string) => void; reject: (err: unknown) => void }> = [];
@@ -58,8 +61,11 @@ api.interceptors.response.use(
 
     if (!refreshToken) {
       refrescando = false;
+      // El token de kiosco (B9) no tiene refresh: venció o el servidor lo invalidó
+      // (cambio de contraseña, rol retirado). El login lo explica en vez de aparecer sin más.
+      const eraKiosco = useAuthStore.getState().usuario?.rol === "Kiosco";
       cerrarSesion();
-      window.location.href = "/login";
+      window.location.href = eraKiosco ? `/login?motivo=${MOTIVO_RECEPCION_VENCIDA}` : "/login";
       return Promise.reject(error);
     }
 

@@ -2,12 +2,12 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useNavigate, Link, useLocation } from "react-router-dom";
+import { useNavigate, Link, useLocation, useSearchParams } from "react-router-dom";
 import LogoMarca from "../../components/LogoMarca";
 import { Eye, EyeOff } from "lucide-react";
 import { authApi } from "../../api/auth";
 import { useAuthStore } from "../../store/authStore";
-import { api } from "../../api/axios";
+import { api, MOTIVO_RECEPCION_VENCIDA } from "../../api/axios";
 import { useTituloPagina } from "../../hooks/useTituloPagina";
 
 const schema = z.object({
@@ -26,6 +26,8 @@ export default function LoginPage() {
   const locationState = location.state as { registroExitoso?: boolean; returnUrl?: string } | null;
   const registroExitoso = locationState?.registroExitoso ?? false;
   const returnUrl = locationState?.returnUrl;
+  const [searchParams] = useSearchParams();
+  const recepcionVencida = searchParams.get("motivo") === MOTIVO_RECEPCION_VENCIDA;
   const [emailNoVerificado, setEmailNoVerificado] = useState<string | null>(null);
   const [reenvioEnviado, setReenvioEnviado] = useState(false);
   const [reenvioEnviando, setReenvioEnviando] = useState(false);
@@ -121,6 +123,15 @@ export default function LoginPage() {
           {registroExitoso && (
             <div className="bg-green-50 border border-green-200 text-green-700 text-sm rounded-xl px-4 py-3 mb-5">
               ¡Cuenta creada! Revisa tu correo para verificar tu cuenta.
+            </div>
+          )}
+          {recepcionVencida && (
+            <div role="status" className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-5">
+              <p className="text-amber-800 text-sm font-medium mb-1">Sesión de recepción vencida</p>
+              <p className="text-amber-700 text-sm">
+                El modo recepción se cerró porque su sesión venció o la cuenta cambió (por ejemplo, la contraseña).
+                Inicia sesión para volver a abrirlo.
+              </p>
             </div>
           )}
           {emailNoVerificado && (

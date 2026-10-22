@@ -137,8 +137,11 @@ export default function App() {
                       <Route path="/dashboard/resenas" element={<ResenasPage />} />
                     </Route>
                   </Route>
+                </Route>
 
-                  {/* Kiosk: pantalla completa, sin DashboardLayout */}
+                {/* Kiosk: pantalla completa, sin DashboardLayout. Entrar cambia la
+                    sesión por un token de kiosco (B9), que solo abre esta ruta. */}
+                <Route element={<RutaProtegida roles={["Propietario", "Empleado", "Kiosco"]} />}>
                   <Route path="/dashboard/kiosk" element={<KioskPage />} />
                 </Route>
 

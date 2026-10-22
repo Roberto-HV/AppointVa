@@ -15,5 +15,11 @@ namespace AppointVaAPI.Constants
 
         /// <summary>Roles that satisfy <see cref="GestionCompleta"/>.</summary>
         public static readonly string[] RolesGestionCompleta = [Roles.Propietario, Roles.SuperAdmin];
+
+        /// <summary>
+        /// Reception screen (B9, decision 3): only the kiosk token, bound to one negocio.
+        /// The default policy rejects that token, so it cannot reach any other endpoint.
+        /// </summary>
+        public const string Kiosco = "Kiosco";
     }
 }
