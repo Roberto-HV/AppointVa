@@ -193,8 +193,27 @@ public class KioscoSalidaLimitadorTests
             else if (limitador.Intentar(_negocio, SinPersistidos, out _)) Interlocked.Increment(ref concedidos);
         })));
 
-        concedidos.Should().BeLessThanOrEqualTo(3);
-        limitador.Restantes(_negocio, out _).Should().Be(0);
+        // The refund may run before, between or after every Intentar. In every interleaving it
+        // returns exactly the one in-flight attempt: 2 grants always fill the window before it,
+        // and at most one more fits after it. Nothing is lost or created, so the attempts
+        // still in the window are exactly the grants made here.
+        concedidos.Should().BeInRange(2, 3, "a refund frees exactly one attempt, never more");
+        limitador.Restantes(_negocio, out _).Should().Be(3 - concedidos, "every attempt is either granted or still available");
+    }
+
+    [Fact]
+    public void Reembolsar_DespuesDeAgotar_DevuelveSoloUnIntento()
+    {
+        // The interleaving where the refund lands last, after the window is already full.
+        var limitador = Crear();
+        for (var i = 0; i < 3; i++) limitador.Intentar(_negocio, SinPersistidos, out _).Should().BeTrue();
+        limitador.Intentar(_negocio, SinPersistidos, out _).Should().BeFalse();
+
+        limitador.Reembolsar(_negocio);
+
+        limitador.Restantes(_negocio, out _).Should().Be(1);
+        limitador.Intentar(_negocio, SinPersistidos, out _).Should().BeTrue();
+        limitador.Intentar(_negocio, SinPersistidos, out _).Should().BeFalse();
     }
 
     // ── Block reported once ───────────────────────────────────────────────────
