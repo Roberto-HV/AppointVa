@@ -44,6 +44,8 @@ export default function DialogoEliminarConCitas({
     staleTime: 0,
     gcTime: 0,
     refetchOnMount: "always",
+    // Volver a la pestaña no debe ocultar el botón mientras se revalida.
+    refetchOnWindowFocus: false,
   });
 
   // Falla cerrada: solo se puede eliminar con un conteo fresco, completo y en cero.

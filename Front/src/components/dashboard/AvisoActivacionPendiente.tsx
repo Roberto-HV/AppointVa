@@ -1,5 +1,5 @@
 import { Mail } from "lucide-react";
-import { ACTIVACION_AVISO, ACTIVACION_RESUMEN, CORREO_SOPORTE } from "../../lib/activacion";
+import { ACTIVACION_AVISO_PANEL, ACTIVACION_RESUMEN, CORREO_SOPORTE } from "../../lib/activacion";
 
 /** Aviso del panel mientras el SuperAdmin no activa el negocio (AP-02). */
 export default function AvisoActivacionPendiente() {
@@ -13,7 +13,7 @@ export default function AvisoActivacionPendiente() {
       </div>
       <p className="text-xs text-amber-800 dark:text-amber-200">
         <span className="font-semibold">Tu negocio está pendiente de activación.</span>{" "}
-        {ACTIVACION_RESUMEN} {ACTIVACION_AVISO}{" "}
+        {ACTIVACION_RESUMEN} {ACTIVACION_AVISO_PANEL}{" "}
         ¿Dudas?{" "}
         <a
           href={`mailto:${CORREO_SOPORTE}`}

@@ -23,26 +23,40 @@ export interface EstadoBloqueoSalida {
 
 const LIBRE: EstadoBloqueoSalida = { intentos: 0, bloqueadoHasta: 0 };
 
+// Respaldo en memoria: si sessionStorage no está disponible (bloqueado por el
+// navegador), el límite sigue aplicando mientras la página no se recargue.
+let enMemoria: EstadoBloqueoSalida = LIBRE;
+/** true si la última escritura no llegó a sessionStorage: la memoria manda. */
+let soloEnMemoria = false;
+
 function guardar(estado: EstadoBloqueoSalida) {
+  enMemoria = estado;
   try {
     sessionStorage.setItem(CLAVE, JSON.stringify(estado));
+    soloEnMemoria = false;
   } catch {
-    // Sin almacenamiento el límite solo dura lo que la pestaña.
+    soloEnMemoria = true;
   }
 }
 
+function vigente(estado: EstadoBloqueoSalida, ahora: number): EstadoBloqueoSalida {
+  // Un bloqueo vencido empieza de cero.
+  if (estado.bloqueadoHasta && estado.bloqueadoHasta <= ahora) return LIBRE;
+  return estado;
+}
+
 export function leerBloqueoSalida(ahora = Date.now()): EstadoBloqueoSalida {
+  // Si la última escritura falló, lo guardado está desactualizado.
+  if (soloEnMemoria) return vigente(enMemoria, ahora);
   try {
     const crudo = sessionStorage.getItem(CLAVE);
     if (!crudo) return LIBRE;
     const estado = JSON.parse(crudo) as Partial<EstadoBloqueoSalida>;
     const intentos = Number(estado.intentos) || 0;
     const bloqueadoHasta = Number(estado.bloqueadoHasta) || 0;
-    // Un bloqueo vencido empieza de cero.
-    if (bloqueadoHasta && bloqueadoHasta <= ahora) return LIBRE;
-    return { intentos, bloqueadoHasta };
+    return vigente({ intentos, bloqueadoHasta }, ahora);
   } catch {
-    return LIBRE;
+    return vigente(enMemoria, ahora);
   }
 }
 
@@ -57,6 +71,8 @@ export function registrarFalloSalida(ahora = Date.now()): EstadoBloqueoSalida {
 }
 
 export function limpiarBloqueoSalida() {
+  enMemoria = LIBRE;
+  soloEnMemoria = false;
   try {
     sessionStorage.removeItem(CLAVE);
   } catch {

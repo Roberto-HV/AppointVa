@@ -27,6 +27,8 @@ export const ACTIVACION_PLAZO = `en menos de ${ACTIVACION_PLAZO_HORAS} horas há
  * panel. Sin correo de activación en el backend (B21).
  */
 export const ACTIVACION_AVISO = "El aviso de activación pendiente de tu panel desaparece cuando tu negocio esté activo.";
+/** La misma idea dicha desde el propio aviso del panel. */
+export const ACTIVACION_AVISO_PANEL = "Este aviso desaparece cuando tu negocio esté activo.";
 
 /** Frase central: idéntica en las tres superficies. */
 export const ACTIVACION_RESUMEN =
