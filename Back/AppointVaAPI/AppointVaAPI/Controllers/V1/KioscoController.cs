@@ -10,6 +10,7 @@ using AppointVaAPI.Services.IServices;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace AppointVaAPI.Controllers.V1
@@ -51,6 +52,10 @@ namespace AppointVaAPI.Controllers.V1
         }
 
         public const string AccionSalidaFallida = "KioscoSalidaFallida";
+        public const string AccionSalidaBloqueada = "KioscoSalidaBloqueada";
+
+        /// <summary>Per-IP ASP.NET rate limit policy for POST api/kiosco/salir (see Program.cs).</summary>
+        public const string PoliticaLimiteSalida = "KioscoSalida";
 
         // POST api/kiosco/sesion — a normal session asks for a kiosk token
         [HttpPost("sesion")]
@@ -175,19 +180,21 @@ namespace AppointVaAPI.Controllers.V1
         // POST api/kiosco/salir — the opener's password trades the kiosk token for a normal session
         [HttpPost("salir")]
         [Authorize(Policy = Politicas.Kiosco)]
+        [EnableRateLimiting(PoliticaLimiteSalida)]
         public async Task<IActionResult> Salir([FromBody] SalirKioscoDto dto)
         {
             var sesion = await ValidarSesionAsync();
             if (sesion is null) return Unauthorized(new { mensaje = "La sesión de recepción ya no es válida. Inicia sesión de nuevo." });
             var (usuario, negocioId, _) = sesion.Value;
 
+            // Already blocked in memory: answer without reading the audit log.
+            if (_limitador.Restantes(negocioId, out var espera) == 0)
+                return await SalidaBloqueadaAsync(negocioId, usuario.Id, espera);
+
             // The attempt is spent before the password is checked, so parallel guesses
             // cannot get past the limit.
-            if (!_limitador.Intentar(negocioId, await FallosRecientesAsync(negocioId), out var espera))
-            {
-                await _audit.RegistrarAsync("KioscoSalidaBloqueada", "Negocio", negocioId.ToString(), usuarioId: usuario.Id);
-                return DemasiadosIntentos(espera);
-            }
+            if (!_limitador.Intentar(negocioId, await FallosRecientesAsync(negocioId), out espera))
+                return await SalidaBloqueadaAsync(negocioId, usuario.Id, espera);
 
             // Identity's lockout is respected but never fed from here: CheckPasswordAsync
             // does not touch AccessFailedCount (only AccessFailedAsync does).
@@ -201,6 +208,9 @@ namespace AppointVaAPI.Controllers.V1
                 if (restantes == 0) return DemasiadosIntentos(esperaTrasFallo);
                 return BadRequest(new { mensaje = "Contraseña incorrecta.", codigoError = CodigoContrasenaIncorrecta, intentosRestantes = restantes });
             }
+
+            // The right password does not count against the budget for wrong guesses.
+            _limitador.Reembolsar(negocioId);
 
             var roles = await _userManager.GetRolesAsync(usuario);
             var rol = roles.FirstOrDefault() ?? string.Empty;
@@ -271,6 +281,17 @@ namespace AppointVaAPI.Controllers.V1
             return fechas
                 .Select(f => new DateTimeOffset(TimeZoneInfo.ConvertTimeToUtc(DateTime.SpecifyKind(f, DateTimeKind.Unspecified), zona)))
                 .ToList();
+        }
+
+        /// <summary>
+        /// 429 for a blocked exit. The block is audited once (its first rejected request), not on
+        /// every retry, so hammering the endpoint does not write a row per request.
+        /// </summary>
+        private async Task<ObjectResult> SalidaBloqueadaAsync(Guid negocioId, Guid usuarioId, TimeSpan espera)
+        {
+            if (_limitador.AvisarBloqueo(negocioId, espera))
+                await _audit.RegistrarAsync(AccionSalidaBloqueada, "Negocio", negocioId.ToString(), usuarioId: usuarioId);
+            return DemasiadosIntentos(espera);
         }
 
         private ObjectResult DemasiadosIntentos(TimeSpan espera)

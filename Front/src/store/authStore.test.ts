@@ -133,7 +133,7 @@ describe("useAuthStore — sesión de kiosco compartida entre pestañas (B9)", (
     useAuthStore.setState({ token: "tok-dueno", refreshToken: "refresh-revocado", usuario: usuarioMock });
     guardarEnOtraPestana("tok-kiosco", usuarioKiosco);
 
-    useAuthStore.getState().cerrarSesion();
+    useAuthStore.getState().cerrarSesion({ porRefreshFallido: true });
     await Promise.resolve();
 
     expect(leerGuardado()).toMatchObject({ token: "tok-kiosco", usuario: { rol: "Kiosco" } });
@@ -142,10 +142,22 @@ describe("useAuthStore — sesión de kiosco compartida entre pestañas (B9)", (
     expect(queryClient.clear).toHaveBeenCalledOnce();
   });
 
+  it("un logout explícito cierra la sesión aunque otra pestaña guarde un kiosco", async () => {
+    useAuthStore.setState({ token: "tok-dueno", refreshToken: "refresh-abc", usuario: usuarioMock });
+    guardarEnOtraPestana("tok-kiosco", usuarioKiosco);
+
+    useAuthStore.getState().cerrarSesion();
+    await Promise.resolve();
+
+    expect(useAuthStore.getState().token).toBeNull();
+    expect(useAuthStore.getState().usuario).toBeNull();
+    expect(leerGuardado()).toMatchObject({ token: null, usuario: null });
+  });
+
   it("la propia sesión de kiosco sí se cierra (token vencido)", () => {
     useAuthStore.getState().iniciarSesionKiosco("tok-kiosco", usuarioKiosco);
 
-    useAuthStore.getState().cerrarSesion();
+    useAuthStore.getState().cerrarSesion({ porRefreshFallido: true });
 
     expect(useAuthStore.getState().token).toBeNull();
     expect(leerGuardado()).toMatchObject({ token: null, usuario: null });

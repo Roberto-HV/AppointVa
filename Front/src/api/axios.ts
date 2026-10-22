@@ -64,7 +64,7 @@ api.interceptors.response.use(
       // El token de kiosco (B9) no tiene refresh: venció o el servidor lo invalidó
       // (cambio de contraseña, rol retirado). El login lo explica en vez de aparecer sin más.
       const eraKiosco = useAuthStore.getState().usuario?.rol === "Kiosco";
-      cerrarSesion();
+      cerrarSesion({ porRefreshFallido: true });
       window.location.href = eraKiosco ? `/login?motivo=${MOTIVO_RECEPCION_VENCIDA}` : "/login";
       return Promise.reject(error);
     }
@@ -84,7 +84,7 @@ api.interceptors.response.use(
       return api(config);
     } catch (refreshError) {
       procesarCola(refreshError, null);
-      cerrarSesion();
+      cerrarSesion({ porRefreshFallido: true });
       window.location.href = "/login";
       return Promise.reject(refreshError);
     } finally {

@@ -329,6 +329,46 @@ public class KioscoIntegrationTests : IntegrationTestBase
     }
 
     [Fact]
+    public async Task Salir_BloqueadaRepetida_AuditaElBloqueoUnaSolaVez()
+    {
+        var cuenta = await CrearCuentaAsync();
+        var kiosco = await AbrirKioscoAsync(cuenta);
+        for (var i = 0; i < 3; i++) await SalirAsync(kiosco, $"mala-{i}");
+
+        for (var i = 0; i < 5; i++)
+            (await SalirAsync(kiosco, Contrasena)).StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
+
+        var acciones = await AccionesAuditadasAsync(cuenta.Usuario.Id);
+        acciones.Count(a => a == KioscoController.AccionSalidaBloqueada).Should().Be(1);
+        acciones.Count(a => a == KioscoController.AccionSalidaFallida).Should().Be(3);
+    }
+
+    [Fact]
+    public async Task Salir_SalidasCorrectas_NoGastanIntentos()
+    {
+        var cuenta = await CrearCuentaAsync();
+        for (var i = 0; i < 3; i++)
+            (await SalirAsync(await AbrirKioscoAsync(cuenta), Contrasena)).StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var fallo = await SalirAsync(await AbrirKioscoAsync(cuenta), "mala");
+
+        fallo.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await fallo.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("intentosRestantes").GetInt32().Should().Be(2);
+    }
+
+    [Fact]
+    public void Salir_TieneLimiteDePeticionesPorIp()
+    {
+        var atributo = typeof(KioscoController).GetMethod(nameof(KioscoController.Salir))!
+            .GetCustomAttributes(typeof(Microsoft.AspNetCore.RateLimiting.EnableRateLimitingAttribute), false)
+            .Cast<Microsoft.AspNetCore.RateLimiting.EnableRateLimitingAttribute>()
+            .SingleOrDefault();
+
+        atributo.Should().NotBeNull();
+        atributo!.PolicyName.Should().Be(KioscoController.PoliticaLimiteSalida);
+    }
+
+    [Fact]
     public async Task Salir_ElLimiteEsPorNegocio()
     {
         var bloqueada = await CrearCuentaAsync();

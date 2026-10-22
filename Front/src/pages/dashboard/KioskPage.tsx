@@ -76,9 +76,18 @@ export default function KioskPage() {
 
   if (!esKiosco && !debeEntrar) {
     // Saliendo: la sesión normal ya está guardada y la navegación a Citas, en curso.
+    // Si esa navegación no llega, el botón la repite; `debeEntrar` sigue en false,
+    // así que no vuelve a entrar al modo recepción.
     return (
-      <div className="dark min-h-screen bg-slate-950 text-white flex items-center justify-center px-6 text-center">
+      <div className="dark min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center gap-4 px-6 text-center">
         <p role="status" className="text-sm text-white/70">Volviendo al panel…</p>
+        <button
+          type="button"
+          onClick={() => navigate("/dashboard/citas", { replace: true })}
+          className="min-h-[44px] px-4 rounded-lg border border-white/20 text-sm font-medium hover:bg-white/10 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+        >
+          Ir al panel
+        </button>
       </div>
     );
   }

@@ -96,4 +96,21 @@ describe("KioskPage — exit does not re-enter kiosk mode (real store + router)"
     expect(useAuthStore.getState().usuario?.rol).toBe("Propietario");
     expect(useAuthStore.getState().refreshToken).toBe("r-nuevo");
   });
+
+  it("'Ir al panel' reaches Citas when the session is restored without navigating", async () => {
+    useAuthStore.setState({ token: "t-kiosco", refreshToken: null, usuario: USUARIO_KIOSCO });
+    renderApp();
+    await screen.findByRole("button", { name: /Salir del modo pantalla/ });
+
+    // Another tab exits kiosk mode: the session changes but this tab never navigates.
+    act(() => { useAuthStore.setState({ token: "t-dueno", refreshToken: "r-dueno", usuario: USUARIO_DUENO }); });
+    expect(screen.getByRole("status")).toHaveTextContent("Volviendo al panel…");
+
+    fireEvent.click(screen.getByRole("button", { name: "Ir al panel" }));
+
+    expect(await screen.findByText("Pantalla de citas")).toBeInTheDocument();
+    await act(async () => { await vi.advanceTimersByTimeAsync(50); });
+    expect(kioscoApi.iniciar).not.toHaveBeenCalled();
+    expect(useAuthStore.getState().usuario?.rol).toBe("Propietario");
+  });
 });

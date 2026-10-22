@@ -16,5 +16,17 @@ namespace AppointVaAPI.Services.IServices
 
         /// <summary>Attempts still available for the negocio, and when it may retry if none are.</summary>
         int Restantes(Guid negocioId, out TimeSpan reintentarEn);
+
+        /// <summary>
+        /// Gives back one attempt taken with <see cref="Intentar"/> once the password proved
+        /// correct, so leaving the screen does not eat into the budget for wrong guesses.
+        /// </summary>
+        void Reembolsar(Guid negocioId);
+
+        /// <summary>
+        /// True only for the first blocked request of a block (until <paramref name="reintentarEn"/>
+        /// passes), so the caller audits a block once instead of on every rejected request.
+        /// </summary>
+        bool AvisarBloqueo(Guid negocioId, TimeSpan reintentarEn);
     }
 }

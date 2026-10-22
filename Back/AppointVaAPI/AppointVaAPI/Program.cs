@@ -256,6 +256,22 @@ builder.Services.AddRateLimiter(options =>
                 QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                 QueueLimit = 0
             }));
+
+    // Salida del modo recepción: 10/min por negocio. El limitador propio (3 fallos cada 5 min
+    // por negocio) decide el bloqueo; este tope solo frena el martilleo de un dispositivo antes
+    // de que llegue a la base de datos. Se particiona por el negocio del token y no por IP:
+    // detrás del proxy de Render todas las peticiones pueden compartir la misma IP remota.
+    options.AddPolicy(AppointVaAPI.Controllers.V1.KioscoController.PoliticaLimiteSalida, httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.User.FindFirst(AppointVaAPI.Constants.ClaimsTipos.NegocioId)?.Value
+                ?? httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(1),
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0
+            }));
 });
 
 // ── Health Checks ─────────────────────────────────────────────────────────────
@@ -376,9 +392,11 @@ if (!app.Environment.IsDevelopment()) app.UseHttpsRedirection();
 app.UseCors("FrontendPolicy");
 if (!string.IsNullOrEmpty(sentryDsn)) app.UseSentryTracing();
 app.UseStaticFiles(); // sirve wwwroot/uploads/ cuando Cloudinary no está configurado
+// El limitador va después de la autenticación para que las políticas puedan
+// particionar por un claim del usuario (KioscoSalida usa el negocio del token).
+app.UseAuthentication();
 if (!app.Environment.IsEnvironment("Testing"))
     app.UseRateLimiter();
-app.UseAuthentication();
 app.UseAuthorization();
 app.UseOutputCache();
 app.MapControllers();

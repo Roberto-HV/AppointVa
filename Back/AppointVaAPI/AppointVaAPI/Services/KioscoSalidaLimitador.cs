@@ -23,16 +23,25 @@ namespace AppointVaAPI.Services
         public static readonly TimeSpan Ventana = TimeSpan.FromMinutes(5);
 
         private readonly TimeProvider _reloj;
-        private readonly ConcurrentDictionary<Guid, List<DateTimeOffset>> _intentos = new();
+        private readonly ConcurrentDictionary<Guid, Registro> _registros = new();
+
+        /// <summary>Per-negocio state; every read and write happens under a lock on the instance.</summary>
+        private sealed class Registro
+        {
+            public readonly List<DateTimeOffset> Intentos = new();
+            /// <summary>Until when the current block has already been reported (audited).</summary>
+            public DateTimeOffset AvisadoHasta = DateTimeOffset.MinValue;
+        }
 
         public KioscoSalidaLimitador(TimeProvider reloj) => _reloj = reloj;
 
         public bool Intentar(Guid negocioId, IReadOnlyCollection<DateTimeOffset> fallosPersistidos, out TimeSpan reintentarEn)
         {
             var ahora = _reloj.GetUtcNow();
-            var log = _intentos.GetOrAdd(negocioId, _ => new List<DateTimeOffset>());
-            lock (log)
+            var registro = _registros.GetOrAdd(negocioId, _ => new Registro());
+            lock (registro)
             {
+                var log = registro.Intentos;
                 Podar(log, ahora);
 
                 // A future timestamp (clock skew between instances) counts as "now".
@@ -62,15 +71,43 @@ namespace AppointVaAPI.Services
         public int Restantes(Guid negocioId, out TimeSpan reintentarEn)
         {
             reintentarEn = TimeSpan.Zero;
-            if (!_intentos.TryGetValue(negocioId, out var log)) return MaxIntentos;
+            if (!_registros.TryGetValue(negocioId, out var registro)) return MaxIntentos;
 
             var ahora = _reloj.GetUtcNow();
-            lock (log)
+            lock (registro)
             {
+                var log = registro.Intentos;
                 Podar(log, ahora);
                 var restantes = Math.Max(0, MaxIntentos - log.Count);
                 if (restantes == 0) reintentarEn = Espera(log, ahora);
                 return restantes;
+            }
+        }
+
+        public void Reembolsar(Guid negocioId)
+        {
+            if (!_registros.TryGetValue(negocioId, out var registro)) return;
+            lock (registro)
+            {
+                var log = registro.Intentos;
+                Podar(log, _reloj.GetUtcNow());
+                // The log is sorted, so the newest entry is the last one. Under concurrency it may
+                // belong to another request, but only the count matters: exactly one attempt is
+                // returned, the one this request took. A persisted failure dropped here comes back
+                // on the next reseed, so a refund never erases a recorded wrong guess.
+                if (log.Count > 0) log.RemoveAt(log.Count - 1);
+            }
+        }
+
+        public bool AvisarBloqueo(Guid negocioId, TimeSpan reintentarEn)
+        {
+            var ahora = _reloj.GetUtcNow();
+            var registro = _registros.GetOrAdd(negocioId, _ => new Registro());
+            lock (registro)
+            {
+                if (registro.AvisadoHasta > ahora) return false;
+                registro.AvisadoHasta = ahora + (reintentarEn > TimeSpan.Zero ? reintentarEn : TimeSpan.FromSeconds(1));
+                return true;
             }
         }
 

@@ -18,7 +18,12 @@ interface AuthState {
   iniciarSesion: (token: string, refreshToken: string, usuario: UsuarioInfo) => void;
   /** Modo recepción (B9): token de kiosco y ningún refresh token guardado. */
   iniciarSesionKiosco: (token: string, usuario: UsuarioInfo) => void;
-  cerrarSesion: () => void;
+  /**
+   * Cierra la sesión. Solo el refresh fallido de axios (`porRefreshFallido`)
+   * adopta una sesión de kiosco guardada por otra pestaña; un logout explícito
+   * (botón, inactividad) siempre limpia.
+   */
+  cerrarSesion: (opciones?: { porRefreshFallido?: boolean }) => void;
   estaAutenticado: () => boolean;
   actualizarFoto: (fotoUrl: string) => void;
 }
@@ -29,8 +34,8 @@ const ROL_KIOSCO = "Kiosco";
 /**
  * Sesión de kiosco guardada por OTRA pestaña (B9). Al entrar en modo recepción
  * se revoca el refresh token del dueño, así que una pestaña antigua acaba
- * fallando el refresh; su `cerrarSesion` no debe borrar la sesión de kiosco
- * compartida en localStorage o la pantalla de recepción se cierra al recargar.
+ * fallando el refresh; ese `cerrarSesion` automático no debe borrar la sesión de
+ * kiosco compartida en localStorage o la pantalla de recepción se cierra al recargar.
  */
 function haySesionKioscoAjena(tokenEnMemoria: string | null): boolean {
   try {
@@ -55,9 +60,9 @@ export const useAuthStore = create<AuthState>()(
         set({ token, refreshToken, usuario }),
       iniciarSesionKiosco: (token, usuario) =>
         set({ token, refreshToken: null, usuario }),
-      cerrarSesion: () => {
+      cerrarSesion: (opciones) => {
         queryClient.clear();
-        if (haySesionKioscoAjena(get().token)) {
+        if (opciones?.porRefreshFallido && haySesionKioscoAjena(get().token)) {
           // Adoptar la sesión de kiosco guardada en vez de pisarla con null.
           void useAuthStore.persist.rehydrate();
           return;

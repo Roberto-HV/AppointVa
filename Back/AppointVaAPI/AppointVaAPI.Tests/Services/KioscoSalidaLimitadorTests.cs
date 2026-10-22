@@ -125,4 +125,92 @@ public class KioscoSalidaLimitadorTests
 
         concedidos.Should().Be(3);
     }
+
+    // ── Refund on a correct password ──────────────────────────────────────────
+
+    [Fact]
+    public void Reembolsar_DevuelveElIntentoDeUnaSalidaCorrecta()
+    {
+        var limitador = Crear();
+        limitador.Intentar(_negocio, SinPersistidos, out _); // wrong guess
+        limitador.Intentar(_negocio, SinPersistidos, out _); // right password
+        limitador.Reembolsar(_negocio);
+
+        limitador.Restantes(_negocio, out _).Should().Be(2, "only the wrong guess still counts");
+    }
+
+    [Fact]
+    public void Reembolsar_SalidasCorrectasRepetidas_NoAgotanElPresupuesto()
+    {
+        var limitador = Crear();
+        for (var i = 0; i < 10; i++)
+        {
+            limitador.Intentar(_negocio, SinPersistidos, out _).Should().BeTrue($"exit {i + 1} was correct");
+            limitador.Reembolsar(_negocio);
+        }
+
+        limitador.Restantes(_negocio, out _).Should().Be(3);
+    }
+
+    [Fact]
+    public void Reembolsar_SinIntentos_NoDaPresupuestoExtra()
+    {
+        var limitador = Crear();
+        limitador.Reembolsar(_negocio);
+        limitador.Intentar(_negocio, SinPersistidos, out _);
+        limitador.Reembolsar(_negocio);
+        limitador.Reembolsar(_negocio);
+
+        limitador.Restantes(_negocio, out _).Should().Be(3);
+        for (var i = 0; i < 3; i++) limitador.Intentar(_negocio, SinPersistidos, out _).Should().BeTrue();
+        limitador.Intentar(_negocio, SinPersistidos, out _).Should().BeFalse("a refund never exceeds the limit");
+    }
+
+    [Fact]
+    public void Reembolsar_NoBorraFallosPersistidos()
+    {
+        var limitador = Crear();
+        var persistidos = new[] { _reloj.Ahora.AddMinutes(-2), _reloj.Ahora.AddMinutes(-1) };
+        limitador.Intentar(_negocio, persistidos, out _).Should().BeTrue();
+        limitador.Reembolsar(_negocio);
+        limitador.Reembolsar(_negocio); // over-refund drops a persisted failure from memory…
+
+        // …but the next attempt reseeds from durable storage.
+        limitador.Intentar(_negocio, persistidos, out _).Should().BeTrue();
+        limitador.Intentar(_negocio, persistidos, out _).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Reembolsar_EnParalelo_NuncaConcedeMasDelLimite()
+    {
+        var limitador = Crear();
+        limitador.Intentar(_negocio, SinPersistidos, out _); // a correct exit in flight
+        var concedidos = 0;
+
+        await Task.WhenAll(Enumerable.Range(0, 50).Select(i => Task.Run(() =>
+        {
+            if (i == 0) limitador.Reembolsar(_negocio);
+            else if (limitador.Intentar(_negocio, SinPersistidos, out _)) Interlocked.Increment(ref concedidos);
+        })));
+
+        concedidos.Should().BeLessThanOrEqualTo(3);
+        limitador.Restantes(_negocio, out _).Should().Be(0);
+    }
+
+    // ── Block reported once ───────────────────────────────────────────────────
+
+    [Fact]
+    public void AvisarBloqueo_SoloLaPrimeraVezPorBloqueo()
+    {
+        var limitador = Crear();
+        limitador.AvisarBloqueo(_negocio, TimeSpan.FromMinutes(2)).Should().BeTrue();
+        limitador.AvisarBloqueo(_negocio, TimeSpan.FromMinutes(2)).Should().BeFalse();
+
+        _reloj.Ahora = _reloj.Ahora.AddMinutes(1);
+        limitador.AvisarBloqueo(_negocio, TimeSpan.FromMinutes(1)).Should().BeFalse("the same block is still running");
+
+        _reloj.Ahora = _reloj.Ahora.AddMinutes(1);
+        limitador.AvisarBloqueo(_negocio, TimeSpan.FromMinutes(5)).Should().BeTrue("a new block is reported again");
+        limitador.AvisarBloqueo(Guid.NewGuid(), TimeSpan.FromMinutes(5)).Should().BeTrue("blocks are per negocio");
+    }
 }
