@@ -10,7 +10,7 @@ import { FeatureCard } from "../../components/landing/FeatureCard";
 import { PricingCard } from "../../components/landing/PricingCard";
 import { Ico } from "../../components/landing/Ico";
 import { dArrow, dBell, dCalendar, dShield, dUsers } from "../../components/landing/iconos";
-import { ACENTO, GOLD, SLATE_700 } from "../../components/landing/constantes";
+import { ACENTO, GOLD, TINTA } from "../../components/landing/constantes";
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 export function LandingPageSalud() {
@@ -31,10 +31,9 @@ export function LandingPageSalud() {
         @media (prefers-reduced-motion: no-preference) {
           html { scroll-behavior: smooth; }
         }
-        ::selection { background: #47556933; }
       `}</style>
 
-      <div className="min-h-screen bg-white text-slate-900 antialiased overflow-x-hidden">
+      <div data-sector="salud" className="min-h-screen bg-white text-slate-900 antialiased overflow-x-hidden">
         <Navbar
           secciones={[
             { href: "#caracteristicas", etiqueta: "Características" },
@@ -47,17 +46,17 @@ export function LandingPageSalud() {
 
         {/* ── HERO ──────────────────────────────────────────────────────────── */}
         <section className="relative pt-36 pb-24 md:pt-44 md:pb-32 overflow-hidden">
-          <div className="absolute inset-0 -z-10" style={{ backgroundImage: "radial-gradient(#33415520 1px, transparent 1px)", backgroundSize: "32px 32px" }} />
+          <div className="absolute inset-0 -z-10" style={{ backgroundImage: "radial-gradient(rgb(var(--neutral-700) / 0.12) 1px, transparent 1px)", backgroundSize: "32px 32px" }} />
           <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-white to-transparent -z-10" />
 
           <div className="max-w-6xl mx-auto px-6">
             <div className="max-w-2xl">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold mb-8" style={{ backgroundColor: "#F1F5F9", color: "#334155", border: "1px solid #E2E8F0" }}>
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold mb-8" style={{ backgroundColor: "rgb(var(--neutral-100))", color: "rgb(var(--neutral-700))", border: "1px solid rgb(var(--neutral-200))" }}>
                 <span className="w-1.5 h-1.5 rounded-full bg-slate-500" />
                 Para profesionales de la salud · México
               </div>
 
-              <h1 className="font-black leading-[1.02] tracking-tight mb-7" style={{ fontSize: "clamp(3rem, 6vw, 4.25rem)" }}>
+              <h1 className="font-bold leading-[1.04] tracking-[-0.02em] mb-7" style={{ fontSize: "clamp(3rem, 6vw, 4.25rem)" }}>
                 La agenda más simple
                 <br />
                 para tu
@@ -74,7 +73,7 @@ export function LandingPageSalud() {
                 <Link
                   to="/registro?sector=salud"
                   className="inline-flex items-center gap-2 px-7 py-3.5 text-sm font-bold text-white rounded-xl transition-all hover:-translate-y-0.5 hover:shadow-lg active:scale-95"
-                  style={{ backgroundColor: SLATE_700, boxShadow: `0 4px 16px -2px ${SLATE_700}44` }}
+                  style={{ backgroundColor: TINTA, boxShadow: `0 4px 16px -2px rgb(var(--color-ink) / 0.27)` }}
                 >
                   Crear mi cuenta
                   <Ico d={dArrow} className="w-4 h-4" />
@@ -99,7 +98,6 @@ export function LandingPageSalud() {
         <section className="border-y border-slate-100 bg-slate-50/60 py-5">
           <div className="max-w-6xl mx-auto px-6">
             <div className="flex flex-wrap items-center gap-x-6 gap-y-3 justify-center md:justify-between">
-              <p className="text-xs font-semibold text-slate-400 whitespace-nowrap uppercase tracking-widest">Ideal para</p>
               <div className="flex flex-wrap gap-2 justify-center">
                 {["Dentistas", "Psicólogos", "Terapeutas", "Nutriólogos", "Optometristas"].map(cat => (
                   <span key={cat} className="px-3 py-1.5 rounded-full text-xs font-medium bg-white text-slate-600 border border-slate-200">
@@ -115,10 +113,9 @@ export function LandingPageSalud() {
         <section id="caracteristicas" className="py-28 scroll-mt-20">
           <div className="max-w-6xl mx-auto px-6">
             <div className="text-center mb-16">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] mb-4" style={{ color: ACENTO }}>Características</p>
-              <h2 className="text-4xl md:text-5xl font-black text-slate-900 mb-5 leading-tight">
-                Todo lo que necesitas,
-                <br />nada de lo que no.
+              <h2 className="text-4xl md:text-5xl font-bold text-slate-900 mb-5 leading-tight">
+                Tu agenda llena,
+                <br />sin contestar el teléfono.
               </h2>
               <p className="text-slate-500 max-w-lg mx-auto text-base">Un sistema completo para gestionar tu consultorio, sin complejidad innecesaria.</p>
             </div>
@@ -152,8 +149,7 @@ export function LandingPageSalud() {
         <section id="precios" className="py-28 bg-white scroll-mt-20">
           <div className="max-w-6xl mx-auto px-6">
             <div className="text-center mb-10">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] mb-4" style={{ color: ACENTO }}>Precios</p>
-              <h2 className="text-4xl md:text-5xl font-black text-slate-900 mb-5">Sin sorpresas al final del mes</h2>
+              <h2 className="text-4xl md:text-5xl font-bold text-slate-900 mb-5">Sin sorpresas al final del mes</h2>
               <p className="text-slate-500 text-base max-w-md mx-auto">Un precio fijo, todo incluido. Sin comisiones por cita, sin módulos extras.</p>
             </div>
 
@@ -175,7 +171,7 @@ export function LandingPageSalud() {
                   className={`flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-bold transition-all duration-200 ${billedAnnually ? "bg-slate-900 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
                 >
                   Anual
-                  <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full transition-colors ${billedAnnually ? "bg-white/15 text-slate-200" : "bg-emerald-100 text-emerald-600"}`}>
+                  <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full transition-colors ${billedAnnually ? "bg-white/15 text-slate-200" : "bg-emerald-100 text-emerald-600"}`}>
                     Hasta −20%
                   </span>
                 </button>
@@ -226,8 +222,7 @@ export function LandingPageSalud() {
         <section id="preguntas" className="py-28 bg-slate-50 scroll-mt-20">
           <div className="max-w-3xl mx-auto px-6">
             <div className="text-center mb-16">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] mb-4" style={{ color: ACENTO }}>FAQ</p>
-              <h2 className="text-4xl md:text-5xl font-black text-slate-900 leading-tight">Lo que más nos preguntan</h2>
+              <h2 className="text-4xl md:text-5xl font-bold text-slate-900 leading-tight">Lo que más nos preguntan</h2>
             </div>
 
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm px-8">
@@ -260,43 +255,43 @@ export function LandingPageSalud() {
         />
 
         {/* ── FOOTER ────────────────────────────────────────────────────────── */}
-        <footer style={{ backgroundColor: "#070E1A" }} className="border-t border-white/5">
+        <footer className="bg-ink border-t border-white/5">
           <div className="max-w-6xl mx-auto px-6 py-12">
             <div className="grid md:grid-cols-4 gap-10 mb-10">
               <div className="md:col-span-2">
-                <span className="text-xl font-black">
+                <span className="text-xl font-bold">
                   <span className="text-white">Appoint</span>
                   <span style={{ color: GOLD }}>Va</span>
                 </span>
-                <p className="text-sm text-slate-500 mt-3 max-w-xs leading-relaxed">
+                <p className="text-sm text-slate-400 mt-3 max-w-xs leading-relaxed">
                   Agenda online para negocios de servicios en México. Sin llamadas, sin WhatsApps, sin complicaciones.
                 </p>
               </div>
 
               <div>
-                <p className="text-xs font-bold uppercase tracking-widest text-slate-600 mb-4">Producto</p>
+                <p className="text-sm font-semibold text-slate-300 mb-4">Producto</p>
                 <nav className="flex flex-col gap-2.5">
-                  <a href="#caracteristicas" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">Características</a>
-                  <a href="#preguntas" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">Preguntas</a>
-                  <a href="#precios" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">Precios</a>
-                  <Link to="/registro?sector=salud" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">Registrarse</Link>
-                  <Link to="/login" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">Iniciar sesión</Link>
+                  <a href="#caracteristicas" className="text-sm text-slate-400 hover:text-slate-200 transition-colors">Características</a>
+                  <a href="#preguntas" className="text-sm text-slate-400 hover:text-slate-200 transition-colors">Preguntas</a>
+                  <a href="#precios" className="text-sm text-slate-400 hover:text-slate-200 transition-colors">Precios</a>
+                  <Link to="/registro?sector=salud" className="text-sm text-slate-400 hover:text-slate-200 transition-colors">Registrarse</Link>
+                  <Link to="/login" className="text-sm text-slate-400 hover:text-slate-200 transition-colors">Iniciar sesión</Link>
                 </nav>
               </div>
 
               <div>
-                <p className="text-xs font-bold uppercase tracking-widest text-slate-600 mb-4">Legal y contacto</p>
+                <p className="text-sm font-semibold text-slate-300 mb-4">Legal y contacto</p>
                 <nav className="flex flex-col gap-2.5">
-                  <Link to="/privacidad" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">Privacidad</Link>
-                  <Link to="/terminos" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">Términos</Link>
-                  <a href="mailto:hola@appointva.com" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">hola@appointva.com</a>
+                  <Link to="/privacidad" className="text-sm text-slate-400 hover:text-slate-200 transition-colors">Privacidad</Link>
+                  <Link to="/terminos" className="text-sm text-slate-400 hover:text-slate-200 transition-colors">Términos</Link>
+                  <a href="mailto:hola@appointva.com" className="text-sm text-slate-400 hover:text-slate-200 transition-colors">hola@appointva.com</a>
                 </nav>
               </div>
             </div>
 
             <div className="border-t border-white/5 pt-6 flex flex-col md:flex-row items-center justify-between gap-3">
-              <p className="text-xs text-slate-600">© 2026 AppointVa · Hecho en México</p>
-              <p className="text-xs text-slate-600">Sistema de gestión de citas para negocios de servicios</p>
+              <p className="text-xs text-slate-400">© 2026 AppointVa · Hecho en México</p>
+              <p className="text-xs text-slate-400">Sistema de gestión de citas para negocios de servicios</p>
             </div>
           </div>
         </footer>

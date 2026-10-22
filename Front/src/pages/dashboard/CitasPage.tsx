@@ -606,7 +606,7 @@ export default function CitasPage() {
           onReagendar={(cita, nuevoInicio) => {
             const nueva = new Date(nuevoInicio).toLocaleString("es-MX", {
               weekday: "short", day: "numeric", month: "short",
-              hour: "2-digit", minute: "2-digit", hour12: true,
+              hour: "numeric", minute: "2-digit", hour12: true,
             });
             setConfirmDrag({ id: cita.id, nombre: cita.nombreCliente, nuevoInicio: nuevoInicio, label: nueva });
           }}
@@ -837,7 +837,7 @@ export default function CitasPage() {
                 value={fEditar.nombre}
                 onChange={(e) => setFEditar((p) => ({ ...p, nombre: e.target.value }))}
                 placeholder="Nombre completo"
-                className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm outline-none focus:border-slate-700"
+                className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm outline-none focus:border-accent-brand"
               />
             </div>
             <div>
@@ -853,7 +853,7 @@ export default function CitasPage() {
                 value={fEditar.telefono}
                 onChange={(e) => setFEditar((p) => ({ ...p, telefono: e.target.value }))}
                 placeholder="Sin teléfono"
-                className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm outline-none focus:border-slate-700"
+                className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm outline-none focus:border-accent-brand"
               />
             </div>
             <div>
@@ -871,7 +871,7 @@ export default function CitasPage() {
                   setEmailEditarError(validarEmailCliente(e.target.value));
                 }}
                 placeholder="correo@ejemplo.com"
-                className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-slate-100 ${
+                className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-accent-brand dark:bg-slate-800 dark:text-slate-100 ${
                   emailEditarError ? "border-red-400 bg-red-50 dark:bg-red-900/20" : "border-slate-200 dark:border-slate-600"
                 }`}
               />
@@ -919,7 +919,7 @@ export default function CitasPage() {
                 rows={4}
                 maxLength={1000}
                 placeholder="Preferencias del cliente, indicaciones especiales, alergias..."
-                className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm outline-none focus:border-slate-700 resize-none"
+                className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm outline-none focus:border-accent-brand resize-none"
               />
               <p className="text-xs text-slate-500 dark:text-slate-400 text-right mt-1">{notasTexto.length}/1000</p>
             </div>
@@ -1076,7 +1076,7 @@ export default function CitasPage() {
                 value={fCliente.nombre}
                 onChange={(e) => setFCliente((p) => ({ ...p, nombre: e.target.value }))}
                 placeholder="Nombre completo"
-                className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm outline-none focus:border-slate-700"
+                className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm outline-none focus:border-accent-brand"
               />
             </div>
 
@@ -1090,7 +1090,7 @@ export default function CitasPage() {
                 value={fCliente.telefono}
                 onChange={(e) => setFCliente((p) => ({ ...p, telefono: e.target.value }))}
                 placeholder="10 dígitos"
-                className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm outline-none focus:border-slate-700"
+                className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm outline-none focus:border-accent-brand"
               />
             </div>
 
@@ -1110,7 +1110,7 @@ export default function CitasPage() {
                 }}
                 onBlur={() => setEmailClienteError(validarEmailCliente(fCliente.email))}
                 placeholder="correo@ejemplo.com"
-                className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-slate-100 ${
+                className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-accent-brand dark:bg-slate-800 dark:text-slate-100 ${
                   emailClienteError ? "border-red-400 bg-red-50 dark:bg-red-900/20" : "border-slate-200 dark:border-slate-600"
                 }`}
               />
@@ -1131,7 +1131,7 @@ export default function CitasPage() {
                 onChange={(e) => setFCliente((p) => ({ ...p, notas: e.target.value }))}
                 rows={2}
                 placeholder="Preferencias, indicaciones..."
-                className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm outline-none focus:border-slate-700 resize-none"
+                className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm outline-none focus:border-accent-brand resize-none"
               />
             </div>
 
@@ -1267,7 +1267,7 @@ export default function CitasPage() {
                     required
                     value={fClienteRepetir.nombre}
                     onChange={(e) => setFClienteRepetir((p) => ({ ...p, nombre: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm outline-none focus:border-slate-700"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm outline-none focus:border-accent-brand"
                   />
                 </div>
                 <div>
@@ -1278,7 +1278,7 @@ export default function CitasPage() {
                     required
                     value={fClienteRepetir.telefono}
                     onChange={(e) => setFClienteRepetir((p) => ({ ...p, telefono: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm outline-none focus:border-slate-700"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm outline-none focus:border-accent-brand"
                   />
                 </div>
                 <div>
@@ -1296,7 +1296,7 @@ export default function CitasPage() {
                       if (emailRepetirError) setEmailRepetirError(validarEmailCliente(e.target.value));
                     }}
                     onBlur={() => setEmailRepetirError(validarEmailCliente(fClienteRepetir.email))}
-                    className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-slate-100 ${
+                    className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-accent-brand dark:bg-slate-800 dark:text-slate-100 ${
                       emailRepetirError ? "border-red-400 bg-red-50 dark:bg-red-900/20" : "border-slate-200 dark:border-slate-600"
                     }`}
                   />
@@ -1315,7 +1315,7 @@ export default function CitasPage() {
                     value={fClienteRepetir.notas}
                     onChange={(e) => setFClienteRepetir((p) => ({ ...p, notas: e.target.value }))}
                     rows={2}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm outline-none focus:border-slate-700 resize-none"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm outline-none focus:border-accent-brand resize-none"
                   />
                 </div>
                 <div className="flex gap-2">

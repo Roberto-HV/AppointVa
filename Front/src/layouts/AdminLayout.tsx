@@ -14,7 +14,7 @@ const CONSULTA_ESCRITORIO = "(min-width: 768px)";
 
 const ENLACE_NAV =
   "flex items-center gap-1 min-h-[44px] px-4 rounded-xl text-sm font-medium transition-colors " +
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40";
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-brand/40 dark:focus-visible:ring-accent-brand/40";
 const ENLACE_NAV_ACTIVO = "bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400";
 const ENLACE_NAV_INACTIVO =
   "text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200";
@@ -87,7 +87,7 @@ export default function AdminLayout() {
           aria-label="Abrir el menú"
           aria-expanded={sidebarOpen}
           aria-controls="menu-admin"
-          className="min-h-[44px] min-w-[44px] -ml-2 flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40"
+          className="min-h-[44px] min-w-[44px] -ml-2 flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-brand/40 dark:focus-visible:ring-accent-brand/40"
         >
           <Menu size={22} aria-hidden="true" />
         </button>
@@ -102,7 +102,7 @@ export default function AdminLayout() {
         <button
           onClick={toggle}
           aria-label={theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
-          className="ml-auto min-h-[44px] min-w-[44px] -mr-2 flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40"
+          className="ml-auto min-h-[44px] min-w-[44px] -mr-2 flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-brand/40 dark:focus-visible:ring-accent-brand/40"
         >
           {theme === "dark" ? <Sun size={18} aria-hidden="true" /> : <Moon size={18} aria-hidden="true" />}
         </button>
@@ -139,7 +139,7 @@ export default function AdminLayout() {
             ref={botonCerrarRef}
             onClick={cerrarSidebar}
             aria-label="Cerrar el menú"
-            className="md:hidden min-h-[44px] min-w-[44px] -mr-2 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40"
+            className="md:hidden min-h-[44px] min-w-[44px] -mr-2 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-brand/40 dark:focus-visible:ring-accent-brand/40"
           >
             <X size={20} aria-hidden="true" />
           </button>
@@ -170,7 +170,7 @@ export default function AdminLayout() {
           <p className="text-xs text-slate-400 dark:text-slate-500 truncate mb-3">{usuario?.email}</p>
           <button
             onClick={handleLogout}
-            className="min-h-[44px] lg:min-h-[36px] px-2 -mx-2 rounded-lg text-xs text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40"
+            className="min-h-[44px] lg:min-h-[36px] px-2 -mx-2 rounded-lg text-xs text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-brand/40 dark:focus-visible:ring-accent-brand/40"
           >
             Cerrar sesión
           </button>
@@ -191,7 +191,7 @@ export default function AdminLayout() {
           <button
             onClick={toggle}
             aria-label={theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
-            className="min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40"
+            className="min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-brand/40 dark:focus-visible:ring-accent-brand/40"
             title={theme === "dark" ? "Modo claro" : "Modo oscuro"}
           >
             {theme === "dark" ? <Sun size={18} aria-hidden="true" /> : <Moon size={18} aria-hidden="true" />}

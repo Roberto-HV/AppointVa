@@ -24,7 +24,7 @@ const ESTADOS_CONFIG: Record<string, { label: string; color: string }> = {
 
 function formatFecha(iso: string) {
   return new Date(iso).toLocaleDateString("es-MX", {
-    day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
+    day: "2-digit", month: "short", year: "numeric", hour: "numeric", minute: "2-digit",
   });
 }
 

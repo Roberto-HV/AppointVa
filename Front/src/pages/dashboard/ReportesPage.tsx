@@ -392,7 +392,7 @@ export default function ReportesPage() {
               <thead>
                 <tr className="border-b border-slate-100 dark:border-slate-700">
                   {["Código", "Cliente", "Servicio", "Empleado", "Fecha", "Precio", "Pagada", "Estado"].map((h) => (
-                    <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide whitespace-nowrap">
+                    <th key={h} className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 whitespace-nowrap">
                       {h}
                     </th>
                   ))}
@@ -514,11 +514,11 @@ export default function ReportesPage() {
                   <thead>
                     <tr className="border-b border-slate-100 dark:border-slate-700">
                       <th className="px-3 py-3 w-8"></th>
-                      <th className="px-5 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Empleado</th>
-                      <th className="px-5 py-3 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Citas</th>
-                      <th className="px-5 py-3 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Ingresos</th>
-                      <th className="px-5 py-3 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide hidden sm:table-cell">Ticket prom.</th>
-                      <th className="px-5 py-3 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">% del total</th>
+                      <th className="px-5 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400">Empleado</th>
+                      <th className="px-5 py-3 text-right text-xs font-medium text-slate-500 dark:text-slate-400">Citas</th>
+                      <th className="px-5 py-3 text-right text-xs font-medium text-slate-500 dark:text-slate-400">Ingresos</th>
+                      <th className="px-5 py-3 text-right text-xs font-medium text-slate-500 dark:text-slate-400 hidden sm:table-cell">Ticket prom.</th>
+                      <th className="px-5 py-3 text-right text-xs font-medium text-slate-500 dark:text-slate-400">% del total</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -662,9 +662,9 @@ export default function ReportesPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-slate-100 dark:border-slate-700">
-                      <th className="px-5 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Empleado</th>
-                      <th className="px-5 py-3 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Citas</th>
-                      <th className="px-5 py-3 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Ingresos</th>
+                      <th className="px-5 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400">Empleado</th>
+                      <th className="px-5 py-3 text-right text-xs font-medium text-slate-500 dark:text-slate-400">Citas</th>
+                      <th className="px-5 py-3 text-right text-xs font-medium text-slate-500 dark:text-slate-400">Ingresos</th>
                     </tr>
                   </thead>
                   <tbody>

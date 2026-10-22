@@ -167,14 +167,14 @@ describe("PerfilPage — 5 tabs", () => {
     await waitFor(() => screen.getByText("Fondo de portada"));
 
     const grupo = screen.getByRole("group", { name: "Fondo de portada" });
-    await userEvent.click(within(grupo).getByRole("radio", { name: "Arcos" }));
+    await userEvent.click(within(grupo).getByRole("radio", { name: "Tinte suave" }));
     expect(screen.getByText(/Fondo sin guardar/)).toBeInTheDocument();
 
     await userEvent.click(screen.getAllByRole("button", { name: "Guardar cambios" })[0]);
 
     await waitFor(() =>
       expect(negociosApi.actualizarPerfil).toHaveBeenCalledWith(
-        expect.objectContaining({ portadaPreset: "geo-arcos" })
+        expect.objectContaining({ portadaPreset: "deg-halo" })
       )
     );
   });

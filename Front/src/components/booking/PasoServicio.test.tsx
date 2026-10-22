@@ -70,7 +70,15 @@ describe("PasoServicio", () => {
     render(
       <PasoServicio servicios={[]} seleccionado={null} onSeleccionar={vi.fn()} />
     );
-    expect(screen.getByText(/¿Qué servicio necesitas?/i)).toBeInTheDocument();
+    expect(screen.getByText("¿Qué te hacemos hoy?")).toBeInTheDocument();
+    expect(screen.queryByText(/para continuar/)).not.toBeInTheDocument();
+  });
+
+  it("asks about the type of consultation in the salud sector", () => {
+    render(
+      <PasoServicio servicios={[]} seleccionado={null} onSeleccionar={vi.fn()} sector="salud" />
+    );
+    expect(screen.getByText("¿Qué tipo de consulta necesitas?")).toBeInTheDocument();
   });
 
   it("does not invent a category heading when the business uses no categories", () => {

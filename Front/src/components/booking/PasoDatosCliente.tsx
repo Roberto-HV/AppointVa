@@ -201,7 +201,7 @@ export default function PasoDatosCliente({ servicio, empleado, slot, formId, slu
         {/* El teléfono va primero: es la llave con la que reconocemos al cliente, y
             preguntarlo después del nombre haría inútil el autocompletado. */}
         <div>
-          <label htmlFor={ids.telefono} className="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">
+          <label htmlFor={ids.telefono} className="block text-sm font-medium text-slate-700 mb-1.5">
             Teléfono <span aria-hidden="true">*</span>
           </label>
           <input
@@ -267,7 +267,7 @@ export default function PasoDatosCliente({ servicio, empleado, slot, formId, slu
         </div>
 
         <div>
-          <label htmlFor={ids.nombre} className="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">
+          <label htmlFor={ids.nombre} className="block text-sm font-medium text-slate-700 mb-1.5">
             Nombre completo <span aria-hidden="true">*</span>
           </label>
           <input
@@ -287,7 +287,7 @@ export default function PasoDatosCliente({ servicio, empleado, slot, formId, slu
         </div>
 
         <div>
-          <label htmlFor={ids.email} className="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">
+          <label htmlFor={ids.email} className="block text-sm font-medium text-slate-700 mb-1.5">
             Correo electrónico <span className="text-slate-500 font-normal normal-case">(opcional)</span>
           </label>
           <input
@@ -392,8 +392,8 @@ export default function PasoDatosCliente({ servicio, empleado, slot, formId, slu
         {bloqueDescuento}
 
         {/* Resumen visual de la cita */}
-        <div className="bg-slate-900 text-white rounded-2xl p-4">
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">Resumen de tu cita</p>
+        <div className="bg-ink text-white rounded-2xl p-4">
+          <p className="text-sm font-semibold text-white/80 mb-3">Resumen de tu cita</p>
           <div className="space-y-2.5">
             <div className="flex items-start gap-3">
               <div className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center shrink-0 mt-0.5">

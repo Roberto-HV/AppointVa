@@ -10,6 +10,9 @@ import {
   formatFechaHoraCompleta,
   formatFechaMx,
   capitalizarPrimera,
+  formatHora,
+  formatHoraDe,
+  monogramaNegocio,
 } from "./formatters";
 
 // Español: solo la primera letra va en mayúscula; días, meses y "de" no.
@@ -48,6 +51,15 @@ describe("formatPrecioCorto", () => {
 });
 
 describe("formatPrecio", () => {
+  it("pesos enteros sin centavos: se lee como menú, no como factura", () => {
+    expect(formatPrecio(280)).toBe("$280");
+    expect(formatPrecio(1250)).toBe("$1,250");
+  });
+
+  it("con centavos solo cuando los hay", () => {
+    expect(formatPrecio(280.5)).toBe("$280.50");
+  });
+
   it("formatea un número entero como MXN", () => {
     expect(formatPrecio(100)).toContain("100");
     expect(formatPrecio(100)).toMatch(/MX\$|\\$|100/);
@@ -204,5 +216,38 @@ describe("nombreConInicial (DC-28)", () => {
     const { nombreConInicial } = await import("./formatters");
     expect(nombreConInicial("Juan Carlos Pérez")).toBe("Juan C.");
     expect(nombreConInicial("María José de la Torre")).toBe("María J.");
+  });
+});
+
+describe("formato único de hora", () => {
+  it("no pone cero a la izquierda en la hora", () => {
+    expect(formatHora("2026-06-15T09:05:00")).toMatch(/^9:05\s?[ap]/);
+    expect(formatHoraDe(new Date(2026, 5, 15, 16, 30))).toMatch(/^4:30\s?p/);
+  });
+
+  it("usa el mismo formato en las fechas con hora", () => {
+    expect(formatFechaHora("2026-06-15T09:05:00")).toContain(formatHora("2026-06-15T09:05:00"));
+    expect(formatFechaHoraCorta("2026-06-15T09:05:00")).not.toMatch(/09:05/);
+  });
+});
+
+describe("monogramaNegocio", () => {
+  it("salta la palabra del giro y toma la distintiva", () => {
+    expect(monogramaNegocio("Salón Aramis")).toBe("A");
+    expect(monogramaNegocio("Barbería Luis")).toBe("L");
+    expect(monogramaNegocio("Clínica Dental Sonrisa")).toBe("D");
+    expect(monogramaNegocio("Consultorio de la Dra. Pérez")).toBe("D");
+  });
+
+  it("ignora acentos y mayúsculas al reconocer el giro", () => {
+    expect(monogramaNegocio("SALON aramis")).toBe("A");
+    expect(monogramaNegocio("barberia el Güero")).toBe("G");
+  });
+
+  it("usa la primera palabra si todas son genéricas y tolera vacío", () => {
+    expect(monogramaNegocio("Salón")).toBe("S");
+    expect(monogramaNegocio("Lashes_crisantemo")).toBe("L");
+    expect(monogramaNegocio("")).toBe("");
+    expect(monogramaNegocio(null)).toBe("");
   });
 });

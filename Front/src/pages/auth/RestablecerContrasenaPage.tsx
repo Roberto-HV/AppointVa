@@ -140,7 +140,7 @@ export default function RestablecerContrasenaPage() {
                       onClick={() => setMostrarNueva((v) => !v)}
                       aria-label={mostrarNueva ? "Ocultar contraseña" : "Mostrar contraseña"}
                       aria-pressed={mostrarNueva}
-                      className="absolute right-0 top-1/2 -translate-y-1/2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-slate-500 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40"
+                      className="absolute right-0 top-1/2 -translate-y-1/2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-slate-500 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-brand/40"
                     >
                       {mostrarNueva ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
@@ -174,7 +174,7 @@ export default function RestablecerContrasenaPage() {
                       onClick={() => setMostrarConfirmar((v) => !v)}
                       aria-label={mostrarConfirmar ? "Ocultar contraseña" : "Mostrar contraseña"}
                       aria-pressed={mostrarConfirmar}
-                      className="absolute right-0 top-1/2 -translate-y-1/2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-slate-500 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40"
+                      className="absolute right-0 top-1/2 -translate-y-1/2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-slate-500 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-brand/40"
                     >
                       {mostrarConfirmar ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>

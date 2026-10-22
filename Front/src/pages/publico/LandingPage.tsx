@@ -12,7 +12,7 @@ import { FeatureCard } from "../../components/landing/FeatureCard";
 import { PricingCard } from "../../components/landing/PricingCard";
 import { Ico } from "../../components/landing/Ico";
 import { dArrow, dBell, dCalendar, dChart, dShield, dStar, dTag, dUsers } from "../../components/landing/iconos";
-import { ACENTO, GOLD, SLATE_700 } from "../../components/landing/constantes";
+import { ACENTO, GOLD, TINTA } from "../../components/landing/constantes";
 
 // ─── Phone mockup ─────────────────────────────────────────────────────────────
 function PhoneMockup() {
@@ -21,8 +21,6 @@ function PhoneMockup() {
 
   return (
     <div className="relative select-none pointer-events-none">
-      <div className="absolute inset-0 blur-3xl opacity-25 scale-90 -z-10" style={{ backgroundColor: "#94A3B8", borderRadius: "50%" }} />
-
       <div className="absolute -top-5 -right-4 z-20 bg-white rounded-2xl shadow-2xl shadow-slate-200 px-3.5 py-2.5 flex items-center gap-2.5 min-w-max">
         <div className="w-7 h-7 rounded-full bg-emerald-50 flex items-center justify-center"><Bell size={14} className="text-emerald-700" aria-hidden="true" /></div>
         <div>
@@ -36,7 +34,7 @@ function PhoneMockup() {
         <div className="absolute -left-[3px] top-[120px] w-[3px] h-6 rounded-l-full bg-[#1a1a1a]" />
         <div className="absolute -right-[3px] top-[100px] w-[3px] h-12 rounded-r-full bg-[#1a1a1a]" />
 
-        <div className="rounded-[2.2rem] bg-[#F9FAFB] overflow-hidden h-[510px] flex flex-col">
+        <div className="rounded-[2.2rem] bg-slate-50 overflow-hidden h-[510px] flex flex-col">
           <div className="flex justify-between items-center px-6 pt-3 pb-1">
             <span className="text-[11px] font-bold text-slate-700">9:41</span>
             <div className="absolute left-1/2 -translate-x-1/2 top-[14px] w-[80px] h-[22px] rounded-full bg-black" />
@@ -56,7 +54,7 @@ function PhoneMockup() {
           </div>
 
           <div className="mx-3 mt-2 mb-1 px-3 py-2.5 bg-white rounded-2xl border border-slate-100 flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl flex items-center justify-center text-[11px] font-black text-white flex-shrink-0" style={{ background: "linear-gradient(135deg, #475569, #1E293B)" }}>BL</div>
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center text-[11px] font-bold text-white flex-shrink-0" style={{ background: "linear-gradient(135deg, rgb(var(--neutral-600)), rgb(var(--neutral-800)))" }}>BL</div>
             <div className="min-w-0">
               <p className="text-[11px] font-bold text-slate-900 leading-none mb-0.5">Barbería Luis</p>
               <p className="text-[9px] text-slate-400 truncate">appointva.com/b/barberia-luis</p>
@@ -65,22 +63,22 @@ function PhoneMockup() {
 
           <div className="flex gap-1 px-4 mb-2">
             {[1, 2, 3, 4].map(s => (
-              <div key={s} className="flex-1 h-1 rounded-full" style={{ backgroundColor: s <= 3 ? SLATE_700 : "#E2E8F0" }} />
+              <div key={s} className="flex-1 h-1 rounded-full" style={{ backgroundColor: s <= 3 ? TINTA : "rgb(var(--neutral-200))" }} />
             ))}
           </div>
 
           <div className="flex-1 px-4 flex flex-col min-h-0">
-            <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest mb-2">Elige tu horario</p>
-            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl mb-3 self-start" style={{ backgroundColor: "#F1F5F9", border: "1px solid #E2E8F0" }}>
-              <Scissors size={11} aria-hidden="true" style={{ color: SLATE_700 }} />
-              <span className="text-[10px] font-bold" style={{ color: SLATE_700 }}>{`Corte · 45 min · $250 ${MONEDA}`}</span>
+            <p className="text-[10px] font-semibold text-slate-500 mb-2">Elige tu horario</p>
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl mb-3 self-start" style={{ backgroundColor: "rgb(var(--neutral-100))", border: "1px solid rgb(var(--neutral-200))" }}>
+              <Scissors size={11} aria-hidden="true" style={{ color: TINTA }} />
+              <span className="text-[10px] font-bold" style={{ color: TINTA }}>{`Corte · 45 min · $250 ${MONEDA}`}</span>
             </div>
 
             <div className="grid grid-cols-4 gap-1 mb-3">
               {days.map(({ d, n }, i) => (
-                <div key={d} className="rounded-xl py-1.5 text-center" style={i === 2 ? { backgroundColor: SLATE_700 } : { backgroundColor: "#F1F5F9" }}>
-                  <p className="text-[9px] font-bold" style={{ color: i === 2 ? "#fff" : "#64748B" }}>{d}</p>
-                  <p className="text-[11px] font-black" style={{ color: i === 2 ? "#fff" : "#334155" }}>{n}</p>
+                <div key={d} className="rounded-xl py-1.5 text-center" style={i === 2 ? { backgroundColor: TINTA } : { backgroundColor: "rgb(var(--neutral-100))" }}>
+                  <p className="text-[9px] font-bold" style={{ color: i === 2 ? "#fff" : "rgb(var(--neutral-500))" }}>{d}</p>
+                  <p className="text-[11px] font-bold" style={{ color: i === 2 ? "#fff" : "rgb(var(--neutral-700))" }}>{n}</p>
                 </div>
               ))}
             </div>
@@ -90,7 +88,7 @@ function PhoneMockup() {
                 const selected = i === 4;
                 const unavailable = i === 2;
                 return (
-                  <div key={t} className="text-center py-1.5 rounded-xl text-[10px] font-bold" style={{ backgroundColor: selected ? SLATE_700 : unavailable ? "#F8FAFC" : "white", color: selected ? "white" : unavailable ? "#CBD5E1" : "#334155", border: selected ? "none" : "1px solid #E2E8F0", textDecoration: unavailable ? "line-through" : "none" }}>
+                  <div key={t} className="text-center py-1.5 rounded-xl text-[10px] font-bold" style={{ backgroundColor: selected ? TINTA : unavailable ? "rgb(var(--neutral-50))" : "white", color: selected ? "white" : unavailable ? "rgb(var(--neutral-300))" : "rgb(var(--neutral-700))", border: selected ? "none" : "1px solid rgb(var(--neutral-200))", textDecoration: unavailable ? "line-through" : "none" }}>
                     {t}
                   </div>
                 );
@@ -108,7 +106,7 @@ function PhoneMockup() {
           </div>
 
           <div className="px-4 pb-5 pt-3">
-            <div className="w-full py-2.5 rounded-2xl text-[12px] font-black text-white text-center" style={{ backgroundColor: SLATE_700 }}>Confirmar reserva →</div>
+            <div className="w-full py-2.5 rounded-2xl text-[12px] font-bold text-white text-center" style={{ backgroundColor: TINTA }}>Confirmar reserva →</div>
           </div>
         </div>
       </div>
@@ -121,7 +119,7 @@ function StepCard({ number, title, desc, delay }: { number: string; title: strin
   const fade = useFadeInUp(delay);
   return (
     <div ref={fade.ref} style={fade.style} className="text-center">
-      <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-white font-black text-lg mb-6 mx-auto relative z-10 shadow-lg" style={{ backgroundColor: SLATE_700, boxShadow: `0 8px 24px -4px ${SLATE_700}55` }}>
+      <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-white font-bold text-lg mb-6 mx-auto relative z-10 shadow-lg" style={{ backgroundColor: TINTA, boxShadow: `0 8px 24px -4px rgb(var(--color-ink) / 0.33)` }}>
         {number}
       </div>
       <h3 className="text-lg font-bold text-slate-900 mb-3">{title}</h3>
@@ -144,7 +142,7 @@ function NegocioCard({ nombre, tipo, slug, initials, delay = 0 }: {
         aria-label={`Abrir la página de reservas de ${nombre}`}
         className="group flex items-center gap-4 p-5 rounded-2xl border border-slate-200 bg-white hover:border-slate-300 hover:shadow-lg hover:shadow-slate-100/50 transition-all duration-300"
       >
-        <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-sm font-black text-white flex-shrink-0" style={{ background: "linear-gradient(135deg, #475569, #1E293B)" }}>
+        <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-sm font-bold text-white flex-shrink-0" style={{ background: "linear-gradient(135deg, rgb(var(--neutral-600)), rgb(var(--neutral-800)))" }}>
           {initials}
         </div>
 
@@ -218,7 +216,6 @@ export default function LandingPage() {
         @media (prefers-reduced-motion: no-preference) {
           html { scroll-behavior: smooth; }
         }
-        ::selection { background: #47556933; }
       `}</style>
 
       <div className="min-h-screen bg-white text-slate-900 antialiased overflow-x-hidden">
@@ -234,18 +231,18 @@ export default function LandingPage() {
 
         {/* ── HERO ──────────────────────────────────────────────────────────── */}
         <section ref={heroRef} className="relative pt-36 pb-24 md:pt-44 md:pb-32 overflow-hidden">
-          <div className="absolute inset-0 -z-10" style={{ backgroundImage: "radial-gradient(#33415520 1px, transparent 1px)", backgroundSize: "32px 32px" }} />
+          <div className="absolute inset-0 -z-10" style={{ backgroundImage: "radial-gradient(rgb(var(--neutral-700) / 0.12) 1px, transparent 1px)", backgroundSize: "32px 32px" }} />
           <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-white to-transparent -z-10" />
 
           <div className="max-w-6xl mx-auto px-6">
             <div className="grid md:grid-cols-2 gap-12 lg:gap-20 items-center">
               <div>
-                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold mb-8" style={{ backgroundColor: "#F1F5F9", color: "#334155", border: "1px solid #E2E8F0" }}>
+                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold mb-8" style={{ backgroundColor: "rgb(var(--neutral-100))", color: "rgb(var(--neutral-700))", border: "1px solid rgb(var(--neutral-200))" }}>
                   <span className="w-1.5 h-1.5 rounded-full bg-slate-500" />
                   Para negocios de servicios · México
                 </div>
 
-                <h1 className="font-black leading-[1.02] tracking-tight mb-7" style={{ fontSize: "clamp(3rem, 6vw, 4.25rem)" }}>
+                <h1 className="font-display font-semibold leading-[1.04] tracking-[-0.02em] mb-7" style={{ fontSize: "clamp(3rem, 6vw, 4.25rem)" }}>
                   Tu agenda
                   <br />
                   online.
@@ -263,7 +260,7 @@ export default function LandingPage() {
                   <Link
                     to="/registro"
                     className="inline-flex items-center justify-center min-w-[180px] px-7 py-3.5 text-sm font-bold text-white rounded-xl border border-transparent transition-all hover:-translate-y-0.5 hover:shadow-lg active:scale-95"
-                    style={{ backgroundColor: SLATE_700, boxShadow: `0 4px 16px -2px ${SLATE_700}44` }}
+                    style={{ backgroundColor: TINTA, boxShadow: `0 4px 16px -2px rgb(var(--color-ink) / 0.27)` }}
                   >
                     Crear mi cuenta
                   </Link>
@@ -298,7 +295,7 @@ export default function LandingPage() {
               { val: `$${PRECIOS_PLANES.basico.mensual}`, label: `${MONEDA} al mes, todo incluido` },
             ].map(({ val, label }) => (
               <div key={label} className="text-center md:text-left">
-                <p className="text-3xl font-black text-slate-900 mb-1 tabular-nums" style={{ fontVariantNumeric: "tabular-nums" }}>{val}</p>
+                <p className="text-3xl font-semibold text-slate-900 mb-1 tabular-nums">{val}</p>
                 <p className="text-sm text-slate-500 leading-snug">{label}</p>
               </div>
             ))}
@@ -309,7 +306,6 @@ export default function LandingPage() {
         <section className="border-y border-slate-100 bg-slate-50/60 py-5">
           <div className="max-w-6xl mx-auto px-6">
             <div className="flex flex-wrap items-center gap-x-6 gap-y-3 justify-center md:justify-between">
-              <p className="text-xs font-semibold text-slate-400 whitespace-nowrap uppercase tracking-widest">Ideal para</p>
               <div className="flex flex-wrap gap-2 justify-center">
                 {["Barberías", "Salones de belleza", "Clínicas", "Spas", "Talleres de uñas"].map(cat => (
                   <span key={cat} className="px-3 py-1.5 rounded-full text-xs font-medium bg-white text-slate-600 border border-slate-200">
@@ -325,10 +321,9 @@ export default function LandingPage() {
         <section id="caracteristicas" className="py-28 scroll-mt-20">
           <div className="max-w-6xl mx-auto px-6">
             <div className="text-center mb-16">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] mb-4" style={{ color: ACENTO }}>Características</p>
-              <h2 className="text-4xl md:text-5xl font-black text-slate-900 mb-5 leading-tight">
-                Todo lo que necesitas,
-                <br />nada de lo que no.
+              <h2 className="font-display text-4xl md:text-5xl font-semibold text-slate-900 mb-5 leading-tight">
+                Tu agenda llena,
+                <br />sin contestar el teléfono.
               </h2>
               <p className="text-slate-500 max-w-lg mx-auto text-base">Un sistema completo para gestionar tu negocio de servicios, sin complejidad innecesaria.</p>
             </div>
@@ -348,8 +343,7 @@ export default function LandingPage() {
         <section id="como-funciona" className="py-28 scroll-mt-20">
           <div className="max-w-6xl mx-auto px-6">
             <div className="text-center mb-20">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] mb-4" style={{ color: ACENTO }}>Cómo funciona</p>
-              <h2 className="text-4xl md:text-5xl font-black text-slate-900 mb-5">Listo en 3 pasos</h2>
+              <h2 className="font-display text-4xl md:text-5xl font-semibold text-slate-900 mb-5">Listo en 3 pasos</h2>
               <p className="text-slate-500 text-base">Sin técnicos, sin contratos, sin complicaciones.</p>
             </div>
 
@@ -366,8 +360,7 @@ export default function LandingPage() {
         <section id="precios" className="py-28 bg-slate-50 scroll-mt-20">
           <div className="max-w-6xl mx-auto px-6">
             <div className="text-center mb-10">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] mb-4" style={{ color: ACENTO }}>Precios</p>
-              <h2 className="text-4xl md:text-5xl font-black text-slate-900 mb-5">Sin sorpresas al final del mes</h2>
+              <h2 className="font-display text-4xl md:text-5xl font-semibold text-slate-900 mb-5">Sin sorpresas al final del mes</h2>
               <p className="text-slate-500 text-base max-w-md mx-auto">Un precio fijo, todo incluido. Sin comisiones por cita, sin módulos extras.</p>
             </div>
 
@@ -389,7 +382,7 @@ export default function LandingPage() {
                   className={`flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-bold transition-all duration-200 ${billedAnnually ? "bg-slate-900 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
                 >
                   Anual
-                  <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full transition-colors ${billedAnnually ? "bg-white/15 text-slate-200" : "bg-emerald-100 text-emerald-600"}`}>
+                  <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full transition-colors ${billedAnnually ? "bg-white/15 text-slate-200" : "bg-emerald-100 text-emerald-600"}`}>
                     Hasta −20%
                   </span>
                 </button>
@@ -431,8 +424,7 @@ export default function LandingPage() {
           <div className="max-w-5xl mx-auto px-6">
             <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
               <div className="text-center lg:text-left">
-                <p className="text-xs font-bold uppercase tracking-[0.2em] mb-4" style={{ color: ACENTO }}>Negocios reales</p>
-                <h2 className="text-4xl md:text-5xl font-black text-slate-900 mb-5 leading-tight">
+                <h2 className="font-display text-4xl md:text-5xl font-semibold text-slate-900 mb-5 leading-tight">
                   Negocios que ya reservan con AppointVa
                 </h2>
                 <p className="text-slate-500 text-base max-w-sm mx-auto lg:mx-0">
@@ -465,8 +457,7 @@ export default function LandingPage() {
         <section className="py-28 bg-slate-50 scroll-mt-20">
           <div className="max-w-3xl mx-auto px-6">
             <div className="text-center mb-16">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] mb-4" style={{ color: ACENTO }}>FAQ</p>
-              <h2 className="text-4xl md:text-5xl font-black text-slate-900 leading-tight">Lo que más nos preguntan</h2>
+              <h2 className="font-display text-4xl md:text-5xl font-semibold text-slate-900 leading-tight">Lo que más nos preguntan</h2>
             </div>
 
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm px-8">
@@ -504,43 +495,43 @@ export default function LandingPage() {
         />
 
         {/* ── FOOTER ────────────────────────────────────────────────────────── */}
-        <footer style={{ backgroundColor: "#070E1A" }} className="border-t border-white/5">
+        <footer className="bg-ink border-t border-white/5">
           <div className="max-w-6xl mx-auto px-6 py-12">
             <div className="grid md:grid-cols-4 gap-10 mb-10">
               <div className="md:col-span-2">
-                <span className="text-xl font-black">
+                <span className="text-xl font-bold">
                   <span className="text-white">Appoint</span>
                   <span style={{ color: GOLD }}>Va</span>
                 </span>
-                <p className="text-sm text-slate-500 mt-3 max-w-xs leading-relaxed">
+                <p className="text-sm text-slate-400 mt-3 max-w-xs leading-relaxed">
                   Agenda online para negocios de servicios en México. Sin llamadas, sin WhatsApps, sin complicaciones.
                 </p>
               </div>
 
               <div>
-                <p className="text-xs font-bold uppercase tracking-widest text-slate-600 mb-4">Producto</p>
+                <p className="text-sm font-semibold text-slate-300 mb-4">Producto</p>
                 <nav className="flex flex-col gap-2.5">
-                  <a href="#caracteristicas" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">Características</a>
-                  <a href="#como-funciona" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">Cómo funciona</a>
-                  <a href="#precios" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">Precios</a>
-                  <Link to="/registro" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">Registrarse</Link>
-                  <Link to="/login" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">Iniciar sesión</Link>
+                  <a href="#caracteristicas" className="text-sm text-slate-400 hover:text-slate-200 transition-colors">Características</a>
+                  <a href="#como-funciona" className="text-sm text-slate-400 hover:text-slate-200 transition-colors">Cómo funciona</a>
+                  <a href="#precios" className="text-sm text-slate-400 hover:text-slate-200 transition-colors">Precios</a>
+                  <Link to="/registro" className="text-sm text-slate-400 hover:text-slate-200 transition-colors">Registrarse</Link>
+                  <Link to="/login" className="text-sm text-slate-400 hover:text-slate-200 transition-colors">Iniciar sesión</Link>
                 </nav>
               </div>
 
               <div>
-                <p className="text-xs font-bold uppercase tracking-widest text-slate-600 mb-4">Legal y contacto</p>
+                <p className="text-sm font-semibold text-slate-300 mb-4">Legal y contacto</p>
                 <nav className="flex flex-col gap-2.5">
-                  <Link to="/privacidad" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">Privacidad</Link>
-                  <Link to="/terminos" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">Términos</Link>
-                  <a href="mailto:hola@appointva.com" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">hola@appointva.com</a>
+                  <Link to="/privacidad" className="text-sm text-slate-400 hover:text-slate-200 transition-colors">Privacidad</Link>
+                  <Link to="/terminos" className="text-sm text-slate-400 hover:text-slate-200 transition-colors">Términos</Link>
+                  <a href="mailto:hola@appointva.com" className="text-sm text-slate-400 hover:text-slate-200 transition-colors">hola@appointva.com</a>
                 </nav>
               </div>
             </div>
 
             <div className="border-t border-white/5 pt-6 flex flex-col md:flex-row items-center justify-between gap-3">
-              <p className="text-xs text-slate-600">© 2026 AppointVa · Hecho en México</p>
-              <p className="text-xs text-slate-600">Sistema de gestión de citas para negocios de servicios</p>
+              <p className="text-xs text-slate-400">© 2026 AppointVa · Hecho en México</p>
+              <p className="text-xs text-slate-400">Sistema de gestión de citas para negocios de servicios</p>
             </div>
           </div>
         </footer>
@@ -551,7 +542,7 @@ export default function LandingPage() {
             <Link
               to="/registro"
               className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl text-sm font-bold text-white active:scale-[0.98] transition-transform"
-              style={{ backgroundColor: SLATE_700 }}
+              style={{ backgroundColor: TINTA }}
             >
               Crear mi cuenta
               <Ico d={dArrow} className="w-4 h-4" />

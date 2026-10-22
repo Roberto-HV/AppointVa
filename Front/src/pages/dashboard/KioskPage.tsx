@@ -30,7 +30,7 @@ const INTERVALO_SONDEO_MS = 30_000;
 
 function horaCorta(iso: string): string {
   return new Date(iso).toLocaleTimeString("es-MX", {
-    hour: "2-digit", minute: "2-digit", hour12: true,
+    hour: "numeric", minute: "2-digit", hour12: true,
   });
 }
 
@@ -114,10 +114,10 @@ export default function KioskPage() {
     if (errorEmpleados) reintentarEmpleados();
   };
   const actualizado = dataUpdatedAt
-    ? new Date(dataUpdatedAt).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", hour12: true })
+    ? new Date(dataUpdatedAt).toLocaleTimeString("es-MX", { hour: "numeric", minute: "2-digit", hour12: true })
     : null;
 
-  const horaStr = ahora.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", hour12: true });
+  const horaStr = ahora.toLocaleTimeString("es-MX", { hour: "numeric", minute: "2-digit", hour12: true });
   const fechaStr = capitalizarPrimera(ahora.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" }));
 
   return (
@@ -128,7 +128,7 @@ export default function KioskPage() {
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 flex-shrink-0">
         <div>
-          <div className="text-lg font-extrabold tracking-tight leading-none">
+          <div className="text-lg font-bold tracking-tight leading-none">
             {perfil?.nombre ?? "Mi Negocio"}
           </div>
           <div className="text-xs text-white/60 uppercase tracking-widest mt-1">
@@ -136,7 +136,7 @@ export default function KioskPage() {
           </div>
         </div>
         <div className="text-right">
-          <div className="text-3xl font-black tracking-tighter tabular-nums leading-none">
+          <div className="text-3xl font-bold tracking-tighter tabular-nums leading-none">
             {horaStr}
           </div>
           <div className="text-sm text-white/70 mt-1">{fechaStr}</div>
@@ -242,7 +242,7 @@ export default function KioskPage() {
                           >
                             <div className="flex items-start justify-between gap-2 mb-1.5">
                               <span
-                                className={`text-xs font-black tabular-nums leading-none ${
+                                className={`text-xs font-bold tabular-nums leading-none ${
                                   enProgreso ? "text-indigo-300" : "text-white/70"
                                 }`}
                               >
@@ -432,7 +432,7 @@ function SalidaProtegida({ email }: { email: string }) {
               onChange={(e) => { setContrasena(e.target.value); setError(""); }}
               aria-invalid={!!error}
               aria-describedby={bloqueado ? idBloqueo : error ? idError : undefined}
-              className="w-full min-h-[44px] rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 text-sm text-foreground disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40"
+              className="w-full min-h-[44px] rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 text-sm text-foreground disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-brand/40 dark:focus-visible:ring-accent-brand/40"
             />
             {error && (
               <p id={idError} role="alert" className="mt-1.5 text-sm text-red-700 dark:text-red-400">{error}</p>

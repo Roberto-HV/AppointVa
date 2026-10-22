@@ -305,7 +305,7 @@ export default function GanttCitas({ onCitaClick, terms = getSectorTerms(null) }
                         <div className={`px-2 py-1 overflow-hidden h-full flex flex-col gap-0.5 ${cerrada ? "line-through" : ""}`}>
                           <span className="text-[10px] font-bold leading-none">
                             {toUtcDate(cita.inicioEn).toLocaleTimeString("es-MX", {
-                              hour: "2-digit",
+                              hour: "numeric",
                               minute: "2-digit",
                               hour12: true,
                             })}

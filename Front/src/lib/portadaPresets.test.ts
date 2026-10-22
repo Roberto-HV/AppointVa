@@ -1,10 +1,9 @@
 import { describe, it, expect } from "vitest";
 import {
-  FAMILIAS_PORTADA,
   PRESETS_PORTADA,
   esPresetPortadaValido,
   fondoPortada,
-  presetsPorFamilia,
+  normalizarPresetPortada,
 } from "./portadaPresets";
 import { degradeGradient } from "./colorUtils";
 
@@ -18,16 +17,45 @@ describe("catálogo de fondos de portada", () => {
     expect(new Set(nombres).size).toBe(nombres.length);
   });
 
-  it("agrupa todos los presets en las familias declaradas", () => {
-    const agrupados = FAMILIAS_PORTADA.flatMap((f) => presetsPorFamilia(f.familia));
-    expect(agrupados).toHaveLength(PRESETS_PORTADA.length);
+  it("solo ofrece el tinte suave: sin patrones, rayas ni granos", () => {
+    expect(PRESETS_PORTADA.map((p) => p.clave)).toEqual(["deg-halo"]);
+    for (const preset of PRESETS_PORTADA) {
+      const { background } = fondoPortada(preset.clave, MARCA);
+      expect(background).not.toMatch(/repeating-linear-gradient|svg/);
+    }
   });
 
   it("reconoce las claves del catálogo y rechaza las demás", () => {
-    expect(esPresetPortadaValido("deg-aurora")).toBe(true);
+    expect(esPresetPortadaValido("deg-halo")).toBe(true);
+    expect(esPresetPortadaValido("deg-aurora")).toBe(false);
     expect(esPresetPortadaValido("no-existe")).toBe(false);
     expect(esPresetPortadaValido(null)).toBe(false);
     expect(esPresetPortadaValido("")).toBe(false);
+  });
+});
+
+describe("normalizarPresetPortada", () => {
+  it("conserva la clave vigente", () => {
+    expect(normalizarPresetPortada("deg-halo")).toBe("deg-halo");
+  });
+
+  it("lleva los degradados retirados al tinte suave", () => {
+    for (const clave of ["deg-aurora", "deg-malla", "deg-amanecer"]) {
+      expect(normalizarPresetPortada(clave)).toBe("deg-halo");
+    }
+  });
+
+  it("devuelve los patrones y texturas retirados a \"sin preset\"", () => {
+    for (const clave of ["geo-diagonales", "geo-reticula", "geo-rombos", "geo-arcos", "tex-arena", "tex-niebla", "tex-vetas", "tex-terrazo"]) {
+      expect(normalizarPresetPortada(clave)).toBeNull();
+    }
+  });
+
+  it("trata vacío y desconocido como sin preset", () => {
+    expect(normalizarPresetPortada(null)).toBeNull();
+    expect(normalizarPresetPortada(undefined)).toBeNull();
+    expect(normalizarPresetPortada("")).toBeNull();
+    expect(normalizarPresetPortada("no-existe")).toBeNull();
   });
 });
 
@@ -46,9 +74,14 @@ describe("fondoPortada", () => {
     }
   });
 
-  it("produce un fondo distinto por preset con el mismo color", () => {
-    const fondos = PRESETS_PORTADA.map((p) => fondoPortada(p.clave, MARCA).background);
-    expect(new Set(fondos).size).toBe(PRESETS_PORTADA.length);
+  it("distingue el tinte suave del degradado de marca por defecto", () => {
+    expect(fondoPortada("deg-halo", MARCA).background).not.toBe(degradeGradient(MARCA));
+  });
+
+  it("una clave retirada se dibuja como su reemplazo, sin reventar", () => {
+    expect(fondoPortada("deg-aurora", MARCA)).toEqual(fondoPortada("deg-halo", MARCA));
+    expect(fondoPortada("geo-arcos", MARCA)).toEqual({ background: degradeGradient(MARCA) });
+    expect(fondoPortada("tex-terrazo", MARCA)).toEqual({ background: degradeGradient(MARCA) });
   });
 
   it("no deja hex ni NaN sueltos en el CSS generado", () => {

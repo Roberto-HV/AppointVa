@@ -6,6 +6,7 @@ import PublicFooter from "../../components/PublicFooter";
 import { useTituloPagina } from "../../hooks/useTituloPagina";
 import { CODIGO_ESTADO_CITA } from "../../lib/estadoCita";
 import { esErrorTemporal, mensajeError } from "../../utils/errores";
+import { formatFechaLarga, formatHora, formatPrecio } from "../../utils/formatters";
 
 interface CitaResumen {
   codigoConfirmacion: string;
@@ -22,17 +23,7 @@ interface CitaResumen {
 }
 
 function formatFechaHora(iso: string) {
-  const d = new Date(iso);
-  return d.toLocaleDateString("es-MX", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  }) + " · " + d.toLocaleTimeString("es-MX", { hour: "numeric", minute: "2-digit", hour12: true });
-}
-
-function formatPrecio(n: number) {
-  return n.toLocaleString("es-MX", { style: "currency", currency: "MXN" });
+  return `${formatFechaLarga(iso)} · ${formatHora(iso)}`;
 }
 
 function EstadoFinal({ titulo, texto, slug }: { titulo: string; texto: string; slug?: string }) {
@@ -206,11 +197,11 @@ export default function CancelarCitaPage() {
               )}
               <div className="flex justify-between gap-4">
                 <span className="text-gray-500 shrink-0">Fecha</span>
-                <span className="font-medium text-gray-800 text-right capitalize">{formatFechaHora(cita.inicioEn)}</span>
+                <span className="font-medium text-gray-800 text-right">{formatFechaHora(cita.inicioEn)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500">Precio</span>
-                <span className="font-medium text-gray-800">{formatPrecio(cita.precio)}</span>
+                <span className="font-medium text-gray-800 tabular-nums">{formatPrecio(cita.precio)}</span>
               </div>
             </div>
           </div>

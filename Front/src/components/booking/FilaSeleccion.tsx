@@ -10,7 +10,7 @@ export function GrupoFilas({ titulo, children }: GrupoProps) {
   return (
     <div>
       {titulo && (
-        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2.5">{titulo}</p>
+        <p className="text-sm font-semibold text-slate-700 mb-2.5">{titulo}</p>
       )}
       <div className="space-y-2">{children}</div>
     </div>

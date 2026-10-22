@@ -89,7 +89,7 @@ function CampoContrasena({ id, etiqueta, autoComplete, placeholder, visible, onA
           aria-invalid={!!error || undefined}
           aria-describedby={error ? idError : undefined}
           {...registro}
-          className={`w-full min-h-[44px] lg:min-h-[36px] px-3 py-2 pr-12 rounded-lg border text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-slate-100 ${error ? "border-red-400 bg-red-50 dark:bg-red-900/20" : "border-slate-200 dark:border-slate-600"}`}
+          className={`w-full min-h-[44px] lg:min-h-[36px] px-3 py-2 pr-12 rounded-lg border text-sm outline-none focus:border-accent-brand dark:bg-slate-800 dark:text-slate-100 ${error ? "border-red-400 bg-red-50 dark:bg-red-900/20" : "border-slate-200 dark:border-slate-600"}`}
         />
         <button
           type="button"
@@ -263,7 +263,7 @@ export default function MiPerfilPage() {
 
   const fmtBloqueo = (iso: string) =>
     new Date(iso).toLocaleString("es-MX", {
-      day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
+      day: "2-digit", month: "short", year: "numeric", hour: "numeric", minute: "2-digit",
     });
 
   return (
@@ -493,7 +493,7 @@ export default function MiPerfilPage() {
                   id="bloqueo-motivo"
                   {...formB.register("motivo")}
                   placeholder="Cita médica, día personal..."
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm outline-none focus:border-slate-700"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm outline-none focus:border-accent-brand"
                 />
               </div>
 

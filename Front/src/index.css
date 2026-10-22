@@ -12,54 +12,93 @@
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
+/* ── Fraunces, cara display (solo font-display) ────────────────────────────
+   Subconjunto latino con ejes opsz + wght (≈66 KB) de @fontsource-variable/fraunces.
+   Solo para titulares de la landing, el nombre del negocio en la reserva, el
+   titular de la confirmación y el saludo de Inicio. Nunca en el chrome del panel. */
+@font-face {
+  font-family: "Fraunces";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url("@fontsource-variable/fraunces/files/fraunces-latin-opsz-normal.woff2") format("woff2-variations"),
+       url("@fontsource-variable/fraunces/files/fraunces-latin-opsz-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  /* ── AppointVa: canales RGB (permite bg-primary/10 etc.) ─────────────────── */
-  --color-primary:       51 65 85;    /* #334155 slate-700 */
-  --color-primary-dark:  30 41 59;    /* #1E293B slate-800 */
-  --color-primary-light: 100 116 139; /* #64748B slate-500 */
+  /* ── Rampa neutra (canales RGB): las escalas slate/gray/zinc de Tailwind
+     apuntan aquí, así que las clases crudas heredan la paleta del producto.
+     Cálida por defecto ("Estudio cálido"); el sector salud la cambia por la
+     rampa fría con [data-sector="salud"] (abajo). No cambia con .dark: las
+     clases dark: ya eligen el paso oscuro de la escala. */
+  --neutral-50:  250 247 242;  /* #FAF7F2 lienzo */
+  --neutral-100: 243 238 230;  /* #F3EEE6 */
+  --neutral-200: 232 225 214;  /* #E8E1D6 línea */
+  --neutral-300: 214 204 190;  /* #D6CCBE */
+  --neutral-400: 166 155 141;  /* #A69B8D texto atenuado (dark): 6.27:1 sobre #1F1B16 */
+  --neutral-500: 107 98 87;    /* #6B6257 texto atenuado: 5.6:1 en lienzo, 5.98:1 en blanco */
+  --neutral-600: 79 71 61;     /* #4F473D */
+  --neutral-700: 53 47 39;     /* #352F27 línea (dark) */
+  --neutral-800: 40 35 29;     /* #28231D */
+  --neutral-900: 31 27 22;     /* #1F1B16 tinta / superficie (dark) */
+  --neutral-950: 22 19 15;     /* #16130F lienzo (dark) */
 
-  /* ── shadcn/ui: variables HSL (zinc base + slate primary) ────────────────── */
-  --background:           0 0% 100%;
-  --foreground:           222 47% 11%;
+  /* ── AppointVa: canales RGB (permite bg-primary/10 etc.) ─────────────────── */
+  --color-ink:           31 27 22;    /* #1F1B16 tinta cálida: botones, titulares, bloques oscuros */
+  --color-primary:       var(--color-ink);
+  --color-primary-dark:  0 0 0;       /* hover de la tinta */
+  --color-primary-light: 107 98 87;   /* #6B6257 */
+  /* Acento de marca AppointVa (terracota): enlaces, foco, nav activo, progreso.
+     Nunca en la página de reserva (ahí manda el color del negocio, brandSolid). */
+  --color-accent-brand:  180 83 42;   /* #B4532A: 4.99:1 en blanco, 4.67:1 en lienzo */
+
+  /* ── shadcn/ui: variables HSL (neutros cálidos + tinta) ──────────────────── */
+  --background:           38 44% 96.5%; /* #FAF7F2 lienzo */
+  --foreground:           33 17% 10.4%; /* #1F1B16 tinta */
   --card:                 0 0% 100%;
-  --card-foreground:      222 47% 11%;
+  --card-foreground:      33 17% 10.4%;
   --popover:              0 0% 100%;
-  --popover-foreground:   222 47% 11%;
-  --primary:              215 25% 27%;  /* #334155 slate-700 */
-  --primary-foreground:   0 0% 100%;
-  --secondary:            214 32% 91%;
-  --secondary-foreground: 215 25% 27%;
-  --muted:                214 32% 96%;
-  --muted-foreground:     215 16% 47%;
-  --accent:               214 32% 91%;
-  --accent-foreground:    215 25% 27%;
+  --popover-foreground:   33 17% 10.4%;
+  --primary:              33 17% 10.4%; /* #1F1B16 tinta */
+  --primary-foreground:   0 0% 100%;    /* 17.1:1 */
+  --secondary:            37 35% 92.7%; /* #F3EEE6 */
+  --secondary-foreground: 33 17% 10.4%;
+  --muted:                37 35% 92.7%;
+  --muted-foreground:     33 10% 38%;   /* #6B6257: 5.18:1 sobre muted */
+  --accent:               37 35% 92.7%; /* hover de ghost/outline (shadcn); el acento de marca es --color-accent-brand */
+  --accent-foreground:    33 17% 10.4%;
   --destructive:          0 84.2% 60.2%;
   --destructive-foreground: 0 0% 98%;
-  --border:               214 32% 91%;
-  --input:                214 32% 91%;
-  --ring:                 215 25% 27%;  /* slate ring */
-  --radius:               0.5rem;
+  --border:               37 28% 87.5%; /* #E8E1D6 */
+  --input:                37 28% 87.5%;
+  --ring:                 18 62% 43.5%; /* #B4532A terracota */
+  --radius:               0.625rem;     /* 10px: controles (rounded-lg); tarjetas rounded-xl = 14px */
+
+  /* Elevación de tarjeta (shadow-card): sombra cálida O borde, nunca ambos. */
+  --shadow-card: 0 1px 2px rgb(31 27 22 / 0.06), 0 4px 16px rgb(31 27 22 / 0.06);
 
   /* ── Estados de cita (badges) — referencia en docs/design-system.css ───── */
-  --status-pending-bg:    #FEFCE8;  /* yellow-50 */
-  --status-pending-fg:    #A16207;  /* yellow-700 */
-  --status-pending-dot:   #CA8A04;  /* yellow-600 */
-  --status-confirmed-bg:  #F0FDF4;  /* green-50 */
-  --status-confirmed-fg:  #15803D;  /* green-700 */
-  --status-confirmed-dot: #16A34A;  /* green-600 */
-  --status-completed-bg:  #EFF6FF;  /* blue-50 */
-  --status-completed-fg:  #1D4ED8;  /* blue-700 */
-  --status-completed-dot: #2563EB;  /* blue-600 */
-  --status-cancelled-bg:  #FEF2F2;  /* red-50 */
-  --status-cancelled-fg:  #B91C1C;  /* red-700: red-600 daba 4.4:1 sobre red-50 */
-  --status-cancelled-dot: #DC2626;
-  --status-absent-bg:     #F9FAFB;  /* gray-50 */
-  --status-absent-fg:     #475569;  /* slate-600 */
-  --status-absent-dot:    #94A3B8;  /* slate-400 */
+  /* dot = tono del estado; fg = el tono oscurecido, ≥ 4.5:1 sobre bg y sobre blanco. */
+  --status-pending-bg:    #FBF4E6;
+  --status-pending-fg:    #8C5A10;  /* 5.35:1 */
+  --status-pending-dot:   #B7791F;
+  --status-confirmed-bg:  #EDF6F0;
+  --status-confirmed-fg:  #2B6F47;  /* 5.49:1 */
+  --status-confirmed-dot: #2F7D4F;
+  --status-completed-bg:  #EEF2F7;
+  --status-completed-fg:  #3D5A80;  /* 6.28:1 */
+  --status-completed-dot: #3D5A80;
+  --status-cancelled-bg:  #FBEEEC;
+  --status-cancelled-fg:  #A3352A;  /* 5.98:1 */
+  --status-cancelled-dot: #B03A2E;
+  --status-absent-bg:     #F5F3F0;
+  --status-absent-fg:     #5F574D;  /* 6.41:1 */
+  --status-absent-dot:    #8A8177;
 
   /* ── Sidebar del sector salud (solo propietarios con sector "salud") ──── */
   /* Texto blanco sobre #0F4C75: 9.2:1; muted 6.9:1; activo 5.6:1. */
@@ -86,48 +125,52 @@
 }
 
 .dark {
-  /* AppointVa RGB channels — lighter in dark mode */
-  --color-primary:       148 163 184;  /* slate-400 */
-  --color-primary-dark:  203 213 225;  /* slate-300 */
-  --color-primary-light: 100 116 139;  /* slate-500 */
+  /* AppointVa RGB channels — tinta clara en dark */
+  --color-ink:           244 239 232;  /* #F4EFE8 */
+  --color-primary-dark:  255 255 255;
+  --color-primary-light: 166 155 141;  /* #A69B8D */
+  --color-accent-brand:  224 122 79;   /* #E07A4F: 5.76:1 sobre #1F1B16, 6.23:1 sobre #16130F */
 
-  /* shadcn/ui tokens — dark palette */
-  --background:           222 47% 7%;
-  --foreground:           210 40% 96%;
-  --card:                 215 28% 11%;
-  --card-foreground:      210 40% 96%;
-  --popover:              215 28% 11%;
-  --popover-foreground:   210 40% 96%;
-  --primary:              214 32% 91%;
-  --primary-foreground:   222 47% 7%;
-  --secondary:            217 33% 17%;
-  --secondary-foreground: 210 40% 96%;
-  --muted:                217 33% 17%;
-  --muted-foreground:     215 20% 65%;
-  --accent:               217 33% 17%;
-  --accent-foreground:    210 40% 96%;
+  /* shadcn/ui tokens — dark palette (neutros cálidos) */
+  --background:           34 19% 7.3%;  /* #16130F */
+  --foreground:           35 35% 93.3%; /* #F4EFE8 */
+  --card:                 33 17% 10.4%; /* #1F1B16 */
+  --card-foreground:      35 35% 93.3%;
+  --popover:              33 17% 10.4%;
+  --popover-foreground:   35 35% 93.3%;
+  --primary:              35 35% 93.3%; /* #F4EFE8 */
+  --primary-foreground:   34 19% 7.3%;  /* 16.2:1 */
+  --secondary:            33 16% 13.5%; /* #28231D */
+  --secondary-foreground: 35 35% 93.3%;
+  --muted:                33 16% 13.5%;
+  --muted-foreground:     34 12% 60.2%; /* #A69B8D: 5.71:1 sobre muted, 6.27:1 sobre card */
+  --accent:               33 16% 13.5%;
+  --accent-foreground:    35 35% 93.3%;
   --destructive:          0 63% 31%;
   --destructive-foreground: 210 40% 96%;
-  --border:               217 33% 17%;
-  --input:                217 33% 17%;
-  --ring:                 213 27% 84%;
+  --border:               34 15% 18%;   /* #352F27 */
+  --input:                34 15% 18%;
+  --ring:                 18 70% 59.4%; /* #E07A4F */
 
-  /* Estados de cita (dark) */
-  --status-pending-bg:    rgba(161, 98, 7, 0.2);
-  --status-pending-fg:    #FACC15;
-  --status-pending-dot:   #EAB308;
-  --status-confirmed-bg:  rgba(6, 78, 59, 0.4);
-  --status-confirmed-fg:  #4ADE80;
-  --status-confirmed-dot: #22C55E;
-  --status-completed-bg:  rgba(30, 64, 175, 0.2);
-  --status-completed-fg:  #60A5FA;
-  --status-completed-dot: #3B82F6;
-  --status-cancelled-bg:  rgba(127, 29, 29, 0.2);
-  --status-cancelled-fg:  #F87171;
-  --status-cancelled-dot: #EF4444;
-  --status-absent-bg:     #334155;
-  --status-absent-fg:     #CBD5E1;  /* slate-300: gray-400 daba 4.1:1 */
-  --status-absent-dot:    #94A3B8;
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3), 0 4px 16px rgb(0 0 0 / 0.25);
+
+  /* Estados de cita (dark): tinte del tono al 18 %, texto en el equivalente 400.
+     fg/bg ≥ 5.8:1 sobre #16130F, #1F1B16 y #28231D. */
+  --status-pending-bg:    rgba(183, 121, 31, 0.18);
+  --status-pending-fg:    #E8B65C;
+  --status-pending-dot:   #D69A35;
+  --status-confirmed-bg:  rgba(47, 125, 79, 0.18);
+  --status-confirmed-fg:  #74C493;
+  --status-confirmed-dot: #4FA571;
+  --status-completed-bg:  rgba(61, 90, 128, 0.18);
+  --status-completed-fg:  #98B4D9;
+  --status-completed-dot: #6E8FBA;
+  --status-cancelled-bg:  rgba(176, 58, 46, 0.18);
+  --status-cancelled-fg:  #F08F84;
+  --status-cancelled-dot: #D9604F;
+  --status-absent-bg:     #352F27;
+  --status-absent-fg:     #CDC3B6;  /* 7.61:1 */
+  --status-absent-dot:    #8A8177;
 
   /* Sidebar salud (dark): fondo más profundo, mismo contraste */
   --sidebar-salud-bg:     #0B2E47;
@@ -150,6 +193,54 @@
   --rating:               #FBBF24;  /* amber-400 */
 }
 
+/* ── Sector salud: rampa neutra fría y acento #0F4C75 ────────────────────────
+   DashboardLayout pone data-sector="salud" en <html> (así también lo heredan
+   los portales de Radix) y LandingPageSalud en su contenedor. Mismos pasos de
+   luminancia que la rampa cálida, así que los contrastes se conservan. */
+[data-sector="salud"] {
+  --neutral-50:  245 248 250;  /* #F5F8FA */
+  --neutral-100: 237 242 245;  /* #EDF2F5 */
+  --neutral-200: 221 229 235;  /* #DDE5EB */
+  --neutral-300: 195 208 218;  /* #C3D0DA */
+  --neutral-400: 147 164 177;  /* #93A4B1: 6.72:1 sobre #141C21 */
+  --neutral-500: 91 107 120;   /* #5B6B78: 5.16:1 en #F5F8FA, 5.5:1 en blanco */
+  --neutral-600: 69 83 95;     /* #45535F */
+  --neutral-700: 36 49 58;     /* #24313A */
+  --neutral-800: 26 36 43;     /* #1A242B */
+  --neutral-900: 20 28 33;     /* #141C21 */
+  --neutral-950: 14 20 23;     /* #0E1417 */
+
+  --color-accent-brand:  15 76 117;   /* #0F4C75: 9.09:1 en blanco */
+
+  --background:          204 33% 97.1%; /* #F5F8FA */
+  --secondary:           203 29% 94.5%;
+  --muted:               203 29% 94.5%; /* #EDF2F5 */
+  --muted-foreground:    207 14% 41.4%; /* #5B6B78: 4.88:1 sobre muted */
+  --accent:              203 29% 94.5%;
+  --border:              206 26% 89.4%; /* #DDE5EB */
+  --input:               206 26% 89.4%;
+  --ring:                204 77% 25.9%; /* #0F4C75 */
+}
+.dark[data-sector="salud"],
+.dark [data-sector="salud"] {
+  --color-accent-brand:  95 163 214;  /* #5FA3D6: 6.32:1 sobre #141C21 */
+
+  --background:          200 24% 7.3%;  /* #0E1417 */
+  --card:                203 25% 10.4%; /* #141C21 */
+  --popover:             203 25% 10.4%;
+  --secondary:           205 25% 13.5%;
+  --muted:               205 25% 13.5%; /* #1A242B */
+  --muted-foreground:    206 16% 63.5%; /* #93A4B1: 6.15:1 sobre muted */
+  --accent:              205 25% 13.5%;
+  --border:              205 23% 18.4%; /* #24313A */
+  --input:               205 23% 18.4%;
+  --ring:                206 59% 60.6%; /* #5FA3D6 */
+}
+/* Salud no usa la cara display: los titulares font-display vuelven a Inter. */
+[data-sector="salud"] .font-display {
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
 @keyframes stepIn {
   from { opacity: 0; transform: translateX(14px); }
   to   { opacity: 1; transform: translateX(0); }
@@ -158,8 +249,8 @@
   from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-.animate-step-in  { animation: stepIn  0.22s ease-out both; }
-.animate-fade-in  { animation: fadeIn  0.22s ease-out both; }
+.animate-step-in  { animation: stepIn  0.22s cubic-bezier(.22, 1, .36, 1) both; }
+.animate-fade-in  { animation: fadeIn  0.22s cubic-bezier(.22, 1, .36, 1) both; }
 
 /* ── Micro-interactions ─────────────────────────────────────────────────── */
 button:not([disabled]) {
@@ -178,11 +269,52 @@ button:not([disabled]):active {
   html, body {
     margin: 0;
     background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
     font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    line-height: 1.55;
     -webkit-font-smoothing: antialiased;
+    /* Superficies nativas del navegador con el acento de marca */
+    caret-color: rgb(var(--color-accent-brand));
+    accent-color: rgb(var(--color-accent-brand));
   }
   #root {
     background-color: hsl(var(--background));
+  }
+  h1, h2, h3 {
+    letter-spacing: -0.02em;
+  }
+  ::selection {
+    background-color: rgb(var(--color-accent-brand) / 0.2);
+    color: inherit;
+  }
+  /* Scrollbars finas y con los neutros del tema (Firefox + WebKit) */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(var(--neutral-300)) transparent;
+  }
+  .dark * {
+    scrollbar-color: rgb(var(--neutral-700)) transparent;
+  }
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: rgb(var(--neutral-300));
+    border-radius: 9999px;
+  }
+  .dark ::-webkit-scrollbar-thumb {
+    background-color: rgb(var(--neutral-700));
+  }
+}
+
+@layer components {
+  /* Tarjeta base: radio 14px y sombra cálida, sin borde (elevación = sombra O borde). */
+  .tarjeta {
+    @apply rounded-xl bg-card text-card-foreground shadow-card;
   }
 }
 

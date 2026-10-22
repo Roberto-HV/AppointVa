@@ -559,7 +559,7 @@ export default function ClientesPage() {
                 onChange={(e) => { setNotas(e.target.value); setNotasGuardadas(false); }}
                 rows={3}
                 placeholder="Preferencias, alergias, observaciones..."
-                className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:border-slate-700 resize-none dark:bg-slate-800 dark:text-slate-100 dark:border-slate-600"
+                className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:border-accent-brand resize-none dark:bg-slate-800 dark:text-slate-100 dark:border-slate-600"
               />
               <div className="flex items-center gap-3 mt-2">
                 <button

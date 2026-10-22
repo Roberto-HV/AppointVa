@@ -19,7 +19,7 @@ import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
 import ConfirmarAccion from "../../components/ui/ConfirmarAccion";
 import Switch from "../../components/ui/Switch";
 import SelectorFondoPortada from "../../components/dashboard/SelectorFondoPortada";
-import { fondoPortada } from "../../lib/portadaPresets";
+import { fondoPortada, normalizarPresetPortada } from "../../lib/portadaPresets";
 import { DatePicker } from "../../components/ui/DateTimePicker";
 import EditorHorario from "../../components/dashboard/EditorHorario";
 import { errorDelDia } from "../../lib/horario";
@@ -444,7 +444,7 @@ export default function PerfilPage() {
   // posición de la portada y horarios. Avisa al cerrar la pestaña y al seguir
   // un enlace interno (antes un clic en el menú lateral lo perdía todo).
   const colorSinGuardar = colorPrimario !== colorGuardado;
-  const presetSinGuardar = !!negocio && portadaPreset !== (negocio.portadaPreset ?? null);
+  const presetSinGuardar = !!negocio && normalizarPresetPortada(portadaPreset) !== normalizarPresetPortada(negocio.portadaPreset);
   const posicionSinGuardar = !!negocio?.portadaUrl
     && portadaObjectPosition !== normalizarPosicion(negocio.portadaObjectPosition);
   const hayCambiosSinGuardar = isDirty || colorSinGuardar || presetSinGuardar || posicionSinGuardar || horariosDirty;
@@ -510,7 +510,7 @@ export default function PerfilPage() {
   // El fondo elegido gana sobre la foto. Se deriva del estado local, no de lo
   // guardado, para que la miniatura y la vista previa reflejen la elección
   // antes de pulsar "Guardar cambios".
-  const presetPortada = portadaPreset || null;
+  const presetPortada = normalizarPresetPortada(portadaPreset);
   const mostrarFotoPortada = !presetPortada && !!negocio?.portadaUrl;
   const fondoPortadaActual = fondoPortada(presetPortada, colorPrimario);
   const fotoOcultaPorFondo = !!presetPortada && !!negocio?.portadaUrl;
@@ -671,7 +671,7 @@ export default function PerfilPage() {
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Teléfono</label>
                 <input {...register("telefono")}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm outline-none focus:border-slate-700" />
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm outline-none focus:border-accent-brand" />
               </div>
               <div>
                 <label htmlFor="perfil-email" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Correo de contacto</label>
@@ -685,12 +685,12 @@ export default function PerfilPage() {
               <div className="sm:col-span-2">
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Dirección</label>
                 <input {...register("direccion")}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm outline-none focus:border-slate-700" />
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm outline-none focus:border-accent-brand" />
               </div>
               <div className="sm:col-span-2">
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Descripción</label>
                 <textarea rows={3} maxLength={500} {...register("descripcion")}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm outline-none focus:border-slate-700 resize-none" />
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm outline-none focus:border-accent-brand resize-none" />
                 <p className="text-xs text-slate-400 dark:text-slate-500 text-right mt-0.5">{(watch("descripcion") ?? "").length}/500</p>
               </div>
             </div>
@@ -833,7 +833,7 @@ export default function PerfilPage() {
                 onBlur={confirmarColorTexto}
                 onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); confirmarColorTexto(); } }}
                 aria-label="Color en hexadecimal"
-                className="w-32 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm outline-none focus:border-slate-700 font-mono uppercase"
+                className="w-32 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm outline-none focus:border-accent-brand font-mono uppercase"
                 maxLength={7}
                 placeholder="#334155"
               />
@@ -932,21 +932,21 @@ export default function PerfilPage() {
                   <SiInstagram className="w-4 h-4 text-white" />
                 </div>
                 <input {...register("instagramUrl")} placeholder="https://instagram.com/tu_negocio"
-                  className="flex-1 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm outline-none focus:border-slate-700" />
+                  className="flex-1 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm outline-none focus:border-accent-brand" />
               </div>
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-[#1877F2] flex items-center justify-center shrink-0">
                   <SiFacebook className="w-4 h-4 text-white" />
                 </div>
                 <input {...register("facebookUrl")} placeholder="https://facebook.com/tu_negocio"
-                  className="flex-1 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm outline-none focus:border-slate-700" />
+                  className="flex-1 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm outline-none focus:border-accent-brand" />
               </div>
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-black flex items-center justify-center shrink-0">
                   <SiTiktok className="w-4 h-4 text-white" />
                 </div>
                 <input {...register("tiktokUrl")} placeholder="https://tiktok.com/@tu_negocio"
-                  className="flex-1 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm outline-none focus:border-slate-700" />
+                  className="flex-1 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm outline-none focus:border-accent-brand" />
               </div>
             </div>
             <p className="text-xs text-slate-400 dark:text-slate-500 mt-3">Pega la URL completa. Deja vacío si no usas esa red.</p>
@@ -1281,7 +1281,7 @@ export default function PerfilPage() {
                 <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">Motivo <span className="text-slate-400 dark:text-slate-500">(opcional)</span></label>
                 <input type="text" value={nuevoMotivo} onChange={(e) => setNuevoMotivo(e.target.value)}
                   placeholder="Ej: Día festivo, Vacaciones..." maxLength={100}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm outline-none focus:border-slate-700" />
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm outline-none focus:border-accent-brand" />
               </div>
               <button onClick={() => nuevaFecha && bloquearDia()} disabled={!nuevaFecha || bloqueando}
                 className="px-4 py-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-white text-sm font-medium rounded-lg transition">
@@ -1388,7 +1388,7 @@ export default function PerfilPage() {
                     </span>}
               </div>
               <div>
-                <p className="text-white font-black text-[1.05rem] sm:text-2xl leading-tight pointer-events-none">{negocio?.nombre}</p>
+                <p className="text-white font-bold text-[1.05rem] sm:text-2xl leading-tight pointer-events-none">{negocio?.nombre}</p>
               </div>
             </div>
           </div>

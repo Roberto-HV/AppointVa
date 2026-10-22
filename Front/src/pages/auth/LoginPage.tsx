@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import LogoMarca from "../../components/LogoMarca";
-import { Eye, EyeOff, CalendarCheck, Star, Users } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import { authApi } from "../../api/auth";
 import { useAuthStore } from "../../store/authStore";
 import { api } from "../../api/axios";
@@ -164,7 +164,7 @@ export default function LoginPage() {
                   value={codigo2FA}
                   onChange={(e) => setCodigo2FA(e.target.value.replace(/\D/g, ""))}
                   placeholder="000000"
-                  className="w-full px-4 py-3 text-center text-2xl font-mono tracking-[0.5em] rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-slate-700/30 focus:border-slate-700"
+                  className="w-full px-4 py-3 text-center text-2xl font-mono tracking-[0.5em] rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-accent-brand/30 focus:border-accent-brand"
                   autoFocus
                 />
                 {errorGeneral && (
@@ -202,7 +202,7 @@ export default function LoginPage() {
                     autoComplete="email"
                     {...register("email")}
                     className={`w-full px-4 py-3 rounded-xl border text-sm outline-none transition
-                      focus:ring-2 focus:ring-slate-700/30 focus:border-slate-700
+                      focus:ring-2 focus:ring-accent-brand/30 focus:border-accent-brand
                       ${errors.email ? "border-red-400 bg-red-50" : "border-slate-200"}`}
                     placeholder="correo@ejemplo.com"
                   />
@@ -222,7 +222,7 @@ export default function LoginPage() {
                       autoComplete="current-password"
                       {...register("contrasena")}
                       className={`w-full px-4 py-3 pr-11 rounded-xl border text-sm outline-none transition
-                        focus:ring-2 focus:ring-slate-700/30 focus:border-slate-700
+                        focus:ring-2 focus:ring-accent-brand/30 focus:border-accent-brand
                         ${errors.contrasena ? "border-red-400 bg-red-50" : "border-slate-200"}`}
                       placeholder="••••••••"
                     />
@@ -272,11 +272,7 @@ export default function LoginPage() {
       </div>
 
       {/* ── Panel derecho — branding (solo md+) ── */}
-      <div className="hidden md:flex md:w-[45%] lg:w-2/5 bg-slate-800 flex-col items-center justify-center relative overflow-hidden p-12">
-        {/* Formas decorativas de fondo */}
-        <div className="absolute -top-24 -right-24 w-80 h-80 bg-slate-700/50 rounded-full" />
-        <div className="absolute -bottom-28 -left-20 w-96 h-96 bg-slate-700/40 rounded-full" />
-
+      <div className="hidden md:flex md:w-[45%] lg:w-2/5 bg-ink flex-col items-center justify-center relative overflow-hidden p-12">
         {/* Contenido central */}
         <div className="relative z-10 w-full max-w-xs text-center">
           <h2 className="text-3xl font-bold text-white mb-3">¿Nuevo por aquí?</h2>
@@ -284,50 +280,15 @@ export default function LoginPage() {
             Registra tu negocio y configura servicios y horarios mientras lo activamos, en menos de 24 horas hábiles.
           </p>
 
-          {/* Mini-cards de producto */}
-          <div className="space-y-3 mb-8 text-left">
-            <div className="bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-4 py-3 flex items-center gap-3">
-              <div className="w-9 h-9 bg-green-400/20 rounded-xl flex items-center justify-center shrink-0">
-                <CalendarCheck size={18} className="text-green-400" />
-              </div>
-              <div>
-                <p className="text-white text-xs font-semibold">Cita confirmada</p>
-                <p className="text-slate-400 text-xs">María G. · Hoy 3:00 PM</p>
-              </div>
-              <span className="ml-auto text-xs text-green-400 font-medium">Nueva</span>
-            </div>
-
-            <div className="bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-4 py-3 flex items-center gap-3">
-              <div className="w-9 h-9 bg-blue-400/20 rounded-xl flex items-center justify-center shrink-0">
-                <Users size={18} className="text-blue-400" />
-              </div>
-              <div>
-                <p className="text-white text-xs font-semibold">Esta semana</p>
-                <p className="text-slate-400 text-xs">12 citas agendadas</p>
-              </div>
-              <span className="ml-auto text-xs text-blue-400 font-medium">+18%</span>
-            </div>
-
-            <div className="bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-4 py-3 flex items-center gap-3">
-              <div className="w-9 h-9 bg-amber-400/20 rounded-xl flex items-center justify-center shrink-0">
-                <Star size={18} className="text-amber-400" />
-              </div>
-              <div>
-                <p className="text-white text-xs font-semibold">Nueva reseña</p>
-                <p className="text-slate-400 text-xs">★★★★★ "Excelente servicio"</p>
-              </div>
-            </div>
-          </div>
-
           <Link
             to="/registro"
-            className="inline-block w-full border-2 border-white text-white font-semibold py-3 rounded-xl hover:bg-white hover:text-slate-800 transition text-sm"
+            className="inline-block w-full border-2 border-white text-white font-semibold py-3 rounded-xl hover:bg-white hover:text-slate-900 transition text-sm"
           >
             Registra tu negocio
           </Link>
         </div>
 
-        <p className="absolute bottom-6 text-slate-600 text-xs">© {new Date().getFullYear()} AppointVa</p>
+        <p className="absolute bottom-6 text-slate-400 text-xs">© {new Date().getFullYear()} AppointVa</p>
       </div>
 
     </div>

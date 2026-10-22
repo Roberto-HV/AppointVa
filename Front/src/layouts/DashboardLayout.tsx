@@ -15,7 +15,7 @@ import { NotificacionesBell } from '../components/dashboard/NotificacionesBell';
 import { EncuestaSatisfaccionModal } from '../components/dashboard/EncuestaSatisfaccionModal';
 import AvisoActivacionPendiente from '../components/dashboard/AvisoActivacionPendiente';
 import { encuestaApi } from '../api/encuesta';
-import { toUtcDate, capitalizarPrimera } from '../utils/formatters';
+import { toUtcDate, capitalizarPrimera, formatHoraDe } from '../utils/formatters';
 import { useInactividadTimeout } from '../hooks/useInactividadTimeout';
 import { useSectorTerms, getSectorTerms, type SectorTerms } from "../hooks/useSectorTerms";
 import { useSectorFeatures } from "../hooks/useSectorFeatures";
@@ -48,13 +48,9 @@ function FechaHoraActual({ className = "text-slate-500 dark:text-slate-400" }: {
     day: 'numeric',
     month: 'long',
   });
-  const hora = ahora.toLocaleTimeString('es-MX', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-  });
+  const hora = formatHoraDe(ahora);
   return (
-    <span className={`hidden sm:block select-none text-sm ${className}`}>
+    <span className={`hidden sm:block select-none text-sm tabular-nums ${className}`}>
       {capitalizarPrimera(fecha)} · {hora}
     </span>
   );
@@ -363,10 +359,23 @@ export default function DashboardLayout() {
   // Sector salud: el esquema azul se conserva, pero sale de tokens con
   // contraste en ambos temas (antes: estilos en línea con texto slate a 1.2:1).
   const salud = perfil?.sector === "salud";
+
+  // Salud cambia la rampa neutra a la fría y el acento a #0F4C75 (src/index.css).
+  // Va en <html> y no en el contenedor para que también lo hereden los portales
+  // de Radix (diálogos, menús); se retira al salir del panel.
+  useEffect(() => {
+    const root = document.documentElement;
+    if (salud) root.dataset.sector = "salud";
+    else delete root.dataset.sector;
+    return () => { delete root.dataset.sector; };
+  }, [salud]);
+
   const temaNav = salud
     ? {
         aside: "bg-sidebar-salud border-white/10",
         activo: "bg-sidebar-salud-active text-white font-semibold shadow-md",
+        iconoActivo: "text-white",
+        fondoIconoActivo: "bg-white/20",
         inactivo: "text-sidebar-salud-fg hover:bg-sidebar-salud-hover",
         icono: "text-sidebar-salud-muted",
         pie: "text-sidebar-salud-fg hover:bg-sidebar-salud-hover",
@@ -374,7 +383,10 @@ export default function DashboardLayout() {
       }
     : {
         aside: "bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-700/50",
-        activo: "bg-slate-900 dark:bg-slate-600 text-white font-semibold shadow-md",
+        // Nav activo con el acento terracota: tinte suave, texto en tinta (≥ 13:1) e icono en terracota.
+        activo: "bg-accent-brand/10 text-foreground font-semibold",
+        iconoActivo: "text-accent-brand",
+        fondoIconoActivo: "bg-transparent",
         inactivo: "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white",
         icono: "text-slate-500 dark:text-slate-400",
         pie: "text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white",
@@ -516,8 +528,8 @@ export default function DashboardLayout() {
                   <>
                     <div className={`relative rounded-xl flex items-center justify-center shrink-0 transition-colors ${
                       sidebarCollapsed ? "w-11 h-11" : "w-7 h-7"
-                    } ${isActive && !sidebarCollapsed ? "bg-white/20" : "bg-transparent"}`}>
-                      <Icon size={sidebarCollapsed ? 22 : 15} className={isActive ? "text-white" : temaNav.icono} />
+                    } ${isActive && !sidebarCollapsed ? temaNav.fondoIconoActivo : "bg-transparent"}`}>
+                      <Icon size={sidebarCollapsed ? 22 : 15} className={isActive ? temaNav.iconoActivo : temaNav.icono} />
                       {/* Colapsado no cabe el contador: un punto avisa que hay pendientes. */}
                       {sidebarCollapsed && esCitas && pendientesCnt > 0 && (
                         <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-status-pending-dot ring-2 ring-white dark:ring-slate-900" aria-hidden="true" />

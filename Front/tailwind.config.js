@@ -1,4 +1,15 @@
 /** @type {import('tailwindcss').Config} */
+
+// Escala neutra: slate, gray y zinc apuntan a la rampa --neutral-* de src/index.css
+// (cálida por defecto, fría con [data-sector="salud"]), así que las clases crudas
+// siguen al tema del producto en vez del gris frío por defecto de Tailwind.
+const neutra = Object.fromEntries(
+  [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950].map((paso) => [
+    paso,
+    `rgb(var(--neutral-${paso}) / <alpha-value>)`,
+  ])
+);
+
 export default {
   darkMode: "class",
   content: [
@@ -8,6 +19,11 @@ export default {
   theme: {
     extend: {
       colors: {
+        slate: neutra,
+        gray:  neutra,
+        zinc:  neutra,
+        // ── Tinta cálida (botones, titulares, bloques oscuros); clara en dark ──
+        ink: "rgb(var(--color-ink) / <alpha-value>)",
         // ── Colores propios del tema AppointVa (RGB channels para opacity modifiers) ──
         primary: {
           DEFAULT:    "rgb(var(--color-primary) / <alpha-value>)",
@@ -40,6 +56,9 @@ export default {
         accent: {
           DEFAULT:    "hsl(var(--accent))",
           foreground: "hsl(var(--accent-foreground))",
+          // Acento de marca AppointVa (terracota; #0F4C75 en salud): text-accent-brand …
+          // Nunca en la página de reserva: ahí manda el color del negocio (brandSolid).
+          brand:      "rgb(var(--color-accent-brand) / <alpha-value>)",
         },
         destructive: {
           DEFAULT:    "hsl(var(--destructive))",
@@ -72,16 +91,31 @@ export default {
         ),
       },
       borderRadius: {
-        lg: "var(--radius)",
+        lg: "var(--radius)",              // 10px: controles
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+        xl: "14px",                       // tarjetas
+      },
+      boxShadow: {
+        // Elevación cálida de tarjeta: sombra O borde, nunca ambos.
+        card: "var(--shadow-card)",
+      },
+      transitionTimingFunction: {
+        // ease-out-quint: movimiento que se asienta. Con duration-calma (220 ms).
+        calma: "cubic-bezier(.22, 1, .36, 1)",
+      },
+      transitionDuration: {
+        calma: "220ms",
       },
       fontFamily: {
         // Inter autohospedada en src/index.css (@font-face) con la pila del sistema de respaldo.
         sans: ["Inter", "system-ui", "-apple-system", "\"Segoe UI\"", "Roboto", "\"Helvetica Neue\"", "Arial", "sans-serif"],
+        // Fraunces (src/index.css): solo landing H1/H2, nombre del negocio en la reserva,
+        // titular de la confirmación y saludo de Inicio. Nunca en el chrome del panel.
+        display: ["Fraunces", "Georgia", "\"Times New Roman\"", "serif"],
       },
       animation: {
-        "fade-in":        "fadeIn 0.18s ease-out",
+        "fade-in":        "fadeIn 0.2s cubic-bezier(.22, 1, .36, 1)",
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up":   "accordion-up 0.2s ease-out",
       },
@@ -103,4 +137,3 @@ export default {
   },
   plugins: [require("tailwindcss-animate")],
 }
-

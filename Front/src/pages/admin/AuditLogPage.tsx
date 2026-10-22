@@ -166,7 +166,7 @@ export default function AuditLogPage() {
                     <button
                       type="button"
                       onClick={() => refetch()}
-                      className="mt-3 min-h-[44px] lg:min-h-[36px] px-4 rounded-lg border border-slate-200 dark:border-slate-600 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40"
+                      className="mt-3 min-h-[44px] lg:min-h-[36px] px-4 rounded-lg border border-slate-200 dark:border-slate-600 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-brand/40 dark:focus-visible:ring-accent-brand/40"
                     >
                       Reintentar
                     </button>
@@ -223,7 +223,7 @@ export default function AuditLogPage() {
                             onClick={() => setAbierto(expandido ? null : log.id)}
                             aria-expanded={expandido}
                             aria-controls={idDetalle}
-                            className="inline-flex items-center gap-1 min-h-[44px] lg:min-h-[36px] px-2 rounded-lg font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40"
+                            className="inline-flex items-center gap-1 min-h-[44px] lg:min-h-[36px] px-2 rounded-lg font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-brand/40 dark:focus-visible:ring-accent-brand/40"
                           >
                             {expandido ? "Ocultar" : "Ver detalle"}
                             <ChevronDown size={14} aria-hidden="true" className={expandido ? "rotate-180" : ""} />
@@ -251,7 +251,7 @@ export default function AuditLogPage() {
                             <button
                               type="button"
                               onClick={() => { setUsuarioId(log.usuarioId!); setPagina(1); setAbierto(null); }}
-                              className="mt-3 min-h-[44px] lg:min-h-[36px] px-3 rounded-lg border border-slate-200 dark:border-slate-600 font-medium text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40"
+                              className="mt-3 min-h-[44px] lg:min-h-[36px] px-3 rounded-lg border border-slate-200 dark:border-slate-600 font-medium text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-brand/40 dark:focus-visible:ring-accent-brand/40"
                             >
                               Ver solo los eventos de este usuario
                             </button>

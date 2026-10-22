@@ -202,7 +202,7 @@ describe("DescuentosPage — validación y expiración (OM-24)", () => {
   it("el monto fijo se muestra con formato de precio", async () => {
     vi.mocked(descuentosApi.getDescuentos).mockResolvedValue([makeDescuento({ tipo: "MontoFijo", valor: 50 })]);
     renderConQuery();
-    expect(await screen.findByText("$50.00 de descuento")).toBeInTheDocument();
+    expect(await screen.findByText("$50 de descuento")).toBeInTheDocument();
   });
 
   it("la fecha de expiración se muestra como 'Válido hasta' en el día local correcto", async () => {

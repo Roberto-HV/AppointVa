@@ -554,7 +554,7 @@ export default function ServiciosPage() {
             <textarea
               rows={2}
               {...register("descripcion")}
-              className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:border-slate-700 resize-none dark:bg-slate-800 dark:text-slate-100 dark:border-slate-600"
+              className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:border-accent-brand resize-none dark:bg-slate-800 dark:text-slate-100 dark:border-slate-600"
             />
           </div>
 
@@ -692,7 +692,7 @@ export default function ServiciosPage() {
             <input
               type="number" min="1"
               {...formCat.register("orden")}
-              className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-600"
+              className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:border-accent-brand dark:bg-slate-800 dark:text-slate-100 dark:border-slate-600"
             />
             <p className="text-xs text-slate-400 mt-1 dark:text-slate-500">Número que define el orden en el catálogo público.</p>
           </div>

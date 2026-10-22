@@ -676,7 +676,7 @@ export default function PagosPage() {
             {permisos.exportar && (
             <button
               onClick={handleExportarHistorial}
-              className="self-start min-h-[44px] lg:min-h-[36px] flex items-center gap-2 px-3 text-xs border border-slate-200 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40"
+              className="self-start min-h-[44px] lg:min-h-[36px] flex items-center gap-2 px-3 text-xs border border-slate-200 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-brand/40"
             >
               <Download size={14} /> Exportar Excel
             </button>
@@ -815,19 +815,19 @@ export default function PagosPage() {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl p-4">
                   <p className="text-xs text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1.5"><CheckCircle2 size={13} /> Citas atendidas</p>
-                  <p className="text-2xl font-black text-slate-800 dark:text-slate-100">{corteData.length}</p>
+                  <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">{corteData.length}</p>
                 </div>
                 <div className="bg-slate-800 rounded-xl p-4">
                   <p className="text-xs text-slate-400 mb-1 flex items-center gap-1.5"><TrendingUp size={13} /> Total cobrado</p>
-                  <p className="text-xl sm:text-2xl font-black text-white">{formatPrecio(corteTotalCobrado)}</p>
+                  <p className="text-xl sm:text-2xl font-bold text-white">{formatPrecio(corteTotalCobrado)}</p>
                 </div>
                 <div className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl p-4">
                   <p className="text-xs text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1.5"><CreditCard size={13} /> Propinas</p>
-                  <p className="text-xl sm:text-2xl font-black text-teal-600 dark:text-teal-400">{formatPrecio(corteTotalPropinas)}</p>
+                  <p className="text-xl sm:text-2xl font-bold text-teal-600 dark:text-teal-400">{formatPrecio(corteTotalPropinas)}</p>
                 </div>
                 <div className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl p-4">
                   <p className="text-xs text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1.5"><Receipt size={13} /> Promedio/cita</p>
-                  <p className="text-xl sm:text-2xl font-black text-slate-700 dark:text-slate-200">{formatPrecio(cortePromedio)}</p>
+                  <p className="text-xl sm:text-2xl font-bold text-slate-700 dark:text-slate-200">{formatPrecio(cortePromedio)}</p>
                 </div>
               </div>
 
@@ -1165,7 +1165,7 @@ export default function PagosPage() {
                   placeholder="Monto recibido"
                   value={montoRecibido}
                   onChange={(e) => setMontoRecibido(e.target.value)}
-                  className="mt-1 w-full border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-700/30"
+                  className="mt-1 w-full border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-brand/30"
                 />
                 {montoRecibido && cambio > 0 && (
                   <p className="mt-2 text-sm text-emerald-600 dark:text-emerald-400 font-medium">
@@ -1189,7 +1189,7 @@ export default function PagosPage() {
                   placeholder="0.00"
                   value={propina}
                   onChange={(e) => setPropina(e.target.value)}
-                  className="mt-1 w-full border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-700/30"
+                  className="mt-1 w-full border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-brand/30"
                 />
               </div>
             )}
@@ -1366,7 +1366,7 @@ function BotonRevertir({ onClick, deshabilitado, cliente }: { onClick: () => voi
       onClick={onClick}
       disabled={deshabilitado}
       aria-label={`Revertir pago de ${cliente}`}
-      className="min-h-[44px] lg:min-h-[36px] inline-flex items-center gap-1.5 px-3 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-red-700 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-40 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40"
+      className="min-h-[44px] lg:min-h-[36px] inline-flex items-center gap-1.5 px-3 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-red-700 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-40 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-brand/40"
     >
       <RotateCcw size={13} aria-hidden="true" />
       Revertir

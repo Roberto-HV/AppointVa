@@ -368,7 +368,7 @@ export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, on
                 <div key={label} role="group" aria-label={label}>
                   <div className="flex items-center gap-1.5 mb-2">
                     <Icon size={12} className="text-slate-400" />
-                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">{label}</p>
+                    <p className="text-sm font-medium text-slate-500">{label}</p>
                   </div>
                   <div className="grid grid-cols-4 gap-1.5">
                     {slotsFranja.map((slot) => {

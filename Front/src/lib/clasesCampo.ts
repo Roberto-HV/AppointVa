@@ -5,7 +5,7 @@
 // oscuro solo va en la rama sin error, y el error tiene su propio par oscuro.
 
 const BASE =
-  "w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-slate-700 dark:focus:border-slate-400 dark:bg-slate-800 dark:text-slate-100";
+  "w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-accent-brand dark:focus:border-accent-brand dark:bg-slate-800 dark:text-slate-100";
 
 /** Clases de un `<input>`/`<textarea>`; con error, el borde rojo gana en los dos temas. */
 export function claseCampo(conError: boolean, extra = ""): string {

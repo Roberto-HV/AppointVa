@@ -9,7 +9,7 @@ import { intakePublicoApi, type CampoIntake } from "../../api/intake";
 import { descuentosPublicoApi, type DescuentoValidado } from "../../api/descuentos";
 import type { ServicioPublico, EmpleadoPublico, SlotDisponible, ImagenGaleria, ResenaPublica } from "../../types";
 import { getSectorTerms } from "../../hooks/useSectorTerms";
-import { formatPrecio, formatFechaCorta } from "../../utils/formatters";
+import { formatPrecio, formatFechaCorta, monogramaNegocio } from "../../utils/formatters";
 import { precioConDescuento } from "../../utils/descuentos";
 import IndicadorPasos from "../../components/booking/IndicadorPasos";
 import PasoServicio from "../../components/booking/PasoServicio";
@@ -21,7 +21,7 @@ import PublicFooter from "../../components/PublicFooter";
 import { useTituloPagina } from "../../hooks/useTituloPagina";
 
 import { hexToChannels, DEFAULT_COLOR, brandSolid } from "../../lib/colorUtils";
-import { fondoPortada } from "../../lib/portadaPresets";
+import { fondoPortada, normalizarPresetPortada } from "../../lib/portadaPresets";
 
 // El submit del paso 4 vive en la barra de acción, fuera del <form> de PasoDatosCliente.
 const ID_FORM_DATOS = "form-datos-cliente";
@@ -1032,7 +1032,8 @@ export default function BookingPage() {
   const colorCta = brandSolid(color);
   // Un fondo elegido gana sobre la foto: es la última decisión explícita del
   // negocio y, si no, el selector del dashboard no tendría efecto visible.
-  const presetPortada = negocio.portadaPreset || null;
+  // Una clave retirada (patrones, texturas) cae en su reemplazo o en "sin preset".
+  const presetPortada = normalizarPresetPortada(negocio.portadaPreset);
   const mostrarFoto = !presetPortada && !!negocio.portadaUrl;
   const fondoDePortada = fondoPortada(presetPortada, color);
   const terms = getSectorTerms(negocio.sector);
@@ -1251,11 +1252,11 @@ export default function BookingPage() {
   })();
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div data-sector={negocio.sector === "salud" ? "salud" : undefined} className="min-h-screen bg-slate-50">
       {/* Header oscuro del negocio */}
       <div
         data-testid="portada-negocio"
-        className={`relative overflow-hidden min-h-[180px] sm:min-h-[260px] lg:min-h-[300px] xl:min-h-[340px] flex flex-col justify-end ${mostrarFoto ? "bg-zinc-950" : ""}`}
+        className={`relative overflow-hidden min-h-[180px] sm:min-h-[260px] lg:min-h-[300px] xl:min-h-[340px] flex flex-col justify-end ${mostrarFoto ? "bg-ink" : ""}`}
         style={mostrarFoto ? undefined : fondoDePortada}
       >
         {/* Portada visible, a opacidad completa: el contraste lo sostiene el velo de abajo */}
@@ -1314,13 +1315,13 @@ export default function BookingPage() {
                 // Sin logo, la inicial del negocio (como los avatares del equipo), no un emoji (BF-24).
                 <div
                   aria-hidden="true"
-                  className="w-14 h-14 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl flex items-center justify-center text-2xl sm:text-4xl font-black text-white"
+                  className="w-14 h-14 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl flex items-center justify-center text-2xl sm:text-4xl font-bold text-white"
                   style={{
                     background: `rgb(${hexToChannels(color)} / 0.18)`,
                     border: `1.5px solid rgb(${hexToChannels(color)} / 0.40)`,
                   }}
                 >
-                  {negocio.nombre.trim().charAt(0).toUpperCase()}
+                  {monogramaNegocio(negocio.nombre)}
                 </div>
               )}
             </div>
@@ -1328,7 +1329,7 @@ export default function BookingPage() {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h1
-                  className="text-white font-black text-[1.05rem] sm:text-2xl leading-none tracking-tight"
+                  className="font-display text-white font-semibold text-xl sm:text-3xl leading-none tracking-[-0.02em]"
                   style={{ textShadow: SOMBRA_TEXTO_PORTADA }}
                 >
                   {negocio.nombre}
@@ -1336,7 +1337,7 @@ export default function BookingPage() {
                 {/* Sin reseñas no se muestra la píldora: una estrella junto a
                     "Sin reseñas" se lee como una mala nota (BF-25). */}
                 {(negocio.totalResenas ?? 0) > 0 && (
-                  <div className="flex items-center gap-1 rounded-full px-2 py-0.5 bg-zinc-950/40">
+                  <div className="flex items-center gap-1 rounded-full px-2 py-0.5 bg-ink/40">
                     <Star size={9} strokeWidth={0} className="fill-rating text-rating" aria-hidden="true" />
                     <span className="text-[10px] sm:text-xs text-white/85">
                       <span className="sr-only">Calificación </span>

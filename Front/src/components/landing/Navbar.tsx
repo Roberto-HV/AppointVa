@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Ico } from "./Ico";
 import { dClose, dMenu } from "./iconos";
-import { GOLD, SLATE_700 } from "./constantes";
+import { GOLD, TINTA } from "./constantes";
 
 interface Props {
   /** Anclas de la propia página (p. ej. `#precios`). */
@@ -30,7 +30,7 @@ export function Navbar({ secciones, otraLanding, registro }: Props) {
       }`}
     >
       <div className="max-w-6xl mx-auto px-6 h-[68px] flex items-center justify-between">
-        <Link to="/" className="text-xl font-black tracking-tight select-none">
+        <Link to="/" className="text-xl font-bold tracking-tight select-none">
           <span className="text-slate-900">Appoint</span>
           <span style={{ color: GOLD }}>Va</span>
         </Link>
@@ -52,7 +52,7 @@ export function Navbar({ secciones, otraLanding, registro }: Props) {
           <Link
             to={registro}
             className="px-5 py-2 text-sm font-bold text-white rounded-xl transition-colors"
-            style={{ backgroundColor: SLATE_700 }}
+            style={{ backgroundColor: TINTA }}
           >
             Crear mi cuenta
           </Link>
@@ -78,7 +78,7 @@ export function Navbar({ secciones, otraLanding, registro }: Props) {
           <Link to={otraLanding.to} className="py-2 text-sm font-medium text-slate-500 hover:text-slate-700 transition-colors" onClick={() => setOpen(false)}>{otraLanding.etiqueta}</Link>
           <div className="border-t border-slate-100 pt-3 flex flex-col gap-2">
             <Link to="/login" className="py-2.5 text-sm font-medium text-center text-slate-600 border border-slate-200 rounded-xl">Iniciar sesión</Link>
-            <Link to={registro} className="py-2.5 text-sm font-bold text-center text-white rounded-xl" style={{ backgroundColor: SLATE_700 }}>Crear mi cuenta</Link>
+            <Link to={registro} className="py-2.5 text-sm font-bold text-center text-white rounded-xl" style={{ backgroundColor: TINTA }}>Crear mi cuenta</Link>
           </div>
         </div>
       )}

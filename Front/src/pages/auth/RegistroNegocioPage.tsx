@@ -234,7 +234,7 @@ export default function RegistroNegocioPage() {
                 {...nombreRegistro}
                 onChange={onNombreChange}
                 placeholder="Ej. Salón Belleza Luna"
-                className={`w-full px-4 py-3 rounded-xl border text-sm outline-none transition focus:ring-2 focus:ring-slate-700/30 focus:border-slate-700 ${errors.nombreNegocio ? "border-red-400 bg-red-50" : "border-slate-200"}`}
+                className={`w-full px-4 py-3 rounded-xl border text-sm outline-none transition focus:ring-2 focus:ring-accent-brand/30 focus:border-accent-brand ${errors.nombreNegocio ? "border-red-400 bg-red-50" : "border-slate-200"}`}
               />
               {errors.nombreNegocio && <p className="text-red-500 text-xs mt-1">{errors.nombreNegocio.message}</p>}
             </div>
@@ -296,7 +296,7 @@ export default function RegistroNegocioPage() {
                       data-sector={value}
                       onClick={() => setSector(value)}
                       onKeyDown={onSectorKeyDown}
-                      className={`flex flex-col items-center gap-2 py-4 rounded-xl border-2 text-sm font-medium transition cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 ${
+                      className={`flex flex-col items-center gap-2 py-4 rounded-xl border-2 text-sm font-medium transition cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-brand/40 ${
                         elegido
                           ? "border-slate-700 bg-slate-50 text-slate-700"
                           : "border-slate-200 text-slate-500 hover:border-slate-300"
@@ -324,7 +324,7 @@ export default function RegistroNegocioPage() {
                 autoComplete="tel"
                 {...register("telefono")}
                 placeholder="+52 55 1234 5678"
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none transition focus:ring-2 focus:ring-slate-700/30 focus:border-slate-700"
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none transition focus:ring-2 focus:ring-accent-brand/30 focus:border-accent-brand"
               />
             </div>
 
@@ -339,7 +339,7 @@ export default function RegistroNegocioPage() {
                 autoComplete="name"
                 {...register("nombrePropietario")}
                 placeholder="Nombre y apellido"
-                className={`w-full px-4 py-3 rounded-xl border text-sm outline-none transition focus:ring-2 focus:ring-slate-700/30 focus:border-slate-700 ${errors.nombrePropietario ? "border-red-400 bg-red-50" : "border-slate-200"}`}
+                className={`w-full px-4 py-3 rounded-xl border text-sm outline-none transition focus:ring-2 focus:ring-accent-brand/30 focus:border-accent-brand ${errors.nombrePropietario ? "border-red-400 bg-red-50" : "border-slate-200"}`}
               />
               {errors.nombrePropietario && <p className="text-red-500 text-xs mt-1">{errors.nombrePropietario.message}</p>}
             </div>
@@ -353,7 +353,7 @@ export default function RegistroNegocioPage() {
                 autoComplete="email"
                 {...register("email")}
                 placeholder="correo@ejemplo.com"
-                className={`w-full px-4 py-3 rounded-xl border text-sm outline-none transition focus:ring-2 focus:ring-slate-700/30 focus:border-slate-700 ${errors.email ? "border-red-400 bg-red-50" : "border-slate-200"}`}
+                className={`w-full px-4 py-3 rounded-xl border text-sm outline-none transition focus:ring-2 focus:ring-accent-brand/30 focus:border-accent-brand ${errors.email ? "border-red-400 bg-red-50" : "border-slate-200"}`}
               />
               {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}
             </div>
@@ -368,7 +368,7 @@ export default function RegistroNegocioPage() {
                   autoComplete="new-password"
                   {...register("contrasena")}
                   aria-describedby="reglas-contrasena"
-                  className={`w-full px-4 py-3 pr-11 rounded-xl border text-sm outline-none transition focus:ring-2 focus:ring-slate-700/30 focus:border-slate-700 ${errors.contrasena ? "border-red-400 bg-red-50" : "border-slate-200"}`}
+                  className={`w-full px-4 py-3 pr-11 rounded-xl border text-sm outline-none transition focus:ring-2 focus:ring-accent-brand/30 focus:border-accent-brand ${errors.contrasena ? "border-red-400 bg-red-50" : "border-slate-200"}`}
                 />
                 <button
                   type="button"
@@ -395,7 +395,7 @@ export default function RegistroNegocioPage() {
                   autoComplete="new-password"
                   {...register("confirmarContrasena")}
                   placeholder="Repite tu contraseña"
-                  className={`w-full px-4 py-3 pr-11 rounded-xl border text-sm outline-none transition focus:ring-2 focus:ring-slate-700/30 focus:border-slate-700 ${errors.confirmarContrasena ? "border-red-400 bg-red-50" : "border-slate-200"}`}
+                  className={`w-full px-4 py-3 pr-11 rounded-xl border text-sm outline-none transition focus:ring-2 focus:ring-accent-brand/30 focus:border-accent-brand ${errors.confirmarContrasena ? "border-red-400 bg-red-50" : "border-slate-200"}`}
                 />
                 <button
                   type="button"

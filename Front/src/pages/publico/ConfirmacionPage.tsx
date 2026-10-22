@@ -312,7 +312,7 @@ export default function ConfirmacionPage() {
   const IconoEstado = confirmada ? CheckCircle2 : Clock;
 
   return (
-    <div className="min-h-screen bg-slate-50 print:bg-white">
+    <div data-sector={negocioPublico?.sector === "salud" ? "salud" : undefined} className="min-h-screen bg-slate-50 print:bg-white">
       <style>{`
         @media print {
           body { background: white !important; margin: 0; }
@@ -326,17 +326,14 @@ export default function ConfirmacionPage() {
         }
       `}</style>
 
-      {/* Header oscuro Style C */}
-      <div className="relative flex flex-col items-center justify-center py-10 px-4 print:hidden overflow-hidden bg-zinc-950">
-        <div className="absolute inset-0 pointer-events-none" style={{
-          background: `radial-gradient(ellipse 70% 80% at 50% 0%, rgb(${hexToChannels(color)} / 0.28) 0%, transparent 100%)`,
-        }} />
+      {/* Cabecera en tinta; el color del negocio vive en el icono de estado */}
+      <div className="relative flex flex-col items-center justify-center py-10 px-4 print:hidden overflow-hidden bg-ink">
         <div className="relative z-10 flex flex-col items-center gap-3 text-center">
           <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
             style={{ background: `rgb(${hexToChannels(color)} / 0.18)`, border: `1.5px solid rgb(${hexToChannels(color)} / 0.35)` }}>
             <IconoEstado size={32} style={{ color }} aria-hidden="true" />
           </div>
-          <h1 className="text-2xl font-bold text-white">{textosEstado.titulo}</h1>
+          <h1 className="font-display text-3xl font-semibold tracking-[-0.02em] text-white">{textosEstado.titulo}</h1>
           <p className="text-sm text-white/70">
             {textosEstado.subtitulo}
           </p>
@@ -390,9 +387,9 @@ export default function ConfirmacionPage() {
           </div>
 
           {/* Código de confirmación */}
-          <div className="flex flex-col items-center py-5 bg-zinc-950">
-            <p className="text-xs font-semibold uppercase tracking-widest mb-2 text-white/70">Código de confirmación</p>
-            <span className="font-mono text-2xl font-black text-white tracking-[0.2em]">
+          <div className="flex flex-col items-center py-5 bg-ink">
+            <p className="text-sm mb-2 text-white/70">Código de confirmación</p>
+            <span className="font-mono text-2xl font-bold text-white tracking-[0.2em]">
               {cita.codigoConfirmacion}
             </span>
           </div>
@@ -401,7 +398,7 @@ export default function ConfirmacionPage() {
           <div className="px-5 py-4 space-y-3">
             {/* Estado — badge estilo Klarna */}
             <div className="flex justify-between items-center">
-              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Estado</span>
+              <span className="text-sm text-slate-500">Estado</span>
               <span className={`inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full ${
                 cita.estadoTexto === "Confirmada" ? "bg-status-confirmed-bg text-status-confirmed-fg" :
                 cita.estadoTexto === "Pendiente"  ? "bg-status-pending-bg text-status-pending-fg" :
@@ -419,25 +416,25 @@ export default function ConfirmacionPage() {
               { label: "Cliente",     valor: cita.nombreCliente },
             ].map(({ label, valor, hide }) => (
               <div key={label} className={`flex justify-between items-center ${hide ?? ""}`}>
-                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">{label}</span>
+                <span className="text-sm text-slate-500">{label}</span>
                 <span className="text-sm font-semibold text-slate-800">{valor}</span>
               </div>
             ))}
             <div className="flex justify-between items-start">
-              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Fecha y hora</span>
+              <span className="text-sm text-slate-500">Fecha y hora</span>
               <span className="text-sm font-semibold text-slate-800 text-right max-w-[55%]">
                 {formatFechaHora(cita.inicioEn)}
               </span>
             </div>
             {cita.notas && (
               <div className="flex justify-between items-start">
-                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Notas</span>
+                <span className="text-sm text-slate-500">Notas</span>
                 <span className="text-sm text-slate-600 text-right max-w-[60%]">{cita.notas}</span>
               </div>
             )}
             {(cita.instagramUrl || cita.facebookUrl || cita.tiktokUrl) && (
               <div className="pt-1">
-                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">Síguenos</p>
+                <p className="text-sm text-slate-500 mb-2">Síguenos</p>
                 <SocialLinks
                   instagramUrl={cita.instagramUrl}
                   facebookUrl={cita.facebookUrl}
@@ -450,13 +447,13 @@ export default function ConfirmacionPage() {
           {/* Total */}
           <div className="mx-5 border-t border-dashed border-slate-200 pt-3 pb-4 flex justify-between items-center">
             <span className="text-sm font-bold text-slate-700">Total</span>
-            <span className="text-xl font-black text-slate-900">{formatPrecio(cita.precio)}</span>
+            <span className="text-xl font-bold text-slate-900 tabular-nums">{formatPrecio(cita.precio)}</span>
           </div>
 
           {/* Pie print */}
           <div className="hidden print:block text-center border-t-2 border-dashed border-slate-200 py-3 px-5">
             <p className="text-[10px] text-slate-400">
-              Generado el {new Date().toLocaleString("es-MX", { day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+              Generado el {new Date().toLocaleString("es-MX", { day: "2-digit", month: "long", year: "numeric", hour: "numeric", minute: "2-digit" })}
             </p>
             <p className="text-[10px] text-slate-300 mt-0.5">appointva.com</p>
           </div>
@@ -464,7 +461,7 @@ export default function ConfirmacionPage() {
 
         {/* ¿Qué sigue? — timeline Adidas/Afterpay style */}
         <div className="mt-5 mb-1 bg-white rounded-3xl border border-slate-100 shadow-sm px-5 py-4 print:hidden">
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">¿Qué sigue?</p>
+          <p className="text-base font-semibold text-slate-900 mb-4">¿Qué sigue?</p>
           <div>
             {/* Paso 1: estado real de la cita */}
             <div className="flex gap-3 items-start">
@@ -533,10 +530,10 @@ export default function ConfirmacionPage() {
               </div>
             ) : (
               <>
-                <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-3">Anticipo requerido</p>
+                <p className="text-sm font-semibold text-amber-800 mb-3">Anticipo requerido</p>
                 <p className="text-sm font-semibold text-slate-800 mb-1">
                   Para confirmar tu cita, realiza un pago de{" "}
-                  <span className="text-slate-900 font-black">{formatPrecio(cita.montoAnticipo)}</span>
+                  <span className="text-slate-900 font-bold">{formatPrecio(cita.montoAnticipo)}</span>
                 </p>
                 {cita.instruccionesAnticipo && (
                   <pre className="text-xs text-slate-600 whitespace-pre-wrap bg-white/70 rounded-xl px-3 py-2 mt-2 mb-3 font-sans leading-relaxed">

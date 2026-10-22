@@ -72,15 +72,15 @@ const DIAS_DE_POR_VIDA = 365 * 50;
 const ACCION_TARJETA =
   "min-h-[44px] lg:min-h-[36px] px-2 rounded-md border text-xs font-medium " +
   "inline-flex items-center justify-center gap-1.5 text-center transition-colors " +
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 " +
-  "dark:focus-visible:ring-slate-400/40 disabled:opacity-50 disabled:cursor-not-allowed";
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-brand/40 " +
+  "dark:focus-visible:ring-accent-brand/40 disabled:opacity-50 disabled:cursor-not-allowed";
 
 /** Campo de texto de los modales: mismo alto táctil y mismo modo oscuro. */
 const CAMPO_MODAL =
   "w-full min-h-[44px] px-3 py-2 rounded-lg border text-sm outline-none transition-colors " +
   "bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 " +
   "placeholder:text-slate-400 dark:placeholder:text-slate-500 " +
-  "focus:border-slate-700 dark:focus:border-slate-400";
+  "focus:border-accent-brand dark:focus:border-accent-brand";
 const CAMPO_OK = "border-slate-200 dark:border-slate-600";
 /** Clave compartida por activar/desactivar, para saber qué tarjetas están en curso. */
 const CLAVE_ESTADO_NEGOCIO = ["admin", "estado-negocio"] as const;
@@ -91,7 +91,7 @@ const CAMPO_ERROR = "border-red-400 bg-red-50 dark:bg-red-950/30";
 const BOTON_PIE =
   "flex-1 min-h-[44px] rounded-xl text-sm transition-colors disabled:opacity-50 " +
   "disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 " +
-  "focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40";
+  "focus-visible:ring-accent-brand/40 dark:focus-visible:ring-accent-brand/40";
 const BOTON_PIE_SECUNDARIO =
   `${BOTON_PIE} border-2 font-medium border-slate-200 dark:border-slate-600 ` +
   "text-slate-600 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-500";
@@ -401,7 +401,7 @@ function ModalSuscripcion({
                   onClick={() => handleSetPlan(p.id)}
                   disabled={guardandoPlan}
                   aria-pressed={negocio.planId === p.id}
-                  className={`min-h-[44px] lg:min-h-[36px] px-3.5 rounded-full text-xs font-medium border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40 ${
+                  className={`min-h-[44px] lg:min-h-[36px] px-3.5 rounded-full text-xs font-medium border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-brand/40 dark:focus-visible:ring-accent-brand/40 ${
                     negocio.planId === p.id
                       ? 'bg-slate-900 text-white border-slate-900 dark:bg-slate-100 dark:text-slate-900 dark:border-slate-100'
                       : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-600 hover:border-slate-500'
@@ -427,7 +427,7 @@ function ModalSuscripcion({
                   onClick={() => { if (suscripcion?.sector !== s) setSectorPorConfirmar(s); }}
                   disabled={guardandoSector}
                   aria-pressed={suscripcion?.sector === s}
-                  className={`min-h-[44px] lg:min-h-[36px] px-3.5 rounded-full text-xs font-medium border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40 ${
+                  className={`min-h-[44px] lg:min-h-[36px] px-3.5 rounded-full text-xs font-medium border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-brand/40 dark:focus-visible:ring-accent-brand/40 ${
                     suscripcion?.sector === s
                       ? 'bg-slate-900 text-white border-slate-900 dark:bg-slate-100 dark:text-slate-900 dark:border-slate-100'
                       : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-600 hover:border-indigo-400'
@@ -524,7 +524,7 @@ function ModalSuscripcion({
                   type="button"
                   onClick={() => handleMesesChange(m)}
                   aria-pressed={meses === m}
-                  className={`flex-1 min-h-[44px] lg:min-h-[36px] rounded-lg text-xs font-bold border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40 ${
+                  className={`flex-1 min-h-[44px] lg:min-h-[36px] rounded-lg text-xs font-bold border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-brand/40 dark:focus-visible:ring-accent-brand/40 ${
                     meses === m
                       ? "bg-slate-900 text-white border-slate-900 dark:bg-slate-100 dark:text-slate-900 dark:border-slate-100"
                       : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-slate-400"
@@ -538,7 +538,7 @@ function ModalSuscripcion({
               type="button"
               onClick={() => handleMesesChange(LIFETIME_SENTINEL)}
               aria-pressed={meses === LIFETIME_SENTINEL}
-              className={`w-full min-h-[44px] lg:min-h-[36px] rounded-lg text-xs font-bold border transition mb-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40 ${
+              className={`w-full min-h-[44px] lg:min-h-[36px] rounded-lg text-xs font-bold border transition mb-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-brand/40 dark:focus-visible:ring-accent-brand/40 ${
                 meses === LIFETIME_SENTINEL
                   ? "bg-amber-600 text-white border-amber-600"
                   : "bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/20"
@@ -1580,7 +1580,7 @@ export default function NegociosAdminPage() {
                               const neg = metricas?.find(m => m.id === s.negocioId);
                               if (neg) abrirSuscripcion(neg);
                             }}
-                            className="min-h-[44px] lg:min-h-[36px] px-2 -mx-2 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300 underline underline-offset-2 hover:text-slate-900 dark:hover:text-white whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40"
+                            className="min-h-[44px] lg:min-h-[36px] px-2 -mx-2 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300 underline underline-offset-2 hover:text-slate-900 dark:hover:text-white whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-brand/40 dark:focus-visible:ring-accent-brand/40"
                           >
                             Ver suscripción
                           </button>

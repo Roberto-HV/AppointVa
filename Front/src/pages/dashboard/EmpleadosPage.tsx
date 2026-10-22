@@ -350,7 +350,7 @@ export default function EmpleadosPage() {
   function formatBloqueo(iso: string) {
     return new Date(iso).toLocaleString("es-MX", {
       day: "2-digit", month: "long", year: "numeric",
-      hour: "2-digit", minute: "2-digit", hour12: true,
+      hour: "numeric", minute: "2-digit", hour12: true,
     }).replace(/\bDe\b/g, "de");
   }
 
@@ -643,7 +643,7 @@ export default function EmpleadosPage() {
             ) : (
               <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                 {bloqueos.map((b) => (
-                  <div key={b.id} className="flex items-start justify-between gap-3 bg-muted border border-border border-l-[3px] border-l-status-pending-dot rounded-lg px-3 py-2">
+                  <div key={b.id} className="flex items-start justify-between gap-3 bg-status-pending-bg rounded-lg px-3 py-2">
                     <div className="min-w-0">
                       <p className="text-xs font-medium text-foreground">
                         {formatBloqueo(b.inicioEn)} → {formatBloqueo(b.finEn)}

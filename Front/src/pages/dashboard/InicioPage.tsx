@@ -17,7 +17,6 @@ import { serviciosApi } from "../../api/servicios";
 import { useAuthStore } from "../../store/authStore";
 import EstadoBadge from "../../components/ui/EstadoBadge";
 import { Skeleton } from "../../components/ui/Skeleton";
-import AnimatedCounter from "../../components/ui/AnimatedCounter";
 import Modal from "../../components/ui/Modal";
 import AccionesCita, { HojaAccionesCita, type VistaHoja } from "../../components/dashboard/AccionesCita";
 import { InsigniaPorCerrar } from "../../components/dashboard/TarjetaCita";
@@ -26,24 +25,29 @@ import { citaAbierta, citaPorCerrar, estiloEstadoCita } from "../../lib/estadoCi
 import { hoy as hoyLocal, inicioSemana as inicioSemanaLocal, finSemana as finSemanaLocal, fechaLocal } from "../../utils/fechas";
 import { formatPrecio, formatPrecioCorto, formatFechaHoraResumen as formatFechaHora, capitalizarPrimera } from "../../utils/formatters";
 
-interface TarjetaProps { label: string; valor?: string | number; rawValue?: number; valorCorto?: string; color?: string; accent?: boolean }
-function Tarjeta({ label, valor, rawValue, color = "text-slate-900 dark:text-slate-100", accent = false }: TarjetaProps) {
-  const numCls = `text-xl sm:text-2xl font-black leading-none ${accent ? "text-white" : color}`;
+// Una cifra en línea: etiqueta y valor con cifras tabulares, sin tarjeta.
+function Cifra({ label, valor }: { label: string; valor: string | number }) {
   return (
-    <div className={`rounded-2xl border p-3 sm:p-4 transition-all ${accent ? "bg-slate-900 border-slate-800" : "bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700"}`}>
-      {/* 12px mínimo y gris informativo (≥4.5:1): antes 9–10px slate-400, ~2.6:1. */}
-      <p className={`text-xs font-bold uppercase tracking-wide mb-1.5 line-clamp-1 ${accent ? "text-slate-300" : "text-muted-foreground"}`}>{label}</p>
-      {typeof valor === "number" ? (
-        <AnimatedCounter to={valor} className={numCls} />
-      ) : rawValue !== undefined ? (
-        <p className={numCls}>
-          <AnimatedCounter to={rawValue} format={formatPrecioCorto} className="sm:hidden" />
-          <AnimatedCounter to={rawValue} format={(n) => formatPrecio(n)} className="hidden sm:inline" />
-        </p>
-      ) : (
-        <p className={numCls}>{valor}</p>
-      )}
-    </div>
+    <span className="whitespace-nowrap">
+      <span className="text-muted-foreground">{label}</span>{" "}
+      <span className="font-semibold text-foreground tabular-nums">{valor}</span>
+    </span>
+  );
+}
+
+// Citas e ingresos del periodo en una sola línea de texto: antes eran dos filas
+// de tres tarjetas, seis ceros grandes en un día sin reservas.
+function ResumenPeriodo({ grupo, cifras }: { grupo: string; cifras: { label: string; valor: string | number }[] }) {
+  return (
+    <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-sm">
+      <span className="font-semibold text-foreground">{grupo}</span>
+      {cifras.map((c, i) => (
+        <span key={c.label} className="inline-flex items-baseline gap-3">
+          {i > 0 && <span aria-hidden="true" className="text-slate-300 dark:text-slate-600">·</span>}
+          <Cifra label={c.label} valor={c.valor} />
+        </span>
+      ))}
+    </p>
   );
 }
 
@@ -116,7 +120,7 @@ function WizardOnboarding({ negocioId, slug, tieneServicios, tieneHorarios, tien
         aria-valuemax={pasos.length}
         aria-valuenow={hechos}
       >
-        <div className="bg-slate-700 dark:bg-slate-300 h-1.5 rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+        <div className="bg-accent-brand h-1.5 rounded-full transition-all duration-500 ease-calma" style={{ width: `${pct}%` }} />
       </div>
 
       {siguiente ? (
@@ -201,7 +205,7 @@ function BienvenidaScreen({
         <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-slate-900 dark:bg-slate-700 mb-4 shadow-lg">
           <Store size={26} className="text-white" />
         </div>
-        <h2 className="text-2xl font-black text-slate-900 dark:text-slate-100 mb-1.5">
+        <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-1.5">
           Tu página está casi lista
         </h2>
         <p className="text-sm text-slate-500 dark:text-slate-400">
@@ -369,7 +373,7 @@ function VistaPropietario({ nombre }: { nombre: string }) {
 
       {/* Encabezado — Apple Store style */}
       <div className="mb-6">
-        <h1 className="text-3xl font-black text-slate-900 dark:text-slate-100 leading-none mb-1">Hola, {nombre}</h1>
+        <h1 className="font-display text-3xl font-semibold tracking-[-0.02em] text-slate-900 dark:text-slate-100 leading-none mb-1">Hola, {nombre}</h1>
         <div className="flex items-center gap-3">
           <p className="text-sm text-slate-400">{negocio?.nombre ?? "Tu negocio"}</p>
           {!mostrarWizard && keyOnboarding && (
@@ -436,7 +440,7 @@ function VistaPropietario({ nombre }: { nombre: string }) {
                     <CalendarDays size={18} className="text-muted-foreground" aria-hidden="true" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wide mb-0.5">Próxima cita</p>
+                    <p className="text-xs text-muted-foreground font-medium mb-0.5">Próxima cita</p>
                     <p className="font-semibold text-foreground truncate">{proxima.nombreCliente}</p>
                     <p className="text-xs text-muted-foreground truncate">{proxima.nombreServicio} · {proxima.nombreEmpleado}</p>
                   </div>
@@ -482,11 +486,11 @@ function VistaPropietario({ nombre }: { nombre: string }) {
                 <button onClick={() => reintentarAgenda()} className="mt-2 min-h-[44px] px-4 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition">Reintentar</button>
               </div>
             ) : citasDeHoy.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">Sin citas para hoy</p>
+              <p className="text-sm text-muted-foreground text-center py-8">Hoy tienes la agenda libre. Comparte tu enlace y llénala.</p>
             ) : (
               <div className="space-y-1.5">
                 {citasDeHoy.map((c) => {
-                  const hora = new Date(c.inicioEn).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", hour12: true });
+                  const hora = new Date(c.inicioEn).toLocaleTimeString("es-MX", { hour: "numeric", minute: "2-digit", hour12: true });
                   // Solo se atenúa lo que ya está cerrado; una cita pasada que sigue
                   // abierta es trabajo pendiente y conserva su contraste.
                   const atenuada = new Date(c.finEn) < new Date() && !citaAbierta(c.estadoTexto);
@@ -497,7 +501,7 @@ function VistaPropietario({ nombre }: { nombre: string }) {
                         atenuada ? "opacity-70" : "bg-slate-50 dark:bg-slate-700/40"
                       }`}
                     >
-                      <span className="text-xs font-mono font-bold text-slate-600 dark:text-slate-300 w-16 shrink-0">{hora}</span>
+                      <span className="text-xs font-semibold tabular-nums text-slate-600 dark:text-slate-300 w-16 shrink-0">{hora}</span>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">{c.nombreCliente}</p>
                         <p className="text-xs text-muted-foreground truncate">{c.nombreServicio} · {c.nombreEmpleado}</p>
@@ -514,38 +518,28 @@ function VistaPropietario({ nombre }: { nombre: string }) {
 
           {guiaInicio}
 
-          <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2.5">Citas</p>
           <motion.div
-            initial={reducirMovimiento ? false : "hidden"} animate="show"
-            variants={{ hidden: {}, show: { transition: { staggerChildren: 0.08 } } }}
-            className="grid grid-cols-3 gap-2 sm:gap-3 mb-6"
+            initial={reducirMovimiento ? false : { opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+            className="bg-card border border-border rounded-xl px-4 py-3 mb-6 flex flex-col gap-1.5 lg:flex-row lg:flex-wrap lg:gap-x-8"
           >
-            {[
-              { label: "Hoy", valor: data.citasHoy },
-              { label: "Semana", valor: data.citasSemana },
-              { label: "Mes", valor: data.citasMes },
-            ].map(({ label, valor }) => (
-              <motion.div key={label} variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0, transition: { duration: 0.3 } } }}>
-                <Tarjeta label={label} valor={valor} />
-              </motion.div>
-            ))}
-          </motion.div>
-
-          <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2.5">Ingresos</p>
-          <motion.div
-            initial={reducirMovimiento ? false : "hidden"} animate="show"
-            variants={{ hidden: {}, show: { transition: { staggerChildren: 0.08 } } }}
-            className="grid grid-cols-3 gap-2 sm:gap-3 mb-8"
-          >
-            {[
-              { label: "Hoy", rawValue: data.ingresosHoy },
-              { label: "Semana", rawValue: data.ingresosSemana },
-              { label: "Mes", rawValue: data.ingresosMes },
-            ].map(({ label, rawValue }) => (
-              <motion.div key={label} variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0, transition: { duration: 0.3 } } }}>
-                <Tarjeta label={label} rawValue={rawValue} accent />
-              </motion.div>
-            ))}
+            <ResumenPeriodo
+              grupo="Citas"
+              cifras={[
+                { label: "Hoy", valor: data.citasHoy },
+                { label: "Semana", valor: data.citasSemana },
+                { label: "Mes", valor: data.citasMes },
+              ]}
+            />
+            <ResumenPeriodo
+              grupo="Ingresos"
+              cifras={[
+                { label: "Hoy", valor: formatPrecio(data.ingresosHoy) },
+                { label: "Semana", valor: formatPrecio(data.ingresosSemana) },
+                { label: "Mes", valor: formatPrecio(data.ingresosMes) },
+              ]}
+            />
           </motion.div>
 
           {/* Gráfica de tendencia */}
@@ -565,7 +559,7 @@ function VistaPropietario({ nombre }: { nombre: string }) {
                     type="button"
                     aria-pressed={dias === d}
                     onClick={() => setDias(d)}
-                    className={`min-h-[44px] lg:min-h-[36px] px-3 inline-flex items-center rounded-lg border text-sm lg:text-xs font-medium whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40 ${
+                    className={`min-h-[44px] lg:min-h-[36px] px-3 inline-flex items-center rounded-lg border text-sm lg:text-xs font-medium whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-brand/40 dark:focus-visible:ring-accent-brand/40 ${
                       dias === d
                         ? "bg-slate-700 text-white border-slate-700 dark:bg-slate-600 dark:border-slate-600"
                         : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500"
@@ -576,8 +570,9 @@ function VistaPropietario({ nombre }: { nombre: string }) {
                 ))}
               </div>
             </div>
-            {tendencia.length === 0 ? (
-              <p className="text-sm text-slate-400 text-center py-8">Sin datos para este período</p>
+            {/* Una línea plana en cero no informa nada: en su lugar, una frase. */}
+            {!tendencia.some((d) => d.ingresos > 0 || d.citas > 0) ? (
+              <p className="text-sm text-muted-foreground text-center py-8">Aún no hay citas ni ingresos en estos días.</p>
             ) : (
               <ResponsiveContainer width="100%" height={200}>
                 <AreaChart data={tendencia} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
@@ -621,7 +616,7 @@ function VistaPropietario({ nombre }: { nombre: string }) {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 p-5">
+            <div className={`${data.topServicios.length > 0 ? "lg:col-span-2" : "lg:col-span-3"} bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 p-5`}>
               <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4">Próximas citas</h2>
               {data.proximasCitas.length === 0 ? (
                 <p className="text-slate-400 dark:text-slate-500 text-sm">No hay citas próximas</p>
@@ -641,29 +636,28 @@ function VistaPropietario({ nombre }: { nombre: string }) {
               )}
             </div>
 
+            {/* Sin datos no se muestran barras vacías: la tarjeta desaparece. */}
+            {data.topServicios.length > 0 && (
             <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 p-5">
               <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4">Top servicios</h2>
-              {data.topServicios.length === 0 ? (
-                <p className="text-slate-400 dark:text-slate-500 text-sm">Sin datos aún</p>
-              ) : (
                 <div className="space-y-3">
                   {data.topServicios.map((s, i) => (
                     <div key={s.nombre}>
                       <div className="flex justify-between items-center mb-1">
                         <span className="text-xs text-slate-600 dark:text-slate-400 font-medium">{i + 1}. {s.nombre}</span>
-                        <span className="text-xs text-slate-400 dark:text-slate-500">{s.totalCitas} citas</span>
+                        <span className="text-xs text-slate-500 dark:text-slate-400 tabular-nums">{s.totalCitas} citas</span>
                       </div>
                       <div className="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-1.5">
                         <div
-                          className="bg-slate-700 h-1.5 rounded-full"
+                          className="bg-accent-brand h-1.5 rounded-full"
                           style={{ width: `${Math.min((s.totalCitas / (data.topServicios[0]?.totalCitas || 1)) * 100, 100)}%` }}
                         />
                       </div>
                     </div>
                   ))}
                 </div>
-              )}
             </div>
+            )}
           </div>
         </>
           ) : guiaInicio}
@@ -751,7 +745,7 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
     : `En ${Math.floor(minProxima / 60)}h${minProxima % 60 > 0 ? ` ${minProxima % 60}min` : ""}`;
 
   const horaTexto = (iso: string) =>
-    new Date(iso).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", hour12: true });
+    new Date(iso).toLocaleTimeString("es-MX", { hour: "numeric", minute: "2-digit", hour12: true });
 
   return (
     <div className="p-4 sm:p-8">
@@ -761,26 +755,26 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
       {/* Encabezado */}
       <div className="mb-6">
         <p className="text-sm text-slate-400 dark:text-slate-500 mb-0.5">{saludo}</p>
-        <h1 className="text-3xl font-black text-slate-900 dark:text-slate-100 leading-none">{nombre}</h1>
+        <h1 className="font-display text-3xl font-semibold tracking-[-0.02em] text-slate-900 dark:text-slate-100 leading-none">{nombre}</h1>
       </div>
 
       {/* Stats hoy */}
       <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-4">
         <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-3 sm:p-4">
-          <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-1.5">Citas hoy</p>
-          <p className="text-2xl font-black text-slate-900 dark:text-slate-100 leading-none">
+          <p className="text-xs font-medium text-muted-foreground mb-1.5">Citas hoy</p>
+          <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 leading-none">
             {cargandoHoy ? "—" : citasHoy.length}
           </p>
         </div>
         <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-3 sm:p-4">
-          <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-1.5">Completadas</p>
-          <p className="text-2xl font-black text-slate-900 dark:text-slate-100 leading-none">
+          <p className="text-xs font-medium text-muted-foreground mb-1.5">Completadas</p>
+          <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 leading-none">
             {cargandoHoy ? "—" : completadas.length}
           </p>
         </div>
         <div className="bg-slate-900 rounded-2xl p-3 sm:p-4">
-          <p className="text-xs font-bold uppercase tracking-wide text-slate-300 mb-1.5">Ingresos</p>
-          <p className="text-xl font-black text-white leading-none">
+          <p className="text-xs font-medium text-slate-300 mb-1.5">Ingresos</p>
+          <p className="text-xl font-bold text-white leading-none">
             {cargandoHoy ? "—" : formatPrecioCorto(ingresosHoy)}
           </p>
         </div>
@@ -792,15 +786,15 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
           <TrendingUp size={18} className="text-status-confirmed-fg" aria-hidden="true" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-0.5">Esta semana</p>
+          <p className="text-xs font-medium text-muted-foreground mb-0.5">Esta semana</p>
           <p className="text-sm text-foreground">
-            <span className="font-black">{completadasSemana.length}</span> completadas de{" "}
+            <span className="font-bold">{completadasSemana.length}</span> completadas de{" "}
             <span className="font-bold">{totalSemana}</span> citas
           </p>
         </div>
         <div className="text-right shrink-0">
-          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-0.5">Ingresos</p>
-          <p className="text-base font-black text-foreground">
+          <p className="text-xs font-medium text-muted-foreground mb-0.5">Ingresos</p>
+          <p className="text-base font-bold text-foreground">
             {formatPrecioCorto(ingresosSemana)}
           </p>
         </div>
@@ -809,14 +803,14 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
       {/* Próxima cita del día */}
       {!cargandoHoy && proxima && (
         <div className="bg-card border border-border rounded-2xl p-4 mb-6">
-          <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3">Próxima cita</p>
+          <p className="text-sm font-semibold text-foreground mb-3">Próxima cita</p>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="min-w-0 flex-1">
               <p className="font-bold text-foreground truncate">{proxima.nombreCliente}</p>
               <p className="text-sm text-muted-foreground truncate">{proxima.nombreServicio} · {proxima.duracionMinutos} min</p>
             </div>
             <div className="text-right shrink-0">
-              <p className="text-sm font-black text-foreground">{etiquetaProxima}</p>
+              <p className="text-sm font-bold text-foreground">{etiquetaProxima}</p>
               <p className="text-xs text-muted-foreground">{horaTexto(proxima.inicioEn)}</p>
             </div>
             <AccionesCita cita={proxima} whatsapp={false} className="w-full sm:w-auto" />

@@ -360,9 +360,9 @@ describe("cobro: filtrado en el servidor", () => {
     renderPage();
 
     await waitFor(() =>
-      expect(screen.getAllByText("$9,999.00").length).toBeGreaterThan(0)
+      expect(screen.getAllByText("$9,999").length).toBeGreaterThan(0)
     );
-    expect(screen.getAllByText("$1,234.00").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("$1,234").length).toBeGreaterThan(0);
     expect(screen.getAllByText("130").length).toBeGreaterThan(0);
     expect(screen.getAllByText("/ 260").length).toBeGreaterThan(0);
   });
@@ -404,7 +404,7 @@ describe("cobro: revertir y errores", () => {
 
     await userEvent.click(revertir);
     const dialogo = await screen.findByRole("dialog", { name: "Revertir pago" });
-    expect(dialogo).toHaveTextContent("$450.00");
+    expect(dialogo).toHaveTextContent("$450");
     expect(dialogo).toHaveTextContent("Ana García");
     expect(dialogo).toHaveTextContent(/corte del día cambiará/);
     expect(pagosApi.registrar).not.toHaveBeenCalled();

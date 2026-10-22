@@ -482,13 +482,36 @@ describe("BookingPage — portada", () => {
     vi.mocked(publicoApi.obtenerNegocio).mockResolvedValue({
       ...mockNegocio,
       portadaUrl: "https://cdn.test/portada.jpg",
-      portadaPreset: "geo-arcos",
+      portadaPreset: "deg-halo",
     });
     renderConQuery();
 
     const portada = await screen.findByTestId("portada-negocio");
-    expect(portada.style.background).toBe(fondoNormalizado("geo-arcos"));
+    expect(portada.style.background).toBe(fondoNormalizado("deg-halo"));
     expect(fotoDePortada()).toBeNull();
+  });
+
+  it("un patrón retirado ya no tapa la foto: vuelve a mostrarla", async () => {
+    vi.mocked(publicoApi.obtenerNegocio).mockResolvedValue({
+      ...mockNegocio,
+      portadaUrl: "https://cdn.test/portada.jpg",
+      portadaPreset: "geo-arcos",
+    });
+    renderConQuery();
+
+    await screen.findByTestId("portada-negocio");
+    expect(fotoDePortada()?.src).toBe("https://cdn.test/portada.jpg");
+  });
+
+  it("un patrón retirado sin foto cae en el color de marca, sin romper la portada", async () => {
+    vi.mocked(publicoApi.obtenerNegocio).mockResolvedValue({
+      ...mockNegocio,
+      portadaPreset: "tex-terrazo",
+    });
+    renderConQuery();
+
+    const portada = await screen.findByTestId("portada-negocio");
+    expect(portada.style.background).toBe(fondoNormalizado(null));
   });
 
   it("carga la foto con prioridad: es el elemento LCP de la página", async () => {
@@ -702,7 +725,7 @@ describe("BookingPage — código de descuento", () => {
 
     fireEvent.keyDown(campo, { key: "Enter" });
 
-    expect(await screen.findByText(/precio final: \$120\.00/)).toBeInTheDocument();
+    expect(await screen.findByText(/precio final: \$120(?!\.)/)).toBeInTheDocument();
     expect(publicoApi.crearCita).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "Quitar código" }));
     expect(screen.queryByText(/precio final/)).not.toBeInTheDocument();

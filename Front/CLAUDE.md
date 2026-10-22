@@ -32,9 +32,15 @@ Appointment-booking SaaS frontend. Business owners and employees manage appointm
 ## Design System (source of truth)
 
 - Token reference: `docs/design-system.css`; actual tokens: `src/index.css` + `tailwind.config.js`
-- Primary color is **slate**. Brand gold `#C8A961` is for the logo/mark ONLY — never for buttons, links, or accents.
+- Direction: **"Estudio cálido"** (`docs/design/design-critique.md` §3A). Warm paper neutrals, ink, a little terracotta.
+- Primary is **warm ink** (`#1F1B16` light / `#F4EFE8` dark; `bg-primary`, `bg-ink`), no longer slate. Tailwind's `slate-*`/`gray-*`/`zinc-*` scales are remapped to the warm `--neutral-*` ramp, so prefer semantic tokens (`bg-background`, `text-muted-foreground`, `border-border`) for new code.
+- AppointVa brand accent is **terracotta** (`#B4532A` / `#E07A4F`; `text-accent-brand`, `bg-accent-brand/10`, `ring-accent-brand`) for links, focus rings, active nav and progress only. **Never on the booking page `/b/:slug`** (or other business-branded public pages): there the business colour owns the cover, CTA and selected states through `brandSolid()`.
+- Brand gold `#C8A961` is still for the logo/mark ONLY — never for buttons, links, or accents.
+- Sector salud: cool neutral ramp and `#0F4C75` accent via `[data-sector="salud"]` (DashboardLayout sets it on `<html>`; salud public pages on their root). Don't duplicate components per sector.
 - Appointment status colors (pending, confirmed, completed, etc.) are semantic tokens — use them, never hardcode hex values.
-- Font: Inter.
+- Fonts: Inter for UI (400/500/600, 700 max, never `font-black`). Display face **Fraunces** (`font-display`) ONLY for landing H1/H2 (not `/salud`), the booking business name, the confirmation headline and the dashboard Inicio greeting — never in dashboard chrome; salud falls back to Inter.
+- Shape and depth: cards `rounded-xl` (14px), controls `rounded-lg` (10px), pills only for chips/badges. Elevation is `shadow-card` OR a border, never both (`.tarjeta` is the card primitive). Motion 180–240ms with `ease-calma`.
+- Numbers: `tabular-nums` for times, money and counts; one time format (`formatHora`/`formatHoraDe`); whole pesos without `.00` (`formatPrecio`). Labels are sentence case; uppercase only for the confirmation code.
 - If a change needs a new token, add it to `src/index.css`/`tailwind.config.js` AND document it in `docs/design-system.css`.
 
 ## Design & UX Work — Required Skills

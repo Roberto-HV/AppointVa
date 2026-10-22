@@ -1,72 +1,123 @@
 /* ============================================================
  * AppointVa Design System — Token Reference
  * Source: src/index.css + tailwind.config.js
- * Updated: 2026-10-20
+ * Updated: 2026-10-21 — direction A "Estudio cálido"
+ *   (docs/design/design-critique.md §3A)
  *
  * Usage for AI assistants:
  *   - Light mode tokens are defined on :root
  *   - Dark mode via Tailwind's `darkMode: "class"` → .dark on <html>
- *   - Primary color is SLATE (not teal, not blue — slate)
- *   - Brand gold (#C8A961) is reserved for logo/mark ONLY
- *   - Semantic colors carry visual weight; no accent in the nav
+ *   - Primary is WARM INK (#1F1B16 light / #F4EFE8 dark) — no longer slate
+ *   - AppointVa brand accent is TERRACOTTA (#B4532A / #E07A4F): links, focus
+ *     ring, active nav, progress. NEVER on the booking page /b/:slug — there the
+ *     business colour owns cover, CTA and selected states via brandSolid().
+ *   - Brand gold (#C8A961) is reserved for logo/mark ONLY (unchanged)
+ *   - Tailwind's slate/gray/zinc scales are remapped to the --neutral-* ramp,
+ *     so raw `slate-*` classes are warm; the salud sector swaps the ramp to a
+ *     cool one with [data-sector="salud"]
+ *   - Every text/background pair below was contrast-checked (WCAG AA 4.5:1)
  * ============================================================ */
+
+/* === NEUTRAL RAMP (RGB channels, theme-independent) ========= */
+:root {
+  /* Tailwind: slate-*, gray-*, zinc-* all resolve to these (tailwind.config.js `neutra`).
+   * The ramp does not flip in dark: `dark:` classes already pick the dark step. */
+  --neutral-50:  250 247 242;  /* #FAF7F2 canvas */
+  --neutral-100: 243 238 230;  /* #F3EEE6 muted surface */
+  --neutral-200: 232 225 214;  /* #E8E1D6 line */
+  --neutral-300: 214 204 190;  /* #D6CCBE strong line */
+  --neutral-400: 166 155 141;  /* #A69B8D muted text (dark): 6.27:1 on #1F1B16, 5.71:1 on #28231D */
+  --neutral-500: 107 98 87;    /* #6B6257 muted text: 5.60:1 on canvas, 5.98:1 on white, 5.18:1 on #F3EEE6 */
+  --neutral-600: 79 71 61;     /* #4F473D */
+  --neutral-700: 53 47 39;     /* #352F27 line (dark) */
+  --neutral-800: 40 35 29;     /* #28231D raised surface (dark) */
+  --neutral-900: 31 27 22;     /* #1F1B16 ink / surface (dark) */
+  --neutral-950: 22 19 15;     /* #16130F canvas (dark) */
+}
+
+/* Salud sector: cool ramp, same luminance steps so contrasts hold.
+ * Set by DashboardLayout on <html> (covers Radix portals), and by
+ * LandingPageSalud / salud BookingPage / ConfirmacionPage on their root. */
+[data-sector="salud"] {
+  --neutral-50:  245 248 250;  /* #F5F8FA canvas */
+  --neutral-100: 237 242 245;  /* #EDF2F5 */
+  --neutral-200: 221 229 235;  /* #DDE5EB line */
+  --neutral-300: 195 208 218;  /* #C3D0DA */
+  --neutral-400: 147 164 177;  /* #93A4B1 muted text (dark): 6.72:1 on #141C21 */
+  --neutral-500: 91 107 120;   /* #5B6B78 muted text: 5.16:1 on canvas, 5.50:1 on white */
+  --neutral-600: 69 83 95;     /* #45535F */
+  --neutral-700: 36 49 58;     /* #24313A line (dark) */
+  --neutral-800: 26 36 43;     /* #1A242B */
+  --neutral-900: 20 28 33;     /* #141C21 surface (dark) */
+  --neutral-950: 14 20 23;     /* #0E1417 canvas (dark) */
+  --accent-brand: #0F4C75;     /* replaces terracotta: 9.09:1 on white (dark: #5FA3D6, 6.32:1 on #141C21) */
+  /* Also re-points --background/--muted/--muted-foreground/--border/--input/--ring.
+   * .font-display falls back to Inter here: salud keeps Fraunces off. */
+}
 
 /* === LIGHT MODE ============================================= */
 :root {
   /* --- Backgrounds --- */
-  --bg:        #FFFFFF;   /* html, body, #root */
-  --bg-subtle: #F8FAFC;   /* slate-50  — main content area, pages */
+  --bg:        #FAF7F2;   /* canvas — html, body, #root (--background) */
+  --bg-subtle: #FAF7F2;   /* slate-50 → canvas — main content area, pages */
   --surface:   #FFFFFF;   /* card, popover, dialog background */
-  --surface-2: #F1F5F9;   /* slate-100 — muted surfaces, secondary bg */
+  --surface-2: #F3EEE6;   /* slate-100 — muted surfaces, secondary bg (--muted) */
 
   /* --- Borders --- */
-  --border:   #E2E8F0;    /* slate-200 — default borders */
-  --border-2: #CBD5E1;    /* slate-300 — stronger borders */
+  --border:   #E8E1D6;    /* slate-200 — default borders (--border, --input) */
+  --border-2: #D6CCBE;    /* slate-300 — stronger borders */
 
   /* --- Text --- */
-  --text:       #1E293B;  /* slate-800 — primary body text */
-  --text-muted: #64748B;  /* slate-500 — secondary/hint text */
+  --text:       #1F1B16;  /* ink — primary text (--foreground): 16.0:1 on canvas */
+  --text-muted: #6B6257;  /* slate-500 — secondary text (--muted-foreground) */
 
-  /* --- Primary (slate-based, inverts in dark) --- */
-  --primary:    #334155;  /* slate-700 — buttons, active states */
-  --primary-h:  #1E293B;  /* slate-800 — hover state */
-  --primary-fg: #FFFFFF;  /* white — text on primary bg */
+  /* --- Ink / primary (Tailwind: bg-ink, bg-primary, text-primary-foreground) --- */
+  --ink:        #1F1B16;  /* --color-ink: buttons, headings, dark slabs (step bar, code block) */
+  --primary:    #1F1B16;  /* --primary / --color-primary = ink */
+  --primary-h:  #000000;  /* --color-primary-dark — hover */
+  --primary-fg: #FFFFFF;  /* white on ink: 17.1:1 */
+
+  /* --- AppointVa accent (Tailwind: text-accent-brand, bg-accent-brand/10, ring-accent-brand) --- */
+  --accent-brand: #B4532A; /* --color-accent-brand: 4.99:1 on white, 4.67:1 on canvas, white on it 4.99:1 */
+  --ring:         #B4532A; /* --ring (focus) */
+  /* shadcn --accent stays a neutral hover surface (#F3EEE6); it is not the brand accent. */
 
   /* --- Brand (NEVER changes — logo/mark only) --- */
   --brand:      #C8A961;  /* gold — AV loader mark, logo bg */
 
   /* --- Sidebar --- */
   --sidebar-bg:          #FFFFFF;
-  --sidebar-border:      #F1F5F9;   /* slate-100 */
-  --sidebar-active-bg:   #0F172A;   /* slate-900 */
-  --sidebar-active-fg:   #FFFFFF;
-  --sidebar-inactive-fg: #475569;   /* slate-600 */
-  --sidebar-hover-bg:    #F1F5F9;   /* slate-100 */
+  --sidebar-border:      #F3EEE6;   /* slate-100 */
+  --sidebar-active-bg:   rgb(180 83 42 / 0.10); /* bg-accent-brand/10 */
+  --sidebar-active-fg:   #1F1B16;   /* text-foreground (ink); icon text-accent-brand */
+  --sidebar-inactive-fg: #4F473D;   /* slate-600 */
+  --sidebar-hover-bg:    #F3EEE6;   /* slate-100 */
 
   /* --- Topbar --- */
-  --topbar-bg:     #F8FAFC;         /* slate-50 */
-  --topbar-border: #E2E8F0;         /* slate-200 */
+  --topbar-bg:     #FAF7F2;         /* slate-50 */
+  --topbar-border: #E8E1D6;         /* slate-200 */
 
   /* --- Appointment status badges --- */
-  --status-pending-bg:   #FEFCE8;   /* yellow-50 */
-  --status-pending-fg:   #A16207;   /* yellow-700 */
-  --status-pending-dot:  #CA8A04;   /* yellow-600 */
+  /* dot = status hue; fg = darkened hue, >= 4.5:1 on its bg AND on white. */
+  --status-pending-bg:   #FBF4E6;
+  --status-pending-fg:   #8C5A10;   /* 5.35:1 on bg, 5.86:1 on white */
+  --status-pending-dot:  #B7791F;
 
-  --status-confirmed-bg: #F0FDF4;   /* green-50 */
-  --status-confirmed-fg: #15803D;   /* green-700 */
-  --status-confirmed-dot:#16A34A;   /* green-600 */
+  --status-confirmed-bg: #EDF6F0;
+  --status-confirmed-fg: #2B6F47;   /* 5.49:1 on bg, 6.06:1 on white */
+  --status-confirmed-dot:#2F7D4F;
 
-  --status-completed-bg: #EFF6FF;   /* blue-50 */
-  --status-completed-fg: #1D4ED8;   /* blue-700 */
-  --status-completed-dot:#2563EB;   /* blue-600 */
+  --status-completed-bg: #EEF2F7;
+  --status-completed-fg: #3D5A80;   /* 6.28:1 on bg, 7.06:1 on white */
+  --status-completed-dot:#3D5A80;
 
-  --status-cancelled-bg: #FEF2F2;   /* red-50 */
-  --status-cancelled-fg: #B91C1C;   /* red-700 (red-600 was 4.4:1 on red-50) */
-  --status-cancelled-dot:#DC2626;
+  --status-cancelled-bg: #FBEEEC;
+  --status-cancelled-fg: #A3352A;   /* 5.98:1 on bg, 6.77:1 on white */
+  --status-cancelled-dot:#B03A2E;
 
-  --status-absent-bg:    #F9FAFB;   /* gray-50 */
-  --status-absent-fg:    #475569;   /* slate-600 */
-  --status-absent-dot:   #94A3B8;   /* slate-400 */
+  --status-absent-bg:    #F5F3F0;
+  --status-absent-fg:    #5F574D;   /* 6.41:1 on bg, 7.10:1 on white */
+  --status-absent-dot:   #8A8177;
   /* Wired in src/index.css + tailwind.config.js as
    *   bg-status-<estado>-bg  text-status-<estado>-fg  bg-status-<estado>-dot
    * (estado: pending | confirmed | completed | cancelled | absent).
@@ -106,8 +157,8 @@
   --chip-employee-fg:    #1D4ED8;   /* blue-700 */
   --chip-superadmin-bg:  #EDE9FE;   /* purple-100 */
   --chip-superadmin-fg:  #6D28D9;   /* purple-700 */
-  --chip-owner-bg:       #F1F5F9;   /* slate-100 */
-  --chip-owner-fg:       #475569;   /* slate-600 */
+  --chip-owner-bg:       #F3EEE6;   /* slate-100 */
+  --chip-owner-fg:       #4F473D;   /* slate-600 */
   --chip-plan-bg:        #FFFBEB;   /* amber-50 */
   --chip-plan-fg:        #B45309;   /* amber-700 */
 
@@ -128,70 +179,102 @@
   /* --- WhatsApp CTA --- */
   --whatsapp: #25D366;
 
-  /* --- Misc --- */
-  --radius:    0.5rem;              /* base border-radius */
-  --radius-md: 0.375rem;
-  --radius-sm: 0.25rem;
-  /* Inter autohospedada: subconjunto latino variable (@fontsource-variable/inter), font-display: swap. */
-  --font:      'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  /* --- Shape & depth --- */
+  --radius:      0.625rem;        /* 10px — controls (rounded-lg) */
+  --radius-md:   0.5rem;          /* rounded-md */
+  --radius-sm:   0.375rem;        /* rounded-sm */
+  --radius-card: 14px;            /* cards (rounded-xl, overridden in tailwind.config.js) */
+  /* Pills (rounded-full) only for chips and badges. */
+  --shadow-card: 0 1px 2px rgb(31 27 22 / 0.06), 0 4px 16px rgb(31 27 22 / 0.06);
+  /* Tailwind: shadow-card. Elevation = this shadow OR a border, never both.
+   * Card primitive: `.tarjeta` (src/index.css) = rounded-xl bg-card shadow-card, no border. */
+
+  /* --- Motion --- */
+  --ease-calma:     cubic-bezier(.22, 1, .36, 1); /* Tailwind: ease-calma (ease-out-quint) */
+  --duration-calma: 220ms;                        /* Tailwind: duration-calma; range 180–240ms */
+
+  /* --- Typography --- */
+  /* Inter autohospedada: subconjunto latino variable (@fontsource-variable/inter), font-display: swap.
+   * UI weights 400 / 500 / 600 (700 max; font-black removed). Body 16px / 1.55. */
+  --font:         'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  /* Display: Fraunces (variable opsz+wght, @fontsource-variable/fraunces@5.3.0), Tailwind `font-display`,
+   * weight 500–600. ONLY: landing H1/H2 (LandingPage, not /salud), booking business name,
+   * confirmation headline, dashboard Inicio greeting. Never in dashboard chrome. */
+  --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --tracking-heading: -0.02em;    /* h1–h3 (index.css base layer) */
+  /* tabular-nums on every time, price and count. One time format: formatHora / formatHoraDe
+   * ("9:00 a. m."); whole pesos without cents: formatPrecio(280) → "$280". */
+
+  /* --- Browser surfaces (index.css base layer) --- */
+  /* ::selection = accent at 20%; caret-color + accent-color = accent; thin scrollbars
+   * thumb neutral-300 (dark: neutral-700). */
 }
 
 /* === DARK MODE (.dark on <html>) =========================== */
 .dark {
   /* --- Backgrounds --- */
-  --bg:        #020617;   /* slate-950 */
-  --bg-subtle: #020617;   /* slate-950 */
-  --surface:   #0F172A;   /* slate-900 — cards, sidebar, topbar */
-  --surface-2: #1E293B;   /* slate-800 — muted, secondary, inputs */
+  --bg:        #16130F;   /* slate-950 — canvas (--background) */
+  --bg-subtle: #16130F;   /* slate-950 */
+  --surface:   #1F1B16;   /* slate-900 — cards, sidebar, topbar (--card) */
+  --surface-2: #28231D;   /* slate-800 — muted, secondary, inputs (--muted) */
 
   /* --- Borders --- */
-  --border:   #1E293B;    /* slate-800 */
-  --border-2: #334155;    /* slate-700 */
+  --border:   #352F27;    /* slate-700 (--border) */
+  --border-2: #4F473D;    /* slate-600 */
 
   /* --- Text --- */
-  --text:       #F1F5F9;  /* slate-100 */
-  --text-muted: #94A3B8;  /* slate-400 */
+  --text:       #F4EFE8;  /* --foreground: 16.2:1 on canvas */
+  --text-muted: #A69B8D;  /* slate-400 (--muted-foreground) */
 
-  /* --- Primary (inverted) --- */
-  --primary:    #CBD5E1;  /* slate-300 */
-  --primary-h:  #E2E8F0;  /* slate-200 */
-  --primary-fg: #0F172A;  /* slate-900 — text on primary bg */
+  /* --- Ink / primary (inverted) --- */
+  --ink:        #F4EFE8;
+  --primary:    #F4EFE8;
+  --primary-h:  #FFFFFF;
+  --primary-fg: #16130F;  /* 16.2:1 */
+
+  /* --- AppointVa accent (dark) --- */
+  --accent-brand: #E07A4F; /* 5.76:1 on #1F1B16, 6.23:1 on #16130F, 5.24:1 on #28231D */
+  --ring:         #E07A4F;
 
   /* Brand: unchanged */
   --brand: #C8A961;
 
   /* --- Sidebar --- */
-  --sidebar-bg:          #0F172A;                  /* slate-900 */
-  --sidebar-border:      rgba(100, 116, 139, 0.3); /* slate-500/30 */
-  --sidebar-active-bg:   #475569;                  /* slate-600 */
-  --sidebar-active-fg:   #FFFFFF;
-  --sidebar-inactive-fg: #CBD5E1;                  /* slate-300 */
-  --sidebar-hover-bg:    #1E293B;                  /* slate-800 */
+  --sidebar-bg:          #1F1B16;                  /* slate-900 */
+  --sidebar-border:      rgb(53 47 39 / 0.5);      /* slate-700/50 */
+  --sidebar-active-bg:   rgb(224 122 79 / 0.10);   /* bg-accent-brand/10 */
+  --sidebar-active-fg:   #F4EFE8;
+  --sidebar-inactive-fg: #D6CCBE;                  /* slate-300 */
+  --sidebar-hover-bg:    #352F27;                  /* slate-700 */
 
   /* --- Topbar --- */
-  --topbar-bg:     #0F172A;  /* slate-900 */
-  --topbar-border: #334155;  /* slate-700 */
+  --topbar-bg:     #1F1B16;  /* slate-900 */
+  --topbar-border: #352F27;  /* slate-700 */
 
   /* --- Appointment status badges (dark) --- */
-  --status-pending-bg:   rgba(161, 98, 7, 0.2);   /* yellow-900/30 */
-  --status-pending-fg:   #FACC15;                  /* yellow-400 */
-  --status-pending-dot:  #EAB308;                  /* yellow-500 */
+  /* bg = hue at 18% over the surface; fg = 400-equivalent. fg/bg >= 5.8:1 on
+   * #16130F, #1F1B16 and #28231D. */
+  --status-pending-bg:   rgba(183, 121, 31, 0.18);
+  --status-pending-fg:   #E8B65C;                  /* 7.26:1 over #1F1B16 */
+  --status-pending-dot:  #D69A35;
 
-  --status-confirmed-bg: rgba(6, 78, 59, 0.4);    /* green-900/30 */
-  --status-confirmed-fg: #4ADE80;                  /* green-400 */
-  --status-confirmed-dot:#22C55E;                  /* green-500 */
+  --status-confirmed-bg: rgba(47, 125, 79, 0.18);
+  --status-confirmed-fg: #74C493;                  /* 6.87:1 */
+  --status-confirmed-dot:#4FA571;
 
-  --status-completed-bg: rgba(30, 64, 175, 0.2);  /* blue-900/30 */
-  --status-completed-fg: #60A5FA;                  /* blue-400 */
-  --status-completed-dot:#3B82F6;                  /* blue-500 */
+  --status-completed-bg: rgba(61, 90, 128, 0.18);
+  --status-completed-fg: #98B4D9;                  /* 7.13:1 */
+  --status-completed-dot:#6E8FBA;
 
-  --status-cancelled-bg: rgba(127, 29, 29, 0.2);  /* red-900/30 */
-  --status-cancelled-fg: #F87171;                  /* red-400 */
-  --status-cancelled-dot:#EF4444;                  /* red-500 */
+  --status-cancelled-bg: rgba(176, 58, 46, 0.18);
+  --status-cancelled-fg: #F08F84;                  /* 6.38:1 */
+  --status-cancelled-dot:#D9604F;
 
-  --status-absent-bg:    #334155;                  /* slate-700 */
-  --status-absent-fg:    #CBD5E1;                  /* slate-300 (gray-400 was 4.1:1) */
-  --status-absent-dot:   #94A3B8;                  /* slate-400 */
+  --status-absent-bg:    #352F27;                  /* slate-700 */
+  --status-absent-fg:    #CDC3B6;                  /* 7.61:1 */
+  --status-absent-dot:   #8A8177;
+
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3), 0 4px 16px rgb(0 0 0 / 0.25);
 
   /* --- Sidebar, "salud" sector (dark) --- */
   --sidebar-salud-bg:     #0B2E47;
@@ -219,8 +302,8 @@
   --chip-employee-fg:    #93C5FD;   /* blue-300 */
   --chip-superadmin-bg:  rgba(109, 40, 217, 0.2);
   --chip-superadmin-fg:  #C4B5FD;   /* purple-300 */
-  --chip-owner-bg:       #1E293B;   /* slate-800 */
-  --chip-owner-fg:       #94A3B8;   /* slate-400 */
+  --chip-owner-bg:       #28231D;   /* slate-800 */
+  --chip-owner-fg:       #A69B8D;   /* slate-400 */
   --chip-plan-bg:        rgba(180, 83, 9, 0.2);
   --chip-plan-fg:        #FCD34D;   /* amber-300 */
 
@@ -263,7 +346,8 @@
 
 /*
  * Sidebar NavLink:
- *   Active:   bg-slate-900 dark:bg-slate-600   text-white font-semibold shadow-md
+ *   Active:   bg-accent-brand/10 text-foreground font-semibold; icon text-accent-brand
+ *             (salud: bg-sidebar-salud-active text-white)
  *   Inactive: text-slate-600 dark:text-slate-300
  *             hover:bg-slate-100 dark:hover:bg-slate-700
  *   Base:     flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors
@@ -284,10 +368,9 @@
  */
 
 /*
- * Stat card (income accent — dark even in light mode):
- *   bg-slate-900 border-slate-800 text-white
- *   KPI value: text-xl sm:text-2xl font-black leading-none
- *   Label:     text-[10px] font-bold uppercase tracking-widest text-slate-400
+ * Inicio metrics: ONE line of text per group (ResumenPeriodo in InicioPage.tsx):
+ *   "Citas  Hoy 3 · Semana 12 · Mes 45", values font-semibold tabular-nums.
+ *   The hero-metric stat cards were removed; empty chart / top services are hidden.
  *
  * Standard card:
  *   bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700
@@ -296,29 +379,33 @@
 
 /*
  * Animations:
- *   .animate-step-in  → opacity 0→1 + translateX(14px→0) in 0.22s ease-out
- *   .animate-fade-in  → opacity 0→1 + translateY(6px→0)  in 0.22s ease-out
+ *   .animate-step-in  → opacity 0→1 + translateX(14px→0) in 0.22s ease-calma
+ *   .animate-fade-in  → opacity 0→1 + translateY(6px→0)  in 0.22s ease-calma
+ *   New transitions: duration-calma (220ms, range 180–240) + ease-calma
  *   All buttons/active states: transform scale(0.97) on :active, 80ms ease
  */
 
 /*
  * Typography in use:
- *   text-3xl font-black          → page greeting headings
- *   text-xl sm:text-2xl font-black leading-none → KPI values
+ *   font-display text-3xl font-semibold → Inicio greeting (Fraunces; Inter in salud)
  *   text-sm font-bold / font-semibold            → section titles
  *   text-xs font-semibold                        → badges, chips, labels
- *   text-[10px] font-bold uppercase tracking-widest → micro-labels (Apple style)
- *   text-xs font-mono font-bold                  → times in agenda
+ *   text-xs font-semibold tabular-nums           → times in agenda
  *
- * Single font: Inter — no display or mono variants in the design system.
- * Font loaded via system-ui fallback (no @font-face; Inter must be installed
- * or loaded externally by the app shell).
+ * Labels are sentence case (text-sm font-medium). Uppercase is reserved for the
+ * confirmation code. No font-black anywhere (700 max, 600 preferred).
+ * Inter + Fraunces are self-hosted via @font-face in src/index.css.
  */
 
 /*
  * Specialty context (Health sector):
- *   Sidebar bg override via inline style: backgroundColor: "#1B6CA8"
- *   This is a per-tenant customization, not a design system token.
+ *   Sidebar uses the --sidebar-salud-* tokens. The rest of the UI gets the cool
+ *   neutral ramp and the #0F4C75 accent through [data-sector="salud"] (see top).
+ *
+ * Cover presets (src/lib/portadaPresets.ts): photo / brand colour (no preset) /
+ *   "deg-halo" soft tint. Retired keys (geo-*, tex-*, deg-aurora|malla|amanecer)
+ *   are normalised by normalizarPresetPortada(): gradients → deg-halo, patterns
+ *   and textures → no preset (photo if any, else brand colour).
  */
 
 /*

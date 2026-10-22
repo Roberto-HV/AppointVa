@@ -1,6 +1,13 @@
 // ── Precio ─────────────────────────────────────────────────────────────────────
+/** Pesos enteros sin centavos ("$280"); con centavos solo si los hay ("$280.50"). */
 export function formatPrecio(n: number): string {
-  return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(n);
+  const enteros = Number.isInteger(n);
+  return new Intl.NumberFormat("es-MX", {
+    style: "currency",
+    currency: "MXN",
+    minimumFractionDigits: enteros ? 0 : 2,
+    maximumFractionDigits: enteros ? 0 : 2,
+  }).format(n);
 }
 
 /**
@@ -67,7 +74,7 @@ export function formatFechaHoraCorta(iso: string): string {
   if (isNaN(d.getTime())) return "—";
   return d.toLocaleString("es-MX", {
     day: "2-digit", month: "short", year: "numeric",
-    hour: "2-digit", minute: "2-digit", hour12: true,
+    ...OPCIONES_HORA,
   });
 }
 
@@ -78,11 +85,19 @@ export function formatFechaCorta(iso: string): string {
   return d.toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" });
 }
 
-/** Solo la parte de hora: "04:30 p. m." */
+// Formato único de hora en toda la app: "9:00 a. m." (hora sin cero a la izquierda).
+const OPCIONES_HORA = { hour: "numeric", minute: "2-digit", hour12: true } as const;
+
+/** Hora de un Date: "4:30 p. m." */
+export function formatHoraDe(d: Date): string {
+  return d.toLocaleTimeString("es-MX", OPCIONES_HORA);
+}
+
+/** Solo la parte de hora: "4:30 p. m." */
 export function formatHora(iso: string): string {
   const d = toUtcDate(iso);
   if (isNaN(d.getTime())) return "—";
-  return d.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", hour12: true });
+  return formatHoraDe(d);
 }
 
 /** Fecha + hora estándar para vistas detalle: "15 de junio de 2026, 10:00 a. m." */
@@ -91,7 +106,7 @@ export function formatFechaHora(iso: string): string {
   if (isNaN(d.getTime())) return "—";
   return d.toLocaleString("es-MX", {
     day: "2-digit", month: "long", year: "numeric",
-    hour: "2-digit", minute: "2-digit", hour12: true,
+    ...OPCIONES_HORA,
   }).replace(/\bDe\b/g, "de");
 }
 
@@ -101,7 +116,7 @@ export function formatFechaHoraResumen(iso: string): string {
   if (isNaN(d.getTime())) return "—";
   const s = d.toLocaleString("es-MX", {
     weekday: "short", day: "numeric", month: "long", year: "numeric",
-    hour: "2-digit", minute: "2-digit", hour12: true,
+    ...OPCIONES_HORA,
   }).replace(/\bDe\b/g, "de");
   return capitalizarPrimera(s);
 }
@@ -112,7 +127,7 @@ export function formatFechaHoraCompleta(iso: string): string {
   if (isNaN(d.getTime())) return "—";
   const s = d.toLocaleString("es-MX", {
     weekday: "long", day: "numeric", month: "long", year: "numeric",
-    hour: "2-digit", minute: "2-digit", hour12: true,
+    ...OPCIONES_HORA,
   }).replace(/\bDe\b/g, "de");
   return capitalizarPrimera(s);
 }
@@ -134,4 +149,27 @@ export function nombreConInicial(nombreCompleto: string | null | undefined): str
   const apellido = partes.slice(1).find((p) => !PARTICULAS_APELLIDO.has(p.toLocaleLowerCase("es-MX")));
   if (!apellido) return partes[0];
   return `${partes[0]} ${apellido.charAt(0).toLocaleUpperCase("es-MX")}.`;
+}
+
+// Palabras genéricas del giro que no distinguen a un negocio de otro.
+const GIROS_GENERICOS = new Set([
+  "salon", "barberia", "clinica", "consultorio", "estudio", "spa",
+  "el", "la", "los", "las", "de", "del", "y",
+]);
+
+/** Sin acentos y en minúsculas, para comparar con GIROS_GENERICOS. */
+function normalizar(palabra: string): string {
+  return palabra.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("es-MX");
+}
+
+/**
+ * Monograma del negocio a partir de su palabra distintiva:
+ * "Salón Aramis" → "A", "Barbería Luis" → "L", "Clínica Dental Sonrisa" → "D".
+ * Si todas las palabras son genéricas, usa la primera ("Salón" → "S").
+ */
+export function monogramaNegocio(nombre: string | null | undefined): string {
+  const palabras = (nombre ?? "").trim().split(/\s+/).filter(Boolean);
+  if (palabras.length === 0) return "";
+  const distintiva = palabras.find((p) => !GIROS_GENERICOS.has(normalizar(p))) ?? palabras[0];
+  return distintiva.charAt(0).toLocaleUpperCase("es-MX");
 }

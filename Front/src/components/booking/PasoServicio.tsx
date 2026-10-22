@@ -1,7 +1,6 @@
 import { useMemo } from "react";
 import type { ServicioPublico } from "../../types";
 import { formatPrecio } from "../../utils/formatters";
-import { getSectorTerms } from "../../hooks/useSectorTerms";
 import { brandAccent, brandTint, DEFAULT_COLOR } from "../../lib/colorUtils";
 import FilaSeleccion, { GrupoFilas } from "./FilaSeleccion";
 import { Clock } from "lucide-react";
@@ -61,15 +60,13 @@ function agrupar(servicios: ServicioPublico[]): Grupo[] {
 }
 
 export default function PasoServicio({ servicios, seleccionado, onSeleccionar, color = DEFAULT_COLOR, sector }: Props) {
-  const terms = getSectorTerms(sector);
   const acento = useMemo(() => brandAccent(color), [color]);
   const tinte = useMemo(() => brandTint(color), [color]);
   const grupos = useMemo(() => agrupar(servicios), [servicios]);
 
   return (
     <div>
-      <h2 tabIndex={-1} className="text-xl font-bold text-slate-900 mb-1 outline-none">{`¿Qué ${terms.servicio.toLowerCase()} necesitas?`}</h2>
-      <p className="text-sm text-slate-500 mb-5">{`Selecciona un ${terms.servicio.toLowerCase()} para continuar`}</p>
+      <h2 tabIndex={-1} className="text-xl font-bold text-slate-900 mb-5 outline-none">{sector === "salud" ? "¿Qué tipo de consulta necesitas?" : "¿Qué te hacemos hoy?"}</h2>
 
       <div className="space-y-5">
         {grupos.map((grupo) => (
