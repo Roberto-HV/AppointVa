@@ -17,8 +17,11 @@ vi.mock("../../api/auth", () => ({
     configurar2FA: vi.fn(),
     activar2FA: vi.fn(),
     desactivar2FA: vi.fn(),
+    regenerarCodigosRecuperacion: vi.fn(),
   },
 }));
+
+const CODIGOS = Array.from({ length: 10 }, (_, i) => `AAAA${i}-BBBB${i}`);
 
 vi.mock("../../store/toastStore", () => ({
   useToastStore: () => ({ toast: vi.fn() }),
@@ -53,6 +56,7 @@ describe("DosFactoresPage — idle: 2FA desactivado", () => {
     vi.mocked(authApi.obtenerEstado2FA).mockResolvedValue({
       habilitado: false,
       tieneConfiguracion: false,
+      codigosRecuperacionRestantes: 0,
     });
     renderConQuery();
     await screen.findByText("Autenticación de dos factores (2FA)");
@@ -67,6 +71,7 @@ describe("DosFactoresPage — idle: 2FA activado", () => {
     vi.mocked(authApi.obtenerEstado2FA).mockResolvedValue({
       habilitado: true,
       tieneConfiguracion: true,
+      codigosRecuperacionRestantes: 10,
     });
     renderConQuery();
     await screen.findByText("2FA activado");
@@ -78,6 +83,7 @@ describe("DosFactoresPage — flujo activación: paso 1 (QR)", () => {
     vi.mocked(authApi.obtenerEstado2FA).mockResolvedValue({
       habilitado: false,
       tieneConfiguracion: false,
+      codigosRecuperacionRestantes: 0,
     });
     vi.mocked(authApi.configurar2FA).mockResolvedValue({
       uri: "otpauth://totp/test?secret=ABCD1234",
@@ -97,6 +103,7 @@ describe("DosFactoresPage — flujo activación: input de código", () => {
     vi.mocked(authApi.obtenerEstado2FA).mockResolvedValue({
       habilitado: false,
       tieneConfiguracion: false,
+      codigosRecuperacionRestantes: 0,
     });
     vi.mocked(authApi.configurar2FA).mockResolvedValue({
       uri: "otpauth://totp/test?secret=ABCD1234",
@@ -119,12 +126,13 @@ describe("DosFactoresPage — flujo activación: éxito", () => {
     vi.mocked(authApi.obtenerEstado2FA).mockResolvedValue({
       habilitado: false,
       tieneConfiguracion: false,
+      codigosRecuperacionRestantes: 0,
     });
     vi.mocked(authApi.configurar2FA).mockResolvedValue({
       uri: "otpauth://totp/test?secret=ABCD1234",
       llave: "ABCD1234",
     });
-    vi.mocked(authApi.activar2FA).mockResolvedValue({ mensaje: "OK" });
+    vi.mocked(authApi.activar2FA).mockResolvedValue({ mensaje: "OK", codigosRecuperacion: CODIGOS });
     renderConQuery();
     fireEvent.click(
       await screen.findByRole("button", { name: "Activar autenticación en dos pasos" })
@@ -137,14 +145,14 @@ describe("DosFactoresPage — flujo activación: éxito", () => {
     expect(authApi.activar2FA).toHaveBeenCalledWith("123456");
   });
 
-  it("Enter con el código escrito confirma la activación y avisa que no hay códigos de respaldo", async () => {
-    vi.mocked(authApi.obtenerEstado2FA).mockResolvedValue({ habilitado: false, tieneConfiguracion: false });
+  it("Enter con el código escrito confirma la activación y anuncia los códigos de recuperación", async () => {
+    vi.mocked(authApi.obtenerEstado2FA).mockResolvedValue({ habilitado: false, tieneConfiguracion: false, codigosRecuperacionRestantes: 0 });
     vi.mocked(authApi.configurar2FA).mockResolvedValue({ uri: "otpauth://totp/test?secret=ABCD1234", llave: "ABCD1234" });
-    vi.mocked(authApi.activar2FA).mockResolvedValue({ mensaje: "OK" });
+    vi.mocked(authApi.activar2FA).mockResolvedValue({ mensaje: "OK", codigosRecuperacion: CODIGOS });
     renderConQuery();
     fireEvent.click(await screen.findByRole("button", { name: "Activar autenticación en dos pasos" }));
     const campo = await screen.findByPlaceholderText("000000");
-    expect(screen.getByText(/no genera códigos de respaldo/)).toBeInTheDocument();
+    expect(screen.getByText(/10 códigos de recuperación/)).toBeInTheDocument();
     fireEvent.change(campo, { target: { value: "654321" } });
     fireEvent.submit(campo.closest("form")!);
     await waitFor(() => expect(authApi.activar2FA).toHaveBeenCalledWith("654321"));
@@ -156,6 +164,7 @@ describe("DosFactoresPage — flujo activación: código incorrecto", () => {
     vi.mocked(authApi.obtenerEstado2FA).mockResolvedValue({
       habilitado: false,
       tieneConfiguracion: false,
+      codigosRecuperacionRestantes: 0,
     });
     vi.mocked(authApi.configurar2FA).mockResolvedValue({
       uri: "otpauth://totp/test?secret=ABCD1234",
@@ -181,6 +190,7 @@ describe("DosFactoresPage — flujo desactivación", () => {
     vi.mocked(authApi.obtenerEstado2FA).mockResolvedValue({
       habilitado: true,
       tieneConfiguracion: true,
+      codigosRecuperacionRestantes: 10,
     });
     vi.mocked(authApi.desactivar2FA).mockResolvedValue({ mensaje: "OK" });
     renderConQuery();
@@ -192,5 +202,60 @@ describe("DosFactoresPage — flujo desactivación", () => {
     await waitFor(() =>
       expect(authApi.desactivar2FA).toHaveBeenCalledWith("123456")
     );
+  });
+});
+
+describe("DosFactoresPage — códigos de recuperación (B8)", () => {
+  it("tras activar muestra los 10 códigos una sola vez, con copiar y descargar", async () => {
+    vi.mocked(authApi.obtenerEstado2FA).mockResolvedValue({ habilitado: false, tieneConfiguracion: false, codigosRecuperacionRestantes: 0 });
+    vi.mocked(authApi.configurar2FA).mockResolvedValue({ uri: "otpauth://totp/test?secret=ABCD1234", llave: "ABCD1234" });
+    vi.mocked(authApi.activar2FA).mockResolvedValue({ mensaje: "OK", codigosRecuperacion: CODIGOS });
+    renderConQuery();
+    fireEvent.click(await screen.findByRole("button", { name: "Activar autenticación en dos pasos" }));
+    fireEvent.change(await screen.findByPlaceholderText("000000"), { target: { value: "123456" } });
+    fireEvent.click(screen.getByRole("button", { name: "Confirmar activación" }));
+
+    const lista = await screen.findByRole("list", { name: "Códigos de recuperación" });
+    expect(lista.querySelectorAll("li")).toHaveLength(10);
+    expect(screen.getByRole("button", { name: /Copiar/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Descargar .txt/ })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Ya los guardé" }));
+    expect(screen.queryByText(CODIGOS[0])).not.toBeInTheDocument();
+  });
+
+  it("con 2FA activo muestra cuántos quedan y avisa cuando son pocos", async () => {
+    vi.mocked(authApi.obtenerEstado2FA).mockResolvedValue({ habilitado: true, tieneConfiguracion: true, codigosRecuperacionRestantes: 2 });
+    renderConQuery();
+    expect(await screen.findByText(/Te quedan pocos códigos/)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Códigos de recuperación" })).toBeInTheDocument();
+  });
+
+  it("no avisa cuando quedan suficientes", async () => {
+    vi.mocked(authApi.obtenerEstado2FA).mockResolvedValue({ habilitado: true, tieneConfiguracion: true, codigosRecuperacionRestantes: 8 });
+    renderConQuery();
+    await screen.findByRole("heading", { name: "Códigos de recuperación" });
+    expect(screen.queryByText(/Te quedan pocos códigos/)).not.toBeInTheDocument();
+  });
+
+  it("regenerar pide la contraseña y muestra los códigos nuevos", async () => {
+    vi.mocked(authApi.obtenerEstado2FA).mockResolvedValue({ habilitado: true, tieneConfiguracion: true, codigosRecuperacionRestantes: 1 });
+    vi.mocked(authApi.regenerarCodigosRecuperacion).mockResolvedValue({ mensaje: "OK", codigosRecuperacion: CODIGOS });
+    renderConQuery();
+    const generar = await screen.findByRole("button", { name: "Generar códigos nuevos" });
+    expect(generar).toBeDisabled();
+    fireEvent.change(screen.getByLabelText("Tu contraseña"), { target: { value: "Secreta123" } });
+    fireEvent.click(generar);
+    await waitFor(() => expect(authApi.regenerarCodigosRecuperacion).toHaveBeenCalledWith({ contrasena: "Secreta123" }));
+    expect(await screen.findByText(CODIGOS[3])).toBeInTheDocument();
+  });
+
+  it("muestra el error si la contraseña no es correcta", async () => {
+    vi.mocked(authApi.obtenerEstado2FA).mockResolvedValue({ habilitado: true, tieneConfiguracion: true, codigosRecuperacionRestantes: 5 });
+    vi.mocked(authApi.regenerarCodigosRecuperacion).mockRejectedValue({ response: { data: { mensaje: "La contraseña o el código no son correctos." } } });
+    renderConQuery();
+    fireEvent.change(await screen.findByLabelText("Tu contraseña"), { target: { value: "mala" } });
+    fireEvent.click(screen.getByRole("button", { name: "Generar códigos nuevos" }));
+    expect(await screen.findByText("La contraseña o el código no son correctos.")).toBeInTheDocument();
   });
 });

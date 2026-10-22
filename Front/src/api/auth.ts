@@ -1,6 +1,18 @@
 import { api } from "./axios";
 import type { LoginRespuesta } from "../types";
 
+export interface EstadoDosFactores {
+  habilitado: boolean;
+  tieneConfiguracion: boolean;
+  /** Códigos de recuperación sin usar (0 con 2FA desactivado). */
+  codigosRecuperacionRestantes: number;
+}
+
+export interface CodigosRecuperacionRespuesta {
+  mensaje: string;
+  codigosRecuperacion: string[];
+}
+
 export const authApi = {
   login: async (email: string, contrasena: string): Promise<LoginRespuesta> => {
     const { data } = await api.post("/auth/login", { email, contrasena });
@@ -41,7 +53,7 @@ export const authApi = {
   },
 
   // 2FA
-  obtenerEstado2FA: async (): Promise<{ habilitado: boolean; tieneConfiguracion: boolean }> => {
+  obtenerEstado2FA: async (): Promise<EstadoDosFactores> => {
     const { data } = await api.get("/auth/2fa/estado");
     return data;
   },
@@ -51,8 +63,17 @@ export const authApi = {
     return data;
   },
 
-  activar2FA: async (codigo: string): Promise<{ mensaje: string }> => {
+  /** Devuelve los códigos de recuperación en claro: es la única vez que llegan. */
+  activar2FA: async (codigo: string): Promise<CodigosRecuperacionRespuesta> => {
     const { data } = await api.post("/auth/2fa/activar", { codigo });
+    return data;
+  },
+
+  /** Reemplaza todos los códigos; pide la contraseña o un código de la app. */
+  regenerarCodigosRecuperacion: async (
+    verificacion: { contrasena: string } | { codigo: string },
+  ): Promise<CodigosRecuperacionRespuesta> => {
+    const { data } = await api.post("/auth/2fa/codigos-recuperacion", verificacion);
     return data;
   },
 
@@ -63,6 +84,12 @@ export const authApi = {
 
   verificar2FA: async (challengeToken: string, codigo: string): Promise<LoginRespuesta> => {
     const { data } = await api.post("/auth/2fa/verificar", { challengeToken, codigo });
+    return data;
+  },
+
+  /** Mismo paso del login con un código de recuperación de un solo uso (B8). */
+  verificar2FAConCodigoRecuperacion: async (challengeToken: string, codigoRecuperacion: string): Promise<LoginRespuesta> => {
+    const { data } = await api.post("/auth/2fa/verificar", { challengeToken, codigoRecuperacion });
     return data;
   },
 

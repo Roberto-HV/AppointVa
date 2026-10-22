@@ -55,13 +55,31 @@ function fechaComoUtc(d: Date): Date {
   return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours(), d.getMinutes(), d.getSeconds()));
 }
 
+/**
+ * S9: ExcelJS ya escribe el texto como celda de texto (Excel no lo evalúa al abrir),
+ * pero si alguien edita la celda y pulsa Enter, "=…" pasa a ser fórmula, y el mismo
+ * texto copiado a un CSV sí se ejecuta. Se antepone un apóstrofo a lo que empieza
+ * con = + - @ (o tabulador / retorno), salvo números y teléfonos ("+52 55 1234 5678",
+ * "-15"): sin letras ni símbolos no hay fórmula que armar. Igual que `Escapar` del CSV
+ * del servidor.
+ */
+const INICIO_FORMULA = /^[=+\-@\t\r]/;
+const NUMERO_O_TELEFONO = /^[+-]?[0-9 ().-]+$/;
+
+export function neutralizarFormula(texto: string): string {
+  return INICIO_FORMULA.test(texto) && !NUMERO_O_TELEFONO.test(texto) ? `'${texto}` : texto;
+}
+
 export function prepararCelda(v: CeldaExcel): CeldaPreparada {
   if (v === null || v === undefined) return { value: "", texto: "" };
   if (typeof v === "number") {
     const entero = Number.isInteger(v);
     return { value: v, numFmt: entero ? FORMATO_ENTERO : FORMATO_DECIMAL, texto: v.toLocaleString("es-MX") };
   }
-  if (typeof v === "string") return { value: v, texto: v };
+  if (typeof v === "string") {
+    const seguro = neutralizarFormula(v);
+    return { value: seguro, texto: seguro };
+  }
   if (v instanceof Date) {
     if (isNaN(v.getTime())) return { value: "", texto: "" };
     const conHora = v.getHours() !== 0 || v.getMinutes() !== 0;

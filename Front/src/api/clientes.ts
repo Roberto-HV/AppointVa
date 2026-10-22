@@ -16,7 +16,27 @@ export interface ResumenActividad {
   sinVisitas: number;
 }
 
+/** Una fila del archivo de Excel. Las notas internas no se exportan. */
+export interface ClienteExportacion {
+  nombreCompleto: string;
+  telefono: string;
+  email: string | null;
+  totalCitas: number;
+  cantidadInasistencias: number;
+  ultimaCitaEn: string | null;
+  fechaCreacion: string;
+}
+
 export const clientesApi = {
+  /**
+   * Todo el directorio (o la búsqueda actual), sin paginar. Solo el propietario;
+   * el servidor limita la frecuencia y registra cada exportación (decisión 10).
+   */
+  exportar: async (buscar?: string): Promise<ClienteExportacion[]> => {
+    const { data } = await api.get("/clientes/exportar", { params: buscar ? { buscar } : {} });
+    return data;
+  },
+
   obtenerTodos: async (buscar?: string, pagina = 1, tamano = 30): Promise<PaginaClientes> => {
     const { data, headers } = await api.get("/clientes", {
       params: { ...(buscar ? { buscar } : {}), pagina, tamano },

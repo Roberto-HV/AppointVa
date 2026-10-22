@@ -4,6 +4,7 @@ using AppointVaAPI.Models.Dtos.Reportes;
 using AppointVaAPI.Services.IServices;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
 using System.Text;
@@ -17,11 +18,13 @@ namespace AppointVaAPI.Controllers.V1
     {
         private readonly ApplicationDbContext _db;
         private readonly IContextoNegocio _contexto;
+        private readonly IAuditService _audit;
 
-        public ReportesController(ApplicationDbContext db, IContextoNegocio contexto)
+        public ReportesController(ApplicationDbContext db, IContextoNegocio contexto, IAuditService audit)
         {
             _db = db;
             _contexto = contexto;
+            _audit = audit;
         }
 
         // GET api/reportes/citas?desde=&hasta=&empleadoId=&servicioId=&estado=
@@ -34,8 +37,35 @@ namespace AppointVaAPI.Controllers.V1
             [FromQuery] byte? estado)
         {
             if (_contexto.NegocioId is null) return Unauthorized();
-            var negocioId = _contexto.NegocioId.Value;
+            return Ok(await ConstruirReporteCitasAsync(_contexto.NegocioId.Value, desde, hasta, empleadoId, servicioId, estado));
+        }
 
+        // GET api/reportes/citas/exportacion — the same report, for the Excel file (S7)
+        // Every row carries client name, phone and email, so building the file goes
+        // through here: owner-only, rate limited and audited like the client export.
+        [HttpGet("citas/exportacion")]
+        [Authorize(Policy = Politicas.GestionCompleta)]
+        [EnableRateLimiting(Politicas.LimiteExportacion)]
+        public async Task<IActionResult> ExportacionCitas(
+            [FromQuery] DateTime? desde,
+            [FromQuery] DateTime? hasta,
+            [FromQuery] Guid? empleadoId,
+            [FromQuery] Guid? servicioId,
+            [FromQuery] byte? estado)
+        {
+            if (_contexto.NegocioId is null) return Unauthorized();
+            var dto = await ConstruirReporteCitasAsync(_contexto.NegocioId.Value, desde, hasta, empleadoId, servicioId, estado);
+            await RegistrarExportacionAsync("reporte de citas", dto.Citas.Count, "xlsx");
+            return Ok(dto);
+        }
+
+        private Task RegistrarExportacionAsync(string origen, int filas, string formato) =>
+            _audit.RegistrarAsync(ClientesController.AccionExportarClientes, "Negocio", _contexto.NegocioId.ToString(),
+                $"Origen: {origen}; Filas: {filas}; Formato: {formato}");
+
+        private async Task<ReporteCitasDto> ConstruirReporteCitasAsync(
+            Guid negocioId, DateTime? desde, DateTime? hasta, Guid? empleadoId, Guid? servicioId, byte? estado)
+        {
             var (desdeUtc, hastaUtc) = NormalizarRango(desde, hasta);
 
             var query = _db.Citas
@@ -110,12 +140,13 @@ namespace AppointVaAPI.Controllers.V1
                 }).ToList()
             };
 
-            return Ok(dto);
+            return dto;
         }
 
         // GET api/reportes/citas/exportar — descarga CSV
         [HttpGet("citas/exportar")]
         [Authorize(Policy = Politicas.GestionCompleta)] // B10: exports are never available to Empleado
+        [EnableRateLimiting(Politicas.LimiteExportacion)] // S7: client data, audited below
         public async Task<IActionResult> ExportarCitasCsv(
             [FromQuery] DateTime? desde,
             [FromQuery] DateTime? hasta,
@@ -166,6 +197,8 @@ namespace AppointVaAPI.Controllers.V1
                 };
                 sb.AppendLine(string.Join(",", campos));
             }
+
+            await RegistrarExportacionAsync("citas (CSV)", citas.Count, "csv");
 
             var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
             var nombreArchivo = $"citas_{desdeUtc:yyyyMMdd}_{hastaUtc.AddDays(-1):yyyyMMdd}.csv";
@@ -371,11 +404,24 @@ namespace AppointVaAPI.Controllers.V1
             return (desdeUtc, hastaUtc);
         }
 
-        private static string Escapar(string valor)
+        /// <summary>
+        /// CSV cell. S9: a cell that starts with = + - @ (or tab / carriage return) is run
+        /// as a formula when the file is opened in a spreadsheet, so it gets a leading
+        /// apostrophe. Plain numbers and phone numbers ("+52 55 1234 5678", "-15") have no
+        /// letters or symbols to build a payload from and are left as they are.
+        /// </summary>
+        public static string Escapar(string valor)
         {
-            if (valor.Contains(',') || valor.Contains('"') || valor.Contains('\n'))
+            if (valor.Length > 0 && "=+-@\t\r".Contains(valor[0]) && !PareceNumeroOTelefono(valor))
+                valor = "'" + valor;
+            if (valor.Contains(',') || valor.Contains('"') || valor.Contains('\n') || valor.Contains('\r'))
                 return $"\"{valor.Replace("\"", "\"\"")}\"";
             return valor;
         }
+
+        private static readonly System.Text.RegularExpressions.Regex NumeroOTelefono =
+            new(@"^[+-]?[0-9 ().\-]+$", System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+
+        private static bool PareceNumeroOTelefono(string valor) => NumeroOTelefono.IsMatch(valor);
     }
 }

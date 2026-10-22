@@ -9,6 +9,8 @@ import { authApi } from "../../api/auth";
 import { useAuthStore } from "../../store/authStore";
 import { api, MOTIVO_RECEPCION_VENCIDA } from "../../api/axios";
 import { useTituloPagina } from "../../hooks/useTituloPagina";
+import { useToastStore } from "../../store/toastStore";
+import { quedanPocosCodigos } from "../../utils/codigosRecuperacion";
 
 const schema = z.object({
   email: z.string().email("Correo inválido"),
@@ -36,6 +38,10 @@ export default function LoginPage() {
   const [challengeToken, setChallengeToken] = useState<string | null>(null);
   const [codigo2FA, setCodigo2FA] = useState("");
   const [verificando, setVerificando] = useState(false);
+  // B8: el segundo paso también acepta un código de recuperación de un solo uso.
+  const [usarRecuperacion, setUsarRecuperacion] = useState(false);
+  const [codigoRecuperacion, setCodigoRecuperacion] = useState("");
+  const { toast } = useToastStore();
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -83,12 +89,24 @@ export default function LoginPage() {
 
   const onVerificar2FA = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!challengeToken || !codigo2FA.trim()) return;
+    const valor = usarRecuperacion ? codigoRecuperacion.trim() : codigo2FA.trim();
+    if (!challengeToken || !valor) return;
     setErrorGeneral("");
     setVerificando(true);
     try {
-      const respuesta = await authApi.verificar2FA(challengeToken, codigo2FA.trim());
+      const respuesta = usarRecuperacion
+        ? await authApi.verificar2FAConCodigoRecuperacion(challengeToken, valor)
+        : await authApi.verificar2FA(challengeToken, valor);
       iniciarSesion(respuesta.token, respuesta.refreshToken, respuesta.usuario);
+      const restantes = respuesta.codigosRecuperacionRestantes;
+      if (usarRecuperacion && typeof restantes === "number") {
+        toast(
+          quedanPocosCodigos(restantes)
+            ? `Te ${restantes === 1 ? "queda 1 código" : `quedan ${restantes} códigos`} de recuperación. Genera nuevos en Seguridad.`
+            : `Entraste con un código de recuperación. Te quedan ${restantes}.`,
+          quedanPocosCodigos(restantes) ? "error" : "info",
+        );
+      }
       (document.activeElement as HTMLElement)?.blur();
       if (respuesta.usuario.rol === "SuperAdmin") navigate("/admin");
       else navigate(returnUrl ?? "/dashboard");
@@ -164,20 +182,43 @@ export default function LoginPage() {
                   </svg>
                 </div>
                 <h1 className="text-2xl font-bold text-slate-900">Verificación en dos pasos</h1>
-                <p className="text-sm text-slate-500 mt-1">Ingresa el código de 6 dígitos de tu app autenticadora</p>
+                <p className="text-sm text-slate-500 mt-1">
+                  {usarRecuperacion
+                    ? "Ingresa uno de tus códigos de recuperación. Cada código sirve una sola vez."
+                    : "Ingresa el código de 6 dígitos de tu app autenticadora"}
+                </p>
               </div>
               <form onSubmit={onVerificar2FA} className="space-y-4">
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  maxLength={6}
-                  value={codigo2FA}
-                  onChange={(e) => setCodigo2FA(e.target.value.replace(/\D/g, ""))}
-                  placeholder="000000"
-                  className="w-full px-4 py-3 text-center text-2xl font-mono tracking-[0.5em] rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-accent-brand/30 focus:border-accent-brand"
-                  autoFocus
-                />
+                {usarRecuperacion ? (
+                  <input
+                    key="recuperacion"
+                    type="text"
+                    aria-label="Código de recuperación"
+                    autoComplete="off"
+                    autoCapitalize="characters"
+                    spellCheck={false}
+                    maxLength={20}
+                    value={codigoRecuperacion}
+                    onChange={(e) => setCodigoRecuperacion(e.target.value.toUpperCase())}
+                    placeholder="XXXXX-XXXXX"
+                    className="w-full px-4 py-3 text-center text-xl font-mono tracking-widest rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-accent-brand/30 focus:border-accent-brand"
+                    autoFocus
+                  />
+                ) : (
+                  <input
+                    key="totp"
+                    type="text"
+                    aria-label="Código de verificación"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    maxLength={6}
+                    value={codigo2FA}
+                    onChange={(e) => setCodigo2FA(e.target.value.replace(/\D/g, ""))}
+                    placeholder="000000"
+                    className="w-full px-4 py-3 text-center text-2xl font-mono tracking-[0.5em] rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-accent-brand/30 focus:border-accent-brand"
+                    autoFocus
+                  />
+                )}
                 {errorGeneral && (
                   <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl px-4 py-3">
                     {errorGeneral}
@@ -185,14 +226,26 @@ export default function LoginPage() {
                 )}
                 <button
                   type="submit"
-                  disabled={verificando || codigo2FA.length < 6}
+                  disabled={verificando || (usarRecuperacion
+                    ? codigoRecuperacion.replace(/[^0-9A-Z]/gi, "").length < 10
+                    : codigo2FA.length < 6)}
                   className="w-full bg-slate-700 hover:bg-slate-800 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition text-sm"
                 >
                   {verificando ? "Verificando..." : "Verificar"}
                 </button>
                 <button
                   type="button"
-                  onClick={() => { setChallengeToken(null); setCodigo2FA(""); setErrorGeneral(""); }}
+                  onClick={() => { setUsarRecuperacion((v) => !v); setErrorGeneral(""); }}
+                  className="w-full text-sm font-medium text-slate-600 hover:text-slate-800 underline-offset-2 hover:underline transition"
+                >
+                  {usarRecuperacion ? "Usar el código de la app" : "Usar un código de recuperación"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setChallengeToken(null); setCodigo2FA(""); setCodigoRecuperacion("");
+                    setUsarRecuperacion(false); setErrorGeneral("");
+                  }}
                   className="w-full text-sm text-slate-400 hover:text-slate-600 transition"
                 >
                   ← Volver al inicio de sesión

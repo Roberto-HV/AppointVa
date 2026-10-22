@@ -6,6 +6,7 @@ import ReportesPage from "./ReportesPage";
 vi.mock("../../api/reportes", () => ({
   reportesApi: {
     obtenerCitas: vi.fn(),
+    obtenerCitasExportacion: vi.fn(),
     obtenerIngresos: vi.fn(),
     obtenerHeatmap: vi.fn(),
     obtenerRetencion: vi.fn(),
@@ -190,6 +191,36 @@ describe("ReportesPage — mapa de calor (OM-18)", () => {
 });
 
 describe("ReportesPage — exportar (OM-19)", () => {
+  it("pide los datos al endpoint auditado con los filtros en pantalla (S7)", async () => {
+    vi.mocked(reportesApi.obtenerCitas).mockResolvedValue(reporte);
+    vi.mocked(reportesApi.obtenerCitasExportacion).mockResolvedValue({ ...reporte, citas: [...reporte.citas, { ...reporte.citas[0], id: "c2" }] });
+    renderConQuery();
+    const boton = await screen.findByRole("button", { name: /Exportar Excel/ });
+    await waitFor(() => expect(boton).not.toBeDisabled());
+    fireEvent.click(boton);
+    await waitFor(() => expect(exportarExcel).toHaveBeenCalled());
+    const filtrosPantalla = vi.mocked(reportesApi.obtenerCitas).mock.calls[0][0];
+    expect(reportesApi.obtenerCitasExportacion).toHaveBeenCalledWith(filtrosPantalla);
+    // The file uses the server's answer, not the rows already on screen.
+    expect(vi.mocked(exportarExcel).mock.calls[0][1][0]).toHaveLength(2);
+  });
+
+  it("si el servidor rechaza la exportación avisa y no genera el archivo", async () => {
+    useToastStore.setState({ toasts: [] });
+    vi.mocked(reportesApi.obtenerCitas).mockResolvedValue(reporte);
+    vi.mocked(reportesApi.obtenerCitasExportacion).mockRejectedValue({ response: { data: { mensaje: "Demasiadas solicitudes. Intenta de nuevo en un momento." } } });
+    renderConQuery();
+    const boton = await screen.findByRole("button", { name: /Exportar Excel/ });
+    await waitFor(() => expect(boton).not.toBeDisabled());
+    fireEvent.click(boton);
+    await waitFor(() =>
+      expect(useToastStore.getState().toasts.map((t) => t.mensaje)).toContain(
+        "Demasiadas solicitudes. Intenta de nuevo en un momento.",
+      ),
+    );
+    expect(exportarExcel).not.toHaveBeenCalled();
+  });
+
   const reporte = {
     totalCitas: 1, totalCompletadas: 1, totalCanceladas: 0, totalPendientes: 0, totalInasistencias: 0,
     totalIngresos: 149.9, totalIngresosEfectivo: 0, totalIngresosTarjeta: 0,
@@ -202,10 +233,12 @@ describe("ReportesPage — exportar (OM-19)", () => {
 
   it("escribe precio y fecha como celdas con tipo y el período en fecha local", async () => {
     vi.mocked(reportesApi.obtenerCitas).mockResolvedValue(reporte);
+    vi.mocked(reportesApi.obtenerCitasExportacion).mockResolvedValue(reporte);
     renderConQuery();
     const boton = await screen.findByRole("button", { name: /Exportar Excel/ });
     await waitFor(() => expect(boton).not.toBeDisabled());
     fireEvent.click(boton);
+    await waitFor(() => expect(exportarExcel).toHaveBeenCalled());
     const [, filas, , , opciones] = vi.mocked(exportarExcel).mock.calls[0];
     const fila = filas[0][0];
     expect(fila[6]).toBeInstanceOf(Date);
@@ -217,6 +250,7 @@ describe("ReportesPage — exportar (OM-19)", () => {
     useToastStore.setState({ toasts: [] });
     vi.mocked(exportarExcel).mockRejectedValueOnce(new Error("x"));
     vi.mocked(reportesApi.obtenerCitas).mockResolvedValue(reporte);
+    vi.mocked(reportesApi.obtenerCitasExportacion).mockResolvedValue(reporte);
     renderConQuery();
     const boton = await screen.findByRole("button", { name: /Exportar Excel/ });
     await waitFor(() => expect(boton).not.toBeDisabled());

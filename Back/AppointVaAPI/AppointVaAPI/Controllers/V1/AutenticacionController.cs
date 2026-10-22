@@ -2,6 +2,7 @@ using AppointVaAPI.Data;
 using AppointVaAPI.Helpers;
 using AppointVaAPI.Models;
 using AppointVaAPI.Models.Dtos.Autenticacion;
+using AppointVaAPI.Services;
 using AppointVaAPI.Services.IServices;
 using AppointVaAPI.Constants;
 using System.Security.Claims;
@@ -300,10 +301,13 @@ namespace AppointVaAPI.Controllers.V1
 
             var llave = await _userManager.GetAuthenticatorKeyAsync(usuario);
 
+            var habilitado = await _userManager.GetTwoFactorEnabledAsync(usuario);
+
             return Ok(new EstadoDosFactoresDto
             {
-                Habilitado          = await _userManager.GetTwoFactorEnabledAsync(usuario),
-                TieneConfiguracion  = !string.IsNullOrEmpty(llave)
+                Habilitado          = habilitado,
+                TieneConfiguracion  = !string.IsNullOrEmpty(llave),
+                CodigosRecuperacionRestantes = habilitado ? await _userManager.CountRecoveryCodesAsync(usuario) : 0
             });
         }
 
@@ -356,7 +360,59 @@ namespace AppointVaAPI.Controllers.V1
 
             await _userManager.SetTwoFactorEnabledAsync(usuario, true);
 
-            return Ok(new { mensaje = "Autenticación de dos factores activada correctamente." });
+            // B8: a fresh set on every activation; the plain codes leave the server only here.
+            var codigos = await _userManager.GenerateNewTwoFactorRecoveryCodesAsync(usuario, CantidadCodigosRecuperacion);
+            await _audit.RegistrarAsync("2FAActivado", "Usuario", usuario.Id.ToString(), usuarioId: usuario.Id);
+
+            return Ok(new CodigosRecuperacionDto
+            {
+                Mensaje = "Autenticación de dos factores activada correctamente.",
+                CodigosRecuperacion = codigos?.ToList() ?? []
+            });
+        }
+
+        /// <summary>B8: how many recovery codes a user gets each time a set is generated.</summary>
+        public const int CantidadCodigosRecuperacion = 10;
+
+        // POST api/auth/2fa/codigos-recuperacion — replaces the whole set (old codes stop working)
+        [Authorize]
+        [EnableRateLimiting("Auth")]
+        [HttpPost("2fa/codigos-recuperacion")]
+        public async Task<IActionResult> RegenerarCodigosRecuperacion([FromBody] RegenerarCodigosRecuperacionDto dto)
+        {
+            var usuarioId = User.FindFirst("sub")?.Value;
+            if (usuarioId is null) return Unauthorized();
+
+            var usuario = await _userManager.FindByIdAsync(usuarioId);
+            if (usuario is null) return NotFound();
+
+            if (!await _userManager.GetTwoFactorEnabledAsync(usuario))
+                return BadRequest(new { mensaje = "Activa la verificación en dos pasos antes de generar códigos de recuperación." });
+
+            bool verificado;
+            if (!string.IsNullOrEmpty(dto.Contrasena))
+                verificado = await _userManager.CheckPasswordAsync(usuario, dto.Contrasena);
+            else if (!string.IsNullOrWhiteSpace(dto.Codigo))
+                verificado = await _userManager.VerifyTwoFactorTokenAsync(
+                    usuario, _userManager.Options.Tokens.AuthenticatorTokenProvider,
+                    dto.Codigo.Replace(" ", "").Replace("-", ""));
+            else
+                return BadRequest(new { mensaje = "Ingresa tu contraseña o un código de tu app autenticadora." });
+
+            if (!verificado)
+            {
+                await _audit.RegistrarAsync("CodigosRecuperacionRegeneracionFallida", "Usuario", usuario.Id.ToString(), usuarioId: usuario.Id);
+                return BadRequest(new { mensaje = "La contraseña o el código no son correctos." });
+            }
+
+            var codigos = await _userManager.GenerateNewTwoFactorRecoveryCodesAsync(usuario, CantidadCodigosRecuperacion);
+            await _audit.RegistrarAsync("CodigosRecuperacionRegenerados", "Usuario", usuario.Id.ToString(), usuarioId: usuario.Id);
+
+            return Ok(new CodigosRecuperacionDto
+            {
+                Mensaje = "Se generaron códigos nuevos. Los anteriores ya no sirven.",
+                CodigosRecuperacion = codigos?.ToList() ?? []
+            });
         }
 
         // POST api/auth/2fa/desactivar — deshabilita 2FA
@@ -379,6 +435,10 @@ namespace AppointVaAPI.Controllers.V1
 
             await _userManager.SetTwoFactorEnabledAsync(usuario, false);
             await _userManager.ResetAuthenticatorKeyAsync(usuario);
+            // B8: leftover recovery codes must not survive into a later activation.
+            await _userManager.RemoveAuthenticationTokenAsync(
+                usuario, UserStoreCodigosRecuperacion.ProveedorInterno, UserStoreCodigosRecuperacion.NombreToken);
+            await _audit.RegistrarAsync("2FADesactivado", "Usuario", usuario.Id.ToString(), usuarioId: usuario.Id);
 
             return Ok(new { mensaje = "Autenticación de dos factores desactivada." });
         }
@@ -457,12 +517,32 @@ namespace AppointVaAPI.Controllers.V1
                 || await AccesoEmpleadoHelper.AccesoBloqueadoAsync(_db, _userManager, usuario))
                 return Unauthorized(new { mensaje = "Usuario no encontrado." });
 
-            var codigoLimpio = dto.Codigo.Replace(" ", "").Replace("-", "");
-            var valido = await _userManager.VerifyTwoFactorTokenAsync(
-                usuario, _userManager.Options.Tokens.AuthenticatorTokenProvider, codigoLimpio);
+            int? codigosRestantes = null;
+            if (!string.IsNullOrWhiteSpace(dto.CodigoRecuperacion))
+            {
+                // B8: same endpoint and rate limit as the TOTP code; each code works once.
+                var canje = await _userManager.RedeemTwoFactorRecoveryCodeAsync(usuario, dto.CodigoRecuperacion.Trim());
+                if (!canje.Succeeded)
+                {
+                    await _audit.RegistrarAsync("CodigoRecuperacionFallido", "Usuario", usuario.Id.ToString(), usuarioId: usuario.Id);
+                    return Unauthorized(new { mensaje = "Código de recuperación incorrecto o ya usado." });
+                }
+                codigosRestantes = await _userManager.CountRecoveryCodesAsync(usuario);
+                await _audit.RegistrarAsync("CodigoRecuperacionUsado", "Usuario", usuario.Id.ToString(),
+                    $"Restantes: {codigosRestantes}", usuario.Id);
+            }
+            else
+            {
+                if (string.IsNullOrWhiteSpace(dto.Codigo))
+                    return BadRequest(new { mensaje = "Ingresa el código de tu app autenticadora." });
 
-            if (!valido)
-                return Unauthorized(new { mensaje = "Código incorrecto o expirado." });
+                var codigoLimpio = dto.Codigo.Replace(" ", "").Replace("-", "");
+                var valido = await _userManager.VerifyTwoFactorTokenAsync(
+                    usuario, _userManager.Options.Tokens.AuthenticatorTokenProvider, codigoLimpio);
+
+                if (!valido)
+                    return Unauthorized(new { mensaje = "Código incorrecto o expirado." });
+            }
 
             var roles = await _userManager.GetRolesAsync(usuario);
             var rol = roles.FirstOrDefault() ?? string.Empty;
@@ -475,6 +555,7 @@ namespace AppointVaAPI.Controllers.V1
                 Token = token,
                 TokenExpiracion = DateTime.UtcNow.AddMinutes(15),
                 RefreshToken = refreshToken,
+                CodigosRecuperacionRestantes = codigosRestantes,
                 Usuario = new UsuarioInfoDto
                 {
                     Id = usuario.Id,

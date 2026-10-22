@@ -13,6 +13,7 @@ vi.mock("../../api/clientes", () => ({
     obtenerPorId: vi.fn(),
     obtenerCitas: vi.fn().mockResolvedValue([]),
     actualizarNotas: vi.fn(),
+    exportar: vi.fn(),
   },
 }));
 
@@ -54,6 +55,7 @@ vi.mock("../../components/ui/Pagination", () => ({
 }));
 
 import { clientesApi } from "../../api/clientes";
+import { exportarExcel } from "../../utils/exportarExcel";
 
 const makeCliente = (overrides: Record<string, unknown> = {}) => ({
   id: "cli-1",
@@ -583,5 +585,42 @@ describe("ClientesPage — notas internas", () => {
     fireEvent.change(await screen.findByPlaceholderText("Preferencias, alergias, observaciones..."), { target: { value: "" } });
     fireEvent.click(screen.getByRole("button", { name: "Guardar notas" }));
     await waitFor(() => expect(clientesApi.actualizarNotas).toHaveBeenCalledWith("cli-1", null));
+  });
+});
+
+// ── Exportación completa (B18 / decisión 10) ───────────────────────────────────
+
+describe("ClientesPage — exportar todo el directorio", () => {
+  it("pide al servidor todas las filas, no solo la página visible", async () => {
+    vi.mocked(clientesApi.obtenerTodos).mockResolvedValue(paginaCon([makeCliente()], 40));
+    const todos = Array.from({ length: 40 }, (_, i) => ({
+      nombreCompleto: `Cliente ${i}`, telefono: `55${i}`, email: null, totalCitas: 1,
+      cantidadInasistencias: 0, ultimaCitaEn: null, fechaCreacion: "2025-01-01T00:00:00",
+    }));
+    vi.mocked(clientesApi.exportar).mockResolvedValue(todos);
+    renderConQuery();
+
+    const boton = await screen.findByRole("button", { name: "Exportar Excel" });
+    expect(screen.queryByText(/Solo esta página/)).not.toBeInTheDocument();
+    expect(screen.getByText("Todo el directorio: 40")).toBeInTheDocument();
+    fireEvent.click(boton);
+
+    await waitFor(() => expect(exportarExcel).toHaveBeenCalled());
+    expect(clientesApi.exportar).toHaveBeenCalledWith(undefined);
+    const [, grupos] = vi.mocked(exportarExcel).mock.calls[0];
+    expect(grupos[0]).toHaveLength(40);
+    expect(grupos[0][39][0]).toBe("Cliente 39");
+  });
+
+  it("si el servidor falla no genera un archivo a medias", async () => {
+    vi.mocked(clientesApi.obtenerTodos).mockResolvedValue(paginaCon([makeCliente()], 1));
+    vi.mocked(clientesApi.exportar).mockRejectedValue(new Error("429"));
+    renderConQuery();
+
+    fireEvent.click(await screen.findByRole("button", { name: "Exportar Excel" }));
+
+    await waitFor(() => expect(clientesApi.exportar).toHaveBeenCalled());
+    await waitFor(() => expect(screen.getByRole("button", { name: "Exportar Excel" })).not.toBeDisabled());
+    expect(exportarExcel).not.toHaveBeenCalled();
   });
 });

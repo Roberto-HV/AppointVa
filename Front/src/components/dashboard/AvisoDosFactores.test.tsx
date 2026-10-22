@@ -25,14 +25,14 @@ beforeEach(() => {
 
 describe("AvisoDosFactores (DC-29, decisión 9)", () => {
   it("con 2FA apagado recomienda activarlo y enlaza a Seguridad", async () => {
-    vi.mocked(authApi.obtenerEstado2FA).mockResolvedValue({ habilitado: false, tieneConfiguracion: false });
+    vi.mocked(authApi.obtenerEstado2FA).mockResolvedValue({ habilitado: false, tieneConfiguracion: false, codigosRecuperacionRestantes: 0 });
     renderAviso();
     expect(await screen.findByRole("heading", { name: /verificación en dos pasos/ })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Activar ahora" })).toHaveAttribute("href", "/dashboard/seguridad");
   });
 
   it("se puede descartar y no vuelve a aparecer en este navegador", async () => {
-    vi.mocked(authApi.obtenerEstado2FA).mockResolvedValue({ habilitado: false, tieneConfiguracion: false });
+    vi.mocked(authApi.obtenerEstado2FA).mockResolvedValue({ habilitado: false, tieneConfiguracion: false, codigosRecuperacionRestantes: 0 });
     const { unmount } = renderAviso();
     fireEvent.click(await screen.findByRole("button", { name: /Descartar el aviso/ }));
     expect(screen.queryByRole("heading", { name: /verificación en dos pasos/ })).not.toBeInTheDocument();
@@ -41,8 +41,22 @@ describe("AvisoDosFactores (DC-29, decisión 9)", () => {
     expect(screen.queryByRole("heading", { name: /verificación en dos pasos/ })).not.toBeInTheDocument();
   });
 
+  it("con 2FA activo y pocos códigos de recuperación, avisa y enlaza a Seguridad (B8)", async () => {
+    vi.mocked(authApi.obtenerEstado2FA).mockResolvedValue({ habilitado: true, tieneConfiguracion: true, codigosRecuperacionRestantes: 2 });
+    renderAviso();
+    expect(await screen.findByRole("heading", { name: "Te quedan 2 códigos de recuperación" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Generar códigos nuevos" })).toHaveAttribute("href", "/dashboard/seguridad");
+  });
+
+  it("el aviso de códigos aparece aunque se haya descartado la recomendación de activar 2FA", async () => {
+    localStorage.setItem("appointva-aviso-2fa-descartado:u1", "1");
+    vi.mocked(authApi.obtenerEstado2FA).mockResolvedValue({ habilitado: true, tieneConfiguracion: true, codigosRecuperacionRestantes: 0 });
+    renderAviso();
+    expect(await screen.findByRole("heading", { name: "Ya no te quedan códigos de recuperación" })).toBeInTheDocument();
+  });
+
   it("no aparece si 2FA ya está activo", async () => {
-    vi.mocked(authApi.obtenerEstado2FA).mockResolvedValue({ habilitado: true, tieneConfiguracion: true });
+    vi.mocked(authApi.obtenerEstado2FA).mockResolvedValue({ habilitado: true, tieneConfiguracion: true, codigosRecuperacionRestantes: 10 });
     renderAviso();
     await vi.waitFor(() => expect(authApi.obtenerEstado2FA).toHaveBeenCalled());
     expect(screen.queryByRole("heading", { name: /verificación en dos pasos/ })).not.toBeInTheDocument();

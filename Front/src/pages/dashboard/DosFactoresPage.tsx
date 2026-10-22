@@ -1,8 +1,11 @@
 ﻿import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { QRCodeSVG } from "qrcode.react";
-import { Shield, ShieldCheck, ShieldOff } from "lucide-react";
+import { KeyRound, Shield, ShieldCheck, ShieldOff } from "lucide-react";
 import { authApi } from "../../api/auth";
+import { useAuthStore } from "../../store/authStore";
+import CodigosRecuperacion from "../../components/dashboard/CodigosRecuperacion";
+import { quedanPocosCodigos } from "../../utils/codigosRecuperacion";
 import { useToastStore } from "../../store/toastStore";
 import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
 import { mensajeError } from "../../utils/errores";
@@ -19,6 +22,11 @@ export default function DosFactoresPage() {
   const [codigo, setCodigo] = useState("");
   const [errorCodigo, setErrorCodigo] = useState("");
   const [errorConfig, setErrorConfig] = useState("");
+  // B8: los códigos en claro solo viven en memoria mientras se muestran.
+  const [codigosNuevos, setCodigosNuevos] = useState<string[] | null>(null);
+  const [contrasenaCodigos, setContrasenaCodigos] = useState("");
+  const [errorCodigos, setErrorCodigos] = useState("");
+  const cuenta = useAuthStore((s) => s.usuario?.email);
 
   const { data: estado, isLoading } = useQuery({
     queryKey: ["2fa-estado"],
@@ -46,13 +54,28 @@ export default function DosFactoresPage() {
 
   const { mutate: activar, isPending: activando } = useMutation({
     mutationFn: () => authApi.activar2FA(codigo),
-    onSuccess: () => {
+    onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ["2fa-estado"] });
+      setCodigosNuevos(data.codigosRecuperacion ?? []);
       setPaso("activado");
       toast("Autenticación de dos factores activada");
     },
     onError: (err: unknown) => {
       setErrorCodigo(mensajeError(err, "Código incorrecto"));
+    },
+  });
+
+  const { mutate: regenerarCodigos, isPending: regenerando } = useMutation({
+    mutationFn: () => authApi.regenerarCodigosRecuperacion({ contrasena: contrasenaCodigos }),
+    onMutate: () => setErrorCodigos(""),
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ["2fa-estado"] });
+      setContrasenaCodigos("");
+      setCodigosNuevos(data.codigosRecuperacion);
+      toast("Códigos nuevos generados. Los anteriores ya no sirven.");
+    },
+    onError: (err: unknown) => {
+      setErrorCodigos(mensajeError(err, "No se pudieron generar los códigos. Intenta de nuevo."));
     },
   });
 
@@ -181,7 +204,7 @@ export default function DosFactoresPage() {
               {llave}
             </p>
             <p className="text-xs text-muted-foreground mt-2 text-center">
-              Guarda esta clave en un lugar seguro. AppointVa no genera códigos de respaldo: si cambias o pierdes el teléfono, la necesitarás para volver a configurar tu app autenticadora.
+              Al confirmar te daremos 10 códigos de recuperación para entrar si pierdes el teléfono.
             </p>
           </div>
 
@@ -213,6 +236,63 @@ export default function DosFactoresPage() {
           <p className="font-semibold text-emerald-800 dark:text-emerald-200">¡2FA activado correctamente!</p>
           <p className="text-sm text-emerald-700 dark:text-emerald-300 mt-1">Desde ahora necesitarás el código al iniciar sesión.</p>
         </div>
+      )}
+      {paso === "activado" && codigosNuevos && codigosNuevos.length > 0 && (
+        <CodigosRecuperacion
+          codigos={codigosNuevos}
+          cuenta={cuenta}
+          onListo={() => { setCodigosNuevos(null); setPaso("idle"); }}
+        />
+      )}
+
+      {/* ── Códigos de recuperación (B8) ── */}
+      {estado?.habilitado && paso !== "activado" && (
+        codigosNuevos ? (
+          <CodigosRecuperacion codigos={codigosNuevos} cuenta={cuenta} onListo={() => setCodigosNuevos(null)} />
+        ) : (
+          <form
+            onSubmit={(e) => { e.preventDefault(); if (!regenerando && contrasenaCodigos) regenerarCodigos(); }}
+            className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 p-5 space-y-4"
+            aria-labelledby="codigos-titulo"
+          >
+            <div className="flex items-center gap-2">
+              <KeyRound size={18} className="text-slate-600 dark:text-slate-300" aria-hidden="true" />
+              <h2 id="codigos-titulo" className="font-semibold text-slate-800 dark:text-slate-200">Códigos de recuperación</h2>
+            </div>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              Te quedan <span className="font-semibold tabular-nums text-foreground">{estado.codigosRecuperacionRestantes ?? 0}</span> códigos sin usar. Cada uno sirve una vez para entrar sin tu app autenticadora.
+            </p>
+            {quedanPocosCodigos(estado.codigosRecuperacionRestantes ?? 0) && (
+              <p role="alert" className="text-sm font-medium text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-2">
+                {(estado.codigosRecuperacionRestantes ?? 0) === 0
+                  ? "Ya no te quedan códigos. Genera nuevos para no quedarte fuera si pierdes el teléfono."
+                  : "Te quedan pocos códigos. Genera nuevos para no quedarte fuera si pierdes el teléfono."}
+              </p>
+            )}
+            <div>
+              <label htmlFor="contrasena-codigos" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tu contraseña</label>
+              <input
+                id="contrasena-codigos"
+                type="password"
+                autoComplete="current-password"
+                value={contrasenaCodigos}
+                aria-invalid={!!errorCodigos}
+                aria-describedby={errorCodigos ? "contrasena-codigos-error" : undefined}
+                onChange={(e) => { setContrasenaCodigos(e.target.value); setErrorCodigos(""); }}
+                className="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 outline-none focus:border-accent-brand"
+              />
+              {errorCodigos && <p id="contrasena-codigos-error" role="alert" className="text-red-700 dark:text-red-400 text-xs mt-1">{errorCodigos}</p>}
+            </div>
+            <button
+              type="submit"
+              disabled={regenerando || !contrasenaCodigos}
+              className="w-full py-2.5 rounded-xl border-2 border-slate-200 dark:border-slate-600 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:border-slate-300 disabled:opacity-40 transition"
+            >
+              {regenerando ? "Generando..." : "Generar códigos nuevos"}
+            </button>
+            <p className="text-xs text-muted-foreground">Los códigos anteriores dejarán de servir.</p>
+          </form>
+        )
       )}
 
       {/* ── Si 2FA está activado, opción de desactivar ── */}

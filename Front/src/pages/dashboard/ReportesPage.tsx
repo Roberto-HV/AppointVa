@@ -10,7 +10,8 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
 import { Download, TrendingUp, TrendingDown, Calendar, DollarSign, CheckCircle } from "lucide-react";
-import { reportesApi, type FiltrosReporteCitas } from "../../api/reportes";
+import { reportesApi, type FiltrosReporteCitas, type ReporteCitas } from "../../api/reportes";
+import { mensajeError } from "../../utils/errores";
 import { useSectorTerms } from "../../hooks/useSectorTerms";
 import { Users, RefreshCw } from "lucide-react";
 import { exportarExcel } from "../../utils/exportarExcel";
@@ -207,8 +208,27 @@ export default function ReportesPage() {
   const subtituloPeriodo = `Período: ${fechaLargaLocal(desde)} — ${fechaLargaLocal(hasta)}`;
   const avisarFalloExcel = () => toast(MENSAJE_ERROR_EXCEL, "error");
 
-  const handleExportar = () => {
-    if (!reporteCitas?.citas.length) return;
+  // S7: el archivo lleva nombre, teléfono y correo de cada cliente, así que se pide
+  // al servidor (que registra la exportación) en vez de reusar lo que hay en pantalla.
+  const [exportandoCitas, setExportandoCitas] = useState(false);
+  const handleExportar = async () => {
+    if (!reporteCitas?.citas.length || exportandoCitas) return;
+    setExportandoCitas(true);
+    try {
+      let reporte;
+      try {
+        reporte = await reportesApi.obtenerCitasExportacion(filtros);
+      } catch (err) {
+        toast(mensajeError(err, "No se pudo exportar el reporte. Intenta de nuevo."), "error");
+        return;
+      }
+      await generarExcelCitas(reporte);
+    } finally {
+      setExportandoCitas(false);
+    }
+  };
+
+  const generarExcelCitas = (reporteCitas: ReporteCitas) => {
 
     const encabezados = ["Código", "Cliente", "Teléfono", "Email", "Servicio", "Empleado", "Fecha", "Duración (min)", "Precio", "Pagada", "Método de pago", "Estado", "Notas"];
     const filas = reporteCitas.citas.map((c) => [
@@ -236,7 +256,7 @@ export default function ReportesPage() {
       "", "", "", "",
     ];
 
-    exportarExcel(encabezados, [filas], "reporte-citas", `Reporte de ${terms.citas}`, { subtitulo: subtituloPeriodo, totales })
+    return exportarExcel(encabezados, [filas], "reporte-citas", `Reporte de ${terms.citas}`, { subtitulo: subtituloPeriodo, totales })
       .catch(avisarFalloExcel);
   };
 
@@ -293,7 +313,7 @@ export default function ReportesPage() {
                 : handleExportarIngresos
               }
               disabled={
-                tab === "citas" ? !reporteCitas?.citas.length
+                tab === "citas" ? !reporteCitas?.citas.length || exportandoCitas
                 : tab === "empleados" ? !reporteIngresos?.porEmpleado.length
                 : !reporteIngresos?.porServicio.length
               }

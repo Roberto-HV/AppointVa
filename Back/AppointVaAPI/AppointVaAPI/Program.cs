@@ -79,6 +79,8 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(opt =>
     opt.Lockout.AllowedForNewUsers = true;
 })
 .AddEntityFrameworkStores<ApplicationDbContext>()
+// B8: same tables, but 2FA recovery codes are stored as salted hashes, not plain text.
+.AddUserStore<AppointVaAPI.Services.UserStoreCodigosRecuperacion>()
 .AddDefaultTokenProviders();
 
 // ── JWT ────────────────────────────────────────────────────────────────────────
@@ -261,6 +263,20 @@ builder.Services.AddRateLimiter(options =>
             {
                 PermitLimit = 3,
                 Window = TimeSpan.FromMinutes(5),
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0
+            }));
+
+    // B18 / S7: full client-data exports. 10 per 10 minutes per signed-in user, so an
+    // owner can retry a few times but a stolen session cannot scrape in a loop.
+    options.AddPolicy(Politicas.LimiteExportacion, httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.User.FindFirst(AppointVaAPI.Constants.ClaimsTipos.UsuarioId)?.Value
+                ?? httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(10),
                 QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                 QueueLimit = 0
             }));

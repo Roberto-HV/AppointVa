@@ -93,6 +93,12 @@ export const reportesApi = {
     return data;
   },
 
+  /** Mismo reporte, pedido para el archivo de Excel: el servidor registra la exportación (S7). */
+  obtenerCitasExportacion: async (filtros?: FiltrosReporteCitas): Promise<ReporteCitas> => {
+    const { data } = await api.get("/reportes/citas/exportacion", { params: filtros });
+    return data;
+  },
+
   exportarCitasCsv: async (filtros?: FiltrosReporteCitas): Promise<void> => {
     const { data, headers } = await api.get("/reportes/citas/exportar", {
       params: filtros,

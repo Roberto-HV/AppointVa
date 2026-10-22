@@ -6,6 +6,7 @@ using AppointVaAPI.Repository.IRepository;
 using AppointVaAPI.Services.IServices;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace AppointVaAPI.Controllers.V1
@@ -19,16 +20,22 @@ namespace AppointVaAPI.Controllers.V1
         private readonly IClienteRepository _repo;
         private readonly IContextoNegocio _contexto;
         private readonly ApplicationDbContext _db;
+        private readonly IAuditService _audit;
 
         public ClientesController(
             IClienteRepository repo,
             IContextoNegocio contexto,
-            ApplicationDbContext db)
+            ApplicationDbContext db,
+            IAuditService audit)
         {
             _repo = repo;
             _contexto = contexto;
             _db = db;
+            _audit = audit;
         }
+
+        /// <summary>Audit action written for every export that carries client data (B18 / S7).</summary>
+        public const string AccionExportarClientes = "ExportarClientes";
 
         /// <summary>Umbral por omisión, igual al que la pantalla trae preseleccionado.</summary>
         private const int DiasActividadPorDefecto = 60;
@@ -84,6 +91,38 @@ namespace AppointVaAPI.Controllers.V1
                 : lista.AsEnumerable();
 
             return Ok(resultado.Select(MapearDto));
+        }
+
+        // GET api/clientes/exportar?buscar=
+        // B18 / decision 10: the whole directory (or the current search), not one page.
+        // Owner-only (class-level GestionCompleta), rate limited, and every call is audited
+        // with who, when, how many rows and the format the front turns it into.
+        [HttpGet("exportar")]
+        [EnableRateLimiting(Politicas.LimiteExportacion)]
+        public async Task<IActionResult> Exportar([FromQuery] string? buscar)
+        {
+            if (_contexto.NegocioId is null) return Unauthorized();
+
+            var clientes = await FiltrarDirectorio(buscar)
+                .OrderBy(c => c.NombreCompleto)
+                .AsNoTracking()
+                .Select(c => new ClienteExportacionDto
+                {
+                    NombreCompleto = c.NombreCompleto,
+                    Telefono = c.Telefono,
+                    Email = c.Email,
+                    TotalCitas = c.TotalCitas,
+                    CantidadInasistencias = c.CantidadInasistencias,
+                    UltimaCitaEn = c.UltimaCitaEn,
+                    FechaCreacion = c.FechaCreacion
+                })
+                .ToListAsync();
+
+            var filtro = string.IsNullOrWhiteSpace(buscar) ? "directorio completo" : "búsqueda";
+            await _audit.RegistrarAsync(AccionExportarClientes, "Negocio", _contexto.NegocioId.ToString(),
+                $"Origen: clientes; Filas: {clientes.Count}; Formato: xlsx; Filtro: {filtro}");
+
+            return Ok(clientes);
         }
 
         // GET api/clientes/resumen-actividad?buscar=&dias=60
@@ -244,6 +283,18 @@ namespace AppointVaAPI.Controllers.V1
             EstadosCitas.Inasistencia => "Inasistencia",
             _ => "Desconocido"
         };
+    }
+
+    /// <summary>One exported row. Internal notes are deliberately left out of the file.</summary>
+    public class ClienteExportacionDto
+    {
+        public string NombreCompleto { get; set; } = string.Empty;
+        public string Telefono { get; set; } = string.Empty;
+        public string? Email { get; set; }
+        public int TotalCitas { get; set; }
+        public int CantidadInasistencias { get; set; }
+        public DateTime? UltimaCitaEn { get; set; }
+        public DateTime FechaCreacion { get; set; }
     }
 
     public class ActualizarNotasClienteDto

@@ -21,5 +21,8 @@ namespace AppointVaAPI.Constants
         /// The default policy rejects that token, so it cannot reach any other endpoint.
         /// </summary>
         public const string Kiosco = "Kiosco";
+
+        /// <summary>Rate limit policy (not an authorization policy) for client-data exports (B18 / S7).</summary>
+        public const string LimiteExportacion = "Exportacion";
     }
 }

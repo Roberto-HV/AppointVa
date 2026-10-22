@@ -3,8 +3,11 @@ using AppointVaAPI.Controllers.V1;
 using AppointVaAPI.Data;
 using AppointVaAPI.Models;
 using AppointVaAPI.Models.Dtos.Autenticacion;
+using AppointVaAPI.Models.Dtos.Kiosco;
 using AppointVaAPI.Repository.IRepository;
 using AppointVaAPI.Services.IServices;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Http;
 using FluentAssertions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -118,6 +121,43 @@ public class AccesoEmpleadoInactivoTests
 
         (await Login(usuario)).Should().BeOfType<OkObjectResult>();
         (await Refresh(usuario)).Should().BeOfType<OkObjectResult>();
+    }
+
+    [Fact]
+    public async Task EmpleadoInactivo_NoPuedeCompletarElSegundoFactor()
+    {
+        var (usuario, _) = Sembrar(Roles.Empleado, empleadoActivo: 0);
+        _jwt.ValidarChallengeToken2FA("desafio").Returns(usuario.Id);
+
+        var resultado = await CrearAuth().Verificar2FA(
+            new VerificarDosFactoresDto { ChallengeToken = "desafio", Codigo = "123456" });
+
+        resultado.Should().BeOfType<UnauthorizedObjectResult>();
+        await _userManager.DidNotReceive().VerifyTwoFactorTokenAsync(
+            Arg.Any<ApplicationUser>(), Arg.Any<string>(), Arg.Any<string>());
+        _jwt.DidNotReceive().GenerarToken(Arg.Any<ApplicationUser>(), Arg.Any<string>());
+    }
+
+    [Fact]
+    public async Task EmpleadoInactivo_NoPuedeAbrirElModoRecepcion()
+    {
+        var (usuario, _) = Sembrar(Roles.Empleado, empleadoActivo: 0);
+        var kiosco = new KioscoController(
+            _userManager, _jwt, Substitute.For<IAuditService>(), Substitute.For<IKioscoSalidaLimitador>(),
+            _db, TimeProvider.System)
+        {
+            ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = new ClaimsPrincipal(new ClaimsIdentity(
+                        [new Claim(ClaimsTipos.UsuarioId, usuario.Id.ToString())], "test"))
+                }
+            }
+        };
+
+        (await kiosco.Iniciar(new IniciarKioscoDto())).Should().BeOfType<UnauthorizedResult>();
+        _jwt.DidNotReceive().GenerarTokenKiosco(Arg.Any<ApplicationUser>(), Arg.Any<string>(), Arg.Any<TimeSpan>());
     }
 
     private EmpleadosController CrearEmpleados(Empleado empleado)

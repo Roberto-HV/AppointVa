@@ -18,6 +18,7 @@ vi.mock("../../api/auth", () => ({
   authApi: {
     login: vi.fn(),
     verificar2FA: vi.fn(),
+    verificar2FAConCodigoRecuperacion: vi.fn(),
   },
 }));
 
@@ -160,6 +161,51 @@ describe("LoginPage — desafío 2FA", () => {
     await user.click(screen.getByRole("button", { name: "Iniciar sesión" }));
 
     await screen.findByPlaceholderText("000000");
+  });
+
+  async function llegarAlDesafio() {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    vi.mocked(authApi.login).mockResolvedValue({ requiere2FA: true, challengeToken: "challenge-abc" } as any);
+    const user = userEvent.setup();
+    renderLoginPage();
+    await user.type(screen.getByPlaceholderText("correo@ejemplo.com"), "user@test.com");
+    await user.type(screen.getByPlaceholderText("••••••••"), "pass123");
+    await user.click(screen.getByRole("button", { name: "Iniciar sesión" }));
+    await screen.findByPlaceholderText("000000");
+    return user;
+  }
+
+  it("acepta un código de recuperación y avisa cuando quedan pocos (B8)", async () => {
+    const { useToastStore } = await import("../../store/toastStore");
+    useToastStore.setState({ toasts: [] });
+    vi.mocked(authApi.verificar2FAConCodigoRecuperacion).mockResolvedValue({
+      token: "t", tokenExpiracion: "", refreshToken: "r", usuario: mockUser, codigosRecuperacionRestantes: 2,
+    });
+    const user = await llegarAlDesafio();
+
+    await user.click(screen.getByRole("button", { name: "Usar un código de recuperación" }));
+    const campo = screen.getByRole("textbox", { name: "Código de recuperación" });
+    const verificar = screen.getByRole("button", { name: "Verificar" });
+    expect(verificar).toBeDisabled();
+    await user.type(campo, "abcde-fghij");
+    expect(campo).toHaveValue("ABCDE-FGHIJ");
+    await user.click(verificar);
+
+    await waitFor(() =>
+      expect(authApi.verificar2FAConCodigoRecuperacion).toHaveBeenCalledWith("challenge-abc", "ABCDE-FGHIJ"),
+    );
+    expect(authApi.verificar2FA).not.toHaveBeenCalled();
+    expect(mockIniciarSesion).toHaveBeenCalled();
+    expect(useToastStore.getState().toasts.map((t) => t.mensaje)).toContain(
+      "Te quedan 2 códigos de recuperación. Genera nuevos en Seguridad.",
+    );
+  });
+
+  it("puede volver al código de la app", async () => {
+    const user = await llegarAlDesafio();
+    await user.click(screen.getByRole("button", { name: "Usar un código de recuperación" }));
+    await user.click(screen.getByRole("button", { name: "Usar el código de la app" }));
+    expect(screen.getByPlaceholderText("000000")).toBeInTheDocument();
   });
 });
 

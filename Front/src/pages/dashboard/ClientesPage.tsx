@@ -7,6 +7,7 @@ import { useSectorTerms } from "../../hooks/useSectorTerms";
 import Modal from "../../components/ui/Modal";
 import EstadoBadge from "../../components/ui/EstadoBadge";
 import { exportarExcel } from "../../utils/exportarExcel";
+import { mensajeError } from "../../utils/errores";
 import { soloFecha } from "../../utils/fechas";
 import type { ClienteDto } from "../../types";
 import { formatPrecio, formatFecha, formatFechaCorta, formatFechaHora } from "../../utils/formatters";
@@ -165,19 +166,36 @@ export default function ClientesPage() {
   const buscarClientes = (termino: string) => { setPagina(1); setBuscarActivo(termino); };
   const limpiarBusqueda = () => { setBuscarActivo(""); setPagina(1); };
 
-  const exportarClientes = () => {
-    const enc = ["Nombre", "Teléfono", "Correo", "Total citas", "Inasistencias", "Última visita", "Cliente desde"];
-    const filas = clientes.map((c) => [
-      c.nombreCompleto,
-      c.telefono,
-      c.email ?? "",
-      c.totalCitas,
-      c.cantidadInasistencias,
-      c.ultimaCitaEn ? soloFecha(c.ultimaCitaEn) : "",
-      soloFecha(c.fechaCreacion),
-    ]);
-    exportarExcel(enc, [filas], "clientes", terms.clientes)
-      .catch(() => toast("No se pudo generar el archivo de Excel. Intenta de nuevo.", "error"));
+  // B18 / decisión 10: el archivo trae todo el directorio (o la búsqueda actual),
+  // no solo la página visible. El servidor lo entrega completo y deja registro de
+  // quién exportó, cuándo y cuántas filas.
+  const [exportando, setExportando] = useState(false);
+  const exportarClientes = async () => {
+    if (exportando) return;
+    setExportando(true);
+    try {
+      let todos;
+      try {
+        todos = await clientesApi.exportar(buscarActivo || undefined);
+      } catch (err) {
+        toast(mensajeError(err, "No se pudo exportar el directorio. Intenta de nuevo."), "error");
+        return;
+      }
+      const enc = ["Nombre", "Teléfono", "Correo", "Total citas", "Inasistencias", "Última visita", "Cliente desde"];
+      const filas = todos.map((c) => [
+        c.nombreCompleto,
+        c.telefono,
+        c.email ?? "",
+        c.totalCitas,
+        c.cantidadInasistencias,
+        c.ultimaCitaEn ? soloFecha(c.ultimaCitaEn) : "",
+        soloFecha(c.fechaCreacion),
+      ]);
+      await exportarExcel(enc, [filas], "clientes", terms.clientes)
+        .catch(() => toast("No se pudo generar el archivo de Excel. Intenta de nuevo.", "error"));
+    } finally {
+      setExportando(false);
+    }
   };
 
   return (
@@ -187,21 +205,21 @@ export default function ClientesPage() {
         titulo={terms.clientes}
         subtitulo={`Directorio, historial y notas de cada ${terms.cliente.toLowerCase()}`}
         acciones={
-          /* El aviso ámbar se queda: no decora, advierte que el archivo no trae
-             todo el directorio. Lo que cambia es el número — decía siempre "30"
-             aunque la página tuviera tres filas, y a 15 por página eso pasaría
-             más seguido. Ahora cuenta las filas que realmente se exportan. */
+          /* Ya no lleva el aviso "Solo esta página": el archivo trae las
+             {totalClientes} filas del directorio (o de la búsqueda), no la página. */
           permisos.exportar && tab === "todos" && clientes.length > 0 && (
             <div className="flex flex-col items-end gap-0.5">
               <BotonAccion
                 variante="secundaria"
                 onClick={exportarClientes}
-                title={`Exporta los ${clientes.length} ${terms.clientes.toLowerCase()} de esta página, no los ${totalClientes} del directorio`}
+                disabled={exportando}
+                aria-busy={exportando}
+                title={`Exporta los ${totalClientes} ${terms.clientes.toLowerCase()} ${buscarActivo ? "de la búsqueda" : "del directorio"}`}
               >
-                Exportar Excel
+                {exportando ? "Exportando..." : "Exportar Excel"}
               </BotonAccion>
-              <span className="text-xs font-medium text-amber-800 dark:text-amber-300">
-                Solo esta página: {clientes.length} de {totalClientes}
+              <span className="text-xs text-muted-foreground tabular-nums">
+                {buscarActivo ? "Toda la búsqueda" : "Todo el directorio"}: {totalClientes}
               </span>
             </div>
           )

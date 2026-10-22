@@ -6,6 +6,8 @@ export interface LoginRespuesta {
   usuario: UsuarioInfo;
   requiere2FA?: boolean;
   challengeToken?: string;
+  /** B8: solo cuando el segundo paso fue un código de recuperación (los que quedan). */
+  codigosRecuperacionRestantes?: number | null;
 }
 
 export interface UsuarioInfo {

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { exportarExcel, prepararCelda } from "./exportarExcel";
+import { exportarExcel, prepararCelda, neutralizarFormula } from "./exportarExcel";
 import { fechaLocal } from "./fechas";
 
 const flushPromises = () => new Promise((r) => setTimeout(r, 0));
@@ -208,4 +208,24 @@ describe("exportarExcel — errores", () => {
     URL.createObjectURL = vi.fn(() => { throw new Error("sin memoria"); });
     await expect(exportarExcel(["Col"], [[["dato"]]], "archivo")).rejects.toThrow("sin memoria");
   });
+});
+
+describe("neutralizarFormula — S9", () => {
+  it.each([
+    ["=HYPERLINK(\"http://x\",\"clic\")", "'=HYPERLINK(\"http://x\",\"clic\")"],
+    ["@SUMA(A1)", "'@SUMA(A1)"],
+    ["+cmd|' /C calc'!A0", "'+cmd|' /C calc'!A0"],
+    ["-2+3+cmd", "'-2+3+cmd"],
+    ["\t=1+1", "'\t=1+1"],
+  ])("antepone un apóstrofo a %s", (entrada, esperado) => {
+    expect(neutralizarFormula(entrada)).toBe(esperado);
+    expect(prepararCelda(entrada).value).toBe(esperado);
+  });
+
+  it.each(["+52 55 1234 5678", "-15", "Ana López", "correo@ejemplo.com", ""])(
+    "deja igual %s (teléfonos, números y texto normal)",
+    (texto) => {
+      expect(neutralizarFormula(texto)).toBe(texto);
+    },
+  );
 });
