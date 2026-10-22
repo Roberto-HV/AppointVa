@@ -66,3 +66,17 @@ describe('adminApi.setSector', () => {
     );
   });
 });
+
+describe('adminApi.emitirTicketHangfire', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('POSTs /admin/hangfire/ticket (Authorization header via axios) and returns the ticket', async () => {
+    const mockApi = vi.mocked(axiosModule.api);
+    mockApi.post.mockResolvedValueOnce({ data: { ticket: 'abc', expiraEnSegundos: 60 } });
+
+    await expect(adminApi.emitirTicketHangfire()).resolves.toBe('abc');
+    expect(mockApi.post).toHaveBeenCalledWith('/admin/hangfire/ticket');
+  });
+});

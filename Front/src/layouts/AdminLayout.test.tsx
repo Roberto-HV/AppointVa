@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { CLAVE_TEMA } from "../lib/temaPorRuta";
@@ -21,6 +21,9 @@ vi.mock("../store/authStore", () => ({
 }));
 
 vi.mock("../api/auth", () => ({ authApi: { logout: vi.fn() } }));
+
+const emitirTicketHangfire = vi.hoisted(() => vi.fn());
+vi.mock("../api/admin", () => ({ adminApi: { emitirTicketHangfire } }));
 
 import AdminLayout from "./AdminLayout";
 
@@ -133,5 +136,41 @@ describe("AdminLayout — logo", () => {
     const logo = screen.getByRole("img", { hidden: true, name: "AppointVa" });
     expect(logo).toHaveAttribute("src", "/logo-appointva-oscuro.png");
     expect(document.querySelector('img[src*="MasterLogo"], img[src*="MaterLogo"]')).toBeNull();
+  });
+});
+
+// S2: the JWT must never travel in the Hangfire URL; a one-time ticket does.
+describe("AdminLayout — tareas programadas (Hangfire)", () => {
+  const boton = () => screen.getByRole("button", { hidden: true, name: /Tareas programadas/ });
+
+  it("pide un ticket de un solo uso y abre /hangfire-session?ticket=… sin el JWT", async () => {
+    emitirTicketHangfire.mockResolvedValueOnce("tkt-123");
+    const ventana = { opener: {} as unknown, location: { replace: vi.fn() }, close: vi.fn() };
+    const open = vi.spyOn(window, "open").mockReturnValue(ventana as unknown as Window);
+
+    renderizar();
+    fireEvent.click(boton());
+
+    expect(open).toHaveBeenCalledWith("about:blank", "_blank");
+    await waitFor(() => expect(ventana.location.replace).toHaveBeenCalled());
+    const url = ventana.location.replace.mock.calls[0][0] as string;
+    expect(url).toMatch(/\/hangfire-session\?ticket=tkt-123$/);
+    expect(url).not.toContain("token=");
+    expect(ventana.opener).toBeNull();
+    open.mockRestore();
+  });
+
+  it("si el ticket falla, cierra la pestaña y avisa", async () => {
+    emitirTicketHangfire.mockRejectedValueOnce(new Error("403"));
+    const ventana = { opener: null, location: { replace: vi.fn() }, close: vi.fn() };
+    const open = vi.spyOn(window, "open").mockReturnValue(ventana as unknown as Window);
+
+    renderizar();
+    fireEvent.click(boton());
+
+    expect(await screen.findByRole("alert", { hidden: true })).toHaveTextContent("No se pudo abrir el panel de tareas");
+    expect(ventana.close).toHaveBeenCalled();
+    expect(ventana.location.replace).not.toHaveBeenCalled();
+    open.mockRestore();
   });
 });

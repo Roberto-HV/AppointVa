@@ -189,6 +189,15 @@ export const adminApi = {
     await api.patch(`/admin/negocios/${negocioId}/empleados-extra`, { empleadosExtra });
   },
 
+  /**
+   * S2: asks for a 60 s single-use ticket (sent with the Authorization header) for the
+   * Hangfire dashboard. The ticket is opaque, never a JWT, and dies on first use.
+   */
+  emitirTicketHangfire: async (): Promise<string> => {
+    const { data } = await api.post<{ ticket: string; expiraEnSegundos: number }>("/admin/hangfire/ticket");
+    return data.ticket;
+  },
+
   setSector: async (negocioId: string, sector: string): Promise<void> => {
     await api.patch(`/admin/negocios/${negocioId}/sector`, { sector });
   },

@@ -3,6 +3,7 @@ import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { Menu, X, ExternalLink, Sun, Moon } from "lucide-react";
 import { useAuthStore } from "../store/authStore";
 import { authApi } from "../api/auth";
+import { adminApi } from "../api/admin";
 import { useInactividadTimeout } from "../hooks/useInactividadTimeout";
 import { useTheme } from "../hooks/useTheme";
 import { useMediaQuery } from "../hooks/useMediaQuery";
@@ -23,10 +24,31 @@ const claseEnlaceNav = ({ isActive }: { isActive: boolean }) =>
   `${ENLACE_NAV} ${isActive ? ENLACE_NAV_ACTIVO : ENLACE_NAV_INACTIVO}`;
 
 export default function AdminLayout() {
-  const { usuario, token, refreshToken, cerrarSesion } = useAuthStore();
+  const { usuario, refreshToken, cerrarSesion } = useAuthStore();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { theme, toggle } = useTheme();
+
+  const [errorHangfire, setErrorHangfire] = useState(false);
+
+  // S2: the JWT never goes in a URL. The tab is opened synchronously (so the popup
+  // blocker allows it) and pointed at /hangfire-session once the one-time ticket arrives.
+  const abrirHangfire = async () => {
+    cerrarSidebar();
+    setErrorHangfire(false);
+    const ventana = window.open("about:blank", "_blank");
+    if (ventana) ventana.opener = null;
+    try {
+      const ticket = await adminApi.emitirTicketHangfire();
+      const base = import.meta.env.VITE_API_URL?.replace("/api", "") ?? "";
+      const url = `${base}/hangfire-session?ticket=${encodeURIComponent(ticket)}`;
+      if (ventana) ventana.location.replace(url);
+      else window.location.assign(url);
+    } catch {
+      ventana?.close();
+      setErrorHangfire(true);
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -153,15 +175,19 @@ export default function AdminLayout() {
           <NavLink to="/admin/audit" onClick={cerrarSidebar} className={claseEnlaceNav}>
             Registro de auditoría
           </NavLink>
-          <a
-            href={`${import.meta.env.VITE_API_URL?.replace("/api", "")}/hangfire-session?token=${token}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={cerrarSidebar}
-            className={`${ENLACE_NAV} ${ENLACE_NAV_INACTIVO}`}
+          <button
+            type="button"
+            onClick={abrirHangfire}
+            className={`${ENLACE_NAV} ${ENLACE_NAV_INACTIVO} w-full text-left`}
           >
             Tareas programadas <ExternalLink size={12} aria-hidden="true" />
-          </a>
+            <span className="sr-only"> (se abre en una pestaña nueva)</span>
+          </button>
+          {errorHangfire && (
+            <p role="alert" className="px-4 text-xs text-red-600 dark:text-red-400">
+              No se pudo abrir el panel de tareas. Intenta de nuevo.
+            </p>
+          )}
         </nav>
 
         {/* Usuario */}

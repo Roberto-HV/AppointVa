@@ -23,7 +23,6 @@ using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.ResponseCompression;
 using AppointVaAPI.Filters;
 using AppointVaAPI.Policies;
-using System.IdentityModel.Tokens.Jwt;
 
 // ── Serilog ────────────────────────────────────────────────────────────────────
 Serilog.Log.Logger = new LoggerConfiguration()
@@ -143,6 +142,8 @@ builder.Services.AddScoped<IBlobStorageService, BlobStorageService>();
 builder.Services.AddScoped<IPushService, PushService>();
 builder.Services.AddScoped<IRecordatorioService, RecordatorioService>();
 builder.Services.AddScoped<NotificacionJob>();
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddSingleton<IPanelJobsAccesoService, PanelJobsAccesoService>();
 builder.Services.AddHttpClient("WhatsApp");
 builder.Services.AddHttpClient("WebPush");
 builder.Services.AddHttpClient("Brevo");
@@ -310,55 +311,39 @@ if (app.Environment.IsDevelopment())
     app.MapScalarApiReference(opt => opt.Title = "AppointVa API");
 }
 
-// Hangfire dashboard — protegido con cookie validada por HangfireAuthorizationFilter
+// Hangfire dashboard — protegido con la cookie de sesión validada por HangfireAuthorizationFilter
 if (!app.Environment.IsEnvironment("Testing"))
     app.UseHangfireDashboard("/hangfire", new DashboardOptions
     {
-        Authorization = [new HangfireAuthorizationFilter(app.Configuration)],
+        Authorization = [new HangfireAuthorizationFilter()],
         DashboardTitle = "AppointVa — Jobs",
         IsReadOnlyFunc = _ => false,
     });
 
-// Endpoint que valida el JWT, pone la cookie y redirige al dashboard
-app.MapGet("/hangfire-session", (HttpContext ctx, IConfiguration config) =>
+// S2: canjea un ticket de un solo uso (POST /api/admin/hangfire/ticket, solo SuperAdmin)
+// por una cookie de sesión opaca del dashboard. Nunca recibe un JWT por la URL.
+app.MapGet("/hangfire-session", (HttpContext ctx, [Microsoft.AspNetCore.Mvc.FromServices] IPanelJobsAccesoService acceso) =>
 {
-    var token = ctx.Request.Query["token"].FirstOrDefault();
-    if (string.IsNullOrEmpty(token)) return Results.Redirect("/hangfire");
+    ctx.Response.Headers.CacheControl = "no-store";
+    ctx.Response.Headers["Referrer-Policy"] = "no-referrer";
 
-    try
+    var sesion = acceso.CanjearTicket(ctx.Request.Query["ticket"].FirstOrDefault());
+    if (sesion is null) return Results.Redirect("/hangfire");
+
+    ctx.Response.Cookies.Append(HangfireAuthorizationFilter.NombreCookie, sesion, new CookieOptions
     {
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["Jwt:Clave"]!));
-        var principal = new JwtSecurityTokenHandler().ValidateToken(token,
-            new TokenValidationParameters
-            {
-                ValidateIssuer           = true,
-                ValidateAudience         = true,
-                ValidateLifetime         = true,
-                ValidateIssuerSigningKey  = true,
-                ValidIssuer              = config["Jwt:Emisor"],
-                ValidAudience            = config["Jwt:Audiencia"],
-                IssuerSigningKey         = key,
-                RoleClaimType            = "role",
-                NameClaimType            = "sub",
-                ClockSkew                = TimeSpan.Zero,
-            }, out _);
+        HttpOnly = true,
+        Secure   = true,
+        // Lax (no Strict): la navegación llega desde el front en otro sitio y Strict
+        // haría que el primer redirect a /hangfire no lleve la cookie.
+        SameSite = SameSiteMode.Lax,
+        Path     = "/hangfire",
+        MaxAge   = acceso.DuracionSesion,
+    });
+    // Cookie anterior (contenía el JWT): se borra.
+    ctx.Response.Cookies.Delete("hangfire_auth");
 
-        if (!principal.IsInRole("SuperAdmin")) return Results.Redirect("/hangfire");
-
-        ctx.Response.Cookies.Append("hangfire_auth", token, new CookieOptions
-        {
-            HttpOnly  = true,
-            Secure    = true,
-            SameSite  = SameSiteMode.Strict,
-            MaxAge    = TimeSpan.FromMinutes(60),
-        });
-
-        return Results.Redirect("/hangfire");
-    }
-    catch
-    {
-        return Results.Redirect("/hangfire");
-    }
+    return Results.Redirect("/hangfire");
 });
 
 // ── Security headers ──────────────────────────────────────────────────────────
