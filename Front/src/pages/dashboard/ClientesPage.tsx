@@ -13,9 +13,11 @@ import { formatPrecio, formatFecha, formatFechaCorta, formatFechaHora } from "..
 import Pagination from "../../components/ui/Pagination";
 import { useToastStore } from "../../store/toastStore";
 import { SiWhatsapp } from "react-icons/si";
-import { UserX, UserCheck, Eye, Users } from "lucide-react";
+import { UserX, UserCheck, Eye } from "lucide-react";
 import Select from "../../components/ui/Select";
 import EmptyState from "../../components/ui/EmptyState";
+import BotonCopiarEnlace from "../../components/dashboard/BotonCopiarEnlace";
+import { tonoDeSector } from "../../lib/vozVacia";
 import BotonAccion from "../../components/ui/BotonAccion";
 import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
 import { FiltroBarra } from "../../components/ui/filtros";
@@ -395,9 +397,9 @@ export default function ClientesPage() {
             />
           ) : (
             <EmptyState
-              icon={<Users size={40} strokeWidth={1.5} />}
-              title={`Aún no hay ${terms.clientes.toLowerCase()}`}
-              description={`Los ${terms.clientes.toLowerCase()} aparecerán aquí automáticamente cuando hagan su primera reserva`}
+              voz="clientes"
+              tono={tonoDeSector(negocio?.sector)}
+              action={negocio?.slug ? <BotonCopiarEnlace url={`${window.location.origin}/b/${negocio.slug}`} /> : undefined}
             />
           )}
         </div>

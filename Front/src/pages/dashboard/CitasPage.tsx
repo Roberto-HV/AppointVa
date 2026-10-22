@@ -1,9 +1,10 @@
-﻿import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { useSectorTerms } from "../../hooks/useSectorTerms";
+import { useSectorTerms, useSector } from "../../hooks/useSectorTerms";
+import { tonoDeSector } from "../../lib/vozVacia";
 
 import { hoy, inicioSemana, finSemana, inicioMes, finMes } from "../../utils/fechas";
-import { Calendar, CheckCircle2, RotateCcw, StickyNote, Receipt, Banknote, Star, Pencil, AlertTriangle, Monitor } from "lucide-react";
+import { CheckCircle2, RotateCcw, StickyNote, Receipt, Banknote, Star, Pencil, AlertTriangle, Monitor } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { citasApi, ESTADOS } from "../../api/citas";
 import Tabs from "../../components/ui/Tabs";
@@ -48,6 +49,7 @@ export default function CitasPage() {
   const qc = useQueryClient();
   const { toast } = useToastStore();
   const terms = useSectorTerms();
+  const sector = useSector();
   const esMovil = useMediaQuery(CONSULTA_MOVIL);
   const permisos = usePermisos();
 
@@ -457,6 +459,8 @@ export default function CitasPage() {
 
   const hayFiltrosActivos =
     Boolean(busqueda) || campos.some(campoActivo);
+  // Solo el período acota la lista: el vacío es del rango, no de un filtro.
+  const soloRango = !busqueda && campos.every((c) => c.tipo === "rangoFechas" || !campoActivo(c));
 
   // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -648,16 +652,28 @@ export default function CitasPage() {
           </div>
         ) : citas.length === 0 ? (
           <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700">
-            <EmptyState
-              variante={hayFiltrosActivos ? "sinResultados" : "vacio"}
-              icon={hayFiltrosActivos ? undefined : <Calendar size={40} strokeWidth={1.5} />}
-              title={
-                estadoFiltro
-                  ? `Sin ${terms.citas.toLowerCase()} ${estadoFiltro.toLowerCase()}s`
-                  : `No hay ${terms.citas.toLowerCase()} en este rango`
-              }
-              onLimpiarFiltros={hayFiltrosActivos ? limpiarFiltros : undefined}
-            />
+            {hayFiltrosActivos && !soloRango ? (
+              <EmptyState
+                variante="sinResultados"
+                title={
+                  estadoFiltro
+                    ? `Sin ${terms.citas.toLowerCase()} ${estadoFiltro.toLowerCase()}s`
+                    : `No hay ${terms.citas.toLowerCase()} en este rango`
+                }
+                onLimpiarFiltros={limpiarFiltros}
+              />
+            ) : (
+              // Rango vacío sin filtros: una frase con voz del sector y una sola salida.
+              <EmptyState
+                voz="citasRango"
+                tono={tonoDeSector(sector)}
+                action={
+                  <BotonAccion onClick={abrirNuevaCita}>
+                    {`Nueva ${terms.cita.toLowerCase()}`}
+                  </BotonAccion>
+                }
+              />
+            )}
           </div>
         ) : esMovil ? (
           // Teléfono: tarjetas apiladas con las acciones a la vista. La tabla medía

@@ -39,10 +39,15 @@ export function getSectorTerms(sector: string | null | undefined): SectorTerms {
 }
 
 export function useSectorTerms(): SectorTerms {
+  return getSectorTerms(useSector());
+}
+
+/** Sector del negocio en sesión (mismo query que el perfil; `undefined` mientras carga). */
+export function useSector(): string | undefined {
   const { data } = useQuery({
     queryKey: ["negocio-perfil"],
     queryFn: negociosApi.obtenerPerfil,
     staleTime: 5 * 60 * 1000,
   });
-  return getSectorTerms(data?.sector);
+  return data?.sector;
 }

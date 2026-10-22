@@ -199,8 +199,11 @@ describe("CitasPage — estado vacío", () => {
     });
     renderConQuery();
     await waitFor(() =>
-      expect(screen.getByText("No hay citas en este rango")).toBeInTheDocument()
+      expect(screen.getByText("Nada agendado en estas fechas")).toBeInTheDocument()
     );
+    // Una sola salida, con la voz del sector: crear la cita desde ahí mismo.
+    fireEvent.click(screen.getByRole("button", { name: "Nueva cita" }));
+    expect(await screen.findByRole("dialog", { name: "Nueva cita" })).toBeInTheDocument();
   });
 });
 
@@ -787,7 +790,7 @@ describe("CitasPage — error al cargar (DC-32)", () => {
     vi.mocked(citasApi.obtenerTodas).mockRejectedValueOnce(new Error("red"));
     renderConQuery();
     expect(await screen.findByText("No se pudieron cargar las citas.")).toBeInTheDocument();
-    expect(screen.queryByText("No hay citas en este rango")).toBeNull();
+    expect(screen.queryByText("Nada agendado en estas fechas")).toBeNull();
     vi.mocked(citasApi.obtenerTodas).mockResolvedValue({ datos: [makeCita()], total: 1, pagina: 1, tamano: 15 });
     fireEvent.click(screen.getByRole("button", { name: "Reintentar" }));
     expect(await screen.findByText("Juan Pérez")).toBeInTheDocument();

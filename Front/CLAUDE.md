@@ -38,7 +38,7 @@ Appointment-booking SaaS frontend. Business owners and employees manage appointm
 - Brand gold `#C8A961` is still for the logo/mark ONLY — never for buttons, links, or accents.
 - Sector salud: cool neutral ramp and `#0F4C75` accent via `[data-sector="salud"]` (DashboardLayout sets it on `<html>`; salud public pages on their root). Don't duplicate components per sector.
 - Appointment status colors (pending, confirmed, completed, etc.) are semantic tokens — use them, never hardcode hex values.
-- Fonts: Inter for UI (400/500/600, 700 max, never `font-black`). Display face **Fraunces** (`font-display`) ONLY for landing H1/H2 (not `/salud`), the booking business name, the confirmation headline and the dashboard Inicio greeting — never in dashboard chrome; salud falls back to Inter.
+- Fonts: Inter for UI (400/500/600, 700 max, never `font-black`). Display face **Fraunces** (`font-display`) ONLY for landing H1/H2 (not `/salud`), the booking business name and service category headings, the confirmation headline and the dashboard Inicio greeting — never in dashboard chrome; salud falls back to Inter.
 - Shape and depth: cards `rounded-xl` (14px), controls `rounded-lg` (10px), pills only for chips/badges. Elevation is `shadow-card` OR a border, never both (`.tarjeta` is the card primitive). Motion 180–240ms with `ease-calma`.
 - Numbers: `tabular-nums` for times, money and counts; one time format (`formatHora`/`formatHoraDe`); whole pesos without `.00` (`formatPrecio`). Labels are sentence case; uppercase only for the confirmation code.
 - If a change needs a new token, add it to `src/index.css`/`tailwind.config.js` AND document it in `docs/design-system.css`.

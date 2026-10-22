@@ -1164,20 +1164,34 @@ export default function BookingPage() {
     if (paso === 1) {
       return (
         <>
-          {/* Resumen corrido: en el paso 1 aún no existe el breadcrumb de arriba. */}
-          {servicio && (
-            <p className="mb-2 truncate text-xs text-slate-500">
-              <span className="font-semibold text-slate-700">{servicio.nombre}</span>
-              {` · ${servicio.duracionMinutos} min · ${formatPrecio(servicio.precio)}`}
-            </p>
-          )}
+          {/* Resumen corrido dentro del botón: "Corte de dama · 45 min · $280 — Continuar".
+              El nombre accesible sigue siendo "Continuar"; el resumen va como descripción. */}
           <button
             onClick={irSiguiente}
             disabled={!servicio}
-            className={`${BTN_PRIMARIO} w-full`}
+            aria-label={servicio ? "Continuar" : undefined}
+            aria-describedby={servicio ? "resumen-servicio-elegido" : undefined}
+            className={`${BTN_PRIMARIO} w-full ${servicio ? "!justify-between gap-3 px-4" : ""}`}
             style={{ background: colorCta }}
           >
-            Continuar
+            {servicio ? (
+              <>
+                {/* Si no cabe, se recorta el nombre; duración y precio siempre se leen. */}
+                <span aria-hidden="true" className="min-w-0 flex text-left font-medium tabular-nums opacity-90">
+                  <span className="truncate">{servicio.nombre}</span>
+                  <span className="shrink-0 whitespace-pre">{` · ${servicio.duracionMinutos} min · ${formatPrecio(servicio.precio)}`}</span>
+                </span>
+                {/* La descripción va en una sola pieza de texto: partida, el cálculo accesible pierde los espacios. */}
+                <span id="resumen-servicio-elegido" className="sr-only">
+                  {`${servicio.nombre} · ${servicio.duracionMinutos} min · ${formatPrecio(servicio.precio)}`}
+                </span>
+                <span className="shrink-0">
+                  <span aria-hidden="true">— </span>Continuar
+                </span>
+              </>
+            ) : (
+              "Continuar"
+            )}
           </button>
         </>
       );

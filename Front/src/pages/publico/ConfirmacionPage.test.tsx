@@ -30,10 +30,7 @@ vi.mock("../../components/PublicFooter", () => ({
   default: () => <div data-testid="public-footer" />,
 }));
 
-vi.mock("../../lib/colorUtils", () => ({
-  hexToChannels: () => "99 102 241",
-  DEFAULT_COLOR: "#6366f1",
-}));
+
 
 vi.mock("../../components/icons/WhatsAppIcon", () => ({
   default: () => <svg data-testid="whatsapp-icon" />,
@@ -49,10 +46,22 @@ vi.mock("../../components/booking/PasoFechaHora", () => ({
   ),
 }));
 
-vi.mock("../../utils/formatters", () => ({
-  formatPrecio: (v: number) => `$${v}`,
-  formatFechaHoraCompleta: () => "martes, 22 de julio de 2026 10:00",
-}));
+// `real.cuando` deja pasar la implementación real de describirCuandoCita.
+const real = vi.hoisted(() => ({ cuando: false }));
+
+vi.mock("../../utils/formatters", async (importOriginal) => {
+  const mod = await importOriginal<typeof import("../../utils/formatters")>();
+  return {
+    ...mod,
+    formatPrecio: (v: number) => `$${v}`,
+    formatFechaHoraCompleta: () => "martes, 22 de julio de 2026 10:00",
+    describirCuandoCita: (iso: string, ahora?: Date) => {
+      if (real.cuando) return mod.describirCuandoCita(iso, ahora);
+      const r = mod.describirCuandoCita(iso, ahora);
+      return r && { ...r, texto: "el miércoles 22 a las 10:00 a. m." };
+    },
+  };
+});
 
 import { publicoApi } from "../../api/publico";
 
@@ -92,6 +101,7 @@ function renderConQuery() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  real.cuando = false;
   Object.defineProperty(navigator, "clipboard", {
     value: { writeText: vi.fn().mockResolvedValue(undefined) },
     writable: true,
@@ -229,7 +239,7 @@ describe("ConfirmacionPage — banner sin email", () => {
   });
 });
 
-// ── BF-04: el encabezado y el «¿Qué sigue?» reflejan el estado real ───────────
+// ── BF-04: el encabezado, el sello y el «¿Qué sigue?» reflejan el estado real ─
 describe("ConfirmacionPage — estado de la cita", () => {
   async function renderCita(cambios: Record<string, unknown>) {
     vi.mocked(publicoApi.obtenerCita).mockResolvedValue({
@@ -241,43 +251,82 @@ describe("ConfirmacionPage — estado de la cita", () => {
     return screen.findByRole("heading", { level: 1 });
   }
 
-  it("confirmada: dice «¡Cita confirmada!»", async () => {
+  it("el titular dice cuándo la esperan, en la cara display", async () => {
     const titulo = await renderCita({ estadoTexto: "Confirmada" });
-    expect(titulo).toHaveTextContent("¡Cita confirmada!");
+    expect(titulo).toHaveTextContent("Te esperamos el miércoles 22 a las 10:00 a. m.");
+    expect(titulo).toHaveClass("font-display");
+  });
+
+  it("si la hora ya pasó no dice «te esperamos»", async () => {
+    const titulo = await renderCita({ estadoTexto: "Confirmada", inicioEn: new Date(Date.now() - 86400000 * 3).toISOString() });
+    expect(titulo).toHaveTextContent(/^Tu cita fue /);
+  });
+
+  it("hoy y ya empezada (sin mocks de fecha): «Tu cita es hoy…»", async () => {
+    real.cuando = true;
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 9, 21, 15, 0));
+    try {
+      const titulo = await renderCita({
+        estadoTexto: "Confirmada",
+        inicioEn: new Date(2026, 9, 21, 14, 0).toISOString(),
+        finEn: new Date(2026, 9, 21, 15, 30).toISOString(),
+      });
+      expect(titulo).toHaveTextContent(/^Tu cita es hoy a las 2:00/);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("inasistencia: no dice «Por confirmar» ni promete pendiente", async () => {
+    await renderCita({ estadoTexto: "Inasistencia", estado: 5, inicioEn: new Date(Date.now() - 86400000).toISOString() });
+    const sello = screen.getAllByText("Inasistencia").find((el) => el.classList.contains("bg-status-absent-bg"));
+    expect(sello).toBeDefined();
+    expect(screen.queryByText("Por confirmar")).not.toBeInTheDocument();
+    expect(screen.queryByText(/pendiente de confirmación/i)).not.toBeInTheDocument();
+    expect(screen.queryByText("¿Qué sigue?")).not.toBeInTheDocument();
+    expect(screen.queryByText("Recordatorio")).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(/^Tu cita fue /);
+  });
+
+  it("confirmada: el sello dice «Confirmada»", async () => {
+    await renderCita({ estadoTexto: "Confirmada" });
+    expect(screen.getByText("Confirmada")).toHaveClass("bg-status-confirmed-bg");
     expect(screen.getByText("Cita confirmada")).toBeInTheDocument();
   });
 
   it("pendiente sin anticipo: no la da por confirmada", async () => {
-    const titulo = await renderCita({ estadoTexto: "Pendiente", estado: 0 });
-    expect(titulo).toHaveTextContent("¡Cita agendada!");
+    await renderCita({ estadoTexto: "Pendiente", estado: 0 });
+    expect(screen.getByText("Por confirmar")).toHaveClass("bg-status-pending-bg");
     expect(screen.getByText("Pendiente de confirmación del negocio")).toBeInTheDocument();
     expect(screen.getByText("Pendiente de confirmación")).toBeInTheDocument();
     expect(screen.queryByText(/cita confirmada/i)).not.toBeInTheDocument();
   });
 
   it("pendiente con anticipo sin pagar: pide el anticipo", async () => {
-    const titulo = await renderCita({ estadoTexto: "Pendiente", requiereAnticipo: true, montoAnticipo: 100 });
-    expect(titulo).toHaveTextContent("¡Cita agendada!");
+    await renderCita({ estadoTexto: "Pendiente", requiereAnticipo: true, montoAnticipo: 100 });
+    expect(screen.getByText("Falta anticipo")).toBeInTheDocument();
     expect(screen.getByText("Falta tu anticipo para confirmarla")).toBeInTheDocument();
     expect(screen.getByText("Falta tu anticipo")).toBeInTheDocument();
     expect(screen.queryByText(/cita confirmada/i)).not.toBeInTheDocument();
   });
 
   it("pendiente con comprobante enviado: espera la revisión del negocio", async () => {
-    const titulo = await renderCita({
+    await renderCita({
       estadoTexto: "Pendiente",
       requiereAnticipo: true,
       montoAnticipo: 100,
       comprobanteUrl: "https://cdn.test/comprobante.jpg",
     });
-    expect(titulo).toHaveTextContent("¡Cita agendada!");
+    expect(screen.getByText("Por confirmar")).toBeInTheDocument();
     expect(screen.getByText("El negocio revisará tu pago y confirmará tu cita")).toBeInTheDocument();
     expect(screen.queryByText("Falta tu anticipo")).not.toBeInTheDocument();
   });
 
   it("confirmada con anticipo: manda el estado del negocio", async () => {
-    const titulo = await renderCita({ estadoTexto: "Confirmada", requiereAnticipo: true, montoAnticipo: 100 });
-    expect(titulo).toHaveTextContent("¡Cita confirmada!");
+    await renderCita({ estadoTexto: "Confirmada", requiereAnticipo: true, montoAnticipo: 100 });
+    expect(screen.getByText("Confirmada")).toBeInTheDocument();
+    expect(screen.queryByText("Falta anticipo")).not.toBeInTheDocument();
   });
 
   it("cancelada: dice «Cita cancelada»", async () => {
@@ -302,15 +351,16 @@ describe("ConfirmacionPage — estado de la cita", () => {
   });
 });
 
-// ── BF-16: el estado usa los tokens semánticos ────────────────────────────────
-describe("ConfirmacionPage — badge de estado", () => {
+// ── BF-16: el sello usa los tokens semánticos y vive en el talón ──────────────
+describe("ConfirmacionPage — sello de estado", () => {
   it("confirmada usa los tokens de estado confirmado", async () => {
     vi.mocked(publicoApi.obtenerCita).mockResolvedValue({ ...mockCitaBase, emailCliente: "juan@test.com" } as never);
     renderConQuery();
-    const badge = (await screen.findByText("Estado")).nextElementSibling;
-    expect(badge).toHaveTextContent(/^Confirmada$/);
-    expect(badge?.textContent).not.toMatch(/[✓⏳]/);
-    expect(badge).toHaveClass("bg-status-confirmed-bg", "text-status-confirmed-fg");
+    const sello = await screen.findByText("Confirmada");
+    expect(sello.textContent).not.toMatch(/[✓⏳]/);
+    expect(sello).toHaveClass("bg-status-confirmed-bg", "text-status-confirmed-fg");
+    // El lector de pantalla oye "Estado de la cita: Confirmada".
+    expect(sello.parentElement).toHaveTextContent("Estado de la cita: Confirmada");
   });
 
   it("pendiente usa los tokens de estado pendiente", async () => {
@@ -318,9 +368,50 @@ describe("ConfirmacionPage — badge de estado", () => {
       ...mockCitaBase, emailCliente: "juan@test.com", estadoTexto: "Pendiente", estado: 0,
     } as never);
     renderConQuery();
-    const badge = (await screen.findByText("Estado")).nextElementSibling;
-    expect(badge).toHaveTextContent(/^Pendiente$/);
-    expect(badge).toHaveClass("bg-status-pending-bg", "text-status-pending-fg");
+    const sello = await screen.findByText("Por confirmar");
+    expect(sello).toHaveClass("bg-status-pending-bg", "text-status-pending-fg");
+  });
+
+  it("el código va en el talón, antes del borde perforado y del detalle", async () => {
+    vi.mocked(publicoApi.obtenerCita).mockResolvedValue({ ...mockCitaBase, emailCliente: "juan@test.com" } as never);
+    const { container } = renderConQuery();
+    const codigo = await screen.findByText("ABC123");
+    const perforado = container.querySelector(".talon-perforado")!;
+    expect(perforado).toHaveAttribute("aria-hidden", "true");
+    expect(codigo.compareDocumentPosition(perforado) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(perforado.compareDocumentPosition(screen.getByText("Juan Pérez")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("la banda del negocio usa su foto de portada y su logo", async () => {
+    vi.mocked(publicoApi.obtenerNegocio).mockResolvedValue({
+      sector: "belleza", portadaUrl: "https://cdn.test/portada.jpg", logoUrl: "https://cdn.test/logo.png",
+    } as never);
+    vi.mocked(publicoApi.obtenerCita).mockResolvedValue({ ...mockCitaBase, emailCliente: "juan@test.com" } as never);
+    const { container } = renderConQuery();
+    await screen.findByText("ABC123");
+    await waitFor(() =>
+      expect(container.querySelector('[data-testid="banda-negocio"] img')).toHaveAttribute("src", "https://cdn.test/portada.jpg")
+    );
+    expect(container.querySelector('img[src="https://cdn.test/logo.png"]')).toBeInTheDocument();
+  });
+
+  it("con foto, la banda conserva el fondo del negocio; si la foto o el logo fallan, quedan el color y el monograma", async () => {
+    vi.mocked(publicoApi.obtenerNegocio).mockResolvedValue({
+      sector: "belleza", portadaUrl: "https://cdn.test/portada.jpg", logoUrl: "https://cdn.test/logo.png",
+    } as never);
+    vi.mocked(publicoApi.obtenerCita).mockResolvedValue({ ...mockCitaBase, emailCliente: "juan@test.com", colorPrimario: "#2F7D4F" } as never);
+    const { container } = renderConQuery();
+    await screen.findByText("ABC123");
+    const banda = container.querySelector('[data-testid="banda-negocio"]') as HTMLElement;
+    await waitFor(() => expect(banda.querySelector("img")).not.toBeNull());
+    expect(banda.style.background || banda.style.backgroundColor || banda.style.backgroundImage).not.toBe("");
+
+    fireEvent.error(banda.querySelector("img")!);
+    fireEvent.error(container.querySelector('img[src="https://cdn.test/logo.png"]')!);
+    await waitFor(() => expect(banda.querySelector("img")).toBeNull());
+    expect(container.querySelector('img[src="https://cdn.test/logo.png"]')).toBeNull();
+    expect(screen.getByText("T")).toBeInTheDocument();
+    expect(banda.style.background || banda.style.backgroundColor || banda.style.backgroundImage).not.toBe("");
   });
 });
 
@@ -343,6 +434,24 @@ describe("ConfirmacionPage — acciones", () => {
     expect(apple).toHaveAttribute("href", "https://api.test/cita.ics");
     expect(google).toHaveAttribute("href", "https://calendar.google.com/x");
     expect(apple.compareDocumentPosition(whatsapp) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("calendario y WhatsApp van justo bajo el talón, antes de «¿Qué sigue?»", async () => {
+    vi.mocked(publicoApi.obtenerCita).mockResolvedValue(conCalendario as never);
+    renderConQuery();
+    const whatsapp = await screen.findByRole("link", { name: /Compartir por WhatsApp/ });
+    const queSigue = screen.getByText("¿Qué sigue?");
+    expect(whatsapp.compareDocumentPosition(queSigue) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("si falta el anticipo, su panel va antes que el calendario", async () => {
+    vi.mocked(publicoApi.obtenerCita).mockResolvedValue({
+      ...conCalendario, estadoTexto: "Pendiente", requiereAnticipo: true, montoAnticipo: 100,
+    } as never);
+    renderConQuery();
+    const apple = await screen.findByRole("link", { name: /Apple Calendar/ });
+    const anticipo = screen.getByText("Anticipo requerido");
+    expect(anticipo.compareDocumentPosition(apple) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it("Reagendar y Cancelar son botones de 44px", async () => {

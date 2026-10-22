@@ -1,7 +1,7 @@
 import { forwardRef } from "react";
 import { Link } from "react-router-dom";
 
-import { DARK } from "./constantes";
+import { TINTA } from "./constantes";
 
 interface CtaFinalProps {
   titulo: string;
@@ -20,7 +20,7 @@ export const CtaFinal = forwardRef<HTMLElement, CtaFinalProps>(function CtaFinal
   ref,
 ) {
   return (
-    <section ref={ref} style={{ backgroundColor: DARK }} className="py-28 relative overflow-hidden">
+    <section ref={ref} style={{ backgroundColor: TINTA }} className="py-28 relative overflow-hidden">
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] blur-3xl opacity-10 pointer-events-none bg-slate-400" />
       <div className="relative max-w-2xl mx-auto px-6 text-center">
         <h2 className="text-4xl md:text-5xl font-bold text-white mb-6 leading-tight">{titulo}</h2>

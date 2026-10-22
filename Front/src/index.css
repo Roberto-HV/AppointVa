@@ -316,6 +316,26 @@ button:not([disabled]):active {
   .tarjeta {
     @apply rounded-xl bg-card text-card-foreground shadow-card;
   }
+
+  /* Borde perforado del talón de /cita/:codigo: dos muescas que dejan ver el
+     fondo de la página y una línea punteada entre ellas. Solo páginas públicas
+     (modo claro), por eso el blanco es literal. La sombra la pone el contenedor
+     con drop-shadow, que sigue el recorte de las muescas. */
+  .talon-perforado {
+    position: relative;
+    height: 20px;
+    background:
+      radial-gradient(circle at 0 50%, transparent 10px, #fff 10.5px) left / 51% 100% no-repeat,
+      radial-gradient(circle at 100% 50%, transparent 10px, #fff 10.5px) right / 51% 100% no-repeat;
+  }
+  .talon-perforado::after {
+    content: "";
+    position: absolute;
+    left: 18px;
+    right: 18px;
+    top: 50%;
+    border-top: 2px dashed rgb(var(--neutral-200));
+  }
 }
 
 /* Fuera de @layer para máxima especificidad — previene auto-zoom de iOS */

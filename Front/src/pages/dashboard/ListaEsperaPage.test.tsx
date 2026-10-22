@@ -74,7 +74,7 @@ afterEach(() => {
 describe("ListaEsperaPage — estado vacío", () => {
   it("muestra el mensaje cuando no hay entradas", async () => {
     renderConQuery();
-    await screen.findByText("No hay entradas en la lista de espera");
+    await screen.findByText("Nadie en espera por ahora");
   });
 });
 
@@ -94,7 +94,7 @@ describe("ListaEsperaPage — filtro de estado", () => {
   it("el desplegable refleja el estado elegido", async () => {
     renderConQuery();
     // wait for page to settle (empty state renders)
-    await screen.findByText("No hay entradas en la lista de espera");
+    await screen.findByText("Nadie en espera por ahora");
     // El estado es un <Select>: las opciones solo existen con el panel abierto.
     const disparador = screen.getByRole("button", { name: "Estado" });
     fireEvent.click(disparador);

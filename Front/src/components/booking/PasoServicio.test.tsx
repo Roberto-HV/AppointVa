@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, within } from "@testing-library/react";
 import PasoServicio from "./PasoServicio";
 import type { ServicioPublico } from "../../types";
 
@@ -199,5 +199,44 @@ describe("PasoServicio — grupo Destacados", () => {
     );
     expect(screen.getByText("Destacados")).toBeInTheDocument();
     expect(screen.getByText("Otros")).toBeInTheDocument();
+  });
+});
+
+describe("PasoServicio — como carta", () => {
+  const conCategoria: ServicioPublico[] = [
+    { ...mockServicios[0], categoriaNombre: "Cabello" },
+    { ...mockServicios[1], categoriaNombre: "Color" },
+  ];
+
+  it("nombre y precio en la misma línea, unidos por una guía punteada que no se lee", () => {
+    render(<PasoServicio servicios={mockServicios} seleccionado={null} onSeleccionar={vi.fn()} />);
+    const nombre = screen.getByText("Corte de cabello");
+    const linea = nombre.parentElement!;
+    expect(linea).toHaveClass("items-baseline");
+    expect(linea).toContainElement(screen.getByText("$150"));
+    const guia = linea.querySelector(".border-dotted");
+    expect(guia).toHaveAttribute("aria-hidden", "true");
+    expect(screen.getByText("30 min")).toHaveClass("text-slate-500");
+  });
+
+  it("los encabezados de categoría van en la cara display, salvo en salud", () => {
+    const { unmount } = render(<PasoServicio servicios={conCategoria} seleccionado={null} onSeleccionar={vi.fn()} />);
+    expect(screen.getByRole("heading", { level: 3, name: "Cabello" })).toHaveClass("font-display");
+    unmount();
+    render(<PasoServicio servicios={conCategoria} seleccionado={null} onSeleccionar={vi.fn()} sector="salud" />);
+    expect(screen.getByRole("heading", { level: 3, name: "Cabello" })).not.toHaveClass("font-display");
+  });
+
+  it("cada categoría es una lista con nombre; la fila sigue siendo un botón conmutable", () => {
+    render(<PasoServicio servicios={conCategoria} seleccionado={conCategoria[1]} onSeleccionar={vi.fn()} />);
+    const color = screen.getByRole("region", { name: "Color" });
+    expect(within(color).getByRole("button", { name: /Coloración/ })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("la palomita del seleccionado se rellena con el color sólido del negocio", () => {
+    render(<PasoServicio servicios={mockServicios} seleccionado={mockServicios[0]} onSeleccionar={vi.fn()} color="#1F6F43" />);
+    const fila = screen.getByRole("button", { name: /Corte de cabello/ });
+    const palomita = fila.querySelector("[aria-hidden='true']") as HTMLElement;
+    expect(palomita.style.background).toBe("rgb(31, 111, 67)");
   });
 });

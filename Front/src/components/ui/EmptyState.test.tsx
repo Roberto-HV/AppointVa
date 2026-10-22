@@ -48,3 +48,28 @@ describe("EmptyState", () => {
     expect(screen.queryByRole("button", { name: /limpiar filtros/i })).not.toBeInTheDocument();
   });
 });
+
+describe("EmptyState — con voz", () => {
+  it("belleza habla cálido y ofrece una acción", () => {
+    render(<EmptyState voz="citasRango" tono="belleza" action={<button type="button">Nueva cita</button>} />);
+    expect(screen.getByText("Nada agendado en estas fechas")).toBeInTheDocument();
+    expect(screen.getByText("¿Mueves el rango o creas una cita?")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Nueva cita" })).toBeInTheDocument();
+  });
+
+  it("salud habla sobrio", () => {
+    render(<EmptyState voz="citasRango" tono="salud" />);
+    expect(screen.getByText("Sin consultas en este periodo")).toBeInTheDocument();
+  });
+
+  it("con voz no pinta icono por defecto", () => {
+    const { container } = render(<EmptyState voz="listaEspera" tono="belleza" variante="sinResultados" />);
+    expect(container.querySelector("svg")).toBeNull();
+  });
+
+  it("un título explícito gana sobre el catálogo", () => {
+    render(<EmptyState voz="clientes" tono="salud" title="Otro texto" />);
+    expect(screen.getByText("Otro texto")).toBeInTheDocument();
+    expect(screen.getByText(/primera consulta/)).toBeInTheDocument();
+  });
+});

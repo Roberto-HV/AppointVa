@@ -1,9 +1,8 @@
-import { useMemo } from "react";
+import { useId, useMemo } from "react";
+import { Check } from "lucide-react";
 import type { ServicioPublico } from "../../types";
 import { formatPrecio } from "../../utils/formatters";
-import { brandAccent, brandTint, DEFAULT_COLOR } from "../../lib/colorUtils";
-import FilaSeleccion, { GrupoFilas } from "./FilaSeleccion";
-import { Clock } from "lucide-react";
+import { brandSolid, brandTint, DEFAULT_COLOR } from "../../lib/colorUtils";
 
 interface Props {
   servicios: ServicioPublico[];
@@ -59,43 +58,107 @@ function agrupar(servicios: ServicioPublico[]): Grupo[] {
   return grupos;
 }
 
+interface FilaMenuProps {
+  servicio: ServicioPublico;
+  activo: boolean;
+  onSeleccionar: () => void;
+  /** Color sólido del negocio (contraste ≥ 4.5 con blanco) para la palomita. */
+  solido: string;
+  tinte: string;
+}
+
+/**
+ * Una línea de carta impresa: nombre y precio sobre la misma línea base, unidos
+ * por una guía punteada; la duración debajo en el tono apagado.
+ *
+ * Divergencia deliberada de `FilaSeleccion` (que usan PasoEmpleado y otros
+ * pasos): aquí el layout es de carta/menú, no de fila con avatar. Si cambia el
+ * estado seleccionado en `FilaSeleccion`, revisar que este siga a la par.
+ */
+function FilaMenu({ servicio, activo, onSeleccionar, solido, tinte }: FilaMenuProps) {
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={onSeleccionar}
+        aria-pressed={activo}
+        className="w-full text-left flex items-start gap-3 px-4 py-3.5 transition-colors duration-200 ease-calma
+          hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-slate-900"
+        style={activo ? { background: tinte } : undefined}
+      >
+        <span
+          aria-hidden="true"
+          className={`mt-0.5 shrink-0 w-5 h-5 rounded-full flex items-center justify-center transition-colors duration-200 ease-calma ${
+            activo ? "" : "border-2 border-slate-300"
+          }`}
+          style={activo ? { background: solido } : undefined}
+        >
+          {activo && <Check size={12} strokeWidth={3} className="text-white" />}
+        </span>
+
+        <span className="flex-1 min-w-0">
+          <span className="flex items-baseline gap-2">
+            <span className="text-[15px] font-semibold text-slate-900">{servicio.nombre}</span>
+            <span aria-hidden="true" className="flex-1 min-w-[1.5rem] border-b-2 border-dotted border-slate-300 translate-y-[-0.3em]" />
+            <span className="shrink-0 text-[15px] font-semibold text-slate-900 tabular-nums">{formatPrecio(servicio.precio)}</span>
+          </span>
+          <span className="mt-0.5 block text-xs text-slate-500 tabular-nums">{servicio.duracionMinutos} min</span>
+          {/* Clamp fijo: si creciera al seleccionar empujaría todo lo de abajo justo al tocar. */}
+          {servicio.descripcion && (
+            <span className="mt-1 block text-xs text-slate-500 line-clamp-2">{servicio.descripcion}</span>
+          )}
+        </span>
+
+        {servicio.imagenUrl && (
+          <img
+            src={servicio.imagenUrl}
+            alt=""
+            className="w-14 h-14 rounded-lg object-cover shrink-0 bg-slate-100"
+            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+          />
+        )}
+      </button>
+    </li>
+  );
+}
+
 export default function PasoServicio({ servicios, seleccionado, onSeleccionar, color = DEFAULT_COLOR, sector }: Props) {
-  const acento = useMemo(() => brandAccent(color), [color]);
+  const solido = useMemo(() => brandSolid(color), [color]);
   const tinte = useMemo(() => brandTint(color), [color]);
   const grupos = useMemo(() => agrupar(servicios), [servicios]);
+  const idBase = useId();
+  // Los encabezados de categoría van en la cara display, salvo en salud.
+  const claseEncabezado = sector === "salud"
+    ? "text-sm font-semibold text-slate-700"
+    : "font-display text-lg font-semibold text-slate-900 tracking-[-0.01em]";
 
   return (
     <div>
       <h2 tabIndex={-1} className="text-xl font-bold text-slate-900 mb-5 outline-none">{sector === "salud" ? "¿Qué tipo de consulta necesitas?" : "¿Qué te hacemos hoy?"}</h2>
 
-      <div className="space-y-5">
-        {grupos.map((grupo) => (
-          <GrupoFilas key={grupo.clave} titulo={grupo.titulo}>
-            {grupo.servicios.map((servicio) => (
-              <FilaSeleccion
-                key={servicio.id}
-                activo={seleccionado?.id === servicio.id}
-                onSeleccionar={() => onSeleccionar(servicio)}
-                acento={acento}
-                tinte={tinte}
-                titulo={servicio.nombre}
-                descripcion={servicio.descripcion}
-                imagenUrl={servicio.imagenUrl}
-                meta={
-                  <span className="inline-flex items-center gap-1 text-xs text-slate-500">
-                    <Clock size={11} />
-                    {servicio.duracionMinutos} min
-                  </span>
-                }
-                valor={
-                  <span className="text-base font-bold text-slate-900">
-                    {formatPrecio(servicio.precio)}
-                  </span>
-                }
-              />
-            ))}
-          </GrupoFilas>
-        ))}
+      <div className="space-y-6">
+        {grupos.map((grupo, i) => {
+          const idTitulo = `${idBase}-grupo-${i}`;
+          return (
+            <section key={grupo.clave} aria-labelledby={grupo.titulo ? idTitulo : undefined}>
+              {grupo.titulo && (
+                <h3 id={idTitulo} className={`mb-2 ${claseEncabezado}`}>{grupo.titulo}</h3>
+              )}
+              <ul className="rounded-xl bg-white border border-slate-200 divide-y divide-slate-100 overflow-hidden">
+                {grupo.servicios.map((servicio) => (
+                  <FilaMenu
+                    key={servicio.id}
+                    servicio={servicio}
+                    activo={seleccionado?.id === servicio.id}
+                    onSeleccionar={() => onSeleccionar(servicio)}
+                    solido={solido}
+                    tinte={tinte}
+                  />
+                ))}
+              </ul>
+            </section>
+          );
+        })}
       </div>
     </div>
   );

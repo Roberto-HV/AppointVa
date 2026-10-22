@@ -3,7 +3,7 @@ import { precioVisible, formatMonto, MONEDA } from "../../lib/precios";
 import { useFadeInUp } from "./useFadeInUp";
 import { Ico } from "./Ico";
 import { dCheck } from "./iconos";
-import { DARK, TINTA } from "./constantes";
+import { TINTA } from "./constantes";
 
 interface Props {
   name: string;
@@ -28,7 +28,7 @@ export function PricingCard({
   return (
     <div
       ref={fade.ref}
-      style={{ ...fade.style, backgroundColor: highlighted ? DARK : "white", transform: `${fade.style.transform} ${highlighted ? "scale(1.04)" : ""}` }}
+      style={{ ...fade.style, backgroundColor: highlighted ? TINTA : "white", transform: `${fade.style.transform} ${highlighted ? "scale(1.04)" : ""}` }}
       className={`relative flex flex-col p-7 rounded-2xl border transition-all duration-300 ${highlighted ? "border-transparent shadow-2xl" : "border-slate-200 hover:border-slate-300 hover:shadow-md"}`}
     >
       {highlighted && (
@@ -74,7 +74,7 @@ export function PricingCard({
           Próximamente disponible
         </div>
       ) : (
-        <Link to={registro} className="block text-center py-3 rounded-xl text-sm font-bold transition-all hover:opacity-90 active:scale-95" style={{ backgroundColor: highlighted ? "#FFFFFF" : TINTA, color: highlighted ? DARK : "white" }}>
+        <Link to={registro} className="block text-center py-3 rounded-xl text-sm font-bold transition-all hover:opacity-90 active:scale-95" style={{ backgroundColor: highlighted ? "#FFFFFF" : TINTA, color: highlighted ? TINTA : "white" }}>
           Empezar con {name}
         </Link>
       )}

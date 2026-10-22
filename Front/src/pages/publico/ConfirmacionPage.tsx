@@ -1,4 +1,4 @@
-﻿import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { publicoApi } from "../../api/publico";
@@ -7,9 +7,12 @@ import { Copy, Check, CalendarClock, Printer, CheckCircle2, XCircle, Star, Bell,
 import { SiWhatsapp, SiApple, SiGooglecalendar } from "react-icons/si";
 import PublicFooter from "../../components/PublicFooter";
 import { useTituloPagina } from "../../hooks/useTituloPagina";
-import { formatPrecio, formatFechaHoraCompleta as formatFechaHora } from "../../utils/formatters";
+import { formatPrecio, formatFechaHoraCompleta as formatFechaHora, describirCuandoCita, monogramaNegocio } from "../../utils/formatters";
+import { useCopiarAlPortapapeles } from "../../hooks/useCopiarAlPortapapeles";
 
-import { hexToChannels, DEFAULT_COLOR } from "../../lib/colorUtils";
+import { brandSolid, DEFAULT_COLOR } from "../../lib/colorUtils";
+import { fondoPortada } from "../../lib/portadaPresets";
+import SelloEstado from "../../components/booking/SelloEstado";
 import SocialLinks from "../../components/icons/SocialLinks";
 import PasoFechaHora from "../../components/booking/PasoFechaHora";
 import type { ConfirmacionCita, SlotDisponible } from "../../types";
@@ -18,46 +21,66 @@ import { getSectorTerms } from "../../hooks/useSectorTerms";
 const estadoHttp = (err: unknown) => (err as { response?: { status?: number } })?.response?.status;
 
 /** Lo que la página promete según el estado real de la cita activa. */
-type EstadoVisibleCita = "confirmada" | "falta-anticipo" | "revisando-anticipo" | "pendiente";
+/**
+ * "otro": cualquier estado que no es Pendiente ni Confirmada y no tiene pantalla
+ * propia (Cancelada y Completada sí la tienen), p. ej. "Inasistencia" o un
+ * estado nuevo. Se muestra tal cual, en tono neutro, sin decir "por confirmar".
+ */
+type EstadoVisibleCita = "confirmada" | "falta-anticipo" | "revisando-anticipo" | "pendiente" | "otro";
 
 function estadoVisibleCita(
   cita: Pick<ConfirmacionCita, "estadoTexto" | "requiereAnticipo" | "comprobanteUrl">,
   comprobanteSubido = false
 ): EstadoVisibleCita {
   if (cita.estadoTexto === "Confirmada") return "confirmada";
+  if (cita.estadoTexto !== "Pendiente") return "otro";
   if (cita.requiereAnticipo) {
     return cita.comprobanteUrl || comprobanteSubido ? "revisando-anticipo" : "falta-anticipo";
   }
   return "pendiente";
 }
 
-const TEXTOS_ESTADO: Record<EstadoVisibleCita, {
-  titulo: string;
+interface TextosEstado {
   subtitulo: string;
+  /** Texto del sello sobre el talón. */
+  sello: string;
   paso: string;
   detallePaso: string;
-}> = {
+}
+
+function textosDeEstado(estado: EstadoVisibleCita, estadoTexto: string): TextosEstado {
+  if (estado !== "otro") return TEXTOS_ESTADO[estado];
+  const etiqueta = estadoTexto.trim() || "Sin estado";
+  return {
+    sello: etiqueta,
+    subtitulo: "Si tienes dudas sobre tu cita, comunícate con el negocio",
+    paso: etiqueta,
+    detallePaso: "Es el estado que registró el negocio para esta cita",
+  };
+}
+
+const TEXTOS_ESTADO: Record<Exclude<EstadoVisibleCita, "otro">, TextosEstado> = {
   confirmada: {
-    titulo: "¡Cita confirmada!",
+    sello: "Confirmada",
     subtitulo: "Guarda tu código o comparte por WhatsApp",
     paso: "Cita confirmada",
     detallePaso: "Guarda tu código, lo necesitarás el día de tu cita",
   },
   "falta-anticipo": {
-    titulo: "¡Cita agendada!",
     subtitulo: "Falta tu anticipo para confirmarla",
+    sello: "Falta anticipo",
     paso: "Falta tu anticipo",
     detallePaso: "Realiza el pago y sube tu comprobante para que el negocio confirme tu cita",
   },
   "revisando-anticipo": {
-    titulo: "¡Cita agendada!",
     subtitulo: "El negocio revisará tu pago y confirmará tu cita",
+    sello: "Por confirmar",
     paso: "Pendiente de confirmación",
     detallePaso: "Recibimos tu comprobante; el negocio confirmará tu cita al revisarlo",
   },
   pendiente: {
-    titulo: "¡Cita agendada!",
     subtitulo: "Pendiente de confirmación del negocio",
+    sello: "Por confirmar",
     paso: "Pendiente de confirmación",
     detallePaso: "El negocio confirmará tu cita. Guarda tu código para consultarla",
   },
@@ -93,10 +116,13 @@ export default function ConfirmacionPage() {
   const [errorCancelar, setErrorCancelar] = useState("");
   const [reagendando, setReagendando] = useState(false);
   const [slotReag, setSlotReag] = useState<SlotDisponible | null>(null);
-  const [linkCopiado, setLinkCopiado] = useState(false);
-  const [bannerCopiado, setBannerCopiado] = useState(false);
+  const { copiado: linkCopiado, copiar: copiarCita } = useCopiarAlPortapapeles();
+  const { copiado: bannerCopiado, copiar: copiarBanner } = useCopiarAlPortapapeles();
   /** Si el portapapeles falla, el enlace se muestra para copiarlo a mano (BF-27). */
   const [copiaManual, setCopiaManual] = useState<{ origen: "banner" | "cita"; url: string } | null>(null);
+  // Si la foto de portada o el logo no cargan, queda la banda de color y el monograma.
+  const [portadaFallo, setPortadaFallo] = useState(false);
+  const [logoFallo, setLogoFallo] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [errorComprobante, setErrorComprobante] = useState("");
   const [exitoReagenda, setExitoReagenda] = useState(false);
@@ -161,19 +187,11 @@ export default function ConfirmacionPage() {
     setMeta("og:url", linkCita);
   }, [cita, linkCita]);
 
-  const copiar = async (origen: "banner" | "cita", url: string, marcar: (v: boolean) => void) => {
-    try {
-      if (!navigator.clipboard) throw new Error("Sin portapapeles");
-      await navigator.clipboard.writeText(url);
-      setCopiaManual(null);
-      marcar(true);
-      setTimeout(() => marcar(false), 2000);
-    } catch {
-      setCopiaManual({ origen, url });
-    }
+  const copiar = async (origen: "banner" | "cita", url: string, copiarCon: (texto: string) => Promise<boolean>) => {
+    setCopiaManual((await copiarCon(url)) ? null : { origen, url });
   };
-  const copiarLink = () => copiar("cita", linkCita, setLinkCopiado);
-  const copiarLinkBanner = () => copiar("banner", window.location.href, setBannerCopiado);
+  const copiarLink = () => copiar("cita", linkCita, copiarCita);
+  const copiarLinkBanner = () => copiar("banner", window.location.href, copiarBanner);
 
   const { data: negocioPublico } = useQuery({
     queryKey: ["negocio", negocioSlug],
@@ -304,12 +322,93 @@ export default function ConfirmacionPage() {
     );
   }
 
-  // ── Cita activa (Pendiente / Confirmada) ────────────────────────────────────
+  // ── Cita activa (Pendiente / Confirmada) u otro estado sin pantalla propia ──
   const color = cita.colorPrimario ?? DEFAULT_COLOR;
   const estadoVisible = estadoVisibleCita(cita, comprobanteSubido);
-  const textosEstado = TEXTOS_ESTADO[estadoVisible];
+  const textosEstado = textosDeEstado(estadoVisible, cita.estadoTexto);
   const confirmada = estadoVisible === "confirmada";
-  const IconoEstado = confirmada ? CheckCircle2 : Clock;
+  const otroEstado = estadoVisible === "otro";
+  const colorSolido = brandSolid(color);
+  const portadaUrl = portadaFallo ? undefined : negocioPublico?.portadaUrl;
+  const logoUrl = logoFallo ? undefined : negocioPublico?.logoUrl;
+  // La banda siempre lleva el fondo de portada que el negocio eligió (o su
+  // color): mientras la foto carga, o si falla, no queda un hueco gris.
+  const fondoBanda = fondoPortada(negocioPublico?.portadaPreset, color);
+  const cuando = describirCuandoCita(cita.inicioEn);
+  // Una cita cuya hora ya pasó no puede decir "te esperamos"; si fue hoy aún "es".
+  const titular = !cuando
+    ? (otroEstado ? "Tu cita" : "Te esperamos")
+    : !cuando.yaInicio && !otroEstado
+    ? `Te esperamos ${cuando.texto}`
+    : cuando.dias >= 0
+    ? `Tu cita es ${cuando.texto}`
+    : `Tu cita fue ${cuando.texto}`;
+  const BTN_CALENDARIO = "flex-1 min-h-[48px] flex items-center justify-center gap-2 rounded-xl text-white text-sm font-semibold transition hover:opacity-90";
+
+  // Pagar el anticipo es lo que confirma la cita: si falta, el panel va justo
+  // bajo el talón; si ya se envió el comprobante, baja con el resto.
+  const panelAnticipo = cita.requiereAnticipo && !cancelada && !completada && !otroEstado && (
+      <div className={`mt-5 rounded-xl border px-5 py-4 print:hidden ${
+        cita.comprobanteUrl || comprobanteSubido
+          ? "bg-emerald-50 border-emerald-200"
+          : "bg-amber-50 border-amber-200"
+      }`}>
+        {cita.comprobanteUrl || comprobanteSubido ? (
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-emerald-500 flex items-center justify-center shrink-0">
+              <Check size={17} className="text-white" strokeWidth={2.5} />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-emerald-800">Comprobante recibido</p>
+              <p className="text-xs text-emerald-600 mt-0.5">El negocio revisará tu pago y confirmará la cita</p>
+            </div>
+          </div>
+        ) : (
+          <>
+            <p className="text-sm font-semibold text-amber-800 mb-3">Anticipo requerido</p>
+            <p className="text-sm font-semibold text-slate-800 mb-1">
+              Para confirmar tu cita, realiza un pago de{" "}
+              <span className="text-slate-900 font-bold">{formatPrecio(cita.montoAnticipo)}</span>
+            </p>
+            {cita.instruccionesAnticipo && (
+              <pre className="text-xs text-slate-600 whitespace-pre-wrap bg-white/70 rounded-xl px-3 py-2 mt-2 mb-3 font-sans leading-relaxed">
+                {cita.instruccionesAnticipo}
+              </pre>
+            )}
+            <p className="text-xs text-slate-500 mb-3">Después de pagar, sube tu comprobante aquí para agilizar la confirmación:</p>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                setErrorComprobante("");
+                const archivo = e.target.files?.[0];
+                if (archivo) {
+                  if (archivo.size > 20 * 1024 * 1024) {
+                    setErrorComprobante("No se pudo subir el comprobante. Verifica que el archivo sea una imagen menor a 20 MB.");
+                    if (fileInputRef.current) fileInputRef.current.value = "";
+                    return;
+                  }
+                  subirComprobante(archivo);
+                }
+              }}
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={subiendoComprobante}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white text-sm font-bold transition"
+            >
+              <Upload size={14} />
+              {subiendoComprobante ? "Subiendo..." : "Subir comprobante de pago"}
+            </button>
+            {errorComprobante && (
+              <p className="text-xs text-red-500 dark:text-red-400 mt-2">{errorComprobante}</p>
+            )}
+          </>
+        )}
+      </div>
+    );
 
   return (
     <div data-sector={negocioPublico?.sector === "salud" ? "salud" : undefined} className="min-h-screen bg-slate-50 print:bg-white">
@@ -326,21 +425,45 @@ export default function ConfirmacionPage() {
         }
       `}</style>
 
-      {/* Cabecera en tinta; el color del negocio vive en el icono de estado */}
-      <div className="relative flex flex-col items-center justify-center py-10 px-4 print:hidden overflow-hidden bg-ink">
-        <div className="relative z-10 flex flex-col items-center gap-3 text-center">
-          <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
-            style={{ background: `rgb(${hexToChannels(color)} / 0.18)`, border: `1.5px solid rgb(${hexToChannels(color)} / 0.35)` }}>
-            <IconoEstado size={32} style={{ color }} aria-hidden="true" />
-          </div>
-          <h1 className="font-display text-3xl font-semibold tracking-[-0.02em] text-white">{textosEstado.titulo}</h1>
-          <p className="text-sm text-white/70">
-            {textosEstado.subtitulo}
-          </p>
+      {/* Banda corta del negocio: su foto de portada o su color, con logo y nombre encima */}
+      <header className="print:hidden">
+        <div data-testid="banda-negocio" aria-hidden="true" className="h-24 sm:h-28 w-full overflow-hidden" style={fondoBanda}>
+          {portadaUrl && (
+            <img
+              src={portadaUrl}
+              alt=""
+              onError={() => setPortadaFallo(true)}
+              className="w-full h-full object-cover"
+              style={{ objectPosition: negocioPublico?.portadaObjectPosition ?? "center" }}
+            />
+          )}
         </div>
-      </div>
+        <div className="max-w-md mx-auto px-4 flex flex-col items-center text-center">
+          {logoUrl ? (
+            <img
+              src={logoUrl}
+              alt=""
+              onError={() => setLogoFallo(true)}
+              className="-mt-8 w-16 h-16 rounded-xl object-cover bg-white ring-4 ring-slate-50"
+            />
+          ) : (
+            <div
+              aria-hidden="true"
+              className="-mt-8 w-16 h-16 rounded-xl flex items-center justify-center text-white text-2xl font-semibold ring-4 ring-slate-50"
+              style={{ background: colorSolido }}
+            >
+              {monogramaNegocio(cita.nombreNegocio)}
+            </div>
+          )}
+          <p className="mt-2 text-sm font-semibold text-slate-700">{cita.nombreNegocio}</p>
+          <h1 className="font-display mt-4 text-[1.75rem] sm:text-3xl leading-tight font-semibold tracking-[-0.02em] text-slate-900 text-balance">
+            {titular}
+          </h1>
+          <p className="mt-2 text-sm text-slate-600">{textosEstado.subtitulo}</p>
+        </div>
+      </header>
 
-      <div className="max-w-md mx-auto px-4 py-5">
+      <div className="max-w-md mx-auto px-4 py-6">
 
         {!cita.emailCliente && (
           <div className="mb-4 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex flex-col gap-2.5 print:hidden">
@@ -377,38 +500,34 @@ export default function ConfirmacionPage() {
           </div>
         )}
 
-        {/* Comprobante */}
-        <div id="comprobante-cita" className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+        {/* Comprobante: talón con el código y el sello, borde perforado y el detalle */}
+        <div id="comprobante-cita" className="[filter:drop-shadow(0_1px_2px_rgb(31_27_22/0.08))_drop-shadow(0_4px_12px_rgb(31_27_22/0.06))]">
 
-          {/* Cabecera print-only */}
-          <div className="hidden print:block text-center px-5 pt-5 pb-4 border-b-2 border-dashed border-slate-200">
-            <p className="font-bold text-base text-slate-900">{cita.nombreNegocio}</p>
-            <p className="text-xs text-slate-400 mt-0.5">Comprobante de cita · AppointVa</p>
-          </div>
+          {/* Talón */}
+          <div className="bg-white rounded-t-xl px-5 pt-5 pb-4">
+            {/* Cabecera print-only */}
+            <div className="hidden print:block text-center pb-4 mb-4 border-b-2 border-dashed border-slate-200">
+              <p className="font-bold text-base text-slate-900">{cita.nombreNegocio}</p>
+              <p className="text-xs text-slate-400 mt-0.5">Comprobante de cita · AppointVa</p>
+            </div>
 
-          {/* Código de confirmación */}
-          <div className="flex flex-col items-center py-5 bg-ink">
-            <p className="text-sm mb-2 text-white/70">Código de confirmación</p>
-            <span className="font-mono text-2xl font-bold text-white tracking-[0.2em]">
-              {cita.codigoConfirmacion}
-            </span>
-          </div>
-
-          {/* Detalles de la cita */}
-          <div className="px-5 py-4 space-y-3">
-            {/* Estado — badge estilo Klarna */}
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-slate-500">Estado</span>
-              <span className={`inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full ${
-                cita.estadoTexto === "Confirmada" ? "bg-status-confirmed-bg text-status-confirmed-fg" :
-                cita.estadoTexto === "Pendiente"  ? "bg-status-pending-bg text-status-pending-fg" :
-                "bg-slate-100 text-slate-600"
-              }`}>
-                {cita.estadoTexto === "Confirmada" && <Check size={12} strokeWidth={3} aria-hidden="true" />}
-                {cita.estadoTexto === "Pendiente" && <Clock size={12} strokeWidth={2.5} aria-hidden="true" />}
-                {cita.estadoTexto}
+            <p className="text-sm text-slate-500 mb-1">Código de confirmación</p>
+            <div className="flex items-center justify-between gap-3">
+              <span className="min-w-0 font-mono text-2xl font-bold text-slate-900 tracking-[0.2em] uppercase">
+                {cita.codigoConfirmacion}
+              </span>
+              <span className="shrink-0">
+                <span className="sr-only">Estado de la cita: </span>
+                <SelloEstado etiqueta={textosEstado.sello} tono={confirmada ? "confirmado" : otroEstado ? "neutro" : "pendiente"} />
               </span>
             </div>
+          </div>
+
+          <div className="talon-perforado" aria-hidden="true" />
+
+          {/* Detalles de la cita */}
+          <div className="bg-white rounded-b-xl">
+          <div className="px-5 pt-3 pb-4 space-y-3">
             {[
               { label: "Negocio",     valor: cita.nombreNegocio,  hide: "print:hidden" },
               { label: "Servicio",    valor: cita.nombreServicio },
@@ -457,27 +576,85 @@ export default function ConfirmacionPage() {
             </p>
             <p className="text-[10px] text-slate-300 mt-0.5">appointva.com</p>
           </div>
+          </div>
+        </div>
+
+        {estadoVisible === "falta-anticipo" && panelAnticipo}
+
+        {/* Guardar y compartir: justo bajo el talón, es lo que se hace al terminar */}
+        <div className="mt-4 space-y-2.5 print:hidden">
+          {/* Agregar al calendario — acción principal: es lo que el visitante necesita guardar */}
+          {(cita.icalUrl || cita.webcalUrl || cita.googleCalUrl) && (
+            <div>
+              <p className="text-xs font-semibold text-slate-600 text-center mb-2">Agrégala a tu calendario</p>
+              <div className="flex gap-2">
+                {(cita.webcalUrl ?? cita.icalUrl) && (
+                  <a
+                    href={cita.webcalUrl ?? cita.icalUrl}
+                    className={BTN_CALENDARIO}
+                    style={{ background: colorSolido }}
+                  >
+                    <SiApple size={18} aria-hidden="true" />
+                    Apple Calendar
+                  </a>
+                )}
+                {cita.googleCalUrl && (
+                  <a
+                    href={cita.googleCalUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={BTN_CALENDARIO}
+                    style={{ background: colorSolido }}
+                  >
+                    <SiGooglecalendar size={18} aria-hidden="true" />
+                    Google Calendar
+                  </a>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* WhatsApp — secundaria; texto oscuro sobre blanco en lugar de blanco sobre #25D366 (~2:1) */}
+          <a
+            href={`https://wa.me/?text=${encodeURIComponent(
+              `*${confirmada ? "Cita confirmada" : "Cita agendada"} en ${cita.nombreNegocio}*\n\n` +
+              `Servicio: ${cita.nombreServicio}\n` +
+              `Con: ${cita.nombreEmpleado}\n` +
+              `Fecha: ${formatFechaHora(cita.inicioEn)}\n\n` +
+              `Ver o cancelar: ${linkCita}`
+            )}`}
+            target="_blank"
+            rel="noreferrer"
+            className="w-full min-h-[48px] flex items-center justify-center gap-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-sm font-semibold transition"
+          >
+            <SiWhatsapp size={20} style={{ color: "#128C7E" }} aria-hidden="true" />
+            Compartir por WhatsApp
+          </a>
         </div>
 
         {/* ¿Qué sigue? — timeline Adidas/Afterpay style */}
-        <div className="mt-5 mb-1 bg-white rounded-3xl border border-slate-100 shadow-sm px-5 py-4 print:hidden">
-          <p className="text-base font-semibold text-slate-900 mb-4">¿Qué sigue?</p>
+        <div className="mt-5 mb-1 tarjeta bg-white px-5 py-4 print:hidden">
+          <p className="text-base font-semibold text-slate-900 mb-4">{otroEstado ? "Estado de tu cita" : "¿Qué sigue?"}</p>
           <div>
             {/* Paso 1: estado real de la cita */}
             <div className="flex gap-3 items-start">
               <div className="flex flex-col items-center shrink-0">
-                <div className={`w-7 h-7 rounded-full flex items-center justify-center ${confirmada ? "bg-status-confirmed-dot" : "bg-status-pending-dot"}`}>
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center ${confirmada ? "bg-status-confirmed-dot" : otroEstado ? "bg-status-absent-dot" : "bg-status-pending-dot"}`}>
                   {confirmada
                     ? <Check size={13} className="text-white" strokeWidth={2.5} />
+                    : otroEstado
+                    ? <Info size={13} className="text-white" strokeWidth={2.5} />
                     : <Clock size={13} className="text-white" strokeWidth={2.5} />}
                 </div>
-                <div className="w-px h-6 bg-slate-200 mt-1" />
+                {!otroEstado && <div className="w-px h-6 bg-slate-200 mt-1" />}
               </div>
-              <div className="pb-5 pt-0.5">
+              <div className={`pt-0.5 ${otroEstado ? "" : "pb-5"}`}>
                 <p className="text-sm font-semibold text-slate-800">{textosEstado.paso}</p>
                 <p className="text-xs text-slate-500 mt-0.5">{textosEstado.detallePaso}</p>
               </div>
             </div>
+            {/* Recordatorio y día de la cita solo tienen sentido si la cita sigue en pie. */}
+            {!otroEstado && (<>
             {/* Paso 2: Recordatorio */}
             <div className="flex gap-3 items-start">
               <div className="flex flex-col items-center shrink-0">
@@ -508,121 +685,14 @@ export default function ConfirmacionPage() {
                 <p className="text-xs text-slate-600 mt-0.5">{formatFechaHora(cita.inicioEn)}</p>
               </div>
             </div>
+            </>)}
           </div>
         </div>
 
-        {/* Panel de anticipo */}
-        {cita.requiereAnticipo && !cancelada && !completada && (
-          <div className={`mt-5 rounded-3xl border px-5 py-4 print:hidden ${
-            cita.comprobanteUrl || comprobanteSubido
-              ? "bg-emerald-50 border-emerald-200"
-              : "bg-amber-50 border-amber-200"
-          }`}>
-            {cita.comprobanteUrl || comprobanteSubido ? (
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-emerald-500 flex items-center justify-center shrink-0">
-                  <Check size={17} className="text-white" strokeWidth={2.5} />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-emerald-800">Comprobante recibido</p>
-                  <p className="text-xs text-emerald-600 mt-0.5">El negocio revisará tu pago y confirmará la cita</p>
-                </div>
-              </div>
-            ) : (
-              <>
-                <p className="text-sm font-semibold text-amber-800 mb-3">Anticipo requerido</p>
-                <p className="text-sm font-semibold text-slate-800 mb-1">
-                  Para confirmar tu cita, realiza un pago de{" "}
-                  <span className="text-slate-900 font-bold">{formatPrecio(cita.montoAnticipo)}</span>
-                </p>
-                {cita.instruccionesAnticipo && (
-                  <pre className="text-xs text-slate-600 whitespace-pre-wrap bg-white/70 rounded-xl px-3 py-2 mt-2 mb-3 font-sans leading-relaxed">
-                    {cita.instruccionesAnticipo}
-                  </pre>
-                )}
-                <p className="text-xs text-slate-500 mb-3">Después de pagar, sube tu comprobante aquí para agilizar la confirmación:</p>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => {
-                    setErrorComprobante("");
-                    const archivo = e.target.files?.[0];
-                    if (archivo) {
-                      if (archivo.size > 20 * 1024 * 1024) {
-                        setErrorComprobante("No se pudo subir el comprobante. Verifica que el archivo sea una imagen menor a 20 MB.");
-                        if (fileInputRef.current) fileInputRef.current.value = "";
-                        return;
-                      }
-                      subirComprobante(archivo);
-                    }
-                  }}
-                />
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={subiendoComprobante}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white text-sm font-bold transition"
-                >
-                  <Upload size={14} />
-                  {subiendoComprobante ? "Subiendo..." : "Subir comprobante de pago"}
-                </button>
-                {errorComprobante && (
-                  <p className="text-xs text-red-500 dark:text-red-400 mt-2">{errorComprobante}</p>
-                )}
-              </>
-            )}
-          </div>
-        )}
+        {estadoVisible !== "falta-anticipo" && panelAnticipo}
 
         {/* Acciones */}
         <div className="mt-4 space-y-2.5 print:hidden">
-          {/* Agregar al calendario — acción principal: es lo que el visitante necesita guardar */}
-          {(cita.icalUrl || cita.webcalUrl || cita.googleCalUrl) && (
-            <div>
-              <p className="text-xs font-semibold text-slate-600 text-center mb-2">Agrégala a tu calendario</p>
-              <div className="flex gap-2">
-                {(cita.webcalUrl ?? cita.icalUrl) && (
-                  <a
-                    href={cita.webcalUrl ?? cita.icalUrl}
-                    className="flex-1 min-h-[48px] flex items-center justify-center gap-2 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold transition"
-                  >
-                    <SiApple size={18} aria-hidden="true" />
-                    Apple Calendar
-                  </a>
-                )}
-                {cita.googleCalUrl && (
-                  <a
-                    href={cita.googleCalUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex-1 min-h-[48px] flex items-center justify-center gap-2 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold transition"
-                  >
-                    <SiGooglecalendar size={18} aria-hidden="true" />
-                    Google Calendar
-                  </a>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* WhatsApp — secundaria; texto oscuro sobre blanco en lugar de blanco sobre #25D366 (~2:1) */}
-          <a
-            href={`https://wa.me/?text=${encodeURIComponent(
-              `*${confirmada ? "Cita confirmada" : "Cita agendada"} en ${cita.nombreNegocio}*\n\n` +
-              `Servicio: ${cita.nombreServicio}\n` +
-              `Con: ${cita.nombreEmpleado}\n` +
-              `Fecha: ${formatFechaHora(cita.inicioEn)}\n\n` +
-              `Ver o cancelar: ${linkCita}`
-            )}`}
-            target="_blank"
-            rel="noreferrer"
-            className="w-full min-h-[48px] flex items-center justify-center gap-2.5 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-sm font-semibold transition"
-          >
-            <SiWhatsapp size={20} style={{ color: "#128C7E" }} aria-hidden="true" />
-            Compartir por WhatsApp
-          </a>
-
           {/* Enlace y acciones secundarias */}
           <div className="flex items-center justify-center gap-4 pt-1 flex-wrap">
             <button

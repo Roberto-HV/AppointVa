@@ -1,4 +1,4 @@
-﻿import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { Menu, X, LayoutDashboard, CalendarDays, Users, Scissors, UserCheck, Building2, Link, Copy, Check, BarChart2, ShieldCheck, UserCircle, Images, ClipboardList, Tag, LogOut, ChevronLeft, ChevronRight, BookOpen, Moon, Sun, CreditCard, Star } from "lucide-react";
 import { useTheme } from "../hooks/useTheme";
@@ -20,6 +20,7 @@ import { useInactividadTimeout } from '../hooks/useInactividadTimeout';
 import { useSectorTerms, getSectorTerms, type SectorTerms } from "../hooks/useSectorTerms";
 import { useSectorFeatures } from "../hooks/useSectorFeatures";
 import { hoy as hoyLocal } from "../utils/fechas";
+import { useCopiarAlPortapapeles } from "../hooks/useCopiarAlPortapapeles";
 
 /** true desde `xl` (1280px): ahí el sidebar es fijo y no un cajón. */
 function useEsEscritorio() {
@@ -189,7 +190,7 @@ export default function DashboardLayout() {
     try { localStorage.setItem("sidebar-collapsed", next ? "1" : "0"); } catch {}
     return next;
   });
-  const [copiado, setCopiado] = useState(false);
+  const { copiado, copiar } = useCopiarAlPortapapeles();
   const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
   const prevPendientesRef = useRef<number | null>(null);
   const headerUserRef = useRef<HTMLDivElement>(null);
@@ -281,14 +282,7 @@ export default function DashboardLayout() {
 
   const bookingUrl = perfil ? `${window.location.origin}/b/${perfil.slug}` : "";
 
-  const copiarEnlace = async () => {
-    if (!bookingUrl) return;
-    try {
-      await navigator.clipboard.writeText(bookingUrl);
-      setCopiado(true);
-      setTimeout(() => setCopiado(false), 2000);
-    } catch { /* clipboard failed silently */ }
-  };
+  const copiarEnlace = () => { void copiar(bookingUrl); };
 
   const handleLogout = async () => {
     try {

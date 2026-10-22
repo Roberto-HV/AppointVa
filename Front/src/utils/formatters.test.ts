@@ -13,6 +13,8 @@ import {
   formatHora,
   formatHoraDe,
   monogramaNegocio,
+  formatCuandoCita,
+  describirCuandoCita,
 } from "./formatters";
 
 // Español: solo la primera letra va en mayúscula; días, meses y "de" no.
@@ -249,5 +251,53 @@ describe("monogramaNegocio", () => {
     expect(monogramaNegocio("Lashes_crisantemo")).toBe("L");
     expect(monogramaNegocio("")).toBe("");
     expect(monogramaNegocio(null)).toBe("");
+  });
+});
+
+// Titular de la confirmación: "Te esperamos el jueves 22 a las 9:00 a. m."
+describe("formatCuandoCita", () => {
+  // Miércoles 21 de octubre de 2026, 10:00 hora local.
+  const ahora = new Date(2026, 9, 21, 10, 0);
+  const iso = (d: Date) => d.toISOString();
+
+  it("dice hoy y mañana en lugar de la fecha", () => {
+    expect(formatCuandoCita(iso(new Date(2026, 9, 21, 17, 30)), ahora)).toMatch(/^hoy a las 5:30/);
+    expect(formatCuandoCita(iso(new Date(2026, 9, 22, 9, 0)), ahora)).toMatch(/^mañana a las 9:00/);
+  });
+
+  it("dentro de la semana nombra el día y su número, sin mes", () => {
+    expect(formatCuandoCita(iso(new Date(2026, 9, 23, 9, 0)), ahora)).toMatch(/^el viernes 23 a las 9:00/);
+  });
+
+  it("más lejos añade el mes, y el año solo si cambia", () => {
+    expect(formatCuandoCita(iso(new Date(2026, 10, 5, 9, 0)), ahora)).toMatch(/^el jueves 5 de noviembre a las 9:00/);
+    expect(formatCuandoCita(iso(new Date(2027, 0, 7, 9, 0)), ahora)).toMatch(/^el jueves 7 de enero de 2027 a las 9:00/);
+  });
+
+  it("concuerda el artículo con la una", () => {
+    expect(formatCuandoCita(iso(new Date(2026, 9, 21, 13, 0)), ahora)).toMatch(/^hoy a la 1:00/);
+  });
+
+  it("devuelve vacío con una fecha inválida", () => {
+    expect(formatCuandoCita("no-es-fecha", ahora)).toBe("");
+  });
+});
+
+describe("describirCuandoCita", () => {
+  const ahora = new Date(2026, 9, 21, 10, 0);
+  const iso = (d: Date) => d.toISOString();
+
+  it("hoy y ya empezada: dias 0 y yaInicio, sin depender del texto", () => {
+    expect(describirCuandoCita(iso(new Date(2026, 9, 21, 9, 30)), ahora)).toMatchObject({ dias: 0, yaInicio: true });
+  });
+
+  it("hoy más tarde, mañana y días pasados", () => {
+    expect(describirCuandoCita(iso(new Date(2026, 9, 21, 17, 0)), ahora)).toMatchObject({ dias: 0, yaInicio: false });
+    expect(describirCuandoCita(iso(new Date(2026, 9, 22, 9, 0)), ahora)).toMatchObject({ dias: 1, yaInicio: false });
+    expect(describirCuandoCita(iso(new Date(2026, 9, 18, 9, 0)), ahora)).toMatchObject({ dias: -3, yaInicio: true });
+  });
+
+  it("devuelve null con una fecha inválida", () => {
+    expect(describirCuandoCita("no-es-fecha", ahora)).toBeNull();
   });
 });

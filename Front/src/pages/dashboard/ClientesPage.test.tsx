@@ -155,7 +155,7 @@ describe("ClientesPage — estado vacío sin búsqueda", () => {
     renderConQuery();
     await waitFor(() =>
       expect(
-        screen.getByText(/aparecerán aquí automáticamente/i)
+        screen.getByText(/Llegan solos con su primera reserva/i)
       ).toBeInTheDocument()
     );
   });

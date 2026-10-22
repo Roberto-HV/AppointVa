@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
@@ -24,6 +24,11 @@ import { colorCategoria, EJE_TICK, REJILLA } from "../../lib/temaGraficas";
 import { citaAbierta, citaPorCerrar, estiloEstadoCita } from "../../lib/estadoCita";
 import { hoy as hoyLocal, inicioSemana as inicioSemanaLocal, finSemana as finSemanaLocal, fechaLocal } from "../../utils/fechas";
 import { formatPrecio, formatPrecioCorto, formatFechaHoraResumen as formatFechaHora, capitalizarPrimera } from "../../utils/formatters";
+import EncabezadoHoy from "../../components/dashboard/EncabezadoHoy";
+import TarjetaPrimeraReserva from "../../components/dashboard/PrimeraReserva";
+import { usePrimeraReserva } from "../../lib/primeraReserva";
+import { getSectorTerms } from "../../hooks/useSectorTerms";
+import { saludoDelDia } from "../../lib/fraseHoy";
 
 // Una cifra en línea: etiqueta y valor con cifras tabulares, sin tarjeta.
 function Cifra({ label, valor }: { label: string; valor: string | number }) {
@@ -310,7 +315,7 @@ function VistaPropietario({ nombre }: { nombre: string }) {
     staleTime: 1000 * 60 * 10,
   });
 
-  const { data: tendencia = [] } = useQuery({
+  const { data: tendencia = [], isSuccess: tendenciaLista } = useQuery({
     queryKey: ["dashboard-tendencia", dias],
     queryFn: () => dashboardApi.obtenerTendencia(dias),
   });
@@ -351,6 +356,14 @@ function VistaPropietario({ nombre }: { nombre: string }) {
     refetchInterval: 30_000,
   });
 
+  const bookingUrl = negocio?.slug ? `${window.location.origin}/b/${negocio.slug}` : "";
+  const terminosSector = getSectorTerms(negocio?.sector);
+  const primeraReserva = usePrimeraReserva(
+    usuario?.negocioId,
+    { resumen: data, citasHoy: citasDeHoy, tendencia },
+    !!data && !isError && !cargandoAgenda && !errorAgenda && tendenciaLista,
+  );
+
   // La guía de inicio va después de la agenda de hoy, no encima.
   const guiaInicio = negocio && usuario?.negocioId ? (
     <WizardOnboarding
@@ -371,21 +384,34 @@ function VistaPropietario({ nombre }: { nombre: string }) {
     <div className="p-4 sm:p-8">
       <NotificacionBanner />
 
-      {/* Encabezado — Apple Store style */}
-      <div className="mb-6">
-        <h1 className="font-display text-3xl font-semibold tracking-[-0.02em] text-slate-900 dark:text-slate-100 leading-none mb-1">Hola, {nombre}</h1>
-        <div className="flex items-center gap-3">
-          <p className="text-sm text-slate-400">{negocio?.nombre ?? "Tu negocio"}</p>
-          {!mostrarWizard && keyOnboarding && (
-            <button
-              onClick={() => { localStorage.removeItem(keyOnboarding); setMostrarWizard(true); }}
-              className="text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:underline transition"
-            >
-              Ver guía de inicio
-            </button>
-          )}
-        </div>
-      </div>
+      {/* Encabezado: una oración con el día de hoy y, debajo, su línea de tiempo */}
+      <EncabezadoHoy
+        nombre={nombre}
+        nombreNegocio={negocio?.nombre}
+        citasHoy={cargandoAgenda || errorAgenda || enBienvenida ? undefined : citasDeHoy}
+        proximasCitas={data?.proximasCitas}
+        terminos={{ cita: terminosSector.cita.toLowerCase(), citas: terminosSector.citas.toLowerCase() }}
+        bookingUrl={bookingUrl}
+        pie={!mostrarWizard && keyOnboarding ? (
+          <button
+            onClick={() => { localStorage.removeItem(keyOnboarding); setMostrarWizard(true); }}
+            className="text-xs text-muted-foreground hover:text-foreground hover:underline transition"
+          >
+            Ver guía de inicio
+          </button>
+        ) : null}
+      />
+
+      {primeraReserva.celebracion && !enBienvenida && (
+        <TarjetaPrimeraReserva
+          celebracion={primeraReserva.celebracion}
+          conConfeti={primeraReserva.recienDetectada}
+          color={negocio?.colorPrimario}
+          nombreNegocio={negocio?.nombre}
+          bookingUrl={bookingUrl}
+          onCerrar={primeraReserva.cerrar}
+        />
+      )}
 
       {isError && !data && (
         <div className="rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-6 text-center mb-6">
@@ -418,48 +444,7 @@ function VistaPropietario({ nombre }: { nombre: string }) {
         </>
       ) : data ? (
         <>
-          {/* Highlight próxima cita */}
-          {data.proximasCitas.length > 0 && (() => {
-            const proxima = data.proximasCitas[0];
-            const proximaCompleta = citasDeHoy.find((c) => c.id === proxima.id);
-            const msRestantes = new Date(proxima.inicioEn).getTime() - Date.now();
-            const minutos = Math.round(msRestantes / 60000);
-            const esHoy = msRestantes > 0 && msRestantes < 24 * 60 * 60 * 1000;
-            const etiqueta = msRestantes <= 0
-              ? "En curso"
-              : minutos < 60
-              ? `En ${minutos} min`
-              : minutos < 1440
-              ? `En ${Math.floor(minutos / 60)}h ${minutos % 60 > 0 ? `${minutos % 60}min` : ""}`
-              : null;
-            if (!esHoy && !etiqueta) return null;
-            return (
-              <div className="bg-card border border-border rounded-xl p-4 mb-6 flex flex-wrap items-center justify-between gap-3 animate-fade-in">
-                <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center shrink-0">
-                    <CalendarDays size={18} className="text-muted-foreground" aria-hidden="true" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-xs text-muted-foreground font-medium mb-0.5">Próxima cita</p>
-                    <p className="font-semibold text-foreground truncate">{proxima.nombreCliente}</p>
-                    <p className="text-xs text-muted-foreground truncate">{proxima.nombreServicio} · {proxima.nombreEmpleado}</p>
-                  </div>
-                </div>
-                <div className="text-right shrink-0">
-                  {etiqueta && (
-                    <p className={`text-sm font-bold ${msRestantes <= 0 ? "text-status-confirmed-fg" : "text-foreground"}`}>{etiqueta}</p>
-                  )}
-                  <p className="text-xs text-muted-foreground mb-1">{formatFechaHora(proxima.inicioEn)}</p>
-                  <EstadoBadge estado={proxima.estadoTexto} />
-                </div>
-                {/* El resumen no trae la cita completa; si es de hoy, la agenda sí. */}
-                {proximaCompleta && (
-                  <AccionesCita cita={proximaCompleta} nombreNegocio={negocio?.nombre} className="w-full sm:w-auto" />
-                )}
-              </div>
-            );
-          })()}
-
+          {/* La próxima cita ya la nombra el encabezado; sus acciones están en la agenda. */}
           {/* Agenda de hoy */}
           <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-5 mb-6">
             <div className="flex items-center justify-between mb-4">
@@ -486,7 +471,7 @@ function VistaPropietario({ nombre }: { nombre: string }) {
                 <button onClick={() => reintentarAgenda()} className="mt-2 min-h-[44px] px-4 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition">Reintentar</button>
               </div>
             ) : citasDeHoy.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">Hoy tienes la agenda libre. Comparte tu enlace y llénala.</p>
+              <p className="text-sm text-muted-foreground text-center py-6">Nada agendado para hoy.</p>
             ) : (
               <div className="space-y-1.5">
                 {citasDeHoy.map((c) => {
@@ -673,7 +658,7 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
   // Fechas locales: con `toISOString()` la agenda saltaba a mañana desde las 18:00 (UTC-6).
   const hoy = hoyLocal(ahora);
   const manana = fechaLocal(new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate() + 1));
-  const saludo = ahora.getHours() < 12 ? "Buenos días" : ahora.getHours() < 19 ? "Buenas tardes" : "Buenas noches";
+  const saludo = saludoDelDia(ahora);
 
   // Inicio y fin de semana (lunes–domingo)
   const inicioSemanaStr = inicioSemanaLocal(ahora);

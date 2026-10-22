@@ -92,6 +92,9 @@ vi.mock("framer-motion", () => ({
         {children}
       </div>
     ),
+    span: ({ className, style }: { className?: string; style?: React.CSSProperties }) => (
+      <span className={className} style={style} />
+    ),
   },
 }));
 
@@ -471,5 +474,119 @@ describe("InicioPage — toggle de período", () => {
     const btn7d = screen.getByRole("button", { name: "7d" });
     expect(btn7d).toHaveAttribute("aria-pressed", "false");
     expect(btn7d.className).not.toContain("bg-slate-700");
+  });
+});
+
+// ── 8. Encabezado de hoy: una oración y la línea de tiempo ───────────────────
+describe("InicioPage — encabezado de hoy", () => {
+  const citaHoy = (id: string, desfaseMs: number, extra: Record<string, unknown> = {}) => ({
+    id, codigoConfirmacion: id, clienteId: "cl1", empleadoId: "e1", servicioId: "s1",
+    nombreCliente: "Sofía Ramírez", telefonoCliente: "", nombreEmpleado: "María",
+    nombreServicio: "Corte de dama", duracionMinutos: 45, precio: 280, pagada: false,
+    inicioEn: new Date(Date.now() + desfaseMs).toISOString(),
+    finEn: new Date(Date.now() + desfaseMs + 2_700_000).toISOString(),
+    estado: 2, estadoTexto: "Confirmada",
+    ...extra,
+  });
+
+  it("un día libre lo dice en la oración y ofrece copiar el enlace", async () => {
+    renderConQuery();
+    const titulo = await screen.findByRole("heading", { level: 1, name: /Agenda libre hoy\./ });
+    expect(titulo).toHaveTextContent(/^Buen(os|as) (días|tardes|noches), Roberto\. Agenda libre hoy\.$/);
+    expect(titulo).toHaveClass("font-display");
+    expect(await screen.findByRole("button", { name: "Copiar enlace de reservas" })).toBeInTheDocument();
+    // Ya no hay "Hola, Roberto" ni la tarjeta suelta de "Próxima cita".
+    expect(screen.queryByText(/Hola, /)).toBeNull();
+  });
+
+  it("con citas cuenta las de hoy y nombra la siguiente", async () => {
+    vi.mocked(citasApi.obtenerTodas).mockResolvedValue({
+      ...emptyPage,
+      datos: [citaHoy("c1", 3_600_000), citaHoy("c2", 7_200_000, { nombreServicio: "Uñas" })],
+      total: 2,
+    });
+    renderConQuery();
+    const titulo = screen.getByRole("heading", { level: 1 });
+    await waitFor(() => expect(titulo).toHaveTextContent(/Hoy tienes 2 citas/));
+    expect(titulo).toHaveTextContent(/la siguiente es Corte de dama a las? .+ con Sofía\./);
+    expect(within(titulo).getByText("2 citas").tagName).toBe("STRONG");
+  });
+
+  it("muestra la línea de tiempo con una entrada legible por cita", async () => {
+    vi.mocked(citasApi.obtenerTodas).mockResolvedValue({
+      ...emptyPage, datos: [citaHoy("c1", 3_600_000), citaHoy("c2", 7_200_000)], total: 2,
+    });
+    renderConQuery();
+    const linea = await screen.findByRole("region", { name: "Línea de tiempo de hoy" });
+    const lista = within(linea).getByRole("list", { name: "Citas de hoy en orden" });
+    expect(within(lista).getAllByRole("listitem")).toHaveLength(2);
+    expect(within(lista).getAllByRole("listitem")[0]).toHaveTextContent(/Corte de dama con Sofía Ramírez, confirmada/);
+  });
+
+  it("sin cargar la agenda solo saluda, sin inventar 'agenda libre'", async () => {
+    vi.mocked(citasApi.obtenerTodas).mockReturnValue(new Promise(() => {}));
+    renderConQuery();
+    const titulo = await screen.findByRole("heading", { level: 1 });
+    expect(titulo).toHaveTextContent(/^Buen(os|as) (días|tardes|noches), Roberto\.$/);
+  });
+});
+
+// ── 9. Primera reserva: una tarjeta, una vez ─────────────────────────────────
+describe("InicioPage — primera reserva", () => {
+  // GET /citas sin fechas (tamano 1) da el total histórico en X-Total-Count.
+  const conTotalHistorico = (total: number) =>
+    vi.mocked(citasApi.obtenerTodas).mockImplementation(async (f) =>
+      f && !f.desde && f.tamano === 1 ? { ...emptyPage, total } : emptyPage
+    );
+  const unaReserva = {
+    ...mockResumen,
+    citasHoy: 0, citasSemana: 1, citasMes: 1,
+    proximasCitas: [{
+      id: "p1", inicioEn: new Date(Date.now() + 86_400_000).toISOString(),
+      nombreCliente: "Sofía Ramírez", nombreServicio: "Corte de dama", nombreEmpleado: "María", estadoTexto: "Pendiente",
+    }],
+  };
+
+  it("estando el negocio sin reservas, la primera se celebra y se recuerda", async () => {
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation((k) =>
+      k === "primera-reserva-neg-1" ? "sin-reservas" : k === "onboarding-ok-neg-1" ? "1" : null
+    );
+    const setItem = vi.spyOn(Storage.prototype, "setItem");
+    vi.mocked(dashboardApi.obtenerResumen).mockResolvedValue(unaReserva);
+    conTotalHistorico(1);
+    renderConQuery();
+
+    const tarjeta = await screen.findByRole("region", { name: "¡Tu primera reserva!" });
+    expect(tarjeta).toHaveTextContent("Sofía reservó Corte de dama.");
+    expect(within(tarjeta).getByRole("button", { name: "Compártelo en tus redes" })).toBeInTheDocument();
+    expect(within(tarjeta).getByTestId("confeti")).toBeInTheDocument();
+    // Solo el estado: ni el nombre ni el servicio se guardan.
+    expect(setItem).toHaveBeenCalledWith("primera-reserva-neg-1", "celebrando");
+    expect(setItem.mock.calls.some(([, v]) => String(v).includes("Sofía"))).toBe(false);
+
+    fireEvent.click(within(tarjeta).getByRole("button", { name: "Cerrar aviso de primera reserva" }));
+    await waitFor(() => expect(screen.queryByRole("region", { name: "¡Tu primera reserva!" })).toBeNull());
+    expect(setItem).toHaveBeenCalledWith("primera-reserva-neg-1", "vista");
+  });
+
+  it("un negocio con citas antiguas pero el panel vacío no queda «sin reservas»", async () => {
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation((k) => (k === "onboarding-ok-neg-1" ? "1" : null));
+    const setItem = vi.spyOn(Storage.prototype, "setItem");
+    vi.mocked(dashboardApi.obtenerResumen).mockResolvedValue({ ...mockResumen, citasHoy: 0, citasSemana: 0, citasMes: 0, proximasCitas: [] });
+    conTotalHistorico(120);
+    renderConQuery();
+
+    await waitFor(() => expect(setItem).toHaveBeenCalledWith("primera-reserva-neg-1", "vista"));
+    expect(setItem).not.toHaveBeenCalledWith("primera-reserva-neg-1", "sin-reservas");
+  });
+
+  it("un negocio que ya tenía citas nunca la ve", async () => {
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation((k) => (k === "onboarding-ok-neg-1" ? "1" : null));
+    const setItem = vi.spyOn(Storage.prototype, "setItem");
+    vi.mocked(dashboardApi.obtenerResumen).mockResolvedValue(unaReserva);
+    renderConQuery();
+
+    await waitFor(() => expect(setItem).toHaveBeenCalledWith("primera-reserva-neg-1", "vista"));
+    expect(screen.queryByRole("region", { name: "¡Tu primera reserva!" })).toBeNull();
   });
 });

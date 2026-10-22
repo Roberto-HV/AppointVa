@@ -321,6 +321,16 @@ describe("BookingPage — barra de acción", () => {
     expect(container.querySelector('[data-testid="paso-servicio"]')?.contains(continuar)).toBe(false);
   });
 
+  it("en el paso 1 el botón resume la elección: «servicio · duración · precio — Continuar»", async () => {
+    vi.mocked(publicoApi.obtenerNegocio).mockResolvedValue(mockNegocio);
+    renderConQuery();
+
+    fireEvent.click(await screen.findByRole("button", { name: "Corte de cabello" }));
+    const continuar = screen.getByRole("button", { name: "Continuar" });
+    expect(continuar).toHaveAccessibleDescription(/^Corte de cabello\s·\s\d+ min · \$/);
+    expect(continuar).toHaveTextContent(/Corte de cabello\s·\s\d+ min · \$.+— Continuar$/);
+  });
+
   it("wires the last step's primary button to the form inside PasoDatosCliente", async () => {
     await avanzarHastaPaso4();
     expect(screen.getByRole("button", { name: "Confirmar cita" })).toHaveAttribute(

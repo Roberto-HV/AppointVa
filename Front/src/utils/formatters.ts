@@ -100,6 +100,53 @@ export function formatHora(iso: string): string {
   return formatHoraDe(d);
 }
 
+/**
+ * Cuándo es una cita, dicho como en una conversación: "hoy a las 9:00 a. m.",
+ * "mañana a la 1:00 p. m.", "el jueves 22 a las 5:30 p. m." (dentro de la
+ * semana) o "el jueves 22 de octubre a las …" (más lejos; con año si no es
+ * el actual). Lo usa el titular de la confirmación ("Te esperamos …").
+ */
+export function formatCuandoCita(iso: string, ahora: Date = new Date()): string {
+  return describirCuandoCita(iso, ahora)?.texto ?? "";
+}
+
+/** `formatCuandoCita` con los datos para decidir el tono de la frase sin parsear el texto. */
+export interface CuandoCita {
+  texto: string;
+  /** Días de calendario local desde hoy: 0 = hoy, 1 = mañana, negativo = ya pasó. */
+  dias: number;
+  /** La hora de inicio ya llegó respecto de `ahora`. */
+  yaInicio: boolean;
+}
+
+export function describirCuandoCita(iso: string, ahora: Date = new Date()): CuandoCita | null {
+  const d = toUtcDate(iso);
+  if (isNaN(d.getTime())) return null;
+  const aLasHora = formatALasHora(d);
+  const hoyInicio = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate()).getTime();
+  const diaCita = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const dias = Math.round((diaCita - hoyInicio) / 86_400_000);
+  const yaInicio = d.getTime() <= ahora.getTime();
+  if (dias === 0) return { texto: `hoy ${aLasHora}`, dias, yaInicio };
+  if (dias === 1) return { texto: `mañana ${aLasHora}`, dias, yaInicio };
+  const cerca = dias > 1 && dias < 7;
+  const fecha = d
+    .toLocaleDateString("es-MX", {
+      weekday: "long",
+      day: "numeric",
+      ...(cerca ? {} : { month: "long" }),
+      ...(!cerca && d.getFullYear() !== ahora.getFullYear() ? { year: "numeric" } : {}),
+    })
+    .replace(/,/g, "")
+    .replace(/\bDe\b/g, "de");
+  return { texto: `el ${fecha} ${aLasHora}`, dias, yaInicio };
+}
+
+/** "a las 5:30 p. m.", y "a la 1:00 p. m." para la una: el artículo concuerda con la hora. */
+export function formatALasHora(d: Date): string {
+  return `${d.getHours() % 12 === 1 ? "a la" : "a las"} ${formatHoraDe(d)}`;
+}
+
 /** Fecha + hora estándar para vistas detalle: "15 de junio de 2026, 10:00 a. m." */
 export function formatFechaHora(iso: string): string {
   const d = toUtcDate(iso);

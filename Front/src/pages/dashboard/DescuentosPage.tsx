@@ -7,6 +7,7 @@ import { Plus, Trash2, Tag, Check, Copy } from "lucide-react";
 import { descuentosApi, type Descuento } from "../../api/descuentos";
 import { negociosApi } from "../../api/negocios";
 import { useToastStore } from "../../store/toastStore";
+import { useCopiarAlPortapapeles } from "../../hooks/useCopiarAlPortapapeles";
 import Pagination from "../../components/ui/Pagination";
 import BotonAccion from "../../components/ui/BotonAccion";
 import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
@@ -63,7 +64,9 @@ function formatDescuento(desc: Descuento) {
 export default function DescuentosPage() {
   const idForm = useId();
   const [showForm, setShowForm] = useState(false);
-  const [copiado, setCopiado] = useState<string | null>(null);
+  const { copiado: hayCopia, copiar } = useCopiarAlPortapapeles();
+  const [codigoCopiado, setCodigoCopiado] = useState<string | null>(null);
+  const copiado = hayCopia ? codigoCopiado : null;
   const [cuponEliminar, setCuponEliminar] = useState<Descuento | null>(null);
   const descarte = useConfirmarDescarte();
   const qc = useQueryClient();
@@ -123,10 +126,9 @@ export default function DescuentosPage() {
     onError: () => toast("No se pudo eliminar el cupón. Intenta de nuevo.", "error"),
   });
 
-  const copiarCodigo = (codigo: string) => {
-    void navigator.clipboard?.writeText(codigo);
-    setCopiado(codigo);
-    setTimeout(() => setCopiado(null), 2000);
+  const copiarCodigo = async (codigo: string) => {
+    setCodigoCopiado(codigo);
+    if (!(await copiar(codigo))) toast(`No se pudo copiar. El código es ${codigo}`, "error");
   };
 
   const vigente = (d: Descuento) => !d.agotado && !d.expirado;

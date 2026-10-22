@@ -1,9 +1,10 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Clock, Trash2, CheckCircle, Bell, Ban, Phone, Mail, Calendar, User, Tag } from "lucide-react";
+import { Trash2, CheckCircle, Bell, Ban, Phone, Mail, Calendar, User, Tag } from "lucide-react";
 import { listaEsperaApi, type EntradaListaEspera } from "../../api/listaEspera";
 import { useToastStore } from "../../store/toastStore";
 import EmptyState from "../../components/ui/EmptyState";
+import { tonoDeSector } from "../../lib/vozVacia";
 import Pagination from "../../components/ui/Pagination";
 import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
 import { FiltroBarra } from "../../components/ui/filtros";
@@ -152,14 +153,15 @@ export default function ListaEsperaPage() {
       ) : isError ? (
         <ErrorCarga mensaje="No se pudo cargar la lista de espera." onReintentar={() => refetch()} reintentando={isFetching} />
       ) : lista.length === 0 ? (
-        <EmptyState
-          variante={filtroEstado ? "sinResultados" : "vacio"}
-          icon={filtroEstado ? undefined : <Clock size={40} strokeWidth={1.5} />}
-          title={filtroEstado
-            ? `Ningún registro con estado "${ESTADOS_CONFIG[filtroEstado]?.label ?? filtroEstado}"`
-            : "No hay entradas en la lista de espera"}
-          onLimpiarFiltros={filtroEstado ? () => setFiltroEstado("") : undefined}
-        />
+        filtroEstado ? (
+          <EmptyState
+            variante="sinResultados"
+            title={`Ningún registro con estado "${ESTADOS_CONFIG[filtroEstado]?.label ?? filtroEstado}"`}
+            onLimpiarFiltros={() => setFiltroEstado("")}
+          />
+        ) : (
+          <EmptyState voz="listaEspera" tono={tonoDeSector(perfil?.sector)} />
+        )
       ) : (
         <div className="space-y-3">
           {paginada.visibles.map((entrada) => (

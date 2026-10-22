@@ -199,7 +199,8 @@
   --font:         'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   /* Display: Fraunces (variable opsz+wght, @fontsource-variable/fraunces@5.3.0), Tailwind `font-display`,
    * weight 500–600. ONLY: landing H1/H2 (LandingPage, not /salud), booking business name,
-   * confirmation headline, dashboard Inicio greeting. Never in dashboard chrome. */
+   * confirmation headline, dashboard Inicio "today" sentence, booking step-1 category headings.
+   * Never in dashboard chrome. */
   --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
   --tracking-heading: -0.02em;    /* h1–h3 (index.css base layer) */
   /* tabular-nums on every time, price and count. One time format: formatHora / formatHoraDe
@@ -383,11 +384,23 @@
  *   .animate-fade-in  → opacity 0→1 + translateY(6px→0)  in 0.22s ease-calma
  *   New transitions: duration-calma (220ms, range 180–240) + ease-calma
  *   All buttons/active states: transform scale(0.97) on :active, 80ms ease
+ *   Signature moments (each skipped under prefers-reduced-motion via useReducedMotion):
+ *     - confirmation stamp (SelloEstado): scale 1.6→1 + rotate -12°→-6°, 240ms ease-calma, once
+ *     - first-booking confetti (PrimeraReserva): 18 brand-coloured pieces, 900ms, once
+ */
+
+/*
+ * Component classes:
+ *   .talon-perforado → perforated edge of the /cita/:codigo ticket stub: two 10px
+ *     notches (radial-gradient) + a 2px dashed --neutral-200 line. Light-only (public page);
+ *     the wrapper casts the shadow with filter: drop-shadow so it follows the notches.
  */
 
 /*
  * Typography in use:
- *   font-display text-3xl font-semibold → Inicio greeting (Fraunces; Inter in salud)
+ *   font-display text-2xl font-normal + <strong> → Inicio "today" sentence (Fraunces; Inter in salud)
+ *   font-display text-[1.75rem] font-semibold  → confirmation headline ("Te esperamos …")
+ *   font-display text-lg font-semibold         → booking step-1 category headings (not salud)
  *   text-sm font-bold / font-semibold            → section titles
  *   text-xs font-semibold                        → badges, chips, labels
  *   text-xs font-semibold tabular-nums           → times in agenda
