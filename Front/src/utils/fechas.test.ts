@@ -6,6 +6,7 @@ import {
   fechaLargaLocal,
   soloFecha,
   finDelDiaEnZona,
+  fechaEnZona,
   hoy,
   inicioSemana,
   finSemana,
@@ -212,5 +213,18 @@ describe("finDelDiaEnZona (OM-24)", () => {
     const esperado = new Date(2026, 6, 15, 23, 59, 59).toISOString();
     expect(finDelDiaEnZona("2026-07-15", "No/Existe")).toBe(esperado);
     expect(finDelDiaEnZona("2026-07-15")).toBe(esperado);
+  });
+});
+
+describe("fechaEnZona (B16)", () => {
+  it("es el inverso de finDelDiaEnZona en la zona del negocio", () => {
+    expect(fechaEnZona("2027-01-01T05:59:59", "America/Mexico_City")).toBe("2026-12-31");
+    expect(fechaEnZona(finDelDiaEnZona("2026-07-15", "America/Mexico_City"), "America/Mexico_City")).toBe("2026-07-15");
+  });
+
+  it("sin zona válida usa el día local del navegador", () => {
+    const iso = "2026-10-22T12:00:00Z";
+    expect(fechaEnZona(iso, "Zona/Inexistente")).toBe(fechaLocal(new Date(iso)));
+    expect(fechaEnZona(iso)).toBe(fechaLocal(new Date(iso)));
   });
 });

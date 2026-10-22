@@ -27,6 +27,7 @@ import { useSubirImagen } from "../../hooks/useSubirImagen";
 import ProgresoSubida from "../../components/ui/ProgresoSubida";
 import Switch from "../../components/ui/Switch";
 import ErrorCarga from "../../components/ui/ErrorCarga";
+import { mensajeError } from "../../utils/errores";
 
 // ── Schemas ───────────────────────────────────────────────────────────────────
 // `noValidate` en el formulario: estos mensajes son los únicos que ve el dueño.
@@ -166,7 +167,8 @@ export default function ServiciosPage() {
       setServicioEliminar(null);
       toast(`${terms.servicio} eliminado`);
     },
-    onError: () => toast(`No se pudo eliminar el ${terms.servicio.toLowerCase()}. Intenta de nuevo.`, "error"),
+    // 409: el servidor también bloquea el borrado con citas futuras y explica por qué.
+    onError: (err: unknown) => toast(mensajeError(err, `No se pudo eliminar el ${terms.servicio.toLowerCase()}. Intenta de nuevo.`), "error"),
   });
 
   // El estado pendiente es por fila: antes una petición en curso desactivaba los

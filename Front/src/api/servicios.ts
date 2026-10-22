@@ -28,6 +28,12 @@ export const serviciosApi = {
 
   toggleActivo: (s: ServicioDto): Promise<ServicioDto> => guardarCampos(s, { activo: !s.activo }),
 
+  /** Citas Pendientes o Confirmadas desde hoy (zona del negocio). B13. */
+  contarCitasFuturas: async (id: string): Promise<number> => {
+    const { data } = await api.get<{ total: number }>(`/servicios/${id}/citas-futuras`);
+    return data.total;
+  },
+
   toggleDestacado: (s: ServicioDto): Promise<ServicioDto> => guardarCampos(s, { destacado: !s.destacado }),
 
   crear: async (dto: CrearServicioDto): Promise<ServicioDto> => {

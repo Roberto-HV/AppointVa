@@ -145,7 +145,7 @@ namespace AppointVaAPI.Controllers.V1
 
             // Validar que el empleado pertenece a este negocio
             var empleadoValido = await _db.Empleados
-                .AnyAsync(e => e.Id == dto.EmpleadoId && e.NegocioId == negocioId && e.FechaEliminacion == null);
+                .AnyAsync(e => e.Id == dto.EmpleadoId && e.NegocioId == negocioId && e.FechaEliminacion == null && e.Activo == 1);
             if (!empleadoValido)
                 return BadRequest(new { mensaje = "Empleado no válido" });
 

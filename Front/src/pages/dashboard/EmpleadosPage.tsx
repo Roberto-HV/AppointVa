@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Camera, Eye, EyeOff, Pencil, Clock, CalendarX, Mail, Trash2, AlertCircle } from "lucide-react";
+import { Camera, Eye, EyeOff, Pencil, Clock, CalendarX, Mail, Trash2, AlertCircle, RotateCcw } from "lucide-react";
 import { empleadosApi } from "../../api/empleados";
 import { serviciosApi } from "../../api/servicios";
 import { negociosApi } from "../../api/negocios";
@@ -112,9 +112,12 @@ export default function EmpleadosPage() {
   const fotoInputRef = useRef<HTMLInputElement>(null);
   const empleadoFotoIdRef = useRef<string | null>(null);
 
+  // B13: también los desactivados, para poder reactivarlos. La clave cuelga de
+  // ["empleados"], así que invalidarla refresca también los selectores de otras
+  // pantallas, que solo piden los activos.
   const { data: empleados = [], isLoading } = useQuery({
-    queryKey: ["empleados"],
-    queryFn: () => empleadosApi.obtenerTodos(),
+    queryKey: ["empleados", { incluirInactivos: true }],
+    queryFn: () => empleadosApi.obtenerTodos(true),
   });
 
   const { data: servicios = [] } = useQuery({
@@ -293,8 +296,32 @@ export default function EmpleadosPage() {
       setEmpleadoEliminar(null);
       toast(`${terms.empleado} eliminado`);
     },
-    onError: () => toast(`No se pudo eliminar el ${terms.empleado.toLowerCase()}. Intenta de nuevo.`, "error"),
+    // 409: el servidor también bloquea el borrado con citas futuras y explica por qué.
+    onError: (err: unknown) => toast(mensajeError(err, `No se pudo eliminar el ${terms.empleado.toLowerCase()}. Intenta de nuevo.`), "error"),
   });
+
+  // B13 (decisión 7): desactivar es la baja reversible. Sale de reservas y de
+  // recepción; sus citas ya agendadas no cambian.
+  const desactivar = useMutation({
+    mutationFn: (id: string) => empleadosApi.desactivar(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["empleados"] });
+      setEmpleadoEliminar(null);
+      toast(`${terms.empleado} desactivado`);
+    },
+    onError: (err: unknown) => toast(mensajeError(err, `No se pudo desactivar el ${terms.empleado.toLowerCase()}. Intenta de nuevo.`), "error"),
+  });
+
+  // 402 si reactivarlo pasa el límite de empleados del plan: el servidor lo explica.
+  const reactivar = useMutation({
+    mutationFn: (id: string) => empleadosApi.reactivar(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["empleados"] });
+      toast(`${terms.empleado} reactivado`);
+    },
+    onError: (err: unknown) => toast(mensajeError(err, `No se pudo reactivar el ${terms.empleado.toLowerCase()}. Intenta de nuevo.`), "error"),
+  });
+  const reactivandoId = reactivar.isPending ? reactivar.variables : undefined;
 
   const { mutate: guardarHorario, isPending: guardandoHorario } = useMutation({
     // Lo que se guarda llega como variables desde el clic, no del closure:
@@ -468,6 +495,17 @@ export default function EmpleadosPage() {
                 <p className="text-xs text-slate-400 mt-1 dark:text-slate-500">{emp.servicioIds.length} {emp.servicioIds.length === 1 ? terms.servicio : terms.servicios} asignados</p>
 
                 <div className="mt-3 space-y-1.5">
+                  {!emp.activo && (
+                    <button
+                      type="button"
+                      onClick={() => reactivar.mutate(emp.id)}
+                      disabled={reactivandoId === emp.id}
+                      aria-label={`Reactivar a ${emp.nombre}`}
+                      className="w-full border border-border text-foreground hover:bg-muted rounded-md py-2 text-sm font-medium flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50"
+                    >
+                      <RotateCcw size={12} aria-hidden="true" /> {reactivandoId === emp.id ? "Reactivando…" : "Reactivar"}
+                    </button>
+                  )}
                   <div className="grid grid-cols-2 gap-1.5">
                     <button
                       onClick={() => abrirEditar(emp)}
@@ -756,8 +794,8 @@ export default function EmpleadosPage() {
       </Modal>
 
       {/* Eliminar empleado (decisión 7, OM-17): bloqueado mientras tenga citas
-          abiertas desde hoy. "Desactivar" como acción principal necesita un
-          endpoint que aún no existe (B13). */}
+          abiertas desde hoy (el servidor las cuenta y también lo bloquea, B13).
+          Desactivar (reversible) es la acción principal. */}
       <DialogoEliminarConCitas
         abierto={!!empleadoEliminar}
         titulo={`Eliminar ${terms.empleado.toLowerCase()}`}
@@ -771,6 +809,12 @@ export default function EmpleadosPage() {
             <p>{`El ${terms.empleado.toLowerCase()} dejará de aparecer y no podrá recibir nuevas citas. Esta acción no se puede deshacer.`}</p>
           </>
         )}
+        alternativa={empleadoEliminar?.activo ? {
+          etiqueta: "Desactivar",
+          descripcion: `Si solo quieres que deje de recibir ${terms.citas.toLowerCase()}, desactívalo: no aparecerá en tu página de reservas ni en recepción, y puedes reactivarlo cuando quieras.`,
+          pendiente: desactivar.isPending,
+          onSelect: () => desactivar.mutate(empleadoEliminar.id),
+        } : undefined}
         etiquetaEliminar={`Eliminar ${terms.empleado.toLowerCase()}`}
         eliminando={eliminandoEmpleado}
         onEliminar={() => empleadoEliminar && eliminar(empleadoEliminar.id)}

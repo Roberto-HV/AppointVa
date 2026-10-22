@@ -22,6 +22,23 @@ export const empleadosApi = {
     await api.delete(`/empleados/${id}`);
   },
 
+  // B13: baja reversible. Deja de aparecer en reservas; sus citas no cambian.
+  desactivar: async (id: string): Promise<EmpleadoDto> => {
+    const { data } = await api.patch(`/empleados/${id}/desactivar`);
+    return data;
+  },
+
+  reactivar: async (id: string): Promise<EmpleadoDto> => {
+    const { data } = await api.patch(`/empleados/${id}/reactivar`);
+    return data;
+  },
+
+  /** Citas Pendientes o Confirmadas desde hoy (zona del negocio). */
+  contarCitasFuturas: async (id: string): Promise<number> => {
+    const { data } = await api.get<{ total: number }>(`/empleados/${id}/citas-futuras`);
+    return data.total;
+  },
+
   invitar: async (id: string, email: string, password: string): Promise<void> => {
     await api.post(`/empleados/${id}/invitar`, { email, password });
   },

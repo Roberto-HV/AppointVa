@@ -44,7 +44,7 @@ namespace AppointVaAPI.Services
             if (empleadoId.HasValue)
             {
                 var empleadoInfo = await _db.Empleados
-                    .Where(e => e.Id == empleadoId.Value && e.NegocioId == negocioId)
+                    .Where(e => e.Id == empleadoId.Value && e.NegocioId == negocioId && e.Activo == 1 && e.FechaEliminacion == null)
                     .Select(e => new { e.Nombre })
                     .AsNoTracking()
                     .FirstOrDefaultAsync();

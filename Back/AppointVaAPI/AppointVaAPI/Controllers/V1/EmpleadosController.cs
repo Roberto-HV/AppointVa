@@ -1,5 +1,6 @@
 ﻿using AppointVaAPI.Constants;
 using AppointVaAPI.Data;
+using AppointVaAPI.Helpers;
 using AppointVaAPI.Models;
 using AppointVaAPI.Models.Dtos.Empleados;
 using AppointVaAPI.Models.Dtos.Horarios;
@@ -144,8 +145,88 @@ namespace AppointVaAPI.Controllers.V1
             var empleado = await _repo.ObtenerPorIdAsync(id, _contexto.NegocioId.Value);
             if (empleado is null) return NotFound(new { mensaje = "Empleado no encontrado" });
 
+            // Decision 7: deleting is blocked while open appointments remain from today.
+            var futuras = await CitasFuturasHelper.ContarAsync(_db, _contexto.NegocioId.Value, empleadoId: id);
+            if (futuras > 0)
+                return Conflict(new { mensaje = $"El empleado tiene {futuras} citas pendientes o confirmadas desde hoy. Reagéndalas, reasígnalas o cancélalas antes de eliminarlo, o desactívalo.", citasFuturas = futuras });
+
             await _repo.EliminarAsync(id, _contexto.NegocioId.Value);
             return NoContent();
+        }
+
+        // GET api/empleados/{id}/citas-futuras
+        // B13: open appointments (Pendiente/Confirmada) from today, so the
+        // delete/deactivate dialogs can state the consequences.
+        [HttpGet("{id:guid}/citas-futuras")]
+        [Authorize(Policy = Politicas.GestionCompleta)]
+        public async Task<IActionResult> ContarCitasFuturas(Guid id)
+        {
+            if (_contexto.NegocioId is null) return Unauthorized();
+
+            var existe = await _db.Empleados.AnyAsync(e =>
+                e.Id == id && e.NegocioId == _contexto.NegocioId.Value && e.FechaEliminacion == null);
+            if (!existe) return NotFound(new { mensaje = "Empleado no encontrado" });
+
+            var total = await CitasFuturasHelper.ContarAsync(_db, _contexto.NegocioId.Value, empleadoId: id);
+            return Ok(new { total });
+        }
+
+        // PATCH api/empleados/{id}/desactivar
+        // B13: reversible. The employee leaves public booking, the kiosk and new
+        // dashboard bookings; their existing appointments are left untouched.
+        [HttpPatch("{id:guid}/desactivar")]
+        [Authorize(Policy = Politicas.GestionCompleta)]
+        public async Task<IActionResult> Desactivar(Guid id)
+        {
+            if (_contexto.NegocioId is null) return Unauthorized();
+
+            var empleado = await _repo.ObtenerPorIdAsync(id, _contexto.NegocioId.Value);
+            if (empleado is null) return NotFound(new { mensaje = "Empleado no encontrado" });
+
+            if (empleado.Activo != 0)
+            {
+                empleado.Activo = 0;
+                empleado.FechaActualizacion = DateTime.UtcNow;
+                await _repo.ActualizarAsync(empleado);
+            }
+
+            var servicioIds = await _repo.ObtenerServicioIdsAsync(empleado.Id);
+            return Ok(MapearDto(empleado, servicioIds));
+        }
+
+        // PATCH api/empleados/{id}/reactivar
+        // B13: counts toward the plan's employee limit again, so it is checked here.
+        [HttpPatch("{id:guid}/reactivar")]
+        [Authorize(Policy = Politicas.GestionCompleta)]
+        public async Task<IActionResult> Reactivar(Guid id)
+        {
+            if (_contexto.NegocioId is null) return Unauthorized();
+            var negocioId = _contexto.NegocioId.Value;
+
+            var empleado = await _repo.ObtenerPorIdAsync(id, negocioId);
+            if (empleado is null) return NotFound(new { mensaje = "Empleado no encontrado" });
+
+            if (empleado.Activo != 1)
+            {
+                var planLimite = await _db.Negocios
+                    .Where(n => n.Id == negocioId)
+                    .Select(n => n.Plan != null ? n.Plan.MaxEmpleados : 0)
+                    .FirstOrDefaultAsync();
+                if (planLimite > 0)
+                {
+                    var activos = await _db.Empleados.CountAsync(e =>
+                        e.NegocioId == negocioId && e.FechaEliminacion == null && e.Activo == 1);
+                    if (activos >= planLimite)
+                        return StatusCode(402, new { mensaje = $"Has alcanzado el límite de {planLimite} empleados de tu plan. Desactiva a otro empleado o actualiza tu plan para reactivarlo." });
+                }
+
+                empleado.Activo = 1;
+                empleado.FechaActualizacion = DateTime.UtcNow;
+                await _repo.ActualizarAsync(empleado);
+            }
+
+            var servicioIds = await _repo.ObtenerServicioIdsAsync(empleado.Id);
+            return Ok(MapearDto(empleado, servicioIds));
         }
 
         // ── Horarios ───────────────────────────────────────────────────────────

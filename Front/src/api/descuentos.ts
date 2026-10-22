@@ -22,20 +22,30 @@ export interface DescuentoValidado {
   valor: number;
 }
 
+export interface DatosCupon {
+  codigo: string;
+  descripcion?: string;
+  tipo: string;
+  valor: number;
+  usoMaximo?: number;
+  fechaExpiracion?: string;
+}
+
 export const descuentosApi = {
-  getDescuentos: () =>
-    api.get<Descuento[]>("/descuentos").then((r) => r.data),
+  /** B14: con `incluirInactivos` también llegan los desactivados, para reactivarlos. */
+  getDescuentos: (incluirInactivos = false) =>
+    api.get<Descuento[]>("/descuentos", { params: { incluirInactivos } }).then((r) => r.data),
 
-  crear: (data: {
-    codigo: string;
-    descripcion?: string;
-    tipo: string;
-    valor: number;
-    usoMaximo?: number;
-    fechaExpiracion?: string;
-  }) => api.post<Descuento>("/descuentos", data).then((r) => r.data),
+  crear: (data: DatosCupon) => api.post<Descuento>("/descuentos", data).then((r) => r.data),
 
-  eliminar: (id: string) => api.delete(`/descuentos/${id}`),
+  /** B16: los usos ya hechos se conservan; el límite no puede quedar por debajo de ellos. */
+  actualizar: (id: string, data: DatosCupon) =>
+    api.put<Descuento>(`/descuentos/${id}`, data).then((r) => r.data),
+
+  /** Baja reversible: deja de aceptarse al reservar. */
+  desactivar: (id: string) => api.delete(`/descuentos/${id}`),
+
+  reactivar: (id: string) => api.patch<Descuento>(`/descuentos/${id}/reactivar`).then((r) => r.data),
 };
 
 export const descuentosPublicoApi = {

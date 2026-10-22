@@ -1,4 +1,6 @@
 ﻿using AppointVaAPI.Constants;
+using AppointVaAPI.Data;
+using AppointVaAPI.Helpers;
 using AppointVaAPI.Models;
 using AppointVaAPI.Models.Dtos.Servicios;
 using AppointVaAPI.Repository.IRepository;
@@ -16,12 +18,14 @@ namespace AppointVaAPI.Controllers.V1
         private readonly IServicioRepository _repo;
         private readonly IContextoNegocio _contexto;
         private readonly IBlobStorageService _storage;
+        private readonly ApplicationDbContext _db;
 
-        public ServiciosController(IServicioRepository repo, IContextoNegocio contexto, IBlobStorageService storage)
+        public ServiciosController(IServicioRepository repo, IContextoNegocio contexto, IBlobStorageService storage, ApplicationDbContext db)
         {
             _repo = repo;
             _contexto = contexto;
             _storage = storage;
+            _db = db;
         }
 
         // GET api/servicios
@@ -138,8 +142,28 @@ namespace AppointVaAPI.Controllers.V1
             var servicio = await _repo.ObtenerPorIdAsync(id, _contexto.NegocioId.Value);
             if (servicio is null) return NotFound(new { mensaje = "Servicio no encontrado" });
 
+            // Decision 7: deleting is blocked while open appointments remain from today.
+            var futuras = await CitasFuturasHelper.ContarAsync(_db, _contexto.NegocioId.Value, servicioId: id);
+            if (futuras > 0)
+                return Conflict(new { mensaje = $"El servicio tiene {futuras} citas pendientes o confirmadas desde hoy. Reagéndalas o cancélalas antes de eliminarlo, u ocúltalo de reservas.", citasFuturas = futuras });
+
             await _repo.EliminarAsync(id, _contexto.NegocioId.Value);
             return NoContent();
+        }
+
+        // GET api/servicios/{id}/citas-futuras
+        // B13: open appointments (Pendiente/Confirmada) from today for this service.
+        [HttpGet("{id:guid}/citas-futuras")]
+        [Authorize(Policy = Politicas.GestionCompleta)]
+        public async Task<IActionResult> ContarCitasFuturas(Guid id)
+        {
+            if (_contexto.NegocioId is null) return Unauthorized();
+
+            var servicio = await _repo.ObtenerPorIdAsync(id, _contexto.NegocioId.Value);
+            if (servicio is null) return NotFound(new { mensaje = "Servicio no encontrado" });
+
+            var total = await CitasFuturasHelper.ContarAsync(_db, _contexto.NegocioId.Value, servicioId: id);
+            return Ok(new { total });
         }
 
         private static ServicioDto MapearDto(Servicio s) => new()

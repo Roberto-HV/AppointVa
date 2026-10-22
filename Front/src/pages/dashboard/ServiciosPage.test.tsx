@@ -22,6 +22,7 @@ vi.mock("../../api/servicios", () => ({
     subirImagen: vi.fn(),
     toggleActivo: vi.fn(),
     toggleDestacado: vi.fn(),
+    contarCitasFuturas: vi.fn(),
   },
   categoriasApi: {
     obtenerTodas: vi.fn(),
@@ -106,6 +107,7 @@ function renderConQuery() {
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(citasApi.obtenerTodas).mockResolvedValue({ datos: [], total: 0, pagina: 1, tamano: 500 });
+  vi.mocked(serviciosApi.contarCitasFuturas).mockResolvedValue(0);
   vi.mocked(categoriasApi.obtenerTodas).mockResolvedValue([]);
 });
 
@@ -227,16 +229,14 @@ describe("ServiciosPage — eliminar servicio", () => {
 
   it("con citas futuras del servicio bloquea la eliminación y muestra cuántas (OM-17)", async () => {
     vi.mocked(serviciosApi.obtenerTodos).mockResolvedValue([mockServicio]);
-    vi.mocked(citasApi.obtenerTodas).mockImplementation(async (f) => ({
-      datos: f?.estado === 1
-        ? [{ id: "c1", servicioId: "svc-1" }, { id: "c2", servicioId: "otro" }]
-        : [{ id: "c3", servicioId: "svc-1" }],
-      total: f?.estado === 1 ? 2 : 1, pagina: 1, tamano: 500,
-    }) as never);
+    // B13: el conteo viene del servidor (`GET /servicios/{id}/citas-futuras`).
+    vi.mocked(serviciosApi.contarCitasFuturas).mockResolvedValue(2);
     renderConQuery();
     fireEvent.click(await screen.findByRole("button", { name: "Eliminar Corte de cabello" }));
     const dialogo = await screen.findByRole("dialog", { name: "No se puede eliminar todavía" });
     expect(dialogo).toHaveTextContent("Tiene 2 citas pendientes o confirmadas desde hoy");
+    expect(serviciosApi.contarCitasFuturas).toHaveBeenCalledWith("svc-1");
+    expect(dialogo).toHaveTextContent("Si eliges «Ocultar de reservas», esas 2 citas se mantienen en la agenda.");
     expect(screen.getByRole("link", { name: "Ver citas desde hoy" })).toHaveAttribute("href", expect.stringContaining("/dashboard/citas?desde="));
     expect(screen.queryByRole("button", { name: "Eliminar servicio" })).not.toBeInTheDocument();
     // Ocultar sigue disponible como acción principal.

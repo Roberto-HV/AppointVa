@@ -93,6 +93,9 @@ export default function DialogoEliminarConCitas({
             mensaje
           )}
           {alternativa && !cargando && <p>{alternativa.descripcion}</p>}
+          {alternativa && bloqueado && (
+            <p>{`Si eliges «${alternativa.etiqueta}», esas ${textoCitas} se mantienen en la agenda.`}</p>
+          )}
         </div>
         <div className="flex flex-col-reverse sm:flex-row gap-2">
           <button type="button" onClick={onCerrar} className={`${BOTON} border border-border font-medium text-foreground hover:bg-muted`}>

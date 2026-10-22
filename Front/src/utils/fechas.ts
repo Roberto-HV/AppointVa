@@ -110,3 +110,21 @@ export function finDelDiaEnZona(ymd: string, zona?: string | null): string {
     return new Date(anio, mes - 1, dia, 23, 59, 59).toISOString();
   }
 }
+
+/**
+ * Día "YYYY-MM-DD" de un instante ISO en la zona del negocio: el inverso de
+ * `finDelDiaEnZona` para precargar la fecha de un cupón al editarlo. Sin zona
+ * válida usa la del navegador.
+ */
+export function fechaEnZona(iso: string, zona?: string | null): string {
+  const d = new Date(comoUtc(iso));
+  try {
+    if (!zona) throw new Error("sin zona");
+    const partes = new Intl.DateTimeFormat("en-US", { timeZone: zona, year: "numeric", month: "2-digit", day: "2-digit" })
+      .formatToParts(d);
+    const v = (t: string) => partes.find((p) => p.type === t)?.value;
+    return `${v("year")}-${v("month")}-${v("day")}`;
+  } catch {
+    return fechaLocal(d);
+  }
+}

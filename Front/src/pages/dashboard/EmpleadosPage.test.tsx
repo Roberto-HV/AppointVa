@@ -21,6 +21,9 @@ vi.mock("../../api/empleados", () => ({
     crear: vi.fn(),
     actualizar: vi.fn(),
     eliminar: vi.fn(),
+    desactivar: vi.fn(),
+    reactivar: vi.fn(),
+    contarCitasFuturas: vi.fn(),
     invitar: vi.fn(),
     obtenerHorario: vi.fn(),
     actualizarHorario: vi.fn(),
@@ -144,6 +147,7 @@ beforeEach(() => {
   // clearAllMocks keeps queued *Once values; a test that ends before its
   // query fires would leak them into the next test.
   vi.mocked(empleadosApi.obtenerHorario).mockReset();
+  vi.mocked(empleadosApi.contarCitasFuturas).mockResolvedValue(0);
 });
 
 describe("EmpleadosPage — estado de carga", () => {
@@ -292,19 +296,61 @@ describe("EmpleadosPage — eliminar empleado", () => {
 
   it("con citas futuras bloquea la eliminación, dice cuántas y enlaza a Citas filtradas (OM-17)", async () => {
     vi.mocked(empleadosApi.obtenerTodos).mockResolvedValue([mockEmpleado]);
-    // Pendientes: 2, Confirmadas: 1.
-    vi.mocked(citasApi.obtenerTodas).mockImplementation(async (f) =>
-      ({ datos: [], total: f?.estado === 1 ? 2 : 1, pagina: 1, tamano: 1 }) as never);
+    // B13: el conteo viene del servidor (`GET /empleados/{id}/citas-futuras`).
+    vi.mocked(empleadosApi.contarCitasFuturas).mockResolvedValue(3);
     renderConQuery();
     fireEvent.click(await screen.findByRole("button", { name: "Eliminar" }));
     const dialogo = await screen.findByRole("dialog", { name: "No se puede eliminar todavía" });
     expect(dialogo).toHaveTextContent("Tiene 3 citas pendientes o confirmadas desde hoy");
-    expect(vi.mocked(citasApi.obtenerTodas)).toHaveBeenCalledWith(expect.objectContaining({ empleadoId: "emp-1", estado: 1 }));
+    expect(dialogo).toHaveTextContent("Si eliges «Desactivar», esas 3 citas se mantienen en la agenda.");
+    expect(empleadosApi.contarCitasFuturas).toHaveBeenCalledWith("emp-1");
     const enlace = screen.getByRole("link", { name: "Ver sus citas" });
     expect(enlace.getAttribute("href")).toContain("empleadoId=emp-1");
     expect(enlace.getAttribute("href")).toMatch(/desde=\d{4}-\d{2}-\d{2}/);
     expect(screen.queryByRole("button", { name: "Eliminar empleado" })).not.toBeInTheDocument();
     expect(empleadosApi.eliminar).not.toHaveBeenCalled();
+  });
+});
+
+describe("EmpleadosPage — desactivar y reactivar (B13)", () => {
+  it("pide también los empleados inactivos", async () => {
+    vi.mocked(empleadosApi.obtenerTodos).mockResolvedValue([mockEmpleado]);
+    renderConQuery();
+    await screen.findByText("María García");
+    expect(empleadosApi.obtenerTodos).toHaveBeenCalledWith(true);
+  });
+
+  it("desde el diálogo de eliminar, Desactivar es la acción principal aunque haya citas", async () => {
+    vi.mocked(empleadosApi.obtenerTodos).mockResolvedValue([mockEmpleado]);
+    vi.mocked(empleadosApi.contarCitasFuturas).mockResolvedValue(2);
+    vi.mocked(empleadosApi.desactivar).mockResolvedValue({ ...mockEmpleado, activo: false });
+    renderConQuery();
+    fireEvent.click(await screen.findByRole("button", { name: "Eliminar" }));
+    await screen.findByRole("dialog", { name: "No se puede eliminar todavía" });
+    fireEvent.click(screen.getByRole("button", { name: "Desactivar" }));
+    await waitFor(() => expect(empleadosApi.desactivar).toHaveBeenCalledWith("emp-1"));
+    expect(empleadosApi.eliminar).not.toHaveBeenCalled();
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  });
+
+  it("un empleado inactivo muestra Reactivar, que llama a la API, y su diálogo no ofrece Desactivar", async () => {
+    vi.mocked(empleadosApi.obtenerTodos).mockResolvedValue([{ ...mockEmpleado, activo: false }]);
+    vi.mocked(empleadosApi.reactivar).mockResolvedValue(mockEmpleado);
+    renderConQuery();
+    expect(await screen.findByText("Inactivo")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Reactivar a María García" }));
+    await waitFor(() => expect(empleadosApi.reactivar).toHaveBeenCalledWith("emp-1"));
+
+    fireEvent.click(screen.getByRole("button", { name: "Eliminar" }));
+    await screen.findByRole("button", { name: "Eliminar empleado" });
+    expect(screen.queryByRole("button", { name: "Desactivar" })).toBeNull();
+  });
+
+  it("un empleado activo no muestra Reactivar", async () => {
+    vi.mocked(empleadosApi.obtenerTodos).mockResolvedValue([mockEmpleado]);
+    renderConQuery();
+    await screen.findByText("María García");
+    expect(screen.queryByRole("button", { name: /Reactivar/ })).toBeNull();
   });
 });
 
