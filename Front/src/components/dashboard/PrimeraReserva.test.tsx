@@ -1,10 +1,17 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { createElement, type ReactNode } from "react";
+import { render, screen, fireEvent, renderHook, waitFor } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import TarjetaPrimeraReserva from "./PrimeraReserva";
-import { leerMarca, siguienteMarca, sinNingunaCita, unicaCita } from "../../lib/primeraReserva";
+import { leerMarca, siguienteMarca, sinNingunaCita, unicaCita, usePrimeraReserva } from "../../lib/primeraReserva";
 import type { ResumenDashboard } from "../../types";
 
 const reducir = vi.hoisted(() => ({ valor: false }));
+const totalApi = vi.hoisted(() => ({ total: 0 }));
+vi.mock("../../api/citas", () => ({
+  citasApi: { obtenerTodas: vi.fn(async () => ({ total: totalApi.total })) },
+}));
+
 vi.mock("framer-motion", async (importOriginal) => {
   const mod = await importOriginal<typeof import("framer-motion")>();
   return { ...mod, useReducedMotion: () => reducir.valor };
@@ -65,6 +72,11 @@ describe("primera reserva — reglas", () => {
     expect(unicaCita(conUna, hoy)).toEqual({ cliente: "Sofía Ramírez", servicio: "Corte de dama" });
   });
 
+  it("total 1 con el panel aún vacío (otro reloj): sigue esperando, no se da por vista", () => {
+    expect(siguienteMarca("sin-reservas", datos(vacio, 1))).toBe("sin-reservas");
+    expect(siguienteMarca("sin-reservas", datos(conUna, 1))).toBe("celebrando");
+  });
+
   it("una vez vista no cambia; celebrando termina si llega otra reserva", () => {
     expect(siguienteMarca("vista", datos(conUna, 1))).toBe("vista");
     expect(siguienteMarca("celebrando", datos(conUna, 1))).toBe("celebrando");
@@ -80,6 +92,34 @@ describe("primera reserva — almacenamiento", () => {
     expect(leerMarca("n1")).toBe("celebrando");
     localStorage.setItem("primera-reserva-n1", "basura");
     expect(leerMarca("n1")).toBe("vista");
+  });
+});
+
+describe("primera reserva — hook con datos desfasados", () => {
+  afterEach(() => { localStorage.clear(); totalApi.total = 0; });
+
+  it("el total llega a 1 antes que el resumen: no guarda «vista», refresca el panel y luego celebra", async () => {
+    localStorage.setItem("primera-reserva-n1", "sin-reservas");
+    totalApi.total = 1;
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const invalidar = vi.spyOn(queryClient, "invalidateQueries");
+    const wrapper = ({ children }: { children: ReactNode }) => createElement(QueryClientProvider, { client: queryClient }, children);
+
+    const { result, rerender } = renderHook(
+      ({ resumen }: { resumen: ResumenDashboard }) =>
+        usePrimeraReserva("n1", { resumen, citasHoy: [], tendencia: sinTendencia }, true),
+      { wrapper, initialProps: { resumen: vacio } },
+    );
+
+    await waitFor(() => expect(invalidar).toHaveBeenCalledWith({ queryKey: ["dashboard-resumen"] }));
+    expect(invalidar).toHaveBeenCalledWith({ queryKey: ["citas-agenda-hoy"] });
+    expect(localStorage.getItem("primera-reserva-n1")).toBe("sin-reservas");
+    expect(result.current.celebracion).toBeNull();
+
+    rerender({ resumen: conUna });
+    await waitFor(() => expect(result.current.celebracion).toEqual({ cliente: "Sofía Ramírez", servicio: "Corte de dama" }));
+    expect(localStorage.getItem("primera-reserva-n1")).toBe("celebrando");
+    expect(result.current.recienDetectada).toBe(true);
   });
 });
 

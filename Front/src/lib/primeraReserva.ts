@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { citasApi } from "../api/citas";
 import type { CitaDto, PuntoDatos, ResumenDashboard } from "../types";
 
@@ -20,8 +20,13 @@ import type { CitaDto, PuntoDatos, ResumenDashboard } from "../types";
 //   1. Total histórico 0 y el panel sin ninguna cita: queda "sin-reservas".
 //   2. Estando así, cuando el total pasa a exactamente 1 y esa única cita está
 //      a la vista (próximas o de hoy), se celebra: "celebrando".
-//   3. Ante cualquier otra cosa (ya había citas, llegaron dos de golpe…) se
-//      marca "vista" y nunca se muestra. Mejor callar que celebrar en falso.
+//      El total, el resumen y las citas de hoy se refrescan con relojes
+//      distintos: si el total llega a 1 antes que los demás (aún vacíos), se
+//      sigue en "sin-reservas" y se invalidan resumen y citas de hoy para que
+//      se pongan al día; nunca se decide "vista" con datos atrasados.
+//   3. Ante cualquier otra cosa definitiva (ya había citas al entrar, el total
+//      llegó a 2 o más…) se marca "vista" y nunca se muestra. Mejor callar que
+//      celebrar en falso.
 //
 // Privacidad: en localStorage solo se guarda el estado. Quién reservó y qué
 // se deduce de los datos en cada render; nunca se persiste.
@@ -90,8 +95,9 @@ export function siguienteMarca(actual: MarcaPrimeraReserva | null, datos: DatosP
   if (actual === "vista") return actual;
   if (actual === null) return totalHistorico === 0 && sinNingunaCita(resumen, tendencia) ? "sin-reservas" : "vista";
   if (actual === "sin-reservas") {
-    if (totalHistorico === 0) return actual;
-    return totalHistorico === 1 && unicaCita(resumen, citasHoy) ? "celebrando" : "vista";
+    if (totalHistorico >= 2) return "vista";
+    // Total 1 sin la cita a la vista: el panel va atrasado, se espera.
+    return totalHistorico === 1 && unicaCita(resumen, citasHoy) ? "celebrando" : actual;
   }
   // actual === "celebrando": sigue mientras esa primera cita sea la única.
   return totalHistorico <= 1 && unicaCita(resumen, citasHoy) ? actual : "vista";
@@ -128,6 +134,15 @@ export function usePrimeraReserva(
     refetchInterval: guardada === "sin-reservas" ? 30_000 : false,
     staleTime: 0,
   });
+
+  // El total va por su cuenta: cuando cambia mientras se espera, el resumen y
+  // las citas de hoy se piden de nuevo para no quedarse atrás.
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    if (!negocioId || !totalHistorico || leerMarca(negocioId) !== "sin-reservas") return;
+    void queryClient.invalidateQueries({ queryKey: ["dashboard-resumen"] });
+    void queryClient.invalidateQueries({ queryKey: ["citas-agenda-hoy"] });
+  }, [negocioId, totalHistorico, queryClient]);
 
   const marca = useMemo(() => {
     if (!negocioId) return null;
