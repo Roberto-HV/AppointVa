@@ -297,7 +297,12 @@ export default function EmpleadosPage() {
   });
 
   const { mutate: guardarHorario, isPending: guardandoHorario } = useMutation({
-    mutationFn: () => empleadosApi.actualizarHorario(empleadoHorario!.id, horarioLocal),
+    // Lo que se guarda llega como variables desde el clic, no del closure:
+    // useMutation actualiza `mutationFn` en un efecto, y un clic justo tras el
+    // render que carga el horario usaría la versión anterior (`[]`) y
+    // borraría el horario del empleado.
+    mutationFn: ({ id, horarios }: { id: string; horarios: HorarioDiaDto[] }) =>
+      empleadosApi.actualizarHorario(id, horarios),
     onSuccess: () => { setModalHorario(false); setHorarioOriginal(null); toast("Horario guardado"); },
     onError: (err) => toast(mensajeError(err, "No se pudo guardar el horario. Intenta de nuevo."), "error"),
   });
@@ -617,7 +622,7 @@ export default function EmpleadosPage() {
           )}
 
           <button
-            onClick={() => guardarHorario()}
+            onClick={() => guardarHorario({ id: empleadoHorario!.id, horarios: horarioLocal })}
             disabled={!horarioCargado || guardandoHorario || horarioLocal.some((h) => !!errorDelDia(h))}
             className="w-full bg-slate-700 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-xl transition mt-2"
           >

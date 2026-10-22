@@ -73,7 +73,7 @@ function UserMenuContent({ usuario, perfil, iniciales, rolChip, rol, onProfile, 
   return (
     <div className="py-1">
       <div className="px-4 pt-3 pb-3 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center shrink-0 overflow-hidden">
+        <div className="w-10 h-10 rounded-full bg-slate-900 dark:bg-slate-600 dark:ring-1 dark:ring-white/25 flex items-center justify-center shrink-0 overflow-hidden">
           {usuario?.fotoUrl
             ? <img src={usuario.fotoUrl} alt="Avatar" className="w-full h-full object-cover" />
             : <span className="text-sm font-bold text-white">{iniciales}</span>
@@ -658,7 +658,7 @@ export default function DashboardLayout() {
               aria-controls="menu-usuario-movil"
               className="w-11 h-11 rounded-full flex items-center justify-center"
             >
-              <span className="w-8 h-8 rounded-full bg-slate-900 flex items-center justify-center overflow-hidden">
+              <span className="w-8 h-8 rounded-full bg-slate-900 dark:bg-slate-600 dark:ring-1 dark:ring-white/25 flex items-center justify-center overflow-hidden">
                 {usuario?.fotoUrl
                   ? <img src={usuario.fotoUrl} alt="" className="w-full h-full object-cover" />
                   : <span className="text-[10px] font-bold text-white">{iniciales}</span>
@@ -696,7 +696,7 @@ export default function DashboardLayout() {
                 aria-label="Menú de usuario"
                 aria-expanded={headerMenuOpen}
                 aria-controls="menu-usuario-escritorio"
-                className="w-9 h-9 rounded-full bg-slate-900 flex items-center justify-center overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="w-9 h-9 rounded-full bg-slate-900 dark:bg-slate-600 dark:ring-1 dark:ring-white/25 flex items-center justify-center overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:focus-visible:ring-2 dark:focus-visible:ring-ring"
               >
                 {usuario?.fotoUrl
                   ? <img src={usuario.fotoUrl} alt="" className="w-full h-full object-cover" />

@@ -33,12 +33,28 @@ interface PopoverAncladoProps {
   ancho: number;
   className?: string;
   ariaLabel: string;
+  /** Dónde montar el panel; ver `contenedorPortal`. */
+  contenedor: HTMLElement;
   children: React.ReactNode;
 }
 
 /**
- * Panel flotante en un portal a `document.body` con coordenadas `fixed`
- * calculadas y sujetas al viewport.
+ * Contenedor del portal: el diálogo modal que envuelve al trigger o, si no hay
+ * ninguno, `document.body`.
+ *
+ * Un Dialog de Radix bloquea el resto de la página: pone `pointer-events: none`
+ * en `body`, atrapa el foco dentro de su contenido y anula el scroll fuera de
+ * él. Un panel portado a `body` heredaba ese bloqueo y los clics lo
+ * atravesaban. Portado dentro del propio contenido del diálogo queda en su capa
+ * (clics, Tab y scroll de la lista de horas funcionan).
+ */
+function contenedorPortal(anchor: HTMLElement | null): HTMLElement {
+  return anchor?.closest<HTMLElement>('[role="dialog"], [role="alertdialog"]') ?? document.body;
+}
+
+/**
+ * Panel flotante en un portal con coordenadas `fixed` calculadas y sujetas al
+ * viewport.
  *
  * Un panel `absolute` dentro del contenedor del trigger se recortaba: las
  * páginas del dashboard tienen `overflow-x-hidden`, así que la parte del
@@ -46,7 +62,7 @@ interface PopoverAncladoProps {
  * de poder desplazarse. El portal saca el panel de ese contenedor y el clamp
  * garantiza que siempre quede completo en pantalla.
  */
-function PopoverAnclado({ anchorRef, onClose, ancho, className = "", ariaLabel, children }: PopoverAncladoProps) {
+function PopoverAnclado({ anchorRef, onClose, ancho, className = "", ariaLabel, contenedor, children }: PopoverAncladoProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<{ top: number; left: number; width: number } | null>(null);
 
@@ -68,12 +84,30 @@ function PopoverAnclado({ anchorRef, onClose, ancho, className = "", ariaLabel, 
       ? Math.max(MARGEN_VIEWPORT, Math.min(abajo, vh - alto - MARGEN_VIEWPORT))
       : arriba;
 
+    // Dentro de un diálogo el contenido lleva `transform` (centrado), que lo
+    // convierte en el bloque contenedor de los `fixed`: las coordenadas pasan a
+    // ser relativas a su caja de relleno, así que se descuenta su origen.
+    let origenX = 0, origenY = 0;
+    if (contenedor !== document.body) {
+      const cs = getComputedStyle(contenedor);
+      const creaBloque = (cs.transform && cs.transform !== "none")
+        || (cs.filter && cs.filter !== "none")
+        || (cs.perspective && cs.perspective !== "none");
+      if (creaBloque) {
+        const cr = contenedor.getBoundingClientRect();
+        origenX = cr.left + contenedor.clientLeft;
+        origenY = cr.top + contenedor.clientTop;
+      }
+    }
+    const finalTop = top - origenY;
+    const finalLeft = left - origenX;
+
     setPos((prev) =>
-      prev && prev.top === top && prev.left === left && prev.width === width
+      prev && prev.top === finalTop && prev.left === finalLeft && prev.width === width
         ? prev
-        : { top, left, width }
+        : { top: finalTop, left: finalLeft, width }
     );
-  }, [anchorRef, ancho]);
+  }, [anchorRef, ancho, contenedor]);
 
   // Sin deps: la primera pasada mide con alto 0 y la segunda ya con el panel
   // renderizado; converge porque `setPos` conserva el objeto si no cambió.
@@ -123,7 +157,7 @@ function PopoverAnclado({ anchorRef, onClose, ancho, className = "", ariaLabel, 
     >
       {children}
     </div>,
-    document.body
+    contenedor
   );
 }
 
@@ -141,6 +175,7 @@ interface DatePickerProps {
 
 export function DatePicker({ value, onChange, label, minDate, error, ariaLabel }: DatePickerProps) {
   const [open, setOpen] = useState(false);
+  const [contenedor, setContenedor] = useState<HTMLElement>(() => document.body);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
   const initMes = () => {
@@ -230,7 +265,7 @@ export function DatePicker({ value, onChange, label, minDate, error, ariaLabel }
       <button
         ref={triggerRef}
         type="button"
-        onClick={() => setOpen(o => !o)}
+        onClick={(e) => { setContenedor(contenedorPortal(e.currentTarget)); setOpen(o => !o); }}
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-label={`${nombreAccesible}${value ? `: ${displayFecha}` : ""}`}
@@ -249,6 +284,7 @@ export function DatePicker({ value, onChange, label, minDate, error, ariaLabel }
       {open && (
         <PopoverAnclado
           anchorRef={triggerRef}
+          contenedor={contenedor}
           onClose={() => setOpen(false)}
           ancho={352}
           ariaLabel={`Calendario — ${nombreAccesible}`}
@@ -368,6 +404,7 @@ interface TimePickerProps {
 
 export function TimePicker({ value, onChange, label, minTime, maxTime, busySlots = [], error, compact, ariaLabel }: TimePickerProps) {
   const [open, setOpen] = useState(false);
+  const [contenedor, setContenedor] = useState<HTMLElement>(() => document.body);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
   const nombreAccesible = ariaLabel ?? label ?? "Hora";
@@ -382,7 +419,7 @@ export function TimePicker({ value, onChange, label, minTime, maxTime, busySlots
       <button
         ref={triggerRef}
         type="button"
-        onClick={() => setOpen(o => !o)}
+        onClick={(e) => { setContenedor(contenedorPortal(e.currentTarget)); setOpen(o => !o); }}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label={`${nombreAccesible}${value ? `: ${displayHora(value)}` : ""}`}
@@ -408,6 +445,7 @@ export function TimePicker({ value, onChange, label, minTime, maxTime, busySlots
       {open && (
         <PopoverAnclado
           anchorRef={triggerRef}
+          contenedor={contenedor}
           onClose={() => setOpen(false)}
           ancho={180}
           ariaLabel={`Horas — ${nombreAccesible}`}

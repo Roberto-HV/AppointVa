@@ -14,6 +14,20 @@ describe("mensajeError", () => {
   });
 });
 
+describe("mensajeError con ProblemDetails de validación", () => {
+  const problema = (errors: Record<string, string[]>) => ({ response: { status: 400, data: { title: "One or more validation errors occurred.", errors } } });
+
+  it("traduce el campo obligatorio que rechazó el modelo", () => {
+    expect(mensajeError(problema({ TelefonoCliente: ["The TelefonoCliente field is required."] }), "Falló"))
+      .toBe("Falta el teléfono.");
+  });
+
+  it("conserva un mensaje propio en español y descarta uno en inglés desconocido", () => {
+    expect(mensajeError(problema({ Notas: ["La nota es demasiado larga"] }), "Falló")).toBe("La nota es demasiado larga");
+    expect(mensajeError(problema({ Algo: ["The value 'x' is not valid."] }), "Falló")).toBe("Falló");
+  });
+});
+
 describe("esErrorTemporal", () => {
   it("sin respuesta, 5xx, 408 y 429 son temporales", () => {
     expect(esErrorTemporal(new Error("Network Error"))).toBe(true);

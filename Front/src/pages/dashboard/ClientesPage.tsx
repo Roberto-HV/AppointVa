@@ -139,7 +139,10 @@ export default function ClientesPage() {
   });
 
   const { mutate: guardarNotas, isPending: guardandoNotas } = useMutation({
-    mutationFn: () => clientesApi.actualizarNotas(clienteSel!.id, notas || null),
+    // Las notas llegan como variables desde el clic: useMutation actualiza
+    // `mutationFn` en un efecto y un closure podría enviar un valor anterior.
+    mutationFn: ({ id, notas }: { id: string; notas: string }) =>
+      clientesApi.actualizarNotas(id, notas || null),
     onSuccess: (actualizado) => {
       qc.invalidateQueries({ queryKey: ["clientes"] });
       setClienteSel(actualizado);
@@ -565,7 +568,7 @@ export default function ClientesPage() {
               />
               <div className="flex items-center gap-3 mt-2">
                 <button
-                  onClick={() => guardarNotas()}
+                  onClick={() => guardarNotas({ id: clienteSel.id, notas })}
                   disabled={guardandoNotas || notas === (clienteSel.notas ?? "")}
                   className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-white text-xs font-medium rounded-lg transition"
                 >

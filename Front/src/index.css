@@ -344,3 +344,17 @@ button:not([disabled]):active {
     font-size: 16px !important;
   }
 }
+
+/* Línea de tiempo de Inicio (LineaTiempoHoy): cada bloque mide un % del día,
+   así que su etiqueta depende del ancho real. Angosto → hora de inicio en vez
+   de un nombre truncado a "Cort…"; diminuto → sin texto (el color y la lista
+   para lectores de pantalla siguen ahí). */
+.bloque-linea { container-type: inline-size; }
+.bloque-linea__corto { display: none; }
+@container (max-width: 72px) {
+  .bloque-linea__nombre { display: none; }
+  .bloque-linea__corto { display: block; }
+}
+@container (max-width: 26px) {
+  .bloque-linea__corto { display: none; }
+}

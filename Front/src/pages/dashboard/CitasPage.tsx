@@ -38,12 +38,28 @@ import { TAMANO_PAGINA } from "../../hooks/usePaginacionLocal";
 import { leerParamsCitas } from "../../lib/paramsCitas";
 import { mensajeError } from "../../utils/errores";
 import { isAxiosError } from "axios";
+import { z } from "zod";
 import { usePermisos } from "../../hooks/usePermisos";
 import { confirmarEnLote, resumenLote } from "../../lib/confirmarEnLote";
 
 
 type VistaCitas = "lista" | "calendario" | "gantt";
 const ESTADOS_FILTRO = ["Pendiente", "Confirmada", "Completada", "Cancelada", "Inasistencia"];
+
+/**
+ * `POST /citas` exige `TelefonoCliente` (`[Required]`, máx. 20): el teléfono
+ * identifica al cliente del negocio, así que no puede ir vacío.
+ */
+const esquemaTelefonoCliente = z.string()
+  .trim()
+  .min(1, "Ingresa el teléfono del cliente")
+  .max(20, "Máximo 20 caracteres")
+  .regex(/^\+?[\d\s\-().]+$/, "Solo dígitos, +, - o espacios");
+
+function validarTelefonoCliente(v: string): string {
+  const r = esquemaTelefonoCliente.safeParse(v);
+  return r.success ? "" : r.error.issues[0]?.message ?? "Teléfono no válido";
+}
 
 export default function CitasPage() {
   const qc = useQueryClient();
@@ -134,6 +150,8 @@ export default function CitasPage() {
 
   // Issue 12 — drag-to-reschedule confirmation
   const [confirmDrag, setConfirmDrag] = useState<{id: string; nombre: string; nuevoInicio: string; label: string} | null>(null);
+
+  const [telefonoClienteError, setTelefonoClienteError] = useState("");
 
   const validarEmailCliente = (v: string) =>
     v.trim() && !EMAIL_RE.test(v.trim()) ? "Correo no válido (ej: nombre@dominio.com)" : "";
@@ -237,6 +255,7 @@ export default function CitasPage() {
       setSvcSel(""); setEmpSel(""); setFechaNueva(""); setSlotNuevo("");
       setFCliente({ nombre: "", telefono: "", email: "", notas: "" });
       setEmailClienteError("");
+      setTelefonoClienteError("");
       toast(`${terms.cita} creada`);
     },
     onError: (err: unknown) => {
@@ -276,6 +295,7 @@ export default function CitasPage() {
     setSvcSel(""); setEmpSel(""); setFechaNueva(""); setSlotNuevo("");
     setFCliente({ nombre: "", telefono: "", email: "", notas: "" });
     setEmailClienteError("");
+    setTelefonoClienteError("");
   };
 
   const abrirRepetirCita = (c: CitaDto) => {
@@ -1098,16 +1118,31 @@ export default function CitasPage() {
 
             <div>
               <label htmlFor="nueva-telefono" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Teléfono <span className="text-muted-foreground font-normal">(opcional)</span>
+                Teléfono <span className="text-red-700 dark:text-red-400" aria-hidden="true">*</span>
               </label>
               <input
                 id="nueva-telefono"
                 type="tel"
+                required
+                aria-required="true"
+                aria-invalid={!!telefonoClienteError || undefined}
+                aria-describedby={telefonoClienteError ? "nueva-telefono-error" : undefined}
                 value={fCliente.telefono}
-                onChange={(e) => setFCliente((p) => ({ ...p, telefono: e.target.value }))}
+                onChange={(e) => {
+                  setFCliente((p) => ({ ...p, telefono: e.target.value }));
+                  if (telefonoClienteError) setTelefonoClienteError(validarTelefonoCliente(e.target.value));
+                }}
+                onBlur={() => { if (fCliente.telefono) setTelefonoClienteError(validarTelefonoCliente(fCliente.telefono)); }}
                 placeholder="10 dígitos"
-                className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm outline-none focus:border-accent-brand"
+                className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-accent-brand dark:bg-slate-800 dark:text-slate-100 ${
+                  telefonoClienteError ? "border-red-400 bg-red-50 dark:bg-red-900/20" : "border-slate-200 dark:border-slate-600"
+                }`}
               />
+              {telefonoClienteError && (
+                <p id="nueva-telefono-error" className="text-red-700 dark:text-red-400 text-xs mt-1 flex items-center gap-1">
+                  <AlertTriangle size={12} aria-hidden="true" /> {telefonoClienteError}
+                </p>
+              )}
             </div>
 
             <div>
@@ -1160,9 +1195,12 @@ export default function CitasPage() {
               </button>
               <button
                 onClick={() => {
+                  const errTel = validarTelefonoCliente(fCliente.telefono);
                   const err = validarEmailCliente(fCliente.email);
+                  setTelefonoClienteError(errTel);
                   setEmailClienteError(err);
-                  if (!err) crearCita();
+                  if (errTel) document.getElementById("nueva-telefono")?.focus();
+                  if (!err && !errTel) crearCita();
                 }}
                 disabled={!fCliente.nombre.trim() || creando || !!emailClienteError}
                 className="flex-1 bg-slate-700 hover:bg-slate-800 disabled:opacity-40 text-white font-semibold py-2.5 rounded-xl text-sm transition"

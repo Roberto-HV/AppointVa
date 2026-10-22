@@ -22,6 +22,11 @@ function etiquetaEje(t: number): string {
   return String(h === 0 ? 12 : h);
 }
 
+/** Hora de inicio sin a. m./p. m. ("4:30"): la etiqueta de un bloque angosto. */
+function horaCorta(d: Date): string {
+  return formatHoraDe(d).replace(/\s*[ap]\.\s?m\.?$/i, "");
+}
+
 /**
  * Tira horizontal del día con la hora actual como aguja. Las citas que se
  * traslapan van en sub-carriles (hasta 3; más allá, un "+N"). Cada cita es un
@@ -69,7 +74,7 @@ export default function LineaTiempoHoy({ citas, ahora }: Props) {
                 key={c.id}
                 data-testid="bloque-linea"
                 data-carril={carril}
-                className={`absolute rounded-md overflow-hidden ring-1 ring-card ${estilo.bloque} ${pasada ? "opacity-60" : ""}`}
+                className={`bloque-linea absolute rounded-md overflow-hidden ring-1 ring-card ${estilo.bloque} ${pasada ? "opacity-60" : ""}`}
                 style={{
                   left: `${izquierda}%`,
                   width: `${ancho}%`,
@@ -77,8 +82,14 @@ export default function LineaTiempoHoy({ citas, ahora }: Props) {
                   height: ALTO_CARRIL,
                 }}
               >
-                <span aria-hidden="true" className="block truncate px-1.5 text-[11px] font-medium leading-7">
+                {/* El ancho es un % del día: a 375px una cita de 45 min mide ~40px y
+                    el nombre quedaba en "Cort…". Una container query (index.css)
+                    cambia a la hora de inicio cuando el bloque es angosto. */}
+                <span aria-hidden="true" className="bloque-linea__nombre block truncate px-1.5 text-[11px] font-medium leading-7">
                   {c.nombreServicio}
+                </span>
+                <span aria-hidden="true" className="bloque-linea__corto truncate text-center text-[11px] font-medium leading-7 tabular-nums">
+                  {horaCorta(inicio)}
                 </span>
                 <span className="sr-only">{textoLector}</span>
               </li>

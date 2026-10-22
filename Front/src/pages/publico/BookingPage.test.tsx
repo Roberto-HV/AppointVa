@@ -321,14 +321,19 @@ describe("BookingPage — barra de acción", () => {
     expect(container.querySelector('[data-testid="paso-servicio"]')?.contains(continuar)).toBe(false);
   });
 
-  it("en el paso 1 el botón resume la elección: «servicio · duración · precio — Continuar»", async () => {
+  it("en el paso 1 el botón resume la elección: el servicio en su línea y «duración · precio» debajo", async () => {
     vi.mocked(publicoApi.obtenerNegocio).mockResolvedValue(mockNegocio);
     renderConQuery();
 
     fireEvent.click(await screen.findByRole("button", { name: "Corte de cabello" }));
     const continuar = screen.getByRole("button", { name: "Continuar" });
     expect(continuar).toHaveAccessibleDescription(/^Corte de cabello\s·\s\d+ min · \$/);
-    expect(continuar).toHaveTextContent(/Corte de cabello\s·\s\d+ min · \$.+— Continuar$/);
+    // El nombre del servicio va en su propia línea (no comparte renglón con la
+    // duración y el precio) para que a 375px no se trunque.
+    const nombre = within(continuar).getByText("Corte de cabello");
+    expect(nombre).not.toHaveTextContent(/min/);
+    expect(within(continuar).getByText(/^\d+ min · \$/)).toBeInTheDocument();
+    expect(continuar).toHaveTextContent(/Continuar$/);
   });
 
   it("wires the last step's primary button to the form inside PasoDatosCliente", async () => {

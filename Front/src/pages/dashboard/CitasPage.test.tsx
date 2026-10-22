@@ -131,6 +131,9 @@ vi.mock("../../components/ui/Select", () => ({
 }));
 
 import { citasApi } from "../../api/citas";
+import { empleadosApi } from "../../api/empleados";
+import { serviciosApi } from "../../api/servicios";
+import { api } from "../../api/axios";
 
 const makeCita = (overrides = {}) => ({
   id: "cita-1",
@@ -937,5 +940,57 @@ describe("CitasPage — Confirmar seleccionadas (DC-30, decisión 14)", () => {
     act(() => responder());
     await waitFor(() => expect(useToastStore.getState().toasts.at(-1)?.mensaje).toBe("1 confirmada"));
     expect(citasApi.cambiarEstado).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("CitasPage — nueva cita: teléfono obligatorio", () => {
+  // POST /citas rechaza el alta sin TelefonoCliente ([Required] en CrearCitaDto).
+  async function llegarADatosDelCliente() {
+    vi.mocked(citasApi.obtenerTodas).mockResolvedValue({ datos: [], total: 0, pagina: 1, tamano: 15 });
+    vi.mocked(serviciosApi.obtenerTodos).mockResolvedValue([
+      { id: "svc-1", nombre: "Corte", activo: true, duracionMinutos: 45, precio: 280 },
+    ] as never);
+    vi.mocked(empleadosApi.obtenerTodos).mockResolvedValue([
+      { id: "emp-1", nombre: "Ana", activo: true, servicioIds: ["svc-1"] },
+    ] as never);
+    vi.mocked(api.get).mockImplementation(async (url: string) =>
+      url === "/publico/disponibilidad"
+        ? { data: [{ inicio: "2030-01-10T10:00:00", horaTexto: "10:00" }] }
+        : { data: [] }
+    );
+    renderConQuery();
+    fireEvent.click(await screen.findByRole("button", { name: "+ Nueva cita" }));
+    const modal = await screen.findByRole("dialog", { name: "Nueva cita" });
+    fireEvent.click(await within(modal).findByRole("button", { name: /Corte/ }));
+    fireEvent.click(within(modal).getByRole("button", { name: "Ana" }));
+    fireEvent.change(modal.querySelector('input[type="date"]')!, { target: { value: "2030-01-10" } });
+    fireEvent.click(await within(modal).findByRole("button", { name: "10:00" }));
+    fireEvent.click(within(modal).getByRole("button", { name: "Continuar" }));
+    return modal;
+  }
+
+  it("marca el teléfono como obligatorio y no envía sin él", async () => {
+    const modal = await llegarADatosDelCliente();
+    const telefono = within(modal).getByLabelText(/Teléfono/);
+    expect(telefono).toBeRequired();
+    expect(modal.querySelector('label[for="nueva-telefono"]')).not.toHaveTextContent(/opcional/i);
+
+    fireEvent.change(within(modal).getByLabelText(/Nombre del cliente/), { target: { value: "Luis" } });
+    fireEvent.click(within(modal).getByRole("button", { name: "Crear cita" }));
+
+    expect(await within(modal).findByText("Ingresa el teléfono del cliente")).toBeInTheDocument();
+    expect(telefono).toHaveAttribute("aria-invalid", "true");
+    expect(citasApi.crear).not.toHaveBeenCalled();
+  });
+
+  it("con teléfono válido envía la cita", async () => {
+    vi.mocked(citasApi.crear).mockResolvedValue({} as never);
+    const modal = await llegarADatosDelCliente();
+    fireEvent.change(within(modal).getByLabelText(/Nombre del cliente/), { target: { value: "Luis" } });
+    fireEvent.change(within(modal).getByLabelText(/Teléfono/), { target: { value: "55 1122 3344" } });
+    fireEvent.click(within(modal).getByRole("button", { name: "Crear cita" }));
+    await waitFor(() => expect(citasApi.crear).toHaveBeenCalledWith(
+      expect.objectContaining({ telefonoCliente: "55 1122 3344" })
+    ));
   });
 });

@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { DatePicker, TimePicker } from "./DateTimePicker";
+import Modal from "./Modal";
 
 /** Emula un móvil de 390px de ancho. */
 function anchoViewport(px: number) {
@@ -146,5 +147,40 @@ describe("TimePicker", () => {
     await user.click(screen.getByRole("button", { name: "Inicio" }));
     await user.keyboard("{Escape}");
     expect(screen.queryByRole("listbox", { name: "Inicio" })).not.toBeInTheDocument();
+  });
+});
+
+describe("dentro de un Dialog modal", () => {
+  // Radix pone `pointer-events: none` en body; user-event se niega a hacer clic
+  // en elementos que lo heredan, así que estos tests reproducen el bug real.
+  it("el calendario se monta dentro del diálogo y un clic en un día lo selecciona", async () => {
+    const onChange = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <Modal abierto onCerrar={vi.fn()} titulo="Nueva cita">
+        <DatePicker value="2026-03-10" onChange={onChange} ariaLabel="Fecha de la cita" />
+      </Modal>
+    );
+    await user.click(screen.getByRole("button", { name: /Fecha de la cita/ }));
+    const modal = screen.getByRole("dialog", { name: "Nueva cita" });
+    const calendario = screen.getByRole("dialog", { name: /calendario/i });
+    expect(modal).toContainElement(calendario);
+
+    await user.click(screen.getByRole("button", { name: "18" }));
+    expect(onChange).toHaveBeenCalledWith("2026-03-18");
+    expect(screen.getByRole("dialog", { name: "Nueva cita" })).toBeInTheDocument();
+  });
+
+  it("un clic en una hora del TimePicker la selecciona", async () => {
+    const onChange = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <Modal abierto onCerrar={vi.fn()} titulo="Bloquear horario">
+        <TimePicker value="" onChange={onChange} ariaLabel="Inicio" />
+      </Modal>
+    );
+    await user.click(screen.getByRole("button", { name: "Inicio" }));
+    await user.click(screen.getByRole("option", { name: "9:30 a.m." }));
+    expect(onChange).toHaveBeenCalledWith("09:30");
   });
 });

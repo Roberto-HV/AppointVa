@@ -100,4 +100,13 @@ describe("LineaTiempoHoy", () => {
     expect(a).toHaveStyle({ left: "0%", width: "25%" });
     expect(b).toHaveStyle({ left: "50%" });
   });
+
+  it("cada bloque trae una etiqueta corta (hora de inicio) para cuando es angosto", () => {
+    render(<LineaTiempoHoy citas={[cita("a", 9, 30, 45)]} ahora={dia(10)} />);
+    const [bloque] = screen.getAllByTestId("bloque-linea");
+    expect(bloque).toHaveClass("bloque-linea");
+    expect(bloque.querySelector(".bloque-linea__corto")).toHaveTextContent(/^9:30$/);
+    expect(bloque.querySelector(".bloque-linea__nombre")).toHaveAttribute("aria-hidden", "true");
+    expect(bloque.querySelector(".bloque-linea__corto")).toHaveAttribute("aria-hidden", "true");
+  });
 });

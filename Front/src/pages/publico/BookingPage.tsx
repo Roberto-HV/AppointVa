@@ -1164,29 +1164,33 @@ export default function BookingPage() {
     if (paso === 1) {
       return (
         <>
-          {/* Resumen corrido dentro del botón: "Corte de dama · 45 min · $280 — Continuar".
+          {/* Resumen en dos líneas a la izquierda: el nombre del servicio tiene su
+              propia línea (hasta dos renglones) y "45 min · $280" va debajo; a 375px
+              una sola línea corrida truncaba hasta los nombres cortos.
               El nombre accesible sigue siendo "Continuar"; el resumen va como descripción. */}
           <button
             onClick={irSiguiente}
             disabled={!servicio}
             aria-label={servicio ? "Continuar" : undefined}
             aria-describedby={servicio ? "resumen-servicio-elegido" : undefined}
-            className={`${BTN_PRIMARIO} w-full ${servicio ? "!justify-between gap-3 px-4" : ""}`}
+            className={`${BTN_PRIMARIO} w-full ${servicio ? "!justify-between gap-3 px-4 py-2" : ""}`}
             style={{ background: colorCta }}
           >
             {servicio ? (
               <>
-                {/* Si no cabe, se recorta el nombre; duración y precio siempre se leen. */}
-                <span aria-hidden="true" className="min-w-0 flex text-left font-medium tabular-nums opacity-90">
-                  <span className="truncate">{servicio.nombre}</span>
-                  <span className="shrink-0 whitespace-pre">{` · ${servicio.duracionMinutos} min · ${formatPrecio(servicio.precio)}`}</span>
+                <span aria-hidden="true" className="min-w-0 flex flex-col text-left leading-tight">
+                  <span className="font-semibold tracking-normal line-clamp-2 break-words">{servicio.nombre}</span>
+                  <span className="text-xs font-medium tracking-normal tabular-nums opacity-90">
+                    {`${servicio.duracionMinutos} min · ${formatPrecio(servicio.precio)}`}
+                  </span>
                 </span>
                 {/* La descripción va en una sola pieza de texto: partida, el cálculo accesible pierde los espacios. */}
                 <span id="resumen-servicio-elegido" className="sr-only">
                   {`${servicio.nombre} · ${servicio.duracionMinutos} min · ${formatPrecio(servicio.precio)}`}
                 </span>
-                <span className="shrink-0">
-                  <span aria-hidden="true">— </span>Continuar
+                <span className="shrink-0 inline-flex items-center gap-1">
+                  Continuar
+                  <ChevronRight size={16} aria-hidden="true" />
                 </span>
               </>
             ) : (

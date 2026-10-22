@@ -554,3 +554,34 @@ describe("ClientesPage — detalle desde el teléfono y la fila (OM-10)", () => 
     expect(await screen.findByRole("dialog", { name: "Juan Pérez" })).toBeInTheDocument();
   });
 });
+
+describe("ClientesPage — notas internas", () => {
+  it("guarda las notas que hay en el campo para el cliente abierto", async () => {
+    const cliente = makeCliente({ notas: "Alergia al tinte" });
+    vi.mocked(clientesApi.obtenerTodos).mockResolvedValue(paginaCon([cliente]));
+    vi.mocked(clientesApi.actualizarNotas).mockResolvedValue({ ...cliente, notas: "Prefiere la mañana" } as never);
+    renderConQuery();
+    fireEvent.click(await screen.findByRole("button", { name: "Ver detalle de Juan Pérez" }));
+
+    const campo = await screen.findByPlaceholderText("Preferencias, alergias, observaciones...");
+    expect(campo).toHaveValue("Alergia al tinte");
+    fireEvent.change(campo, { target: { value: "Prefiere la mañana" } });
+    fireEvent.click(screen.getByRole("button", { name: "Guardar notas" }));
+
+    await waitFor(() => expect(clientesApi.actualizarNotas).toHaveBeenCalledTimes(1));
+    expect(clientesApi.actualizarNotas).toHaveBeenCalledWith("cli-1", "Prefiere la mañana");
+    expect(await screen.findByRole("status")).toHaveTextContent("Guardado");
+  });
+
+  it("vaciar las notas las guarda como null", async () => {
+    const cliente = makeCliente({ notas: "Alergia al tinte" });
+    vi.mocked(clientesApi.obtenerTodos).mockResolvedValue(paginaCon([cliente]));
+    vi.mocked(clientesApi.actualizarNotas).mockResolvedValue({ ...cliente, notas: null } as never);
+    renderConQuery();
+    fireEvent.click(await screen.findByRole("button", { name: "Ver detalle de Juan Pérez" }));
+
+    fireEvent.change(await screen.findByPlaceholderText("Preferencias, alergias, observaciones..."), { target: { value: "" } });
+    fireEvent.click(screen.getByRole("button", { name: "Guardar notas" }));
+    await waitFor(() => expect(clientesApi.actualizarNotas).toHaveBeenCalledWith("cli-1", null));
+  });
+});
