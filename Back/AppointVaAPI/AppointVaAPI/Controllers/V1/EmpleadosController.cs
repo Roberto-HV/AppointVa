@@ -23,19 +23,22 @@ namespace AppointVaAPI.Controllers.V1
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IBlobStorageService _storage;
         private readonly ApplicationDbContext _db;
+        private readonly IJwtService _jwtService;
 
         public EmpleadosController(
             IEmpleadoRepository repo,
             IContextoNegocio contexto,
             UserManager<ApplicationUser> userManager,
             IBlobStorageService storage,
-            ApplicationDbContext db)
+            ApplicationDbContext db,
+            IJwtService jwtService)
         {
             _repo = repo;
             _contexto = contexto;
             _userManager = userManager;
             _storage = storage;
             _db = db;
+            _jwtService = jwtService;
         }
 
         // GET api/empleados
@@ -188,10 +191,29 @@ namespace AppointVaAPI.Controllers.V1
                 empleado.Activo = 0;
                 empleado.FechaActualizacion = DateTime.UtcNow;
                 await _repo.ActualizarAsync(empleado);
+
+                await CerrarSesionesDelEmpleadoAsync(empleado);
             }
 
             var servicioIds = await _repo.ObtenerServicioIdsAsync(empleado.Id);
             return Ok(MapearDto(empleado, servicioIds));
+        }
+
+        /// <summary>
+        /// Login, refresh and 2FA reject a user whose access depends on an inactive employee
+        /// (AccesoEmpleadoHelper). This ends what is already open: refresh tokens are revoked
+        /// and the security stamp rotated, which ends kiosk sessions. Regular access tokens
+        /// are not stamp-checked, so one already issued lives until it expires (Jwt:ExpiracionMinutos).
+        /// An owner linked to their own employee profile keeps their sessions.
+        /// </summary>
+        private async Task CerrarSesionesDelEmpleadoAsync(Empleado empleado)
+        {
+            if (empleado.UsuarioId is null) return;
+            var usuario = await _userManager.FindByIdAsync(empleado.UsuarioId.Value.ToString());
+            if (usuario is null || !await AccesoEmpleadoHelper.DependeDelEmpleadoAsync(_userManager, usuario)) return;
+
+            await _jwtService.RevocarTodosRefreshTokensAsync(usuario.Id);
+            await _userManager.UpdateSecurityStampAsync(usuario);
         }
 
         // PATCH api/empleados/{id}/reactivar

@@ -1,4 +1,5 @@
 using AppointVaAPI.Data;
+using AppointVaAPI.Helpers;
 using AppointVaAPI.Models;
 using AppointVaAPI.Models.Dtos.Autenticacion;
 using AppointVaAPI.Services.IServices;
@@ -53,6 +54,13 @@ namespace AppointVaAPI.Controllers.V1
             var usuario = await _userManager.FindByEmailAsync(dto.Email);
             if (usuario is null || !usuario.Activo)
                 return Unauthorized(new { mensaje = "Credenciales inválidas" });
+
+            // A deactivated employee answers exactly like invalid credentials (no enumeration).
+            if (await AccesoEmpleadoHelper.AccesoBloqueadoAsync(_db, _userManager, usuario))
+            {
+                await _audit.RegistrarAsync("LoginFallido", detalles: "Empleado inactivo", usuarioId: usuario.Id);
+                return Unauthorized(new { mensaje = "Credenciales inválidas" });
+            }
 
             // S5 (account enumeration): only existing accounts can be locked out, so a
             // distinct status here would confirm the email exists. Answer exactly like
@@ -121,7 +129,7 @@ namespace AppointVaAPI.Controllers.V1
                 return Unauthorized(new { mensaje = "Refresh token inválido o expirado" });
 
             var usuario = refreshToken.Usuario!;
-            if (!usuario.Activo)
+            if (!usuario.Activo || await AccesoEmpleadoHelper.AccesoBloqueadoAsync(_db, _userManager, usuario))
                 return Unauthorized(new { mensaje = "Cuenta inactiva" });
 
             // Marcar el token anterior como usado antes de generar el nuevo (reduce ventana de race)
@@ -445,7 +453,8 @@ namespace AppointVaAPI.Controllers.V1
                 return Unauthorized(new { mensaje = "Token de verificación inválido o expirado. Inicia sesión de nuevo." });
 
             var usuario = await _userManager.FindByIdAsync(usuarioId.Value.ToString());
-            if (usuario is null || !usuario.Activo)
+            if (usuario is null || !usuario.Activo
+                || await AccesoEmpleadoHelper.AccesoBloqueadoAsync(_db, _userManager, usuario))
                 return Unauthorized(new { mensaje = "Usuario no encontrado." });
 
             var codigoLimpio = dto.Codigo.Replace(" ", "").Replace("-", "");

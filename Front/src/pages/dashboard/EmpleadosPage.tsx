@@ -811,7 +811,7 @@ export default function EmpleadosPage() {
         )}
         alternativa={empleadoEliminar?.activo ? {
           etiqueta: "Desactivar",
-          descripcion: `Si solo quieres que deje de recibir ${terms.citas.toLowerCase()}, desactívalo: no aparecerá en tu página de reservas ni en recepción, y puedes reactivarlo cuando quieras.`,
+          descripcion: `Si solo quieres que deje de recibir ${terms.citas.toLowerCase()}, desactívalo: no aparecerá en tu página de reservas ni en recepción y, si tiene cuenta, perderá el acceso al panel. Puedes reactivarlo cuando quieras.`,
           pendiente: desactivar.isPending,
           onSelect: () => desactivar.mutate(empleadoEliminar.id),
         } : undefined}

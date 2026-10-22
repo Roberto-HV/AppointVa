@@ -64,6 +64,8 @@ namespace AppointVaAPI.Controllers.V1
         {
             var usuario = await _userManager.FindByIdAsync(User.FindFirst(ClaimsTipos.UsuarioId)?.Value ?? string.Empty);
             if (usuario is null || !usuario.Activo || usuario.NegocioId is null) return Unauthorized();
+            // A still-valid access token of a just-deactivated employee cannot open a kiosk.
+            if (await AccesoEmpleadoHelper.AccesoBloqueadoAsync(_db, _userManager, usuario)) return Unauthorized();
 
             // The role comes from the database, not from the (up to an hour old) access token.
             var rol = (await _userManager.GetRolesAsync(usuario))

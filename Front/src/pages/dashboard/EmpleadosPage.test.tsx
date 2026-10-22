@@ -326,7 +326,8 @@ describe("EmpleadosPage — desactivar y reactivar (B13)", () => {
     vi.mocked(empleadosApi.desactivar).mockResolvedValue({ ...mockEmpleado, activo: false });
     renderConQuery();
     fireEvent.click(await screen.findByRole("button", { name: "Eliminar" }));
-    await screen.findByRole("dialog", { name: "No se puede eliminar todavía" });
+    const dialogo = await screen.findByRole("dialog", { name: "No se puede eliminar todavía" });
+    expect(dialogo).toHaveTextContent("perderá el acceso al panel");
     fireEvent.click(screen.getByRole("button", { name: "Desactivar" }));
     await waitFor(() => expect(empleadosApi.desactivar).toHaveBeenCalledWith("emp-1"));
     expect(empleadosApi.eliminar).not.toHaveBeenCalled();
