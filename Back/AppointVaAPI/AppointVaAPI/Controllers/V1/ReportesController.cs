@@ -115,6 +115,7 @@ namespace AppointVaAPI.Controllers.V1
 
         // GET api/reportes/citas/exportar — descarga CSV
         [HttpGet("citas/exportar")]
+        [Authorize(Policy = Politicas.GestionCompleta)] // B10: exports are never available to Empleado
         public async Task<IActionResult> ExportarCitasCsv(
             [FromQuery] DateTime? desde,
             [FromQuery] DateTime? hasta,

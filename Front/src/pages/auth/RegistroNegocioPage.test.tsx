@@ -184,6 +184,13 @@ describe("RegistroNegocioPage — pantalla de éxito (AP-02, AP-03)", () => {
     expect(screen.getByRole("link", { name: "hola@appointva.com" })).toHaveAttribute("href", "mailto:hola@appointva.com");
   });
 
+  it("cubre el correo que ya tenía cuenta sin revelarlo (S5)", async () => {
+    await registrar();
+    expect(screen.getByText(/Si este correo ya tenía una cuenta, no se crea otra/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "inicia sesión" })).toHaveAttribute("href", "/login");
+    expect(screen.getByRole("link", { name: "recupera tu contraseña" })).toHaveAttribute("href", "/recuperar-contrasena");
+  });
+
   it("muestra el error del reenvío en la propia pantalla", async () => {
     const user = await registrar();
     vi.mocked(reenviarVerificacion).mockRejectedValue(new Error("red"));

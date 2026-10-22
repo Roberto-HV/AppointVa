@@ -16,7 +16,7 @@ public class CitasAnticipoTests : IClassFixture<CustomWebApplicationFactory>
         _factory = factory;
     }
 
-    private async Task<(Guid negocioId, Guid citaId)> SeedCitaConAnticipoAsync()
+    private async Task<(Guid negocioId, Guid citaId)> SeedCitaConAnticipoAsync(Guid? usuarioEmpleadoId = null)
     {
         var negocioId = Guid.NewGuid();
         var citaId = Guid.NewGuid();
@@ -32,7 +32,7 @@ public class CitasAnticipoTests : IClassFixture<CustomWebApplicationFactory>
 
         db.Empleados.Add(new AppointVaAPI.Models.Empleado
         {
-            Id = empleadoId, NegocioId = negocioId, Nombre = "Test Empleado",
+            Id = empleadoId, NegocioId = negocioId, Nombre = "Test Empleado", UsuarioId = usuarioEmpleadoId,
             Email = "emp@test.com", FechaCreacion = DateTime.UtcNow, FechaActualizacion = DateTime.UtcNow
         });
         db.Clientes.Add(new AppointVaAPI.Models.Cliente
@@ -104,8 +104,11 @@ public class CitasAnticipoTests : IClassFixture<CustomWebApplicationFactory>
     public async Task MarcarAnticipo_ComoEmpleado_Devuelve200()
     {
         // Arrange
-        var (negocioId, citaId) = await SeedCitaConAnticipoAsync();
-        var client = _factory.CreateAuthenticatedClient(TestTokenHelper.Empleado(negocioId));
+        // The employee must be linked to the token's user: they may only touch their own citas.
+        var usuarioId = Guid.NewGuid();
+        var (negocioId, citaId) = await SeedCitaConAnticipoAsync(usuarioId);
+        var client = _factory.CreateAuthenticatedClient(
+            TestTokenHelper.GenerarToken("Empleado", negocioId, usuarioId));
 
         // Act
         var response = await client.PatchAsJsonAsync(

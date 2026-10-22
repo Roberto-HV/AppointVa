@@ -1,0 +1,19 @@
+namespace AppointVaAPI.Constants
+{
+    /// <summary>
+    /// Named authorization policies.
+    /// </summary>
+    public static class Politicas
+    {
+        /// <summary>
+        /// Full business management (decision 2, DC-14): everything the restricted
+        /// Empleado role may not do — exports, cash closing, payment reversal,
+        /// deposit annulment and global client edits. Mirrors the frontend matrix
+        /// in Front/src/hooks/usePermisos.ts.
+        /// </summary>
+        public const string GestionCompleta = "GestionCompleta";
+
+        /// <summary>Roles that satisfy <see cref="GestionCompleta"/>.</summary>
+        public static readonly string[] RolesGestionCompleta = [Roles.Propietario, Roles.SuperAdmin];
+    }
+}

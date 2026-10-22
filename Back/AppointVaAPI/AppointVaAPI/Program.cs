@@ -1,3 +1,4 @@
+using AppointVaAPI.Constants;
 using AppointVaAPI.Data;
 using AppointVaAPI.Jobs;
 using AppointVaAPI.Models;
@@ -105,6 +106,11 @@ builder.Services.AddAuthentication(opt =>
         ClockSkew = TimeSpan.Zero
     };
 });
+
+// ── Authorization policies ────────────────────────────────────────────────────
+// B10 / decision 2: the restricted Empleado role is denied these actions server-side.
+builder.Services.AddAuthorization(opt =>
+    opt.AddPolicy(Politicas.GestionCompleta, p => p.RequireRole(Politicas.RolesGestionCompleta)));
 
 // ── CORS ───────────────────────────────────────────────────────────────────────
 var origenesPermitidos = builder.Configuration["Cors:OrigenesPermitidos"]!.Split(',');

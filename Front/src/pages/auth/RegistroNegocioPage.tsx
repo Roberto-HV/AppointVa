@@ -167,7 +167,14 @@ export default function RegistroNegocioPage() {
             <h1 className={TITULO_AUTH}>¡Revisa tu correo!</h1>
             <p className="text-slate-500 text-sm mb-1">Enviamos un enlace de verificación a:</p>
             <p className="font-semibold text-slate-800 mb-4 break-all">{emailRegistrado}</p>
-            <p className="text-sm text-slate-500 mb-5">Si no lo ves, revisa la carpeta de spam.</p>
+            <p className="text-sm text-slate-500 mb-2">Si no lo ves, revisa la carpeta de spam.</p>
+            {/* S5: the server answers the same for an email that already has an account,
+                so this screen covers that case without saying which one happened. */}
+            <p className="text-sm text-slate-500 mb-5">
+              Si este correo ya tenía una cuenta, no se crea otra:{" "}
+              <Link to="/login" className="underline text-slate-700">inicia sesión</Link> o{" "}
+              <Link to="/recuperar-contrasena" className="underline text-slate-700">recupera tu contraseña</Link>.
+            </p>
 
             <div className="text-left bg-slate-50 border border-slate-200 rounded-xl p-4 mb-5">
               <h2 className="text-sm font-semibold text-slate-800 mb-2">Qué sigue</h2>

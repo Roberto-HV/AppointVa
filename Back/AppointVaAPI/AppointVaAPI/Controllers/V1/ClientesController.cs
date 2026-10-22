@@ -13,6 +13,7 @@ namespace AppointVaAPI.Controllers.V1
     [ApiController]
     [Route("api/clientes")]
     [Authorize(Roles = $"{Roles.Propietario},{Roles.SuperAdmin}")]
+    [Authorize(Policy = Politicas.GestionCompleta)] // B10: client list, export source and global edits
     public class ClientesController : ControllerBase
     {
         private readonly IClienteRepository _repo;

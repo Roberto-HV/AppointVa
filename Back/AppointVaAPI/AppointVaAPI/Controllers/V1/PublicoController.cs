@@ -890,8 +890,25 @@ namespace AppointVaAPI.Controllers.V1
             if (await _db.Negocios.AnyAsync(n => n.Slug == dto.Slug))
                 return Conflict(new { mensaje = "Ese identificador ya está en uso. Prueba con otro." });
 
+            // Validate the password policy before the existence check: otherwise a weak
+            // password would answer 400 for a new email and 201 for an existing one.
+            var erroresContrasena = new List<string>();
+            var candidato = new ApplicationUser { UserName = dto.Email, Email = dto.Email };
+            foreach (var validador in _userManager.PasswordValidators)
+            {
+                var r = await validador.ValidateAsync(_userManager, candidato, dto.Contrasena);
+                if (!r.Succeeded) erroresContrasena.AddRange(r.Errors.Select(e => e.Description));
+            }
+            if (erroresContrasena.Count > 0)
+                return BadRequest(new { mensaje = "No se pudo crear la cuenta.", errores = erroresContrasena });
+
+            // S5 (account enumeration): an existing email gets the same response as a
+            // new registration, so this endpoint cannot be used to probe for accounts.
+            // Nothing is created and no email is sent.
+            // TODO(B21): send the "you already have an account" notice (with links to
+            // login and password recovery) to dto.Email here once that email exists.
             if (await _userManager.FindByEmailAsync(dto.Email) is not null)
-                return Conflict(new { mensaje = "Ya existe una cuenta con este correo." });
+                return StatusCode(201, new { mensaje = MensajeRegistroAceptado });
 
             var negocio = new Negocio
             {
@@ -956,8 +973,10 @@ namespace AppointVaAPI.Controllers.V1
             var urlVerificacion = $"{frontendUrl}/verificar-email?userId={usuario.Id}&token={tokenEncoded}";
             _ = Task.Run(() => _email.EnviarVerificacionEmailAsync(dto.Email, dto.NombrePropietario, urlVerificacion));
 
-            return StatusCode(201, new { mensaje = "Negocio registrado. Revisa tu correo para verificar tu cuenta." });
+            return StatusCode(201, new { mensaje = MensajeRegistroAceptado });
         }
+
+        private const string MensajeRegistroAceptado = "Negocio registrado. Revisa tu correo para verificar tu cuenta.";
 
         // GET api/publico/verificar-email?userId=...&token=...
         [HttpGet("verificar-email")]

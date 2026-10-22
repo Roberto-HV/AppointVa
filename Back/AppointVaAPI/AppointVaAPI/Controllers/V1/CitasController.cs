@@ -441,6 +441,11 @@ namespace AppointVaAPI.Controllers.V1
                                            && e.NegocioId == _contexto.NegocioId);
                 if (empleado is null || cita.EmpleadoId != empleado.Id)
                     return StatusCode(403, new { mensaje = "Solo puedes registrar pagos de tus propias citas" });
+
+                // B10 / decision 2: an Empleado may charge, but never reverse or
+                // overwrite a payment that is already registered.
+                if (!dto.Pagada || cita.Pagada)
+                    return StatusCode(403, new { mensaje = "Solo el propietario puede revertir o modificar un pago registrado" });
             }
 
             if (dto.Pagada && dto.MontoPago2.HasValue && dto.MontoCobrado.HasValue
@@ -478,6 +483,10 @@ namespace AppointVaAPI.Controllers.V1
                     .FirstOrDefaultAsync(e => e.UsuarioId == _contexto.UsuarioId && e.NegocioId == _contexto.NegocioId);
                 if (emp is null || cita.EmpleadoId != emp.Id)
                     return StatusCode(403, new { mensaje = "Solo puedes registrar anticipos de tus propias citas" });
+
+                // B10 / decision 2: an Empleado may record a deposit, never annul one.
+                if (!dto.Recibido)
+                    return StatusCode(403, new { mensaje = "Solo el propietario puede anular un anticipo" });
             }
 
             if (dto.Recibido)
@@ -534,6 +543,7 @@ namespace AppointVaAPI.Controllers.V1
 
         // PATCH api/citas/{id}/cliente
         [HttpPatch("{id:guid}/cliente")]
+        [Authorize(Policy = Politicas.GestionCompleta)] // B10: editing a client's data is a global client edit
         public async Task<IActionResult> EditarCliente(Guid id, [FromBody] EditarClienteCitaDto dto)
         {
             if (_contexto.NegocioId is null) return Unauthorized();

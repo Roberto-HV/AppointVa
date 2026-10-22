@@ -50,8 +50,14 @@ namespace AppointVaAPI.Controllers.V1
             if (usuario is null || !usuario.Activo)
                 return Unauthorized(new { mensaje = "Credenciales inválidas" });
 
+            // S5 (account enumeration): only existing accounts can be locked out, so a
+            // distinct status here would confirm the email exists. Answer exactly like
+            // invalid credentials; the lockout itself still blocks the attempt and is audited.
             if (await _userManager.IsLockedOutAsync(usuario))
-                return StatusCode(429, new { mensaje = "Cuenta bloqueada temporalmente. Intenta en 15 minutos." });
+            {
+                await _audit.RegistrarAsync("LoginFallido", detalles: "Cuenta bloqueada", usuarioId: usuario.Id);
+                return Unauthorized(new { mensaje = "Credenciales inválidas" });
+            }
 
             if (!await _userManager.CheckPasswordAsync(usuario, dto.Contrasena))
             {

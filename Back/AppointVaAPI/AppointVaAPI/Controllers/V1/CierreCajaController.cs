@@ -13,6 +13,7 @@ namespace AppointVaAPI.Controllers.V1;
 [ApiController]
 [Route("api/cierre-caja")]
 [Authorize(Roles = Roles.Propietario)]
+[Authorize(Policy = Politicas.GestionCompleta)] // B10: cash closing is never available to Empleado
 public class CierreCajaController : ControllerBase
 {
     private readonly ApplicationDbContext _db;
