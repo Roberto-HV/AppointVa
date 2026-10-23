@@ -181,6 +181,29 @@ describe("PasoFechaHora — disponibilidad de la semana", () => {
     expect(await screen.findByRole("button", { name: "10:00" })).toBeInTheDocument();
   });
 
+  it("un día sin disponibilidad lo dice al elegirlo y pide escoger otro", async () => {
+    conHorariosEn("2026-10-23");
+    renderConQuery();
+    await waitFor(() => expect(diaPorNumero(21)).toHaveAttribute("data-disponibilidad", "sin-horarios"));
+
+    expect(diaPorNumero(21)).toHaveAccessibleName(/sin disponibilidad/);
+    expect(diaPorNumero(21).querySelector('[data-punto="sin-horarios"]')).toHaveClass("bg-slate-300");
+
+    fireEvent.click(diaPorNumero(21));
+
+    const aviso = await screen.findByRole("status");
+    expect(aviso).toHaveTextContent("No hay horarios disponibles para este día.");
+    expect(aviso).toHaveTextContent("Elige otro día.");
+    expect(screen.getByRole("button", { name: "Próximo disponible: viernes 23" })).toBeInTheDocument();
+  });
+
+  it("la leyenda explica los puntos de disponibilidad", async () => {
+    conHorariosEn("2026-10-23");
+    renderConQuery();
+    expect(await screen.findByText("Sin disponibilidad")).toBeInTheDocument();
+    expect(screen.getByText("Con horarios")).toBeInTheDocument();
+  });
+
   it("con la semana vacía ofrece la siguiente y la lista de espera", async () => {
     conHorariosEn();
     renderConQuery({ enlaceListaEspera: "/b/salon-test/espera?servicioId=srv-1" });
@@ -278,6 +301,22 @@ describe("PasoFechaHora — precarga y errores por día", () => {
     expect(dia(21)).toHaveAttribute("data-disponibilidad", "error");
     expect(dia(21)).toHaveAccessibleName(/no se pudo cargar; toca para reintentar/);
     expect(screen.getByText(/No pudimos revisar algunos días/)).toBeInTheDocument();
+  });
+
+  it("un día que no se pudo revisar no se presenta como sin horarios", async () => {
+    vi.mocked(publicoApi.obtenerDisponibilidad).mockImplementation(async (_s, _e, fecha) => {
+      if (fecha === "2026-10-21") throw errorDeRed();
+      return fecha === "2026-10-23" ? [slot(fecha)] : [];
+    });
+    renderConQuery();
+    await waitFor(() => expect(dia(21)).toHaveAttribute("data-disponibilidad", "error"));
+
+    fireEvent.click(dia(21));
+
+    expect(await screen.findByText("No pudimos revisar los horarios de este día.", undefined, { timeout: 3000 })).toBeInTheDocument();
+    expect(screen.queryByText("No hay horarios disponibles para este día.")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Intentar de nuevo" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "viernes 23" })).toBeInTheDocument();
   });
 
   it("espera a un día anterior que sigue cargando antes de abrir uno posterior", async () => {

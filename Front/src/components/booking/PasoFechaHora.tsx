@@ -25,7 +25,7 @@ const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto"
 /** Lo que el lector de pantalla oye tras la fecha; el punto de color no le llega. */
 const DETALLE_DISPONIBILIDAD: Record<EstadoDia, string> = {
   "con-horarios": ", con horarios",
-  "sin-horarios": ", sin horarios",
+  "sin-horarios": ", sin disponibilidad",
   cargando: "",
   error: ", no se pudo cargar; toca para reintentar",
 };
@@ -138,6 +138,10 @@ export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, on
   const semanaSinHorarios =
     fechasReservables.length > 0 && fechasReservables.every((f) => estadoDia(f) === "sin-horarios");
   const hayDiasConError = fechasReservables.some((f) => estadoDia(f) === "error");
+  const hayDiasRevisados = fechasReservables.some((f) => {
+    const estado = estadoDia(f);
+    return estado === "con-horarios" || estado === "sin-horarios";
+  });
   const siguienteConHorarios = fechaSel
     ? fechasReservables.find((f) => f > fechaSel && estadoDia(f) === "con-horarios") ?? null
     : null;
@@ -304,23 +308,44 @@ export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, on
                 {dia.getDate()}
               </span>
               {/* Punto de disponibilidad; el hueco se reserva siempre para no mover la fila.
-                  Un día que no cargó lleva un punto rojo: tocarlo lo reintenta. */}
+                  Color de marca: hay horarios. Gris: sin disponibilidad (cerrado, bloqueado
+                  o lleno). Rojo: la consulta falló (p. ej. demasiadas peticiones) y no
+                  sabemos si hay horarios; tocarlo lo reintenta. La leyenda va debajo. */}
               <span
                 aria-hidden="true"
-                className={`mt-1 h-1 w-1 rounded-full ${disponibilidad === "error" ? (seleccionada ? "bg-white" : "bg-red-600") : ""}`}
-                style={disponibilidad === "error" ? undefined : {
-                  background: disponibilidad === "con-horarios"
-                    ? (seleccionada ? "white" : acento)
-                    : "transparent",
-                }}
+                data-punto={pasado ? undefined : disponibilidad}
+                className={`mt-1 h-1 w-1 rounded-full ${
+                  disponibilidad === "error"
+                    ? (seleccionada ? "bg-white" : "bg-red-600")
+                    : disponibilidad === "sin-horarios"
+                    ? (seleccionada ? "bg-white/70" : "bg-slate-300")
+                    : ""
+                }`}
+                style={disponibilidad === "con-horarios"
+                  ? { background: seleccionada ? "white" : acento }
+                  : undefined}
               />
             </button>
           );
         })}
       </div>
 
+      {/* Leyenda de los puntos: decorativa para el lector de pantalla, que ya oye
+          la disponibilidad en la etiqueta de cada día. */}
+      {hayDiasRevisados && (
+        <ul aria-hidden="true" className="-mt-3 mb-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-600">
+          <li className="flex items-center gap-1.5">
+            <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: acento }} />
+            Con horarios
+          </li>
+          <li className="flex items-center gap-1.5">
+            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-slate-300" />
+            Sin disponibilidad
+          </li>
+        </ul>
+      )}
       {hayDiasConError && (
-        <p className="-mt-3 mb-4 flex items-center gap-1.5 text-xs text-slate-600">
+        <p className="-mt-2 mb-4 flex items-center gap-1.5 text-xs text-slate-600">
           <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rounded-full bg-red-600" />
           No pudimos revisar algunos días. Toca uno marcado para intentarlo de nuevo.
         </p>
@@ -343,14 +368,27 @@ export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, on
               Cargando horarios…
             </div>
           ) : isError ? (
-            <div className="bg-red-50 border border-red-100 rounded-2xl px-4 py-4 text-center">
-              <p className="text-sm text-red-600 mb-2">No se pudieron cargar los horarios.</p>
+            <div role="status" className="bg-red-50 border border-red-100 rounded-2xl px-4 py-4 text-center">
+              {/* Un fallo no es "sin horarios": no sabemos si los hay, así que no lo afirmamos. */}
+              <p className="text-sm text-red-700 mb-2">No pudimos revisar los horarios de este día.</p>
               <button
                 onClick={() => refetch()}
-                className="text-xs text-red-500 font-semibold hover:underline"
+                className="min-h-[44px] px-3 text-sm text-red-700 font-semibold hover:underline"
               >
                 Intentar de nuevo
               </button>
+              {siguienteConHorarios && (
+                <p className="text-xs text-slate-600">
+                  {"O elige otro día: "}
+                  <button
+                    type="button"
+                    onClick={() => elegirFecha(siguienteConHorarios)}
+                    className="font-semibold underline underline-offset-2"
+                  >
+                    {textoDia(siguienteConHorarios)}
+                  </button>
+                </p>
+              )}
             </div>
           ) : slots.length === 0 ? (
             <div className="text-center py-8">
@@ -359,7 +397,10 @@ export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, on
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
                 </svg>
               </div>
-              <p className="text-sm font-medium text-slate-600">Sin disponibilidad este día</p>
+              <div role="status">
+                <p className="text-sm font-semibold text-slate-700">No hay horarios disponibles para este día.</p>
+                <p className="mt-1 text-sm text-slate-500">Elige otro día.</p>
+              </div>
               {salidasSinHorarios}
             </div>
           ) : (
