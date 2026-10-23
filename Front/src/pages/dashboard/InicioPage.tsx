@@ -371,7 +371,7 @@ function VistaPropietario({ nombre }: { nombre: string }) {
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 leading-none mb-1">Hola, {nombre}</h1>
         <div className="flex items-center gap-3">
-          <p className="text-sm text-slate-400">{negocio?.nombre ?? "Tu negocio"}</p>
+          <p className="text-sm text-muted-foreground">{negocio?.nombre ?? "Tu negocio"}</p>
           {!mostrarWizard && keyOnboarding && (
             <button
               onClick={() => { localStorage.removeItem(keyOnboarding); setMostrarWizard(true); }}
@@ -577,7 +577,7 @@ function VistaPropietario({ nombre }: { nombre: string }) {
               </div>
             </div>
             {tendencia.length === 0 ? (
-              <p className="text-sm text-slate-400 text-center py-8">Sin datos para este período</p>
+              <p className="text-sm text-muted-foreground text-center py-8">Sin datos para este período</p>
             ) : (
               <ResponsiveContainer width="100%" height={200}>
                 <AreaChart data={tendencia} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
@@ -655,7 +655,7 @@ function VistaPropietario({ nombre }: { nombre: string }) {
                       </div>
                       <div className="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-1.5">
                         <div
-                          className="bg-slate-700 h-1.5 rounded-full"
+                          className="bg-slate-700 dark:bg-slate-300 h-1.5 rounded-full"
                           style={{ width: `${Math.min((s.totalCitas / (data.topServicios[0]?.totalCitas || 1)) * 100, 100)}%` }}
                         />
                       </div>
@@ -760,7 +760,7 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
 
       {/* Encabezado */}
       <div className="mb-6">
-        <p className="text-sm text-slate-400 dark:text-slate-500 mb-0.5">{saludo}</p>
+        <p className="text-sm text-muted-foreground mb-0.5">{saludo}</p>
         <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 leading-none">{nombre}</h1>
       </div>
 

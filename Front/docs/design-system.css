@@ -51,7 +51,7 @@
   --neutral-800: 26 36 43;     /* #1A242B */
   --neutral-900: 20 28 33;     /* #141C21 surface (dark) */
   --neutral-950: 14 20 23;     /* #0E1417 canvas (dark) */
-  --accent-brand: #0F4C75;     /* replaces the navy accent: 9.09:1 on white (dark: #5FA3D6, 6.32:1 on #141C21) */
+  --accent-brand: #0F4C75;     /* salud override: 9.09:1 on white (dark: #5FA3D6, 6.32:1 on #141C21) */
   /* Also re-points --background/--muted/--muted-foreground/--border/--input/--ring.
    * .font-display falls back to Inter here: salud keeps Fraunces off. */
 }
