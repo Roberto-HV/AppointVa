@@ -86,6 +86,19 @@ const schemaBloqueo = z.object({
 }, { message: "El bloqueo debe durar al menos 1 hora", path: ["horaFin"] });
 type BloqueoForm = z.infer<typeof schemaBloqueo>;
 
+// Acciones de la tarjeta de un empleado: un solo tamaño (44px táctil, 36px en
+// escritorio), icono + texto alineados y tres pesos visuales con los tokens del
+// sistema: principal (Editar), secundarias neutras y la destructiva aparte.
+const BOTON_TARJETA =
+  "inline-flex items-center justify-center gap-2 min-h-[44px] lg:min-h-[36px] px-3 rounded-lg text-sm font-medium " +
+  "transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 " +
+  "focus-visible:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed";
+const BOTON_TARJETA_PRIMARIO = `${BOTON_TARJETA} bg-primary text-primary-foreground hover:opacity-90`;
+const BOTON_TARJETA_SECUNDARIO =
+  `${BOTON_TARJETA} border border-border dark:border-slate-600 bg-card text-foreground hover:bg-muted dark:hover:bg-slate-700`;
+const BOTON_TARJETA_PELIGRO =
+  `${BOTON_TARJETA} text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20`;
+
 export default function EmpleadosPage() {
   const entrada = useEntradaAnimada();
   const terms = useSectorTerms();
@@ -399,12 +412,9 @@ export default function EmpleadosPage() {
           </div>
           <p className="font-medium text-slate-700 mb-1 dark:text-slate-300">Aún no tienes {terms.empleados.toLowerCase()}</p>
           <p className="text-sm text-slate-400 mb-5 dark:text-slate-500">Agrega a tu equipo para que puedan recibir citas</p>
-          <button
-            onClick={abrirCrear}
-            className="bg-slate-700 hover:bg-slate-800 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition"
-          >
+          <BotonAccion onClick={abrirCrear}>
             Agregar primer {terms.empleado.toLowerCase()}
-          </button>
+          </BotonAccion>
         </div>
       ) : empleadosFiltrados.length === 0 ? (
         <div className="bg-white rounded-xl border border-slate-100 dark:bg-slate-800 dark:border-slate-700">
@@ -469,39 +479,24 @@ export default function EmpleadosPage() {
                 {emp.telefono && <p className="text-xs text-slate-400 dark:text-slate-500">{emp.telefono}</p>}
                 <p className="text-xs text-slate-400 mt-1 dark:text-slate-500">{emp.servicioIds.length} {emp.servicioIds.length === 1 ? terms.servicio : terms.servicios} asignados</p>
 
-                <div className="mt-3 space-y-1.5">
-                  <div className="grid grid-cols-2 gap-1.5">
-                    <button
-                      onClick={() => abrirEditar(emp)}
-                      className="border border-blue-300 bg-blue-50 text-blue-600 hover:border-blue-500 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-400 dark:hover:bg-blue-950 rounded-md py-2 text-sm font-medium flex items-center justify-center gap-1.5 transition-colors"
-                    >
-                      <Pencil size={12} /> Editar
+                <div className="mt-4 space-y-2" role="group" aria-label={`Acciones de ${emp.nombre}`}>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button type="button" onClick={() => abrirEditar(emp)} className={BOTON_TARJETA_PRIMARIO}>
+                      <Pencil size={15} aria-hidden="true" /> Editar
                     </button>
-                    <button
-                      onClick={() => abrirHorario(emp)}
-                      className="border border-violet-300 bg-violet-50 text-violet-600 hover:border-violet-500 hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-950/40 dark:text-violet-400 dark:hover:bg-violet-950 rounded-md py-2 text-sm font-medium flex items-center justify-center gap-1.5 transition-colors"
-                    >
-                      <Clock size={12} /> Horarios
+                    <button type="button" onClick={() => abrirHorario(emp)} className={BOTON_TARJETA_SECUNDARIO}>
+                      <Clock size={15} className="text-muted-foreground" aria-hidden="true" /> Horarios
+                    </button>
+                    <button type="button" onClick={() => abrirBloqueo(emp)} className={BOTON_TARJETA_SECUNDARIO}>
+                      <CalendarX size={15} className="text-muted-foreground" aria-hidden="true" /> Bloqueos
+                    </button>
+                    <button type="button" onClick={() => abrirInvitar(emp)} className={BOTON_TARJETA_SECUNDARIO}>
+                      <Mail size={15} className="text-muted-foreground" aria-hidden="true" /> Invitar
                     </button>
                   </div>
-                  <div className="grid grid-cols-3 gap-1.5">
-                    <button
-                      onClick={() => abrirBloqueo(emp)}
-                      className="border border-amber-300 bg-amber-50 text-amber-600 hover:border-amber-500 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-400 dark:hover:bg-amber-950 rounded-md py-2 text-sm font-medium flex items-center justify-center gap-1.5 transition-colors"
-                    >
-                      <CalendarX size={12} /> Bloqueos
-                    </button>
-                    <button
-                      onClick={() => abrirInvitar(emp)}
-                      className="border border-emerald-300 bg-emerald-50 text-emerald-600 hover:border-emerald-500 hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-400 dark:hover:bg-emerald-950 rounded-md py-2 text-sm font-medium flex items-center justify-center gap-1.5 transition-colors"
-                    >
-                      <Mail size={12} /> Invitar
-                    </button>
-                    <button
-                      onClick={() => setEmpleadoEliminar(emp)}
-                      className="border border-destructive/40 bg-destructive/5 text-destructive hover:bg-destructive hover:text-white rounded-md py-2 text-sm font-medium flex items-center justify-center gap-1.5 transition-colors"
-                    >
-                      <Trash2 size={12} /> Eliminar
+                  <div className="pt-2 border-t border-border dark:border-slate-700 flex justify-end">
+                    <button type="button" onClick={() => setEmpleadoEliminar(emp)} className={BOTON_TARJETA_PELIGRO}>
+                      <Trash2 size={15} aria-hidden="true" /> Eliminar
                     </button>
                   </div>
                 </div>
@@ -572,8 +567,7 @@ export default function EmpleadosPage() {
             </div>
           </div>
 
-          <button type="submit" disabled={guardando}
-            className="w-full bg-slate-700 hover:bg-slate-800 disabled:opacity-50 text-white font-semibold py-2.5 rounded-xl transition">
+          <button type="submit" disabled={guardando} className={`${BOTON_MODAL_PRIMARIO} w-full`}>
             {guardando ? "Guardando..." : empleadoEdit ? "Guardar cambios" : "Crear empleado"}
           </button>
         </form>
@@ -626,7 +620,7 @@ export default function EmpleadosPage() {
           <button
             onClick={() => guardarHorario({ id: empleadoHorario!.id, horarios: horarioLocal })}
             disabled={!horarioCargado || guardandoHorario || horarioLocal.some((h) => !!errorDelDia(h))}
-            className="w-full bg-slate-700 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-xl transition mt-2"
+            className={`${BOTON_MODAL_PRIMARIO} w-full mt-2`}
           >
             {guardandoHorario ? "Guardando..." : "Guardar horario"}
           </button>
@@ -650,7 +644,7 @@ export default function EmpleadosPage() {
             ) : (
               <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                 {bloqueos.map((b) => (
-                  <div key={b.id} className="flex items-start justify-between gap-3 bg-status-pending-bg rounded-lg px-3 py-2">
+                  <div key={b.id} className="flex items-center justify-between gap-3 bg-status-pending-bg rounded-lg pl-3 pr-1 py-1">
                     <div className="min-w-0">
                       <p className="text-xs font-medium text-foreground">
                         {formatBloqueo(b.inicioEn)} → {formatBloqueo(b.finEn)}
@@ -660,9 +654,10 @@ export default function EmpleadosPage() {
                     <button
                       type="button"
                       onClick={() => b.id && setBloqueoEliminar({ id: b.id, texto: `${formatBloqueo(b.inicioEn)} → ${formatBloqueo(b.finEn)}` })}
-                      className="text-red-700 dark:text-red-400 hover:underline text-xs shrink-0 mt-0.5 px-1 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      aria-label={`Eliminar bloqueo ${formatBloqueo(b.inicioEn)} a ${formatBloqueo(b.finEn)}`}
+                      className={`${BOTON_TARJETA_PELIGRO} shrink-0 px-2.5 text-xs`}
                     >
-                      Eliminar
+                      <Trash2 size={14} aria-hidden="true" /> Eliminar
                     </button>
                   </div>
                 ))}
@@ -748,7 +743,7 @@ export default function EmpleadosPage() {
               <button
                 type="submit"
                 disabled={creandoBloqueo}
-                className="w-full bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white font-semibold py-2.5 rounded-xl transition"
+                className={`${BOTON_MODAL_PRIMARIO} w-full`}
               >
                 {creandoBloqueo ? "Guardando..." : "Agregar bloqueo"}
               </button>

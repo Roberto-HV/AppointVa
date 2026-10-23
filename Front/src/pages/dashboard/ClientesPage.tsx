@@ -13,7 +13,7 @@ import { formatPrecio, formatFecha, formatFechaCorta, formatFechaHora } from "..
 import Pagination from "../../components/ui/Pagination";
 import { useToastStore } from "../../store/toastStore";
 import { SiWhatsapp } from "react-icons/si";
-import { UserX, UserCheck, Eye } from "lucide-react";
+import { UserX, UserCheck, History, Pencil, ChevronRight } from "lucide-react";
 import Select from "../../components/ui/Select";
 import EmptyState from "../../components/ui/EmptyState";
 import BotonCopiarEnlace from "../../components/dashboard/BotonCopiarEnlace";
@@ -24,10 +24,21 @@ import { FiltroBarra } from "../../components/ui/filtros";
 import { TAMANO_PAGINA } from "../../hooks/usePaginacionLocal";
 import { useConfirmarDescarte } from "../../hooks/useCambiosSinGuardar";
 import { usePermisos } from "../../hooks/usePermisos";
+import EditarClienteModal from "../../components/dashboard/EditarClienteModal";
 
 type TabClientes = "todos" | "activos" | "inactivos";
 const TAMANO = TAMANO_PAGINA;
 const OPCIONES_DIAS = [30, 60, 90, 180] as const;
+
+// Acciones de una fila: mismo alto táctil (44px en móvil, 36px en escritorio),
+// icono + texto; donde el texto no cabe se oculta y queda en aria-label y title.
+const BOTON_FILA =
+  "inline-flex items-center justify-center gap-1.5 min-h-[44px] min-w-[44px] lg:min-h-[36px] lg:min-w-[36px] px-2.5 rounded-lg " +
+  "text-xs font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+const BOTON_FILA_NEUTRO =
+  `${BOTON_FILA} border border-border dark:border-slate-600 text-foreground hover:bg-muted dark:hover:bg-slate-700`;
+const BOTON_FILA_WHATSAPP =
+  `${BOTON_FILA} bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#128C7E] dark:text-[#25D366]`;
 
 export default function ClientesPage() {
   const qc = useQueryClient();
@@ -40,6 +51,7 @@ export default function ClientesPage() {
   const [buscarActivo, setBuscarActivo] = useState("");
   const [pagina, setPagina] = useState(1);
   const [clienteSel, setClienteSel] = useState<ClienteDto | null>(null);
+  const [clienteEditar, setClienteEditar] = useState<ClienteDto | null>(null);
   const [notas, setNotas] = useState("");
   const [notasGuardadas, setNotasGuardadas] = useState(false);
   const [diasInactivo, setDiasInactivo] = useState<typeof OPCIONES_DIAS[number]>(60);
@@ -99,6 +111,8 @@ export default function ClientesPage() {
     if (digits.startsWith("52") && digits.length >= 12) return digits;
     return `52${digits}`;
   };
+
+  const whatsappDirecto = (tel: string) => `https://wa.me/${formatWaPhone(tel)}`;
 
   const whatsappReactivacion = (c: ClienteDto) => {
     const negocioNombre = negocio?.nombre ?? "nosotros";
@@ -353,18 +367,43 @@ export default function ClientesPage() {
                           <p className="text-xs text-slate-400 dark:text-slate-500">sin visitar</p>
                         </div>
                       )}
-                      {tab === "inactivos" && c.telefono && (
-                        <a
-                          href={whatsappReactivacion(c)}
-                          target="_blank"
-                          rel="noreferrer"
-                          title={`Enviar mensaje de reactivación a ${c.nombreCompleto}`}
-                          className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] text-xs font-semibold rounded-lg transition"
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => abrirCliente(c)}
+                          aria-label={`Ver historial de ${c.nombreCompleto}`}
+                          title="Ver historial"
+                          className={BOTON_FILA_NEUTRO}
                         >
-                          <SiWhatsapp size={13} />
-                          Reactivar
-                        </a>
-                      )}
+                          <History size={15} aria-hidden="true" />
+                          <span className="hidden md:inline">Historial</span>
+                        </button>
+                        {permisos.editarCliente && (
+                          <button
+                            type="button"
+                            onClick={() => setClienteEditar(c)}
+                            aria-label={`Editar ${c.nombreCompleto}`}
+                            title={`Editar ${terms.cliente.toLowerCase()}`}
+                            className={BOTON_FILA_NEUTRO}
+                          >
+                            <Pencil size={15} aria-hidden="true" />
+                            <span className="hidden md:inline">Editar</span>
+                          </button>
+                        )}
+                        {tab === "inactivos" && c.telefono && (
+                          <a
+                            href={whatsappReactivacion(c)}
+                            target="_blank"
+                            rel="noreferrer"
+                            aria-label={`Enviar mensaje de reactivación a ${c.nombreCompleto}`}
+                            title="Enviar mensaje de reactivación por WhatsApp"
+                            className={`${BOTON_FILA_WHATSAPP} font-semibold`}
+                          >
+                            <SiWhatsapp size={14} aria-hidden="true" />
+                            <span className="hidden md:inline">Reactivar</span>
+                          </a>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
@@ -434,7 +473,7 @@ export default function ClientesPage() {
                       )}
                     </span>
                   </span>
-                  <Eye size={16} className="text-muted-foreground shrink-0" aria-hidden="true" />
+                  <ChevronRight size={18} className="text-muted-foreground shrink-0" aria-hidden="true" />
                 </button>
               </li>
             ))}
@@ -487,14 +526,29 @@ export default function ClientesPage() {
                     <td className="px-5 py-3 text-slate-600 text-sm dark:text-slate-400">
                       {c.ultimaCitaEn ? formatFecha(c.ultimaCitaEn) : <span className="text-slate-400 dark:text-slate-500">—</span>}
                     </td>
-                    <td className="px-5 py-3 text-right">
-                      <button
-                        onClick={(e) => { e.stopPropagation(); abrirCliente(c); }}
-                        className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg bg-slate-700/10 text-slate-700 hover:bg-slate-700/20 dark:bg-slate-600/30 dark:text-slate-300 dark:hover:bg-slate-600/50 dark:border dark:border-slate-500 transition"
-                      >
-                        <Eye size={13} />
-                        Ver detalle
-                      </button>
+                    <td className="px-5 py-3 text-right whitespace-nowrap">
+                      <div className="inline-flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); abrirCliente(c); }}
+                          aria-label={`Ver historial de ${c.nombreCompleto}`}
+                          className={BOTON_FILA_NEUTRO}
+                        >
+                          <History size={15} aria-hidden="true" />
+                          Historial
+                        </button>
+                        {permisos.editarCliente && (
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); setClienteEditar(c); }}
+                            aria-label={`Editar ${c.nombreCompleto}`}
+                            className={BOTON_FILA_NEUTRO}
+                          >
+                            <Pencil size={15} aria-hidden="true" />
+                            Editar
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -525,11 +579,36 @@ export default function ClientesPage() {
       >
         {clienteSel && (
           <div className="space-y-5">
+            {/* Acciones del cliente: editar sus datos y escribirle. El historial
+                y las notas son el contenido de este mismo diálogo. */}
+            {(permisos.editarCliente || clienteSel.telefono) && (
+              <div className="flex flex-wrap gap-2" role="group" aria-label={`Acciones del ${terms.cliente.toLowerCase()}`}>
+                {permisos.editarCliente && (
+                  <BotonAccion variante="secundaria" onClick={() => setClienteEditar(clienteSel)} className="flex-1 sm:flex-none">
+                    <Pencil size={15} aria-hidden="true" />
+                    Editar datos
+                  </BotonAccion>
+                )}
+                {clienteSel.telefono && (
+                  <a
+                    href={whatsappDirecto(clienteSel.telefono)}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label={`Escribir por WhatsApp a ${clienteSel.nombreCompleto}`}
+                    className={`${BOTON_FILA_WHATSAPP} flex-1 sm:flex-none px-3.5 text-sm font-semibold`}
+                  >
+                    <SiWhatsapp size={15} aria-hidden="true" />
+                    WhatsApp
+                  </a>
+                )}
+              </div>
+            )}
+
             {/* Info básica */}
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div className="bg-slate-50 rounded-lg px-3 py-2 dark:bg-slate-700">
                 <p className="text-xs text-slate-400 mb-0.5 dark:text-slate-500">Teléfono</p>
-                <p className="font-medium text-slate-800 dark:text-slate-200">{clienteSel.telefono}</p>
+                <p className="font-medium text-slate-800 dark:text-slate-200 tabular-nums">{clienteSel.telefono || "—"}</p>
               </div>
               {clienteSel.email && (
                 <div className="bg-slate-50 rounded-lg px-3 py-2 dark:bg-slate-700">
@@ -550,33 +629,6 @@ export default function ClientesPage() {
               <div className="bg-slate-50 rounded-lg px-3 py-2 col-span-2 dark:bg-slate-700">
                 <p className="text-xs text-slate-400 mb-0.5 dark:text-slate-500">{`${terms.cliente} desde`}</p>
                 <p className="font-medium text-slate-800 dark:text-slate-200">{formatFecha(clienteSel.fechaCreacion)}</p>
-              </div>
-            </div>
-
-            {/* Notas */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">
-                Notas internas
-                <span className="text-slate-400 font-normal ml-1 dark:text-slate-500">(solo visible para ti)</span>
-              </label>
-              <textarea
-                value={notas}
-                onChange={(e) => { setNotas(e.target.value); setNotasGuardadas(false); }}
-                rows={3}
-                placeholder="Preferencias, alergias, observaciones..."
-                className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:border-accent-brand resize-none dark:bg-slate-800 dark:text-slate-100 dark:border-slate-600"
-              />
-              <div className="flex items-center gap-3 mt-2">
-                <button
-                  onClick={() => guardarNotas({ id: clienteSel.id, notas })}
-                  disabled={guardandoNotas || notas === (clienteSel.notas ?? "")}
-                  className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-white text-xs font-medium rounded-lg transition"
-                >
-                  {guardandoNotas ? "Guardando..." : "Guardar notas"}
-                </button>
-                {notasGuardadas && (
-                  <span role="status" className="text-xs text-green-700 dark:text-green-400 font-medium">Guardado</span>
-                )}
               </div>
             </div>
 
@@ -606,9 +658,43 @@ export default function ClientesPage() {
                 </div>
               )}
             </div>
+
+            {/* Notas */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">
+                Notas internas
+                <span className="text-slate-400 font-normal ml-1 dark:text-slate-500">(solo visible para ti)</span>
+              </label>
+              <textarea
+                value={notas}
+                onChange={(e) => { setNotas(e.target.value); setNotasGuardadas(false); }}
+                rows={3}
+                placeholder="Preferencias, alergias, observaciones..."
+                className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:border-accent-brand resize-none dark:bg-slate-800 dark:text-slate-100 dark:border-slate-600"
+              />
+              <div className="flex items-center gap-3 mt-2">
+                <BotonAccion
+                  onClick={() => guardarNotas({ id: clienteSel.id, notas })}
+                  disabled={guardandoNotas || notas === (clienteSel.notas ?? "")}
+                >
+                  {guardandoNotas ? "Guardando..." : "Guardar notas"}
+                </BotonAccion>
+                {notasGuardadas && (
+                  <span role="status" className="text-xs text-green-700 dark:text-green-400 font-medium">Guardado</span>
+                )}
+              </div>
+            </div>
           </div>
         )}
       </Modal>
+      <EditarClienteModal
+        cliente={clienteEditar}
+        onCerrar={() => setClienteEditar(null)}
+        onGuardado={(actualizado) => {
+          // Si el detalle de este cliente está abierto, se refresca con los datos nuevos.
+          setClienteSel((sel) => (sel && sel.id === actualizado.id ? actualizado : sel));
+        }}
+      />
       {descarte.dialogo}
     </div>
   );

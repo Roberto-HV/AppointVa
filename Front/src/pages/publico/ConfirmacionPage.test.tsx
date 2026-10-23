@@ -431,7 +431,9 @@ describe("ConfirmacionPage — acciones", () => {
     const apple = await screen.findByRole("link", { name: /Apple Calendar/ });
     const google = screen.getByRole("link", { name: /Google Calendar/ });
     const whatsapp = screen.getByRole("link", { name: /Compartir por WhatsApp/ });
-    expect(apple).toHaveAttribute("href", "https://api.test/cita.ics");
+    // El .ics se pide por https a la base del API del front, nunca a la icalUrl/webcal del servidor.
+    expect(apple).toHaveAttribute("href", expect.stringMatching(/^https?:\/\/[^/]+\/api\/publico\/citas\/ABC123\/ical$/));
+    expect(apple.getAttribute("href")).not.toBe("https://api.test/cita.ics");
     expect(google).toHaveAttribute("href", "https://calendar.google.com/x");
     expect(apple.compareDocumentPosition(whatsapp) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });

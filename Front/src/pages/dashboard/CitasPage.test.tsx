@@ -340,9 +340,32 @@ describe("CitasPage — botones de acción en filas", () => {
     renderConQuery();
     fireEvent.click(await screen.findByRole("button", { name: "Acciones de la cita de Juan Pérez" }));
     expect(await screen.findByRole("button", { name: "Agregar nota interna" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Editar datos del cliente" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Repetir cita" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Marcar inasistencia" })).toBeInTheDocument();
+    // Los datos del cliente se editan y consultan en Clientes, no desde la cita.
+    expect(screen.queryByRole("button", { name: /Editar datos del cliente/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Ver historial/ })).not.toBeInTheDocument();
+  });
+
+  it("ordena la hoja: estado, gestión, comunicación, detalle y las destructivas al final", async () => {
+    vi.mocked(citasApi.obtenerTodas).mockResolvedValue({
+      datos: [makeCita({ estadoTexto: "Confirmada", estado: 2 })],
+      total: 1,
+      pagina: 1,
+      tamano: 15,
+    });
+    renderConQuery();
+    fireEvent.click(await screen.findByRole("button", { name: "Acciones de la cita de Juan Pérez" }));
+    const grupo = await screen.findByRole("group", { name: "Acciones de la cita" });
+    const nombres = Array.from(grupo.querySelectorAll("button, a")).map((el) => el.textContent?.trim());
+    const pos = (t: string) => nombres.findIndex((n) => n?.startsWith(t));
+    expect(pos("Marcar como completada")).toBe(0);
+    expect(pos("Reagendar")).toBeLessThan(pos("Agregar nota interna"));
+    expect(pos("Agregar nota interna")).toBeLessThan(pos("Repetir cita"));
+    expect(pos("Repetir cita")).toBeLessThan(pos("Enviar recordatorio por WhatsApp"));
+    expect(pos("Enviar recordatorio por WhatsApp")).toBeLessThan(pos("Ver detalle"));
+    expect(pos("Ver detalle")).toBeLessThan(pos("Marcar inasistencia"));
+    expect(pos("Cancelar cita")).toBe(nombres.length - 1);
   });
 });
 

@@ -5,9 +5,8 @@ import { Link } from "react-router-dom";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
-import { CheckCircle2, ChevronDown, Circle, X, Scissors, Users, CalendarDays, Clock, TrendingUp, Store, Images, ExternalLink, History } from "lucide-react";
-import { clientesApi } from "../../api/clientes";
-import type { CitaDto, ClienteCitaDto } from "../../types";
+import { CheckCircle2, ChevronDown, Circle, X, Scissors, Users, CalendarDays, TrendingUp, Store, Images, ExternalLink } from "lucide-react";
+import type { CitaDto } from "../../types";
 import { NotificacionBanner } from "../../components/ui/NotificacionBanner";
 import { dashboardApi } from "../../api/dashboard";
 import { citasApi } from "../../api/citas";
@@ -18,7 +17,6 @@ import { useAuthStore } from "../../store/authStore";
 import EstadoBadge from "../../components/ui/EstadoBadge";
 import { Skeleton } from "../../components/ui/Skeleton";
 import AnimatedCounter from "../../components/ui/AnimatedCounter";
-import Modal from "../../components/ui/Modal";
 import AccionesCita, { HojaAccionesCita, type VistaHoja } from "../../components/dashboard/AccionesCita";
 import { InsigniaPorCerrar } from "../../components/dashboard/TarjetaCita";
 import { colorCategoria, EJE_TICK, REJILLA } from "../../lib/temaGraficas";
@@ -685,8 +683,7 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
   const inicioSemanaStr = inicioSemanaLocal(ahora);
   const finSemanaStr = finSemanaLocal(ahora);
 
-  const [clienteSel, setClienteSel] = useState<{ id: string; nombre: string } | null>(null);
-  // Tocar una cita de la agenda abre sus acciones; el historial es una de ellas.
+  // Tocar una cita de la agenda abre sus acciones.
   const [citaHoja, setCitaHoja] = useState<CitaDto | null>(null);
   const [vistaHoja, setVistaHoja] = useState<VistaHoja>("menu");
   const abrirHoja = (c: CitaDto, v: VistaHoja = "menu") => { setCitaHoja(c); setVistaHoja(v); };
@@ -712,13 +709,6 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
     queryFn: () => citasApi.obtenerTodas({ desde: inicioSemanaStr, hasta: finSemanaStr, tamano: 200 }),
     select: (p) => p.datos,
     staleTime: 0,
-  });
-
-  const { data: historialCliente = [], isLoading: cargandoHistorial, isError: errorHistorial } = useQuery({
-    queryKey: ["historial-cliente", clienteSel?.id],
-    queryFn: () => clientesApi.obtenerCitas(clienteSel!.id),
-    enabled: !!clienteSel,
-    staleTime: 1000 * 60,
   });
 
   const pendientesOConfirmadas = citasProximas.filter(
@@ -935,58 +925,7 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
         cita={citaHoja}
         vistaInicial={vistaHoja}
         onCerrar={() => setCitaHoja(null)}
-        accionesExtra={citaHoja?.clienteId ? [{
-          id: "historial",
-          etiqueta: "Ver historial del cliente",
-          Icono: History,
-          onSelect: () => setClienteSel({ id: citaHoja.clienteId, nombre: citaHoja.nombreCliente }),
-        }] : []}
       />
-
-      {/* Historial del cliente: Modal (Radix) da foco, Escape y tema oscuro */}
-      <Modal
-        abierto={!!clienteSel}
-        onCerrar={() => setClienteSel(null)}
-        titulo={clienteSel ? `Historial de ${clienteSel.nombre}` : "Historial"}
-        ancho="md"
-      >
-        <div className="space-y-2">
-          {cargandoHistorial ? (
-            [0, 1, 2].map((i) => <Skeleton key={i} className="h-14 rounded-xl" />)
-          ) : errorHistorial ? (
-            <p className="text-sm text-red-700 dark:text-red-400 text-center py-8" role="alert">No se pudo cargar el historial</p>
-          ) : historialCliente.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">Primera visita del cliente</p>
-          ) : (
-            historialCliente.map((h: ClienteCitaDto) => (
-              <div key={h.id} className="flex items-center gap-3 p-3 bg-muted rounded-xl">
-                <div className="w-8 h-8 rounded-lg bg-background flex items-center justify-center shrink-0">
-                  <Clock size={14} className="text-muted-foreground" aria-hidden="true" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-foreground truncate">{h.nombreServicio}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {new Date(h.inicioEn).toLocaleDateString("es-MX", {
-                      day: "numeric", month: "short", year: "numeric",
-                    })}
-                    {h.nombreEmpleado ? ` · ${h.nombreEmpleado}` : ""}
-                  </p>
-                </div>
-                <div className="text-right shrink-0 space-y-1">
-                  <p className="text-xs font-semibold text-foreground">{formatPrecio(h.precio)}</p>
-                  <EstadoBadge estado={h.estadoTexto} />
-                </div>
-              </div>
-            ))
-          )}
-          {historialCliente.length > 0 && (
-            <p className="text-xs text-muted-foreground text-center pt-2 flex items-center justify-center gap-1">
-              <History size={12} aria-hidden="true" />
-              {historialCliente.length} visita{historialCliente.length !== 1 ? "s" : ""} en total
-            </p>
-          )}
-        </div>
-      </Modal>
     </div>
   );
 }

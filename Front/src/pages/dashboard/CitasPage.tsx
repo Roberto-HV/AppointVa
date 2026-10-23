@@ -4,7 +4,7 @@ import { useSectorTerms, useSector } from "../../hooks/useSectorTerms";
 import { tonoDeSector } from "../../lib/vozVacia";
 
 import { hoy, inicioSemana, finSemana, inicioMes, finMes } from "../../utils/fechas";
-import { CheckCircle2, RotateCcw, StickyNote, Receipt, Banknote, Star, Pencil, AlertTriangle, Monitor } from "lucide-react";
+import { CheckCircle2, RotateCcw, StickyNote, Receipt, Banknote, Star, AlertTriangle, Monitor } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { citasApi, ESTADOS } from "../../api/citas";
 import Tabs from "../../components/ui/Tabs";
@@ -39,7 +39,6 @@ import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
 import { TAMANO_PAGINA } from "../../hooks/usePaginacionLocal";
 import { leerParamsCitas } from "../../lib/paramsCitas";
 import { mensajeError } from "../../utils/errores";
-import { isAxiosError } from "axios";
 import { z } from "zod";
 import { usePermisos } from "../../hooks/usePermisos";
 import { confirmarEnLote, resumenLote } from "../../lib/confirmarEnLote";
@@ -144,11 +143,6 @@ export default function CitasPage() {
   const [fCliente, setFCliente] = useState({ nombre: "", telefono: "", email: "", notas: "" });
   const [emailClienteError, setEmailClienteError] = useState("");
   const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-
-  // Modal editar cliente
-  const [citaEditar, setCitaEditar] = useState<CitaDto | null>(null);
-  const [fEditar, setFEditar] = useState({ nombre: "", telefono: "", email: "" });
-  const [emailEditarError, setEmailEditarError] = useState("");
 
   // Issue 12 — drag-to-reschedule confirmation
   const [confirmDrag, setConfirmDrag] = useState<{id: string; nombre: string; nuevoInicio: string; label: string} | null>(null);
@@ -264,32 +258,6 @@ export default function CitasPage() {
       toast(mensajeError(err, `No se pudo crear la ${terms.cita.toLowerCase()}`), "error");
     },
   });
-
-  const { mutate: editarCliente, isPending: editando } = useMutation({
-    mutationFn: () => citasApi.editarCliente(citaEditar!.id, {
-      nombreCompleto: fEditar.nombre.trim(),
-      telefono: fEditar.telefono.trim(),
-      email: fEditar.email.trim(),
-    }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["citas"] });
-      qc.invalidateQueries({ queryKey: ["clientes"] });
-      setCitaEditar(null);
-      toast("Datos del cliente actualizados");
-    },
-    onError: (err: unknown) => {
-      const duplicado = isAxiosError(err) && err.response?.status === 409;
-      toast(mensajeError(err, duplicado
-          ? `Ese teléfono o correo ya está registrado con otro ${terms.cliente.toLowerCase()}`
-          : "No se pudo actualizar el cliente"), "error");
-    },
-  });
-
-  const abrirEditar = (c: CitaDto) => {
-    setCitaEditar(c);
-    setFEditar({ nombre: c.nombreCliente, telefono: c.telefonoCliente ?? "", email: c.emailCliente ?? "" });
-    setEmailEditarError("");
-  };
 
   const abrirNuevaCita = () => {
     setModalNueva(true);
@@ -501,23 +469,15 @@ export default function CitasPage() {
   const puedeAccionarAnticipo = (c: CitaDto) =>
     c.anticipoRequerido && !c.pagada && !(c.anticipoRecibido && !permisos.anularAnticipo);
 
+  // Orden dentro de la hoja: los grupos los coloca `HojaAccionesCita` (pago,
+  // gestión, comunicación); aquí solo el orden dentro de cada grupo.
   const accionesExtra = (c: CitaDto): AccionExtraCita[] => [
-    {
-      id: "notas",
-      etiqueta: c.notas ? "Ver o editar nota interna" : "Agregar nota interna",
-      Icono: StickyNote,
-      marcador: !!c.notas,
-      onSelect: () => abrirNotas(c),
-    },
-    // Editar cambia el registro global del cliente: solo Propietario (decisión 2).
-    ...(permisos.editarCliente
-      ? [{ id: "editar", etiqueta: `Editar datos del ${terms.cliente.toLowerCase()}`, Icono: Pencil, onSelect: () => abrirEditar(c) }]
-      : []),
     ...(puedeAccionarAnticipo(c)
       ? [c.anticipoRecibido
-          ? { id: "anticipo", etiqueta: "Anular anticipo", Icono: Banknote, onSelect: () => setCitaAnularAnticipo(c) }
+          ? { id: "anticipo", grupo: "pago" as const, etiqueta: "Anular anticipo", Icono: Banknote, onSelect: () => setCitaAnularAnticipo(c) }
           : {
               id: "anticipo",
+              grupo: "pago" as const,
               etiqueta: anticipoEnCurso(c.id)
                 ? "Registrando anticipo…"
                 : `Registrar anticipo de ${formatPrecio(c.montoAnticipo ?? 0)}`,
@@ -532,11 +492,19 @@ export default function CitasPage() {
             }]
       : []),
     ...(c.comprobanteUrl
-      ? [{ id: "comprobante", etiqueta: "Ver comprobante de anticipo", Icono: Receipt, onSelect: () => setUrlComprobante(c.comprobanteUrl!) }]
+      ? [{ id: "comprobante", grupo: "pago" as const, etiqueta: "Ver comprobante de anticipo", Icono: Receipt, onSelect: () => setUrlComprobante(c.comprobanteUrl!) }]
       : []),
-    { id: "repetir", etiqueta: `Repetir ${terms.cita.toLowerCase()}`, Icono: RotateCcw, onSelect: () => abrirRepetirCita(c) },
+    {
+      id: "notas",
+      grupo: "gestion",
+      etiqueta: c.notas ? "Ver o editar nota interna" : "Agregar nota interna",
+      Icono: StickyNote,
+      marcador: !!c.notas,
+      onSelect: () => abrirNotas(c),
+    },
+    { id: "repetir", grupo: "gestion", etiqueta: `Repetir ${terms.cita.toLowerCase()}`, Icono: RotateCcw, onSelect: () => abrirRepetirCita(c) },
     ...(c.estadoTexto === "Completada" && c.telefonoCliente
-      ? [{ id: "resena", etiqueta: "Solicitar reseña por WhatsApp", Icono: Star, href: urlResenaWhatsApp(c, nombreNegocio, perfil?.slug) }]
+      ? [{ id: "resena", grupo: "comunicacion" as const, etiqueta: "Solicitar reseña por WhatsApp", Icono: Star, href: urlResenaWhatsApp(c, nombreNegocio, perfil?.slug) }]
       : []),
   ];
 
@@ -859,85 +827,6 @@ export default function CitasPage() {
           </div>
         </div>
       )}
-
-      {/* ── Modal: Editar cliente ── */}
-      <Modal abierto={!!citaEditar} onCerrar={() => setCitaEditar(null)} titulo="Editar datos del cliente" ancho="sm">
-        {citaEditar && (
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="editar-nombre" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Nombre <span className="text-red-700 dark:text-red-400" aria-hidden="true">*</span>
-              </label>
-              <input
-                id="editar-nombre"
-                type="text"
-                required
-                value={fEditar.nombre}
-                onChange={(e) => setFEditar((p) => ({ ...p, nombre: e.target.value }))}
-                placeholder="Nombre completo"
-                className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm outline-none focus:border-accent-brand"
-              />
-            </div>
-            <div>
-              <label htmlFor="editar-telefono" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Teléfono{" "}
-                <span className="text-slate-400 dark:text-slate-500 font-normal">
-                  {fEditar.telefono ? `(vaciar para desvincular esta ${terms.cita.toLowerCase()} del ${terms.cliente.toLowerCase()})` : "(sin teléfono — cita independiente)"}
-                </span>
-              </label>
-              <input
-                id="editar-telefono"
-                type="tel"
-                value={fEditar.telefono}
-                onChange={(e) => setFEditar((p) => ({ ...p, telefono: e.target.value }))}
-                placeholder="Sin teléfono"
-                className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm outline-none focus:border-accent-brand"
-              />
-            </div>
-            <div>
-              <label htmlFor="editar-email" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Correo <span className="text-muted-foreground font-normal">(opcional)</span>
-              </label>
-              <input
-                id="editar-email"
-                type="email"
-                aria-invalid={!!emailEditarError || undefined}
-                aria-describedby={emailEditarError ? "editar-email-error" : undefined}
-                value={fEditar.email}
-                onChange={(e) => {
-                  setFEditar((p) => ({ ...p, email: e.target.value }));
-                  setEmailEditarError(validarEmailCliente(e.target.value));
-                }}
-                placeholder="correo@ejemplo.com"
-                className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-accent-brand dark:bg-slate-800 dark:text-slate-100 ${
-                  emailEditarError ? "border-red-400 bg-red-50 dark:bg-red-900/20" : "border-slate-200 dark:border-slate-600"
-                }`}
-              />
-              {emailEditarError && <p id="editar-email-error" className="text-red-700 dark:text-red-400 text-xs mt-1 flex items-center gap-1"><AlertTriangle size={12} aria-hidden="true" /> {emailEditarError}</p>}
-            </div>
-            <p className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded-lg px-3 py-2">
-              {`Esto actualiza los datos del ${terms.cliente.toLowerCase()} en todas sus ${terms.citas.toLowerCase()}.`}
-            </p>
-            <ModalAcciones>
-              <button
-                type="button"
-                onClick={() => setCitaEditar(null)}
-                className={BOTON_MODAL_SECUNDARIO}
-              >
-                Volver
-              </button>
-              <button
-                onClick={() => { if (!emailEditarError) editarCliente(); }}
-                disabled={!fEditar.nombre.trim() || editando || !!emailEditarError}
-                type="button"
-                className={BOTON_MODAL_PRIMARIO}
-              >
-                {editando ? "Guardando..." : "Guardar cambios"}
-              </button>
-            </ModalAcciones>
-          </div>
-        )}
-      </Modal>
 
       {/* ── Modal: Notas internas ── */}
       <Modal abierto={!!citaNotas} onCerrar={() => setCitaNotas(null)} titulo="Nota interna" ancho="sm">

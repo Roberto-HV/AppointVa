@@ -53,6 +53,15 @@ export const clientesApi = {
     return data;
   },
 
+  /** PUT /clientes/{id}: nombre, teléfono y correo. 409 si el teléfono o el correo ya son de otro cliente. */
+  actualizar: async (
+    id: string,
+    dto: { nombreCompleto: string; telefono: string; email: string }
+  ): Promise<ClienteDto> => {
+    const { data } = await api.put(`/clientes/${id}`, dto);
+    return data;
+  },
+
   actualizarNotas: async (id: string, notas: string | null): Promise<ClienteDto> => {
     const { data } = await api.patch(`/clientes/${id}/notas`, { notas });
     return data;

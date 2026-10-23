@@ -13,6 +13,7 @@ vi.mock("../../api/clientes", () => ({
     obtenerPorId: vi.fn(),
     obtenerCitas: vi.fn().mockResolvedValue([]),
     actualizarNotas: vi.fn(),
+    actualizar: vi.fn(),
   },
 }));
 
@@ -583,5 +584,58 @@ describe("ClientesPage — notas internas", () => {
     fireEvent.change(await screen.findByPlaceholderText("Preferencias, alergias, observaciones..."), { target: { value: "" } });
     fireEvent.click(screen.getByRole("button", { name: "Guardar notas" }));
     await waitFor(() => expect(clientesApi.actualizarNotas).toHaveBeenCalledWith("cli-1", null));
+  });
+});
+
+describe("ClientesPage — editar cliente", () => {
+  it("la fila ofrece Historial y Editar, en ese orden", async () => {
+    vi.mocked(clientesApi.obtenerTodos).mockResolvedValue(paginaCon([makeCliente()]));
+    renderConQuery();
+    const tabla = await screen.findByRole("table");
+    const historial = await within(tabla).findByRole("button", { name: "Ver historial de Juan Pérez" });
+    const editar = within(tabla).getByRole("button", { name: "Editar Juan Pérez" });
+    expect(historial.compareDocumentPosition(editar) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("edita nombre, teléfono y correo desde el detalle", async () => {
+    const cliente = makeCliente();
+    vi.mocked(clientesApi.obtenerTodos).mockResolvedValue(paginaCon([cliente]));
+    vi.mocked(clientesApi.actualizar).mockResolvedValue({ ...cliente, nombreCompleto: "Juan P. Gómez", telefono: "5599887766" } as never);
+    renderConQuery();
+    fireEvent.click(await screen.findByRole("button", { name: "Ver detalle de Juan Pérez" }));
+    const detalle = await screen.findByRole("dialog", { name: "Juan Pérez" });
+    // El historial vive en el detalle del cliente.
+    expect(within(detalle).getByText("Historial de citas")).toBeInTheDocument();
+    fireEvent.click(within(detalle).getByRole("button", { name: /Editar datos/ }));
+
+    const form = await screen.findByRole("dialog", { name: "Editar cliente" });
+    const guardar = within(form).getByRole("button", { name: "Guardar cambios" });
+    expect(guardar).toBeDisabled();
+    fireEvent.change(within(form).getByLabelText(/Nombre/), { target: { value: "Juan P. Gómez" } });
+    fireEvent.change(within(form).getByLabelText(/Teléfono/), { target: { value: "55 9988 7766" } });
+    fireEvent.click(guardar);
+
+    await waitFor(() =>
+      expect(clientesApi.actualizar).toHaveBeenCalledWith("cli-1", {
+        nombreCompleto: "Juan P. Gómez",
+        telefono: "55 9988 7766",
+        email: "juan@test.com",
+      })
+    );
+    expect(await screen.findByRole("dialog", { name: "Juan P. Gómez" })).toBeInTheDocument();
+  });
+
+  it("no envía un teléfono o un correo con formato inválido", async () => {
+    vi.mocked(clientesApi.obtenerTodos).mockResolvedValue(paginaCon([makeCliente()]));
+    renderConQuery();
+    const tabla = await screen.findByRole("table");
+    fireEvent.click(await within(tabla).findByRole("button", { name: "Editar Juan Pérez" }));
+    const form = await screen.findByRole("dialog", { name: "Editar cliente" });
+    fireEvent.change(within(form).getByLabelText(/Teléfono/), { target: { value: "12" } });
+    fireEvent.change(within(form).getByLabelText(/Correo/), { target: { value: "no-es-correo" } });
+    fireEvent.click(within(form).getByRole("button", { name: "Guardar cambios" }));
+    expect(await within(form).findByText("Entre 7 y 15 dígitos")).toBeInTheDocument();
+    expect(within(form).getByText(/Correo no válido/)).toBeInTheDocument();
+    expect(clientesApi.actualizar).not.toHaveBeenCalled();
   });
 });

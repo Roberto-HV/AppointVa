@@ -17,6 +17,7 @@ import SocialLinks from "../../components/icons/SocialLinks";
 import PasoFechaHora from "../../components/booking/PasoFechaHora";
 import type { ConfirmacionCita, SlotDisponible } from "../../types";
 import { getSectorTerms } from "../../hooks/useSectorTerms";
+import { urlIcalCita } from "../../utils/calendarioCita";
 
 const estadoHttp = (err: unknown) => (err as { response?: { status?: number } })?.response?.status;
 
@@ -584,20 +585,19 @@ export default function ConfirmacionPage() {
         {/* Guardar y compartir: justo bajo el talón, es lo que se hace al terminar */}
         <div className="mt-4 space-y-2.5 print:hidden">
           {/* Agregar al calendario — acción principal: es lo que el visitante necesita guardar */}
-          {(cita.icalUrl || cita.webcalUrl || cita.googleCalUrl) && (
+          {/* Apple: .ics por https con la base del API del front (ver calendarioCita). */}
+          {cita.codigoConfirmacion && (
             <div>
               <p className="text-xs font-semibold text-slate-600 text-center mb-2">Agrégala a tu calendario</p>
               <div className="flex gap-2">
-                {(cita.webcalUrl ?? cita.icalUrl) && (
-                  <a
-                    href={cita.webcalUrl ?? cita.icalUrl}
-                    className={BTN_CALENDARIO}
-                    style={{ background: colorSolido }}
-                  >
-                    <SiApple size={18} aria-hidden="true" />
-                    Apple Calendar
-                  </a>
-                )}
+                <a
+                  href={urlIcalCita(cita.codigoConfirmacion)}
+                  className={BTN_CALENDARIO}
+                  style={{ background: colorSolido }}
+                >
+                  <SiApple size={18} aria-hidden="true" />
+                  Apple Calendar
+                </a>
                 {cita.googleCalUrl && (
                   <a
                     href={cita.googleCalUrl}

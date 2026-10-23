@@ -495,7 +495,7 @@ namespace AppointVaAPI.Controllers.V1
             var empleado = await _db.Empleados.FindAsync(dto.EmpleadoId);
 
             var backendUrl = _config["BackendUrl"] ?? string.Empty;
-            var icalUrl = string.IsNullOrWhiteSpace(backendUrl) ? null : $"{backendUrl}/api/publico/citas/{codigo}/ical";
+            var icalUrl = UrlIcal(backendUrl, codigo);
             cita.Negocio = negocio;
             cita.Servicio = servicio;
             cita.Empleado = empleado;
@@ -581,7 +581,7 @@ namespace AppointVaAPI.Controllers.V1
                 return NotFound(new { mensaje = "Cita no encontrada" });
 
             var backendUrl = _config["BackendUrl"] ?? string.Empty;
-            var icalUrl = string.IsNullOrWhiteSpace(backendUrl) ? null : $"{backendUrl}/api/publico/citas/{codigo}/ical";
+            var icalUrl = UrlIcal(backendUrl, codigo);
             var googleCalUrl = GenerarGoogleCalendarUrl(cita);
 
             return Ok(new ConfirmacionCitaDto
@@ -618,6 +618,20 @@ namespace AppointVaAPI.Controllers.V1
             });
         }
 
+        /// <summary>
+        /// URL pública del .ics. `BackendUrl` es el origen del API; se toleran una
+        /// barra final o un "/api" final (el mismo valor que VITE_API_URL), que
+        /// producían "//api" o "/api/api" y el calendario recibía un 404.
+        /// </summary>
+        internal static string? UrlIcal(string? backendUrl, string codigo)
+        {
+            if (string.IsNullOrWhiteSpace(backendUrl)) return null;
+            var origen = backendUrl.Trim().TrimEnd('/');
+            if (origen.EndsWith("/api", StringComparison.OrdinalIgnoreCase))
+                origen = origen[..^4];
+            return $"{origen}/api/publico/citas/{Uri.EscapeDataString(codigo)}/ical";
+        }
+
         // GET api/publico/citas/{codigo}/ical
         [HttpGet("citas/{codigo}/ical")]
         [EnableRateLimiting("PublicoGeneral")]
@@ -626,41 +640,27 @@ namespace AppointVaAPI.Controllers.V1
             var cita = await _citaRepo.ObtenerPorCodigoAsync(codigo);
             if (cita is null) return NotFound();
 
-            var sb = new StringBuilder();
-            sb.Append("BEGIN:VCALENDAR\r\n");
-            sb.Append("VERSION:2.0\r\n");
-            sb.Append("PRODID:-//AppointVa//AppointVa//ES\r\n");
-            sb.Append("CALSCALE:GREGORIAN\r\n");
-            sb.Append("METHOD:PUBLISH\r\n");
-            sb.Append("BEGIN:VEVENT\r\n");
             var tzIcal = AppointVaAPI.Helpers.ZonaHorariaHelper.Resolver(cita.Negocio?.ZonaHoraria);
-            var inicioUtcIcal = AppointVaAPI.Helpers.ZonaHorariaHelper.ToDateTimeOffset(cita.InicioEn, tzIcal).UtcDateTime;
-            var finUtcIcal = AppointVaAPI.Helpers.ZonaHorariaHelper.ToDateTimeOffset(cita.FinEn, tzIcal).UtcDateTime;
-            sb.Append($"DTSTART:{inicioUtcIcal:yyyyMMddTHHmmssZ}\r\n");
-            sb.Append($"DTEND:{finUtcIcal:yyyyMMddTHHmmssZ}\r\n");
-            sb.Append($"DTSTAMP:{DateTime.UtcNow:yyyyMMddTHHmmssZ}\r\n");
-            sb.Append($"UID:{cita.CodigoConfirmacion}@appointva\r\n");
-            sb.Append($"SUMMARY:{cita.Servicio?.Nombre ?? "Cita"} con {cita.Empleado?.Nombre ?? "el equipo"}\r\n");
-            var descripcion = $"Negocio: {cita.Negocio?.Nombre ?? "AppointVa"}\\n" +
-                              $"Servicio: {cita.Servicio?.Nombre ?? string.Empty}\\n" +
-                              $"Profesional: {cita.Empleado?.Nombre ?? string.Empty}\\n" +
-                              $"Código: {cita.CodigoConfirmacion}";
-            sb.Append($"DESCRIPTION:{descripcion}\r\n");
-            if (!string.IsNullOrWhiteSpace(cita.Negocio?.Direccion))
-                sb.Append($"LOCATION:{cita.Negocio.Direccion}\r\n");
-            if (!string.IsNullOrWhiteSpace(cita.Negocio?.Email))
-                sb.Append($"ORGANIZER;CN={cita.Negocio.Nombre ?? "AppointVa"}:mailto:{cita.Negocio.Email}\r\n");
-            sb.Append("STATUS:CONFIRMED\r\n");
-            sb.Append("SEQUENCE:0\r\n");
-            sb.Append("BEGIN:VALARM\r\n");
-            sb.Append("ACTION:DISPLAY\r\n");
-            sb.Append("DESCRIPTION:Recordatorio de cita\r\n");
-            sb.Append("TRIGGER:-PT1H\r\n");
-            sb.Append("END:VALARM\r\n");
-            sb.Append("END:VEVENT\r\n");
-            sb.Append("END:VCALENDAR");
+            var nombreNegocio = cita.Negocio?.Nombre ?? "AppointVa";
+            var ics = AppointVaAPI.Helpers.IcalHelper.Generar(new AppointVaAPI.Helpers.IcalHelper.EventoIcal(
+                Uid: $"{cita.CodigoConfirmacion}@appointva",
+                InicioUtc: AppointVaAPI.Helpers.ZonaHorariaHelper.ToDateTimeOffset(cita.InicioEn, tzIcal).UtcDateTime,
+                FinUtc: AppointVaAPI.Helpers.ZonaHorariaHelper.ToDateTimeOffset(cita.FinEn, tzIcal).UtcDateTime,
+                MarcaUtc: DateTime.UtcNow,
+                Resumen: $"{cita.Servicio?.Nombre ?? "Cita"} con {cita.Empleado?.Nombre ?? "el equipo"}",
+                Descripcion: $"Negocio: {nombreNegocio}\n" +
+                             $"Servicio: {cita.Servicio?.Nombre ?? string.Empty}\n" +
+                             $"Profesional: {cita.Empleado?.Nombre ?? string.Empty}\n" +
+                             $"Código: {cita.CodigoConfirmacion}",
+                Lugar: cita.Negocio?.Direccion,
+                OrganizadorNombre: nombreNegocio,
+                OrganizadorEmail: cita.Negocio?.Email));
 
-            return File(Encoding.UTF8.GetBytes(sb.ToString()), "text/calendar; charset=utf-8", $"cita-{codigo}.ics");
+            // inline y no attachment: Safari en iOS muestra "Agregar al calendario"
+            // con text/calendar en línea; como adjunto solo ofrece descargarlo.
+            Response.Headers.ContentDisposition = $"inline; filename=\"cita-{cita.CodigoConfirmacion}.ics\"";
+            Response.Headers.CacheControl = "no-store";
+            return Content(ics, "text/calendar; charset=utf-8", Encoding.UTF8);
         }
 
         // DELETE api/publico/citas/{codigo}?email=...  — el cliente cancela su propia cita

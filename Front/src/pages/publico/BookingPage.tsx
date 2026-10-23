@@ -1032,7 +1032,7 @@ export default function BookingPage() {
   const colorCta = brandSolid(color);
   // Un fondo elegido gana sobre la foto: es la última decisión explícita del
   // negocio y, si no, el selector del dashboard no tendría efecto visible.
-  // Una clave retirada (patrones, texturas) cae en su reemplazo o en "sin preset".
+  // Una clave desconocida (no está en el catálogo) cuenta como "sin preset".
   const presetPortada = normalizarPresetPortada(negocio.portadaPreset);
   const mostrarFoto = !presetPortada && !!negocio.portadaUrl;
   const fondoDePortada = fondoPortada(presetPortada, color);

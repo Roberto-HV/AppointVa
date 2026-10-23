@@ -417,14 +417,14 @@ describe("InicioPage — agenda del empleado (DC-15)", () => {
 (selector: (s: any) => unknown) => selector({ usuario: empleadoUser }));
   });
 
-  it("tocar la cita abre sus acciones, con 'Ver historial del cliente' como una de ellas", async () => {
+  it("tocar la cita abre sus acciones de la cita, sin acciones del cliente", async () => {
     vi.mocked(citasApi.obtenerTodas).mockResolvedValue({ ...emptyPage, datos: [citaEmpleado("Pendiente", 3_600_000)], total: 1 });
     renderConQuery();
     fireEvent.click(await screen.findByRole("button", { name: /Ana López, Corte\. Ver acciones/ }));
     const hoja = await screen.findByRole("dialog");
     expect(within(hoja).getByRole("button", { name: "Confirmar cita" })).toBeInTheDocument();
-    fireEvent.click(within(hoja).getByRole("button", { name: "Ver historial del cliente" }));
-    expect(await screen.findByRole("dialog", { name: "Historial de Ana López" })).toBeInTheDocument();
+    expect(within(hoja).queryByRole("button", { name: /Ver historial/ })).not.toBeInTheDocument();
+    expect(within(hoja).queryByRole("link", { name: /Ver historial/ })).not.toBeInTheDocument();
   });
 
   it("una cita que ya terminó y sigue confirmada dice 'Por cerrar' y muestra Completar en la fila", async () => {
