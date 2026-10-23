@@ -6,6 +6,7 @@ import {
   CheckCircle2, CheckCheck, CalendarClock, XCircle, UserX, MoreHorizontal, ExternalLink, History,
 } from "lucide-react";
 import Modal from "../ui/Modal";
+import ModalAcciones from "../ui/ModalAcciones";
 import EstadoBadge from "../ui/EstadoBadge";
 import { DatePicker } from "../ui/DateTimePicker";
 import { api } from "../../api/axios";
@@ -66,7 +67,7 @@ const ITEM_NORMAL = `${ITEM} text-foreground`;
 const ITEM_DESTRUCTIVO = `${ITEM} text-red-700 dark:text-red-400`;
 
 const BOTON_SECUNDARIO =
-  "min-h-[44px] lg:min-h-[36px] flex-1 px-4 rounded-xl border border-border text-sm font-medium text-foreground " +
+  "min-h-[44px] lg:min-h-[36px] flex-1 px-4 rounded-xl border border-border dark:border-slate-600 text-sm font-medium text-foreground " +
   "hover:bg-muted transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 const BOTON_PRIMARIO =
   "min-h-[44px] lg:min-h-[36px] flex-1 px-4 rounded-xl text-sm font-semibold bg-primary text-primary-foreground " +
@@ -298,7 +299,7 @@ function HojaAbierta({
               )}
             </div>
           )}
-          <div className="flex flex-col-reverse sm:flex-row gap-2">
+          <ModalAcciones>
             <button type="button" className={BOTON_SECUNDARIO} onClick={() => setVista("menu")}>Volver</button>
             <button
               type="button"
@@ -308,7 +309,7 @@ function HojaAbierta({
             >
               {reagendar.isPending ? "Reagendando…" : "Confirmar nuevo horario"}
             </button>
-          </div>
+          </ModalAcciones>
         </div>
       )}
 
@@ -318,7 +319,7 @@ function HojaAbierta({
           <p className="text-sm text-muted-foreground">
             {`¿Confirmas que esta ${cita1} fue atendida y deseas marcarla como completada?`}
           </p>
-          <div className="flex flex-col-reverse sm:flex-row gap-2">
+          <ModalAcciones>
             <button type="button" className={BOTON_SECUNDARIO} onClick={() => setVista("menu")}>Volver</button>
             <button
               type="button"
@@ -328,7 +329,7 @@ function HojaAbierta({
             >
               {cambiarEstado.isPending ? "Guardando…" : "Marcar como completada"}
             </button>
-          </div>
+          </ModalAcciones>
         </div>
       )}
 
@@ -348,7 +349,7 @@ function HojaAbierta({
               className="w-full px-3 py-2 rounded-lg border border-input bg-background text-foreground text-sm outline-none focus:ring-2 focus:ring-ring resize-none"
             />
           </div>
-          <div className="flex flex-col-reverse sm:flex-row gap-2">
+          <ModalAcciones>
             <button type="button" className={BOTON_SECUNDARIO} onClick={() => setVista("menu")}>Volver</button>
             <button
               type="button"
@@ -358,7 +359,7 @@ function HojaAbierta({
             >
               {cambiarEstado.isPending ? "Guardando…" : vista === "cancelar" ? `Cancelar ${cita1}` : "Marcar inasistencia"}
             </button>
-          </div>
+          </ModalAcciones>
         </div>
       )}
     </Modal>

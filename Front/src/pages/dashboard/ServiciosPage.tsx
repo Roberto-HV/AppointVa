@@ -10,6 +10,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { serviciosApi, categoriasApi } from "../../api/servicios";
 import Modal from "../../components/ui/Modal";
+import ModalAcciones from "../../components/ui/ModalAcciones";
+import { BOTON_MODAL_PRIMARIO, BOTON_MODAL_SECUNDARIO } from "../../components/ui/botonesModal";
 import ConfirmarAccion from "../../components/ui/ConfirmarAccion";
 import DialogoEliminarConCitas from "../../components/dashboard/DialogoEliminarConCitas";
 import Pagination from "../../components/ui/Pagination";
@@ -620,13 +622,14 @@ export default function ServiciosPage() {
             </div>
           </div>
 
-          <button
-            type="submit"
-            disabled={guardandoServicio}
-            className="w-full bg-slate-700 hover:bg-slate-800 disabled:opacity-50 text-white font-semibold py-2.5 rounded-xl transition"
-          >
-            {guardandoServicio ? "Guardando..." : servicioEdit ? "Guardar cambios" : "Crear servicio"}
-          </button>
+          <ModalAcciones>
+            <button type="button" onClick={() => descarte.pedirCierre(isDirty, () => setModal(false))} className={BOTON_MODAL_SECUNDARIO}>
+              Cancelar
+            </button>
+            <button type="submit" disabled={guardandoServicio} className={BOTON_MODAL_PRIMARIO}>
+              {guardandoServicio ? "Guardando..." : servicioEdit ? "Guardar cambios" : "Crear servicio"}
+            </button>
+          </ModalAcciones>
         </form>
       </Modal>
 
@@ -701,13 +704,14 @@ export default function ServiciosPage() {
             />
             <p className="text-xs text-slate-400 mt-1 dark:text-slate-500">Número que define el orden en el catálogo público.</p>
           </div>
-          <button
-            type="submit"
-            disabled={guardandoCategoria}
-            className="w-full bg-slate-700 hover:bg-slate-800 disabled:opacity-50 text-white font-semibold py-2.5 rounded-xl transition"
-          >
-            {guardandoCategoria ? "Guardando..." : categoriaEdit ? "Guardar cambios" : "Crear categoría"}
-          </button>
+          <ModalAcciones>
+            <button type="button" onClick={() => descarte.pedirCierre(formCat.formState.isDirty, () => setModalCategoria(false))} className={BOTON_MODAL_SECUNDARIO}>
+              Cancelar
+            </button>
+            <button type="submit" disabled={guardandoCategoria} className={BOTON_MODAL_PRIMARIO}>
+              {guardandoCategoria ? "Guardando..." : categoriaEdit ? "Guardar cambios" : "Crear categoría"}
+            </button>
+          </ModalAcciones>
         </form>
       </Modal>
 

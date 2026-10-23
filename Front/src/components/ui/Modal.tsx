@@ -15,16 +15,22 @@ const anchos = {
   lg: "sm:max-w-lg",
 };
 
+/**
+ * Diálogo del dashboard. Cabecera y cuerpo comparten el mismo relleno
+ * horizontal (px-5 sm:px-6) para que título, campos y botones queden en la
+ * misma vertical. La cabecera queda fija y solo el cuerpo hace scroll.
+ */
 export default function Modal({ abierto, onCerrar, titulo, children, ancho = "md" }: Props) {
   return (
     <Dialog open={abierto} onOpenChange={(open) => { if (!open) onCerrar(); }}>
-      <DialogContent className={`${anchos[ancho]} max-h-[90vh] flex flex-col p-0 gap-0 bg-white dark:bg-slate-800`}>
-        <DialogHeader className="px-6 py-4 border-b border-slate-100 dark:border-slate-700">
-          <DialogTitle className="text-base font-semibold text-slate-800 dark:text-slate-100">{titulo}</DialogTitle>
+      <DialogContent className={`${anchos[ancho]} max-h-[90dvh] flex flex-col overflow-hidden p-0 gap-0 bg-white dark:bg-slate-800`}>
+        <DialogHeader className="px-5 sm:px-6 py-4 pr-12 sm:pr-12 border-b border-slate-100 dark:border-slate-700">
+          <DialogTitle className="text-base font-semibold leading-6 text-slate-800 dark:text-slate-100">{titulo}</DialogTitle>
         </DialogHeader>
         {/* text-foreground por defecto: el contenido sin color propio no queda
-            negro sobre el fondo oscuro del modal en dark mode. */}
-        <div className="overflow-y-auto p-6 text-foreground">{children}</div>
+            negro sobre el fondo oscuro del modal en dark mode. min-h-0: sin él
+            el cuerpo no encoge dentro de la columna flex y no hace scroll. */}
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 sm:px-6 py-5 text-foreground">{children}</div>
       </DialogContent>
     </Dialog>
   );

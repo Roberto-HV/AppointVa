@@ -11,6 +11,8 @@ import { serviciosApi } from "../../api/servicios";
 import { negociosApi } from "../../api/negocios";
 import { citasApi } from "../../api/citas";
 import Modal from "../../components/ui/Modal";
+import ModalAcciones from "../../components/ui/ModalAcciones";
+import { BOTON_MODAL_PRIMARIO, BOTON_MODAL_SECUNDARIO } from "../../components/ui/botonesModal";
 import ConfirmarAccion from "../../components/ui/ConfirmarAccion";
 import DialogoEliminarConCitas from "../../components/dashboard/DialogoEliminarConCitas";
 import EditorHorario from "../../components/dashboard/EditorHorario";
@@ -836,10 +838,15 @@ export default function EmpleadosPage() {
           {errorInvitar && (
             <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-3 py-2">{errorInvitar}</div>
           )}
-          <button type="submit" disabled={invitando}
-            className="w-full bg-slate-700 hover:bg-slate-800 disabled:opacity-50 text-white font-semibold py-2.5 rounded-xl transition">
-            {invitando ? "Creando cuenta..." : "Crear cuenta de acceso"}
-          </button>
+          <ModalAcciones>
+            <button type="button" className={BOTON_MODAL_SECUNDARIO}
+              onClick={() => descarte.pedirCierre(formInvitar.formState.isDirty, () => setModalInvitar(false))}>
+              Cancelar
+            </button>
+            <button type="submit" disabled={invitando} className={BOTON_MODAL_PRIMARIO}>
+              {invitando ? "Creando cuenta..." : "Crear cuenta de acceso"}
+            </button>
+          </ModalAcciones>
         </form>
       </Modal>
 

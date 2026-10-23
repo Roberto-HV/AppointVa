@@ -6,6 +6,8 @@ import { kioscoApi, type CitaKiosco } from "../../api/kiosco";
 import { getSectorTerms } from "../../hooks/useSectorTerms";
 import { ArrowLeft, Check } from "lucide-react";
 import Modal from "../../components/ui/Modal";
+import ModalAcciones from "../../components/ui/ModalAcciones";
+import { BOTON_MODAL_PRIMARIO, BOTON_MODAL_SECUNDARIO } from "../../components/ui/botonesModal";
 import { usePulsacionLarga } from "../../hooks/usePulsacionLarga";
 import {
   completarSalida2FA,
@@ -560,22 +562,22 @@ function SalidaProtegida({ email }: { email: string }) {
           {error && (
             <p id={idError} role="alert" className="mt-1.5 text-sm text-red-700 dark:text-red-400">{error}</p>
           )}
-          <div className="flex justify-end gap-2">
+          <ModalAcciones>
             <button
               type="button"
               onClick={cerrar}
-              className="min-h-[44px] px-4 rounded-lg border border-slate-200 dark:border-slate-600 text-sm font-medium text-foreground hover:bg-slate-50 dark:hover:bg-slate-700 transition"
+              className={BOTON_MODAL_SECUNDARIO}
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={faltaDato || verificando || bloqueado}
-              className="min-h-[44px] px-4 rounded-lg bg-slate-700 hover:bg-slate-800 dark:bg-slate-600 dark:hover:bg-slate-500 text-sm font-semibold text-white disabled:opacity-40 transition"
+              className={BOTON_MODAL_PRIMARIO}
             >
               {verificando ? "Verificando…" : "Salir"}
             </button>
-          </div>
+          </ModalAcciones>
         </form>
       </Modal>
     </>

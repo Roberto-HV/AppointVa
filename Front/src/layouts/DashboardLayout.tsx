@@ -682,7 +682,7 @@ export default function DashboardLayout() {
             desplazarse a un campo del final no lo deja debajo de la barra. */}
         <main
           className="flex-1 overflow-y-auto bg-slate-50 dark:bg-slate-950 scroll-pb-[var(--barra-accion,0px)]"
-          style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+          style={{ paddingBottom: 'var(--main-relleno-inferior, env(safe-area-inset-bottom))' }}
         >
           {/* Desktop topbar — hidden on mobile (mobile has its own header) */}
           <header className="hidden xl:flex items-center justify-end gap-3 border-b border-slate-200 bg-slate-50 px-6 py-3 dark:border-slate-700 dark:bg-slate-900">

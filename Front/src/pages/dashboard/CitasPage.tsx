@@ -16,6 +16,8 @@ import { negociosApi } from "../../api/negocios";
 import { api } from "../../api/axios";
 import EstadoBadge from "../../components/ui/EstadoBadge";
 import Modal from "../../components/ui/Modal";
+import ModalAcciones from "../../components/ui/ModalAcciones";
+import { BOTON_MODAL_PRIMARIO, BOTON_MODAL_SECUNDARIO, BOTON_MODAL_PELIGRO_SUAVE } from "../../components/ui/botonesModal";
 import ConfirmarAccion from "../../components/ui/ConfirmarAccion";
 import AccionesCita, { HojaAccionesCita, type AccionExtraCita, type VistaHoja } from "../../components/dashboard/AccionesCita";
 import TarjetaCita, { InsigniasCita } from "../../components/dashboard/TarjetaCita";
@@ -916,22 +918,23 @@ export default function CitasPage() {
             <p className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded-lg px-3 py-2">
               {`Esto actualiza los datos del ${terms.cliente.toLowerCase()} en todas sus ${terms.citas.toLowerCase()}.`}
             </p>
-            <div className="flex gap-2">
+            <ModalAcciones>
               <button
                 type="button"
                 onClick={() => setCitaEditar(null)}
-                className="px-4 py-2.5 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl text-sm transition"
+                className={BOTON_MODAL_SECUNDARIO}
               >
                 Volver
               </button>
               <button
                 onClick={() => { if (!emailEditarError) editarCliente(); }}
                 disabled={!fEditar.nombre.trim() || editando || !!emailEditarError}
-                className="flex-1 bg-slate-700 hover:bg-slate-800 disabled:opacity-40 text-white font-semibold py-2.5 rounded-xl text-sm transition"
+                type="button"
+                className={BOTON_MODAL_PRIMARIO}
               >
                 {editando ? "Guardando..." : "Guardar cambios"}
               </button>
-            </div>
+            </ModalAcciones>
           </div>
         )}
       </Modal>
@@ -959,12 +962,13 @@ export default function CitasPage() {
               />
               <p className="text-xs text-slate-500 dark:text-slate-400 text-right mt-1">{notasTexto.length}/1000</p>
             </div>
-            <div className="flex gap-2">
+            <ModalAcciones>
               {citaNotas.notas && (
                 <button
                   onClick={() => actualizarNotas({ id: citaNotas.id, notas: null, anterior: citaNotas.notas })}
                   disabled={guardandoNotas}
-                  className="px-4 py-2.5 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-40 rounded-xl text-sm transition"
+                  type="button"
+                  className={BOTON_MODAL_PELIGRO_SUAVE}
                 >
                   Eliminar nota
                 </button>
@@ -972,11 +976,12 @@ export default function CitasPage() {
               <button
                 onClick={() => actualizarNotas({ id: citaNotas.id, notas: notasTexto || null })}
                 disabled={guardandoNotas || notasTexto === (citaNotas.notas ?? "")}
-                className="flex-1 bg-slate-700 hover:bg-slate-800 disabled:opacity-40 text-white font-semibold py-2.5 rounded-xl text-sm transition"
+                type="button"
+                className={BOTON_MODAL_PRIMARIO}
               >
                 {guardandoNotas ? "Guardando..." : "Guardar nota"}
               </button>
-            </div>
+            </ModalAcciones>
           </div>
         )}
       </Modal>
@@ -1083,13 +1088,16 @@ export default function CitasPage() {
               </div>
             )}
 
-            <button
-              onClick={() => slotNuevo && setPasoCita(2)}
-              disabled={!slotNuevo}
-              className="w-full bg-slate-700 hover:bg-slate-800 disabled:opacity-40 text-white font-semibold py-2.5 rounded-xl transition"
-            >
-              Continuar
-            </button>
+            <ModalAcciones>
+              <button
+                onClick={() => slotNuevo && setPasoCita(2)}
+                disabled={!slotNuevo}
+                type="button"
+                className={BOTON_MODAL_PRIMARIO}
+              >
+                Continuar
+              </button>
+            </ModalAcciones>
           </div>
         )}
 
@@ -1186,10 +1194,11 @@ export default function CitasPage() {
               />
             </div>
 
-            <div className="flex gap-2">
+            <ModalAcciones>
               <button
                 onClick={() => setPasoCita(1)}
-                className="px-4 py-2.5 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl text-sm transition"
+                type="button"
+                className={BOTON_MODAL_SECUNDARIO}
               >
                 Atrás
               </button>
@@ -1203,11 +1212,12 @@ export default function CitasPage() {
                   if (!err && !errTel) crearCita();
                 }}
                 disabled={!fCliente.nombre.trim() || creando || !!emailClienteError}
-                className="flex-1 bg-slate-700 hover:bg-slate-800 disabled:opacity-40 text-white font-semibold py-2.5 rounded-xl text-sm transition"
+                type="button"
+                className={BOTON_MODAL_PRIMARIO}
               >
                 {creando ? "Creando..." : `Crear ${terms.cita.toLowerCase()}`}
               </button>
-            </div>
+            </ModalAcciones>
           </div>
         )}
       </Modal>
@@ -1295,13 +1305,16 @@ export default function CitasPage() {
                   seleccionado={slotRepetir}
                   onSeleccionar={setSlotRepetir}
                 />
-                <button
-                  onClick={() => slotRepetir && setPasoRepetir(2)}
-                  disabled={!slotRepetir}
-                  className="w-full bg-slate-700 hover:bg-slate-800 disabled:opacity-40 text-white font-semibold py-2.5 rounded-xl transition"
-                >
-                  Continuar
-                </button>
+                <ModalAcciones>
+                  <button
+                    onClick={() => slotRepetir && setPasoRepetir(2)}
+                    disabled={!slotRepetir}
+                    type="button"
+                    className={BOTON_MODAL_PRIMARIO}
+                  >
+                    Continuar
+                  </button>
+                </ModalAcciones>
               </div>
             )}
 
@@ -1372,10 +1385,11 @@ export default function CitasPage() {
                     className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm outline-none focus:border-accent-brand resize-none"
                   />
                 </div>
-                <div className="flex gap-2">
+                <ModalAcciones>
                   <button
                     onClick={() => setPasoRepetir(1)}
-                    className="px-4 py-2.5 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl text-sm transition"
+                    type="button"
+                className={BOTON_MODAL_SECUNDARIO}
                   >
                     Atrás
                   </button>
@@ -1386,11 +1400,12 @@ export default function CitasPage() {
                       if (!err) repetirCita();
                     }}
                     disabled={!fClienteRepetir.nombre.trim() || !fClienteRepetir.telefono.trim() || repitiendo || !!emailRepetirError}
-                    className="flex-1 bg-slate-700 hover:bg-slate-800 disabled:opacity-40 text-white font-semibold py-2.5 rounded-xl text-sm transition"
+                    type="button"
+                className={BOTON_MODAL_PRIMARIO}
                   >
                     {repitiendo ? "Creando..." : `Crear ${terms.cita.toLowerCase()}`}
                   </button>
-                </div>
+                </ModalAcciones>
               </div>
             )}
           </>

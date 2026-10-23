@@ -1,4 +1,5 @@
 import Modal from "./ui/Modal";
+import ModalAcciones from "./ui/ModalAcciones";
 
 interface Props {
   abierto: boolean;
@@ -17,11 +18,11 @@ export default function AvisoInactividad({ abierto, onSeguir, onCerrarSesion }: 
         <p className="text-sm text-muted-foreground">
           Por seguridad, tu sesión se cerrará en 1 minuto por inactividad. Lo que no hayas guardado se perderá.
         </p>
-        <div className="flex flex-col-reverse sm:flex-row gap-2">
+        <ModalAcciones>
           <button
             type="button"
             onClick={onCerrarSesion}
-            className="min-h-[44px] lg:min-h-[36px] flex-1 px-4 rounded-xl border border-border text-sm font-medium text-foreground hover:bg-muted transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="min-h-[44px] lg:min-h-[36px] flex-1 px-4 rounded-xl border border-border dark:border-slate-600 text-sm font-medium text-foreground hover:bg-muted transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             Cerrar sesión
           </button>
@@ -32,7 +33,7 @@ export default function AvisoInactividad({ abierto, onSeguir, onCerrarSesion }: 
           >
             Seguir conectado
           </button>
-        </div>
+        </ModalAcciones>
       </div>
     </Modal>
   );

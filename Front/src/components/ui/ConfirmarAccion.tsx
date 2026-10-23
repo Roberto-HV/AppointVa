@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import Modal from "./Modal";
+import ModalAcciones from "./ModalAcciones";
 
 interface Props {
   abierto: boolean;
@@ -28,11 +29,11 @@ export default function ConfirmarAccion({
     <Modal abierto={abierto} onCerrar={onCerrar} titulo={titulo} ancho="sm">
       <div className="space-y-5">
         <div className="text-sm text-muted-foreground">{mensaje}</div>
-        <div className="flex flex-col-reverse sm:flex-row gap-2">
+        <ModalAcciones>
           <button
             type="button"
             onClick={onCerrar}
-            className="min-h-[44px] lg:min-h-[36px] flex-1 px-4 rounded-xl border border-border text-sm font-medium text-foreground hover:bg-muted transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="min-h-[44px] lg:min-h-[36px] flex-1 px-4 rounded-xl border border-border dark:border-slate-600 text-sm font-medium text-foreground hover:bg-muted transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             {etiquetaVolver}
           </button>
@@ -48,7 +49,7 @@ export default function ConfirmarAccion({
           >
             {pendiente ? "Procesando…" : etiquetaConfirmar}
           </button>
-        </div>
+        </ModalAcciones>
       </div>
     </Modal>
   );
