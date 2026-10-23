@@ -12,7 +12,11 @@ import { negociosApi } from "../../api/negocios";
 import { citasApi } from "../../api/citas";
 import Modal from "../../components/ui/Modal";
 import ModalAcciones from "../../components/ui/ModalAcciones";
-import { BOTON_MODAL_PRIMARIO, BOTON_MODAL_SECUNDARIO } from "../../components/ui/botonesModal";
+import {
+  BOTON_MODAL_PRIMARIO,
+  BOTON_MODAL_SECUNDARIO,
+  BOTON_MODAL_PELIGRO_SUAVE,
+} from "../../components/ui/botonesModal";
 import ConfirmarAccion from "../../components/ui/ConfirmarAccion";
 import DialogoEliminarConCitas from "../../components/dashboard/DialogoEliminarConCitas";
 import EditorHorario from "../../components/dashboard/EditorHorario";
@@ -35,6 +39,14 @@ import { useSubirImagen } from "../../hooks/useSubirImagen";
 import { ACCEPT_IMAGEN } from "../../lib/imagenes";
 import ProgresoSubida from "../../components/ui/ProgresoSubida";
 import type { EmpleadoDto, HorarioDiaDto } from "../../types";
+
+// Quitar un bloqueo de la lista del modal: acción destructiva discreta, sin borde,
+// del mismo alto que el resto de botones (44px táctil, 36px en escritorio).
+const BOTON_QUITAR_BLOQUEO =
+  "inline-flex items-center justify-center gap-2 min-h-[44px] lg:min-h-[36px] rounded-lg font-medium " +
+  "transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 " +
+  "focus-visible:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed " +
+  "text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20";
 
 const HORARIO_BASE: HorarioDiaDto[] = Array.from({ length: 7 }, (_, i) => ({
   diaSemana: i,
@@ -85,19 +97,6 @@ const schemaBloqueo = z.object({
   return (fin.getTime() - inicio.getTime()) >= 60 * 60 * 1000;
 }, { message: "El bloqueo debe durar al menos 1 hora", path: ["horaFin"] });
 type BloqueoForm = z.infer<typeof schemaBloqueo>;
-
-// Acciones de la tarjeta de un empleado: un solo tamaño (44px táctil, 36px en
-// escritorio), icono + texto alineados y tres pesos visuales con los tokens del
-// sistema: principal (Editar), secundarias neutras y la destructiva aparte.
-const BOTON_TARJETA =
-  "inline-flex items-center justify-center gap-2 min-h-[44px] lg:min-h-[36px] px-3 rounded-lg text-sm font-medium " +
-  "transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 " +
-  "focus-visible:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed";
-const BOTON_TARJETA_PRIMARIO = `${BOTON_TARJETA} bg-primary text-primary-foreground hover:opacity-90`;
-const BOTON_TARJETA_SECUNDARIO =
-  `${BOTON_TARJETA} border border-border dark:border-slate-600 bg-card text-foreground hover:bg-muted dark:hover:bg-slate-700`;
-const BOTON_TARJETA_PELIGRO =
-  `${BOTON_TARJETA} text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20`;
 
 export default function EmpleadosPage() {
   const entrada = useEntradaAnimada();
@@ -440,66 +439,68 @@ export default function EmpleadosPage() {
             <motion.div
               key={emp.id}
               variants={{ hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0, transition: { duration: 0.35 } } }}
-              className="bg-white rounded-xl border border-slate-100 p-5 flex gap-4 dark:bg-slate-800 dark:border-slate-700"
+              className="bg-white rounded-xl border border-slate-100 p-5 flex flex-col gap-4 dark:bg-slate-800 dark:border-slate-700"
             >
-              {/* Un botón, no un div: se enfoca con Tab, y la insignia de la cámara
-                  está siempre a la vista, también en pantallas táctiles sin hover. */}
-              <div className="shrink-0 w-14 flex flex-col items-center gap-1.5">
-                <button
-                  type="button"
-                  className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center shrink-0 relative group dark:bg-slate-700 disabled:opacity-60
-                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                  onClick={() => { empleadoFotoIdRef.current = emp.id; fotoInputRef.current?.click(); }}
-                  disabled={fotoEmpleado.subiendoEn(emp.id)}
-                  aria-label={`Cambiar foto de ${emp.nombre}`}
-                  title="Cambiar foto"
-                >
-                  <span className="w-full h-full rounded-full overflow-hidden flex items-center justify-center">
-                    {emp.fotoUrl
-                      ? <img src={emp.fotoUrl} alt="" className="w-full h-full object-cover" />
-                      : <span className="text-xl font-bold text-slate-400">{emp.nombre.charAt(0)}</span>
-                    }
-                  </span>
-                  <span aria-hidden="true" className="absolute -bottom-0.5 -right-0.5 w-6 h-6 rounded-full bg-card border border-border text-muted-foreground flex items-center justify-center shadow-sm group-hover:text-foreground transition">
-                    <Camera size={13} />
-                  </span>
-                </button>
-                {fotoEmpleado.subiendoEn(emp.id) && (
-                  <ProgresoSubida porcentaje={fotoEmpleado.progresoDe(emp.id) ?? null} etiqueta={`Subiendo foto de ${emp.nombre}`} />
-                )}
+              <div className="flex gap-4">
+                {/* Un botón, no un div: se enfoca con Tab, y la insignia de la cámara
+                    está siempre a la vista, también en pantallas táctiles sin hover. */}
+                <div className="shrink-0 w-14 flex flex-col items-center gap-1.5">
+                  <button
+                    type="button"
+                    className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center shrink-0 relative group dark:bg-slate-700 disabled:opacity-60
+                      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                    onClick={() => { empleadoFotoIdRef.current = emp.id; fotoInputRef.current?.click(); }}
+                    disabled={fotoEmpleado.subiendoEn(emp.id)}
+                    aria-label={`Cambiar foto de ${emp.nombre}`}
+                    title="Cambiar foto"
+                  >
+                    <span className="w-full h-full rounded-full overflow-hidden flex items-center justify-center">
+                      {emp.fotoUrl
+                        ? <img src={emp.fotoUrl} alt="" className="w-full h-full object-cover" />
+                        : <span className="text-xl font-bold text-slate-400">{emp.nombre.charAt(0)}</span>
+                      }
+                    </span>
+                    <span aria-hidden="true" className="absolute -bottom-0.5 -right-0.5 w-6 h-6 rounded-full bg-card border border-border text-muted-foreground flex items-center justify-center shadow-sm group-hover:text-foreground transition">
+                      <Camera size={13} />
+                    </span>
+                  </button>
+                  {fotoEmpleado.subiendoEn(emp.id) && (
+                    <ProgresoSubida porcentaje={fotoEmpleado.progresoDe(emp.id) ?? null} etiqueta={`Subiendo foto de ${emp.nombre}`} />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <p className="font-semibold text-slate-800 truncate dark:text-slate-200">{emp.nombre}</p>
+                    <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${emp.activo ? "bg-status-confirmed-bg text-status-confirmed-fg" : "bg-status-absent-bg text-status-absent-fg"}`}>
+                      {emp.activo ? "Activo" : "Inactivo"}
+                    </span>
+                  </div>
+                  {emp.email && <p className="text-xs text-slate-400 truncate dark:text-slate-500">{emp.email}</p>}
+                  {emp.telefono && <p className="text-xs text-slate-400 dark:text-slate-500">{emp.telefono}</p>}
+                  <p className="text-xs text-slate-400 mt-1 dark:text-slate-500">{emp.servicioIds.length} {emp.servicioIds.length === 1 ? terms.servicio : terms.servicios} asignados</p>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-0.5">
-                  <p className="font-semibold text-slate-800 truncate dark:text-slate-200">{emp.nombre}</p>
-                  <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${emp.activo ? "bg-status-confirmed-bg text-status-confirmed-fg" : "bg-status-absent-bg text-status-absent-fg"}`}>
-                    {emp.activo ? "Activo" : "Inactivo"}
-                  </span>
-                </div>
-                {emp.email && <p className="text-xs text-slate-400 truncate dark:text-slate-500">{emp.email}</p>}
-                {emp.telefono && <p className="text-xs text-slate-400 dark:text-slate-500">{emp.telefono}</p>}
-                <p className="text-xs text-slate-400 mt-1 dark:text-slate-500">{emp.servicioIds.length} {emp.servicioIds.length === 1 ? terms.servicio : terms.servicios} asignados</p>
 
-                <div className="mt-4 space-y-2" role="group" aria-label={`Acciones de ${emp.nombre}`}>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button type="button" onClick={() => abrirEditar(emp)} className={BOTON_TARJETA_PRIMARIO}>
-                      <Pencil size={15} aria-hidden="true" /> Editar
-                    </button>
-                    <button type="button" onClick={() => abrirHorario(emp)} className={BOTON_TARJETA_SECUNDARIO}>
-                      <Clock size={15} className="text-muted-foreground" aria-hidden="true" /> Horarios
-                    </button>
-                    <button type="button" onClick={() => abrirBloqueo(emp)} className={BOTON_TARJETA_SECUNDARIO}>
-                      <CalendarX size={15} className="text-muted-foreground" aria-hidden="true" /> Bloqueos
-                    </button>
-                    <button type="button" onClick={() => abrirInvitar(emp)} className={BOTON_TARJETA_SECUNDARIO}>
-                      <Mail size={15} className="text-muted-foreground" aria-hidden="true" /> Invitar
-                    </button>
-                  </div>
-                  <div className="pt-2 border-t border-border dark:border-slate-700 flex justify-end">
-                    <button type="button" onClick={() => setEmpleadoEliminar(emp)} className={BOTON_TARJETA_PELIGRO}>
-                      <Trash2 size={15} aria-hidden="true" /> Eliminar
-                    </button>
-                  </div>
-                </div>
+              {/* Acciones a todo el ancho de la tarjeta y pegadas a su pie (`mt-auto`),
+                  así quedan a la misma altura en tarjetas vecinas. Rejilla fija de dos
+                  columnas iguales: Editar ocupa la primera fila y las otras cuatro, con
+                  Eliminar al final, completan dos filas sin huérfanos en ningún ancho. */}
+              <div className="mt-auto grid grid-cols-2 gap-2" role="group" aria-label={`Acciones de ${emp.nombre}`}>
+                <button type="button" onClick={() => abrirEditar(emp)} className={`${BOTON_MODAL_PRIMARIO} col-span-2`}>
+                  <Pencil size={15} aria-hidden="true" /> Editar
+                </button>
+                <button type="button" onClick={() => abrirHorario(emp)} className={BOTON_MODAL_SECUNDARIO}>
+                  <Clock size={15} className="text-muted-foreground" aria-hidden="true" /> Horarios
+                </button>
+                <button type="button" onClick={() => abrirBloqueo(emp)} className={BOTON_MODAL_SECUNDARIO}>
+                  <CalendarX size={15} className="text-muted-foreground" aria-hidden="true" /> Bloqueos
+                </button>
+                <button type="button" onClick={() => abrirInvitar(emp)} className={BOTON_MODAL_SECUNDARIO}>
+                  <Mail size={15} className="text-muted-foreground" aria-hidden="true" /> Invitar
+                </button>
+                <button type="button" onClick={() => setEmpleadoEliminar(emp)} className={BOTON_MODAL_PELIGRO_SUAVE}>
+                  <Trash2 size={15} aria-hidden="true" /> Eliminar
+                </button>
               </div>
             </motion.div>
           ))}
@@ -655,7 +656,7 @@ export default function EmpleadosPage() {
                       type="button"
                       onClick={() => b.id && setBloqueoEliminar({ id: b.id, texto: `${formatBloqueo(b.inicioEn)} → ${formatBloqueo(b.finEn)}` })}
                       aria-label={`Eliminar bloqueo ${formatBloqueo(b.inicioEn)} a ${formatBloqueo(b.finEn)}`}
-                      className={`${BOTON_TARJETA_PELIGRO} shrink-0 px-2.5 text-xs`}
+                      className={`${BOTON_QUITAR_BLOQUEO} shrink-0 px-2.5 text-xs`}
                     >
                       <Trash2 size={14} aria-hidden="true" /> Eliminar
                     </button>
