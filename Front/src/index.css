@@ -14,8 +14,8 @@
 
 /* ── Fraunces, cara display (solo font-display) ────────────────────────────
    Subconjunto latino con ejes opsz + wght (≈66 KB) de @fontsource-variable/fraunces.
-   Solo para titulares de la landing, el nombre del negocio en la reserva, el
-   titular de la confirmación y el saludo de Inicio. Nunca en el chrome del panel. */
+   Solo para los titulares H1/H2 de la landing (`/`). Nunca en el panel, la
+   reserva pública ni la confirmación. */
 @font-face {
   font-family: "Fraunces";
   font-style: normal;
@@ -31,56 +31,57 @@
 @tailwind utilities;
 
 :root {
-  /* ── Rampa neutra (canales RGB): las escalas slate/gray/zinc de Tailwind
-     apuntan aquí, así que las clases crudas heredan la paleta del producto.
-     Cálida por defecto ("Estudio cálido"); el sector salud la cambia por la
-     rampa fría con [data-sector="salud"] (abajo). No cambia con .dark: las
-     clases dark: ya eligen el paso oscuro de la escala. */
-  --neutral-50:  250 247 242;  /* #FAF7F2 lienzo */
-  --neutral-100: 243 238 230;  /* #F3EEE6 */
-  --neutral-200: 232 225 214;  /* #E8E1D6 línea */
-  --neutral-300: 214 204 190;  /* #D6CCBE */
-  --neutral-400: 166 155 141;  /* #A69B8D texto atenuado (dark): 6.27:1 sobre #1F1B16 */
-  --neutral-500: 107 98 87;    /* #6B6257 texto atenuado: 5.6:1 en lienzo, 5.98:1 en blanco */
-  --neutral-600: 79 71 61;     /* #4F473D */
-  --neutral-700: 53 47 39;     /* #352F27 línea (dark) */
-  --neutral-800: 40 35 29;     /* #28231D */
-  --neutral-900: 31 27 22;     /* #1F1B16 tinta / superficie (dark) */
-  --neutral-950: 22 19 15;     /* #16130F lienzo (dark) */
+  /* ── Rampa neutra (canales RGB): la escala slate de Tailwind apunta aquí.
+     Por defecto son los valores de slate de Tailwind (base azul marino/pizarra);
+     el sector salud la cambia por su rampa fría con [data-sector="salud"]
+     (abajo). gray/zinc son los de Tailwind. No cambia con .dark: las clases
+     dark: ya eligen el paso oscuro de la escala. */
+  --neutral-50:  248 250 252;  /* #F8FAFC */
+  --neutral-100: 241 245 249;  /* #F1F5F9 */
+  --neutral-200: 226 232 240;  /* #E2E8F0 */
+  --neutral-300: 203 213 225;  /* #CBD5E1 */
+  --neutral-400: 148 163 184;  /* #94A3B8 */
+  --neutral-500: 100 116 139;  /* #64748B */
+  --neutral-600: 71 85 105;    /* #475569 */
+  --neutral-700: 51 65 85;     /* #334155 */
+  --neutral-800: 30 41 59;     /* #1E293B */
+  --neutral-900: 15 23 42;     /* #0F172A */
+  --neutral-950: 2 6 23;       /* #020617 */
 
   /* ── AppointVa: canales RGB (permite bg-primary/10 etc.) ─────────────────── */
-  --color-ink:           31 27 22;    /* #1F1B16 tinta cálida: botones, titulares, bloques oscuros */
-  --color-primary:       var(--color-ink);
-  --color-primary-dark:  0 0 0;       /* hover de la tinta */
-  --color-primary-light: 107 98 87;   /* #6B6257 */
-  /* Acento de marca AppointVa (terracota): enlaces, foco, nav activo, progreso.
-     Nunca en la página de reserva (ahí manda el color del negocio, brandSolid). */
-  --color-accent-brand:  180 83 42;   /* #B4532A: 4.99:1 en blanco, 4.67:1 en lienzo */
+  --color-ink:           30 41 59;    /* #1E293B azul marino (slate-800): bloques oscuros, botones de la landing */
+  --color-primary:       51 65 85;    /* #334155 slate-700 */
+  --color-primary-dark:  30 41 59;    /* #1E293B slate-800 */
+  --color-primary-light: 100 116 139; /* #64748B slate-500 */
+  /* Acento de marca AppointVa = el azul marino primario (enlaces, foco, nav
+     activo, progreso). Nunca en la página de reserva (ahí manda el color del
+     negocio, brandSolid). Salud lo cambia por #0F4C75. */
+  --color-accent-brand:  51 65 85;    /* #334155: 10.4:1 en blanco */
 
-  /* ── shadcn/ui: variables HSL (neutros cálidos + tinta) ──────────────────── */
-  --background:           38 44% 96.5%; /* #FAF7F2 lienzo */
-  --foreground:           33 17% 10.4%; /* #1F1B16 tinta */
+  /* ── shadcn/ui: variables HSL (base pizarra + primario azul marino) ──────── */
+  --background:           0 0% 100%;
+  --foreground:           222 47% 11%;
   --card:                 0 0% 100%;
-  --card-foreground:      33 17% 10.4%;
+  --card-foreground:      222 47% 11%;
   --popover:              0 0% 100%;
-  --popover-foreground:   33 17% 10.4%;
-  --primary:              33 17% 10.4%; /* #1F1B16 tinta */
-  --primary-foreground:   0 0% 100%;    /* 17.1:1 */
-  --secondary:            37 35% 92.7%; /* #F3EEE6 */
-  --secondary-foreground: 33 17% 10.4%;
-  --muted:                37 35% 92.7%;
-  --muted-foreground:     33 10% 38%;   /* #6B6257: 5.18:1 sobre muted */
-  --accent:               37 35% 92.7%; /* hover de ghost/outline (shadcn); el acento de marca es --color-accent-brand */
-  --accent-foreground:    33 17% 10.4%;
+  --popover-foreground:   222 47% 11%;
+  --primary:              215 25% 27%;  /* #334155 slate-700 */
+  --primary-foreground:   0 0% 100%;
+  --secondary:            214 32% 91%;
+  --secondary-foreground: 215 25% 27%;
+  --muted:                214 32% 96%;
+  --muted-foreground:     215 16% 47%;
+  --accent:               214 32% 91%;  /* hover de ghost/outline (shadcn); el acento de marca es --color-accent-brand */
+  --accent-foreground:    215 25% 27%;
   --destructive:          0 84.2% 60.2%;
   --destructive-foreground: 0 0% 98%;
-  --border:               37 28% 87.5%; /* #E8E1D6 */
-  --input:                37 28% 87.5%;
-  --ring:                 18 62% 43.5%; /* #B4532A terracota */
+  --border:               214 32% 91%;
+  --input:                214 32% 91%;
+  --ring:                 215 25% 27%;  /* slate ring */
   --radius:               0.625rem;     /* 10px: controles (rounded-lg); tarjetas rounded-xl = 14px */
 
-  /* Elevación de tarjeta (shadow-card): sombra cálida O borde, nunca ambos. */
-  --shadow-card: 0 1px 2px rgb(31 27 22 / 0.06), 0 4px 16px rgb(31 27 22 / 0.06);
+  /* Elevación de tarjeta (shadow-card): sombra O borde, nunca ambos. */
+  --shadow-card: 0 1px 2px rgb(15 23 42 / 0.06), 0 4px 16px rgb(15 23 42 / 0.06);
 
   /* ── Estados de cita (badges) — referencia en docs/design-system.css ───── */
   /* dot = tono del estado; fg = el tono oscurecido, ≥ 4.5:1 sobre bg y sobre blanco. */
@@ -125,32 +126,33 @@
 }
 
 .dark {
-  /* AppointVa RGB channels — tinta clara en dark */
-  --color-ink:           244 239 232;  /* #F4EFE8 */
-  --color-primary-dark:  255 255 255;
-  --color-primary-light: 166 155 141;  /* #A69B8D */
-  --color-accent-brand:  224 122 79;   /* #E07A4F: 5.76:1 sobre #1F1B16, 6.23:1 sobre #16130F */
+  /* AppointVa RGB channels — lighter in dark mode */
+  --color-ink:           226 232 240;  /* #E2E8F0 slate-200: claro sobre oscuro */
+  --color-primary:       148 163 184;  /* slate-400 */
+  --color-primary-dark:  203 213 225;  /* slate-300 */
+  --color-primary-light: 100 116 139;  /* slate-500 */
+  --color-accent-brand:  203 213 225;  /* #CBD5E1 (= --ring) */
 
-  /* shadcn/ui tokens — dark palette (neutros cálidos) */
-  --background:           34 19% 7.3%;  /* #16130F */
-  --foreground:           35 35% 93.3%; /* #F4EFE8 */
-  --card:                 33 17% 10.4%; /* #1F1B16 */
-  --card-foreground:      35 35% 93.3%;
-  --popover:              33 17% 10.4%;
-  --popover-foreground:   35 35% 93.3%;
-  --primary:              35 35% 93.3%; /* #F4EFE8 */
-  --primary-foreground:   34 19% 7.3%;  /* 16.2:1 */
-  --secondary:            33 16% 13.5%; /* #28231D */
-  --secondary-foreground: 35 35% 93.3%;
-  --muted:                33 16% 13.5%;
-  --muted-foreground:     34 12% 60.2%; /* #A69B8D: 5.71:1 sobre muted, 6.27:1 sobre card */
-  --accent:               33 16% 13.5%;
-  --accent-foreground:    35 35% 93.3%;
+  /* shadcn/ui tokens — dark palette */
+  --background:           222 47% 7%;
+  --foreground:           210 40% 96%;
+  --card:                 215 28% 11%;
+  --card-foreground:      210 40% 96%;
+  --popover:              215 28% 11%;
+  --popover-foreground:   210 40% 96%;
+  --primary:              214 32% 91%;
+  --primary-foreground:   222 47% 7%;
+  --secondary:            217 33% 17%;
+  --secondary-foreground: 210 40% 96%;
+  --muted:                217 33% 17%;
+  --muted-foreground:     215 20% 65%;
+  --accent:               217 33% 17%;
+  --accent-foreground:    210 40% 96%;
   --destructive:          0 63% 31%;
   --destructive-foreground: 210 40% 96%;
-  --border:               34 15% 18%;   /* #352F27 */
-  --input:                34 15% 18%;
-  --ring:                 18 70% 59.4%; /* #E07A4F */
+  --border:               217 33% 17%;
+  --input:                217 33% 17%;
+  --ring:                 213 27% 84%;
 
   --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3), 0 4px 16px rgb(0 0 0 / 0.25);
 
@@ -196,7 +198,7 @@
 /* ── Sector salud: rampa neutra fría y acento #0F4C75 ────────────────────────
    DashboardLayout pone data-sector="salud" en <html> (así también lo heredan
    los portales de Radix) y LandingPageSalud en su contenedor. Mismos pasos de
-   luminancia que la rampa cálida, así que los contrastes se conservan. */
+   luminancia que la rampa por defecto, así que los contrastes se conservan. */
 [data-sector="salud"] {
   --neutral-50:  245 248 250;  /* #F5F8FA */
   --neutral-100: 237 242 245;  /* #EDF2F5 */
@@ -312,7 +314,7 @@ button:not([disabled]):active {
 }
 
 @layer components {
-  /* Tarjeta base: radio 14px y sombra cálida, sin borde (elevación = sombra O borde). */
+  /* Tarjeta base: radio 14px y sombra suave, sin borde (elevación = sombra O borde). */
   .tarjeta {
     @apply rounded-xl bg-card text-card-foreground shadow-card;
   }
@@ -343,18 +345,4 @@ button:not([disabled]):active {
   input, textarea, select {
     font-size: 16px !important;
   }
-}
-
-/* Línea de tiempo de Inicio (LineaTiempoHoy): cada bloque mide un % del día,
-   así que su etiqueta depende del ancho real. Angosto → hora de inicio en vez
-   de un nombre truncado a "Cort…"; diminuto → sin texto (el color y la lista
-   para lectores de pantalla siguen ahí). */
-.bloque-linea { container-type: inline-size; }
-.bloque-linea__corto { display: none; }
-@container (max-width: 72px) {
-  .bloque-linea__nombre { display: none; }
-  .bloque-linea__corto { display: block; }
-}
-@container (max-width: 26px) {
-  .bloque-linea__corto { display: none; }
 }

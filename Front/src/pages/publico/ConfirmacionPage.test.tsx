@@ -251,10 +251,10 @@ describe("ConfirmacionPage — estado de la cita", () => {
     return screen.findByRole("heading", { level: 1 });
   }
 
-  it("el titular dice cuándo la esperan, en la cara display", async () => {
+  it("el titular dice cuándo la esperan, en Inter (sin cara display)", async () => {
     const titulo = await renderCita({ estadoTexto: "Confirmada" });
     expect(titulo).toHaveTextContent("Te esperamos el miércoles 22 a las 10:00 a. m.");
-    expect(titulo).toHaveClass("font-display");
+    expect(titulo).not.toHaveClass("font-display");
   });
 
   it("si la hora ya pasó no dice «te esperamos»", async () => {

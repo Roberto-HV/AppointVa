@@ -127,10 +127,10 @@ export default function PasoServicio({ servicios, seleccionado, onSeleccionar, c
   const tinte = useMemo(() => brandTint(color), [color]);
   const grupos = useMemo(() => agrupar(servicios), [servicios]);
   const idBase = useId();
-  // Los encabezados de categoría van en la cara display, salvo en salud.
+  // Encabezados de categoría en Inter, como el resto de la reserva.
   const claseEncabezado = sector === "salud"
     ? "text-sm font-semibold text-slate-700"
-    : "font-display text-lg font-semibold text-slate-900 tracking-[-0.01em]";
+    : "text-lg font-semibold text-slate-900";
 
   return (
     <div>

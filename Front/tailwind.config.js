@@ -1,8 +1,9 @@
 /** @type {import('tailwindcss').Config} */
 
-// Escala neutra: slate, gray y zinc apuntan a la rampa --neutral-* de src/index.css
-// (cálida por defecto, fría con [data-sector="salud"]), así que las clases crudas
-// siguen al tema del producto en vez del gris frío por defecto de Tailwind.
+// Escala slate: apunta a la rampa --neutral-* de src/index.css, que por defecto
+// tiene exactamente los valores de slate de Tailwind (base azul marino/pizarra) y
+// con [data-sector="salud"] cambia a la rampa fría de salud. gray y zinc son los
+// de Tailwind, sin tocar.
 const neutra = Object.fromEntries(
   [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950].map((paso) => [
     paso,
@@ -20,9 +21,7 @@ export default {
     extend: {
       colors: {
         slate: neutra,
-        gray:  neutra,
-        zinc:  neutra,
-        // ── Tinta cálida (botones, titulares, bloques oscuros); clara en dark ──
+        // ── Tinta azul marino (botones, titulares, bloques oscuros); clara en dark ──
         ink: "rgb(var(--color-ink) / <alpha-value>)",
         // ── Colores propios del tema AppointVa (RGB channels para opacity modifiers) ──
         primary: {
@@ -56,7 +55,7 @@ export default {
         accent: {
           DEFAULT:    "hsl(var(--accent))",
           foreground: "hsl(var(--accent-foreground))",
-          // Acento de marca AppointVa (terracota; #0F4C75 en salud): text-accent-brand …
+          // Acento de marca AppointVa (= azul marino primario; #0F4C75 en salud): text-accent-brand …
           // Nunca en la página de reserva: ahí manda el color del negocio (brandSolid).
           brand:      "rgb(var(--color-accent-brand) / <alpha-value>)",
         },
@@ -97,7 +96,7 @@ export default {
         xl: "14px",                       // tarjetas
       },
       boxShadow: {
-        // Elevación cálida de tarjeta: sombra O borde, nunca ambos.
+        // Elevación de tarjeta: sombra O borde, nunca ambos.
         card: "var(--shadow-card)",
       },
       transitionTimingFunction: {
@@ -110,8 +109,8 @@ export default {
       fontFamily: {
         // Inter autohospedada en src/index.css (@font-face) con la pila del sistema de respaldo.
         sans: ["Inter", "system-ui", "-apple-system", "\"Segoe UI\"", "Roboto", "\"Helvetica Neue\"", "Arial", "sans-serif"],
-        // Fraunces (src/index.css): solo landing H1/H2, nombre del negocio en la reserva,
-        // titular de la confirmación y saludo de Inicio. Nunca en el chrome del panel.
+        // Fraunces (src/index.css): solo titulares H1/H2 de la landing. Nunca en el panel,
+        // la reserva pública ni la confirmación.
         display: ["Fraunces", "Georgia", "\"Times New Roman\"", "serif"],
       },
       animation: {

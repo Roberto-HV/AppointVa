@@ -7,7 +7,7 @@
 /** Fondo de página de las pantallas con tarjeta centrada. */
 export const FONDO_AUTH = "min-h-screen bg-slate-50 flex items-center justify-center p-4";
 
-/** Tarjeta base (.tarjeta en src/index.css): radio 14px y sombra cálida, sin borde. */
+/** Tarjeta base (.tarjeta en src/index.css): radio 14px y sombra suave, sin borde. */
 export const TARJETA_AUTH = "tarjeta p-6 sm:p-8";
 
 /** El `<h1>` de cada pantalla. */

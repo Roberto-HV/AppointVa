@@ -377,7 +377,7 @@ export default function DashboardLayout() {
       }
     : {
         aside: "bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-700/50",
-        // Nav activo con el acento terracota: tinte suave, texto en tinta (≥ 13:1) e icono en terracota.
+        // Nav activo con el acento de marca (azul marino): tinte suave, texto en primer plano e icono en el acento.
         activo: "bg-accent-brand/10 text-foreground font-semibold",
         iconoActivo: "text-accent-brand",
         fondoIconoActivo: "bg-transparent",

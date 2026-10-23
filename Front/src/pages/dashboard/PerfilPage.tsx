@@ -543,8 +543,13 @@ export default function PerfilPage() {
       type="submit"
       disabled={guardandoFormulario || !cambiosFormulario}
       aria-describedby="estado-guardado"
-      className="bg-slate-700 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-xl transition text-sm
-        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50 dark:focus-visible:ring-offset-slate-950"
+      // Botón primario con su par de contraste del tema (blanco sobre azul marino;
+      // en dark, oscuro sobre claro). Deshabilitado no se desvanece con opacidad:
+      // usa un relleno neutro con texto legible, así siempre se ve dónde guardar.
+      className="flex-1 sm:flex-none min-h-[44px] bg-primary text-primary-foreground hover:bg-primary-dark shadow-sm
+        disabled:shadow-none disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-600 dark:disabled:bg-slate-800 dark:disabled:text-slate-300
+        font-semibold px-6 py-2.5 rounded-lg transition text-sm
+        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
     >
       {guardandoFormulario ? "Guardando…" : "Guardar cambios"}
     </button>
@@ -604,7 +609,7 @@ export default function PerfilPage() {
               : "border-transparent"
           }`}
       >
-        <div className="flex items-center gap-4">
+        <div className="flex w-full sm:w-auto items-center gap-4">
           {btnGuardar}
           {estadoGuardado}
         </div>

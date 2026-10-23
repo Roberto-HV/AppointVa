@@ -456,7 +456,7 @@ export default function ConfirmacionPage() {
             </div>
           )}
           <p className="mt-2 text-sm font-semibold text-slate-700">{cita.nombreNegocio}</p>
-          <h1 className="font-display mt-4 text-[1.75rem] sm:text-3xl leading-tight font-semibold tracking-[-0.02em] text-slate-900 text-balance">
+          <h1 className="mt-4 text-2xl sm:text-3xl leading-tight font-bold text-slate-900 text-balance">
             {titular}
           </h1>
           <p className="mt-2 text-sm text-slate-600">{textosEstado.subtitulo}</p>

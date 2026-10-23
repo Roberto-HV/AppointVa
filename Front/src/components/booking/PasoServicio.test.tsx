@@ -219,9 +219,9 @@ describe("PasoServicio — como carta", () => {
     expect(screen.getByText("30 min")).toHaveClass("text-slate-500");
   });
 
-  it("los encabezados de categoría van en la cara display, salvo en salud", () => {
+  it("los encabezados de categoría usan Inter (sin cara display), también en salud", () => {
     const { unmount } = render(<PasoServicio servicios={conCategoria} seleccionado={null} onSeleccionar={vi.fn()} />);
-    expect(screen.getByRole("heading", { level: 3, name: "Cabello" })).toHaveClass("font-display");
+    expect(screen.getByRole("heading", { level: 3, name: "Cabello" })).not.toHaveClass("font-display");
     unmount();
     render(<PasoServicio servicios={conCategoria} seleccionado={null} onSeleccionar={vi.fn()} sector="salud" />);
     expect(screen.getByRole("heading", { level: 3, name: "Cabello" })).not.toHaveClass("font-display");
