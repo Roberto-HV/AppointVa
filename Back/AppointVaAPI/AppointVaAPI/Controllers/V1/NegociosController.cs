@@ -400,6 +400,7 @@ namespace AppointVaAPI.Controllers.V1
             }
 
             await _db.SaveChangesAsync();
+            await InvalidarNegocioPublicoAsync(_contexto.NegocioId.Value);
             return await ObtenerHorarios();
         }
 
@@ -642,6 +643,7 @@ namespace AppointVaAPI.Controllers.V1
 
             _db.BloqueosNegocio.Add(bloqueo);
             await _db.SaveChangesAsync();
+            await InvalidarNegocioPublicoAsync(_contexto.NegocioId.Value);
 
             return Ok(new BloqueoNegocioDto
             {
@@ -665,8 +667,23 @@ namespace AppointVaAPI.Controllers.V1
 
             _db.BloqueosNegocio.Remove(bloqueo);
             await _db.SaveChangesAsync();
+            await InvalidarNegocioPublicoAsync(_contexto.NegocioId.Value);
 
             return NoContent();
+        }
+
+        /// <summary>
+        /// La página pública lleva horario y días cerrados en caché (5 min): al cambiarlos,
+        /// se invalida para que la reserva no marque como cerrado un día ya abierto.
+        /// </summary>
+        private async Task InvalidarNegocioPublicoAsync(Guid negocioId)
+        {
+            var slug = await _db.Negocios
+                .Where(n => n.Id == negocioId)
+                .Select(n => n.Slug)
+                .FirstOrDefaultAsync();
+            if (!string.IsNullOrEmpty(slug))
+                await _cacheStore.EvictByTagAsync($"negocio-{slug}", CancellationToken.None);
         }
 
         // PATCH api/negocios/{id}/propietario/password — super-admin restablece la contraseña del propietario

@@ -64,6 +64,19 @@ export interface NegocioPublico {
   promedioResenas: number;
   totalResenas: number;
   resenas: ResenaPublica[];
+  /** Intervalos de atención activos; un día sin intervalos está cerrado. Ausente en APIs antiguas. */
+  horario?: IntervaloHorarioPublico[];
+  /** Días bloqueados por el negocio desde hoy, "YYYY-MM-DD". */
+  diasCerrados?: string[];
+  /** Zona horaria IANA del negocio. */
+  zonaHoraria?: string | null;
+}
+
+export interface IntervaloHorarioPublico {
+  /** 0=domingo … 6=sábado */
+  diaSemana: number;
+  horaInicio: string; // "HH:mm"
+  horaFin: string; // "HH:mm"
 }
 
 export interface ServicioPublico {

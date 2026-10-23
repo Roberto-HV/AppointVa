@@ -1533,6 +1533,9 @@ export default function BookingPage() {
               onLimpiarSlot={() => setSlot(null)}
               color={color}
               diasAnticipacionMinima={negocio.diasAnticipacionMinima}
+              calendario={negocio.horario
+                ? { horario: negocio.horario, diasCerrados: negocio.diasCerrados, zonaHoraria: negocio.zonaHoraria }
+                : undefined}
               enlaceListaEspera={
                 negocio.listaEsperaActiva === true
                   ? `/b/${negocio.slug}/espera?servicioId=${servicio.id}`

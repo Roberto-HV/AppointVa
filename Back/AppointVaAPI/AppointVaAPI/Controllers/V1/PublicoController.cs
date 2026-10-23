@@ -116,6 +116,21 @@ namespace AppointVaAPI.Controllers.V1
                 .AsNoTracking()
                 .ToListAsync();
 
+            var horario = await _db.HorariosNegocios
+                .Where(h => h.NegocioId == negocio.Id && h.Activo == 1)
+                .OrderBy(h => h.DiaSemana).ThenBy(h => h.HoraInicio)
+                .AsNoTracking()
+                .ToListAsync();
+
+            // Días bloqueados desde ayer (margen por zona horaria): la reserva no muestra el pasado.
+            var tzNegocio = AppointVaAPI.Helpers.ZonaHorariaHelper.Resolver(negocio.ZonaHoraria);
+            var desdeBloqueos = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tzNegocio).Date.AddDays(-1);
+            var diasCerrados = await _db.BloqueosNegocio
+                .Where(b => b.NegocioId == negocio.Id && b.Fecha >= desdeBloqueos)
+                .OrderBy(b => b.Fecha)
+                .Select(b => b.Fecha)
+                .ToListAsync();
+
             var dto = new NegocioPublicoDto
             {
                 Id = negocio.Id,
@@ -188,7 +203,15 @@ namespace AppointVaAPI.Controllers.V1
                     FechaCreacion = r.FechaCreacion
                 }).ToList(),
                 PromedioResenas = resenas.Count > 0 ? resenas.Average(r => r.Rating) : 0,
-                TotalResenas = resenas.Count
+                TotalResenas = resenas.Count,
+                Horario = horario.Select(h => new IntervaloHorarioPublicoDto
+                {
+                    DiaSemana = h.DiaSemana,
+                    HoraInicio = h.HoraInicio.ToString(@"hh\:mm"),
+                    HoraFin = h.HoraFin.ToString(@"hh\:mm")
+                }).ToList(),
+                DiasCerrados = diasCerrados.Select(f => f.ToString("yyyy-MM-dd")).Distinct().ToList(),
+                ZonaHoraria = AppointVaAPI.Helpers.ZonaHorariaHelper.IdIana(tzNegocio)
             };
 
             return Ok(dto);

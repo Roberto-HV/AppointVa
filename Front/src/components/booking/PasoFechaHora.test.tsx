@@ -186,13 +186,13 @@ describe("PasoFechaHora — disponibilidad de la semana", () => {
     renderConQuery();
     await waitFor(() => expect(diaPorNumero(21)).toHaveAttribute("data-disponibilidad", "sin-horarios"));
 
-    expect(diaPorNumero(21)).toHaveAccessibleName(/sin disponibilidad/);
+    expect(diaPorNumero(21)).toHaveAccessibleName(/sin horarios disponibles$/);
     expect(diaPorNumero(21).querySelector('[data-punto="sin-horarios"]')).toHaveClass("bg-slate-300");
 
     fireEvent.click(diaPorNumero(21));
 
     const aviso = await screen.findByRole("status");
-    expect(aviso).toHaveTextContent("No hay horarios disponibles para este día.");
+    expect(aviso).toHaveTextContent("Sin horarios disponibles");
     expect(aviso).toHaveTextContent("Elige otro día.");
     expect(screen.getByRole("button", { name: "Próximo disponible: viernes 23" })).toBeInTheDocument();
   });
@@ -200,7 +200,9 @@ describe("PasoFechaHora — disponibilidad de la semana", () => {
   it("la leyenda explica los puntos de disponibilidad", async () => {
     conHorariosEn("2026-10-23");
     renderConQuery();
-    expect(await screen.findByText("Sin disponibilidad")).toBeInTheDocument();
+    expect(await screen.findByText("Sin horarios")).toBeInTheDocument();
+    // Sin calendario del negocio no se puede afirmar que un día esté cerrado.
+    expect(screen.queryByText("Cerrado")).not.toBeInTheDocument();
     expect(screen.getByText("Con horarios")).toBeInTheDocument();
   });
 
@@ -300,6 +302,8 @@ describe("PasoFechaHora — precarga y errores por día", () => {
     expect(dia(23)).toHaveAttribute("aria-pressed", "true");
     expect(dia(21)).toHaveAttribute("data-disponibilidad", "error");
     expect(dia(21)).toHaveAccessibleName(/no se pudo cargar; toca para reintentar/);
+    // Sin punto: no sabemos si hay horarios, así que no se pinta ni gris ni rojo.
+    expect(dia(21).querySelector('[data-punto="error"]')!.className).not.toMatch(/bg-/);
     expect(screen.getByText(/No pudimos revisar algunos días/)).toBeInTheDocument();
   });
 
@@ -313,8 +317,8 @@ describe("PasoFechaHora — precarga y errores por día", () => {
 
     fireEvent.click(dia(21));
 
-    expect(await screen.findByText("No pudimos revisar los horarios de este día.", undefined, { timeout: 3000 })).toBeInTheDocument();
-    expect(screen.queryByText("No hay horarios disponibles para este día.")).not.toBeInTheDocument();
+    expect(await screen.findByText("No pudimos revisar este día.", undefined, { timeout: 3000 })).toBeInTheDocument();
+    expect(screen.queryByText("Sin horarios disponibles")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Intentar de nuevo" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "viernes 23" })).toBeInTheDocument();
   });
@@ -398,5 +402,82 @@ describe("PasoFechaHora — accesibilidad", () => {
 
     const grupo = await screen.findByRole("group", { name: "Mañana" });
     expect(within(grupo).getByRole("button", { name: "10:00" })).toHaveAttribute("aria-pressed", "true");
+  });
+});
+
+// ── Días cerrados según el horario del negocio, no por una lista de horarios vacía ──
+describe("PasoFechaHora — calendario del negocio", () => {
+  const slot = (fecha: string) => ({ inicio: `${fecha}T10:00:00`, fin: `${fecha}T10:30:00`, horaTexto: "10:00" });
+  const dia = (n: number) =>
+    screen.getAllByRole("button").find((b) => b.getAttribute("data-fecha") === `2026-10-${String(n).padStart(2, "0")}`)!;
+  const llamadasPara = (fecha: string) =>
+    vi.mocked(publicoApi.obtenerDisponibilidad).mock.calls.filter((c) => c[2] === fecha).length;
+  // Abre lunes, martes, jueves, viernes y sábado de 9 a 18; miércoles y domingo cierra.
+  // El sábado 24 está bloqueado (feriado).
+  const calendario = {
+    horario: [1, 2, 4, 5, 6].map((diaSemana) => ({ diaSemana, horaInicio: "09:00", horaFin: "18:00" })),
+    diasCerrados: ["2026-10-24"],
+    zonaHoraria: null,
+  };
+
+  beforeEach(() => {
+    vi.mocked(publicoApi.obtenerDisponibilidad).mockImplementation(async (_s, _e, fecha) =>
+      fecha === "2026-10-23" ? [slot(fecha)] : []
+    );
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("marca en rojo los días que no abre o están bloqueados, sin pedir su disponibilidad", async () => {
+    vi.useFakeTimers({ toFake: ["Date"], now: new Date(2026, 9, 20, 12) });
+    renderConQuery({ calendario });
+
+    await waitFor(() => expect(dia(22)).toHaveAttribute("data-disponibilidad", "sin-horarios"));
+    for (const n of [21, 24, 25]) {
+      expect(dia(n)).toHaveAttribute("data-disponibilidad", "cerrado");
+      expect(dia(n)).toHaveAccessibleName(/, cerrado$/);
+      expect(dia(n).querySelector('[data-punto="cerrado"]')).toHaveClass("bg-status-cancelled-dot");
+      expect(llamadasPara(`2026-10-${n}`)).toBe(0);
+    }
+    // Abre, pero no le quedan horarios: gris, no rojo.
+    expect(dia(22).querySelector('[data-punto="sin-horarios"]')).toHaveClass("bg-slate-300");
+    expect(screen.getByText("Cerrado")).toBeInTheDocument();
+  });
+
+  it("al tocar un día cerrado lo dice y ofrece el próximo disponible", async () => {
+    vi.useFakeTimers({ toFake: ["Date"], now: new Date(2026, 9, 20, 12) });
+    renderConQuery({ calendario });
+    await waitFor(() => expect(dia(23)).toHaveAttribute("data-disponibilidad", "con-horarios"));
+
+    fireEvent.click(dia(21));
+
+    const aviso = await screen.findByRole("status");
+    expect(aviso).toHaveTextContent("Cerrado");
+    expect(aviso).not.toHaveTextContent("Sin horarios disponibles");
+    expect(screen.getByRole("button", { name: "Próximo disponible: viernes 23" })).toBeInTheDocument();
+    expect(llamadasPara("2026-10-21")).toBe(0);
+  });
+
+  it("hoy, pasada la hora de cierre, el día dice «Cerrado por hoy»", async () => {
+    vi.useFakeTimers({ toFake: ["Date"], now: new Date(2026, 9, 20, 18, 30) });
+    renderConQuery({ calendario });
+
+    expect(dia(20)).toHaveAttribute("data-disponibilidad", "cerrado-hoy");
+    expect(dia(20)).toHaveAccessibleName(/cerrado por hoy$/);
+    expect(dia(20).querySelector('[data-punto="cerrado-hoy"]')).toHaveClass("bg-status-cancelled-dot");
+
+    fireEvent.click(dia(20));
+    expect(await screen.findByRole("status")).toHaveTextContent("Cerrado por hoy");
+    expect(llamadasPara("2026-10-20")).toBe(0);
+  });
+
+  it("hoy, antes del cierre y sin horarios libres, es gris y no cerrado", async () => {
+    vi.useFakeTimers({ toFake: ["Date"], now: new Date(2026, 9, 20, 17, 0) });
+    renderConQuery({ calendario });
+
+    await waitFor(() => expect(dia(20)).toHaveAttribute("data-disponibilidad", "sin-horarios"));
+    expect(dia(20)).toHaveAccessibleName(/sin horarios disponibles$/);
   });
 });

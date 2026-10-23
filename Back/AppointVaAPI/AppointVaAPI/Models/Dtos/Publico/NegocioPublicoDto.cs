@@ -35,6 +35,19 @@
         public double PromedioResenas { get; set; }
         public int TotalResenas { get; set; }
         public List<ResenaPublicaDto> Resenas { get; set; } = new();
+        /// <summary>Intervalos de atención activos (0=domingo … 6=sábado). Un día sin intervalos está cerrado.</summary>
+        public List<IntervaloHorarioPublicoDto> Horario { get; set; } = new();
+        /// <summary>Días bloqueados (feriados, cierres) desde hoy, "yyyy-MM-dd".</summary>
+        public List<string> DiasCerrados { get; set; } = new();
+        /// <summary>Zona horaria IANA del negocio (p. ej. "America/Mexico_City"); null si no se pudo resolver.</summary>
+        public string? ZonaHoraria { get; set; }
+    }
+
+    public class IntervaloHorarioPublicoDto
+    {
+        public byte DiaSemana { get; set; }
+        public string HoraInicio { get; set; } = string.Empty; // "HH:mm"
+        public string HoraFin { get; set; } = string.Empty;    // "HH:mm"
     }
 
     public class ServicioPublicoDto

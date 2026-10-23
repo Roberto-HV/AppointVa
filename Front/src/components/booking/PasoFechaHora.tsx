@@ -5,6 +5,7 @@ import { publicoApi } from "../../api/publico";
 import type { SlotDisponible } from "../../types";
 import { brandAccent, DEFAULT_COLOR } from "../../lib/colorUtils";
 import { fechaLocal } from "../../utils/fechas";
+import { cierreDelDia, type CalendarioNegocio } from "../../utils/calendarioNegocio";
 import { ChevronLeft, ChevronRight, Sun, Sunrise, Moon } from "lucide-react";
 
 interface Props {
@@ -17,6 +18,11 @@ interface Props {
   diasAnticipacionMinima?: number;
   /** Ruta de la lista de espera; si llega, se ofrece cuando no hay horarios. */
   enlaceListaEspera?: string;
+  /**
+   * Horario y días bloqueados del negocio. Con él, los días en que no abre se marcan
+   * «Cerrado» sin consultar disponibilidad; sin él, solo se sabe si hay horarios libres.
+   */
+  calendario?: CalendarioNegocio;
 }
 
 const DIAS_CORTOS = ["Do", "Lu", "Ma", "Mi", "Ju", "Vi", "Sá"];
@@ -25,7 +31,9 @@ const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto"
 /** Lo que el lector de pantalla oye tras la fecha; el punto de color no le llega. */
 const DETALLE_DISPONIBILIDAD: Record<EstadoDia, string> = {
   "con-horarios": ", con horarios",
-  "sin-horarios": ", sin disponibilidad",
+  "sin-horarios": ", sin horarios disponibles",
+  cerrado: ", cerrado",
+  "cerrado-hoy": ", cerrado por hoy",
   cargando: "",
   error: ", no se pudo cargar; toca para reintentar",
 };
@@ -42,7 +50,8 @@ const OPCIONES_CONSULTA = { retry: 2, retryDelay: 1000, staleTime: VIGENCIA_DISP
  */
 const OPCIONES_PRECARGA = { retry: 0, staleTime: VIGENCIA_DISPONIBILIDAD } as const;
 
-type EstadoDia = "con-horarios" | "sin-horarios" | "cargando" | "error";
+type EstadoDia = "con-horarios" | "sin-horarios" | "cerrado" | "cerrado-hoy" | "cargando" | "error";
+const TEXTO_CIERRE = { cerrado: "Cerrado", "cerrado-hoy": "Cerrado por hoy" } as const;
 
 function estadoDeConsulta(consulta?: { data?: SlotDisponible[]; isError: boolean }): EstadoDia {
   if (consulta?.data) return consulta.data.length > 0 ? "con-horarios" : "sin-horarios";
@@ -72,7 +81,7 @@ function textoMesSemana(dias: Date[]): string {
   return `${MESES[mes0]} ${anio}`;
 }
 
-export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, onSeleccionar, onLimpiarSlot, color = DEFAULT_COLOR, diasAnticipacionMinima = 0, enlaceListaEspera }: Props) {
+export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, onSeleccionar, onLimpiarSlot, color = DEFAULT_COLOR, diasAnticipacionMinima = 0, enlaceListaEspera, calendario }: Props) {
   // Al volver a este paso con un horario ya elegido, su día sigue a la vista.
   const [semanaRef, setSemanaRef] = useState(() =>
     lunesDeSemanaDe(seleccionado ? new Date(seleccionado.inicio) : new Date())
@@ -101,7 +110,10 @@ export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, on
   // consulta del día elegido, así que tocar un día ya cargado no vuelve a pedirlo.
   // El día elegido explícitamente queda fuera: lo lleva su propia consulta, con reintentos.
   const fechasReservables = diasSemana.filter((d) => d >= fechaMinima).map(fechaLocal);
-  const fechasPrecarga = fechasReservables.filter((f) => f !== fechaElegida);
+  // Los días cerrados se saben por el horario: no gastan consultas (límite público por minuto).
+  const ahora = new Date();
+  const cierre = (fecha: string) => (calendario ? cierreDelDia(fecha, calendario, ahora) : null);
+  const fechasPrecarga = fechasReservables.filter((f) => f !== fechaElegida && !cierre(f));
   const disponibilidadSemana = useQueries({
     queries: fechasPrecarga.map((fecha) => ({
       queryKey: ["slots", servicioId, empleadoId, fecha],
@@ -109,8 +121,8 @@ export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, on
       ...OPCIONES_PRECARGA,
     })),
   });
-  const estadoPrecarga = (fecha: string) =>
-    estadoDeConsulta(disponibilidadSemana[fechasPrecarga.indexOf(fecha)]);
+  const estadoPrecarga = (fecha: string): EstadoDia =>
+    cierre(fecha) ?? estadoDeConsulta(disponibilidadSemana[fechasPrecarga.indexOf(fecha)]);
 
   // Sin elección explícita se abre el primer día con horarios, en orden: no salta a
   // un día posterior mientras uno anterior sigue cargando. Un día que falló no
@@ -124,23 +136,26 @@ export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, on
     return null;
   })();
   const fechaSel = fechaElegida ?? primeraConHorarios;
+  const cierreSel = fechaSel ? cierre(fechaSel) : null;
 
   const consultaDia = useQuery({
     queryKey: ["slots", servicioId, empleadoId, fechaSel],
     queryFn: () => publicoApi.obtenerDisponibilidad(servicioId, empleadoId, fechaSel!),
-    enabled: !!fechaSel,
+    enabled: !!fechaSel && !cierreSel,
     ...OPCIONES_CONSULTA,
   });
   const { data: slots = [], isFetching, isError, refetch } = consultaDia;
 
   const estadoDia = (fecha: string): EstadoDia =>
-    fecha === fechaSel ? estadoDeConsulta(consultaDia) : estadoPrecarga(fecha);
+    cierre(fecha) ?? (fecha === fechaSel ? estadoDeConsulta(consultaDia) : estadoPrecarga(fecha));
+  const esSinHorariosOCerrado = (estado: EstadoDia) =>
+    estado === "sin-horarios" || estado === "cerrado" || estado === "cerrado-hoy";
   const semanaSinHorarios =
-    fechasReservables.length > 0 && fechasReservables.every((f) => estadoDia(f) === "sin-horarios");
+    fechasReservables.length > 0 && fechasReservables.every((f) => esSinHorariosOCerrado(estadoDia(f)));
   const hayDiasConError = fechasReservables.some((f) => estadoDia(f) === "error");
   const hayDiasRevisados = fechasReservables.some((f) => {
     const estado = estadoDia(f);
-    return estado === "con-horarios" || estado === "sin-horarios";
+    return estado === "con-horarios" || esSinHorariosOCerrado(estado);
   });
   const siguienteConHorarios = fechaSel
     ? fechasReservables.find((f) => f > fechaSel && estadoDia(f) === "con-horarios") ?? null
@@ -264,7 +279,8 @@ export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, on
           const seleccionada = iso === fechaSel;
           const disponibilidad = pasado ? "cargando" : estadoDia(iso);
           // Atenuado, no deshabilitado: el visitante aún puede abrirlo y ver por qué.
-          const sinHorarios = disponibilidad === "sin-horarios" && !seleccionada;
+          const sinHorarios = esSinHorariosOCerrado(disponibilidad) && !seleccionada;
+          const cerrado = disponibilidad === "cerrado" || disponibilidad === "cerrado-hoy";
           const etiqueta =
             `${DIAS_LARGOS[dia.getDay()]} ${dia.getDate()} de ${MESES[dia.getMonth()].toLowerCase()}` +
             (esHoy ? ", hoy" : "") +
@@ -308,15 +324,15 @@ export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, on
                 {dia.getDate()}
               </span>
               {/* Punto de disponibilidad; el hueco se reserva siempre para no mover la fila.
-                  Color de marca: hay horarios. Gris: sin disponibilidad (cerrado, bloqueado
-                  o lleno). Rojo: la consulta falló (p. ej. demasiadas peticiones) y no
-                  sabemos si hay horarios; tocarlo lo reintenta. La leyenda va debajo. */}
+                  Color de marca: hay horarios. Gris: abre, pero ya no quedan horarios.
+                  Rojo: cerrado (no abre ese día, o hoy ya cerró). Sin punto: cargando, o la
+                  consulta falló y no sabemos si hay horarios; tocarlo lo reintenta. */}
               <span
                 aria-hidden="true"
                 data-punto={pasado ? undefined : disponibilidad}
                 className={`mt-1 h-1 w-1 rounded-full ${
-                  disponibilidad === "error"
-                    ? (seleccionada ? "bg-white" : "bg-red-600")
+                  cerrado
+                    ? (seleccionada ? "bg-white" : "bg-status-cancelled-dot")
                     : disponibilidad === "sin-horarios"
                     ? (seleccionada ? "bg-white/70" : "bg-slate-300")
                     : ""
@@ -340,14 +356,19 @@ export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, on
           </li>
           <li className="flex items-center gap-1.5">
             <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-slate-300" />
-            Sin disponibilidad
+            Sin horarios
           </li>
+          {calendario && (
+            <li className="flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-status-cancelled-dot" />
+              Cerrado
+            </li>
+          )}
         </ul>
       )}
       {hayDiasConError && (
-        <p className="-mt-2 mb-4 flex items-center gap-1.5 text-xs text-slate-600">
-          <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rounded-full bg-red-600" />
-          No pudimos revisar algunos días. Toca uno marcado para intentarlo de nuevo.
+        <p className="-mt-2 mb-4 text-xs text-slate-600">
+          No pudimos revisar algunos días. Toca un día sin punto para intentarlo de nuevo.
         </p>
       )}
 
@@ -362,7 +383,16 @@ export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, on
       {/* Slots de horario */}
       {fechaSel && (
         <div className="animate-step-in">
-          {isFetching ? (
+          {cierreSel ? (
+            <div className="text-center py-8">
+              {/* No abre ese día: no es «sin horarios», así que no se invita a esperar huecos. */}
+              <div role="status">
+                <p className="text-sm font-semibold text-slate-700">{TEXTO_CIERRE[cierreSel]}</p>
+                <p className="mt-1 text-sm text-slate-500">Elige otro día.</p>
+              </div>
+              {salidasSinHorarios}
+            </div>
+          ) : isFetching ? (
             <div className="flex items-center justify-center gap-2.5 py-8 text-sm text-slate-400">
               <div className="w-4 h-4 border-2 border-slate-200 border-t-slate-700 rounded-full animate-spin" />
               Cargando horarios…
@@ -370,7 +400,7 @@ export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, on
           ) : isError ? (
             <div role="status" className="bg-red-50 border border-red-100 rounded-2xl px-4 py-4 text-center">
               {/* Un fallo no es "sin horarios": no sabemos si los hay, así que no lo afirmamos. */}
-              <p className="text-sm text-red-700 mb-2">No pudimos revisar los horarios de este día.</p>
+              <p className="text-sm text-red-700 mb-2">No pudimos revisar este día.</p>
               <button
                 onClick={() => refetch()}
                 className="min-h-[44px] px-3 text-sm text-red-700 font-semibold hover:underline"
@@ -398,7 +428,7 @@ export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, on
                 </svg>
               </div>
               <div role="status">
-                <p className="text-sm font-semibold text-slate-700">No hay horarios disponibles para este día.</p>
+                <p className="text-sm font-semibold text-slate-700">Sin horarios disponibles</p>
                 <p className="mt-1 text-sm text-slate-500">Elige otro día.</p>
               </div>
               {salidasSinHorarios}
