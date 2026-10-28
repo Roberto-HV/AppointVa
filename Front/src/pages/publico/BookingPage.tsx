@@ -21,7 +21,8 @@ import PublicFooter from "../../components/PublicFooter";
 import { useTituloPagina } from "../../hooks/useTituloPagina";
 
 import { hexToChannels, DEFAULT_COLOR, brandSolid } from "../../lib/colorUtils";
-import { fondoPortada, normalizarPresetPortada, veloPortada } from "../../lib/portadaPresets";
+import { fondoPortada, normalizarPresetPortada } from "../../lib/portadaPresets";
+import { VELOS_PORTADA, modoPortada, tintaPortada } from "../../lib/portadaVelo";
 
 // El submit del paso 4 vive en la barra de acción, fuera del <form> de PasoDatosCliente.
 const ID_FORM_DATOS = "form-datos-cliente";
@@ -59,26 +60,6 @@ function AlMontarPaso({ onMontado }: { onMontado: () => void }) {
   return null;
 }
 const CODIGO_HORARIO_NO_DISPONIBLE = "HORARIO_NO_DISPONIBLE";
-
-// Piso de legibilidad del texto de la portada: el velo sostiene el contraste en
-// conjunto, pero una zona clara aislada de la foto puede colarse bajo una línea.
-const SOMBRA_TEXTO_PORTADA = "0 1px 3px rgba(12,12,15,0.65)";
-
-// Velo del bloque de texto sobre una foto. Los tramos están medidos contra una
-// portada blanca pura: el nombre cae alrededor del 60% y necesita ~0.80 de negro
-// para llegar al 4.5:1 de la WCAG 1.4.3; arriba se desvanece hasta cero.
-// Los tramos intermedios no son decorativos: aproximan una curva suave para que el
-// borde superior del velo no se lea como una banda sobre una foto plana y clara.
-const VELO_TEXTO_PORTADA =
-  "linear-gradient(to top, rgba(12,12,15,0.86) 0%, rgba(12,12,15,0.81) 42%, " +
-  "rgba(12,12,15,0.70) 60%, rgba(12,12,15,0.50) 74%, rgba(12,12,15,0.28) 85%, " +
-  "rgba(12,12,15,0.11) 93%, rgba(12,12,15,0) 100%)";
-
-// Velo ligero para materiales oscuros: la veta más clara (plata al 85% sobre
-// cuarzo negro) necesita ~0.4 de negro bajo el nombre para quedar en 4.5:1.
-const VELO_TEXTO_SUAVE =
-  "linear-gradient(to top, rgba(12,12,15,0.6) 0%, rgba(12,12,15,0.5) 55%, " +
-  "rgba(12,12,15,0.28) 82%, rgba(12,12,15,0) 100%)";
 
 const BTN_BASE = "min-h-[48px] rounded-2xl text-sm transition inline-flex items-center justify-center gap-1.5";
 const BTN_PRIMARIO = `${BTN_BASE} text-white font-bold tracking-wide hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed`;
@@ -1042,16 +1023,11 @@ export default function BookingPage() {
   const presetPortada = normalizarPresetPortada(negocio.portadaPreset);
   const mostrarFoto = !presetPortada && !!negocio.portadaUrl;
   const fondoDePortada = fondoPortada(presetPortada, color);
-  // Un material claro (cuarzo blanco, duela de roble) pesa como una foto clara:
-  // el nombre en blanco necesita el mismo velo para llegar al 4.5:1. Uno oscuro
-  // con vetas claras lleva uno ligero; los fondos de marca, ninguno.
-  const veloMaterial = veloPortada(presetPortada);
-  const veloEnTexto =
-    mostrarFoto || veloMaterial === "fuerte"
-      ? VELO_TEXTO_PORTADA
-      : veloMaterial === "suave"
-        ? VELO_TEXTO_SUAVE
-        : null;
+  // Velo y tinta del texto según lo que haya detrás (ver `portadaVelo`): sobre un
+  // material claro el texto pasa a tinta oscura y el material se ve entero.
+  const modoDePortada = modoPortada(presetPortada, mostrarFoto);
+  const veloEnTexto = VELOS_PORTADA[modoDePortada].portada;
+  const tinta = tintaPortada(modoDePortada);
   const terms = getSectorTerms(negocio.sector);
   // Mientras carga la consulta del servicio se mantiene el total que ya se mostraba.
   const intakeEnIndicador = servicio && !cargandoIntake ? hayIntake : camposIntakeGenerales.length > 0;
@@ -1320,8 +1296,9 @@ export default function BookingPage() {
             El velo va aquí y no en toda la portada: así se ajusta al bloque de texto
             —crece y encoge con él— y deja la foto intacta por encima. Los fondos
             de marca no lo llevan, ya nacen oscuros donde cae el texto; los
-            materiales sí (ver `veloPortada`). */}
+            materiales sí (ver `portadaVelo`). */}
         <div
+          data-tinta={tinta.tipo}
           className="relative z-10 px-5 sm:px-8 pt-[calc(3.5rem+env(safe-area-inset-top))] pb-4 sm:pb-6"
           style={veloEnTexto ? { background: veloEnTexto } : undefined}
         >
@@ -1332,15 +1309,19 @@ export default function BookingPage() {
               {negocio.logoUrl ? (
                 <button
                   onClick={() => setLightboxUrl(negocio.logoUrl!)}
-                  className="block focus:outline-none"
+                  className={`block rounded-2xl sm:rounded-3xl ${tinta.anilloFoco}`}
                   aria-label="Ver logo en pantalla completa"
                 >
                   <img
                     src={negocio.logoUrl}
                     alt={negocio.nombre}
-                    className="w-14 h-14 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl object-cover cursor-zoom-in"
+                    className={`w-14 h-14 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl object-cover cursor-zoom-in ${tinta.bordeLogo}`}
                     style={{
-                      border: `1.5px solid rgb(${hexToChannels(color)} / 0.45)`,
+                      // Sobre un material claro el marco va en tinta (clase); en lo
+                      // demás, del color de marca como siempre.
+                      ...(tinta.bordeLogo
+                        ? { borderWidth: "1.5px", borderStyle: "solid" }
+                        : { border: `1.5px solid rgb(${hexToChannels(color)} / 0.45)` }),
                       boxShadow: `0 2px 16px rgb(${hexToChannels(color)} / 0.28)`,
                     }}
                     loading="eager"
@@ -1350,10 +1331,12 @@ export default function BookingPage() {
                 // Sin logo, la inicial del negocio (como los avatares del equipo), no un emoji (BF-24).
                 <div
                   aria-hidden="true"
-                  className="w-14 h-14 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl flex items-center justify-center text-2xl sm:text-4xl font-bold text-white"
+                  className={`w-14 h-14 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl flex items-center justify-center text-2xl sm:text-4xl font-bold ${tinta.monograma} ${tinta.bordeLogo}`}
                   style={{
                     background: `rgb(${hexToChannels(color)} / 0.18)`,
-                    border: `1.5px solid rgb(${hexToChannels(color)} / 0.40)`,
+                    ...(tinta.bordeLogo
+                      ? { borderWidth: "1.5px", borderStyle: "solid" }
+                      : { border: `1.5px solid rgb(${hexToChannels(color)} / 0.40)` }),
                   }}
                 >
                   {monogramaNegocio(negocio.nombre)}
@@ -1364,17 +1347,17 @@ export default function BookingPage() {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h1
-                  className="text-white font-bold text-xl sm:text-3xl leading-tight"
-                  style={{ textShadow: SOMBRA_TEXTO_PORTADA }}
+                  className={`${tinta.titulo.className} font-bold text-xl sm:text-3xl leading-tight`}
+                  style={tinta.titulo.style}
                 >
                   {negocio.nombre}
                 </h1>
                 {/* Sin reseñas no se muestra la píldora: una estrella junto a
                     "Sin reseñas" se lee como una mala nota (BF-25). */}
                 {(negocio.totalResenas ?? 0) > 0 && (
-                  <div className="flex items-center gap-1 rounded-full px-2 py-0.5 bg-ink/40">
+                  <div className={`flex items-center gap-1 rounded-full px-2 py-0.5 ${tinta.pildora}`}>
                     <Star size={9} strokeWidth={0} className="fill-rating text-rating" aria-hidden="true" />
-                    <span className="text-[10px] sm:text-xs text-white/85">
+                    <span className={`text-[10px] sm:text-xs ${tinta.pildoraTexto}`}>
                       <span className="sr-only">Calificación </span>
                       {(negocio.promedioResenas ?? 0).toFixed(1)}
                     </span>
@@ -1383,16 +1366,16 @@ export default function BookingPage() {
               </div>
               {negocio.descripcion && (
                 <p
-                  className="text-xs sm:text-sm mt-1 leading-snug"
-                  style={{ color: "rgba(255,255,255,0.92)", textShadow: SOMBRA_TEXTO_PORTADA }}
+                  className={`text-xs sm:text-sm mt-1 leading-snug ${tinta.descripcion.className}`}
+                  style={tinta.descripcion.style}
                 >
                   {negocio.descripcion}
                 </p>
               )}
               {negocio.direccion && (
                 <p
-                  className="flex items-start gap-1 text-xs sm:text-sm mt-2 leading-snug"
-                  style={{ color: "rgba(255,255,255,0.80)", textShadow: SOMBRA_TEXTO_PORTADA }}
+                  className={`flex items-start gap-1 text-xs sm:text-sm mt-2 leading-snug ${tinta.secundario.className}`}
+                  style={tinta.secundario.style}
                 >
                   <MapPin size={14} className="shrink-0 mt-px" aria-hidden="true" />
                   <span>{negocio.direccion}</span>

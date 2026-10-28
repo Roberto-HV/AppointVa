@@ -325,6 +325,26 @@ function duela(o: OpcionesMadera): FondoPortada {
 
 // ── Catálogo ──────────────────────────────────────────────────────────────────
 
+/**
+ * Color liso de cada material (el tono medio de su base): lo que pinta la
+ * miniatura del selector mientras el SVG todavía no se dibuja.
+ */
+export const BASE_MATERIALES: Record<string, string> = {
+  "mat-cuarzo-blanco": "#efebe4",
+  "mat-cuarzo-negro": "#141518",
+  "mat-marmol-carrara": "#eeeeeb",
+  "mat-marmol-verde": "#0d3a2d",
+  "mat-rosa-cuarzo": "#f0d6cd",
+  "mat-duela-clara": "#d6b48a",
+  "mat-duela-oscura": "#5a3a24",
+  "mat-madera": "#7a4b2a",
+  "mat-terrazo": "#ede6da",
+  "mat-concreto": "#babab5",
+  "mat-lino": "#e6ddcd",
+  "mat-pizarra": "#2e353b",
+  "mat-cuero": "#4f2f1c",
+};
+
 export const CONSTRUCTORES_MATERIALES: Record<string, () => FondoPortada> = {
   "mat-cuarzo-blanco": () =>
     piedra({

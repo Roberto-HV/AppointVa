@@ -19,7 +19,8 @@ import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
 import ConfirmarAccion from "../../components/ui/ConfirmarAccion";
 import Switch from "../../components/ui/Switch";
 import SelectorFondoPortada from "../../components/dashboard/SelectorFondoPortada";
-import { fondoPortada, normalizarPresetPortada, veloPortada } from "../../lib/portadaPresets";
+import { fondoPortada, normalizarPresetPortada } from "../../lib/portadaPresets";
+import { VELOS_PORTADA, modoPortada, tintaPortada } from "../../lib/portadaVelo";
 import { DatePicker } from "../../components/ui/DateTimePicker";
 import EditorHorario from "../../components/dashboard/EditorHorario";
 import { errorDelDia } from "../../lib/horario";
@@ -50,19 +51,7 @@ const ZONAS_HORARIAS = [
   { valor: "UTC",                     texto: "UTC" },
 ];
 
-// Velos de la vista previa del booking. Van de arriba abajo porque aquí el texto
-// está arriba; en la portada real va abajo y el velo se invierte.
-// Sobre una foto blanca —el peor caso— el tramo que cubre el bloque de texto
-// (19%-74% de la altura) deja el nombre en 12.7:1 y la descripción en 6.2:1.
-const VELO_PREVIEW_FOTO =
-  "linear-gradient(to bottom, rgba(12,12,15,0.86) 0%, rgba(12,12,15,0.84) 50%, " +
-  "rgba(12,12,15,0.70) 74%, rgba(12,12,15,0.38) 88%, rgba(12,12,15,0.12) 100%)";
-// El degradado de marca solo necesita que no queme arriba: lo justo para pasar el
-// 4.5:1 con margen sin apagar el color que el negocio está eligiendo.
 const HEX_COMPLETO = /^#[0-9A-Fa-f]{6}$/;
-
-const VELO_PREVIEW_MARCA =
-  "linear-gradient(to bottom, rgba(12,12,15,0.42) 0%, rgba(12,12,15,0.22) 70%, rgba(12,12,15,0) 100%)";
 
 const HORAS_RECORDATORIO = [
   { valor: 2,  texto: "2 horas antes" },
@@ -544,26 +533,11 @@ export default function PerfilPage() {
   const mostrarFotoPortada = !presetPortada && !!negocio?.portadaUrl;
   const fondoPortadaActual = fondoPortada(presetPortada, colorPrimario);
   const fotoOcultaPorFondo = !!presetPortada && !!negocio?.portadaUrl;
-  // Velo del texto de la vista previa, medido sobre los píxeles que se renderizan.
-  // La maqueta mide 64 px y pone el texto arriba; la portada real mide 180-340 px
-  // y lo pone abajo, así que lo que cae bajo el texto no es lo mismo en cada caso:
-  //  · Foto: puede ser blanca. Sin velo el nombre queda en 1:1, y con un velo suave
-  //    en 3.7:1. Necesita el mismo peso que el velo de la portada real.
-  //  · Fondo elegido: ya nace oscuro, incluso comprimido en 64 px (el peor caso
-  //    medido es 6.2:1). Taparlo mentiría sobre cómo se ve el fondo que se eligió.
-  //  · Degradado de marca: va de L 42% a L 9%, y en la portada real el texto cae en
-  //    el extremo oscuro. Aquí cae en el claro —un dorado da 4.2:1— y pide un velo
-  //    ligero, el mínimo para no desteñir el color de marca que se está eligiendo.
-  //  · Material: claro, pesa como una foto clara y lleva su velo; oscuro, sus
-  //    vetas claras piden uno ligero. Igual que en la portada real.
-  const veloMaterial = veloPortada(presetPortada);
-  const veloPreviewPortada = mostrarFotoPortada || veloMaterial === "fuerte"
-    ? VELO_PREVIEW_FOTO
-    : veloMaterial === "suave"
-      ? VELO_PREVIEW_MARCA
-      : presetPortada
-        ? null
-        : VELO_PREVIEW_MARCA;
+  // Velo y tinta del texto de la vista previa: los mismos modos que la portada
+  // real, con velos medidos para esta maqueta de 64 px (ver `portadaVelo`).
+  const modoVistaPrevia = modoPortada(presetPortada, mostrarFotoPortada);
+  const veloPreviewPortada = VELOS_PORTADA[modoVistaPrevia].vistaPrevia;
+  const tintaPreview = tintaPortada(modoVistaPrevia);
 
   // ── Barra de guardado compartida ─────────────────────────────────────────
   // Las tres pestañas del formulario son largas y el botón vivía al final de
@@ -898,6 +872,7 @@ export default function PerfilPage() {
               {/* Refleja la portada real: foto, fondo elegido, o el degradado de
                   marca. Antes era un negro fijo, que no era ninguno de los tres. */}
               <div className="px-4 pt-3 pb-3 flex items-start gap-3 relative"
+                data-testid="vista-previa-portada" data-tinta={tintaPreview.tipo}
                 style={mostrarFotoPortada ? { background: "#0C0C0F" } : fondoPortadaActual}>
                 {mostrarFotoPortada && (
                   <img src={negocio!.portadaUrl!} alt="" aria-hidden
@@ -911,17 +886,23 @@ export default function PerfilPage() {
                 )}
                 {/* Velo del texto, solo donde el fondo de verdad se aclara bajo él. */}
                 {veloPreviewPortada && (
-                  <div className="absolute inset-0 pointer-events-none"
+                  <div data-testid="velo-vista-previa" className="absolute inset-0 pointer-events-none"
                     style={{ background: veloPreviewPortada }} />
                 )}
-                <div className="w-10 h-10 rounded-xl shrink-0 relative z-10"
-                  style={{ background: `${colorPrimario}28`, border: `1.5px solid ${colorPrimario}60` }} />
+                <div className={`w-10 h-10 rounded-xl shrink-0 relative z-10 ${tintaPreview.bordeLogo}`}
+                  style={{
+                    background: `${colorPrimario}28`,
+                    ...(tintaPreview.bordeLogo
+                      ? { borderWidth: "1.5px", borderStyle: "solid" }
+                      : { border: `1.5px solid ${colorPrimario}60` }),
+                  }} />
                 <div className="relative z-10">
-                  <div className="text-white text-sm font-bold leading-tight">Tu negocio</div>
-                  {/* Mismo blanco que la descripción de la portada real: al 0.35 no
+                  <div className={`${tintaPreview.titulo.className} text-sm font-bold leading-tight`}>Tu negocio</div>
+                  {/* Misma tinta que la descripción de la portada real: al 0.35 no
                       llegaba al 4.5:1 sobre ningún fondo, y además se leía apagada
                       comparada con lo que el cliente acaba viendo. */}
-                  <div className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.92)" }}>Descripción breve...</div>
+                  <div className={`text-xs mt-0.5 ${tintaPreview.descripcion.className}`}
+                    style={{ color: tintaPreview.descripcion.style.color }}>Descripción breve...</div>
                 </div>
               </div>
               <div className="px-4 py-2.5 flex items-center gap-1.5" style={{ background: "#18181B" }}>

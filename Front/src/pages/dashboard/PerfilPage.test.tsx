@@ -180,6 +180,33 @@ describe("PerfilPage — 5 tabs", () => {
     );
   });
 
+  it("la vista previa usa tinta oscura y sin velo negro sobre un material claro", async () => {
+    renderPerfilPage();
+    await waitFor(() => screen.getByText("Fondo de portada"));
+    const previa = () => screen.getByTestId("vista-previa-portada");
+    const velo = () => screen.queryByTestId("velo-vista-previa")?.style.background ?? "";
+
+    // Degradado de marca: texto blanco y el velo ligero de siempre.
+    expect(previa().dataset.tinta).toBe("clara");
+    expect(within(previa()).getByText("Tu negocio").className).toContain("text-white");
+    expect(velo()).toMatch(/rgba\(12, 12, 15, 0\.42\)/);
+
+    const grupo = screen.getByRole("group", { name: "Fondo de portada" });
+    await userEvent.click(within(grupo).getByRole("radio", { name: "Cuarzo blanco y oro" }));
+    expect(previa().dataset.tinta).toBe("oscura");
+    expect(within(previa()).getByText("Tu negocio").className).toContain("text-slate-900");
+    expect(within(previa()).getByText("Descripción breve...").className).toContain("text-slate-800");
+    expect(velo()).not.toMatch(/rgba\(12, 12, 15/);
+
+    // Material oscuro y fondo de marca: sin cambios.
+    await userEvent.click(within(grupo).getByRole("radio", { name: "Cuarzo negro y plata" }));
+    expect(previa().dataset.tinta).toBe("clara");
+    expect(velo()).toMatch(/rgba\(12, 12, 15, 0\.42\)/);
+    await userEvent.click(within(grupo).getByRole("radio", { name: "Arcos" }));
+    expect(previa().dataset.tinta).toBe("clara");
+    expect(screen.queryByTestId("velo-vista-previa")).toBeNull();
+  });
+
   it("guarda aunque la base aún devuelva el 0 heredado", async () => {
     // Bases sin la migración `SetNegocioPorcentajeAnticipoDefault` siguen
     // devolviendo 0. Ese 0 bloqueaba el formulario completo durante dos meses.

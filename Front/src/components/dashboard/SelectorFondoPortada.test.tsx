@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import SelectorFondoPortada from "./SelectorFondoPortada";
 import { PRESETS_PORTADA, fondoPortada } from "../../lib/portadaPresets";
@@ -60,6 +60,76 @@ describe("SelectorFondoPortada", () => {
     expect(velo("Cuarzo negro y plata")).not.toBe("");
     expect(velo("Cuarzo blanco y oro")).not.toBe(velo("Cuarzo negro y plata"));
     expect(velo("Aurora")).toBe("");
+    // El material claro no se tapa con negro, y su muestra va en tinta oscura.
+    expect(velo("Cuarzo blanco y oro")).not.toMatch(/rgba\(12, 12, 15/);
+  });
+
+  it("la muestra de un material claro usa tinta oscura; la de uno oscuro, blanca", () => {
+    montar();
+    const muestra = (nombre: string) =>
+      screen.getByRole("radio", { name: nombre }).closest("label")!
+        .querySelector<HTMLElement>("span.justify-end")!;
+    expect(muestra("Cuarzo blanco y oro").dataset.tinta).toBe("oscura");
+    expect(muestra("Cuarzo blanco y oro").firstElementChild!.className).toContain("bg-slate-900/90");
+    expect(muestra("Cuarzo negro y plata").dataset.tinta).toBe("clara");
+    expect(muestra("Aurora").dataset.tinta).toBe("clara");
+  });
+
+  describe("materiales diferidos", () => {
+    let disparar: (visible: boolean) => void = () => {};
+    const observados: Element[] = [];
+
+    beforeEach(() => {
+      observados.length = 0;
+      class IOFalso {
+        cb: IntersectionObserverCallback;
+        constructor(cb: IntersectionObserverCallback) {
+          this.cb = cb;
+          disparar = (visible) =>
+            act(() =>
+              this.cb(
+                observados.map((target) => ({ isIntersecting: visible, target }) as IntersectionObserverEntry),
+                this as unknown as IntersectionObserver,
+              ),
+            );
+        }
+        observe(el: Element) { observados.push(el); }
+        disconnect() {}
+        unobserve() {}
+        takeRecords() { return []; }
+      }
+      vi.stubGlobal("IntersectionObserver", IOFalso);
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    const muestrasMateriales = () =>
+      Array.from(
+        document.querySelectorAll<HTMLElement>('[data-familia="material"] [data-muestra]'),
+      );
+
+    it("pinta un color liso hasta que el grupo entra en pantalla, y luego el material", () => {
+      montar();
+      const antes = muestrasMateriales();
+      expect(antes).toHaveLength(PRESETS_PORTADA.filter((p) => p.familia === "material").length);
+      expect(antes.every((m) => m.dataset.muestra === "provisional")).toBe(true);
+      expect(antes.some((m) => m.style.background.includes("svg"))).toBe(false);
+      // Los grupos de marca no esperan: son baratos y van arriba.
+      const aurora = screen.getByRole("radio", { name: "Aurora" }).closest("label")!;
+      expect(aurora.querySelector("[data-muestra]")!.getAttribute("data-muestra")).toBe("fondo");
+
+      disparar(false);
+      expect(muestrasMateriales().every((m) => m.dataset.muestra === "provisional")).toBe(true);
+
+      disparar(true);
+      const despues = muestrasMateriales();
+      expect(despues.every((m) => m.dataset.muestra === "fondo")).toBe(true);
+      const esperado = document.createElement("div");
+      esperado.style.background = fondoPortada("mat-cuarzo-blanco", COLOR).background;
+      expect(despues.map((m) => m.style.background)).toContain(esperado.style.background);
+    });
   });
 
   it("previsualiza cada fondo con el color del negocio, no con una muestra genérica", () => {

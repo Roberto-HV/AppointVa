@@ -7,7 +7,6 @@ import {
   normalizarPresetPortada,
   presetsPorFamilia,
   tonoPortada,
-  veloPortada,
 } from "./portadaPresets";
 import { degradeGradient } from "./colorUtils";
 
@@ -52,6 +51,30 @@ describe("normalizarPresetPortada", () => {
     expect(normalizarPresetPortada(undefined)).toBeNull();
     expect(normalizarPresetPortada("")).toBeNull();
     expect(normalizarPresetPortada("no-existe")).toBeNull();
+  });
+});
+
+describe("fondoPortada — caché", () => {
+  it("devuelve la misma referencia para la misma clave y el mismo color", () => {
+    for (const preset of PRESETS_PORTADA) {
+      expect(fondoPortada(preset.clave, MARCA)).toBe(fondoPortada(preset.clave, MARCA));
+    }
+    expect(fondoPortada(null, MARCA)).toBe(fondoPortada(null, MARCA));
+  });
+
+  it("un material no depende del color: misma referencia con cualquier marca", () => {
+    expect(fondoPortada("mat-cuarzo-blanco", MARCA)).toBe(fondoPortada("mat-cuarzo-blanco", "#C9A227"));
+  });
+
+  it("un fondo de marca sí se separa por color", () => {
+    const indigo = fondoPortada("deg-aurora", MARCA);
+    const dorado = fondoPortada("deg-aurora", "#C9A227");
+    expect(indigo).not.toBe(dorado);
+    expect(fondoPortada(null, MARCA)).not.toBe(fondoPortada(null, "#C9A227"));
+  });
+
+  it("el objeto compartido está congelado", () => {
+    expect(Object.isFrozen(fondoPortada("deg-aurora", MARCA))).toBe(true);
   });
 });
 
@@ -131,15 +154,6 @@ describe("materiales", () => {
     expect(tonoPortada(null)).toBe("oscuro");
     expect(tonoPortada("no-existe")).toBe("oscuro");
     expect(tonoPortada("deg-aurora")).toBe("oscuro");
-  });
-
-  it("pide velo bajo el texto: fuerte si es claro, suave si es oscuro", () => {
-    for (const preset of MATERIALES) {
-      expect(veloPortada(preset.clave)).toBe(preset.tono === "claro" ? "fuerte" : "suave");
-    }
-    expect(veloPortada("deg-aurora")).toBe("ninguno");
-    expect(veloPortada(null)).toBe("ninguno");
-    expect(veloPortada("no-existe")).toBe("ninguno");
   });
 
   it("tiene colores propios: el color de marca no cambia el fondo", () => {

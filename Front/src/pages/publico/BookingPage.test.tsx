@@ -529,23 +529,77 @@ describe("BookingPage — portada", () => {
     return velo;
   }
 
-  it("vela el texto sobre un material: más sobre uno claro que sobre uno oscuro", async () => {
-    const claro = await veloDelTexto("mat-cuarzo-blanco");
+  it("vela el texto sobre un material oscuro; los fondos de marca no llevan velo", async () => {
     const oscuro = await veloDelTexto("mat-cuarzo-negro");
     const marca = await veloDelTexto("deg-aurora");
-    expect(claro).not.toBe("");
-    expect(oscuro).not.toBe("");
-    expect(claro).not.toBe(oscuro);
+    expect(oscuro).toMatch(/rgba\(12, 12, 15, 0\.6\)/);
     // Los fondos de marca siguen sin velo: ya nacen oscuros bajo el texto.
     expect(marca).toBe("");
   });
 
-  it.each(PRESETS_PORTADA.filter((p) => p.familia === "material").map((p) => [p.clave, p.tono]))(
-    "el material %s (%s) se dibuja tal cual y lleva velo bajo el texto",
+  // Tinta y velo del bloque del nombre para un preset (o foto, sin preset).
+  async function textoDePortada(extra: Partial<typeof mockNegocio>) {
+    vi.mocked(publicoApi.obtenerNegocio).mockResolvedValue({ ...mockNegocio, totalResenas: 3, promedioResenas: 4.5, ...extra });
+    const { unmount } = renderConQuery();
+    const portada = await screen.findByTestId("portada-negocio");
+    const h1 = portada.querySelector("h1")!;
+    const bloque = h1.closest<HTMLElement>(".z-10")!;
+    const resultado = {
+      tinta: bloque.dataset.tinta,
+      velo: bloque.style.background,
+      claseNombre: h1.className,
+    };
+    unmount();
+    return resultado;
+  }
+
+  it.each(PRESETS_PORTADA.filter((p) => p.familia === "material" && p.tono === "claro").map((p) => p.clave))(
+    "el material claro %s lleva tinta oscura y ningún velo negro",
     async (clave) => {
-      expect(await veloDelTexto(clave)).not.toBe("");
+      const { tinta, velo, claseNombre } = await textoDePortada({ portadaPreset: clave });
+      expect(tinta).toBe("oscura");
+      expect(claseNombre).toContain("text-slate-900");
+      expect(claseNombre).not.toContain("text-white");
+      expect(velo).not.toMatch(/rgba\(12, 12, 15/);
     },
   );
+
+  it.each(PRESETS_PORTADA.filter((p) => p.familia === "material" && p.tono === "oscuro").map((p) => p.clave))(
+    "el material oscuro %s conserva el texto blanco y su velo ligero",
+    async (clave) => {
+      const { tinta, velo, claseNombre } = await textoDePortada({ portadaPreset: clave });
+      expect(tinta).toBe("clara");
+      expect(claseNombre).toContain("text-white");
+      expect(velo).toMatch(/rgba\(12, 12, 15, 0\.6\)/);
+    },
+  );
+
+  it("la foto y los fondos de marca no cambian: texto blanco, velo fuerte solo en la foto", async () => {
+    const foto = await textoDePortada({ portadaUrl: "https://cdn.test/portada.jpg" });
+    expect(foto.tinta).toBe("clara");
+    expect(foto.claseNombre).toContain("text-white");
+    expect(foto.velo).toMatch(/rgba\(12, 12, 15, 0\.86\)/);
+
+    const marca = await textoDePortada({ portadaPreset: "geo-arcos" });
+    expect(marca.tinta).toBe("clara");
+    expect(marca.claseNombre).toContain("text-white");
+    expect(marca.velo).toBe("");
+  });
+
+  it("el botón del logo tiene anillo de foco visible en portada clara y oscura", async () => {
+    for (const [preset, anillo] of [["mat-cuarzo-blanco", "focus-visible:ring-slate-900"], ["mat-cuarzo-negro", "focus-visible:ring-white"]] as const) {
+      vi.mocked(publicoApi.obtenerNegocio).mockResolvedValue({
+        ...mockNegocio,
+        logoUrl: "https://cdn.test/logo.png",
+        portadaPreset: preset,
+      });
+      const { unmount } = renderConQuery();
+      const boton = await screen.findByRole("button", { name: "Ver logo en pantalla completa" });
+      expect(boton.className).toContain("focus-visible:ring-2");
+      expect(boton.className).toContain(anillo);
+      unmount();
+    }
+  });
 
   it("una clave desconocida no tapa la foto: vuelve a mostrarla", async () => {
     vi.mocked(publicoApi.obtenerNegocio).mockResolvedValue({

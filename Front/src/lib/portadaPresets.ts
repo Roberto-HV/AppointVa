@@ -21,8 +21,8 @@ export type FamiliaPortada = "geometrico" | "degradado" | "textura" | "material"
 
 /**
  * Luminosidad del fondo donde cae el texto de la portada. Los fondos de marca
- * nacen oscuros; un material claro (cuarzo blanco, duela de roble) necesita el
- * mismo velo que una foto para que el nombre en blanco llegue al 4.5:1.
+ * nacen oscuros; sobre un material claro (cuarzo blanco, duela de roble) el texto
+ * pasa a tinta oscura en vez de tapar el material con un velo (ver `portadaVelo`).
  */
 export type TonoPortada = "claro" | "oscuro";
 
@@ -106,20 +106,6 @@ export function esPresetPortadaValido(clave: string | null | undefined): boolean
  */
 export function tonoPortada(clave: string | null | undefined): TonoPortada {
   return PRESETS_PORTADA.find((p) => p.clave === clave)?.tono ?? "oscuro";
-}
-
-/**
- * Cuánto hay que oscurecer el bloque del texto de la portada sobre este fondo:
- *  · "fuerte": fondo claro; el mismo velo que una foto.
- *  · "suave": material oscuro; sus vetas claras (plata, verde agua) pueden pasar
- *    justo bajo el nombre y un velo ligero lo mantiene por encima del 4.5:1.
- *  · "ninguno": los fondos de marca ya nacen oscuros y lisos donde cae el texto.
- */
-export function veloPortada(clave: string | null | undefined): "fuerte" | "suave" | "ninguno" {
-  const preset = PRESETS_PORTADA.find((p) => p.clave === clave);
-  if (!preset) return "ninguno";
-  if (preset.tono === "claro") return "fuerte";
-  return preset.familia === "material" ? "suave" : "ninguno";
 }
 
 /**
@@ -381,10 +367,31 @@ const CONSTRUCTORES: Record<string, Constructor> = {
 export function fondoPortada(clave: string | null | undefined, hex: string): FondoPortada {
   const color = hex || DEFAULT_COLOR;
   const vigente = normalizarPresetPortada(clave);
-  if (!vigente) return { background: degradeGradient(color) };
-  const material = CONSTRUCTORES_MATERIALES[vigente];
-  if (material) return material();
-  const constructor = CONSTRUCTORES[vigente];
-  if (!constructor) return { background: degradeGradient(color) };
-  return constructor(color);
+  // Los materiales no dependen del color de marca: una entrada por material.
+  // El resto sí, así que la clave lleva el color.
+  const material = vigente ? CONSTRUCTORES_MATERIALES[vigente] : undefined;
+  const llave = material ? vigente! : `${vigente ?? ""}|${color}`;
+  const enCache = CACHE_FONDOS.get(llave);
+  if (enCache) return enCache;
+  const constructor = vigente ? CONSTRUCTORES[vigente] : undefined;
+  const fondo = material
+    ? material()
+    : constructor
+      ? constructor(color)
+      : { background: degradeGradient(color) };
+  // Al pasar del tope (alguien arrastrando el selector de color) se vacía entera:
+  // más simple que un LRU y nunca deja de devolver lo correcto.
+  if (CACHE_FONDOS.size >= TOPE_CACHE) CACHE_FONDOS.clear();
+  // Congelado: el mismo objeto se comparte entre la portada, la vista previa y
+  // las muestras, y nadie debe poder alterarlo para los demás.
+  CACHE_FONDOS.set(llave, Object.freeze(fondo));
+  return fondo;
 }
+
+/**
+ * Fondos ya construidos. Un material arma varios KB de SVG y el selector pinta
+ * todo el catálogo en cada render; sin caché, cada tecla en el campo de color
+ * reconstruía las 25 miniaturas.
+ */
+const CACHE_FONDOS = new Map<string, FondoPortada>();
+const TOPE_CACHE = 400;

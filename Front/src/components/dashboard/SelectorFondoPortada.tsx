@@ -1,12 +1,14 @@
-import type { ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { Check } from "lucide-react";
 import {
   FAMILIAS_PORTADA,
   fondoPortada,
   normalizarPresetPortada,
   presetsPorFamilia,
-  veloPortada,
+  type FamiliaPortada,
 } from "../../lib/portadaPresets";
+import { BASE_MATERIALES } from "../../lib/portadaMateriales";
+import { VELOS_PORTADA, modoPortada, tintaPortada, type ModoPortada } from "../../lib/portadaVelo";
 
 interface Props {
   /** Clave del preset elegido, o `null` si no hay ninguno. Una clave desconocida cuenta como ninguno. */
@@ -79,32 +81,75 @@ function Tarjeta({
   );
 }
 
-// Los mismos velos que la portada real pone bajo el texto (ver `veloPortada`).
-const VELOS_MUESTRA = {
-  fuerte: "linear-gradient(to top, rgba(12,12,15,0.8) 0%, rgba(12,12,15,0.55) 40%, rgba(12,12,15,0) 75%)",
-  suave: "linear-gradient(to top, rgba(12,12,15,0.55) 0%, rgba(12,12,15,0.3) 40%, rgba(12,12,15,0) 75%)",
-};
-
 /**
- * Muestra blanco sobre el fondo, para juzgar la legibilidad antes de publicar.
- * Con `velo`, la portada real oscurece el pie bajo el texto: la muestra lo
- * enseña para no prometer un blanco sobre blanco que el cliente nunca verá.
+ * Muestra del texto sobre el fondo, para juzgar la legibilidad antes de publicar.
+ * Lleva el mismo velo y la misma tinta que la portada real (ver `portadaVelo`):
+ * no promete un blanco sobre blanco que el cliente nunca verá, ni tapa un
+ * material claro que en la portada se ve entero.
  */
-function MuestraTexto({ velo = "ninguno" }: { velo?: "fuerte" | "suave" | "ninguno" }) {
+function MuestraTexto({ modo }: { modo: ModoPortada }) {
+  const velo = VELOS_PORTADA[modo].muestra;
+  const [nombre, descripcion] = tintaPortada(modo).muestra;
   return (
     <span
+      data-tinta={tintaPortada(modo).tipo}
       className="absolute inset-0 flex flex-col justify-end p-2 gap-1"
-      style={velo !== "ninguno" ? { background: VELOS_MUESTRA[velo] } : undefined}
+      style={velo ? { background: velo } : undefined}
     >
-      <span
-        className="block h-1.5 w-2/3 rounded-full"
-        style={{ background: "rgba(255,255,255,0.92)" }}
-      />
-      <span
-        className="block h-1 w-1/2 rounded-full"
-        style={{ background: "rgba(255,255,255,0.55)" }}
-      />
+      <span className={`block h-1.5 w-2/3 rounded-full ${nombre.className ?? ""}`} style={nombre.style} />
+      <span className={`block h-1 w-1/2 rounded-full ${descripcion.className ?? ""}`} style={descripcion.style} />
     </span>
+  );
+}
+
+/**
+ * Avisa cuando el elemento entra (o está por entrar) en pantalla. Cada material
+ * es un SVG con filtros de ruido que cuesta pintar; el grupo va al final del
+ * selector y casi nunca se ve al abrir la pestaña. Sin IntersectionObserver
+ * (navegadores viejos) se pinta de inmediato, como antes.
+ */
+function useVisible<T extends Element>(diferido: boolean): [RefObject<T | null>, boolean] {
+  const ref = useRef<T | null>(null);
+  const [visible, setVisible] = useState(
+    () => !diferido || typeof IntersectionObserver === "undefined",
+  );
+  useEffect(() => {
+    if (visible || !ref.current) return;
+    const observador = new IntersectionObserver(
+      (entradas) => {
+        if (entradas.some((e) => e.isIntersecting)) {
+          setVisible(true);
+          observador.disconnect();
+        }
+      },
+      { rootMargin: "200px" },
+    );
+    observador.observe(ref.current);
+    return () => observador.disconnect();
+  }, [visible]);
+  return [ref, visible];
+}
+
+function GrupoFondos({
+  familia,
+  titulo,
+  descripcion,
+  diferido,
+  children,
+}: {
+  familia: FamiliaPortada;
+  titulo: string;
+  descripcion: string;
+  diferido: boolean;
+  children: (visible: boolean) => ReactNode;
+}) {
+  const [ref, visible] = useVisible<HTMLDivElement>(diferido);
+  return (
+    <div ref={ref} data-familia={familia} className="mb-5 last:mb-0">
+      <h3 className="text-xs font-semibold text-slate-700 dark:text-slate-300">{titulo}</h3>
+      <p className="text-[11px] text-slate-400 dark:text-slate-500 mb-2">{descripcion}</p>
+      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">{children(visible)}</div>
+    </div>
   );
 }
 
@@ -135,7 +180,7 @@ export default function SelectorFondoPortada({
               className="absolute inset-0 w-full h-full object-cover"
               style={{ objectPosition: portadaObjectPosition ?? "center" }}
             />
-            <MuestraTexto velo="fuerte" />
+            <MuestraTexto modo="foto" />
           </Tarjeta>
         )}
         {!portadaUrl && (
@@ -146,17 +191,21 @@ export default function SelectorFondoPortada({
             onSeleccionar={() => onCambiar(null)}
           >
             <span className="absolute inset-0" style={fondoPortada(null, color)} />
-            <MuestraTexto />
+            <MuestraTexto modo="degradado-marca" />
           </Tarjeta>
         )}
       </div>
 
       {FAMILIAS_PORTADA.map((familia) => (
-        <div key={familia.familia} className="mb-5 last:mb-0">
-          <h3 className="text-xs font-semibold text-slate-700 dark:text-slate-300">{familia.titulo}</h3>
-          <p className="text-[11px] text-slate-400 dark:text-slate-500 mb-2">{familia.descripcion}</p>
-          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
-            {presetsPorFamilia(familia.familia).map((preset) => (
+        <GrupoFondos
+          key={familia.familia}
+          familia={familia.familia}
+          titulo={familia.titulo}
+          descripcion={familia.descripcion}
+          diferido={familia.familia === "material"}
+        >
+          {(visible) =>
+            presetsPorFamilia(familia.familia).map((preset) => (
               <Tarjeta
                 key={preset.clave}
                 grupo={grupo}
@@ -164,12 +213,22 @@ export default function SelectorFondoPortada({
                 seleccionado={vigente === preset.clave}
                 onSeleccionar={() => onCambiar(preset.clave)}
               >
-                <span className="absolute inset-0" style={fondoPortada(preset.clave, color)} />
-                <MuestraTexto velo={veloPortada(preset.clave)} />
+                {/* Hasta que el grupo se ve, un color liso del material: mismo
+                    tamaño y tono, sin el costo de los filtros SVG. */}
+                <span
+                  data-muestra={visible ? "fondo" : "provisional"}
+                  className="absolute inset-0"
+                  style={
+                    visible
+                      ? fondoPortada(preset.clave, color)
+                      : { background: BASE_MATERIALES[preset.clave] }
+                  }
+                />
+                <MuestraTexto modo={modoPortada(preset.clave, false)} />
               </Tarjeta>
-            ))}
-          </div>
-        </div>
+            ))
+          }
+        </GrupoFondos>
       ))}
     </div>
   );
