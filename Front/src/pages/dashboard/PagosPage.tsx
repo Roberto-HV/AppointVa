@@ -12,6 +12,8 @@ import { exportarExcel } from "../../utils/exportarExcel";
 import { usePermisos } from "../../hooks/usePermisos";
 import { hoy, inicioSemana, finSemana, inicioMes, finMes } from "../../utils/fechas";
 import Modal from "../../components/ui/Modal";
+import ModalAcciones from "../../components/ui/ModalAcciones";
+import { BOTON_MODAL_PRIMARIO } from "../../components/ui/botonesModal";
 import ConfirmarAccion from "../../components/ui/ConfirmarAccion";
 import Switch from "../../components/ui/Switch";
 import { mensajeError } from "../../utils/errores";
@@ -1200,13 +1202,16 @@ export default function PagosPage() {
               </p>
             )}
 
-            <button
-              onClick={handleConfirmar}
-              disabled={!puedeConfirmar || mutPagar.isPending}
-              className="w-full min-h-[44px] py-2.5 bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50 font-semibold rounded-xl transition text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              {mutPagar.isPending ? "Procesando…" : "Confirmar pago"}
-            </button>
+            <ModalAcciones>
+              <button
+                type="button"
+                onClick={handleConfirmar}
+                disabled={!puedeConfirmar || mutPagar.isPending}
+                className={BOTON_MODAL_PRIMARIO}
+              >
+                {mutPagar.isPending ? "Procesando…" : "Confirmar pago"}
+              </button>
+            </ModalAcciones>
           </div>
         )}
       </Modal>

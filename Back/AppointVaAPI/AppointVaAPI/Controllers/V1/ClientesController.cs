@@ -1,5 +1,7 @@
 using AppointVaAPI.Constants;
+using System.ComponentModel.DataAnnotations;
 using AppointVaAPI.Data;
+using AppointVaAPI.Helpers;
 using AppointVaAPI.Models;
 using AppointVaAPI.Models.Dtos.Clientes;
 using AppointVaAPI.Repository.IRepository;
@@ -199,6 +201,68 @@ namespace AppointVaAPI.Controllers.V1
                 estado = c.Estado,
                 estadoTexto = ObtenerEstadoTexto(c.Estado)
             }));
+        }
+
+        // PUT api/clientes/{id}
+        // Edita los datos del cliente desde el directorio. El teléfono se guarda
+        // sólo-dígitos, igual que al darlo de alta (ClienteRepository), y no puede
+        // repetirse dentro del negocio; el correo tampoco.
+        [HttpPut("{id:guid}")]
+        public async Task<IActionResult> Actualizar(Guid id, [FromBody] ActualizarClienteDto dto)
+        {
+            if (_contexto.NegocioId is null) return Unauthorized();
+            var negocioId = _contexto.NegocioId.Value;
+
+            var nombre = dto.NombreCompleto?.Trim() ?? string.Empty;
+            if (nombre.Length == 0)
+                return BadRequest(new { mensaje = "El nombre es obligatorio" });
+
+            string? telefono = null;
+            if (!string.IsNullOrWhiteSpace(dto.Telefono))
+            {
+                telefono = NormalizacionHelper.SoloDigitos(dto.Telefono);
+                if (telefono.Length < 7 || telefono.Length > 15)
+                    return BadRequest(new { mensaje = "El teléfono no es válido" });
+            }
+
+            var email = string.IsNullOrWhiteSpace(dto.Email) ? null : dto.Email.Trim();
+            if (email is not null && !new EmailAddressAttribute().IsValid(email))
+                return BadRequest(new { mensaje = "El correo no es válido" });
+
+            var cliente = await _repo.ObtenerPorIdAsync(id, negocioId);
+            if (cliente is null) return NotFound(new { mensaje = "Cliente no encontrado" });
+
+            if (telefono is not null)
+            {
+                // Las filas antiguas pueden guardar el teléfono con formato: se
+                // compara contra el valor tal cual y contra su forma sólo-dígitos.
+                var crudo = dto.Telefono!.Trim();
+                var duplicado = await _db.Clientes.FirstOrDefaultAsync(c =>
+                    c.NegocioId == negocioId &&
+                    c.Id != cliente.Id &&
+                    (c.Telefono == telefono || c.Telefono == crudo));
+                if (duplicado is not null)
+                    return Conflict(new { mensaje = $"Este teléfono ya está registrado para {duplicado.NombreCompleto}" });
+            }
+
+            if (email is not null)
+            {
+                var emailMin = email.ToLower();
+                var duplicado = await _db.Clientes.FirstOrDefaultAsync(c =>
+                    c.NegocioId == negocioId &&
+                    c.Id != cliente.Id &&
+                    c.Email != null && c.Email.ToLower() == emailMin);
+                if (duplicado is not null)
+                    return Conflict(new { mensaje = $"Este correo ya está registrado para {duplicado.NombreCompleto}" });
+            }
+
+            cliente.NombreCompleto = nombre;
+            cliente.Telefono = telefono;
+            cliente.Email = email;
+            cliente.FechaActualizacion = DateTime.UtcNow;
+            await _repo.ActualizarAsync(cliente);
+
+            return Ok(MapearDto(cliente));
         }
 
         // PATCH api/clientes/{id}/notas

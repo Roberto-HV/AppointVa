@@ -261,10 +261,10 @@ describe("ConfirmacionPage — estado de la cita", () => {
     return screen.findByRole("heading", { level: 1 });
   }
 
-  it("el titular dice cuándo la esperan, en la cara display", async () => {
+  it("el titular dice cuándo la esperan, en Inter (sin cara display)", async () => {
     const titulo = await renderCita({ estadoTexto: "Confirmada" });
     expect(titulo).toHaveTextContent("Te esperamos el miércoles 22 a las 10:00 a. m.");
-    expect(titulo).toHaveClass("font-display");
+    expect(titulo).not.toHaveClass("font-display");
   });
 
   it("si la hora ya pasó no dice «te esperamos»", async () => {
@@ -441,7 +441,9 @@ describe("ConfirmacionPage — acciones", () => {
     const apple = await screen.findByRole("link", { name: /Apple Calendar/ });
     const google = screen.getByRole("link", { name: /Google Calendar/ });
     const whatsapp = screen.getByRole("link", { name: /Compartir por WhatsApp/ });
-    expect(apple).toHaveAttribute("href", "https://api.test/cita.ics");
+    // El .ics se pide por https a la base del API del front, nunca a la icalUrl/webcal del servidor.
+    expect(apple).toHaveAttribute("href", expect.stringMatching(/^https?:\/\/[^/]+\/api\/publico\/citas\/ABC123\/ical$/));
+    expect(apple.getAttribute("href")).not.toBe("https://api.test/cita.ics");
     expect(google).toHaveAttribute("href", "https://calendar.google.com/x");
     expect(apple.compareDocumentPosition(whatsapp) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });

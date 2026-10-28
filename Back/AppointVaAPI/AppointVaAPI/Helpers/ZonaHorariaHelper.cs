@@ -19,6 +19,13 @@ namespace AppointVaAPI.Helpers
             return TimeZoneInfo.Utc;
         }
 
+        /// <summary>Id IANA de la zona (lo que entiende Intl en el navegador); null si no tiene equivalente.</summary>
+        public static string? IdIana(TimeZoneInfo tz)
+        {
+            if (tz.HasIanaId) return tz.Id;
+            return TimeZoneInfo.TryConvertWindowsIdToIanaId(tz.Id, out var iana) ? iana : null;
+        }
+
         public static DateTimeOffset ToDateTimeOffset(DateTime localUnspecified, TimeZoneInfo tz)
         {
             // Strip Kind so DateTimeOffset accepts any timezone offset regardless of how the DateTime was constructed

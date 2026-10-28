@@ -5,9 +5,8 @@ import { Link } from "react-router-dom";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
-import { CheckCircle2, ChevronDown, Circle, X, Scissors, Users, CalendarDays, Clock, TrendingUp, Store, Images, ExternalLink, History } from "lucide-react";
-import { clientesApi } from "../../api/clientes";
-import type { CitaDto, ClienteCitaDto } from "../../types";
+import { CheckCircle2, ChevronDown, Circle, X, Scissors, Users, CalendarDays, TrendingUp, Store, Images, ExternalLink } from "lucide-react";
+import type { CitaDto } from "../../types";
 import { NotificacionBanner } from "../../components/ui/NotificacionBanner";
 import { dashboardApi } from "../../api/dashboard";
 import { citasApi } from "../../api/citas";
@@ -17,42 +16,32 @@ import { serviciosApi } from "../../api/servicios";
 import { useAuthStore } from "../../store/authStore";
 import EstadoBadge from "../../components/ui/EstadoBadge";
 import { Skeleton } from "../../components/ui/Skeleton";
-import Modal from "../../components/ui/Modal";
+import AnimatedCounter from "../../components/ui/AnimatedCounter";
 import AccionesCita, { HojaAccionesCita, type VistaHoja } from "../../components/dashboard/AccionesCita";
 import { InsigniaPorCerrar } from "../../components/dashboard/TarjetaCita";
 import { colorCategoria, EJE_TICK, REJILLA } from "../../lib/temaGraficas";
 import { citaAbierta, citaPorCerrar, estiloEstadoCita } from "../../lib/estadoCita";
 import { hoy as hoyLocal, inicioSemana as inicioSemanaLocal, finSemana as finSemanaLocal, fechaLocal } from "../../utils/fechas";
 import { formatPrecio, formatPrecioCorto, formatFechaHoraResumen as formatFechaHora, capitalizarPrimera } from "../../utils/formatters";
-import EncabezadoHoy from "../../components/dashboard/EncabezadoHoy";
-import TarjetaPrimeraReserva from "../../components/dashboard/PrimeraReserva";
-import { usePrimeraReserva } from "../../lib/primeraReserva";
-import { getSectorTerms } from "../../hooks/useSectorTerms";
-import { saludoDelDia } from "../../lib/fraseHoy";
 
-// Una cifra en línea: etiqueta y valor con cifras tabulares, sin tarjeta.
-function Cifra({ label, valor }: { label: string; valor: string | number }) {
+interface TarjetaProps { label: string; valor?: string | number; rawValue?: number; valorCorto?: string; color?: string; accent?: boolean }
+function Tarjeta({ label, valor, rawValue, color = "text-slate-900 dark:text-slate-100", accent = false }: TarjetaProps) {
+  const numCls = `text-xl sm:text-2xl font-bold leading-none ${accent ? "text-white" : color}`;
   return (
-    <span className="whitespace-nowrap">
-      <span className="text-muted-foreground">{label}</span>{" "}
-      <span className="font-semibold text-foreground tabular-nums">{valor}</span>
-    </span>
-  );
-}
-
-// Citas e ingresos del periodo en una sola línea de texto: antes eran dos filas
-// de tres tarjetas, seis ceros grandes en un día sin reservas.
-function ResumenPeriodo({ grupo, cifras }: { grupo: string; cifras: { label: string; valor: string | number }[] }) {
-  return (
-    <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-sm">
-      <span className="font-semibold text-foreground">{grupo}</span>
-      {cifras.map((c, i) => (
-        <span key={c.label} className="inline-flex items-baseline gap-3">
-          {i > 0 && <span aria-hidden="true" className="text-slate-300 dark:text-slate-600">·</span>}
-          <Cifra label={c.label} valor={c.valor} />
-        </span>
-      ))}
-    </p>
+    <div className={`rounded-2xl border p-3 sm:p-4 transition-all ${accent ? "bg-slate-900 border-slate-800" : "bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700"}`}>
+      {/* 12px mínimo y gris informativo (≥4.5:1): antes 9–10px slate-400, ~2.6:1. */}
+      <p className={`text-xs font-bold uppercase tracking-wide mb-1.5 line-clamp-1 ${accent ? "text-slate-300" : "text-muted-foreground"}`}>{label}</p>
+      {typeof valor === "number" ? (
+        <AnimatedCounter to={valor} className={numCls} />
+      ) : rawValue !== undefined ? (
+        <p className={numCls}>
+          <AnimatedCounter to={rawValue} format={formatPrecioCorto} className="sm:hidden" />
+          <AnimatedCounter to={rawValue} format={(n) => formatPrecio(n)} className="hidden sm:inline" />
+        </p>
+      ) : (
+        <p className={numCls}>{valor}</p>
+      )}
+    </div>
   );
 }
 
@@ -125,7 +114,7 @@ function WizardOnboarding({ negocioId, slug, tieneServicios, tieneHorarios, tien
         aria-valuemax={pasos.length}
         aria-valuenow={hechos}
       >
-        <div className="bg-accent-brand h-1.5 rounded-full transition-all duration-500 ease-calma" style={{ width: `${pct}%` }} />
+        <div className="bg-slate-700 dark:bg-slate-300 h-1.5 rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
       </div>
 
       {siguiente ? (
@@ -315,7 +304,7 @@ function VistaPropietario({ nombre }: { nombre: string }) {
     staleTime: 1000 * 60 * 10,
   });
 
-  const { data: tendencia = [], isSuccess: tendenciaLista } = useQuery({
+  const { data: tendencia = [] } = useQuery({
     queryKey: ["dashboard-tendencia", dias],
     queryFn: () => dashboardApi.obtenerTendencia(dias),
   });
@@ -356,14 +345,6 @@ function VistaPropietario({ nombre }: { nombre: string }) {
     refetchInterval: 30_000,
   });
 
-  const bookingUrl = negocio?.slug ? `${window.location.origin}/b/${negocio.slug}` : "";
-  const terminosSector = getSectorTerms(negocio?.sector);
-  const primeraReserva = usePrimeraReserva(
-    usuario?.negocioId,
-    { resumen: data, citasHoy: citasDeHoy, tendencia },
-    !!data && !isError && !cargandoAgenda && !errorAgenda && tendenciaLista,
-  );
-
   // La guía de inicio va después de la agenda de hoy, no encima.
   const guiaInicio = negocio && usuario?.negocioId ? (
     <WizardOnboarding
@@ -384,34 +365,21 @@ function VistaPropietario({ nombre }: { nombre: string }) {
     <div className="p-4 sm:p-8">
       <NotificacionBanner />
 
-      {/* Encabezado: una oración con el día de hoy y, debajo, su línea de tiempo */}
-      <EncabezadoHoy
-        nombre={nombre}
-        nombreNegocio={negocio?.nombre}
-        citasHoy={cargandoAgenda || errorAgenda || enBienvenida ? undefined : citasDeHoy}
-        proximasCitas={data?.proximasCitas}
-        terminos={{ cita: terminosSector.cita.toLowerCase(), citas: terminosSector.citas.toLowerCase() }}
-        bookingUrl={bookingUrl}
-        pie={!mostrarWizard && keyOnboarding ? (
-          <button
-            onClick={() => { localStorage.removeItem(keyOnboarding); setMostrarWizard(true); }}
-            className="text-xs text-muted-foreground hover:text-foreground hover:underline transition"
-          >
-            Ver guía de inicio
-          </button>
-        ) : null}
-      />
-
-      {primeraReserva.celebracion && !enBienvenida && (
-        <TarjetaPrimeraReserva
-          celebracion={primeraReserva.celebracion}
-          conConfeti={primeraReserva.recienDetectada}
-          color={negocio?.colorPrimario}
-          nombreNegocio={negocio?.nombre}
-          bookingUrl={bookingUrl}
-          onCerrar={primeraReserva.cerrar}
-        />
-      )}
+      {/* Encabezado — Apple Store style */}
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 leading-none mb-1">Hola, {nombre}</h1>
+        <div className="flex items-center gap-3">
+          <p className="text-sm text-muted-foreground">{negocio?.nombre ?? "Tu negocio"}</p>
+          {!mostrarWizard && keyOnboarding && (
+            <button
+              onClick={() => { localStorage.removeItem(keyOnboarding); setMostrarWizard(true); }}
+              className="text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:underline transition"
+            >
+              Ver guía de inicio
+            </button>
+          )}
+        </div>
+      </div>
 
       {isError && !data && (
         <div className="rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-6 text-center mb-6">
@@ -444,7 +412,48 @@ function VistaPropietario({ nombre }: { nombre: string }) {
         </>
       ) : data ? (
         <>
-          {/* La próxima cita ya la nombra el encabezado; sus acciones están en la agenda. */}
+          {/* Highlight próxima cita */}
+          {data.proximasCitas.length > 0 && (() => {
+            const proxima = data.proximasCitas[0];
+            const proximaCompleta = citasDeHoy.find((c) => c.id === proxima.id);
+            const msRestantes = new Date(proxima.inicioEn).getTime() - Date.now();
+            const minutos = Math.round(msRestantes / 60000);
+            const esHoy = msRestantes > 0 && msRestantes < 24 * 60 * 60 * 1000;
+            const etiqueta = msRestantes <= 0
+              ? "En curso"
+              : minutos < 60
+              ? `En ${minutos} min`
+              : minutos < 1440
+              ? `En ${Math.floor(minutos / 60)}h ${minutos % 60 > 0 ? `${minutos % 60}min` : ""}`
+              : null;
+            if (!esHoy && !etiqueta) return null;
+            return (
+              <div className="bg-card border border-border rounded-xl p-4 mb-6 flex flex-wrap items-center justify-between gap-3 animate-fade-in">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center shrink-0">
+                    <CalendarDays size={18} className="text-muted-foreground" aria-hidden="true" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wide mb-0.5">Próxima cita</p>
+                    <p className="font-semibold text-foreground truncate">{proxima.nombreCliente}</p>
+                    <p className="text-xs text-muted-foreground truncate">{proxima.nombreServicio} · {proxima.nombreEmpleado}</p>
+                  </div>
+                </div>
+                <div className="text-right shrink-0">
+                  {etiqueta && (
+                    <p className={`text-sm font-bold ${msRestantes <= 0 ? "text-status-confirmed-fg" : "text-foreground"}`}>{etiqueta}</p>
+                  )}
+                  <p className="text-xs text-muted-foreground mb-1">{formatFechaHora(proxima.inicioEn)}</p>
+                  <EstadoBadge estado={proxima.estadoTexto} />
+                </div>
+                {/* El resumen no trae la cita completa; si es de hoy, la agenda sí. */}
+                {proximaCompleta && (
+                  <AccionesCita cita={proximaCompleta} nombreNegocio={negocio?.nombre} className="w-full sm:w-auto" />
+                )}
+              </div>
+            );
+          })()}
+
           {/* Agenda de hoy */}
           <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-5 mb-6">
             <div className="flex items-center justify-between mb-4">
@@ -471,7 +480,7 @@ function VistaPropietario({ nombre }: { nombre: string }) {
                 <button onClick={() => reintentarAgenda()} className="mt-2 min-h-[44px] px-4 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition">Reintentar</button>
               </div>
             ) : citasDeHoy.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-6">Nada agendado para hoy.</p>
+              <p className="text-sm text-muted-foreground text-center py-8">Sin citas para hoy</p>
             ) : (
               <div className="space-y-1.5">
                 {citasDeHoy.map((c) => {
@@ -503,28 +512,38 @@ function VistaPropietario({ nombre }: { nombre: string }) {
 
           {guiaInicio}
 
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2.5">Citas</p>
           <motion.div
-            initial={reducirMovimiento ? false : { opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-            className="bg-card border border-border rounded-xl px-4 py-3 mb-6 flex flex-col gap-1.5 lg:flex-row lg:flex-wrap lg:gap-x-8"
+            initial={reducirMovimiento ? false : "hidden"} animate="show"
+            variants={{ hidden: {}, show: { transition: { staggerChildren: 0.08 } } }}
+            className="grid grid-cols-3 gap-2 sm:gap-3 mb-6"
           >
-            <ResumenPeriodo
-              grupo="Citas"
-              cifras={[
-                { label: "Hoy", valor: data.citasHoy },
-                { label: "Semana", valor: data.citasSemana },
-                { label: "Mes", valor: data.citasMes },
-              ]}
-            />
-            <ResumenPeriodo
-              grupo="Ingresos"
-              cifras={[
-                { label: "Hoy", valor: formatPrecio(data.ingresosHoy) },
-                { label: "Semana", valor: formatPrecio(data.ingresosSemana) },
-                { label: "Mes", valor: formatPrecio(data.ingresosMes) },
-              ]}
-            />
+            {[
+              { label: "Hoy", valor: data.citasHoy },
+              { label: "Semana", valor: data.citasSemana },
+              { label: "Mes", valor: data.citasMes },
+            ].map(({ label, valor }) => (
+              <motion.div key={label} variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0, transition: { duration: 0.3 } } }}>
+                <Tarjeta label={label} valor={valor} />
+              </motion.div>
+            ))}
+          </motion.div>
+
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2.5">Ingresos</p>
+          <motion.div
+            initial={reducirMovimiento ? false : "hidden"} animate="show"
+            variants={{ hidden: {}, show: { transition: { staggerChildren: 0.08 } } }}
+            className="grid grid-cols-3 gap-2 sm:gap-3 mb-8"
+          >
+            {[
+              { label: "Hoy", rawValue: data.ingresosHoy },
+              { label: "Semana", rawValue: data.ingresosSemana },
+              { label: "Mes", rawValue: data.ingresosMes },
+            ].map(({ label, rawValue }) => (
+              <motion.div key={label} variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0, transition: { duration: 0.3 } } }}>
+                <Tarjeta label={label} rawValue={rawValue} accent />
+              </motion.div>
+            ))}
           </motion.div>
 
           {/* Gráfica de tendencia */}
@@ -544,7 +563,7 @@ function VistaPropietario({ nombre }: { nombre: string }) {
                     type="button"
                     aria-pressed={dias === d}
                     onClick={() => setDias(d)}
-                    className={`min-h-[44px] lg:min-h-[36px] px-3 inline-flex items-center rounded-lg border text-sm lg:text-xs font-medium whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-brand/40 dark:focus-visible:ring-accent-brand/40 ${
+                    className={`min-h-[44px] lg:min-h-[36px] px-3 inline-flex items-center rounded-lg border text-sm lg:text-xs font-medium whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40 dark:focus-visible:ring-slate-400/40 ${
                       dias === d
                         ? "bg-slate-700 text-white border-slate-700 dark:bg-slate-600 dark:border-slate-600"
                         : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500"
@@ -555,9 +574,8 @@ function VistaPropietario({ nombre }: { nombre: string }) {
                 ))}
               </div>
             </div>
-            {/* Una línea plana en cero no informa nada: en su lugar, una frase. */}
-            {!tendencia.some((d) => d.ingresos > 0 || d.citas > 0) ? (
-              <p className="text-sm text-muted-foreground text-center py-8">Aún no hay citas ni ingresos en estos días.</p>
+            {tendencia.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">Sin datos para este período</p>
             ) : (
               <ResponsiveContainer width="100%" height={200}>
                 <AreaChart data={tendencia} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
@@ -601,7 +619,7 @@ function VistaPropietario({ nombre }: { nombre: string }) {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className={`${data.topServicios.length > 0 ? "lg:col-span-2" : "lg:col-span-3"} bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 p-5`}>
+            <div className="lg:col-span-2 bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 p-5">
               <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4">Próximas citas</h2>
               {data.proximasCitas.length === 0 ? (
                 <p className="text-slate-400 dark:text-slate-500 text-sm">No hay citas próximas</p>
@@ -621,28 +639,29 @@ function VistaPropietario({ nombre }: { nombre: string }) {
               )}
             </div>
 
-            {/* Sin datos no se muestran barras vacías: la tarjeta desaparece. */}
-            {data.topServicios.length > 0 && (
             <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 p-5">
               <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4">Top servicios</h2>
+              {data.topServicios.length === 0 ? (
+                <p className="text-slate-400 dark:text-slate-500 text-sm">Sin datos aún</p>
+              ) : (
                 <div className="space-y-3">
                   {data.topServicios.map((s, i) => (
                     <div key={s.nombre}>
                       <div className="flex justify-between items-center mb-1">
                         <span className="text-xs text-slate-600 dark:text-slate-400 font-medium">{i + 1}. {s.nombre}</span>
-                        <span className="text-xs text-slate-500 dark:text-slate-400 tabular-nums">{s.totalCitas} citas</span>
+                        <span className="text-xs text-slate-400 dark:text-slate-500">{s.totalCitas} citas</span>
                       </div>
                       <div className="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-1.5">
                         <div
-                          className="bg-accent-brand h-1.5 rounded-full"
+                          className="bg-slate-700 dark:bg-slate-300 h-1.5 rounded-full"
                           style={{ width: `${Math.min((s.totalCitas / (data.topServicios[0]?.totalCitas || 1)) * 100, 100)}%` }}
                         />
                       </div>
                     </div>
                   ))}
                 </div>
+              )}
             </div>
-            )}
           </div>
         </>
           ) : guiaInicio}
@@ -658,14 +677,13 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
   // Fechas locales: con `toISOString()` la agenda saltaba a mañana desde las 18:00 (UTC-6).
   const hoy = hoyLocal(ahora);
   const manana = fechaLocal(new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate() + 1));
-  const saludo = saludoDelDia(ahora);
+  const saludo = ahora.getHours() < 12 ? "Buenos días" : ahora.getHours() < 19 ? "Buenas tardes" : "Buenas noches";
 
   // Inicio y fin de semana (lunes–domingo)
   const inicioSemanaStr = inicioSemanaLocal(ahora);
   const finSemanaStr = finSemanaLocal(ahora);
 
-  const [clienteSel, setClienteSel] = useState<{ id: string; nombre: string } | null>(null);
-  // Tocar una cita de la agenda abre sus acciones; el historial es una de ellas.
+  // Tocar una cita de la agenda abre sus acciones.
   const [citaHoja, setCitaHoja] = useState<CitaDto | null>(null);
   const [vistaHoja, setVistaHoja] = useState<VistaHoja>("menu");
   const abrirHoja = (c: CitaDto, v: VistaHoja = "menu") => { setCitaHoja(c); setVistaHoja(v); };
@@ -691,13 +709,6 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
     queryFn: () => citasApi.obtenerTodas({ desde: inicioSemanaStr, hasta: finSemanaStr, tamano: 200 }),
     select: (p) => p.datos,
     staleTime: 0,
-  });
-
-  const { data: historialCliente = [], isLoading: cargandoHistorial, isError: errorHistorial } = useQuery({
-    queryKey: ["historial-cliente", clienteSel?.id],
-    queryFn: () => clientesApi.obtenerCitas(clienteSel!.id),
-    enabled: !!clienteSel,
-    staleTime: 1000 * 60,
   });
 
   const pendientesOConfirmadas = citasProximas.filter(
@@ -739,26 +750,26 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
 
       {/* Encabezado */}
       <div className="mb-6">
-        <p className="text-sm text-slate-400 dark:text-slate-500 mb-0.5">{saludo}</p>
-        <h1 className="font-display text-3xl font-semibold tracking-[-0.02em] text-slate-900 dark:text-slate-100 leading-none">{nombre}</h1>
+        <p className="text-sm text-muted-foreground mb-0.5">{saludo}</p>
+        <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 leading-none">{nombre}</h1>
       </div>
 
       {/* Stats hoy */}
       <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-4">
         <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-3 sm:p-4">
-          <p className="text-xs font-medium text-muted-foreground mb-1.5">Citas hoy</p>
+          <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-1.5">Citas hoy</p>
           <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 leading-none">
             {cargandoHoy ? "—" : citasHoy.length}
           </p>
         </div>
         <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-3 sm:p-4">
-          <p className="text-xs font-medium text-muted-foreground mb-1.5">Completadas</p>
+          <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-1.5">Completadas</p>
           <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 leading-none">
             {cargandoHoy ? "—" : completadas.length}
           </p>
         </div>
         <div className="bg-slate-900 rounded-2xl p-3 sm:p-4">
-          <p className="text-xs font-medium text-slate-300 mb-1.5">Ingresos</p>
+          <p className="text-xs font-bold uppercase tracking-wide text-slate-300 mb-1.5">Ingresos</p>
           <p className="text-xl font-bold text-white leading-none">
             {cargandoHoy ? "—" : formatPrecioCorto(ingresosHoy)}
           </p>
@@ -771,14 +782,14 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
           <TrendingUp size={18} className="text-status-confirmed-fg" aria-hidden="true" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-xs font-medium text-muted-foreground mb-0.5">Esta semana</p>
+          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-0.5">Esta semana</p>
           <p className="text-sm text-foreground">
             <span className="font-bold">{completadasSemana.length}</span> completadas de{" "}
             <span className="font-bold">{totalSemana}</span> citas
           </p>
         </div>
         <div className="text-right shrink-0">
-          <p className="text-xs font-medium text-muted-foreground mb-0.5">Ingresos</p>
+          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-0.5">Ingresos</p>
           <p className="text-base font-bold text-foreground">
             {formatPrecioCorto(ingresosSemana)}
           </p>
@@ -788,7 +799,7 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
       {/* Próxima cita del día */}
       {!cargandoHoy && proxima && (
         <div className="bg-card border border-border rounded-2xl p-4 mb-6">
-          <p className="text-sm font-semibold text-foreground mb-3">Próxima cita</p>
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3">Próxima cita</p>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="min-w-0 flex-1">
               <p className="font-bold text-foreground truncate">{proxima.nombreCliente}</p>
@@ -914,58 +925,7 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
         cita={citaHoja}
         vistaInicial={vistaHoja}
         onCerrar={() => setCitaHoja(null)}
-        accionesExtra={citaHoja?.clienteId ? [{
-          id: "historial",
-          etiqueta: "Ver historial del cliente",
-          Icono: History,
-          onSelect: () => setClienteSel({ id: citaHoja.clienteId, nombre: citaHoja.nombreCliente }),
-        }] : []}
       />
-
-      {/* Historial del cliente: Modal (Radix) da foco, Escape y tema oscuro */}
-      <Modal
-        abierto={!!clienteSel}
-        onCerrar={() => setClienteSel(null)}
-        titulo={clienteSel ? `Historial de ${clienteSel.nombre}` : "Historial"}
-        ancho="md"
-      >
-        <div className="space-y-2">
-          {cargandoHistorial ? (
-            [0, 1, 2].map((i) => <Skeleton key={i} className="h-14 rounded-xl" />)
-          ) : errorHistorial ? (
-            <p className="text-sm text-red-700 dark:text-red-400 text-center py-8" role="alert">No se pudo cargar el historial</p>
-          ) : historialCliente.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">Primera visita del cliente</p>
-          ) : (
-            historialCliente.map((h: ClienteCitaDto) => (
-              <div key={h.id} className="flex items-center gap-3 p-3 bg-muted rounded-xl">
-                <div className="w-8 h-8 rounded-lg bg-background flex items-center justify-center shrink-0">
-                  <Clock size={14} className="text-muted-foreground" aria-hidden="true" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-foreground truncate">{h.nombreServicio}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {new Date(h.inicioEn).toLocaleDateString("es-MX", {
-                      day: "numeric", month: "short", year: "numeric",
-                    })}
-                    {h.nombreEmpleado ? ` · ${h.nombreEmpleado}` : ""}
-                  </p>
-                </div>
-                <div className="text-right shrink-0 space-y-1">
-                  <p className="text-xs font-semibold text-foreground">{formatPrecio(h.precio)}</p>
-                  <EstadoBadge estado={h.estadoTexto} />
-                </div>
-              </div>
-            ))
-          )}
-          {historialCliente.length > 0 && (
-            <p className="text-xs text-muted-foreground text-center pt-2 flex items-center justify-center gap-1">
-              <History size={12} aria-hidden="true" />
-              {historialCliente.length} visita{historialCliente.length !== 1 ? "s" : ""} en total
-            </p>
-          )}
-        </div>
-      </Modal>
     </div>
   );
 }

@@ -11,6 +11,12 @@ import { serviciosApi } from "../../api/servicios";
 import { negociosApi } from "../../api/negocios";
 import { citasApi } from "../../api/citas";
 import Modal from "../../components/ui/Modal";
+import ModalAcciones from "../../components/ui/ModalAcciones";
+import {
+  BOTON_MODAL_PRIMARIO,
+  BOTON_MODAL_SECUNDARIO,
+  BOTON_MODAL_PELIGRO_SUAVE,
+} from "../../components/ui/botonesModal";
 import ConfirmarAccion from "../../components/ui/ConfirmarAccion";
 import DialogoEliminarConCitas from "../../components/dashboard/DialogoEliminarConCitas";
 import EditorHorario from "../../components/dashboard/EditorHorario";
@@ -33,6 +39,14 @@ import { useSubirImagen } from "../../hooks/useSubirImagen";
 import { ACCEPT_IMAGEN } from "../../lib/imagenes";
 import ProgresoSubida from "../../components/ui/ProgresoSubida";
 import type { EmpleadoDto, HorarioDiaDto } from "../../types";
+
+// Quitar un bloqueo de la lista del modal: acción destructiva discreta, sin borde,
+// del mismo alto que el resto de botones (44px táctil, 36px en escritorio).
+const BOTON_QUITAR_BLOQUEO =
+  "inline-flex items-center justify-center gap-2 min-h-[44px] lg:min-h-[36px] rounded-lg font-medium " +
+  "transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 " +
+  "focus-visible:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed " +
+  "text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20";
 
 const HORARIO_BASE: HorarioDiaDto[] = Array.from({ length: 7 }, (_, i) => ({
   diaSemana: i,
@@ -424,12 +438,9 @@ export default function EmpleadosPage() {
           </div>
           <p className="font-medium text-slate-700 mb-1 dark:text-slate-300">Aún no tienes {terms.empleados.toLowerCase()}</p>
           <p className="text-sm text-slate-400 mb-5 dark:text-slate-500">Agrega a tu equipo para que puedan recibir citas</p>
-          <button
-            onClick={abrirCrear}
-            className="bg-slate-700 hover:bg-slate-800 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition"
-          >
+          <BotonAccion onClick={abrirCrear}>
             Agregar primer {terms.empleado.toLowerCase()}
-          </button>
+          </BotonAccion>
         </div>
       ) : empleadosFiltrados.length === 0 ? (
         <div className="bg-white rounded-xl border border-slate-100 dark:bg-slate-800 dark:border-slate-700">
@@ -455,92 +466,81 @@ export default function EmpleadosPage() {
             <motion.div
               key={emp.id}
               variants={{ hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0, transition: { duration: 0.35 } } }}
-              className="bg-white rounded-xl border border-slate-100 p-5 flex gap-4 dark:bg-slate-800 dark:border-slate-700"
+              className="bg-white rounded-xl border border-slate-100 p-5 flex flex-col gap-4 dark:bg-slate-800 dark:border-slate-700"
             >
-              {/* Un botón, no un div: se enfoca con Tab, y la insignia de la cámara
-                  está siempre a la vista, también en pantallas táctiles sin hover. */}
-              <div className="shrink-0 w-14 flex flex-col items-center gap-1.5">
-                <button
-                  type="button"
-                  className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center shrink-0 relative group dark:bg-slate-700 disabled:opacity-60
-                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                  onClick={() => { empleadoFotoIdRef.current = emp.id; fotoInputRef.current?.click(); }}
-                  disabled={fotoEmpleado.subiendoEn(emp.id)}
-                  aria-label={`Cambiar foto de ${emp.nombre}`}
-                  title="Cambiar foto"
-                >
-                  <span className="w-full h-full rounded-full overflow-hidden flex items-center justify-center">
-                    {emp.fotoUrl
-                      ? <img src={emp.fotoUrl} alt="" className="w-full h-full object-cover" />
-                      : <span className="text-xl font-bold text-slate-400">{emp.nombre.charAt(0)}</span>
-                    }
-                  </span>
-                  <span aria-hidden="true" className="absolute -bottom-0.5 -right-0.5 w-6 h-6 rounded-full bg-card border border-border text-muted-foreground flex items-center justify-center shadow-sm group-hover:text-foreground transition">
-                    <Camera size={13} />
-                  </span>
-                </button>
-                {fotoEmpleado.subiendoEn(emp.id) && (
-                  <ProgresoSubida porcentaje={fotoEmpleado.progresoDe(emp.id) ?? null} etiqueta={`Subiendo foto de ${emp.nombre}`} />
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-0.5">
-                  <p className="font-semibold text-slate-800 truncate dark:text-slate-200">{emp.nombre}</p>
-                  <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${emp.activo ? "bg-status-confirmed-bg text-status-confirmed-fg" : "bg-status-absent-bg text-status-absent-fg"}`}>
-                    {emp.activo ? "Activo" : "Inactivo"}
-                  </span>
-                </div>
-                {emp.email && <p className="text-xs text-slate-400 truncate dark:text-slate-500">{emp.email}</p>}
-                {emp.telefono && <p className="text-xs text-slate-400 dark:text-slate-500">{emp.telefono}</p>}
-                <p className="text-xs text-slate-400 mt-1 dark:text-slate-500">{emp.servicioIds.length} {emp.servicioIds.length === 1 ? terms.servicio : terms.servicios} asignados</p>
-
-                <div className="mt-3 space-y-1.5">
-                  {!emp.activo && (
-                    <button
-                      type="button"
-                      onClick={() => reactivar.mutate(emp.id)}
-                      disabled={reactivandoId === emp.id}
-                      aria-label={`Reactivar a ${emp.nombre}`}
-                      className="w-full border border-border text-foreground hover:bg-muted rounded-md py-2 text-sm font-medium flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50"
-                    >
-                      <RotateCcw size={12} aria-hidden="true" /> {reactivandoId === emp.id ? "Reactivando…" : "Reactivar"}
-                    </button>
+              <div className="flex gap-4">
+                {/* Un botón, no un div: se enfoca con Tab, y la insignia de la cámara
+                    está siempre a la vista, también en pantallas táctiles sin hover. */}
+                <div className="shrink-0 w-14 flex flex-col items-center gap-1.5">
+                  <button
+                    type="button"
+                    className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center shrink-0 relative group dark:bg-slate-700 disabled:opacity-60
+                      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                    onClick={() => { empleadoFotoIdRef.current = emp.id; fotoInputRef.current?.click(); }}
+                    disabled={fotoEmpleado.subiendoEn(emp.id)}
+                    aria-label={`Cambiar foto de ${emp.nombre}`}
+                    title="Cambiar foto"
+                  >
+                    <span className="w-full h-full rounded-full overflow-hidden flex items-center justify-center">
+                      {emp.fotoUrl
+                        ? <img src={emp.fotoUrl} alt="" className="w-full h-full object-cover" />
+                        : <span className="text-xl font-bold text-slate-400">{emp.nombre.charAt(0)}</span>
+                      }
+                    </span>
+                    <span aria-hidden="true" className="absolute -bottom-0.5 -right-0.5 w-6 h-6 rounded-full bg-card border border-border text-muted-foreground flex items-center justify-center shadow-sm group-hover:text-foreground transition">
+                      <Camera size={13} />
+                    </span>
+                  </button>
+                  {fotoEmpleado.subiendoEn(emp.id) && (
+                    <ProgresoSubida porcentaje={fotoEmpleado.progresoDe(emp.id) ?? null} etiqueta={`Subiendo foto de ${emp.nombre}`} />
                   )}
-                  <div className="grid grid-cols-2 gap-1.5">
-                    <button
-                      onClick={() => abrirEditar(emp)}
-                      className="border border-blue-300 bg-blue-50 text-blue-600 hover:border-blue-500 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-400 dark:hover:bg-blue-950 rounded-md py-2 text-sm font-medium flex items-center justify-center gap-1.5 transition-colors"
-                    >
-                      <Pencil size={12} /> Editar
-                    </button>
-                    <button
-                      onClick={() => abrirHorario(emp)}
-                      className="border border-violet-300 bg-violet-50 text-violet-600 hover:border-violet-500 hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-950/40 dark:text-violet-400 dark:hover:bg-violet-950 rounded-md py-2 text-sm font-medium flex items-center justify-center gap-1.5 transition-colors"
-                    >
-                      <Clock size={12} /> Horarios
-                    </button>
-                  </div>
-                  <div className="grid grid-cols-3 gap-1.5">
-                    <button
-                      onClick={() => abrirBloqueo(emp)}
-                      className="border border-amber-300 bg-amber-50 text-amber-600 hover:border-amber-500 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-400 dark:hover:bg-amber-950 rounded-md py-2 text-sm font-medium flex items-center justify-center gap-1.5 transition-colors"
-                    >
-                      <CalendarX size={12} /> Bloqueos
-                    </button>
-                    <button
-                      onClick={() => abrirInvitar(emp)}
-                      className="border border-emerald-300 bg-emerald-50 text-emerald-600 hover:border-emerald-500 hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-400 dark:hover:bg-emerald-950 rounded-md py-2 text-sm font-medium flex items-center justify-center gap-1.5 transition-colors"
-                    >
-                      <Mail size={12} /> Invitar
-                    </button>
-                    <button
-                      onClick={() => setEmpleadoEliminar(emp)}
-                      className="border border-destructive/40 bg-destructive/5 text-destructive hover:bg-destructive hover:text-white rounded-md py-2 text-sm font-medium flex items-center justify-center gap-1.5 transition-colors"
-                    >
-                      <Trash2 size={12} /> Eliminar
-                    </button>
-                  </div>
                 </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <p className="font-semibold text-slate-800 truncate dark:text-slate-200">{emp.nombre}</p>
+                    <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${emp.activo ? "bg-status-confirmed-bg text-status-confirmed-fg" : "bg-status-absent-bg text-status-absent-fg"}`}>
+                      {emp.activo ? "Activo" : "Inactivo"}
+                    </span>
+                  </div>
+                  {emp.email && <p className="text-xs text-slate-400 truncate dark:text-slate-500">{emp.email}</p>}
+                  {emp.telefono && <p className="text-xs text-slate-400 dark:text-slate-500">{emp.telefono}</p>}
+                  <p className="text-xs text-slate-400 mt-1 dark:text-slate-500">{emp.servicioIds.length} {emp.servicioIds.length === 1 ? terms.servicio : terms.servicios} asignados</p>
+                </div>
+              </div>
+
+              {/* Acciones a todo el ancho de la tarjeta y pegadas a su pie (`mt-auto`),
+                  así quedan a la misma altura en tarjetas vecinas. Rejilla fija de dos
+                  columnas iguales: Editar ocupa la primera fila y las otras cuatro, con
+                  Eliminar al final, completan dos filas sin huérfanos en ningún ancho. */}
+              <div className="mt-auto grid grid-cols-2 gap-2" role="group" aria-label={`Acciones de ${emp.nombre}`}>
+                {/* Inactivo: Reactivar ocupa su propia fila completa encima de Editar,
+                    así la rejilla de dos columnas sigue sin huérfanos. */}
+                {!emp.activo && (
+                  <button
+                    type="button"
+                    onClick={() => reactivar.mutate(emp.id)}
+                    disabled={reactivandoId === emp.id}
+                    aria-label={`Reactivar a ${emp.nombre}`}
+                    className={`${BOTON_MODAL_SECUNDARIO} col-span-2`}
+                  >
+                    <RotateCcw size={15} className="text-muted-foreground" aria-hidden="true" /> {reactivandoId === emp.id ? "Reactivando…" : "Reactivar"}
+                  </button>
+                )}
+                <button type="button" onClick={() => abrirEditar(emp)} className={`${BOTON_MODAL_PRIMARIO} col-span-2`}>
+                  <Pencil size={15} aria-hidden="true" /> Editar
+                </button>
+                <button type="button" onClick={() => abrirHorario(emp)} className={BOTON_MODAL_SECUNDARIO}>
+                  <Clock size={15} className="text-muted-foreground" aria-hidden="true" /> Horarios
+                </button>
+                <button type="button" onClick={() => abrirBloqueo(emp)} className={BOTON_MODAL_SECUNDARIO}>
+                  <CalendarX size={15} className="text-muted-foreground" aria-hidden="true" /> Bloqueos
+                </button>
+                <button type="button" onClick={() => abrirInvitar(emp)} className={BOTON_MODAL_SECUNDARIO}>
+                  <Mail size={15} className="text-muted-foreground" aria-hidden="true" /> Invitar
+                </button>
+                <button type="button" onClick={() => setEmpleadoEliminar(emp)} className={BOTON_MODAL_PELIGRO_SUAVE}>
+                  <Trash2 size={15} aria-hidden="true" /> Eliminar
+                </button>
               </div>
             </motion.div>
           ))}
@@ -608,8 +608,7 @@ export default function EmpleadosPage() {
             </div>
           </div>
 
-          <button type="submit" disabled={guardando}
-            className="w-full bg-slate-700 hover:bg-slate-800 disabled:opacity-50 text-white font-semibold py-2.5 rounded-xl transition">
+          <button type="submit" disabled={guardando} className={`${BOTON_MODAL_PRIMARIO} w-full`}>
             {guardando ? "Guardando..." : empleadoEdit ? "Guardar cambios" : "Crear empleado"}
           </button>
         </form>
@@ -662,7 +661,7 @@ export default function EmpleadosPage() {
           <button
             onClick={() => guardarHorario({ id: empleadoHorario!.id, horarios: horarioLocal })}
             disabled={!horarioCargado || guardandoHorario || horarioLocal.some((h) => !!errorDelDia(h))}
-            className="w-full bg-slate-700 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-xl transition mt-2"
+            className={`${BOTON_MODAL_PRIMARIO} w-full mt-2`}
           >
             {guardandoHorario ? "Guardando..." : "Guardar horario"}
           </button>
@@ -686,7 +685,7 @@ export default function EmpleadosPage() {
             ) : (
               <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                 {bloqueos.map((b) => (
-                  <div key={b.id} className="flex items-start justify-between gap-3 bg-status-pending-bg rounded-lg px-3 py-2">
+                  <div key={b.id} className="flex items-center justify-between gap-3 bg-status-pending-bg rounded-lg pl-3 pr-1 py-1">
                     <div className="min-w-0">
                       <p className="text-xs font-medium text-foreground">
                         {formatBloqueo(b.inicioEn)} → {formatBloqueo(b.finEn)}
@@ -696,9 +695,10 @@ export default function EmpleadosPage() {
                     <button
                       type="button"
                       onClick={() => b.id && setBloqueoEliminar({ id: b.id, texto: `${formatBloqueo(b.inicioEn)} → ${formatBloqueo(b.finEn)}` })}
-                      className="text-red-700 dark:text-red-400 hover:underline text-xs shrink-0 mt-0.5 px-1 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      aria-label={`Eliminar bloqueo ${formatBloqueo(b.inicioEn)} a ${formatBloqueo(b.finEn)}`}
+                      className={`${BOTON_QUITAR_BLOQUEO} shrink-0 px-2.5 text-xs`}
                     >
-                      Eliminar
+                      <Trash2 size={14} aria-hidden="true" /> Eliminar
                     </button>
                   </div>
                 ))}
@@ -784,7 +784,7 @@ export default function EmpleadosPage() {
               <button
                 type="submit"
                 disabled={creandoBloqueo}
-                className="w-full bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white font-semibold py-2.5 rounded-xl transition"
+                className={`${BOTON_MODAL_PRIMARIO} w-full`}
               >
                 {creandoBloqueo ? "Guardando..." : "Agregar bloqueo"}
               </button>
@@ -880,10 +880,15 @@ export default function EmpleadosPage() {
           {errorInvitar && (
             <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-3 py-2">{errorInvitar}</div>
           )}
-          <button type="submit" disabled={invitando}
-            className="w-full bg-slate-700 hover:bg-slate-800 disabled:opacity-50 text-white font-semibold py-2.5 rounded-xl transition">
-            {invitando ? "Creando cuenta..." : "Crear cuenta de acceso"}
-          </button>
+          <ModalAcciones>
+            <button type="button" className={BOTON_MODAL_SECUNDARIO}
+              onClick={() => descarte.pedirCierre(formInvitar.formState.isDirty, () => setModalInvitar(false))}>
+              Cancelar
+            </button>
+            <button type="submit" disabled={invitando} className={BOTON_MODAL_PRIMARIO}>
+              {invitando ? "Creando cuenta..." : "Crear cuenta de acceso"}
+            </button>
+          </ModalAcciones>
         </form>
       </Modal>
 

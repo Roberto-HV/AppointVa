@@ -15,7 +15,7 @@ function montar(props: Partial<React.ComponentProps<typeof SelectorFondoPortada>
 }
 
 describe("SelectorFondoPortada", () => {
-  it("ofrece el tinte suave más la opción por defecto", () => {
+  it("ofrece los doce fondos más la opción por defecto", () => {
     montar();
     const opciones = screen.getAllByRole("radio");
     expect(opciones).toHaveLength(PRESETS_PORTADA.length + 1);
@@ -24,11 +24,11 @@ describe("SelectorFondoPortada", () => {
     }
   });
 
-  it("ya no ofrece patrones ni texturas", () => {
+  it("agrupa los fondos por familia con un encabezado legible", () => {
     montar();
-    expect(screen.queryByText("Geométricos")).not.toBeInTheDocument();
-    expect(screen.queryByText("Arcos")).not.toBeInTheDocument();
-    expect(screen.queryByText("Arena")).not.toBeInTheDocument();
+    expect(screen.getByText("Geométricos")).toBeInTheDocument();
+    expect(screen.getByText("Degradados")).toBeInTheDocument();
+    expect(screen.getByText("Texturas")).toBeInTheDocument();
   });
 
   it("previsualiza cada fondo con el color del negocio, no con una muestra genérica", () => {
@@ -39,7 +39,7 @@ describe("SelectorFondoPortada", () => {
       (el) => el.style.background
     );
     const esperado = document.createElement("div");
-    esperado.style.background = fondoPortada("deg-halo", COLOR).background;
+    esperado.style.background = fondoPortada("deg-aurora", COLOR).background;
     expect(estilos).toContain(esperado.style.background);
   });
 
@@ -58,11 +58,10 @@ describe("SelectorFondoPortada", () => {
 
   it("marca la selección con una palomita, no solo con color", () => {
     const { container } = render(
-      <SelectorFondoPortada valor="deg-halo" onCambiar={vi.fn()} color={COLOR} />
+      <SelectorFondoPortada valor="geo-arcos" onCambiar={vi.fn()} color={COLOR} />
     );
     const elegido = screen.getByRole("radio", { checked: true }) as HTMLInputElement;
     expect(elegido).toBeChecked();
-    expect(elegido.closest("label")).toHaveTextContent("Tinte suave");
     // La tarjeta elegida lleva un icono además del borde.
     expect(container.querySelectorAll("svg.lucide-check").length).toBe(1);
   });
@@ -75,18 +74,18 @@ describe("SelectorFondoPortada", () => {
     expect(elegido.closest("label")).toHaveTextContent("Tu foto");
   });
 
-  it("una clave retirada se muestra como su reemplazo", () => {
+  it("una clave guardada se marca tal cual, sin reasignarla", () => {
     montar({ valor: "deg-aurora" });
-    expect(screen.getByRole("radio", { checked: true }).closest("label")).toHaveTextContent("Tinte suave");
+    expect(screen.getByRole("radio", { checked: true }).closest("label")).toHaveTextContent("Aurora");
   });
 
-  it("un patrón retirado vuelve a la foto si la hay", () => {
-    montar({ valor: "geo-arcos", portadaUrl: "https://cdn.test/p.jpg" });
+  it("una clave desconocida vuelve a la foto si la hay", () => {
+    montar({ valor: "no-existe", portadaUrl: "https://cdn.test/p.jpg" });
     expect(screen.getByRole("radio", { checked: true }).closest("label")).toHaveTextContent("Tu foto");
   });
 
   it("vuelve a la foto al elegir esa opción", async () => {
-    const { onCambiar } = montar({ valor: "deg-halo", portadaUrl: "https://cdn.test/p.jpg" });
+    const { onCambiar } = montar({ valor: "tex-arena", portadaUrl: "https://cdn.test/p.jpg" });
     await userEvent.click(screen.getByText("Tu foto"));
     expect(onCambiar).toHaveBeenCalledWith(null);
   });

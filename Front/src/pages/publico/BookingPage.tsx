@@ -1032,7 +1032,7 @@ export default function BookingPage() {
   const colorCta = brandSolid(color);
   // Un fondo elegido gana sobre la foto: es la última decisión explícita del
   // negocio y, si no, el selector del dashboard no tendría efecto visible.
-  // Una clave retirada (patrones, texturas) cae en su reemplazo o en "sin preset".
+  // Una clave desconocida (no está en el catálogo) cuenta como "sin preset".
   const presetPortada = normalizarPresetPortada(negocio.portadaPreset);
   const mostrarFoto = !presetPortada && !!negocio.portadaUrl;
   const fondoDePortada = fondoPortada(presetPortada, color);
@@ -1347,7 +1347,7 @@ export default function BookingPage() {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h1
-                  className="font-display text-white font-semibold text-xl sm:text-3xl leading-none tracking-[-0.02em]"
+                  className="text-white font-bold text-xl sm:text-3xl leading-tight"
                   style={{ textShadow: SOMBRA_TEXTO_PORTADA }}
                 >
                   {negocio.nombre}
@@ -1533,6 +1533,9 @@ export default function BookingPage() {
               onLimpiarSlot={() => setSlot(null)}
               color={color}
               diasAnticipacionMinima={negocio.diasAnticipacionMinima}
+              calendario={negocio.horario
+                ? { horario: negocio.horario, diasCerrados: negocio.diasCerrados, zonaHoraria: negocio.zonaHoraria }
+                : undefined}
               enlaceListaEspera={
                 negocio.listaEsperaActiva === true
                   ? `/b/${negocio.slug}/espera?servicioId=${servicio.id}`

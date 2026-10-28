@@ -202,26 +202,36 @@ describe("PasoServicio — grupo Destacados", () => {
   });
 });
 
-describe("PasoServicio — como carta", () => {
+describe("PasoServicio — tarjetas separadas", () => {
   const conCategoria: ServicioPublico[] = [
     { ...mockServicios[0], categoriaNombre: "Cabello" },
     { ...mockServicios[1], categoriaNombre: "Color" },
   ];
 
-  it("nombre y precio en la misma línea, unidos por una guía punteada que no se lee", () => {
+  it("cada servicio es su propia tarjeta, no filas unidas en una sola lista", () => {
     render(<PasoServicio servicios={mockServicios} seleccionado={null} onSeleccionar={vi.fn()} />);
-    const nombre = screen.getByText("Corte de cabello");
-    const linea = nombre.parentElement!;
-    expect(linea).toHaveClass("items-baseline");
-    expect(linea).toContainElement(screen.getByText("$150"));
-    const guia = linea.querySelector(".border-dotted");
-    expect(guia).toHaveAttribute("aria-hidden", "true");
-    expect(screen.getByText("30 min")).toHaveClass("text-slate-500");
+    const items = screen.getAllByRole("listitem");
+    expect(items).toHaveLength(2);
+    const lista = screen.getByRole("list");
+    expect(lista).toHaveClass("space-y-2");
+    expect(lista).not.toHaveClass("divide-y");
+    for (const item of items) {
+      expect(within(item).getAllByRole("button")).toHaveLength(1);
+      expect(within(item).getByRole("button")).toHaveClass("rounded-2xl");
+    }
+    expect(document.querySelector(".border-dotted")).toBeNull();
   });
 
-  it("los encabezados de categoría van en la cara display, salvo en salud", () => {
+  it("muestra la duración y el precio dentro de la tarjeta del servicio", () => {
+    render(<PasoServicio servicios={mockServicios} seleccionado={null} onSeleccionar={vi.fn()} />);
+    const tarjeta = screen.getByRole("button", { name: /Corte de cabello/ });
+    expect(within(tarjeta).getByText("30 min")).toHaveClass("text-slate-500");
+    expect(within(tarjeta).getByText("$150")).toHaveClass("tabular-nums");
+  });
+
+  it("los encabezados de categoría usan Inter (sin cara display), también en salud", () => {
     const { unmount } = render(<PasoServicio servicios={conCategoria} seleccionado={null} onSeleccionar={vi.fn()} />);
-    expect(screen.getByRole("heading", { level: 3, name: "Cabello" })).toHaveClass("font-display");
+    expect(screen.getByRole("heading", { level: 3, name: "Cabello" })).not.toHaveClass("font-display");
     unmount();
     render(<PasoServicio servicios={conCategoria} seleccionado={null} onSeleccionar={vi.fn()} sector="salud" />);
     expect(screen.getByRole("heading", { level: 3, name: "Cabello" })).not.toHaveClass("font-display");
@@ -236,7 +246,7 @@ describe("PasoServicio — como carta", () => {
   it("la palomita del seleccionado se rellena con el color sólido del negocio", () => {
     render(<PasoServicio servicios={mockServicios} seleccionado={mockServicios[0]} onSeleccionar={vi.fn()} color="#1F6F43" />);
     const fila = screen.getByRole("button", { name: /Corte de cabello/ });
-    const palomita = fila.querySelector("[aria-hidden='true']") as HTMLElement;
+    const palomita = fila.querySelector("span[aria-hidden='true'].rounded-full") as HTMLElement;
     expect(palomita.style.background).toBe("rgb(31, 111, 67)");
   });
 });

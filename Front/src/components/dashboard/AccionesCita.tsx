@@ -1,17 +1,17 @@
-import { useState, type ComponentType } from "react";
+import { Fragment, useState, type ComponentType, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { SiWhatsapp } from "react-icons/si";
 import {
-  CheckCircle2, CheckCheck, CalendarClock, XCircle, UserX, MoreHorizontal, ExternalLink, History,
+  CheckCircle2, CheckCheck, CalendarClock, XCircle, UserX, MoreHorizontal, ExternalLink,
 } from "lucide-react";
 import Modal from "../ui/Modal";
+import ModalAcciones from "../ui/ModalAcciones";
 import EstadoBadge from "../ui/EstadoBadge";
 import { DatePicker } from "../ui/DateTimePicker";
 import { api } from "../../api/axios";
 import { ESTADOS } from "../../api/citas";
 import { intakeApi } from "../../api/intake";
-import { useAuthStore } from "../../store/authStore";
 import { useSectorTerms } from "../../hooks/useSectorTerms";
 import { useCambiarEstadoCita, useReagendarCita } from "../../hooks/useMutacionesCita";
 import { citaAbierta } from "../../lib/estadoCita";
@@ -29,12 +29,21 @@ import type { CitaDto, SlotDisponible } from "../../types";
 //
 // `HojaAccionesCita` es la hoja controlada (la abre quien quiera: un bloque del
 // calendario, una fila). `AccionesCita` es el grupo de botones de una fila:
-// WhatsApp, la acción principal del estado y "Acciones", que abre la hoja.
+// la acción principal del estado, WhatsApp y "Acciones", que abre la hoja
+// (mismo orden que dentro de la hoja: estado, comunicación, el resto).
 
 type IconoAccion = ComponentType<{ size?: number; className?: string }>;
 
+/**
+ * Grupo de la hoja en el que se coloca una acción extra. El orden de los grupos
+ * es fijo: estado, pago, gestión, comunicación, detalle y destructivas al final.
+ */
+export type GrupoAccion = "estado" | "pago" | "gestion" | "comunicacion" | "destructiva";
+
 export interface AccionExtraCita {
   id: string;
+  /** Por defecto "gestion". */
+  grupo?: GrupoAccion;
   etiqueta: string;
   Icono: IconoAccion;
   /** Se llama después de cerrar la hoja (p. ej. para abrir el modal de notas). */
@@ -66,7 +75,7 @@ const ITEM_NORMAL = `${ITEM} text-foreground`;
 const ITEM_DESTRUCTIVO = `${ITEM} text-red-700 dark:text-red-400`;
 
 const BOTON_SECUNDARIO =
-  "min-h-[44px] lg:min-h-[36px] flex-1 px-4 rounded-xl border border-border text-sm font-medium text-foreground " +
+  "min-h-[44px] lg:min-h-[36px] flex-1 px-4 rounded-xl border border-border dark:border-slate-600 text-sm font-medium text-foreground " +
   "hover:bg-muted transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 const BOTON_PRIMARIO =
   "min-h-[44px] lg:min-h-[36px] flex-1 px-4 rounded-xl text-sm font-semibold bg-primary text-primary-foreground " +
@@ -74,6 +83,45 @@ const BOTON_PRIMARIO =
 const BOTON_DESTRUCTIVO =
   "min-h-[44px] lg:min-h-[36px] flex-1 px-4 rounded-xl text-sm font-semibold bg-red-700 hover:bg-red-800 text-white " +
   "disabled:opacity-40 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+
+/** Une los grupos no vacíos de la hoja con una línea entre cada uno. */
+function conSeparadores(grupos: ReactNode[][]): ReactNode {
+  const llenos = grupos.map((g) => g.filter(Boolean)).filter((g) => g.length > 0);
+  return llenos.map((g, i) => (
+    <Fragment key={i}>
+      {i > 0 && <div className="h-px bg-border my-2" role="separator" />}
+      <div className="space-y-1">{g}</div>
+    </Fragment>
+  ));
+}
+
+function ItemExtra({ accion: a, onCerrar, destructiva }: { accion: AccionExtraCita; onCerrar: () => void; destructiva: boolean }) {
+  const clase = destructiva ? ITEM_DESTRUCTIVO : ITEM_NORMAL;
+  const colorIcono = destructiva ? "" : "text-muted-foreground";
+  if (a.href) {
+    return (
+      <a href={a.href} target="_blank" rel="noreferrer" className={clase}>
+        <a.Icono size={17} className={`${colorIcono} shrink-0`} />
+        {a.etiqueta}
+      </a>
+    );
+  }
+  return (
+    <button
+      type="button"
+      className={clase}
+      disabled={a.deshabilitada}
+      aria-busy={a.deshabilitada || undefined}
+      onClick={() => { if (a.deshabilitada) return; onCerrar(); a.onSelect?.(); }}
+    >
+      <span className="relative shrink-0">
+        <a.Icono size={17} className={colorIcono} />
+        {a.marcador && <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-status-pending-dot" />}
+      </span>
+      {a.etiqueta}
+    </button>
+  );
+}
 
 /** Hoja de acciones controlada. Se monta de nuevo por cada cita, así vuelve siempre al menú. */
 export function HojaAccionesCita({ cita, ...resto }: HojaProps) {
@@ -86,7 +134,6 @@ function HojaAbierta({
 }: HojaProps & { cita: CitaDto }) {
   const terms = useSectorTerms();
   const cita1 = terms.cita.toLowerCase();
-  const esEmpleado = useAuthStore((s) => s.usuario?.rol) === "Empleado";
   const [vista, setVista] = useState<VistaHoja>(vistaInicial);
   const [motivo, setMotivo] = useState("");
   const [fecha, setFecha] = useState("");
@@ -137,6 +184,11 @@ function HojaAbierta({
     </div>
   );
 
+  const extrasDe = (grupo: GrupoAccion) =>
+    accionesExtra
+      .filter((a) => (a.grupo ?? "gestion") === grupo)
+      .map((a) => <ItemExtra key={a.id} accion={a} onCerrar={onCerrar} destructiva={grupo === "destructiva"} />);
+
   const pendiente = cita.estadoTexto === "Pendiente";
   const confirmada = cita.estadoTexto === "Confirmada";
   const abierta = citaAbierta(cita.estadoTexto);
@@ -159,96 +211,84 @@ function HojaAbierta({
             </div>
           )}
 
-          <div className="space-y-1" role="group" aria-label={`Acciones de la ${cita1}`}>
-            {pendiente && (
-              <button
-                type="button"
-                className={ITEM_NORMAL}
-                disabled={cambiarEstado.isPending}
-                onClick={() => aplicarEstado(ESTADOS.Confirmada)}
-              >
-                <CheckCircle2 size={18} className="text-status-confirmed-fg shrink-0" aria-hidden="true" />
-                {cambiarEstado.isPending ? "Confirmando…" : `Confirmar ${cita1}`}
-              </button>
-            )}
-            {confirmada && (
-              <button type="button" className={ITEM_NORMAL} onClick={() => setVista("completar")}>
-                <CheckCheck size={18} className="text-status-completed-fg shrink-0" aria-hidden="true" />
-                Marcar como completada
-              </button>
-            )}
-            {abierta && (
-              <button type="button" className={ITEM_NORMAL} onClick={() => setVista("reagendar")}>
-                <CalendarClock size={18} className="text-muted-foreground shrink-0" aria-hidden="true" />
-                Reagendar
-              </button>
-            )}
-            {confirmada && (
-              <button type="button" className={ITEM_NORMAL} onClick={() => setVista("inasistencia")}>
-                <UserX size={18} className="text-muted-foreground shrink-0" aria-hidden="true" />
-                Marcar inasistencia
-              </button>
-            )}
-            {abierta && (
-              <button type="button" className={ITEM_DESTRUCTIVO} onClick={() => setVista("cancelar")}>
-                <XCircle size={18} className="shrink-0" aria-hidden="true" />
-                {`Cancelar ${cita1}`}
-              </button>
-            )}
-
-            {(abierta) && (cita.telefonoCliente || accionesExtra.length > 0) && (
-              <div className="h-px bg-border my-2" role="separator" />
-            )}
-
-            {cita.telefonoCliente && (
-              <a
-                href={urlRecordatorioWhatsApp(cita, nombreNegocio)}
-                target="_blank"
-                rel="noreferrer"
-                className={ITEM_NORMAL}
-              >
-                <SiWhatsapp size={17} className="text-[#128C7E] dark:text-[#25D366] shrink-0" aria-hidden="true" />
-                Enviar recordatorio por WhatsApp
-              </a>
-            )}
-
-            {accionesExtra.map((a) =>
-              a.href ? (
-                <a key={a.id} href={a.href} target="_blank" rel="noreferrer" className={ITEM_NORMAL}>
-                  <a.Icono size={17} className="text-muted-foreground shrink-0" />
-                  {a.etiqueta}
-                </a>
-              ) : (
-                <button
-                  key={a.id}
-                  type="button"
-                  className={ITEM_NORMAL}
-                  disabled={a.deshabilitada}
-                  aria-busy={a.deshabilitada || undefined}
-                  onClick={() => { if (a.deshabilitada) return; onCerrar(); a.onSelect?.(); }}
-                >
-                  <span className="relative shrink-0">
-                    <a.Icono size={17} className="text-muted-foreground" />
-                    {a.marcador && <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-status-pending-dot" />}
-                  </span>
-                  {a.etiqueta}
-                </button>
-              )
-            )}
-
-            {(mostrarDetalle || !esEmpleado) && <div className="h-px bg-border my-2" role="separator" />}
-            {mostrarDetalle && (
-              <Link to={`/dashboard/citas/${cita.id}`} onClick={onCerrar} className={ITEM_NORMAL}>
-                <ExternalLink size={17} className="text-muted-foreground shrink-0" aria-hidden="true" />
-                Ver detalle
-              </Link>
-            )}
-            {!esEmpleado && cita.clienteId && (
-              <Link to={`/dashboard/clientes?clienteId=${cita.clienteId}`} onClick={onCerrar} className={ITEM_NORMAL}>
-                <History size={17} className="text-muted-foreground shrink-0" aria-hidden="true" />
-                {`Ver historial del ${terms.cliente.toLowerCase()}`}
-              </Link>
-            )}
+          {/* Orden fijo en toda la app, por grupos separados con una línea:
+              1. estado (Confirmar / Completar), 2. pago (anticipo, comprobante),
+              3. gestión (Reagendar, nota, repetir), 4. comunicación (WhatsApp,
+              reseña), 5. Ver detalle, y al final, apartadas, las destructivas
+              (inasistencia, cancelar). Los datos del cliente se editan en
+              Clientes: no son de la cita. */}
+          <div role="group" aria-label={`Acciones de la ${cita1}`}>
+            {conSeparadores([
+              [
+                pendiente && (
+                  <button
+                    key="confirmar"
+                    type="button"
+                    className={ITEM_NORMAL}
+                    disabled={cambiarEstado.isPending}
+                    onClick={() => aplicarEstado(ESTADOS.Confirmada)}
+                  >
+                    <CheckCircle2 size={18} className="text-status-confirmed-fg shrink-0" aria-hidden="true" />
+                    {cambiarEstado.isPending ? "Confirmando…" : `Confirmar ${cita1}`}
+                  </button>
+                ),
+                confirmada && (
+                  <button key="completar" type="button" className={ITEM_NORMAL} onClick={() => setVista("completar")}>
+                    <CheckCheck size={18} className="text-status-completed-fg shrink-0" aria-hidden="true" />
+                    Marcar como completada
+                  </button>
+                ),
+                ...extrasDe("estado"),
+              ],
+              extrasDe("pago"),
+              [
+                abierta && (
+                  <button key="reagendar" type="button" className={ITEM_NORMAL} onClick={() => setVista("reagendar")}>
+                    <CalendarClock size={18} className="text-muted-foreground shrink-0" aria-hidden="true" />
+                    Reagendar
+                  </button>
+                ),
+                ...extrasDe("gestion"),
+              ],
+              [
+                cita.telefonoCliente && (
+                  <a
+                    key="whatsapp"
+                    href={urlRecordatorioWhatsApp(cita, nombreNegocio)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={ITEM_NORMAL}
+                  >
+                    <SiWhatsapp size={17} className="text-[#128C7E] dark:text-[#25D366] shrink-0" aria-hidden="true" />
+                    Enviar recordatorio por WhatsApp
+                  </a>
+                ),
+                ...extrasDe("comunicacion"),
+              ],
+              [
+                mostrarDetalle && (
+                  <Link key="detalle" to={`/dashboard/citas/${cita.id}`} onClick={onCerrar} className={ITEM_NORMAL}>
+                    <ExternalLink size={17} className="text-muted-foreground shrink-0" aria-hidden="true" />
+                    Ver detalle
+                  </Link>
+                ),
+              ],
+              [
+                confirmada && (
+                  <button key="inasistencia" type="button" className={ITEM_DESTRUCTIVO} onClick={() => setVista("inasistencia")}>
+                    <UserX size={18} className="shrink-0" aria-hidden="true" />
+                    Marcar inasistencia
+                  </button>
+                ),
+                abierta && (
+                  <button key="cancelar" type="button" className={ITEM_DESTRUCTIVO} onClick={() => setVista("cancelar")}>
+                    <XCircle size={18} className="shrink-0" aria-hidden="true" />
+                    {`Cancelar ${cita1}`}
+                  </button>
+                ),
+                ...extrasDe("destructiva"),
+              ],
+            ])}
           </div>
 
           {!abierta && (
@@ -298,7 +338,7 @@ function HojaAbierta({
               )}
             </div>
           )}
-          <div className="flex flex-col-reverse sm:flex-row gap-2">
+          <ModalAcciones>
             <button type="button" className={BOTON_SECUNDARIO} onClick={() => setVista("menu")}>Volver</button>
             <button
               type="button"
@@ -308,7 +348,7 @@ function HojaAbierta({
             >
               {reagendar.isPending ? "Reagendando…" : "Confirmar nuevo horario"}
             </button>
-          </div>
+          </ModalAcciones>
         </div>
       )}
 
@@ -318,7 +358,7 @@ function HojaAbierta({
           <p className="text-sm text-muted-foreground">
             {`¿Confirmas que esta ${cita1} fue atendida y deseas marcarla como completada?`}
           </p>
-          <div className="flex flex-col-reverse sm:flex-row gap-2">
+          <ModalAcciones>
             <button type="button" className={BOTON_SECUNDARIO} onClick={() => setVista("menu")}>Volver</button>
             <button
               type="button"
@@ -328,7 +368,7 @@ function HojaAbierta({
             >
               {cambiarEstado.isPending ? "Guardando…" : "Marcar como completada"}
             </button>
-          </div>
+          </ModalAcciones>
         </div>
       )}
 
@@ -348,7 +388,7 @@ function HojaAbierta({
               className="w-full px-3 py-2 rounded-lg border border-input bg-background text-foreground text-sm outline-none focus:ring-2 focus:ring-ring resize-none"
             />
           </div>
-          <div className="flex flex-col-reverse sm:flex-row gap-2">
+          <ModalAcciones>
             <button type="button" className={BOTON_SECUNDARIO} onClick={() => setVista("menu")}>Volver</button>
             <button
               type="button"
@@ -358,7 +398,7 @@ function HojaAbierta({
             >
               {cambiarEstado.isPending ? "Guardando…" : vista === "cancelar" ? `Cancelar ${cita1}` : "Marcar inasistencia"}
             </button>
-          </div>
+          </ModalAcciones>
         </div>
       )}
     </Modal>
@@ -404,18 +444,6 @@ export default function AccionesCita({
 
   return (
     <div className={`flex items-center justify-end gap-1 ${className}`}>
-      {whatsapp && cita.telefonoCliente && (
-        <a
-          href={urlRecordatorioWhatsApp(cita, nombreNegocio)}
-          target="_blank"
-          rel="noreferrer"
-          aria-label={`Enviar recordatorio por WhatsApp a ${cita.nombreCliente}`}
-          className={`${BOTON_ICONO} text-[#128C7E] dark:text-[#25D366] hover:bg-[#25D366]/10`}
-        >
-          <SiWhatsapp size={16} aria-hidden="true" />
-        </a>
-      )}
-
       {primaria && cita.estadoTexto === "Pendiente" && (
         <button
           type="button"
@@ -439,6 +467,18 @@ export default function AccionesCita({
           <CheckCheck size={16} aria-hidden="true" />
           <span className="hidden sm:inline">Completar</span>
         </button>
+      )}
+
+      {whatsapp && cita.telefonoCliente && (
+        <a
+          href={urlRecordatorioWhatsApp(cita, nombreNegocio)}
+          target="_blank"
+          rel="noreferrer"
+          aria-label={`Enviar recordatorio por WhatsApp a ${cita.nombreCliente}`}
+          className={`${BOTON_ICONO} text-[#128C7E] dark:text-[#25D366] hover:bg-[#25D366]/10`}
+        >
+          <SiWhatsapp size={16} aria-hidden="true" />
+        </a>
       )}
 
       <button

@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import Modal from "../ui/Modal";
+import ModalAcciones from "../ui/ModalAcciones";
 import { contarCitasFuturas, enlaceCitasFuturas } from "../../lib/citasFuturas";
 
 // Borrar un empleado o servicio con citas abiertas a futuro dejaría esas citas
@@ -97,8 +98,8 @@ export default function DialogoEliminarConCitas({
             <p>{`Si eliges «${alternativa.etiqueta}», esas ${textoCitas} se mantienen en la agenda.`}</p>
           )}
         </div>
-        <div className="flex flex-col-reverse sm:flex-row gap-2">
-          <button type="button" onClick={onCerrar} className={`${BOTON} border border-border font-medium text-foreground hover:bg-muted`}>
+        <ModalAcciones apilado={!!alternativa && puedeEliminar}>
+          <button type="button" onClick={onCerrar} className={`${BOTON} border border-border dark:border-slate-600 font-medium text-foreground hover:bg-muted`}>
             Volver
           </button>
           {puedeEliminar && (
@@ -121,7 +122,7 @@ export default function DialogoEliminarConCitas({
               {alternativa.pendiente ? "Procesando…" : alternativa.etiqueta}
             </button>
           )}
-        </div>
+        </ModalAcciones>
       </div>
     </Modal>
   );

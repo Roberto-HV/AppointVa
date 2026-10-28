@@ -10,6 +10,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { serviciosApi, categoriasApi } from "../../api/servicios";
 import Modal from "../../components/ui/Modal";
+import ModalAcciones from "../../components/ui/ModalAcciones";
+import { BOTON_MODAL_PRIMARIO, BOTON_MODAL_SECUNDARIO } from "../../components/ui/botonesModal";
 import ConfirmarAccion from "../../components/ui/ConfirmarAccion";
 import DialogoEliminarConCitas from "../../components/dashboard/DialogoEliminarConCitas";
 import Pagination from "../../components/ui/Pagination";
@@ -325,7 +327,9 @@ export default function ServiciosPage() {
                     <motion.div
                       key={s.id}
                       variants={{ hidden: { opacity: 0, x: -10 }, show: { opacity: 1, x: 0, transition: { duration: 0.25 } } }}
-                      className={`flex items-center gap-3 px-4 py-3 ${i < items.length - 1 ? "border-b border-slate-50 dark:border-slate-700" : ""}`}
+                      // Móvil: imagen + nombre/descripción arriba y, en su propia línea,
+                      // precio · duración y acciones. Desde sm todo va en una fila.
+                      className={`flex flex-wrap sm:flex-nowrap items-start sm:items-center gap-x-3 gap-y-2 px-4 py-3 ${i < items.length - 1 ? "border-b border-slate-50 dark:border-slate-700" : ""}`}
                     >
                       {/* Botón con nombre y la cámara siempre visible: sin hover (táctil)
                           y con teclado también se descubre que aquí se cambia la imagen. */}
@@ -354,14 +358,17 @@ export default function ServiciosPage() {
                         <ProgresoSubida className="w-16 shrink-0" porcentaje={imagenServicio.progresoDe(s.id) ?? null} etiqueta={`Subiendo imagen de ${s.nombre}`} />
                       )}
 
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-slate-800 dark:text-slate-200 line-clamp-2">{s.nombre}</p>
-                        {s.descripcion && <p className="text-xs text-slate-400 mt-0.5 line-clamp-1 dark:text-slate-500">{s.descripcion}</p>}
-                        <p className="text-xs text-slate-400 mt-0.5 dark:text-slate-500">{s.duracionMinutos} min</p>
-                        <p className="sm:hidden font-semibold text-slate-800 text-sm mt-1 dark:text-slate-200">{formatPrecio(s.precio)}</p>
+                      <div className="flex-1 min-w-0 basis-0">
+                        <p className="font-medium text-slate-800 dark:text-slate-200 line-clamp-2 break-words">{s.nombre}</p>
+                        {s.descripcion && <p className="text-xs text-slate-500 mt-0.5 line-clamp-3 sm:line-clamp-2 break-words dark:text-slate-400">{s.descripcion}</p>}
+                        <p className="hidden sm:block text-xs text-slate-500 mt-0.5 tabular-nums dark:text-slate-400">{s.duracionMinutos} min</p>
                       </div>
-                      <div className="flex items-center gap-3 sm:gap-5 shrink-0">
-                        <span className="hidden sm:inline font-semibold text-slate-800 text-sm dark:text-slate-200">{formatPrecio(s.precio)}</span>
+                      <div className="flex w-full sm:w-auto items-center justify-between sm:justify-end gap-3 sm:gap-5 sm:shrink-0">
+                        <p className="sm:hidden text-sm tabular-nums">
+                          <span className="font-semibold text-slate-800 dark:text-slate-200">{formatPrecio(s.precio)}</span>
+                          <span className="text-xs text-slate-500 dark:text-slate-400"> · {s.duracionMinutos} min</span>
+                        </p>
+                        <span className="hidden sm:inline font-semibold text-slate-800 text-sm tabular-nums dark:text-slate-200">{formatPrecio(s.precio)}</span>
                         <div className="flex items-center gap-2">
                           {/* Interruptor con nombre de acción: "Activo" parecía una
                               insignia y al pulsarlo sacaba el servicio de reservas. */}
@@ -617,13 +624,14 @@ export default function ServiciosPage() {
             </div>
           </div>
 
-          <button
-            type="submit"
-            disabled={guardandoServicio}
-            className="w-full bg-slate-700 hover:bg-slate-800 disabled:opacity-50 text-white font-semibold py-2.5 rounded-xl transition"
-          >
-            {guardandoServicio ? "Guardando..." : servicioEdit ? "Guardar cambios" : "Crear servicio"}
-          </button>
+          <ModalAcciones>
+            <button type="button" onClick={() => descarte.pedirCierre(isDirty, () => setModal(false))} className={BOTON_MODAL_SECUNDARIO}>
+              Cancelar
+            </button>
+            <button type="submit" disabled={guardandoServicio} className={BOTON_MODAL_PRIMARIO}>
+              {guardandoServicio ? "Guardando..." : servicioEdit ? "Guardar cambios" : "Crear servicio"}
+            </button>
+          </ModalAcciones>
         </form>
       </Modal>
 
@@ -698,13 +706,14 @@ export default function ServiciosPage() {
             />
             <p className="text-xs text-slate-400 mt-1 dark:text-slate-500">Número que define el orden en el catálogo público.</p>
           </div>
-          <button
-            type="submit"
-            disabled={guardandoCategoria}
-            className="w-full bg-slate-700 hover:bg-slate-800 disabled:opacity-50 text-white font-semibold py-2.5 rounded-xl transition"
-          >
-            {guardandoCategoria ? "Guardando..." : categoriaEdit ? "Guardar cambios" : "Crear categoría"}
-          </button>
+          <ModalAcciones>
+            <button type="button" onClick={() => descarte.pedirCierre(formCat.formState.isDirty, () => setModalCategoria(false))} className={BOTON_MODAL_SECUNDARIO}>
+              Cancelar
+            </button>
+            <button type="submit" disabled={guardandoCategoria} className={BOTON_MODAL_PRIMARIO}>
+              {guardandoCategoria ? "Guardando..." : categoriaEdit ? "Guardar cambios" : "Crear categoría"}
+            </button>
+          </ModalAcciones>
         </form>
       </Modal>
 

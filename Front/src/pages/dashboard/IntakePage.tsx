@@ -5,6 +5,7 @@ import { intakeApi, type CampoIntake } from "../../api/intake";
 import { serviciosApi } from "../../api/servicios";
 import { useToastStore } from "../../store/toastStore";
 import Modal from "../../components/ui/Modal";
+import ModalAcciones from "../../components/ui/ModalAcciones";
 import BotonAccion from "../../components/ui/BotonAccion";
 import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
 import ConfirmarAccion from "../../components/ui/ConfirmarAccion";
@@ -318,7 +319,7 @@ export default function IntakePage() {
             <VistaPrevia form={form} />
           </div>
 
-          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-1">
+          <ModalAcciones>
             <button
               type="button"
               onClick={cerrar}
@@ -334,7 +335,7 @@ export default function IntakePage() {
               <Check size={15} aria-hidden="true" />
               {editando ? "Guardar cambios" : "Crear pregunta"}
             </button>
-          </div>
+          </ModalAcciones>
         </form>
       </Modal>
 

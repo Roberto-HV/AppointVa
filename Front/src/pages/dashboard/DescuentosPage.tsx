@@ -12,6 +12,7 @@ import Pagination from "../../components/ui/Pagination";
 import BotonAccion from "../../components/ui/BotonAccion";
 import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
 import Modal from "../../components/ui/Modal";
+import ModalAcciones from "../../components/ui/ModalAcciones";
 import Select from "../../components/ui/Select";
 import ErrorCarga from "../../components/ui/ErrorCarga";
 import { DatePicker } from "../../components/ui/DateTimePicker";
@@ -310,11 +311,11 @@ export default function DescuentosPage() {
             </div>
           </div>
 
-          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-1">
+          <ModalAcciones>
             <button
               type="button"
               onClick={cerrarFormulario}
-              className="min-h-[44px] lg:min-h-[36px] px-4 text-sm text-foreground border border-border hover:bg-muted rounded-xl transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="min-h-[44px] lg:min-h-[36px] px-4 text-sm text-foreground border border-border dark:border-slate-600 hover:bg-muted rounded-xl transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               Cancelar
             </button>
@@ -328,7 +329,7 @@ export default function DescuentosPage() {
                 ? (mutGuardar.isPending ? "Guardando…" : "Guardar cambios")
                 : (mutGuardar.isPending ? "Creando…" : "Crear cupón")}
             </button>
-          </div>
+          </ModalAcciones>
         </form>
       </Modal>
 

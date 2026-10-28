@@ -1,38 +1,39 @@
 /* ============================================================
  * AppointVa Design System — Token Reference
  * Source: src/index.css + tailwind.config.js
- * Updated: 2026-10-21 — direction A "Estudio cálido"
- *   (docs/design/design-critique.md §3A)
+ * Updated: 2026-10-22 — navy/slate base restored (the "Estudio cálido" warm
+ *   palette, terracotta accent and warm neutral remap were reverted)
  *
  * Usage for AI assistants:
  *   - Light mode tokens are defined on :root
  *   - Dark mode via Tailwind's `darkMode: "class"` → .dark on <html>
- *   - Primary is WARM INK (#1F1B16 light / #F4EFE8 dark) — no longer slate
- *   - AppointVa brand accent is TERRACOTTA (#B4532A / #E07A4F): links, focus
- *     ring, active nav, progress. NEVER on the booking page /b/:slug — there the
- *     business colour owns cover, CTA and selected states via brandSolid().
+ *   - Primary is NAVY SLATE (#334155 slate-700 light / #E2E8F0 dark); ink (dark
+ *     slabs) is deep navy #1E293B
+ *   - AppointVa brand accent = the navy primary (#334155 / #CBD5E1): links,
+ *     focus ring, active nav, progress. NEVER on the booking page /b/:slug — there
+ *     the business colour owns cover, CTA and selected states via brandSolid().
  *   - Brand gold (#C8A961) is reserved for logo/mark ONLY (unchanged)
- *   - Tailwind's slate/gray/zinc scales are remapped to the --neutral-* ramp,
- *     so raw `slate-*` classes are warm; the salud sector swaps the ramp to a
- *     cool one with [data-sector="salud"]
+ *   - Tailwind's slate scale resolves to the --neutral-* ramp, whose default
+ *     values ARE Tailwind's slate; the salud sector swaps the ramp to its cool
+ *     one with [data-sector="salud"]. gray/zinc are Tailwind's defaults.
  *   - Every text/background pair below was contrast-checked (WCAG AA 4.5:1)
  * ============================================================ */
 
 /* === NEUTRAL RAMP (RGB channels, theme-independent) ========= */
 :root {
-  /* Tailwind: slate-*, gray-*, zinc-* all resolve to these (tailwind.config.js `neutra`).
+  /* Tailwind: slate-* resolves to these (tailwind.config.js `neutra`); defaults = Tailwind slate.
    * The ramp does not flip in dark: `dark:` classes already pick the dark step. */
-  --neutral-50:  250 247 242;  /* #FAF7F2 canvas */
-  --neutral-100: 243 238 230;  /* #F3EEE6 muted surface */
-  --neutral-200: 232 225 214;  /* #E8E1D6 line */
-  --neutral-300: 214 204 190;  /* #D6CCBE strong line */
-  --neutral-400: 166 155 141;  /* #A69B8D muted text (dark): 6.27:1 on #1F1B16, 5.71:1 on #28231D */
-  --neutral-500: 107 98 87;    /* #6B6257 muted text: 5.60:1 on canvas, 5.98:1 on white, 5.18:1 on #F3EEE6 */
-  --neutral-600: 79 71 61;     /* #4F473D */
-  --neutral-700: 53 47 39;     /* #352F27 line (dark) */
-  --neutral-800: 40 35 29;     /* #28231D raised surface (dark) */
-  --neutral-900: 31 27 22;     /* #1F1B16 ink / surface (dark) */
-  --neutral-950: 22 19 15;     /* #16130F canvas (dark) */
+  --neutral-50:  248 250 252;  /* #F8FAFC */
+  --neutral-100: 241 245 249;  /* #F1F5F9 */
+  --neutral-200: 226 232 240;  /* #E2E8F0 line */
+  --neutral-300: 203 213 225;  /* #CBD5E1 strong line */
+  --neutral-400: 148 163 184;  /* #94A3B8 */
+  --neutral-500: 100 116 139;  /* #64748B */
+  --neutral-600: 71 85 105;    /* #475569 */
+  --neutral-700: 51 65 85;     /* #334155 navy primary */
+  --neutral-800: 30 41 59;     /* #1E293B */
+  --neutral-900: 15 23 42;     /* #0F172A */
+  --neutral-950: 2 6 23;       /* #020617 */
 }
 
 /* Salud sector: cool ramp, same luminance steps so contrasts hold.
@@ -50,7 +51,7 @@
   --neutral-800: 26 36 43;     /* #1A242B */
   --neutral-900: 20 28 33;     /* #141C21 surface (dark) */
   --neutral-950: 14 20 23;     /* #0E1417 canvas (dark) */
-  --accent-brand: #0F4C75;     /* replaces terracotta: 9.09:1 on white (dark: #5FA3D6, 6.32:1 on #141C21) */
+  --accent-brand: #0F4C75;     /* salud override: 9.09:1 on white (dark: #5FA3D6, 6.32:1 on #141C21) */
   /* Also re-points --background/--muted/--muted-foreground/--border/--input/--ring.
    * .font-display falls back to Inter here: salud keeps Fraunces off. */
 }
@@ -58,44 +59,44 @@
 /* === LIGHT MODE ============================================= */
 :root {
   /* --- Backgrounds --- */
-  --bg:        #FAF7F2;   /* canvas — html, body, #root (--background) */
-  --bg-subtle: #FAF7F2;   /* slate-50 → canvas — main content area, pages */
+  --bg:        #FFFFFF;   /* html, body, #root (--background) */
+  --bg-subtle: #F8FAFC;   /* slate-50 — main content area, pages */
   --surface:   #FFFFFF;   /* card, popover, dialog background */
-  --surface-2: #F3EEE6;   /* slate-100 — muted surfaces, secondary bg (--muted) */
+  --surface-2: #F1F5F9;   /* slate-100 — muted surfaces, secondary bg (--muted) */
 
   /* --- Borders --- */
-  --border:   #E8E1D6;    /* slate-200 — default borders (--border, --input) */
-  --border-2: #D6CCBE;    /* slate-300 — stronger borders */
+  --border:   #E2E8F0;    /* slate-200 — default borders (--border, --input) */
+  --border-2: #CBD5E1;    /* slate-300 — stronger borders */
 
   /* --- Text --- */
-  --text:       #1F1B16;  /* ink — primary text (--foreground): 16.0:1 on canvas */
-  --text-muted: #6B6257;  /* slate-500 — secondary text (--muted-foreground) */
+  --text:       #0F172A;  /* --foreground (222 47% 11%) */
+  --text-muted: #64748B;  /* slate-500 — secondary text (--muted-foreground) */
 
   /* --- Ink / primary (Tailwind: bg-ink, bg-primary, text-primary-foreground) --- */
-  --ink:        #1F1B16;  /* --color-ink: buttons, headings, dark slabs (step bar, code block) */
-  --primary:    #1F1B16;  /* --primary / --color-primary = ink */
-  --primary-h:  #000000;  /* --color-primary-dark — hover */
-  --primary-fg: #FFFFFF;  /* white on ink: 17.1:1 */
+  --ink:        #1E293B;  /* --color-ink (slate-800): dark slabs (step bar, login panel, footer), landing buttons; white on it 14.6:1 */
+  --primary:    #334155;  /* --primary / --color-primary: navy slate-700 */
+  --primary-h:  #1E293B;  /* --color-primary-dark — hover (slate-800) */
+  --primary-fg: #FFFFFF;  /* white on navy: 10.4:1 */
 
   /* --- AppointVa accent (Tailwind: text-accent-brand, bg-accent-brand/10, ring-accent-brand) --- */
-  --accent-brand: #B4532A; /* --color-accent-brand: 4.99:1 on white, 4.67:1 on canvas, white on it 4.99:1 */
-  --ring:         #B4532A; /* --ring (focus) */
-  /* shadcn --accent stays a neutral hover surface (#F3EEE6); it is not the brand accent. */
+  --accent-brand: #334155; /* --color-accent-brand = navy primary: 10.4:1 on white */
+  --ring:         #334155; /* --ring (focus) */
+  /* shadcn --accent stays a neutral hover surface (#E2E8F0); it is not the brand accent. */
 
   /* --- Brand (NEVER changes — logo/mark only) --- */
   --brand:      #C8A961;  /* gold — AV loader mark, logo bg */
 
   /* --- Sidebar --- */
   --sidebar-bg:          #FFFFFF;
-  --sidebar-border:      #F3EEE6;   /* slate-100 */
-  --sidebar-active-bg:   rgb(180 83 42 / 0.10); /* bg-accent-brand/10 */
-  --sidebar-active-fg:   #1F1B16;   /* text-foreground (ink); icon text-accent-brand */
-  --sidebar-inactive-fg: #4F473D;   /* slate-600 */
-  --sidebar-hover-bg:    #F3EEE6;   /* slate-100 */
+  --sidebar-border:      #F1F5F9;   /* slate-100 */
+  --sidebar-active-bg:   rgb(51 65 85 / 0.10); /* bg-accent-brand/10 */
+  --sidebar-active-fg:   #0F172A;   /* text-foreground; icon text-accent-brand */
+  --sidebar-inactive-fg: #475569;   /* slate-600 */
+  --sidebar-hover-bg:    #F1F5F9;   /* slate-100 */
 
   /* --- Topbar --- */
-  --topbar-bg:     #FAF7F2;         /* slate-50 */
-  --topbar-border: #E8E1D6;         /* slate-200 */
+  --topbar-bg:     #F8FAFC;         /* slate-50 */
+  --topbar-border: #E2E8F0;         /* slate-200 */
 
   /* --- Appointment status badges --- */
   /* dot = status hue; fg = darkened hue, >= 4.5:1 on its bg AND on white. */
@@ -157,8 +158,8 @@
   --chip-employee-fg:    #1D4ED8;   /* blue-700 */
   --chip-superadmin-bg:  #EDE9FE;   /* purple-100 */
   --chip-superadmin-fg:  #6D28D9;   /* purple-700 */
-  --chip-owner-bg:       #F3EEE6;   /* slate-100 */
-  --chip-owner-fg:       #4F473D;   /* slate-600 */
+  --chip-owner-bg:       #F1F5F9;   /* slate-100 */
+  --chip-owner-fg:       #475569;   /* slate-600 */
   --chip-plan-bg:        #FFFBEB;   /* amber-50 */
   --chip-plan-fg:        #B45309;   /* amber-700 */
 
@@ -185,7 +186,7 @@
   --radius-sm:   0.375rem;        /* rounded-sm */
   --radius-card: 14px;            /* cards (rounded-xl, overridden in tailwind.config.js) */
   /* Pills (rounded-full) only for chips and badges. */
-  --shadow-card: 0 1px 2px rgb(31 27 22 / 0.06), 0 4px 16px rgb(31 27 22 / 0.06);
+  --shadow-card: 0 1px 2px rgb(15 23 42 / 0.06), 0 4px 16px rgb(15 23 42 / 0.06);
   /* Tailwind: shadow-card. Elevation = this shadow OR a border, never both.
    * Card primitive: `.tarjeta` (src/index.css) = rounded-xl bg-card shadow-card, no border. */
 
@@ -198,9 +199,8 @@
    * UI weights 400 / 500 / 600 (700 max; font-black removed). Body 16px / 1.55. */
   --font:         'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   /* Display: Fraunces (variable opsz+wght, @fontsource-variable/fraunces@5.3.0), Tailwind `font-display`,
-   * weight 500–600. ONLY: landing H1/H2 (LandingPage, not /salud), booking business name,
-   * confirmation headline, dashboard Inicio "today" sentence, booking step-1 category headings.
-   * Never in dashboard chrome. */
+   * weight 500–600. ONLY: landing H1/H2 (LandingPage, not /salud). Never in the dashboard,
+   * the public booking flow (/b/:slug) or the confirmation page: those use Inter. */
   --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
   --tracking-heading: -0.02em;    /* h1–h3 (index.css base layer) */
   /* tabular-nums on every time, price and count. One time format: formatHora / formatHoraDe
@@ -214,43 +214,43 @@
 /* === DARK MODE (.dark on <html>) =========================== */
 .dark {
   /* --- Backgrounds --- */
-  --bg:        #16130F;   /* slate-950 — canvas (--background) */
-  --bg-subtle: #16130F;   /* slate-950 */
-  --surface:   #1F1B16;   /* slate-900 — cards, sidebar, topbar (--card) */
-  --surface-2: #28231D;   /* slate-800 — muted, secondary, inputs (--muted) */
+  --bg:        #090E1A;   /* --background (222 47% 7%) */
+  --bg-subtle: #020617;   /* slate-950 */
+  --surface:   #141B25;   /* --card (215 28% 11%); sidebar/topbar use slate-900 */
+  --surface-2: #1E293B;   /* slate-800 — muted, secondary, inputs (--muted) */
 
   /* --- Borders --- */
-  --border:   #352F27;    /* slate-700 (--border) */
-  --border-2: #4F473D;    /* slate-600 */
+  --border:   #1E293B;    /* --border (217 33% 17%) */
+  --border-2: #475569;    /* slate-600 */
 
   /* --- Text --- */
-  --text:       #F4EFE8;  /* --foreground: 16.2:1 on canvas */
-  --text-muted: #A69B8D;  /* slate-400 (--muted-foreground) */
+  --text:       #F1F5F9;  /* --foreground (210 40% 96%) */
+  --text-muted: #94A3B8;  /* --muted-foreground (215 20% 65%) */
 
-  /* --- Ink / primary (inverted) --- */
-  --ink:        #F4EFE8;
-  --primary:    #F4EFE8;
-  --primary-h:  #FFFFFF;
-  --primary-fg: #16130F;  /* 16.2:1 */
+  /* --- Ink / primary (light on dark) --- */
+  --ink:        #E2E8F0;  /* --color-ink */
+  --primary:    #E2E8F0;  /* --primary (214 32% 91%); --color-primary rgb = slate-400 */
+  --primary-h:  #CBD5E1;  /* --color-primary-dark (slate-300) */
+  --primary-fg: #090E1A;
 
   /* --- AppointVa accent (dark) --- */
-  --accent-brand: #E07A4F; /* 5.76:1 on #1F1B16, 6.23:1 on #16130F, 5.24:1 on #28231D */
-  --ring:         #E07A4F;
+  --accent-brand: #CBD5E1; /* = --ring (213 27% 84%) */
+  --ring:         #CBD5E1;
 
   /* Brand: unchanged */
   --brand: #C8A961;
 
   /* --- Sidebar --- */
-  --sidebar-bg:          #1F1B16;                  /* slate-900 */
-  --sidebar-border:      rgb(53 47 39 / 0.5);      /* slate-700/50 */
-  --sidebar-active-bg:   rgb(224 122 79 / 0.10);   /* bg-accent-brand/10 */
-  --sidebar-active-fg:   #F4EFE8;
-  --sidebar-inactive-fg: #D6CCBE;                  /* slate-300 */
-  --sidebar-hover-bg:    #352F27;                  /* slate-700 */
+  --sidebar-bg:          #0F172A;                  /* slate-900 */
+  --sidebar-border:      rgb(51 65 85 / 0.5);      /* slate-700/50 */
+  --sidebar-active-bg:   rgb(203 213 225 / 0.10);  /* bg-accent-brand/10 */
+  --sidebar-active-fg:   #F1F5F9;
+  --sidebar-inactive-fg: #CBD5E1;                  /* slate-300 */
+  --sidebar-hover-bg:    #334155;                  /* slate-700 */
 
   /* --- Topbar --- */
-  --topbar-bg:     #1F1B16;  /* slate-900 */
-  --topbar-border: #352F27;  /* slate-700 */
+  --topbar-bg:     #0F172A;  /* slate-900 */
+  --topbar-border: #334155;  /* slate-700 */
 
   /* --- Appointment status badges (dark) --- */
   /* bg = hue at 18% over the surface; fg = 400-equivalent. fg/bg >= 5.8:1 on
@@ -271,7 +271,7 @@
   --status-cancelled-fg: #F08F84;                  /* 6.38:1 */
   --status-cancelled-dot:#D9604F;
 
-  --status-absent-bg:    #352F27;                  /* slate-700 */
+  --status-absent-bg:    #352F27;
   --status-absent-fg:    #CDC3B6;                  /* 7.61:1 */
   --status-absent-dot:   #8A8177;
 
@@ -303,8 +303,8 @@
   --chip-employee-fg:    #93C5FD;   /* blue-300 */
   --chip-superadmin-bg:  rgba(109, 40, 217, 0.2);
   --chip-superadmin-fg:  #C4B5FD;   /* purple-300 */
-  --chip-owner-bg:       #28231D;   /* slate-800 */
-  --chip-owner-fg:       #A69B8D;   /* slate-400 */
+  --chip-owner-bg:       #1E293B;   /* slate-800 */
+  --chip-owner-fg:       #94A3B8;   /* slate-400 */
   --chip-plan-bg:        rgba(180, 83, 9, 0.2);
   --chip-plan-fg:        #FCD34D;   /* amber-300 */
 
@@ -369,9 +369,13 @@
  */
 
 /*
- * Inicio metrics: ONE line of text per group (ResumenPeriodo in InicioPage.tsx):
- *   "Citas  Hoy 3 · Semana 12 · Mes 45", values font-semibold tabular-nums.
- *   The hero-metric stat cards were removed; empty chart / top services are hidden.
+ * Inicio (InicioPage.tsx): greeting "Hola, {nombre}", próxima cita highlight,
+ *   agenda de hoy, then stat cards in two rows of three (Citas, Ingresos), the
+ *   trend chart and Próximas citas + Top servicios.
+ * Stat card (income accent — dark even in light mode):
+ *   bg-slate-900 border-slate-800 text-white
+ *   KPI value: text-xl sm:text-2xl font-bold leading-none
+ *   Label:     text-xs font-bold uppercase tracking-wide text-slate-300
  *
  * Standard card:
  *   bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700
@@ -386,7 +390,6 @@
  *   All buttons/active states: transform scale(0.97) on :active, 80ms ease
  *   Signature moments (each skipped under prefers-reduced-motion via useReducedMotion):
  *     - confirmation stamp (SelloEstado): scale 1.6→1 + rotate -12°→-6°, 240ms ease-calma, once
- *     - first-booking confetti (PrimeraReserva): 18 brand-coloured pieces, 900ms, once
  */
 
 /*
@@ -398,9 +401,9 @@
 
 /*
  * Typography in use:
- *   font-display text-2xl font-normal + <strong> → Inicio "today" sentence (Fraunces; Inter in salud)
- *   font-display text-[1.75rem] font-semibold  → confirmation headline ("Te esperamos …")
- *   font-display text-lg font-semibold         → booking step-1 category headings (not salud)
+ *   font-display font-semibold                  → landing H1/H2 only (Fraunces; Inter in salud)
+ *   text-[1.75rem] font-semibold (Inter)        → confirmation headline ("Te esperamos …")
+ *   text-lg font-semibold (Inter)               → booking step-1 category headings
  *   text-sm font-bold / font-semibold            → section titles
  *   text-xs font-semibold                        → badges, chips, labels
  *   text-xs font-semibold tabular-nums           → times in agenda

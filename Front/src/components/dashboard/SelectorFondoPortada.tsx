@@ -1,13 +1,14 @@
 import type { ReactNode } from "react";
 import { Check } from "lucide-react";
 import {
-  PRESETS_PORTADA,
+  FAMILIAS_PORTADA,
   fondoPortada,
   normalizarPresetPortada,
+  presetsPorFamilia,
 } from "../../lib/portadaPresets";
 
 interface Props {
-  /** Clave del preset elegido, o `null` si no hay ninguno. Una clave retirada se muestra como su reemplazo. */
+  /** Clave del preset elegido, o `null` si no hay ninguno. Una clave desconocida cuenta como ninguno. */
   valor: string | null;
   onCambiar: (clave: string | null) => void;
   color: string;
@@ -106,7 +107,7 @@ export default function SelectorFondoPortada({
 
   return (
     <div role="group" aria-label="Fondo de portada">
-      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
+      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5 mb-5">
         {portadaUrl && (
           <Tarjeta
             grupo={grupo}
@@ -134,19 +135,28 @@ export default function SelectorFondoPortada({
             <MuestraTexto />
           </Tarjeta>
         )}
-        {PRESETS_PORTADA.map((preset) => (
-          <Tarjeta
-            key={preset.clave}
-            grupo={grupo}
-            nombre={preset.nombre}
-            seleccionado={vigente === preset.clave}
-            onSeleccionar={() => onCambiar(preset.clave)}
-          >
-            <span className="absolute inset-0" style={fondoPortada(preset.clave, color)} />
-            <MuestraTexto />
-          </Tarjeta>
-        ))}
       </div>
+
+      {FAMILIAS_PORTADA.map((familia) => (
+        <div key={familia.familia} className="mb-5 last:mb-0">
+          <h3 className="text-xs font-semibold text-slate-700 dark:text-slate-300">{familia.titulo}</h3>
+          <p className="text-[11px] text-slate-400 dark:text-slate-500 mb-2">{familia.descripcion}</p>
+          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
+            {presetsPorFamilia(familia.familia).map((preset) => (
+              <Tarjeta
+                key={preset.clave}
+                grupo={grupo}
+                nombre={preset.nombre}
+                seleccionado={vigente === preset.clave}
+                onSeleccionar={() => onCambiar(preset.clave)}
+              >
+                <span className="absolute inset-0" style={fondoPortada(preset.clave, color)} />
+                <MuestraTexto />
+              </Tarjeta>
+            ))}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

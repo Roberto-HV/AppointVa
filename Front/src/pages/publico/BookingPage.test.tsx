@@ -151,7 +151,7 @@ vi.mock("../../lib/colorUtils", async (importOriginal) => ({
 import { publicoApi } from "../../api/publico";
 import { intakePublicoApi } from "../../api/intake";
 import { descuentosPublicoApi } from "../../api/descuentos";
-import { fondoPortada } from "../../lib/portadaPresets";
+import { fondoPortada, PRESETS_PORTADA } from "../../lib/portadaPresets";
 
 const mockNegocio: NegocioPublico = {
   id: "neg-1",
@@ -497,20 +497,32 @@ describe("BookingPage — portada", () => {
     vi.mocked(publicoApi.obtenerNegocio).mockResolvedValue({
       ...mockNegocio,
       portadaUrl: "https://cdn.test/portada.jpg",
-      portadaPreset: "deg-halo",
+      portadaPreset: "geo-arcos",
     });
     renderConQuery();
 
     const portada = await screen.findByTestId("portada-negocio");
-    expect(portada.style.background).toBe(fondoNormalizado("deg-halo"));
+    expect(portada.style.background).toBe(fondoNormalizado("geo-arcos"));
     expect(fotoDePortada()).toBeNull();
   });
 
-  it("un patrón retirado ya no tapa la foto: vuelve a mostrarla", async () => {
+  it.each(PRESETS_PORTADA.map((p) => p.clave))("dibuja el fondo guardado %s tal cual", async (clave) => {
+    vi.mocked(publicoApi.obtenerNegocio).mockResolvedValue({
+      ...mockNegocio,
+      portadaPreset: clave,
+    });
+    renderConQuery();
+
+    const portada = await screen.findByTestId("portada-negocio");
+    expect(portada.style.background).toBe(fondoNormalizado(clave));
+    expect(portada.style.background).not.toBe(fondoNormalizado(null));
+  });
+
+  it("una clave desconocida no tapa la foto: vuelve a mostrarla", async () => {
     vi.mocked(publicoApi.obtenerNegocio).mockResolvedValue({
       ...mockNegocio,
       portadaUrl: "https://cdn.test/portada.jpg",
-      portadaPreset: "geo-arcos",
+      portadaPreset: "no-existe",
     });
     renderConQuery();
 
@@ -518,10 +530,10 @@ describe("BookingPage — portada", () => {
     expect(fotoDePortada()?.src).toBe("https://cdn.test/portada.jpg");
   });
 
-  it("un patrón retirado sin foto cae en el color de marca, sin romper la portada", async () => {
+  it("una clave desconocida sin foto cae en el color de marca, sin romper la portada", async () => {
     vi.mocked(publicoApi.obtenerNegocio).mockResolvedValue({
       ...mockNegocio,
-      portadaPreset: "tex-terrazo",
+      portadaPreset: "no-existe",
     });
     renderConQuery();
 

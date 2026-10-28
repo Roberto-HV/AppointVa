@@ -27,6 +27,7 @@ import { ACCEPT_IMAGEN, TEXTO_FORMATOS_IMAGEN, validarImagen } from "../../lib/i
 import { useSubirImagen } from "../../hooks/useSubirImagen";
 import ProgresoSubida from "../../components/ui/ProgresoSubida";
 import Modal from "../../components/ui/Modal";
+import ModalAcciones from "../../components/ui/ModalAcciones";
 import { claseCampo, CLASE_ERROR_CAMPO } from "../../lib/clasesCampo";
 import { htmlHojaQr } from "../../utils/impresionQr";
 import { hoy } from "../../utils/fechas";
@@ -572,8 +573,13 @@ export default function PerfilPage() {
       type="submit"
       disabled={guardandoFormulario || !cambiosFormulario}
       aria-describedby="estado-guardado"
-      className="bg-slate-700 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-xl transition text-sm
-        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50 dark:focus-visible:ring-offset-slate-950"
+      // Botón primario con su par de contraste del tema (blanco sobre azul marino;
+      // en dark, oscuro sobre claro). Deshabilitado no se desvanece con opacidad:
+      // usa un relleno neutro con texto legible, así siempre se ve dónde guardar.
+      className="flex-1 sm:flex-none min-h-[44px] bg-primary text-primary-foreground hover:bg-primary-dark shadow-sm
+        disabled:shadow-none disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-600 dark:disabled:bg-slate-800 dark:disabled:text-slate-300
+        font-semibold px-6 py-2.5 rounded-lg transition text-sm
+        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
     >
       {guardandoFormulario ? "Guardando…" : "Guardar cambios"}
     </button>
@@ -611,8 +617,14 @@ export default function PerfilPage() {
   useEffect(() => {
     const alto = barraRef.current?.offsetHeight;
     if (!alto) return;
-    document.documentElement.style.setProperty("--barra-accion", `${alto}px`);
-    return () => { document.documentElement.style.removeProperty("--barra-accion"); };
+    const raiz = document.documentElement.style;
+    raiz.setProperty("--barra-accion", `${alto}px`);
+    // La barra ya lleva el safe-area de iOS; el <main> no debe sumarlo otra vez.
+    raiz.setProperty("--main-relleno-inferior", "0px");
+    return () => {
+      raiz.removeProperty("--barra-accion");
+      raiz.removeProperty("--main-relleno-inferior");
+    };
   }, [tab, isLoading]);
 
   // `sticky`, no `fixed`: el contenedor que hace scroll es la columna <main> del
@@ -626,19 +638,21 @@ export default function PerfilPage() {
         ref={barraRef}
         data-testid="barra-guardar"
         className={`sticky bottom-0 z-20 -mx-4 sm:-mx-8 mt-6 flex items-center px-4 sm:px-8 pt-3
-          pb-[calc(0.75rem+env(safe-area-inset-bottom))] rounded-t-2xl border-t transition-colors ${
+          pb-[calc(0.75rem+env(safe-area-inset-bottom))] border-t border-slate-200 dark:border-slate-700
+          bg-white dark:bg-slate-900 transition-shadow ${
             barraPegada
-              ? "border-slate-200 dark:border-slate-700 bg-slate-50/90 dark:bg-slate-950/90 backdrop-blur " +
-                "shadow-[0_-4px_16px_rgba(15,23,42,0.08)] dark:shadow-[0_-4px_16px_rgba(0,0,0,0.45)]"
-              : "border-transparent"
+              ? "shadow-[0_-4px_16px_rgba(15,23,42,0.08)] dark:shadow-[0_-4px_16px_rgba(0,0,0,0.45)]"
+              : ""
           }`}
       >
-        <div className="flex items-center gap-4">
+        <div className="flex w-full sm:w-auto items-center gap-4">
           {btnGuardar}
           {estadoGuardado}
         </div>
       </div>
-      <div ref={centinelaBarra} aria-hidden className="h-px" />
+      {/* -mt-px: el centinela ocupa el último píxel de la barra y no añade alto,
+          así al final del scroll no queda una franja del fondo bajo la barra. */}
+      <div ref={centinelaBarra} aria-hidden className="h-px -mt-px" />
     </>
   );
 
@@ -659,7 +673,9 @@ export default function PerfilPage() {
 
   return (
     <>
-    <div className="p-4 sm:p-8">
+    {/* Sin relleno inferior cuando hay barra de guardar: la barra es lo último de
+        la columna y debe quedar a ras del borde inferior, sin fondo debajo. */}
+    <div className={`px-4 pt-4 sm:px-8 sm:pt-8 ${tab !== "horarios" && tab !== "cuenta" ? "" : "pb-4 sm:pb-8"}`}>
       <EncabezadoPagina
         className="mb-6"
         titulo="Mi negocio"
@@ -1228,11 +1244,11 @@ export default function PerfilPage() {
               className={claseCampo(false)}
             />
           </div>
-          <div className="flex flex-col-reverse sm:flex-row gap-2">
+          <ModalAcciones>
             <button
               type="button"
               onClick={() => setModalEliminar(false)}
-              className="min-h-[44px] lg:min-h-[36px] flex-1 px-4 rounded-xl border border-border text-sm font-medium text-foreground hover:bg-muted transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="min-h-[44px] lg:min-h-[36px] flex-1 px-4 rounded-xl border border-border dark:border-slate-600 text-sm font-medium text-foreground hover:bg-muted transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               Volver
             </button>
@@ -1243,7 +1259,7 @@ export default function PerfilPage() {
             >
               {eliminando ? "Eliminando…" : "Eliminar cuenta"}
             </button>
-          </div>
+          </ModalAcciones>
         </form>
       </Modal>
 
