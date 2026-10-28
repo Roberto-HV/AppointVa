@@ -18,8 +18,6 @@ namespace AppointVaAPI.Models.Dtos.Publico
         public byte Estado { get; set; }
         public string EstadoTexto { get; set; } = string.Empty;
         public string? Notas { get; set; }
-        public string? IcalUrl { get; set; }
-        public string? WebcalUrl { get; set; }
         public string? GoogleCalUrl { get; set; }
         public int HorasCancelacion { get; set; }
         // B2: minimum notice in days, so the reschedule picker hides days the business does not accept.

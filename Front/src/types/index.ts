@@ -131,8 +131,6 @@ export interface ConfirmacionCita {
   estado: number;
   estadoTexto: string;
   notas?: string;
-  icalUrl?: string;
-  webcalUrl?: string;
   googleCalUrl?: string;
   horasCancelacion: number;
   /** B2: días mínimos de anticipación del negocio (0 = sin mínimo). */

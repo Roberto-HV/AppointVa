@@ -494,8 +494,6 @@ namespace AppointVaAPI.Controllers.V1
 
             var empleado = await _db.Empleados.FindAsync(dto.EmpleadoId);
 
-            var backendUrl = _config["BackendUrl"] ?? string.Empty;
-            var icalUrl = UrlIcal(backendUrl, codigo);
             cita.Negocio = negocio;
             cita.Servicio = servicio;
             cita.Empleado = empleado;
@@ -520,8 +518,6 @@ namespace AppointVaAPI.Controllers.V1
                 Estado = cita.Estado,
                 EstadoTexto = ObtenerEstadoTexto(cita.Estado),
                 Notas = cita.Notas,
-                IcalUrl = icalUrl,
-                WebcalUrl = icalUrl?.Replace("https://", "webcal://").Replace("http://", "webcal://"),
                 GoogleCalUrl = googleCalUrl,
                 DiasAnticipacionMinima = negocio.DiasAnticipacionMinima,
                 Sector = negocio.Sector,
@@ -582,8 +578,6 @@ namespace AppointVaAPI.Controllers.V1
             if (cita is null)
                 return NotFound(new { mensaje = "Cita no encontrada" });
 
-            var backendUrl = _config["BackendUrl"] ?? string.Empty;
-            var icalUrl = UrlIcal(backendUrl, codigo);
             var googleCalUrl = GenerarGoogleCalendarUrl(cita);
 
             return Ok(new ConfirmacionCitaDto
@@ -604,8 +598,6 @@ namespace AppointVaAPI.Controllers.V1
                 Estado = cita.Estado,
                 EstadoTexto = ObtenerEstadoTexto(cita.Estado),
                 Notas = cita.Notas,
-                IcalUrl = icalUrl,
-                WebcalUrl = icalUrl?.Replace("https://", "webcal://").Replace("http://", "webcal://"),
                 GoogleCalUrl = googleCalUrl,
                 HorasCancelacion = cita.Negocio?.HorasCancelacion ?? 0,
                 DiasAnticipacionMinima = cita.Negocio?.DiasAnticipacionMinima ?? 0,

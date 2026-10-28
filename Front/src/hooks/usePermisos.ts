@@ -12,8 +12,7 @@ import { useAuthStore } from "../store/authStore";
 //   - exportar a Excel (Citas, Pagos, Clientes),
 //   - el corte de caja,
 //   - la reversión de un pago,
-//   - la anulación de un anticipo,
-//   - PATCH /citas/{id}/cliente (editar los datos del cliente).
+//   - la anulación de un anticipo.
 
 export interface Permisos {
   esEmpleado: boolean;

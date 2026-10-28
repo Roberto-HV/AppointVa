@@ -195,7 +195,7 @@ namespace AppointVaAPI.Services
             }
         }
 
-        private static string PlantillaConfirmacion(Cita cita, string nombreCliente, string? urlCita = null, string? icalUrl = null, string? googleCalUrl = null, string? urlCancelacion = null, bool esPendiente = false)
+        internal static string PlantillaConfirmacion(Cita cita, string nombreCliente, string? urlCita = null, string? icalUrl = null, string? googleCalUrl = null, string? urlCancelacion = null, bool esPendiente = false)
         {
             nombreCliente = nombreCliente.Trim();
             var negocio  = cita.Negocio?.Nombre ?? "el negocio";
@@ -320,7 +320,7 @@ namespace AppointVaAPI.Services
         private static string Hora12(DateTime dt) =>
             dt.ToString("h:mm tt", System.Globalization.CultureInfo.InvariantCulture);
 
-        private static string PlantillaCancelacion(Cita cita, string nombreCliente)
+        internal static string PlantillaCancelacion(Cita cita, string nombreCliente)
         {
             nombreCliente = nombreCliente.Trim();
             var negocio  = cita.Negocio?.Nombre ?? "el negocio";
@@ -386,7 +386,7 @@ namespace AppointVaAPI.Services
                 """;
         }
 
-        private static string PlantillaRecordatorio(Cita cita, string nombreCliente, string cuandoTexto, string? icalUrl = null, string? googleCalUrl = null)
+        internal static string PlantillaRecordatorio(Cita cita, string nombreCliente, string cuandoTexto, string? icalUrl = null, string? googleCalUrl = null)
         {
             nombreCliente = nombreCliente.Trim();
             var negocio  = cita.Negocio?.Nombre ?? "el negocio";
@@ -480,7 +480,7 @@ namespace AppointVaAPI.Services
                 """;
         }
 
-        private static string PlantillaReagendar(Cita cita, string nombreCliente, DateTime fechaOriginal)
+        internal static string PlantillaReagendar(Cita cita, string nombreCliente, DateTime fechaOriginal)
         {
             nombreCliente    = nombreCliente.Trim();
             var negocio      = cita.Negocio?.Nombre ?? "el negocio";
@@ -548,7 +548,7 @@ namespace AppointVaAPI.Services
                 """;
         }
 
-        private static string PlantillaSolicitudResena(Cita cita, string nombreCliente, string urlResena)
+        internal static string PlantillaSolicitudResena(Cita cita, string nombreCliente, string urlResena)
         {
             var negocio  = cita.Negocio?.Nombre ?? "el negocio";
             var servicio = cita.Servicio?.Nombre ?? "el servicio";
@@ -599,7 +599,7 @@ namespace AppointVaAPI.Services
                 """;
         }
 
-        private static string PlantillaListaEspera(string nombreCliente, string nombreNegocio, string nombreServicio, string urlReserva)
+        internal static string PlantillaListaEspera(string nombreCliente, string nombreNegocio, string nombreServicio, string urlReserva)
         {
             return $"""
                 <!DOCTYPE html>
@@ -649,7 +649,7 @@ namespace AppointVaAPI.Services
                 """;
         }
 
-        private static string PlantillaRecuperacion(string nombre, string urlReset)
+        internal static string PlantillaRecuperacion(string nombre, string urlReset)
         {
             return $"""
                 <!DOCTYPE html>
@@ -693,7 +693,7 @@ namespace AppointVaAPI.Services
                 """;
         }
 
-        private static string PlantillaVerificacion(string nombre, string urlVerificacion)
+        internal static string PlantillaVerificacion(string nombre, string urlVerificacion)
         {
             return $"""
                 <!DOCTYPE html>
@@ -737,7 +737,7 @@ namespace AppointVaAPI.Services
                 """;
         }
 
-        private static string PlantillaBienvenida(string nombre, string negocioNombre, string urlReservas, string urlDashboard)
+        internal static string PlantillaBienvenida(string nombre, string negocioNombre, string urlReservas, string urlDashboard)
         {
             return $"""
                 <!DOCTYPE html>

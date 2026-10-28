@@ -172,40 +172,4 @@ public class EmpleadoPermisosTests : IClassFixture<CustomWebApplicationFactory>
         var r = await ClientePropietario(e).PatchAsJsonAsync($"/api/citas/{e.CitaId}/anticipo", new { Recibido = false });
         r.StatusCode.Should().Be(HttpStatusCode.OK);
     }
-
-    // ── Global client edit (PATCH /citas/{id}/cliente) ────────────────────────
-
-    [Fact]
-    public async Task EditarClienteDeCita_Empleado_Retorna403YNoCambiaElCliente()
-    {
-        var e = await SeedAsync();
-
-        var r = await ClienteEmpleado(e).PatchAsJsonAsync($"/api/citas/{e.CitaId}/cliente",
-            new { NombreCompleto = "Nombre Cambiado", Telefono = "5550001111", Email = "" });
-
-        r.StatusCode.Should().Be(HttpStatusCode.Forbidden);
-        await using var scope = _factory.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var cita = await db.Citas.FindAsync(e.CitaId);
-        (await db.Clientes.FindAsync(cita!.ClienteId))!.NombreCompleto.Should().Be("Cliente Original");
-    }
-
-    [Fact]
-    public async Task EditarClienteDeCita_Propietario_Retorna200()
-    {
-        var e = await SeedAsync();
-        var r = await ClientePropietario(e).PatchAsJsonAsync($"/api/citas/{e.CitaId}/cliente",
-            new { NombreCompleto = "Nombre Cambiado", Telefono = "5550001111", Email = "" });
-        r.StatusCode.Should().Be(HttpStatusCode.OK);
-    }
-
-    [Fact]
-    public async Task EditarClienteDeCita_PropietarioDeOtroNegocio_Retorna404()
-    {
-        var e = await SeedAsync();
-        var ajeno = _factory.CreateAuthenticatedClient(TestTokenHelper.Propietario(Guid.NewGuid()));
-        var r = await ajeno.PatchAsJsonAsync($"/api/citas/{e.CitaId}/cliente",
-            new { NombreCompleto = "Intruso", Telefono = "5550001111", Email = "" });
-        r.StatusCode.Should().Be(HttpStatusCode.NotFound);
-    }
 }

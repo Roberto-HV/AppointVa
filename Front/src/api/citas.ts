@@ -126,11 +126,6 @@ export const citasApi = {
     const { data } = await api.get('/citas/historial-pagos', { params });
     return data;
   },
-
-  editarCliente: async (id: string, dto: { nombreCompleto: string; telefono: string; email: string }): Promise<CitaDto> => {
-    const { data } = await api.patch(`/citas/${id}/cliente`, dto);
-    return data;
-  },
 };
 
 export const ESTADOS = {

@@ -8,7 +8,6 @@ using AppointVaAPI.Services.IServices;
 using FluentAssertions;
 using Hangfire;
 using Hangfire.Common;
-using Hangfire.States;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using NSubstitute;
@@ -95,6 +94,20 @@ public class CitasControllerCambiarEstadoTests
         };
     }
 
+    /// <summary>
+    /// Jobs encolados en Hangfire de un tipo dado, como nombres de método.
+    /// Enqueue&lt;T&gt; termina en IBackgroundJobClient.Create(Job, IState); se filtra
+    /// por tipo porque el controller también encola pushes (IPushService), que
+    /// comparten nombres de método con NotificacionJob (EnviarCancelacionAsync).
+    /// </summary>
+    private static List<string> JobsEncolados<T>(IBackgroundJobClient jobClient) =>
+        jobClient.ReceivedCalls()
+            .Where(c => c.GetMethodInfo().Name == nameof(IBackgroundJobClient.Create))
+            .Select(c => (Job)c.GetArguments()[0]!)
+            .Where(j => j.Type == typeof(T))
+            .Select(j => j.Method.Name)
+            .ToList();
+
     // ── Tests ─────────────────────────────────────────────────────────────────
 
     [Fact]
@@ -154,8 +167,10 @@ public class CitasControllerCambiarEstadoTests
             new CambiarEstadoCitaDto { NuevoEstado = EstadosCitas.Confirmada });
 
         result.Should().BeOfType<OkObjectResult>();
-        // Enqueue<NotificacionJob> llama internamente a IBackgroundJobClient.Create
-        jobClient.Received(1).Create(Arg.Any<Job>(), Arg.Any<IState>());
+        JobsEncolados<NotificacionJob>(jobClient)
+            .Should().Equal(nameof(NotificacionJob.EnviarConfirmacionAsync));
+        JobsEncolados<IPushService>(jobClient)
+            .Should().Equal(nameof(IPushService.EnviarConfirmacionCitaAsync));
     }
 
     [Fact]
@@ -171,7 +186,7 @@ public class CitasControllerCambiarEstadoTests
             new CambiarEstadoCitaDto { NuevoEstado = EstadosCitas.Confirmada });
 
         result.Should().BeOfType<OkObjectResult>();
-        jobClient.DidNotReceive().Create(Arg.Any<Job>(), Arg.Any<IState>());
+        JobsEncolados<NotificacionJob>(jobClient).Should().BeEmpty();
     }
 
     [Fact]
@@ -187,7 +202,10 @@ public class CitasControllerCambiarEstadoTests
             new CambiarEstadoCitaDto { NuevoEstado = EstadosCitas.Cancelada, Motivo = "Cambio de planes" });
 
         result.Should().BeOfType<OkObjectResult>();
-        jobClient.Received(1).Create(Arg.Any<Job>(), Arg.Any<IState>());
+        JobsEncolados<NotificacionJob>(jobClient)
+            .Should().Equal(nameof(NotificacionJob.EnviarCancelacionAsync));
+        JobsEncolados<IPushService>(jobClient)
+            .Should().Equal(nameof(IPushService.EnviarCancelacionAsync));
     }
 
     [Fact]
@@ -205,7 +223,8 @@ public class CitasControllerCambiarEstadoTests
 
         result.Should().BeOfType<OkObjectResult>();
         db.Resenas.Should().HaveCount(1, "debe crearse una Resena cuando la cita se completa");
-        jobClient.Received(1).Create(Arg.Any<Job>(), Arg.Any<IState>());
+        JobsEncolados<NotificacionJob>(jobClient)
+            .Should().Equal(nameof(NotificacionJob.EnviarSolicitudResenaAsync));
     }
 
     [Fact]
@@ -222,7 +241,7 @@ public class CitasControllerCambiarEstadoTests
 
         result.Should().BeOfType<OkObjectResult>();
         db.Resenas.Should().BeEmpty("sin email no se crea reseña ni se encola notificación");
-        jobClient.DidNotReceive().Create(Arg.Any<Job>(), Arg.Any<IState>());
+        JobsEncolados<NotificacionJob>(jobClient).Should().BeEmpty();
     }
 
     [Fact]
@@ -269,6 +288,6 @@ public class CitasControllerCambiarEstadoTests
             new CambiarEstadoCitaDto { NuevoEstado = EstadosCitas.Confirmada });
 
         result.Should().BeOfType<OkObjectResult>();
-        jobClient.DidNotReceive().Create(Arg.Any<Job>(), Arg.Any<IState>());
+        JobsEncolados<NotificacionJob>(jobClient).Should().BeEmpty();
     }
 }
