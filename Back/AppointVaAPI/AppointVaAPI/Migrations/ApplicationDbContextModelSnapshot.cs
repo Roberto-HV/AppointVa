@@ -917,6 +917,10 @@ namespace AppointVaAPI.Migrations
                     b.Property<Guid?>("PlanId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("PlanSolicitado")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
                     b.Property<string>("PoliticaCancelacionAnticipo")
                         .IsRequired()
                         .HasMaxLength(500)

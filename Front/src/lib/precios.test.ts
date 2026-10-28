@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { precioVisible, formatMonto } from "./precios";
+import { precioVisible, formatMonto, esClavePlan, urlRegistroConPlan } from "./precios";
 
 describe("precioVisible", () => {
   it("muestra el precio mensual cuando está seleccionado Mensual", () => {
@@ -57,5 +57,20 @@ describe("PRECIOS_PLANES (decisión 5, AP-08)", () => {
     expect(PRECIOS_PLANES.pro).toEqual({ mensual: 449, anual: 382 });
     expect(Math.round(PRECIOS_PLANES.pro.mensual * 0.85)).toBe(PRECIOS_PLANES.pro.anual);
     expect(precioVisible(PRECIOS_PLANES.pro, true)).toMatchObject({ porMes: 382, facturaAnual: true, ahorroAnual: 804 });
+  });
+});
+
+describe("plan en el registro (B20)", () => {
+  it("solo acepta los planes de las landings", () => {
+    expect(esClavePlan("pro")).toBe(true);
+    expect(esClavePlan("basico")).toBe(true);
+    expect(esClavePlan("oro")).toBe(false);
+    expect(esClavePlan("toString")).toBe(false);
+    expect(esClavePlan(null)).toBe(false);
+  });
+
+  it("añade plan= sin perder el sector", () => {
+    expect(urlRegistroConPlan("/registro", "pro")).toBe("/registro?plan=pro");
+    expect(urlRegistroConPlan("/registro?sector=salud", "basico")).toBe("/registro?sector=salud&plan=basico");
   });
 });

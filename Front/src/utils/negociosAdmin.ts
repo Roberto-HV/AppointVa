@@ -3,10 +3,9 @@ import type { NegocioMetricasDto } from "../api/admin";
 // ── Negocios pendientes de activación (AP-07) ─────────────────────────────────
 //
 // El registro público crea el negocio inactivo y sin plan: el SuperAdmin lo
-// aprueba y le asigna uno. `NegocioMetricasDto` no trae fecha de registro ni si
-// el propietario confirmó su correo (hueco del backend), así que la única señal
-// disponible es "inactivo y sin plan". Un negocio desactivado después de tener
-// plan no cuenta como pendiente.
+// aprueba y le asigna uno. Pendiente = "inactivo y sin plan"; un negocio
+// desactivado después de tener plan no cuenta. `fechaCreacion` (B23) ordena la
+// cola con el registro más reciente primero.
 
 export function esPendienteActivacion(n: Pick<NegocioMetricasDto, "activo" | "planNombre" | "planId">): boolean {
   return n.activo !== 1 && !n.planId && !n.planNombre;
@@ -18,9 +17,20 @@ function rango(n: NegocioMetricasDto): number {
   return n.activo === 1 ? 1 : 2;
 }
 
-/** Pendientes primero (la tarea más urgente del SuperAdmin), luego activos, luego desactivados. */
+function marcaTiempo(fecha?: string): number {
+  const t = fecha ? Date.parse(fecha) : NaN;
+  return Number.isNaN(t) ? 0 : t;
+}
+
+/**
+ * Pendientes primero (la tarea más urgente del SuperAdmin), luego activos, luego
+ * desactivados. Entre los pendientes, el registro más reciente primero (B23); el
+ * resto conserva el orden del servidor (por nombre).
+ */
 export function ordenarNegociosAdmin(a: NegocioMetricasDto, b: NegocioMetricasDto): number {
-  return rango(a) - rango(b);
+  const porRango = rango(a) - rango(b);
+  if (porRango !== 0 || rango(a) !== 0) return porRango;
+  return marcaTiempo(b.fechaCreacion) - marcaTiempo(a.fechaCreacion);
 }
 
 // ── Edición de un pago de suscripción (AP-23) ─────────────────────────────────

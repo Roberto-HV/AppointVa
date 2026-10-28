@@ -500,6 +500,8 @@ namespace AppointVaAPI.Controllers.V1
                 IcalUrl = icalUrl,
                 WebcalUrl = icalUrl?.Replace("https://", "webcal://").Replace("http://", "webcal://"),
                 GoogleCalUrl = googleCalUrl,
+                DiasAnticipacionMinima = negocio.DiasAnticipacionMinima,
+                Sector = negocio.Sector,
                 RequiereAnticipo = negocio.RequiereAnticipo,
                 MontoAnticipo = cita.MontoAnticipo,
                 InstruccionesAnticipo = negocio.InstruccionesAnticipo,
@@ -583,6 +585,8 @@ namespace AppointVaAPI.Controllers.V1
                 WebcalUrl = icalUrl?.Replace("https://", "webcal://").Replace("http://", "webcal://"),
                 GoogleCalUrl = googleCalUrl,
                 HorasCancelacion = cita.Negocio?.HorasCancelacion ?? 0,
+                DiasAnticipacionMinima = cita.Negocio?.DiasAnticipacionMinima ?? 0,
+                Sector = cita.Negocio?.Sector ?? "belleza",
                 RequiereAnticipo = cita.AnticipoRequerido,
                 MontoAnticipo = cita.MontoAnticipo,
                 InstruccionesAnticipo = cita.Negocio?.InstruccionesAnticipo,
@@ -879,6 +883,13 @@ namespace AppointVaAPI.Controllers.V1
                 precio = c.Precio,
                 estado = c.Estado,
                 estadoTexto = ObtenerEstadoTexto(c.Estado),
+                // B2: what the reschedule picker needs (the client already typed it as
+                // present): service and employee for availability, the minimum notice
+                // in days, and the cancellation window in hours.
+                servicioId = c.ServicioId,
+                empleadoId = c.EmpleadoId,
+                horasCancelacion = negocio.HorasCancelacion,
+                diasAnticipacionMinima = negocio.DiasAnticipacionMinima,
             }));
         }
 
@@ -917,6 +928,7 @@ namespace AppointVaAPI.Controllers.V1
                 Nombre = dto.NombreNegocio,
                 Telefono = dto.Telefono,
                 Sector = dto.Sector,
+                PlanSolicitado = string.IsNullOrWhiteSpace(dto.Plan) ? null : dto.Plan,
                 Activo = 0, // inactivo hasta que el SuperAdmin apruebe y asigne un plan
                 FechaCreacion = DateTime.UtcNow,
                 FechaActualizacion = DateTime.UtcNow

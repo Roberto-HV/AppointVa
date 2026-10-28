@@ -14,6 +14,7 @@ import { FONDO_AUTH, TITULO_AUTH } from "../../lib/clasesAuth";
 import { esquemaContrasena, traducirErroresIdentity } from "../../utils/contrasena";
 import { mensajeError } from "../../utils/errores";
 import { ACTIVACION_PASOS, CORREO_SOPORTE } from "../../lib/activacion";
+import { esClavePlan, NOMBRES_PLANES } from "../../lib/precios";
 import { useTituloPagina } from "../../hooks/useTituloPagina";
 
 type Sector = "belleza" | "salud";
@@ -79,6 +80,10 @@ export default function RegistroNegocioPage() {
   // puede cambiar aquí, porque después solo lo cambia el SuperAdmin (AP-01).
   const sectorParam = searchParams.get("sector");
   const [sector, setSector] = useState<Sector>(sectorParam === "salud" ? "salud" : "belleza");
+  // `?plan=` (tarjetas de precios) se registra con la cuenta como intención
+  // (B20, decisión 5); el plan real lo asigna el SuperAdmin al activar.
+  const planParam = searchParams.get("plan");
+  const plan = esClavePlan(planParam) ? planParam : undefined;
 
   const onSectorKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
     if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key)) return;
@@ -126,6 +131,7 @@ export default function RegistroNegocioPage() {
         contrasena: data.contrasena,
         telefono: data.telefono || undefined,
         sector,
+        plan,
       });
       setEmailRegistrado(data.email);
       setSlugRegistrado(data.slug);
@@ -226,6 +232,12 @@ export default function RegistroNegocioPage() {
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 sm:p-8">
           <h1 className="text-2xl font-bold text-slate-900 mb-1">Crear cuenta</h1>
           <p className="text-sm text-slate-500 mb-6">Completa los datos para registrar tu negocio</p>
+          {plan && (
+            <p className="text-sm text-slate-600 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 mb-6">
+              Plan elegido: <span className="font-semibold text-slate-800">{NOMBRES_PLANES[plan]}</span>. Lo
+              confirmamos contigo al activar tu cuenta.
+            </p>
+          )}
 
           <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-5">
             <p className="text-xs text-slate-500">Todos los campos son obligatorios salvo los marcados como opcionales.</p>

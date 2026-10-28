@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { precioVisible, formatMonto, MONEDA } from "../../lib/precios";
+import { precioVisible, formatMonto, MONEDA, urlRegistroConPlan, type ClavePlan } from "../../lib/precios";
 import { useFadeInUp } from "./useFadeInUp";
 import { Ico } from "./Ico";
 import { dCheck } from "./iconos";
@@ -13,6 +13,8 @@ interface Props {
   features: string[];
   /** Destino de "Empezar con …". */
   registro: string;
+  /** Plan que se registra con la cuenta (`?plan=`, B20). */
+  plan?: ClavePlan;
   highlighted?: boolean;
   delay?: number;
   comingSoon?: boolean;
@@ -20,8 +22,9 @@ interface Props {
 }
 
 export function PricingCard({
-  name, price, annualPrice, employees, features, registro, highlighted = false, delay = 0, comingSoon = false, billedAnnually = false,
+  name, price, annualPrice, employees, features, registro, plan, highlighted = false, delay = 0, comingSoon = false, billedAnnually = false,
 }: Props) {
+  const destino = plan ? urlRegistroConPlan(registro, plan) : registro;
   const fade = useFadeInUp(delay);
   // Un plan que aún no se puede contratar no lleva nota de facturación anual.
   const precio = precioVisible({ mensual: price, anual: annualPrice, disponible: !comingSoon }, billedAnnually);
@@ -74,7 +77,7 @@ export function PricingCard({
           Próximamente disponible
         </div>
       ) : (
-        <Link to={registro} className="block text-center py-3 rounded-xl text-sm font-bold transition-all hover:opacity-90 active:scale-95" style={{ backgroundColor: highlighted ? "#FFFFFF" : TINTA, color: highlighted ? TINTA : "white" }}>
+        <Link to={destino} className="block text-center py-3 rounded-xl text-sm font-bold transition-all hover:opacity-90 active:scale-95" style={{ backgroundColor: highlighted ? "#FFFFFF" : TINTA, color: highlighted ? TINTA : "white" }}>
           Empezar con {name}
         </Link>
       )}

@@ -56,7 +56,7 @@ namespace AppointVaAPI.Controllers.V1
             var rolePropietarioId = (await _db.Roles
                 .FirstOrDefaultAsync(r => r.Name == Roles.Propietario))?.Id;
 
-            Dictionary<Guid, (string? Email, string? Nombre)> propietariosPorNegocio = new();
+            Dictionary<Guid, (string? Email, string? Nombre, bool EmailConfirmado)> propietariosPorNegocio = new();
             if (rolePropietarioId.HasValue)
             {
                 var propietarioRows = await (
@@ -69,7 +69,9 @@ namespace AppointVaAPI.Controllers.V1
                         NegocioId = u.NegocioId!.Value,
                         u.Email,
                         u.Nombre,
-                        u.Apellido
+                        u.Apellido,
+                        u.EmailConfirmed,
+                        u.FechaCreacion
                     }
                 ).ToListAsync();
 
@@ -79,16 +81,17 @@ namespace AppointVaAPI.Controllers.V1
                         g => g.Key,
                         g =>
                         {
-                            var p = g.First();
+                            // Oldest owner first: the account created at sign-up.
+                            var p = g.OrderBy(x => x.FechaCreacion).First();
                             var nombre = $"{p.Nombre} {p.Apellido}".Trim();
-                            return (Email: (string?)p.Email, Nombre: nombre.Length > 0 ? nombre : (string?)null);
+                            return (Email: (string?)p.Email, Nombre: nombre.Length > 0 ? nombre : (string?)null, EmailConfirmado: p.EmailConfirmed);
                         }
                     );
             }
 
             var result = negocios.Select(n =>
             {
-                propietariosPorNegocio.TryGetValue(n.Id, out var prop);
+                var tienePropietario = propietariosPorNegocio.TryGetValue(n.Id, out var prop);
                 return new NegocioMetricasDto
                 {
                     Id = n.Id,
@@ -110,6 +113,9 @@ namespace AppointVaAPI.Controllers.V1
                     EsTester = n.EsTester,
                     PropietarioEmail = prop.Email,
                     PropietarioNombre = prop.Nombre,
+                    FechaCreacion = n.FechaCreacion,
+                    EmailConfirmado = tienePropietario ? prop.EmailConfirmado : null,
+                    PlanSolicitado = n.PlanSolicitado,
                 };
             }).ToList();
 

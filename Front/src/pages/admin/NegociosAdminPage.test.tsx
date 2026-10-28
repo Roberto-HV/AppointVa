@@ -232,7 +232,7 @@ describe('BadgeSuscripcion — vigencia legible', () => {
 
 // ── Filtros y paginación ────────────────────────────────────────────────────
 
-function negocio(i: number, extra: Partial<typeof mockNegocio> = {}) {
+function negocio(i: number, extra: Partial<adminModule.NegocioMetricasDto> = {}) {
   return {
     ...mockNegocio,
     id: `neg-${i}`,
@@ -508,6 +508,28 @@ describe('NegociosAdminPage — pendientes de activación', () => {
     expect(screen.getByText('Pendiente de activación')).toBeInTheDocument();
   });
 
+  it('muestra la fecha de registro, si verificó el correo y el plan elegido (B23, B20)', async () => {
+    vi.mocked(adminModule.adminApi.obtenerMetricas).mockResolvedValue([
+      negocio(3, {
+        nombre: 'Nuevo SA', activo: 0, planNombre: undefined, planId: undefined,
+        fechaCreacion: '2026-10-20T15:00:00Z', emailConfirmado: true, planSolicitado: 'pro',
+      }),
+      negocio(4, {
+        nombre: 'Otro SA', activo: 0, planNombre: undefined, planId: undefined,
+        fechaCreacion: '2026-10-21T15:00:00Z', emailConfirmado: false,
+      }),
+    ]);
+    renderPage();
+    await screen.findByText('Nuevo SA');
+
+    expect(screen.getByText(/Registrado el 20 de octubre de 2026/)).toBeInTheDocument();
+    expect(screen.getByText('Correo verificado')).toBeInTheDocument();
+    expect(screen.getByText('Correo sin verificar')).toBeInTheDocument();
+    expect(screen.getByText('Eligió el plan Pro')).toBeInTheDocument();
+    // El registro más reciente va primero en la cola.
+    const texto = document.body.textContent ?? '';
+    expect(texto.indexOf('Otro SA')).toBeLessThan(texto.indexOf('Nuevo SA'));
+  });
   it('el filtro "Pendientes de activación" deja fuera a los desactivados', async () => {
     const user = userEvent.setup();
     renderPage();

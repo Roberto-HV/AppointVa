@@ -201,7 +201,10 @@ export default function ConfirmacionPage() {
     retry: false,
   });
   // El mismo término que usó el flujo de reserva ("Profesional" en salud) (BF-25).
-  const terms = getSectorTerms(negocioPublico?.sector);
+  // El sector viene en la propia cita (B4), así no depende de la consulta del
+  // negocio, que falta o falla tras una visita directa; esa queda de respaldo.
+  const sector = cita?.sector ?? negocioPublico?.sector;
+  const terms = getSectorTerms(sector);
 
   const irAlNegocio = () => navigate(negocioSlug ? `/b/${negocioSlug}` : "/");
 
@@ -411,7 +414,7 @@ export default function ConfirmacionPage() {
     );
 
   return (
-    <div data-sector={negocioPublico?.sector === "salud" ? "salud" : undefined} className="min-h-screen bg-slate-50 print:bg-white">
+    <div data-sector={sector === "salud" ? "salud" : undefined} className="min-h-screen bg-slate-50 print:bg-white">
       <style>{`
         @media print {
           body { background: white !important; margin: 0; }

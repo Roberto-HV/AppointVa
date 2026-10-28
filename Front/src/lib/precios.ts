@@ -60,5 +60,24 @@ export const PRECIOS_PLANES = {
   premium: { mensual: 799 },
 } as const satisfies Record<string, PrecioPlan>;
 
+/** Clave de un plan de las landings; es la misma que acepta `POST /publico/registro` (B20). */
+export type ClavePlan = keyof typeof PRECIOS_PLANES;
+
+export const NOMBRES_PLANES: Record<ClavePlan, string> = {
+  basico: "Básico",
+  pro: "Pro",
+  premium: "Premium",
+};
+
+/** `true` si el texto (p. ej. `?plan=` de la URL) es un plan conocido. */
+export function esClavePlan(valor: string | null | undefined): valor is ClavePlan {
+  return !!valor && Object.prototype.hasOwnProperty.call(PRECIOS_PLANES, valor);
+}
+
+/** Añade `plan=` al enlace de registro, conservando lo que ya traiga (p. ej. `?sector=salud`). */
+export function urlRegistroConPlan(registro: string, plan: ClavePlan): string {
+  return `${registro}${registro.includes("?") ? "&" : "?"}plan=${plan}`;
+}
+
 /** Moneda que acompaña a todos los precios de las landings. */
 export const MONEDA = "MXN";

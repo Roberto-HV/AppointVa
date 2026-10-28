@@ -1,8 +1,8 @@
 import { useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { negociosApi } from "../../api/negocios";
+import { negociosApi, type ImagenGaleriaItem } from "../../api/negocios";
 import { useToastStore } from "../../store/toastStore";
-import { Upload, Trash2, X, ImageIcon } from "lucide-react";
+import { Upload, Trash2, X, ImageIcon, ArrowLeft, ArrowRight } from "lucide-react";
 import BotonAccion from "../../components/ui/BotonAccion";
 import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
 import ConfirmarAccion from "../../components/ui/ConfirmarAccion";
@@ -12,6 +12,18 @@ import { mensajeError } from "../../utils/errores";
 import { ACCEPT_IMAGEN, TEXTO_FORMATOS_IMAGEN, validarImagen } from "../../lib/imagenes";
 
 const MAX_FOTOS = 20;
+
+/** Tipo propio del arrastre de una foto ya subida, para no confundirlo con soltar archivos. */
+const TIPO_ARRASTRE_FOTO = "application/x-appointva-foto";
+
+/** Copia de la lista con el elemento de `desde` movido a `hasta` (la misma lista si no cambia). */
+function moverFoto<T>(lista: T[], desde: number, hasta: number): T[] {
+  if (desde === hasta || desde < 0 || hasta < 0 || desde >= lista.length || hasta >= lista.length) return lista;
+  const copia = [...lista];
+  const [movida] = copia.splice(desde, 1);
+  copia.splice(hasta, 0, movida);
+  return copia;
+}
 
 /** Una subida en curso: se pinta como una miniatura con su avance. */
 interface Subida {
@@ -60,6 +72,47 @@ export default function GaleriaPage() {
     }
   };
 
+  // ── Reordenar (B12, OM-15) ─────────────────────────────────────────────────
+  // Flechas "antes/después" (teclado y táctil) y arrastre con el ratón. El
+  // cambio se ve al instante, se revierte si el servidor falla y el lector de
+  // pantalla anuncia la nueva posición. La primera foto es la que ven primero.
+  const [anuncioOrden, setAnuncioOrden] = useState("");
+  const [arrastrandoFoto, setArrastrandoFoto] = useState<string | null>(null);
+  const mutReordenar = useMutation({
+    mutationFn: (nuevas: ImagenGaleriaItem[]) => negociosApi.reordenarGaleria(nuevas.map((f) => f.id)),
+    onMutate: async (nuevas) => {
+      await qc.cancelQueries({ queryKey: ["galeria"] });
+      const previas = qc.getQueryData<ImagenGaleriaItem[]>(["galeria"]);
+      qc.setQueryData<ImagenGaleriaItem[]>(["galeria"], nuevas.map((f, i) => ({ ...f, orden: i + 1 })));
+      return { previas };
+    },
+    onError: (_err, _nuevas, ctx) => {
+      if (ctx?.previas) qc.setQueryData(["galeria"], ctx.previas);
+      setAnuncioOrden("No se pudo cambiar el orden.");
+      toast("No se pudo cambiar el orden de las fotos. Intenta de nuevo.", "error");
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ["galeria"] }),
+  });
+  // Mientras sube una foto la lista del servidor va a cambiar: no se reordena.
+  const reordenando = mutReordenar.isPending || subiendo;
+
+  const reordenar = (desde: number, hasta: number, enfocar?: -1 | 1) => {
+    if (reordenando) return;
+    const nuevas = moverFoto(imagenes, desde, hasta);
+    if (nuevas === imagenes) return;
+    const movida = nuevas[hasta];
+    mutReordenar.mutate(nuevas);
+    setAnuncioOrden(`La foto ahora es la ${hasta + 1} de ${nuevas.length}.`);
+    if (!enfocar) return;
+    // Si la flecha pulsada queda deshabilitada (llegó al extremo), el foco pasa a la otra.
+    requestAnimationFrame(() => {
+      const misma = document.querySelector<HTMLButtonElement>(`[data-mover="${movida.id}:${enfocar}"]`);
+      const otra = document.querySelector<HTMLButtonElement>(`[data-mover="${movida.id}:${-enfocar}"]`);
+      if (misma && !misma.disabled) misma.focus();
+      else otra?.focus();
+    });
+  };
+
   const { mutate: eliminar, isPending: eliminandoFoto } = useMutation({
     mutationFn: (id: string) => negociosApi.eliminarImagenGaleria(id),
     onSuccess: () => {
@@ -89,15 +142,18 @@ export default function GaleriaPage() {
     aceptados.forEach((f) => { void subir(f); });
   };
 
+  // Solo un arrastre de archivos marca la zona; mover una foto ya subida no.
+  const esArrastreDeFoto = (e: React.DragEvent) => Array.from(e.dataTransfer?.types ?? []).includes(TIPO_ARRASTRE_FOTO);
   const zonaArrastre = {
-    onDragEnter: (e: React.DragEvent) => { e.preventDefault(); setArrastrando(true); },
-    onDragOver: (e: React.DragEvent) => { e.preventDefault(); setArrastrando(true); },
+    onDragEnter: (e: React.DragEvent) => { e.preventDefault(); if (!esArrastreDeFoto(e)) setArrastrando(true); },
+    onDragOver: (e: React.DragEvent) => { e.preventDefault(); if (!esArrastreDeFoto(e)) setArrastrando(true); },
     onDragLeave: (e: React.DragEvent) => {
       if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setArrastrando(false);
     },
     onDrop: (e: React.DragEvent) => {
       e.preventDefault();
       setArrastrando(false);
+      if (esArrastreDeFoto(e)) return;
       handleArchivos(e.dataTransfer.files);
     },
   };
@@ -174,7 +230,32 @@ export default function GaleriaPage() {
             {...zonaArrastre}
           >
             {imagenes.map((img, i) => (
-              <div key={img.id} className="group relative aspect-square rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-700">
+              <div
+                key={img.id}
+                draggable={!reordenando && imagenes.length > 1}
+                onDragStart={(e) => {
+                  e.dataTransfer.setData(TIPO_ARRASTRE_FOTO, img.id);
+                  e.dataTransfer.effectAllowed = "move";
+                  setArrastrandoFoto(img.id);
+                }}
+                onDragEnd={() => setArrastrandoFoto(null)}
+                onDragOver={(e) => {
+                  if (!esArrastreDeFoto(e)) return;
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = "move";
+                }}
+                onDrop={(e) => {
+                  if (!esArrastreDeFoto(e)) return;
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const id = e.dataTransfer.getData(TIPO_ARRASTRE_FOTO);
+                  setArrastrandoFoto(null);
+                  reordenar(imagenes.findIndex((f) => f.id === id), i);
+                }}
+                className={`group relative aspect-square rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-700 ${
+                  arrastrandoFoto === img.id ? "opacity-50" : ""
+                }`}
+              >
                 <button
                   type="button"
                   onClick={() => setLightbox(img.url)}
@@ -200,6 +281,32 @@ export default function GaleriaPage() {
                 >
                   <Trash2 size={15} aria-hidden="true" />
                 </button>
+                {/* Mover antes / después: mismo criterio de visibilidad que Eliminar. */}
+                {imagenes.length > 1 && (
+                  <div className="absolute bottom-1.5 left-1.5 flex gap-1 transition
+                    opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 group-focus-within:opacity-100">
+                    {([-1, 1] as const).map((delta) => {
+                      const Icono = delta === -1 ? ArrowLeft : ArrowRight;
+                      const extremo = delta === -1 ? i === 0 : i === imagenes.length - 1;
+                      return (
+                        <button
+                          key={delta}
+                          type="button"
+                          onClick={() => reordenar(i, i + delta, delta)}
+                          disabled={extremo || reordenando}
+                          data-mover={`${img.id}:${delta}`}
+                          aria-label={`Mover foto ${i + 1} ${delta === -1 ? "antes" : "después"}`}
+                          title={delta === -1 ? "Mover antes" : "Mover después"}
+                          className="w-9 h-9 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center transition
+                            disabled:opacity-40 disabled:cursor-not-allowed
+                            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                        >
+                          <Icono size={15} aria-hidden="true" />
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             ))}
 
@@ -230,8 +337,9 @@ export default function GaleriaPage() {
           </div>
 
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-3">
-            {`Arrastra imágenes al grid para agregar más · ${TEXTO_FORMATOS_IMAGEN} · Las fotos se muestran en tu página de reservas.`}
+            {`Arrastra imágenes al grid para agregar más · ${TEXTO_FORMATOS_IMAGEN} · Las fotos se muestran en tu página de reservas en este orden; arrastra una foto o usa sus flechas para cambiarlo.`}
           </p>
+          <p className="sr-only" aria-live="polite" role="status">{anuncioOrden}</p>
         </>
       )}
 

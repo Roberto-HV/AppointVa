@@ -122,7 +122,10 @@ export interface ConfirmacionCita {
   webcalUrl?: string;
   googleCalUrl?: string;
   horasCancelacion: number;
+  /** B2: días mínimos de anticipación del negocio (0 = sin mínimo). */
   diasAnticipacionMinima: number;
+  /** B4: giro del negocio; opcional por compatibilidad con respuestas antiguas. */
+  sector?: "belleza" | "salud";
   requiereAnticipo: boolean;
   montoAnticipo: number;
   instruccionesAnticipo?: string;

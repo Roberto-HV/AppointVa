@@ -160,11 +160,23 @@ namespace AppointVaAPI.Controllers.V1
             pageSize = Math.Min(pageSize, 50);
             page = Math.Max(page, 1);
 
-            var query = db.Resenas
-                .Where(r => r.NegocioId == negocioId && r.Aprobada && r.Respondida)
-                .OrderByDescending(r => r.FechaCreacion);
+            // B15 (decision 15, OM-21): approved, submitted reviews only. The totals, the
+            // average and the distribution cover every such review, not just this page.
+            var filtradas = db.Resenas
+                .Where(r => r.NegocioId == negocioId && r.Aprobada && r.Respondida);
+            var query = filtradas.OrderByDescending(r => r.FechaCreacion);
 
-            var total = await query.CountAsync();
+            var conteos = await filtradas
+                .GroupBy(r => r.Rating)
+                .Select(g => new { Rating = g.Key, Total = g.Count() })
+                .ToListAsync();
+            var total = conteos.Sum(c => c.Total);
+            // Keys "1".."5" always present so the client can render empty bars.
+            var distribucion = Enumerable.Range(1, 5)
+                .ToDictionary(n => n.ToString(), n => conteos.Where(c => c.Rating == n).Sum(c => c.Total));
+            decimal? promedio = total == 0
+                ? null
+                : Math.Round((decimal)conteos.Sum(c => c.Rating * c.Total) / total, 1, MidpointRounding.AwayFromZero);
             var items = await query
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
@@ -180,7 +192,7 @@ namespace AppointVaAPI.Controllers.V1
                 })
                 .ToListAsync();
 
-            return Ok(new { items, total, page, pageSize });
+            return Ok(new { items, total, page, pageSize, promedio, distribucion });
         }
 
     }

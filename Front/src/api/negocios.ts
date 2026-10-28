@@ -42,6 +42,12 @@ export const negociosApi = {
     await api.delete("/negocios/perfil/portada");
   },
 
+  /** B11: guarda solo el punto de enfoque de la portada ("X% Y%"). */
+  actualizarPosicionPortada: async (portadaObjectPosition: string): Promise<{ portadaObjectPosition: string }> => {
+    const { data } = await api.patch("/negocios/perfil/portada/posicion", { portadaObjectPosition });
+    return data;
+  },
+
   eliminarPoliticas: async (): Promise<void> => {
     await api.delete("/negocios/perfil/politicas");
   },
@@ -90,6 +96,12 @@ export const negociosApi = {
 
   eliminarImagenGaleria: async (id: string): Promise<void> => {
     await api.delete(`/negocios/galeria/${id}`);
+  },
+
+  /** B12: todas las fotos de la galería en su nuevo orden (la primera es la que ven primero). */
+  reordenarGaleria: async (ids: string[]): Promise<ImagenGaleriaItem[]> => {
+    const { data } = await api.patch("/negocios/galeria/reordenar", { ids });
+    return data;
   },
 };
 

@@ -32,6 +32,11 @@ describe("LandingPageSalud (decisiones 1, 5, 16, 18)", () => {
     expect(screen.getByRole("link", { name: /Empezar ahora/ })).toHaveAttribute("href", "/registro?sector=salud");
   });
 
+  it("cada plan lleva su clave al registro de salud (B20)", () => {
+    renderSalud();
+    expect(screen.getByRole("link", { name: "Empezar con Básico" })).toHaveAttribute("href", "/registro?sector=salud&plan=basico");
+    expect(screen.getByRole("link", { name: "Empezar con Pro" })).toHaveAttribute("href", "/registro?sector=salud&plan=pro");
+  });
   it("Pro anual a $382 MXN, igual que la landing principal", async () => {
     const user = userEvent.setup();
     renderSalud();

@@ -22,6 +22,10 @@ namespace AppointVaAPI.Models.Dtos.Publico
         public string? WebcalUrl { get; set; }
         public string? GoogleCalUrl { get; set; }
         public int HorasCancelacion { get; set; }
+        // B2: minimum notice in days, so the reschedule picker hides days the business does not accept.
+        public int DiasAnticipacionMinima { get; set; }
+        // B4: business sector ("belleza" | "salud") for the receipt wording after a direct visit.
+        public string Sector { get; set; } = "belleza";
         public bool RequiereAnticipo { get; set; }
         public decimal? MontoAnticipo { get; set; }
         public string? InstruccionesAnticipo { get; set; }

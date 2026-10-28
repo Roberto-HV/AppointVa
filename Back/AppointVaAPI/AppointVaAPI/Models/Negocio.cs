@@ -66,6 +66,10 @@ namespace AppointVaAPI.Models
         public Guid? PlanId { get; set; }
         [ForeignKey("PlanId")]
         public Plan? Plan { get; set; }
+        // B20: plan key chosen on the landing at sign-up ("basico" | "pro" | "premium").
+        // Intent only: PlanId stays the one the SuperAdmin assigns.
+        [MaxLength(20)]
+        public string? PlanSolicitado { get; set; }
         [Required]
         public int Activo { get; set; }
         [Required]

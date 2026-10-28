@@ -74,6 +74,7 @@ vi.mock("../../api/negocios", () => ({
     eliminarLogo: vi.fn().mockResolvedValue(undefined),
     eliminarPortada: vi.fn().mockResolvedValue(undefined),
     eliminarPoliticas: vi.fn().mockResolvedValue(undefined),
+    actualizarPosicionPortada: vi.fn().mockImplementation(async (p: string) => ({ portadaObjectPosition: p })),
   },
 }));
 
@@ -450,15 +451,50 @@ describe("PerfilPage — posición de la portada (OM-04)", () => {
     HTMLElement.prototype.setPointerCapture = vi.fn();
   });
 
-  it("al confirmar una nueva posición avisa que falta guardar y la envía con 'Guardar cambios'", async () => {
-    const user = userEvent.setup();
-    renderPerfilPage();
+  async function arrastrarYConfirmar(user: ReturnType<typeof userEvent.setup>) {
     await user.click(await screen.findByRole("button", { name: "Posicionar" }));
     const arrastre = screen.getByText("Arrastra para ajustar la posición").closest("div")!.previousElementSibling as HTMLElement;
     fireEvent.pointerDown(arrastre, { clientX: 0, clientY: 0, pointerId: 1 });
     fireEvent.pointerMove(arrastre, { clientX: 10, clientY: 10, pointerId: 1 });
     fireEvent.pointerUp(arrastre, { pointerId: 1 });
     await user.click(screen.getByRole("button", { name: "Confirmar" }));
+  }
+
+  it("'Confirmar' guarda la nueva posición al momento, sin 'Guardar cambios' (B11)", async () => {
+    const user = userEvent.setup();
+    renderPerfilPage();
+    await arrastrarYConfirmar(user);
+
+    await waitFor(() => expect(negociosApi.actualizarPosicionPortada).toHaveBeenCalledTimes(1));
+    const pos = vi.mocked(negociosApi.actualizarPosicionPortada).mock.calls[0][0];
+    expect(pos).not.toBe("50% 50%");
+    expect(pos).toMatch(/^\d+(\.\d)?% \d+(\.\d)?%$/);
+    await waitFor(() => expect(toastSpy).toHaveBeenCalledWith("Posición guardada"));
+    expect(screen.queryByText(/Posición sin guardar/)).not.toBeInTheDocument();
+    expect(negociosApi.actualizarPerfil).not.toHaveBeenCalled();
+  });
+
+  it("una portada nueva guarda la posición elegida cuando termina la subida (B11)", async () => {
+    const user = userEvent.setup();
+    const crear = vi.fn(() => "blob:portada");
+    Object.assign(URL, { createObjectURL: crear, revokeObjectURL: vi.fn() });
+    renderPerfilPage();
+    const boton = await screen.findByRole("button", { name: "Cambiar portada" });
+    const input = boton.previousElementSibling as HTMLInputElement;
+    await user.upload(input, new File(["x"], "portada.png", { type: "image/png" }));
+    await user.click(await screen.findByRole("button", { name: "Confirmar" }));
+
+    await waitFor(() => expect(negociosApi.subirPortada).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(negociosApi.actualizarPosicionPortada).toHaveBeenCalledWith("50% 50%"));
+    expect(vi.mocked(negociosApi.subirPortada).mock.invocationCallOrder[0])
+      .toBeLessThan(vi.mocked(negociosApi.actualizarPosicionPortada).mock.invocationCallOrder[0]);
+  });
+
+  it("si guardar la posición falla, avisa que falta guardar y la envía con 'Guardar cambios'", async () => {
+    vi.mocked(negociosApi.actualizarPosicionPortada).mockRejectedValueOnce(new Error("500"));
+    const user = userEvent.setup();
+    renderPerfilPage();
+    await arrastrarYConfirmar(user);
 
     expect(await screen.findByText(/Posición sin guardar/)).toBeInTheDocument();
 

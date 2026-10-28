@@ -76,9 +76,9 @@ async function elegirAccion(opcion: string) {
 /** La búsqueda se confirma; teclear no dispara la consulta. */
 async function buscarUsuario(valor: string) {
   const user = userEvent.setup();
-  await user.clear(screen.getByRole("searchbox", { name: "Buscar por ID de usuario" }));
+  await user.clear(screen.getByRole("searchbox", { name: "Buscar por correo o ID de usuario" }));
   if (valor) {
-    await user.type(screen.getByRole("searchbox", { name: "Buscar por ID de usuario" }), valor);
+    await user.type(screen.getByRole("searchbox", { name: "Buscar por correo o ID de usuario" }), valor);
   }
   await user.click(screen.getByRole("button", { name: "Buscar" }));
 }
@@ -208,16 +208,19 @@ describe("AuditLogPage — lectura de los eventos (AP-24)", () => {
   });
 });
 
-describe("AuditLogPage — filtro por ID de usuario", () => {
-  it("avisa y no consulta cuando el ID no es un UUID completo", async () => {
+describe("AuditLogPage — búsqueda por correo o ID de usuario (B24)", () => {
+  it("un texto que no es UUID se busca como parte del correo", async () => {
     renderAuditLog();
     await screen.findByText("Sin registros");
-    vi.mocked(adminApi.obtenerAuditLogs).mockClear();
 
-    await buscarUsuario("abc");
+    await buscarUsuario("ana@");
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(/UUID completo/i);
-    expect(adminApi.obtenerAuditLogs).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(adminApi.obtenerAuditLogs).toHaveBeenLastCalledWith(
+        expect.objectContaining({ email: "ana@", usuarioId: undefined })
+      );
+    });
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
   it("consulta con el UUID cuando está completo", async () => {
@@ -229,10 +232,16 @@ describe("AuditLogPage — filtro por ID de usuario", () => {
 
     await waitFor(() => {
       expect(adminApi.obtenerAuditLogs).toHaveBeenCalledWith(
-        expect.objectContaining({ usuarioId: uuid })
+        expect.objectContaining({ usuarioId: uuid, email: undefined })
       );
     });
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("ofrece un filtro de período", async () => {
+    renderAuditLog();
+    await screen.findByText("Sin registros");
+    expect(screen.getByRole("group", { name: "Período" })).toBeInTheDocument();
   });
 });
 

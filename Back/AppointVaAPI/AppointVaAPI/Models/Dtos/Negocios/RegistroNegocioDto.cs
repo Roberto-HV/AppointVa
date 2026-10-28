@@ -33,5 +33,11 @@ namespace AppointVaAPI.Models.Dtos.Negocios
         [MaxLength(20)]
         [RegularExpression(@"^(belleza|salud)$", ErrorMessage = "Sector inválido. Usa 'belleza' o 'salud'.")]
         public string Sector { get; set; } = "belleza";
+
+        // B20 (decision 5, AP-08): plan chosen on the landing (`?plan=`). It only records
+        // intent for the SuperAdmin; it does not assign a plan or change billing.
+        [MaxLength(20)]
+        [RegularExpression(@"^(basico|pro|premium)$", ErrorMessage = "Plan inválido. Usa 'basico', 'pro' o 'premium'.")]
+        public string? Plan { get; set; }
     }
 }

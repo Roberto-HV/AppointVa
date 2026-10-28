@@ -27,7 +27,9 @@ vi.mock("../../components/PublicFooter", () => ({
 }));
 
 vi.mock("../../components/booking/PasoFechaHora", () => ({
-  default: () => <div data-testid="paso-fecha-hora" />,
+  default: ({ diasAnticipacionMinima }: { diasAnticipacionMinima?: number }) => (
+    <div data-testid="paso-fecha-hora" data-dias-minimos={String(diasAnticipacionMinima)} />
+  ),
 }));
 
 import { api } from "../../api/axios";
@@ -144,6 +146,17 @@ describe("MisCitasPage", () => {
     expect(screen.queryByText("Google Calendar")).not.toBeInTheDocument();
     // El historial no ofrece reagendar ni cancelar (solo hay una cita próxima).
     expect(screen.getAllByRole("button", { name: "Reagendar" })).toHaveLength(1);
+  });
+
+  it("reagendar respeta los días mínimos de anticipación que manda el servidor (B2)", async () => {
+    localStorage.setItem(SESSION_KEY, JSON.stringify(mockSession));
+    vi.mocked(api.get).mockResolvedValue({
+      data: [{ ...futureCita, diasAnticipacionMinima: 2 }],
+      headers: { "x-total-count": "1" },
+    });
+    renderConQuery();
+    await userEvent.click(await screen.findByRole("button", { name: "Reagendar" }));
+    expect(await screen.findByTestId("paso-fecha-hora")).toHaveAttribute("data-dias-minimos", "2");
   });
 
   it("un fallo de red ofrece Reintentar en vez de culpar a los datos (AP-25)", async () => {

@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
+  rangoAuditoria,
   fechaLocal,
   comoUtc,
   deFechaLocal,
@@ -226,5 +227,18 @@ describe("fechaEnZona (B16)", () => {
     const iso = "2026-10-22T12:00:00Z";
     expect(fechaEnZona(iso, "Zona/Inexistente")).toBe(fechaLocal(new Date(iso)));
     expect(fechaEnZona(iso)).toBe(fechaLocal(new Date(iso)));
+  });
+});
+
+describe("rangoAuditoria (B24)", () => {
+  it("convierte días locales en instantes: desde incluido, hasta = inicio del día siguiente", () => {
+    const r = rangoAuditoria("2026-10-10", "2026-10-12");
+    expect(r.desde).toBe(new Date(2026, 9, 10).toISOString());
+    expect(r.hasta).toBe(new Date(2026, 9, 13).toISOString());
+  });
+
+  it("un extremo vacío no se envía; el fin de mes pasa al mes siguiente", () => {
+    expect(rangoAuditoria("", "")).toEqual({ desde: undefined, hasta: undefined });
+    expect(rangoAuditoria("", "2026-10-31").hasta).toBe(new Date(2026, 10, 1).toISOString());
   });
 });

@@ -392,19 +392,19 @@ export default function LandingPage() {
             <div className="grid md:grid-cols-3 gap-5 items-stretch">
               <PricingCard
                 registro="/registro"
-                delay={0} name="Básico" price={PRECIOS_PLANES.basico.mensual} annualPrice={PRECIOS_PLANES.basico.anual} employees={2}
+                plan="basico" delay={0} name="Básico" price={PRECIOS_PLANES.basico.mensual} annualPrice={PRECIOS_PLANES.basico.anual} employees={2}
                 billedAnnually={billedAnnually}
                 features={["Portal de reservas público", "2 empleados", "Notificaciones por email", "Dashboard y calendario", "Campana de notificaciones", "Gestión de clientes"]}
               />
               <PricingCard
                 registro="/registro"
-                delay={100} name="Pro" price={PRECIOS_PLANES.pro.mensual} annualPrice={PRECIOS_PLANES.pro.anual} employees={4}
+                plan="pro" delay={100} name="Pro" price={PRECIOS_PLANES.pro.mensual} annualPrice={PRECIOS_PLANES.pro.anual} employees={4}
                 highlighted billedAnnually={billedAnnually}
                 features={["Todo lo del plan Básico", "4 empleados", "Módulo de pagos integrado", "Recibos digitales", "Conexión a periféricos de pago", "Códigos de descuento"]}
               />
               <PricingCard
                 registro="/registro"
-                delay={200} name="Premium" price={PRECIOS_PLANES.premium.mensual} employees={50} comingSoon
+                plan="premium" delay={200} name="Premium" price={PRECIOS_PLANES.premium.mensual} employees={50} comingSoon
                 billedAnnually={billedAnnually}
                 features={["Todo lo del plan Pro", "Formularios de admisión", "Reportes avanzados", "Soporte prioritario"]}
               />

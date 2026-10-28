@@ -20,6 +20,7 @@ vi.mock("../../api/negocios", () => ({
     obtenerGaleria: vi.fn(),
     subirImagenGaleria: vi.fn(),
     eliminarImagenGaleria: vi.fn(),
+    reordenarGaleria: vi.fn(),
   },
 }));
 
@@ -248,5 +249,70 @@ describe("GaleriaPage — subidas (OM-14)", () => {
     fireEvent.change(input, { target: { files: [new File(["x"], "foto.heic", { type: "image/heic" })] } });
     expect(negociosApi.subirImagenGaleria).not.toHaveBeenCalled();
     expect(mockToast).toHaveBeenCalledWith('"foto.heic" no es JPG, PNG, WebP o GIF.', "error");
+  });
+});
+
+describe("GaleriaPage — orden de las fotos (B12, OM-15)", () => {
+  const tres = [
+    makeImagen({ id: "a", url: "https://example.com/a.jpg", orden: 1 }),
+    makeImagen({ id: "b", url: "https://example.com/b.jpg", orden: 2 }),
+    makeImagen({ id: "c", url: "https://example.com/c.jpg", orden: 3 }),
+  ];
+  const urlsEnPantalla = () =>
+    screen.getAllByRole("button", { name: /ampliada/ }).map((b) => b.querySelector("img")!.getAttribute("src"));
+
+  beforeEach(() => {
+    vi.mocked(negociosApi.obtenerGaleria).mockResolvedValue(tres);
+  });
+
+  it("las flechas de los extremos están deshabilitadas", async () => {
+    renderConQuery();
+    expect(await screen.findByRole("button", { name: "Mover foto 1 antes" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Mover foto 3 después" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Mover foto 2 antes" })).toBeEnabled();
+  });
+
+  it("mover una foto envía el orden completo, lo muestra al instante y lo anuncia", async () => {
+    vi.mocked(negociosApi.reordenarGaleria).mockReturnValue(new Promise(() => {}));
+    renderConQuery();
+    fireEvent.click(await screen.findByRole("button", { name: "Mover foto 3 antes" }));
+
+    await waitFor(() => expect(negociosApi.reordenarGaleria).toHaveBeenCalledWith(["a", "c", "b"]));
+    await waitFor(() => expect(urlsEnPantalla()).toEqual([
+      "https://example.com/a.jpg", "https://example.com/c.jpg", "https://example.com/b.jpg",
+    ]));
+    expect(screen.getByRole("status", { name: "" })).toHaveTextContent("La foto ahora es la 2 de 3.");
+  });
+
+  it("si el servidor falla, vuelve al orden anterior y avisa", async () => {
+    vi.mocked(negociosApi.reordenarGaleria).mockRejectedValue(new Error("500"));
+    renderConQuery();
+    fireEvent.click(await screen.findByRole("button", { name: "Mover foto 1 después" }));
+
+    await waitFor(() => expect(mockToast).toHaveBeenCalledWith(
+      "No se pudo cambiar el orden de las fotos. Intenta de nuevo.", "error"));
+    await waitFor(() => expect(urlsEnPantalla()).toEqual(tres.map((f) => f.url)));
+  });
+
+  it("arrastrar una foto sobre otra la mueve a esa posición sin subir archivos", async () => {
+    vi.mocked(negociosApi.reordenarGaleria).mockResolvedValue([]);
+    renderConQuery();
+    await screen.findByRole("button", { name: "Mover foto 1 antes" });
+    const tarjetas = screen.getAllByRole("button", { name: /ampliada/ }).map((b) => b.parentElement!);
+    const datos = new Map<string, string>();
+    const dataTransfer = {
+      get types() { return [...datos.keys()]; },
+      setData: (t: string, v: string) => { datos.set(t, v); },
+      getData: (t: string) => datos.get(t) ?? "",
+      files: [] as unknown as FileList,
+      effectAllowed: "", dropEffect: "",
+    };
+
+    fireEvent.dragStart(tarjetas[0], { dataTransfer });
+    fireEvent.dragOver(tarjetas[2], { dataTransfer });
+    fireEvent.drop(tarjetas[2], { dataTransfer });
+
+    await waitFor(() => expect(negociosApi.reordenarGaleria).toHaveBeenCalledWith(["b", "c", "a"]));
+    expect(negociosApi.subirImagenGaleria).not.toHaveBeenCalled();
   });
 });

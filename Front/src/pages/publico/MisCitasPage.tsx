@@ -34,6 +34,8 @@ interface MiCita {
   estado: number;
   estadoTexto: string;
   horasCancelacion?: number;
+  /** B2: días mínimos de anticipación del negocio para reagendar. */
+  diasAnticipacionMinima?: number;
 }
 
 interface Session {
@@ -584,6 +586,7 @@ export default function MisCitasPage() {
                   <PasoFechaHora
                     servicioId={reagendando.servicioId}
                     empleadoId={reagendando.empleadoId}
+                    diasAnticipacionMinima={reagendando.diasAnticipacionMinima ?? 0}
                     seleccionado={slotNuevo}
                     onSeleccionar={setSlotNuevo}
                   />

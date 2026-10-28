@@ -55,6 +55,12 @@ export interface NegocioMetricasDto {
   esTester?: boolean;
   propietarioEmail?: string;
   propietarioNombre?: string;
+  /** B23: fecha de registro (UTC, ISO 8601). */
+  fechaCreacion?: string;
+  /** B23: el propietario confirmó su correo; `null` si el negocio no tiene propietario. */
+  emailConfirmado?: boolean | null;
+  /** B20: plan elegido en la landing al registrarse ("basico" | "pro" | "premium"). */
+  planSolicitado?: string | null;
 }
 
 export interface PagoSuscripcionDto {
@@ -156,6 +162,12 @@ export const adminApi = {
     tamano?: number;
     accion?: string;
     usuarioId?: string;
+    /** B24: parte del correo del usuario, sin distinguir mayúsculas. */
+    email?: string;
+    /** B24: instante ISO 8601 (incluido). */
+    desde?: string;
+    /** B24: instante ISO 8601 (excluido). */
+    hasta?: string;
   }): Promise<AuditLogsRespuesta> => {
     const { data } = await api.get("/admin/audit", { params });
     return data;

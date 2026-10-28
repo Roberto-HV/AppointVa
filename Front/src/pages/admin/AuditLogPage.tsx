@@ -8,6 +8,7 @@ import Pagination from "../../components/ui/Pagination";
 import { FiltroBarra } from "../../components/ui/filtros";
 import { TAMANO_PAGINA } from "../../hooks/usePaginacionLocal";
 import { toUtcDate } from "../../utils/formatters";
+import { rangoAuditoria } from "../../utils/fechas";
 import { useTituloPagina } from "../../hooks/useTituloPagina";
 
 /**
@@ -40,42 +41,47 @@ const ETIQUETA_ACCION: Record<string, string> = {
 
 const etiquetaAccion = (accion: string) => ETIQUETA_ACCION[accion] ?? accion;
 
-/** El backend recibe `usuarioId` como `Guid?`: cualquier otra cosa es un 400. */
+/** Un UUID completo se busca como `usuarioId`; cualquier otro texto, como parte del correo (B24). */
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export default function AuditLogPage() {
   useTituloPagina("Registro de auditoría · Admin");
   const [pagina, setPagina] = useState(1);
   const [accion, setAccion] = useState("");
-  const [usuarioId, setUsuarioId] = useState("");
+  // Correo (o parte de él) o el ID completo de un usuario.
+  const [busqueda, setBusqueda] = useState("");
+  const [desde, setDesde] = useState("");
+  const [hasta, setHasta] = useState("");
   // Fila con los detalles completos abierta. Antes solo se leían en `title`
   // (hover), que en una pantalla táctil no existe.
   const [abierto, setAbierto] = useState<string | null>(null);
 
-  const usuarioIdValido = usuarioId === "" || UUID.test(usuarioId);
+  const usuarioId = UUID.test(busqueda) ? busqueda : "";
+  const email = busqueda && !usuarioId ? busqueda : "";
+  const rango = rangoAuditoria(desde, hasta);
 
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ["audit-logs", pagina, accion, usuarioId],
+    queryKey: ["audit-logs", pagina, accion, usuarioId, email, rango.desde, rango.hasta],
     queryFn: () => adminApi.obtenerAuditLogs({
       pagina,
       tamano: TAMANO_PAGINA,
       accion: accion || undefined,
       usuarioId: usuarioId || undefined,
+      email: email || undefined,
+      desde: rango.desde,
+      hasta: rango.hasta,
     }),
-    // Un UUID a medio teclear hacía que la API respondiera 400 y la tabla se
-    // quedara en blanco, sin filas, sin "Sin registros" y sin error: `data`
-    // era `undefined` y ninguna de las dos ramas se cumplía. Ahora la consulta
-    // ni se lanza y el aviso sale junto al campo.
-    enabled: usuarioIdValido,
     placeholderData: (prev) => prev,
   });
 
   const totalPaginas = data ? Math.max(1, Math.ceil(data.total / data.tamano)) : 1;
-  const hayFiltros = Boolean(accion || usuarioId);
+  const hayFiltros = Boolean(accion || busqueda || desde || hasta);
 
   const limpiarFiltros = () => {
     setAccion("");
-    setUsuarioId("");
+    setBusqueda("");
+    setDesde("");
+    setHasta("");
     setPagina(1);
   };
 
@@ -112,12 +118,12 @@ export default function AuditLogPage() {
       <FiltroBarra
         etiqueta="Filtros del registro de auditoría"
         busqueda={{
-          valor: usuarioId,
-          // La búsqueda se confirma con "Buscar" o Enter, no al teclear: así el
-          // UUID viaja completo y no se dispara una consulta por carácter.
-          onChange: (v) => { setUsuarioId(v.trim()); setPagina(1); },
-          etiqueta: "Buscar por ID de usuario",
-          placeholder: "ID de usuario (UUID)",
+          valor: busqueda,
+          // La búsqueda se confirma con "Buscar" o Enter, no al teclear: así no
+          // se dispara una consulta por carácter.
+          onChange: (v) => { setBusqueda(v.trim()); setPagina(1); },
+          etiqueta: "Buscar por correo o ID de usuario",
+          placeholder: "Correo o ID de usuario",
         }}
         campos={[
           {
@@ -129,15 +135,18 @@ export default function AuditLogPage() {
             etiquetaNeutra: "Todas las acciones",
             opciones: ACCIONES.map((a) => ({ valor: a, etiqueta: etiquetaAccion(a) })),
           },
+          {
+            id: "periodo",
+            tipo: "rangoFechas",
+            etiqueta: "Período",
+            desde,
+            hasta,
+            onChange: (d, h) => { setDesde(d); setHasta(h && d && h < d ? d : h); setPagina(1); },
+          },
         ]}
         onLimpiar={limpiarFiltros}
       />
 
-      {!usuarioIdValido && (
-        <p role="alert" className="-mt-3 mb-5 text-sm text-red-600 dark:text-red-400">
-          El ID de usuario debe ser un UUID completo.
-        </p>
-      )}
 
       {/* Tabla */}
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-700 overflow-hidden">
@@ -250,7 +259,7 @@ export default function AuditLogPage() {
                           {log.usuarioId && log.usuarioId !== usuarioId && (
                             <button
                               type="button"
-                              onClick={() => { setUsuarioId(log.usuarioId!); setPagina(1); setAbierto(null); }}
+                              onClick={() => { setBusqueda(log.usuarioId!); setPagina(1); setAbierto(null); }}
                               className="mt-3 min-h-[44px] lg:min-h-[36px] px-3 rounded-lg border border-slate-200 dark:border-slate-600 font-medium text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-brand/40 dark:focus-visible:ring-accent-brand/40"
                             >
                               Ver solo los eventos de este usuario

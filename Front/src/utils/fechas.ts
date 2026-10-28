@@ -128,3 +128,19 @@ export function fechaEnZona(iso: string, zona?: string | null): string {
     return fechaLocal(d);
   }
 }
+
+/**
+ * Días de calendario ("AAAA-MM-DD", hora local del admin) a instantes UTC para
+ * `GET /admin/audit` (B24): `desde` es el inicio de ese día y `hasta` el inicio
+ * del día siguiente, porque el servidor lo trata como límite exclusivo.
+ */
+export function rangoAuditoria(desde: string, hasta: string): { desde?: string; hasta?: string } {
+  const inicioDia = (dia: string, sumarDias = 0) => {
+    const [a, m, d] = dia.split("-").map(Number);
+    return new Date(a, m - 1, d + sumarDias).toISOString();
+  };
+  return {
+    desde: desde ? inicioDia(desde) : undefined,
+    hasta: hasta ? inicioDia(hasta, 1) : undefined,
+  };
+}

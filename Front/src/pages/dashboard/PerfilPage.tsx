@@ -264,9 +264,32 @@ export default function PerfilPage() {
     mensajeFallo: "No se pudo subir el logo. Intenta de nuevo.",
   });
 
+  // "Confirmar" en el posicionador guarda la posición por su cuenta (B11, OM-04),
+  // sin esperar a "Guardar cambios". Si falla, queda el aviso de "sin guardar".
+  const { mutate: guardarPosicion, isPending: guardandoPosicion } = useMutation({
+    mutationFn: (pos: string) => negociosApi.actualizarPosicionPortada(pos),
+    // La respuesta es lo guardado: basta con ponerla en la caché del perfil.
+    onSuccess: ({ portadaObjectPosition: guardada }) => {
+      qc.setQueryData<NegocioDto>(["negocio-perfil"], (p) => (p ? { ...p, portadaObjectPosition: guardada } : p));
+    },
+    onError: () => toast('No se pudo guardar la posición. Se guardará con "Guardar cambios".', "error"),
+  });
+  // Con una foto nueva, la posición se guarda cuando termina la subida: antes
+  // no hay portada a la que aplicarla.
+  const posicionTrasSubida = useRef<string | null>(null);
+
   const portada = useSubirImagen({
     subir: (archivo, _d, onProgreso) => negociosApi.subirPortada(archivo, onProgreso),
-    onExito: () => { qc.invalidateQueries({ queryKey: ["negocio-perfil"] }); toast("Portada actualizada"); },
+    onExito: () => {
+      toast("Portada actualizada");
+      const pos = posicionTrasSubida.current;
+      posicionTrasSubida.current = null;
+      const recargar = () => qc.invalidateQueries({ queryKey: ["negocio-perfil"] });
+      // Se recarga después de guardar la posición: una recarga a medio camino
+      // traería la posición anterior y pisaría la recién elegida.
+      if (pos) guardarPosicion(pos, { onSettled: recargar });
+      else recargar();
+    },
     mensajeFallo: "No se pudo subir la portada. Intenta de nuevo.",
   });
 
@@ -277,7 +300,13 @@ export default function PerfilPage() {
   function confirmarPortadaModal() {
     if (!portadaModal) return;
     setPortadaObjectPosition(portadaModalPos);
-    if (portadaModal.file) { portada.subirArchivo(portadaModal.file); URL.revokeObjectURL(portadaModal.src); }
+    if (portadaModal.file) {
+      posicionTrasSubida.current = portadaModalPos;
+      portada.subirArchivo(portadaModal.file);
+      URL.revokeObjectURL(portadaModal.src);
+    } else {
+      guardarPosicion(portadaModalPos, { onSuccess: () => toast("Posición guardada") });
+    }
     setPortadaModal(null);
   }
   function cancelarPortadaModal() {
@@ -755,9 +784,14 @@ export default function PerfilPage() {
                   {portada.subiendo ? "Subiendo…" : "Cambiar portada"}
                 </button>
                 {portada.subiendo && <ProgresoSubida className="mt-1" porcentaje={portada.progreso ?? null} etiqueta="Subiendo portada" />}
-                {/* La posición viaja con "Guardar cambios" (el backend no tiene una
-                    ruta para guardarla sola): se avisa igual que con el color. */}
-                {posicionSinGuardar && (
+                {/* "Confirmar" guarda la posición al momento (B11). El aviso solo
+                    queda si ese guardado falló: entonces viaja con "Guardar cambios". */}
+                {guardandoPosicion && (
+                  <p role="status" className="text-xs text-slate-500 dark:text-slate-400 text-center mt-1">
+                    Guardando posición…
+                  </p>
+                )}
+                {posicionSinGuardar && !guardandoPosicion && !portada.subiendo && (
                   <p role="status" className="text-xs text-amber-700 dark:text-amber-400 text-center mt-1">
                     Posición sin guardar — se guardará con "Guardar cambios"
                   </p>

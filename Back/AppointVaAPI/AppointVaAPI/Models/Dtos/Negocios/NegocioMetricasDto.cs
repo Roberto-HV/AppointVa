@@ -21,5 +21,11 @@ namespace AppointVaAPI.Models.Dtos.Negocios
         public bool EsTester { get; set; }
         public string? PropietarioEmail { get; set; }
         public string? PropietarioNombre { get; set; }
+        // B23 (AP-07): registration date (UTC) and whether the owner verified the email.
+        // EmailConfirmado is null when the business has no owner account.
+        public DateTime FechaCreacion { get; set; }
+        public bool? EmailConfirmado { get; set; }
+        // B20: plan chosen on the landing at sign-up, if any.
+        public string? PlanSolicitado { get; set; }
     }
 }

@@ -56,9 +56,14 @@ export const meApi = {
       respondida: boolean;
       aprobada: boolean;
     }[];
+    /** Reseñas aprobadas (el servidor ya filtra, B15). */
     total: number;
     page: number;
     pageSize: number;
+    /** Promedio de todas las aprobadas, con un decimal; `null` si no hay. */
+    promedio: number | null;
+    /** Cuántas aprobadas hay por calificación, claves "1".."5". */
+    distribucion: Record<"1" | "2" | "3" | "4" | "5", number>;
   }> => {
     const res = await api.get("/me/resenas", { params: { page, pageSize } });
     return res.data;

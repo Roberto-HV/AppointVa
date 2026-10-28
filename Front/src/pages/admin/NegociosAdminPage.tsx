@@ -27,7 +27,8 @@ import Pagination from "../../components/ui/Pagination";
 import { FiltroBarra } from "../../components/ui/filtros";
 import { usePaginacionLocal } from "../../hooks/usePaginacionLocal";
 import { useToastStore } from "../../store/toastStore";
-import { formatFechaMx, formatPrecio } from "../../utils/formatters";
+import { formatFecha, formatFechaMx, formatPrecio } from "../../utils/formatters";
+import { esClavePlan, NOMBRES_PLANES } from "../../lib/precios";
 import { generarHTMLComprobante } from "../../utils/comprobanteSuscripcion";
 import { mensajeError } from "../../utils/errores";
 import { useTituloPagina } from "../../hooks/useTituloPagina";
@@ -856,6 +857,32 @@ function TarjetaNegocio({
           </span>
         )}
       </div>
+
+      {/* Registro (B23): cuándo se dio de alta y si el propietario verificó su
+          correo, lo que necesita el SuperAdmin para decidir la activación. */}
+      {(negocio.fechaCreacion || negocio.emailConfirmado != null || (pendiente && esClavePlan(negocio.planSolicitado))) && (
+        <div className="px-4 pb-3 flex items-center gap-2 flex-wrap text-[11px]">
+          {negocio.fechaCreacion && (
+            <span className="text-slate-500 dark:text-slate-400 tabular-nums">Registrado el {formatFecha(negocio.fechaCreacion)}</span>
+          )}
+          {negocio.emailConfirmado != null && (
+            <span
+              className={`font-semibold px-2 py-0.5 rounded-full ${
+                negocio.emailConfirmado
+                  ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400"
+                  : "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300"
+              }`}
+            >
+              {negocio.emailConfirmado ? "Correo verificado" : "Correo sin verificar"}
+            </span>
+          )}
+          {pendiente && esClavePlan(negocio.planSolicitado) && (
+            <span className="font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+              Eligió el plan {NOMBRES_PLANES[negocio.planSolicitado]}
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Métricas */}
       <div className="px-4 pb-4 flex-1">

@@ -18,7 +18,7 @@ function renderizar() {
 
 beforeEach(() => vi.clearAllMocks());
 
-describe("ResenasPage (OM-21, partes sin decisión)", () => {
+describe("ResenasPage (OM-21)", () => {
   it("las estrellas se anuncian como texto", async () => {
     vi.mocked(meApi.obtenerResenas).mockResolvedValue({ items: [resena()], total: 1 } as never);
     renderizar();
@@ -37,11 +37,28 @@ describe("ResenasPage (OM-21, partes sin decisión)", () => {
     expect(screen.getByRole("button", { name: "Ver menos" })).toHaveAttribute("aria-expanded", "true");
   });
 
-  it("si hay reseñas pero ninguna aprobada en la página no dice 'Aún no tienes reseñas'", async () => {
-    vi.mocked(meApi.obtenerResenas).mockResolvedValue({ items: [resena({ aprobada: false })], total: 14 } as never);
+  it("el promedio y la distribución vienen del servidor, no de la página (B15)", async () => {
+    // Página con una sola reseña de 4: el promedio mostrado es el del servidor (4.7).
+    vi.mocked(meApi.obtenerResenas).mockResolvedValue({
+      items: [resena()], total: 14, promedio: 4.7,
+      distribucion: { "1": 0, "2": 0, "3": 1, "4": 2, "5": 11 },
+    } as never);
     renderizar();
-    expect(await screen.findByText("Ninguna reseña aprobada en esta página")).toBeInTheDocument();
-    expect(screen.queryByText("Aún no tienes reseñas")).toBeNull();
+    expect(await screen.findByText("4.7")).toBeInTheDocument();
+    expect(screen.getByText("promedio de todas")).toBeInTheDocument();
+    const filas = screen.getAllByRole("listitem");
+    expect(filas[0]).toHaveTextContent("5 estrellas11");
+    expect(filas[4]).toHaveTextContent("1 estrella0");
+    expect(screen.getByText("14 reseñas publicadas")).toBeInTheDocument();
+  });
+
+  it("sin reseñas aprobadas dice 'Aún no tienes reseñas' y no muestra promedio", async () => {
+    vi.mocked(meApi.obtenerResenas).mockResolvedValue({
+      items: [], total: 0, promedio: null, distribucion: { "1": 0, "2": 0, "3": 0, "4": 0, "5": 0 },
+    } as never);
+    renderizar();
+    expect(await screen.findByText("Aún no tienes reseñas")).toBeInTheDocument();
+    expect(screen.queryByText("promedio de todas")).toBeNull();
   });
 
   it("un fallo de carga ofrece reintentar", async () => {

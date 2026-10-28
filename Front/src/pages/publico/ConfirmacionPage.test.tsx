@@ -222,6 +222,16 @@ describe("ConfirmacionPage — banner sin email", () => {
     expect(await screen.findByText("Profesional")).toBeInTheDocument();
   });
 
+  it("toma el sector de la propia cita cuando la consulta del negocio falla (B4)", async () => {
+    vi.mocked(publicoApi.obtenerNegocio).mockRejectedValue(new Error("sin negocio"));
+    vi.mocked(publicoApi.obtenerCita).mockResolvedValue({
+      ...mockCitaBase, emailCliente: "juan@test.com", sector: "salud",
+    } as never);
+    const { container } = renderConQuery();
+    expect(await screen.findByText("Profesional")).toBeInTheDocument();
+    expect(container.querySelector('[data-sector="salud"]')).not.toBeNull();
+  });
+
   it("el enlace Ver mis citas apunta a /b/salon-test/mis-citas", async () => {
     vi.mocked(publicoApi.obtenerCita).mockResolvedValue({
       ...mockCitaBase,

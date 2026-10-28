@@ -463,6 +463,39 @@ namespace AppointVaAPI.Controllers.V1
             return NoContent();
         }
 
+        // PATCH api/negocios/perfil/portada/posicion — B11 (OM-04): saves the cover focal
+        // point on its own, so "Confirmar" in the positioning overlay persists it without
+        // the full PUT /perfil update.
+        [HttpPatch("perfil/portada/posicion")]
+        [Authorize(Roles = Roles.Propietario)]
+        public async Task<IActionResult> ActualizarPosicionPortada([FromBody] PortadaPosicionDto dto)
+        {
+            if (_contexto.NegocioId is null) return Unauthorized();
+
+            var posicion = dto.PortadaObjectPosition.Trim();
+            if (!PosicionDentroDeRango(posicion))
+                return BadRequest(new { mensaje = "Cada valor de la posición debe estar entre 0% y 100%." });
+
+            var negocio = await _repo.ObtenerPorIdAsync(_contexto.NegocioId.Value);
+            if (negocio is null) return NotFound(new { mensaje = "Negocio no encontrado" });
+            if (string.IsNullOrWhiteSpace(negocio.PortadaUrl))
+                return BadRequest(new { mensaje = "Primero sube una foto de portada." });
+
+            negocio.PortadaObjectPosition = posicion;
+            negocio.FechaActualizacion = DateTime.UtcNow;
+            await _repo.ActualizarAsync(negocio);
+            await _cacheStore.EvictByTagAsync($"negocio-{negocio.Slug}", CancellationToken.None);
+            return Ok(new { portadaObjectPosition = negocio.PortadaObjectPosition });
+        }
+
+        private static bool PosicionDentroDeRango(string posicion)
+        {
+            var partes = posicion.Split(' ');
+            return partes.Length == 2 && partes.All(p =>
+                decimal.TryParse(p.TrimEnd('%'), System.Globalization.NumberStyles.AllowDecimalPoint,
+                    System.Globalization.CultureInfo.InvariantCulture, out var v) && v >= 0 && v <= 100);
+        }
+
         // DELETE api/negocios/perfil/politicas
         [HttpDelete("perfil/politicas")]
         [Authorize(Roles = Roles.Propietario)]
@@ -550,6 +583,12 @@ namespace AppointVaAPI.Controllers.V1
             if (total >= 20)
                 return BadRequest(new { mensaje = "Máximo 20 imágenes en la galería." });
 
+            // After a deletion the count no longer matches the highest position, so a new
+            // photo goes after the current last one instead of reusing a taken position.
+            var ultimoOrden = total == 0 ? 0 : await _db.ImagenesNegocios
+                .Where(i => i.NegocioId == _contexto.NegocioId.Value)
+                .MaxAsync(i => i.Orden);
+
             try
             {
                 var url = await _storage.SubirImagenAsync(archivo, "negocios/galeria");
@@ -559,7 +598,7 @@ namespace AppointVaAPI.Controllers.V1
                     NegocioId = _contexto.NegocioId.Value,
                     Url = url,
                     Descripcion = string.IsNullOrWhiteSpace(descripcion) ? null : descripcion.Trim(),
-                    Orden = total + 1,
+                    Orden = ultimoOrden + 1,
                     FechaCreacion = DateTime.UtcNow
                 };
                 _db.ImagenesNegocios.Add(imagen);
@@ -571,6 +610,41 @@ namespace AppointVaAPI.Controllers.V1
             {
                 return BadRequest(new { mensaje = ex.Message });
             }
+        }
+
+        // PATCH api/negocios/galeria/reordenar — B12 (OM-15): receives every photo id of the
+        // business in the new order (first = first photo clients see) and stores 1..n.
+        [HttpPatch("galeria/reordenar")]
+        [Authorize(Roles = Roles.Propietario)]
+        public async Task<IActionResult> ReordenarGaleria([FromBody] ReordenarGaleriaDto dto)
+        {
+            if (_contexto.NegocioId is null) return Unauthorized();
+            var negocioId = _contexto.NegocioId.Value;
+
+            var negocio = await _repo.ObtenerPorIdAsync(negocioId);
+            if (negocio is null) return NotFound(new { mensaje = "Negocio no encontrado" });
+
+            var imagenes = await _db.ImagenesNegocios
+                .Where(i => i.NegocioId == negocioId)
+                .ToListAsync();
+
+            // The list must be exactly this business's gallery: no duplicates, no missing
+            // photos and no ids from another business (tenant isolation).
+            var ids = dto.Ids ?? new List<Guid>();
+            var propios = imagenes.Select(i => i.Id).ToHashSet();
+            if (ids.Count != propios.Count || ids.Distinct().Count() != ids.Count || !ids.All(propios.Contains))
+                return BadRequest(new { mensaje = "La lista debe incluir cada foto de la galería una sola vez." });
+
+            var porId = imagenes.ToDictionary(i => i.Id);
+            for (var i = 0; i < ids.Count; i++)
+                porId[ids[i]].Orden = i + 1;
+
+            await _db.SaveChangesAsync();
+            await _cacheStore.EvictByTagAsync($"negocio-{negocio.Slug}", CancellationToken.None);
+
+            return Ok(imagenes
+                .OrderBy(i => i.Orden)
+                .Select(i => new { i.Id, i.Url, i.Descripcion, i.Orden, i.FechaCreacion }));
         }
 
         // DELETE api/negocios/galeria/{id}

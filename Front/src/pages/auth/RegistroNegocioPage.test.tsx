@@ -93,6 +93,34 @@ describe("RegistroNegocioPage — giro del negocio (AP-01)", () => {
   });
 });
 
+describe("RegistroNegocioPage — plan elegido en la landing (B20, AP-08)", () => {
+  it("?plan=pro lo muestra y lo envía con el registro", async () => {
+    const user = userEvent.setup();
+    vi.mocked(api.post).mockResolvedValue({ data: {} });
+    renderEn("/registro?sector=salud&plan=pro");
+
+    expect(screen.getByText(/Plan elegido:/)).toHaveTextContent("Plan elegido: Pro.");
+    await llenarFormulario(user);
+    await user.click(screen.getByRole("button", { name: "Crear cuenta" }));
+
+    await waitFor(() => expect(api.post).toHaveBeenCalled());
+    expect(vi.mocked(api.post).mock.calls[0][1]).toMatchObject({ plan: "pro", sector: "salud" });
+  });
+
+  it("un plan desconocido se ignora: ni aviso ni campo en el envío", async () => {
+    const user = userEvent.setup();
+    vi.mocked(api.post).mockResolvedValue({ data: {} });
+    renderEn("/registro?plan=oro");
+
+    expect(screen.queryByText(/Plan elegido:/)).not.toBeInTheDocument();
+    await llenarFormulario(user);
+    await user.click(screen.getByRole("button", { name: "Crear cuenta" }));
+
+    await waitFor(() => expect(api.post).toHaveBeenCalled());
+    expect(vi.mocked(api.post).mock.calls[0][1]).toMatchObject({ plan: undefined });
+  });
+});
+
 describe("RegistroNegocioPage — detalles del formulario (AP-13)", () => {
   it("el error del nombre desaparece al corregirlo", async () => {
     const user = userEvent.setup();
