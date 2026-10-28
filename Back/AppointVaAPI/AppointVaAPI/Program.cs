@@ -322,9 +322,14 @@ builder.Services.AddHealthChecks()
 // GET anónimo (disponibilidad, cita por código, mis citas, /health...) se servía desde la
 // caché hasta 5 minutos aunque los datos ya hubieran cambiado. Solo se cachea lo que lo
 // pide explícitamente con [OutputCache(PolicyName = ...)].
+// La política con nombre se arma con el builder, que incluye la política por defecto de
+// ASP.NET (solo GET/HEAD anónimos, solo 200 sin Set-Cookie, varía por query string);
+// NegocioPublicoPolicy solo agrega la etiqueta negocio-{slug} para poder invalidarla.
 builder.Services.AddOutputCache(opt =>
 {
-    opt.AddPolicy("NegocioPublico", NegocioPublicoPolicy.Instance);
+    opt.AddPolicy("NegocioPublico", b => b
+        .Expire(TimeSpan.FromMinutes(5))
+        .AddPolicy<NegocioPublicoPolicy>());
 });
 
 // ── Compresión HTTP (Brotli + Gzip) ───────────────────────────────────────────
