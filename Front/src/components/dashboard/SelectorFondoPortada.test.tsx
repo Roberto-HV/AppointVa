@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import SelectorFondoPortada from "./SelectorFondoPortada";
 import { PRESETS_PORTADA, fondoPortada } from "../../lib/portadaPresets";
@@ -15,7 +15,7 @@ function montar(props: Partial<React.ComponentProps<typeof SelectorFondoPortada>
 }
 
 describe("SelectorFondoPortada", () => {
-  it("ofrece los doce fondos más la opción por defecto", () => {
+  it("ofrece todos los fondos del catálogo más la opción por defecto", () => {
     montar();
     const opciones = screen.getAllByRole("radio");
     expect(opciones).toHaveLength(PRESETS_PORTADA.length + 1);
@@ -29,6 +29,37 @@ describe("SelectorFondoPortada", () => {
     expect(screen.getByText("Geométricos")).toBeInTheDocument();
     expect(screen.getByText("Degradados")).toBeInTheDocument();
     expect(screen.getByText("Texturas")).toBeInTheDocument();
+    expect(screen.getByText("Materiales")).toBeInTheDocument();
+  });
+
+  it("muestra los materiales en su propio grupo, con nombre y como radios del mismo grupo", () => {
+    montar();
+    const grupo = screen.getByText("Materiales").parentElement!;
+    const materiales = PRESETS_PORTADA.filter((p) => p.familia === "material");
+    const radios = within(grupo).getAllByRole("radio") as HTMLInputElement[];
+    expect(radios).toHaveLength(materiales.length);
+    expect(new Set(radios.map((r) => r.name))).toEqual(new Set(["fondo-portada"]));
+    for (const preset of materiales) {
+      // El nombre visible es la etiqueta accesible del radio.
+      expect(within(grupo).getByRole("radio", { name: preset.nombre })).toBeInTheDocument();
+    }
+  });
+
+  it("elegir un material avisa con su clave", async () => {
+    const { onCambiar } = montar();
+    await userEvent.click(screen.getByText("Cuarzo blanco y oro"));
+    expect(onCambiar).toHaveBeenCalledWith("mat-cuarzo-blanco");
+  });
+
+  it("la muestra lleva el mismo velo que la portada: fuerte en claro, ligero en oscuro, nada en marca", () => {
+    montar();
+    const velo = (nombre: string) =>
+      screen.getByRole("radio", { name: nombre }).closest("label")!
+        .querySelector<HTMLElement>("span.justify-end")!.style.background;
+    expect(velo("Cuarzo blanco y oro")).not.toBe("");
+    expect(velo("Cuarzo negro y plata")).not.toBe("");
+    expect(velo("Cuarzo blanco y oro")).not.toBe(velo("Cuarzo negro y plata"));
+    expect(velo("Aurora")).toBe("");
   });
 
   it("previsualiza cada fondo con el color del negocio, no con una muestra genérica", () => {

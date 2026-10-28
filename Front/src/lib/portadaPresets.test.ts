@@ -6,6 +6,8 @@ import {
   fondoPortada,
   normalizarPresetPortada,
   presetsPorFamilia,
+  tonoPortada,
+  veloPortada,
 } from "./portadaPresets";
 import { degradeGradient } from "./colorUtils";
 
@@ -61,7 +63,7 @@ describe("fondoPortada", () => {
   });
 
   it("deriva un fondo distinto para cada color de marca", () => {
-    for (const preset of PRESETS_PORTADA) {
+    for (const preset of PRESETS_PORTADA.filter((p) => p.familia !== "material")) {
       const indigo = fondoPortada(preset.clave, MARCA).background;
       const dorado = fondoPortada(preset.clave, "#C9A227").background;
       expect(indigo).not.toBe(dorado);
@@ -100,6 +102,86 @@ describe("fondoPortada", () => {
       const { background } = fondoPortada(preset.clave, "");
       expect(background).toBeTruthy();
       expect(background).not.toMatch(/NaN|undefined/);
+    }
+  });
+});
+
+describe("materiales", () => {
+  const MATERIALES = presetsPorFamilia("material");
+
+  it("ofrece la familia con claves estables con prefijo propio", () => {
+    expect(MATERIALES.length).toBeGreaterThanOrEqual(10);
+    for (const preset of MATERIALES) {
+      expect(preset.clave).toMatch(/^mat-[a-z0-9-]+$/);
+      // El backend acepta hasta 40 caracteres en minúsculas, dígitos y guiones.
+      expect(preset.clave.length).toBeLessThanOrEqual(40);
+    }
+  });
+
+  it("cada material declara si es claro u oscuro", () => {
+    for (const preset of MATERIALES) {
+      expect(["claro", "oscuro"]).toContain(preset.tono);
+      expect(tonoPortada(preset.clave)).toBe(preset.tono);
+    }
+    // Hay de los dos tonos: el velo del texto tiene que cubrir ambos casos.
+    expect(new Set(MATERIALES.map((p) => p.tono))).toEqual(new Set(["claro", "oscuro"]));
+  });
+
+  it("sin preset, con uno desconocido o con los de marca, el tono es oscuro", () => {
+    expect(tonoPortada(null)).toBe("oscuro");
+    expect(tonoPortada("no-existe")).toBe("oscuro");
+    expect(tonoPortada("deg-aurora")).toBe("oscuro");
+  });
+
+  it("pide velo bajo el texto: fuerte si es claro, suave si es oscuro", () => {
+    for (const preset of MATERIALES) {
+      expect(veloPortada(preset.clave)).toBe(preset.tono === "claro" ? "fuerte" : "suave");
+    }
+    expect(veloPortada("deg-aurora")).toBe("ninguno");
+    expect(veloPortada(null)).toBe("ninguno");
+    expect(veloPortada("no-existe")).toBe("ninguno");
+  });
+
+  it("tiene colores propios: el color de marca no cambia el fondo", () => {
+    for (const preset of MATERIALES) {
+      expect(fondoPortada(preset.clave, MARCA)).toEqual(fondoPortada(preset.clave, "#C9A227"));
+    }
+  });
+
+  it("produce un estilo válido: SVG en línea sin red, con semillas fijas", () => {
+    for (const preset of MATERIALES) {
+      const fondo = fondoPortada(preset.clave, MARCA);
+      expect(fondo.background).not.toMatch(/NaN|undefined|null/);
+      expect(fondo.background).toContain('url("data:image/svg+xml,');
+      // Ninguna petición externa: el único http es el espacio de nombres del SVG.
+      const svgs = (fondo.background.match(/data:image\/svg\+xml,[^"]+/g) ?? []).map((u) =>
+        decodeURIComponent(u.slice("data:image/svg+xml,".length)),
+      );
+      for (const svg of svgs) {
+        // XML bien formado: un SVG roto no da error, simplemente no se pinta.
+        const doc = new DOMParser().parseFromString(svg, "image/svg+xml");
+        expect(doc.querySelector("parsererror")).toBeNull();
+        expect(doc.documentElement.tagName).toBe("svg");
+      }
+      const sinNamespace = svgs.join("").replace(/xmlns="http:\/\/www\.w3\.org\/2000\/svg"/g, "");
+      expect(sinNamespace).not.toMatch(/https?:/);
+      // Todo ruido lleva semilla: se ve igual en cualquier navegador y visita.
+      const ruidos = sinNamespace.match(/<feTurbulence[^>]*>/g) ?? [];
+      expect(ruidos.length).toBeGreaterThan(0);
+      for (const r of ruidos) expect(r).toMatch(/seed="\d+"/);
+      // Un modo de mezcla por capa, si los hay.
+      if (fondo.backgroundBlendMode) {
+        const capas = fondo.background.split(/,(?![^(]*\))/).length;
+        expect(fondo.backgroundBlendMode.split(",").length).toBeLessThanOrEqual(capas);
+      }
+    }
+  });
+
+  it("cada SVG es ligero: menos de 6 KB codificado", () => {
+    for (const preset of MATERIALES) {
+      const { background } = fondoPortada(preset.clave, MARCA);
+      const urls = background.match(/url\("data:image\/svg\+xml,[^"]+"\)/g) ?? [];
+      for (const u of urls) expect(u.length).toBeLessThan(6 * 1024);
     }
   });
 });

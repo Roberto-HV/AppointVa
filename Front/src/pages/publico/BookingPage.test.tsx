@@ -518,6 +518,35 @@ describe("BookingPage — portada", () => {
     expect(portada.style.background).not.toBe(fondoNormalizado(null));
   });
 
+  // El velo va en el bloque del nombre, no en toda la portada.
+  async function veloDelTexto(portadaPreset: string): Promise<string> {
+    vi.mocked(publicoApi.obtenerNegocio).mockResolvedValue({ ...mockNegocio, portadaPreset });
+    const { unmount } = renderConQuery();
+    const portada = await screen.findByTestId("portada-negocio");
+    expect(portada.style.background).toBe(fondoNormalizado(portadaPreset));
+    const velo = portada.querySelector("h1")!.closest<HTMLElement>(".z-10")!.style.background;
+    unmount();
+    return velo;
+  }
+
+  it("vela el texto sobre un material: más sobre uno claro que sobre uno oscuro", async () => {
+    const claro = await veloDelTexto("mat-cuarzo-blanco");
+    const oscuro = await veloDelTexto("mat-cuarzo-negro");
+    const marca = await veloDelTexto("deg-aurora");
+    expect(claro).not.toBe("");
+    expect(oscuro).not.toBe("");
+    expect(claro).not.toBe(oscuro);
+    // Los fondos de marca siguen sin velo: ya nacen oscuros bajo el texto.
+    expect(marca).toBe("");
+  });
+
+  it.each(PRESETS_PORTADA.filter((p) => p.familia === "material").map((p) => [p.clave, p.tono]))(
+    "el material %s (%s) se dibuja tal cual y lleva velo bajo el texto",
+    async (clave) => {
+      expect(await veloDelTexto(clave)).not.toBe("");
+    },
+  );
+
   it("una clave desconocida no tapa la foto: vuelve a mostrarla", async () => {
     vi.mocked(publicoApi.obtenerNegocio).mockResolvedValue({
       ...mockNegocio,

@@ -21,7 +21,7 @@ import PublicFooter from "../../components/PublicFooter";
 import { useTituloPagina } from "../../hooks/useTituloPagina";
 
 import { hexToChannels, DEFAULT_COLOR, brandSolid } from "../../lib/colorUtils";
-import { fondoPortada, normalizarPresetPortada } from "../../lib/portadaPresets";
+import { fondoPortada, normalizarPresetPortada, veloPortada } from "../../lib/portadaPresets";
 
 // El submit del paso 4 vive en la barra de acción, fuera del <form> de PasoDatosCliente.
 const ID_FORM_DATOS = "form-datos-cliente";
@@ -73,6 +73,12 @@ const VELO_TEXTO_PORTADA =
   "linear-gradient(to top, rgba(12,12,15,0.86) 0%, rgba(12,12,15,0.81) 42%, " +
   "rgba(12,12,15,0.70) 60%, rgba(12,12,15,0.50) 74%, rgba(12,12,15,0.28) 85%, " +
   "rgba(12,12,15,0.11) 93%, rgba(12,12,15,0) 100%)";
+
+// Velo ligero para materiales oscuros: la veta más clara (plata al 85% sobre
+// cuarzo negro) necesita ~0.4 de negro bajo el nombre para quedar en 4.5:1.
+const VELO_TEXTO_SUAVE =
+  "linear-gradient(to top, rgba(12,12,15,0.6) 0%, rgba(12,12,15,0.5) 55%, " +
+  "rgba(12,12,15,0.28) 82%, rgba(12,12,15,0) 100%)";
 
 const BTN_BASE = "min-h-[48px] rounded-2xl text-sm transition inline-flex items-center justify-center gap-1.5";
 const BTN_PRIMARIO = `${BTN_BASE} text-white font-bold tracking-wide hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed`;
@@ -1036,6 +1042,16 @@ export default function BookingPage() {
   const presetPortada = normalizarPresetPortada(negocio.portadaPreset);
   const mostrarFoto = !presetPortada && !!negocio.portadaUrl;
   const fondoDePortada = fondoPortada(presetPortada, color);
+  // Un material claro (cuarzo blanco, duela de roble) pesa como una foto clara:
+  // el nombre en blanco necesita el mismo velo para llegar al 4.5:1. Uno oscuro
+  // con vetas claras lleva uno ligero; los fondos de marca, ninguno.
+  const veloMaterial = veloPortada(presetPortada);
+  const veloEnTexto =
+    mostrarFoto || veloMaterial === "fuerte"
+      ? VELO_TEXTO_PORTADA
+      : veloMaterial === "suave"
+        ? VELO_TEXTO_SUAVE
+        : null;
   const terms = getSectorTerms(negocio.sector);
   // Mientras carga la consulta del servicio se mantiene el total que ya se mostraba.
   const intakeEnIndicador = servicio && !cargandoIntake ? hayIntake : camposIntakeGenerales.length > 0;
@@ -1303,10 +1319,11 @@ export default function BookingPage() {
             el contenido bajo la barra de estado; la portada sigue llegando al borde.
             El velo va aquí y no en toda la portada: así se ajusta al bloque de texto
             —crece y encoge con él— y deja la foto intacta por encima. Los fondos
-            generados no lo llevan, ya nacen oscuros donde cae el texto. */}
+            de marca no lo llevan, ya nacen oscuros donde cae el texto; los
+            materiales sí (ver `veloPortada`). */}
         <div
           className="relative z-10 px-5 sm:px-8 pt-[calc(3.5rem+env(safe-area-inset-top))] pb-4 sm:pb-6"
-          style={mostrarFoto ? { background: VELO_TEXTO_PORTADA } : undefined}
+          style={veloEnTexto ? { background: veloEnTexto } : undefined}
         >
           {/* Fila: logo + nombre alineados arriba */}
           <div className="flex items-start gap-3.5 sm:gap-5">

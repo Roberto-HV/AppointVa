@@ -19,7 +19,7 @@ import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
 import ConfirmarAccion from "../../components/ui/ConfirmarAccion";
 import Switch from "../../components/ui/Switch";
 import SelectorFondoPortada from "../../components/dashboard/SelectorFondoPortada";
-import { fondoPortada, normalizarPresetPortada } from "../../lib/portadaPresets";
+import { fondoPortada, normalizarPresetPortada, veloPortada } from "../../lib/portadaPresets";
 import { DatePicker } from "../../components/ui/DateTimePicker";
 import EditorHorario from "../../components/dashboard/EditorHorario";
 import { errorDelDia } from "../../lib/horario";
@@ -554,11 +554,16 @@ export default function PerfilPage() {
   //  · Degradado de marca: va de L 42% a L 9%, y en la portada real el texto cae en
   //    el extremo oscuro. Aquí cae en el claro —un dorado da 4.2:1— y pide un velo
   //    ligero, el mínimo para no desteñir el color de marca que se está eligiendo.
-  const veloPreviewPortada = mostrarFotoPortada
+  //  · Material: claro, pesa como una foto clara y lleva su velo; oscuro, sus
+  //    vetas claras piden uno ligero. Igual que en la portada real.
+  const veloMaterial = veloPortada(presetPortada);
+  const veloPreviewPortada = mostrarFotoPortada || veloMaterial === "fuerte"
     ? VELO_PREVIEW_FOTO
-    : presetPortada
-      ? null
-      : VELO_PREVIEW_MARCA;
+    : veloMaterial === "suave"
+      ? VELO_PREVIEW_MARCA
+      : presetPortada
+        ? null
+        : VELO_PREVIEW_MARCA;
 
   // ── Barra de guardado compartida ─────────────────────────────────────────
   // Las tres pestañas del formulario son largas y el botón vivía al final de
@@ -955,7 +960,7 @@ export default function PerfilPage() {
             <p className="text-xs text-slate-400 dark:text-slate-500 mb-4">
               {negocio?.portadaUrl
                 ? "Elige un fondo si prefieres no mostrar tu foto. Tu foto se conserva: puedes volver a ella cuando quieras."
-                : "Cada fondo se dibuja con tu color de marca, así que ningún otro negocio tiene el tuyo."}
+                : "Los patrones se dibujan con tu color de marca; los materiales traen colores propios."}
             </p>
             <SelectorFondoPortada
               valor={portadaPreset}

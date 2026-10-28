@@ -6,6 +6,7 @@ import {
   hexToHsl,
   hslARgb,
 } from "./colorUtils";
+import { CONSTRUCTORES_MATERIALES } from "./portadaMateriales";
 
 // ── Fondos de portada generados por código ────────────────────────────────────
 // Un negocio sin una buena foto igual tiene que verse profesional. En vez de
@@ -16,12 +17,20 @@ import {
 // Este módulo es la única fuente: lo consumen la página pública y el selector
 // del dashboard, para que la vista previa no se despegue de lo que el cliente ve.
 
-export type FamiliaPortada = "geometrico" | "degradado" | "textura";
+export type FamiliaPortada = "geometrico" | "degradado" | "textura" | "material";
+
+/**
+ * Luminosidad del fondo donde cae el texto de la portada. Los fondos de marca
+ * nacen oscuros; un material claro (cuarzo blanco, duela de roble) necesita el
+ * mismo velo que una foto para que el nombre en blanco llegue al 4.5:1.
+ */
+export type TonoPortada = "claro" | "oscuro";
 
 export interface PresetPortada {
   clave: string;
   nombre: string;
   familia: FamiliaPortada;
+  tono: TonoPortada;
 }
 
 export interface FamiliaPortadaInfo {
@@ -52,25 +61,65 @@ export const FAMILIAS_PORTADA: FamiliaPortadaInfo[] = [
     titulo: "Texturas",
     descripcion: "Grano fino que le quita el aspecto plano al color.",
   },
+  {
+    familia: "material",
+    titulo: "Materiales",
+    descripcion: "Piedra, madera y telas con colores propios, no los de tu marca.",
+  },
 ];
 
 export const PRESETS_PORTADA: PresetPortada[] = [
-  { clave: "geo-diagonales", nombre: "Diagonales", familia: "geometrico" },
-  { clave: "geo-reticula", nombre: "Retícula", familia: "geometrico" },
-  { clave: "geo-rombos", nombre: "Rombos", familia: "geometrico" },
-  { clave: "geo-arcos", nombre: "Arcos", familia: "geometrico" },
-  { clave: "deg-aurora", nombre: "Aurora", familia: "degradado" },
-  { clave: "deg-malla", nombre: "Malla", familia: "degradado" },
-  { clave: "deg-amanecer", nombre: "Amanecer", familia: "degradado" },
-  { clave: "deg-halo", nombre: "Halo", familia: "degradado" },
-  { clave: "tex-arena", nombre: "Arena", familia: "textura" },
-  { clave: "tex-niebla", nombre: "Niebla", familia: "textura" },
-  { clave: "tex-vetas", nombre: "Vetas", familia: "textura" },
-  { clave: "tex-terrazo", nombre: "Terrazo", familia: "textura" },
+  { clave: "geo-diagonales", nombre: "Diagonales", familia: "geometrico", tono: "oscuro" },
+  { clave: "geo-reticula", nombre: "Retícula", familia: "geometrico", tono: "oscuro" },
+  { clave: "geo-rombos", nombre: "Rombos", familia: "geometrico", tono: "oscuro" },
+  { clave: "geo-arcos", nombre: "Arcos", familia: "geometrico", tono: "oscuro" },
+  { clave: "deg-aurora", nombre: "Aurora", familia: "degradado", tono: "oscuro" },
+  { clave: "deg-malla", nombre: "Malla", familia: "degradado", tono: "oscuro" },
+  { clave: "deg-amanecer", nombre: "Amanecer", familia: "degradado", tono: "oscuro" },
+  { clave: "deg-halo", nombre: "Halo", familia: "degradado", tono: "oscuro" },
+  { clave: "tex-arena", nombre: "Arena", familia: "textura", tono: "oscuro" },
+  { clave: "tex-niebla", nombre: "Niebla", familia: "textura", tono: "oscuro" },
+  { clave: "tex-vetas", nombre: "Vetas", familia: "textura", tono: "oscuro" },
+  { clave: "tex-terrazo", nombre: "Terrazo", familia: "textura", tono: "oscuro" },
+  { clave: "mat-cuarzo-blanco", nombre: "Cuarzo blanco y oro", familia: "material", tono: "claro" },
+  { clave: "mat-cuarzo-negro", nombre: "Cuarzo negro y plata", familia: "material", tono: "oscuro" },
+  { clave: "mat-marmol-carrara", nombre: "Mármol carrara", familia: "material", tono: "claro" },
+  { clave: "mat-marmol-verde", nombre: "Mármol verde", familia: "material", tono: "oscuro" },
+  { clave: "mat-rosa-cuarzo", nombre: "Rosa cuarzo", familia: "material", tono: "claro" },
+  { clave: "mat-duela-clara", nombre: "Duela de roble", familia: "material", tono: "claro" },
+  { clave: "mat-duela-oscura", nombre: "Duela de nogal", familia: "material", tono: "oscuro" },
+  { clave: "mat-madera", nombre: "Madera", familia: "material", tono: "oscuro" },
+  { clave: "mat-terrazo", nombre: "Terrazo crema", familia: "material", tono: "claro" },
+  { clave: "mat-concreto", nombre: "Concreto pulido", familia: "material", tono: "claro" },
+  { clave: "mat-lino", nombre: "Lino", familia: "material", tono: "claro" },
+  { clave: "mat-pizarra", nombre: "Pizarra", familia: "material", tono: "oscuro" },
+  { clave: "mat-cuero", nombre: "Piel café", familia: "material", tono: "oscuro" },
 ];
 
 export function esPresetPortadaValido(clave: string | null | undefined): boolean {
   return !!clave && PRESETS_PORTADA.some((p) => p.clave === clave);
+}
+
+/**
+ * Tono del fondo que se va a dibujar. Sin preset (o con uno desconocido) se
+ * dibuja el degradado de marca, que es oscuro; una foto no pasa por aquí.
+ */
+export function tonoPortada(clave: string | null | undefined): TonoPortada {
+  return PRESETS_PORTADA.find((p) => p.clave === clave)?.tono ?? "oscuro";
+}
+
+/**
+ * Cuánto hay que oscurecer el bloque del texto de la portada sobre este fondo:
+ *  · "fuerte": fondo claro; el mismo velo que una foto.
+ *  · "suave": material oscuro; sus vetas claras (plata, verde agua) pueden pasar
+ *    justo bajo el nombre y un velo ligero lo mantiene por encima del 4.5:1.
+ *  · "ninguno": los fondos de marca ya nacen oscuros y lisos donde cae el texto.
+ */
+export function veloPortada(clave: string | null | undefined): "fuerte" | "suave" | "ninguno" {
+  const preset = PRESETS_PORTADA.find((p) => p.clave === clave);
+  if (!preset) return "ninguno";
+  if (preset.tono === "claro") return "fuerte";
+  return preset.familia === "material" ? "suave" : "ninguno";
 }
 
 /**
@@ -332,7 +381,10 @@ const CONSTRUCTORES: Record<string, Constructor> = {
 export function fondoPortada(clave: string | null | undefined, hex: string): FondoPortada {
   const color = hex || DEFAULT_COLOR;
   const vigente = normalizarPresetPortada(clave);
-  const constructor = vigente ? CONSTRUCTORES[vigente] : undefined;
+  if (!vigente) return { background: degradeGradient(color) };
+  const material = CONSTRUCTORES_MATERIALES[vigente];
+  if (material) return material();
+  const constructor = CONSTRUCTORES[vigente];
   if (!constructor) return { background: degradeGradient(color) };
   return constructor(color);
 }

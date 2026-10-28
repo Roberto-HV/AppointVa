@@ -5,6 +5,7 @@ import {
   fondoPortada,
   normalizarPresetPortada,
   presetsPorFamilia,
+  veloPortada,
 } from "../../lib/portadaPresets";
 
 interface Props {
@@ -78,10 +79,23 @@ function Tarjeta({
   );
 }
 
-/** Muestra blanco sobre el fondo, para juzgar la legibilidad antes de publicar. */
-function MuestraTexto() {
+// Los mismos velos que la portada real pone bajo el texto (ver `veloPortada`).
+const VELOS_MUESTRA = {
+  fuerte: "linear-gradient(to top, rgba(12,12,15,0.8) 0%, rgba(12,12,15,0.55) 40%, rgba(12,12,15,0) 75%)",
+  suave: "linear-gradient(to top, rgba(12,12,15,0.55) 0%, rgba(12,12,15,0.3) 40%, rgba(12,12,15,0) 75%)",
+};
+
+/**
+ * Muestra blanco sobre el fondo, para juzgar la legibilidad antes de publicar.
+ * Con `velo`, la portada real oscurece el pie bajo el texto: la muestra lo
+ * enseña para no prometer un blanco sobre blanco que el cliente nunca verá.
+ */
+function MuestraTexto({ velo = "ninguno" }: { velo?: "fuerte" | "suave" | "ninguno" }) {
   return (
-    <span className="absolute inset-0 flex flex-col justify-end p-2 gap-1">
+    <span
+      className="absolute inset-0 flex flex-col justify-end p-2 gap-1"
+      style={velo !== "ninguno" ? { background: VELOS_MUESTRA[velo] } : undefined}
+    >
       <span
         className="block h-1.5 w-2/3 rounded-full"
         style={{ background: "rgba(255,255,255,0.92)" }}
@@ -121,7 +135,7 @@ export default function SelectorFondoPortada({
               className="absolute inset-0 w-full h-full object-cover"
               style={{ objectPosition: portadaObjectPosition ?? "center" }}
             />
-            <MuestraTexto />
+            <MuestraTexto velo="fuerte" />
           </Tarjeta>
         )}
         {!portadaUrl && (
@@ -151,7 +165,7 @@ export default function SelectorFondoPortada({
                 onSeleccionar={() => onCambiar(preset.clave)}
               >
                 <span className="absolute inset-0" style={fondoPortada(preset.clave, color)} />
-                <MuestraTexto />
+                <MuestraTexto velo={veloPortada(preset.clave)} />
               </Tarjeta>
             ))}
           </div>
