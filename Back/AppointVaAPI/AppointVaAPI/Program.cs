@@ -318,9 +318,12 @@ builder.Services.AddHealthChecks()
     .AddDbContextCheck<ApplicationDbContext>("base-de-datos");
 
 // ── Output Cache ───────────────────────────────────────────────────────────────
+// Sin política base: una política base se aplica a TODAS las peticiones, y con ella cada
+// GET anónimo (disponibilidad, cita por código, mis citas, /health...) se servía desde la
+// caché hasta 5 minutos aunque los datos ya hubieran cambiado. Solo se cachea lo que lo
+// pide explícitamente con [OutputCache(PolicyName = ...)].
 builder.Services.AddOutputCache(opt =>
 {
-    opt.AddBasePolicy(policy => policy.Expire(TimeSpan.FromMinutes(5)));
     opt.AddPolicy("NegocioPublico", NegocioPublicoPolicy.Instance);
 });
 

@@ -28,6 +28,14 @@ export interface CrearCitaDto {
   confirmarClienteExistente?: boolean;
 }
 
+/** Un día de GET /publico/disponibilidad/semana. */
+export interface DisponibilidadDia {
+  fecha: string; // "YYYY-MM-DD"
+  /** "cerrado": día bloqueado o sin horario del negocio ese día de la semana. */
+  estado: "con-horarios" | "sin-horarios" | "cerrado";
+  horarios: SlotDisponible[];
+}
+
 /** Datos de un cliente ya registrado en el negocio, devueltos por la búsqueda por teléfono. */
 export interface ClienteConocido {
   nombreCliente: string;
@@ -49,6 +57,22 @@ export const publicoApi = {
     const params: Record<string, string> = { servicioId, fecha };
     if (empleadoId) params.empleadoId = empleadoId;
     const { data } = await api.get("/publico/disponibilidad", { params });
+    return data;
+  },
+
+  /**
+   * Disponibilidad de varios días en una sola petición (1–14). Los días anteriores a
+   * hoy (en la zona del negocio) no vienen: el servidor recorta el rango a partir de hoy.
+   */
+  obtenerDisponibilidadSemana: async (
+    servicioId: string,
+    empleadoId: string | null,
+    desde: string, // "YYYY-MM-DD"
+    dias = 7
+  ): Promise<DisponibilidadDia[]> => {
+    const params: Record<string, string | number> = { servicioId, desde, dias };
+    if (empleadoId) params.empleadoId = empleadoId;
+    const { data } = await api.get("/publico/disponibilidad/semana", { params });
     return data;
   },
 

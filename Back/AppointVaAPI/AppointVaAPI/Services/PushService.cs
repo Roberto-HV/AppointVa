@@ -82,9 +82,7 @@ namespace AppointVaAPI.Services
             _logger.LogInformation("Push NuevaCita: procesando cita {CitaId} negocio {NegocioId}",
                 citaId, cita.NegocioId);
 
-            var backendUrl = _config["BackendUrl"] ?? string.Empty;
-            var icalUrl = string.IsNullOrWhiteSpace(backendUrl) ? null
-                : $"{backendUrl}/api/publico/citas/{cita.CodigoConfirmacion}/ical";
+            var icalUrl = AppointVaAPI.Helpers.IcalHelper.UrlPublica(_config["BackendUrl"], cita.CodigoConfirmacion);
             var googleCalUrl = BuildGoogleCalendarUrl(cita);
             var payload = BuildPayloadNuevaCita(cita, icalUrl, googleCalUrl);
 
@@ -148,9 +146,7 @@ namespace AppointVaAPI.Services
 
             if (cita is null) return;
 
-            var backendUrl = _config["BackendUrl"] ?? string.Empty;
-            var icalUrl = string.IsNullOrWhiteSpace(backendUrl) ? null
-                : $"{backendUrl}/api/publico/citas/{cita.CodigoConfirmacion}/ical";
+            var icalUrl = AppointVaAPI.Helpers.IcalHelper.UrlPublica(_config["BackendUrl"], cita.CodigoConfirmacion);
             var googleCalUrl = BuildGoogleCalendarUrl(cita);
             var payload = BuildPayloadReagendar(cita, icalUrl, googleCalUrl);
 
@@ -392,9 +388,7 @@ namespace AppointVaAPI.Services
             _logger.LogInformation("Push Recordatorio15Min: procesando cita {CitaId} negocio {NegocioId}",
                 citaId, cita.NegocioId);
 
-            var backendUrl = _config["BackendUrl"] ?? string.Empty;
-            var icalUrl = string.IsNullOrWhiteSpace(backendUrl) ? null
-                : $"{backendUrl}/api/publico/citas/{cita.CodigoConfirmacion}/ical";
+            var icalUrl = AppointVaAPI.Helpers.IcalHelper.UrlPublica(_config["BackendUrl"], cita.CodigoConfirmacion);
             var googleCalUrl = BuildGoogleCalendarUrl(cita);
             var payload = BuildPayloadRecordatorio(cita, icalUrl, googleCalUrl);
 

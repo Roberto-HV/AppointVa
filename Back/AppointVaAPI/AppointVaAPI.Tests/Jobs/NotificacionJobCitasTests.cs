@@ -17,7 +17,7 @@ public class NotificacionJobCitasTests
         NotificacionJob job,
         INotificacionService notificacion,
         IBackgroundJobClient jobClient)
-        CrearComponentes(string dbNombre)
+        CrearComponentes(string dbNombre, string backendUrl = "http://localhost:5048")
     {
         var db           = DbContextFactory.Create(dbNombre);
         var notificacion = Substitute.For<INotificacionService>();
@@ -26,7 +26,7 @@ public class NotificacionJobCitasTests
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["FrontendUrl"] = "http://localhost:5173",
-                ["BackendUrl"]  = "http://localhost:5048",
+                ["BackendUrl"]  = backendUrl,
             })
             .Build();
         var emailService = Substitute.For<IEmailService>();
@@ -119,6 +119,23 @@ public class NotificacionJobCitasTests
         await notificacion.Received(1).EnviarConfirmacionCitaAsync(
             Arg.Any<Cita>(), Arg.Any<string>(), Arg.Any<string>(),
             Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<string?>());
+    }
+
+    [Fact]
+    public async Task EnviarConfirmacion_BackendUrlConApiYBarraFinal_EnlaceIcalSinDuplicarApi()
+    {
+        var (db, job, notificacion, _) = CrearComponentes(
+            nameof(EnviarConfirmacion_BackendUrlConApiYBarraFinal_EnlaceIcalSinDuplicarApi),
+            backendUrl: "https://api.appointva.com/api/");
+        var cita = await SeedCitaAsync(db);
+
+        await job.EnviarConfirmacionAsync(cita.Id, "e@t.com", "Nombre");
+
+        await notificacion.Received(1).EnviarConfirmacionCitaAsync(
+            Arg.Any<Cita>(), Arg.Any<string>(), Arg.Any<string>(),
+            Arg.Any<string?>(),
+            $"https://api.appointva.com/api/publico/citas/{cita.CodigoConfirmacion}/ical",
+            Arg.Any<string?>(), Arg.Any<string?>());
     }
 
     [Fact]

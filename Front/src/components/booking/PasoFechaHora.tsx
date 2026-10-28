@@ -1,5 +1,5 @@
 ﻿import { useMemo, useState } from "react";
-import { useQueries, useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { publicoApi } from "../../api/publico";
 import type { SlotDisponible } from "../../types";
@@ -39,16 +39,15 @@ const DETALLE_DISPONIBILIDAD: Record<EstadoDia, string> = {
 };
 const MESES_CORTOS = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 
-/** Un minuto de caché: volver a una semana ya vista no repite sus 7 consultas. */
+/** Un minuto de caché: volver a una semana ya vista no la vuelve a pedir. */
 const VIGENCIA_DISPONIBILIDAD = 60_000;
 /** El día elegido reintenta: es el que el visitante está esperando ver. */
 const OPCIONES_CONSULTA = { retry: 2, retryDelay: 1000, staleTime: VIGENCIA_DISPONIBILIDAD } as const;
 /**
- * La precarga del resto de la semana es especulativa: sin reintentos, para que un
- * backend degradado no reciba hasta 21 peticiones por semana. Un día que falla se
- * reintenta al tocarlo, ya con la consulta del día elegido.
+ * Toda la semana visible va en una sola petición, con un reintento. Si aun así falla,
+ * cada día queda «sin revisar» y solo se pide el que el visitante elige.
  */
-const OPCIONES_PRECARGA = { retry: 0, staleTime: VIGENCIA_DISPONIBILIDAD } as const;
+const OPCIONES_SEMANA = { retry: 1, staleTime: VIGENCIA_DISPONIBILIDAD } as const;
 
 type EstadoDia = "con-horarios" | "sin-horarios" | "cerrado" | "cerrado-hoy" | "cargando" | "error";
 const TEXTO_CIERRE = { cerrado: "Cerrado", "cerrado-hoy": "Cerrado por hoy" } as const;
@@ -58,6 +57,10 @@ function estadoDeConsulta(consulta?: { data?: SlotDisponible[]; isError: boolean
   if (consulta?.isError) return "error";
   return "cargando";
 }
+
+/** Clave de la caché por día; la consulta semanal la llena para cada día que trae. */
+const claveDia = (servicioId: string, empleadoId: string | null, fecha: string | null) =>
+  ["slots", servicioId, empleadoId, fecha] as const;
 
 function hoy(): Date {
   const d = new Date();
@@ -105,24 +108,37 @@ export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, on
     return d;
   });
 
-  // Disponibilidad de toda la semana visible: cada día muestra si tiene horarios
-  // sin que el visitante tenga que tocarlos uno por uno. Comparte caché con la
-  // consulta del día elegido, así que tocar un día ya cargado no vuelve a pedirlo.
-  // El día elegido explícitamente queda fuera: lo lleva su propia consulta, con reintentos.
+  // Disponibilidad de toda la semana visible en UNA petición: cada día muestra si tiene
+  // horarios sin que el visitante tenga que tocarlos uno por uno. Al llegar, cada día se
+  // guarda en la caché por día, así que abrir un día ya cargado no vuelve a pedirlo.
+  const queryClient = useQueryClient();
   const fechasReservables = diasSemana.filter((d) => d >= fechaMinima).map(fechaLocal);
-  // Los días cerrados se saben por el horario: no gastan consultas (límite público por minuto).
+  // Los días cerrados se saben por el horario: una semana sin días abiertos no se consulta.
   const ahora = new Date();
   const cierre = (fecha: string) => (calendario ? cierreDelDia(fecha, calendario, ahora) : null);
-  const fechasPrecarga = fechasReservables.filter((f) => f !== fechaElegida && !cierre(f));
-  const disponibilidadSemana = useQueries({
-    queries: fechasPrecarga.map((fecha) => ({
-      queryKey: ["slots", servicioId, empleadoId, fecha],
-      queryFn: () => publicoApi.obtenerDisponibilidad(servicioId, empleadoId, fecha),
-      ...OPCIONES_PRECARGA,
-    })),
+  const lunes = fechaLocal(semanaRef);
+  const consultaSemana = useQuery({
+    queryKey: ["slots-semana", servicioId, empleadoId, lunes],
+    queryFn: async () => {
+      const dias = await publicoApi.obtenerDisponibilidadSemana(servicioId, empleadoId, lunes, 7);
+      for (const dia of dias) queryClient.setQueryData(claveDia(servicioId, empleadoId, dia.fecha), dia.horarios);
+      return dias;
+    },
+    enabled: fechasReservables.some((f) => !cierre(f)),
+    ...OPCIONES_SEMANA,
   });
-  const estadoPrecarga = (fecha: string): EstadoDia =>
-    cierre(fecha) ?? estadoDeConsulta(disponibilidadSemana[fechasPrecarga.indexOf(fecha)]);
+  // Mientras llega la semana, el día elegido la espera en vez de pedirse por separado.
+  const esperandoSemana = consultaSemana.isLoading;
+  const estadoPrecarga = (fecha: string): EstadoDia => {
+    const cerrado = cierre(fecha);
+    if (cerrado) return cerrado;
+    if (consultaSemana.data) {
+      // Un día que no vino (anterior a hoy en la zona del negocio) no tiene horarios.
+      const dia = consultaSemana.data.find((d) => d.fecha === fecha);
+      return dia && dia.horarios.length > 0 ? "con-horarios" : "sin-horarios";
+    }
+    return consultaSemana.isError ? "error" : "cargando";
+  };
 
   // Sin elección explícita se abre el primer día con horarios, en orden: no salta a
   // un día posterior mientras uno anterior sigue cargando. Un día que falló no
@@ -138,13 +154,16 @@ export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, on
   const fechaSel = fechaElegida ?? primeraConHorarios;
   const cierreSel = fechaSel ? cierre(fechaSel) : null;
 
+  // Normalmente ya viene en la caché desde la consulta semanal y no se pide; se pide sola
+  // si la semana falló, o para reintentar el día elegido.
   const consultaDia = useQuery({
-    queryKey: ["slots", servicioId, empleadoId, fechaSel],
+    queryKey: claveDia(servicioId, empleadoId, fechaSel),
     queryFn: () => publicoApi.obtenerDisponibilidad(servicioId, empleadoId, fechaSel!),
-    enabled: !!fechaSel && !cierreSel,
+    enabled: !!fechaSel && !cierreSel && !esperandoSemana,
     ...OPCIONES_CONSULTA,
   });
-  const { data: slots = [], isFetching, isError, refetch } = consultaDia;
+  const { data: slots = [], isError, refetch } = consultaDia;
+  const isFetching = consultaDia.isFetching || (esperandoSemana && consultaDia.data === undefined);
 
   const estadoDia = (fecha: string): EstadoDia =>
     cierre(fecha) ?? (fecha === fechaSel ? estadoDeConsulta(consultaDia) : estadoPrecarga(fecha));

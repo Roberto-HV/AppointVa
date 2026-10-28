@@ -1,5 +1,4 @@
 using System.Text;
-using AppointVaAPI.Controllers.V1;
 using AppointVaAPI.Helpers;
 using FluentAssertions;
 using Xunit;
@@ -71,15 +70,15 @@ public class IcalHelperTests
     [InlineData("https://appointva.onrender.com/api/")]
     public void UrlIcal_ToleraBarraYApiFinal(string backendUrl)
     {
-        PublicoController.UrlIcal(backendUrl, "507E5262")
+        IcalHelper.UrlPublica(backendUrl, "507E5262")
             .Should().Be("https://appointva.onrender.com/api/publico/citas/507E5262/ical");
     }
 
     [Fact]
     public void UrlIcal_SinBackendUrl_EsNull()
     {
-        PublicoController.UrlIcal("", "507E5262").Should().BeNull();
-        PublicoController.UrlIcal(null, "507E5262").Should().BeNull();
+        IcalHelper.UrlPublica("", "507E5262").Should().BeNull();
+        IcalHelper.UrlPublica(null, "507E5262").Should().BeNull();
     }
 
     private static string Desplegar(string ics) => ics.Replace("\r\n ", "");

@@ -10,6 +10,21 @@ namespace AppointVaAPI.Helpers
     /// </summary>
     public static class IcalHelper
     {
+        /// <summary>
+        /// URL pública del .ics de una cita. `BackendUrl` es el origen del API; se toleran
+        /// una barra final o un "/api" final (el mismo valor que VITE_API_URL), que
+        /// producían "//api" o "/api/api" y el calendario recibía un 404.
+        /// Null cuando no hay BackendUrl configurado.
+        /// </summary>
+        public static string? UrlPublica(string? backendUrl, string codigo)
+        {
+            if (string.IsNullOrWhiteSpace(backendUrl)) return null;
+            var origen = backendUrl.Trim().TrimEnd('/');
+            if (origen.EndsWith("/api", StringComparison.OrdinalIgnoreCase))
+                origen = origen[..^4];
+            return $"{origen}/api/publico/citas/{Uri.EscapeDataString(codigo)}/ical";
+        }
+
         public sealed record EventoIcal(
             string Uid,
             DateTime InicioUtc,

@@ -12,7 +12,7 @@ namespace AppointVaAPI.Tests.Services;
 public class RecordatorioServiceTests
 {
     private static (ApplicationDbContext db, RecordatorioService service, INotificacionService notificacion)
-        CrearComponentes(string dbNombre)
+        CrearComponentes(string dbNombre, string backendUrl = "http://localhost:5048")
     {
         var db           = DbContextFactory.Create(dbNombre);
         var notificacion = Substitute.For<INotificacionService>();
@@ -20,7 +20,7 @@ public class RecordatorioServiceTests
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["FrontendUrl"] = "http://localhost:5173",
-                ["BackendUrl"]  = "http://localhost:5048",
+                ["BackendUrl"]  = backendUrl,
             })
             .Build();
         return (db, new RecordatorioService(db, notificacion, config), notificacion);
@@ -111,6 +111,22 @@ public class RecordatorioServiceTests
         await notificacion.Received(1).EnviarRecordatorioCitaAsync(
             Arg.Any<Cita>(), Arg.Any<string>(), Arg.Any<string>(),
             Arg.Any<string?>(), Arg.Any<string?>());
+    }
+
+    [Fact]
+    public async Task EnviarRecordatorio_BackendUrlConBarraFinal_EnlaceIcalSinDobleBarra()
+    {
+        var (db, service, notificacion) = CrearComponentes(
+            nameof(EnviarRecordatorio_BackendUrlConBarraFinal_EnlaceIcalSinDobleBarra),
+            backendUrl: "https://api.appointva.com/");
+        var cita = await SeedCitaAsync(db, EstadosCitas.Confirmada, "test@test.com");
+
+        await service.EnviarRecordatorioCitaAsync(cita.Id);
+
+        await notificacion.Received(1).EnviarRecordatorioCitaAsync(
+            Arg.Any<Cita>(), Arg.Any<string>(), Arg.Any<string>(),
+            $"https://api.appointva.com/api/publico/citas/{cita.CodigoConfirmacion}/ical",
+            Arg.Any<string?>());
     }
 
     [Fact]

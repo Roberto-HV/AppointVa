@@ -218,8 +218,10 @@ namespace AppointVaAPI.Controllers.V1
         }
 
         // GET api/publico/disponibilidad?servicioId=...&empleadoId=...&fecha=yyyy-MM-dd
+        // Availability changes with every booking: never served from the output cache.
         [HttpGet("disponibilidad")]
         [EnableRateLimiting("PublicoGeneral")]
+        [OutputCache(NoStore = true)]
         public async Task<IActionResult> ObtenerDisponibilidad(
             [FromQuery] Guid servicioId,
             [FromQuery] Guid? empleadoId,
@@ -228,17 +230,71 @@ namespace AppointVaAPI.Controllers.V1
             if (!DateOnly.TryParseExact(fecha, "yyyy-MM-dd", out var fechaFiltro))
                 return BadRequest(new { mensaje = "Formato de fecha inválido. Use yyyy-MM-dd" });
 
-            if (fechaFiltro < DateOnly.FromDateTime(DateTime.Today))
-                return BadRequest(new { mensaje = "No se pueden consultar fechas pasadas" });
-
-            var servicio = await _db.Servicios.FirstOrDefaultAsync(s => s.Id == servicioId && s.Activo == 1);
+            var servicio = await ObtenerServicioConHoyAsync(servicioId);
             if (servicio is null)
                 return NotFound(new { mensaje = "Servicio no encontrado" });
 
+            // "Today" is the business's today, not the server's (Render runs in UTC).
+            if (fechaFiltro < servicio.Value.Hoy)
+                return BadRequest(new { mensaje = "No se pueden consultar fechas pasadas" });
+
             var slots = await _disponibilidad.ObtenerSlotsDisponiblesAsync(
-                servicio.NegocioId, servicioId, empleadoId, fechaFiltro);
+                servicio.Value.NegocioId, servicioId, empleadoId, fechaFiltro);
 
             return Ok(slots);
+        }
+
+        public const int DiasMaximosDisponibilidadSemana = 14;
+
+        // GET api/publico/disponibilidad/semana?servicioId=...&empleadoId=...&desde=yyyy-MM-dd&dias=7
+        [HttpGet("disponibilidad/semana")]
+        [EnableRateLimiting("PublicoGeneral")]
+        [OutputCache(NoStore = true)]
+        public async Task<IActionResult> ObtenerDisponibilidadSemana(
+            [FromQuery] Guid servicioId,
+            [FromQuery] Guid? empleadoId,
+            [FromQuery] string desde,
+            [FromQuery] int dias = 7)
+        {
+            if (!DateOnly.TryParseExact(desde, "yyyy-MM-dd", out var fechaDesde))
+                return BadRequest(new { mensaje = "Formato de fecha inválido. Use yyyy-MM-dd" });
+
+            if (dias < 1 || dias > DiasMaximosDisponibilidadSemana)
+                return BadRequest(new { mensaje = $"El número de días debe estar entre 1 y {DiasMaximosDisponibilidadSemana}" });
+
+            var servicio = await ObtenerServicioConHoyAsync(servicioId);
+            if (servicio is null)
+                return NotFound(new { mensaje = "Servicio no encontrado" });
+
+            // A week that started in the past is answered from the business's today on.
+            var hoy = servicio.Value.Hoy;
+            if (fechaDesde < hoy)
+            {
+                var diasPasados = hoy.DayNumber - fechaDesde.DayNumber;
+                dias -= diasPasados;
+                fechaDesde = hoy;
+                if (dias < 1) return Ok(new List<DiaDisponibilidadDto>());
+            }
+
+            var resultado = await _disponibilidad.ObtenerSlotsRangoAsync(
+                servicio.Value.NegocioId, servicioId, empleadoId, fechaDesde, dias);
+
+            return Ok(resultado);
+        }
+
+        /// <summary>Active service's business and that business's local date today.</summary>
+        private async Task<(Guid NegocioId, DateOnly Hoy)?> ObtenerServicioConHoyAsync(Guid servicioId)
+        {
+            var servicio = await _db.Servicios
+                .Where(s => s.Id == servicioId && s.Activo == 1)
+                .Select(s => new { s.NegocioId, ZonaHoraria = s.Negocio != null ? s.Negocio.ZonaHoraria : null })
+                .AsNoTracking()
+                .FirstOrDefaultAsync();
+            if (servicio is null) return null;
+
+            var tz = AppointVaAPI.Helpers.ZonaHorariaHelper.Resolver(servicio.ZonaHoraria);
+            var hoy = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz));
+            return (servicio.NegocioId, hoy);
         }
 
         // GET api/publico/verificar-slug?slug=...
@@ -612,20 +668,6 @@ namespace AppointVaAPI.Controllers.V1
                 TiktokUrl = cita.Negocio?.TiktokUrl,
                 ColorPrimario = cita.Negocio?.ColorPrimario ?? "#334155"
             });
-        }
-
-        /// <summary>
-        /// URL pública del .ics. `BackendUrl` es el origen del API; se toleran una
-        /// barra final o un "/api" final (el mismo valor que VITE_API_URL), que
-        /// producían "//api" o "/api/api" y el calendario recibía un 404.
-        /// </summary>
-        internal static string? UrlIcal(string? backendUrl, string codigo)
-        {
-            if (string.IsNullOrWhiteSpace(backendUrl)) return null;
-            var origen = backendUrl.Trim().TrimEnd('/');
-            if (origen.EndsWith("/api", StringComparison.OrdinalIgnoreCase))
-                origen = origen[..^4];
-            return $"{origen}/api/publico/citas/{Uri.EscapeDataString(codigo)}/ical";
         }
 
         // GET api/publico/citas/{codigo}/ical

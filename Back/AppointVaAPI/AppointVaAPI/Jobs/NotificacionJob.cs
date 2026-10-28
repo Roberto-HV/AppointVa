@@ -43,12 +43,10 @@ namespace AppointVaAPI.Jobs
             if (cita is null) return;
 
             var frontendUrl = _config["FrontendUrl"] ?? "https://appointva.com";
-            var backendUrl = _config["BackendUrl"] ?? string.Empty;
             var codigo = cita.CodigoConfirmacion;
             var urlCita = $"{frontendUrl}/b/{cita.Negocio?.Slug}/confirmacion/{codigo}";
             var urlCancelacion = $"{frontendUrl}/cancelar/{codigo}";
-            var icalUrl = string.IsNullOrWhiteSpace(backendUrl) ? null
-                : $"{backendUrl}/api/publico/citas/{codigo}/ical";
+            var icalUrl = AppointVaAPI.Helpers.IcalHelper.UrlPublica(_config["BackendUrl"], codigo);
             var googleCalUrl = GenerarGoogleCalendarUrl(cita);
 
             await _notificacion.EnviarConfirmacionCitaAsync(cita, emailDestino, nombreCliente,

@@ -30,10 +30,7 @@ namespace AppointVaAPI.Services
             if (cita is null) return;
             if (cita.Estado == EstadosCitas.Cancelada || cita.Estado == EstadosCitas.Completada || cita.Estado == EstadosCitas.Inasistencia) return;
 
-            var backendUrl = _config["BackendUrl"] ?? string.Empty;
-            var icalUrl = string.IsNullOrWhiteSpace(backendUrl)
-                ? null
-                : $"{backendUrl}/api/publico/citas/{cita.CodigoConfirmacion}/ical";
+            var icalUrl = AppointVaAPI.Helpers.IcalHelper.UrlPublica(_config["BackendUrl"], cita.CodigoConfirmacion);
             var googleCalUrl = GenerarGoogleCalendarUrl(cita);
 
             var emailCliente = cita.Cliente?.Email;
