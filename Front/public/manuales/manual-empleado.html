@@ -4,6 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AppointVa — Manual del Empleado</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -112,7 +114,7 @@
       padding: 0 24px 72px;
     }
 
-    /* ── TABLE OF CONTENTS ──────────────────────────────────── */
+    /* ── TABLE OF CONTENTS — appointment-slot aesthetic ──── */
     .toc-section {
       padding: 52px 0 0;
     }
@@ -133,6 +135,7 @@
       margin-bottom: 28px;
     }
 
+    /* The agenda / appointment-slot TOC */
     .toc-agenda {
       background: var(--white);
       border: 1px solid var(--border);
@@ -411,6 +414,25 @@
     .mini-card h4 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
     .mini-card p  { font-size: 12px; color: var(--gray); line-height: 1.5; }
 
+    /* ── URL DEMO ───────────────────────────────────────────── */
+    .url-demo {
+      background: var(--dark);
+      border-radius: 12px;
+      padding: 14px 20px;
+      display: flex; align-items: center; gap: 14px;
+      margin-top: 16px;
+    }
+    .url-label {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
+      text-transform: uppercase; color: var(--gold);
+      flex-shrink: 0;
+    }
+    .url-text {
+      font-family: 'Courier New', monospace;
+      font-size: 13px; color: #e5e7eb; flex: 1;
+    }
+    .url-text em { color: var(--gold); font-style: normal; font-weight: 700; }
+
     /* ── DIVIDER ────────────────────────────────────────────── */
     .divider {
       height: 1px;
@@ -426,7 +448,7 @@
     .footer p { font-size: 12px; color: var(--gray-light); }
     .footer strong { color: var(--gold); }
 
-    /* ── SECTION ANCHOR OFFSET ───────────────────────────────── */
+    /* ── SECTION ANCHOR OFFSET (TOC links) ──────────────────── */
     .anchor-target {
       scroll-margin-top: 24px;
     }
@@ -455,76 +477,98 @@
       border-radius: 4px;
     }
 
-    /* ── IMPRESIÓN / PDF ──────────────────────────────────────── */
-    @media print {
-      @page {
-        margin: 2cm 2.5cm;
-        size: A4;
-      }
 
-      body {
-        font-size: 12pt;
-        background: #fff;
-        color: #1a1a1a;
-      }
-
-      .hero {
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-        padding: 32px 40px;
-      }
-
-      .no-print,
-      .print-btn,
-      nav[aria-label="Tabla de contenidos"],
-      .toc-section {
-        display: none !important;
-      }
-
-      .section {
-        page-break-inside: avoid;
-        padding-top: 24px;
-      }
-
-      .card,
-      .step-card,
-      .info-box,
-      .warn-box,
-      .tip-box {
-        page-break-inside: avoid;
-        box-shadow: none !important;
-        border: 1px solid #e5e7eb !important;
-      }
-
-      h2 {
-        page-break-after: avoid;
-        page-break-before: always;
-      }
-
-      h2:first-of-type {
-        page-break-before: avoid;
-      }
-
-      h3 {
-        page-break-after: avoid;
-      }
-
-      a {
-        color: inherit;
-        text-decoration: none;
-      }
-
-      img {
-        max-width: 100%;
-      }
+    /* ── SCREENSHOTS (capturas reales del sistema) ─────────── */
+    figure.shot {
+      margin: 22px 0 30px;
+      break-inside: avoid;
+      page-break-inside: avoid;
     }
+    figure.shot img {
+      display: block;
+      width: 100%;
+      height: auto;
+      margin: 0 auto;
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: var(--shadow-card);
+    }
+    figure.shot.narrow img { max-width: 460px; }
+    figure.shot.phone img  { max-width: 330px; border-radius: 22px; }
+    figure.shot figcaption {
+      margin-top: 10px;
+      font-size: 13px;
+      color: var(--gray);
+      text-align: center;
+      line-height: 1.5;
+    }
+    figure.shot figcaption strong { color: var(--dark); }
+    .shot-pair {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      align-items: start;
+      margin: 22px 0 30px;
+    }
+    .shot-pair figure.shot { margin: 0; }
+    .section h3 {
+      font-size: 17px;
+      font-weight: 700;
+      margin: 30px 0 12px;
+      letter-spacing: -0.2px;
+    }
+    .section p.lead { margin-bottom: 14px; }
+    .section ol.plain, .section ul.plain { margin: 8px 0 16px 22px; }
+    .section ol.plain li, .section ul.plain li { margin-bottom: 6px; }
+    kbd, .ui {
+      font-family: inherit;
+      font-size: 0.92em;
+      font-weight: 600;
+      background: #eef1f6;
+      color: #1e293b;
+      border: 1px solid #d8dee8;
+      border-radius: 6px;
+      padding: 1px 7px;
+      white-space: nowrap;
+    }
+    @media (max-width: 640px) {
+      .shot-pair { grid-template-columns: 1fr; }
+    }
+
+  @media print {
+    @page { size: Letter; margin: 0.6in 0.55in; }
+    html, body { background: #ffffff !important; }
+    .hero { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .toc-section, .toc-agenda, .tip, .info, .warn, .card, .mini-card { background: #ffffff !important; }
+    section.section { break-before: page; page-break-before: always; }
+    h2, h3, .step-title { break-after: avoid; page-break-after: avoid; }
+    .card, .tip, .info, .warn, .step-item, .feat-item, .mini-card, .toc-item,
+    figure.shot, .shot-pair {
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    figure.shot img {
+      width: auto;
+      max-width: 100%;
+      max-height: 6.2in;
+      box-shadow: none;
+    }
+    figure.shot.phone img { max-height: 5.6in; max-width: 3in; }
+    .shot-pair figure.shot.phone img { max-width: 100%; }
+    .no-print { display: none !important; }
+    .toc-section { padding-top: 28px; }
+    .toc-content { padding-top: 7px !important; padding-bottom: 7px !important; }
+    .toc-name { font-size: 13px; }
+    .toc-desc { font-size: 11px; }
+    * { box-shadow: none !important; }
+    a { color: inherit; text-decoration: none; }
+  }
+
   </style>
 </head>
 <body>
 
-<!-- ══════════════════════════════════════════════════════════ -->
-<!--  HERO                                                      -->
-<!-- ══════════════════════════════════════════════════════════ -->
 <header class="hero">
   <div class="hero-inner">
     <div class="logo-row">
@@ -540,587 +584,384 @@
       </div>
       <span class="logo-name">AppointVa</span>
     </div>
-
     <h1>Manual del <span>Empleado</span></h1>
-    <p class="hero-sub">Todo lo que necesitas saber para gestionar tus citas, horarios y notificaciones en AppointVa.</p>
-    <div class="hero-badge" aria-label="Rol: Empleado">
-      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-        <circle cx="6" cy="6" r="5" stroke="#C8A961" stroke-width="1.5"/>
-        <circle cx="6" cy="4" r="1.8" fill="#C8A961"/>
-        <path d="M2.5 10c0-1.93 1.57-3.5 3.5-3.5S9.5 8.07 9.5 10" stroke="#C8A961" stroke-width="1.3" stroke-linecap="round"/>
-      </svg>
-      Rol: Empleado
-    </div>
-    <div class="no-print" style="margin-top: 24px;">
-      <button onclick="window.print()" style="background:var(--gold);color:#1a1a1a;font-weight:700;padding:10px 24px;border:none;border-radius:10px;cursor:pointer;font-size:14px;font-family:inherit;">
-        Descargar PDF
-      </button>
-    </div>
+    <p class="hero-sub">Todo lo que necesitas para atender tu agenda en AppointVa: tus citas del día, cobros, bloqueos de horario y la seguridad de tu cuenta. Todas las imágenes son capturas reales del sistema.</p>
+    <div class="hero-badge">v2.0 &nbsp;·&nbsp; Octubre 2026</div>
   </div>
 </header>
 
-<!-- ══════════════════════════════════════════════════════════ -->
-<!--  TABLE OF CONTENTS                                         -->
-<!-- ══════════════════════════════════════════════════════════ -->
 <main>
 <div class="page">
 
   <nav class="toc-section" aria-label="Tabla de contenidos">
     <div class="section-label">Agenda del manual</div>
-    <div class="section-title">¿Qué quieres hacer hoy?</div>
-
+    <div class="section-title">¿Qué quieres revisar hoy?</div>
     <div class="toc-agenda" role="list">
       <div class="toc-header" aria-hidden="true">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-          <rect x="1" y="2" width="14" height="13" rx="2.5" stroke="#C8A961" stroke-width="1.4"/>
-          <line x1="5" y1="1" x2="5" y2="4" stroke="#C8A961" stroke-width="1.4" stroke-linecap="round"/>
-          <line x1="11" y1="1" x2="11" y2="4" stroke="#C8A961" stroke-width="1.4" stroke-linecap="round"/>
-          <rect x="4" y="8" width="3" height="3" rx="0.8" fill="#C8A961" fill-opacity="0.6"/>
-          <rect x="9" y="8" width="3" height="3" rx="0.8" fill="#C8A961" fill-opacity="0.3"/>
-        </svg>
         <span class="toc-header-title">Manual del Empleado — 7 secciones</span>
         <span class="toc-header-label">Ir a sección</span>
       </div>
-
       <div class="toc-list">
-
-        <a class="toc-item" href="#primeros-pasos" role="listitem">
+        <a class="toc-item" href="#acceso" role="listitem">
           <div class="toc-rail" aria-hidden="true"></div>
           <div class="toc-num" aria-hidden="true">01</div>
           <div class="toc-content">
-            <div class="toc-name">Primeros pasos</div>
-            <div class="toc-desc">Acceso a tu cuenta y primeras configuraciones</div>
+            <div class="toc-name">Tu acceso</div>
+            <div class="toc-desc">Cómo te dan acceso, iniciar sesión y qué ves en el panel</div>
           </div>
           <div class="toc-arrow" aria-hidden="true">→</div>
         </a>
-
-        <a class="toc-item" href="#mis-citas" role="listitem">
+        <a class="toc-item" href="#inicio" role="listitem">
           <div class="toc-rail" aria-hidden="true"></div>
           <div class="toc-num" aria-hidden="true">02</div>
           <div class="toc-content">
-            <div class="toc-name">Mis citas</div>
-            <div class="toc-desc">Ver, filtrar y gestionar las citas asignadas a ti</div>
+            <div class="toc-name">Inicio</div>
+            <div class="toc-desc">Tu día de un vistazo</div>
           </div>
           <div class="toc-arrow" aria-hidden="true">→</div>
         </a>
-
-        <a class="toc-item" href="#gestion-citas" role="listitem">
+        <a class="toc-item" href="#mis-citas" role="listitem">
           <div class="toc-rail" aria-hidden="true"></div>
           <div class="toc-num" aria-hidden="true">03</div>
           <div class="toc-content">
-            <div class="toc-name">Gestión de citas</div>
-            <div class="toc-desc">Cambiar estado, agregar notas y reagendar</div>
+            <div class="toc-name">Mis citas</div>
+            <div class="toc-desc">Lista, calendario, línea de tiempo y acciones de cada cita</div>
           </div>
           <div class="toc-arrow" aria-hidden="true">→</div>
         </a>
-
-        <a class="toc-item" href="#mi-horario" role="listitem">
+        <a class="toc-item" href="#pagos" role="listitem">
           <div class="toc-rail" aria-hidden="true"></div>
           <div class="toc-num" aria-hidden="true">04</div>
           <div class="toc-content">
-            <div class="toc-name">Mi horario</div>
-            <div class="toc-desc">Configurar tus días y horas de atención</div>
+            <div class="toc-name">Pagos</div>
+            <div class="toc-desc">Cobrar tus citas y ver tu historial</div>
           </div>
           <div class="toc-arrow" aria-hidden="true">→</div>
         </a>
-
-        <a class="toc-item" href="#bloqueos" role="listitem">
+        <a class="toc-item" href="#mi-perfil" role="listitem">
           <div class="toc-rail" aria-hidden="true"></div>
           <div class="toc-num" aria-hidden="true">05</div>
           <div class="toc-content">
-            <div class="toc-name">Bloqueos de tiempo</div>
-            <div class="toc-desc">Crear bloqueos manuales cuando no estás disponible</div>
+            <div class="toc-name">Mi perfil y bloqueos</div>
+            <div class="toc-desc">Foto, contraseña, notificaciones y tiempos no disponibles</div>
           </div>
           <div class="toc-arrow" aria-hidden="true">→</div>
         </a>
-
-        <a class="toc-item" href="#notificaciones" role="listitem">
+        <a class="toc-item" href="#seguridad" role="listitem">
           <div class="toc-rail" aria-hidden="true"></div>
           <div class="toc-num" aria-hidden="true">06</div>
           <div class="toc-content">
-            <div class="toc-name">Notificaciones</div>
-            <div class="toc-desc">Activar alertas en tu dispositivo para nuevas citas</div>
+            <div class="toc-name">Verificación en dos pasos</div>
+            <div class="toc-desc">Protege tu cuenta con un código de tu celular</div>
           </div>
           <div class="toc-arrow" aria-hidden="true">→</div>
         </a>
-
-        <a class="toc-item" href="#seguridad" role="listitem">
+        <a class="toc-item" href="#preguntas" role="listitem">
           <div class="toc-rail" aria-hidden="true"></div>
           <div class="toc-num" aria-hidden="true">07</div>
           <div class="toc-content">
-            <div class="toc-name">Seguridad</div>
-            <div class="toc-desc">Autenticación de dos factores y cambio de contraseña</div>
+            <div class="toc-name">Preguntas frecuentes</div>
+            <div class="toc-desc">Situaciones del día a día</div>
           </div>
           <div class="toc-arrow" aria-hidden="true">→</div>
         </a>
-
       </div>
     </div>
   </nav>
 
-  <!-- ══════════════════════════════════════════════════════════ -->
-  <!--  01 — PRIMEROS PASOS                                       -->
-  <!-- ══════════════════════════════════════════════════════════ -->
-  <section class="section anchor-target" id="primeros-pasos" aria-labelledby="h-primeros-pasos">
+
+  <section class="section anchor-target" id="acceso" aria-labelledby="h-acceso">
     <div class="divider" aria-hidden="true"></div>
     <div style="padding-top: 52px;">
       <div class="section-label">Sección 01</div>
-      <h2 class="section-title" id="h-primeros-pasos">Primeros pasos</h2>
-      <p style="font-size:14px; color:var(--gray); margin-bottom:24px;">Tu cuenta ya está creada — el propietario del negocio la configuró por ti. Solo necesitas acceder y dar los primeros pasos.</p>
-
+      <h2 class="section-title" id="h-acceso">Tu acceso</h2>
+      <p class="lead">No necesitas registrarte. El propietario de tu negocio crea tu acceso desde <strong>Empleados → Invitar</strong> y te comparte tu correo y una contraseña.</p>
       <div class="steps">
         <div class="step-item">
           <div class="step-num" aria-hidden="true">1</div>
           <div class="step-body">
-            <div class="step-title">Revisa tu correo de invitación</div>
-            <p class="step-desc">El propietario del negocio creó tu cuenta y AppointVa te envió un email con tu correo de acceso y la contraseña inicial. Úsala para ingresar por primera vez.</p>
+            <div class="step-title">Inicia sesión</div>
+            <p class="step-desc">Entra a <strong>appointva.com/login</strong> con el correo y la contraseña que te dieron.</p>
           </div>
         </div>
         <div class="step-item">
           <div class="step-num" aria-hidden="true">2</div>
           <div class="step-body">
-            <div class="step-title">Inicia sesión en appointva.com/login</div>
-            <p class="step-desc">Ingresa con el correo y la contraseña que recibiste. Al entrar verás tu panel personalizado: un resumen de tus citas del día y el menú lateral con tus secciones disponibles.</p>
-            <span class="step-code">appointva.com/login</span>
+            <div class="step-title">Cambia tu contraseña</div>
+            <p class="step-desc">Ve a <strong>Mi perfil → Cambiar contraseña</strong> y pon una que solo tú conozcas.</p>
           </div>
         </div>
         <div class="step-item">
           <div class="step-num" aria-hidden="true">3</div>
           <div class="step-body">
-            <div class="step-title">Tu vista es diferente a la del propietario</div>
-            <p class="step-desc">Como empleado, solo ves las citas asignadas a ti. No tienes acceso a reportes, la configuración del negocio ni los datos de otros empleados. Eso es intencional y protege la privacidad del equipo.</p>
-          </div>
-        </div>
-        <div class="step-item">
-          <div class="step-num" aria-hidden="true">4</div>
-          <div class="step-body">
-            <div class="step-title">Configura tu horario de atención</div>
-            <p class="step-desc">Antes de que los clientes puedan reservar citas contigo, debes definir tu horario. Sin horario configurado no aparecerás como opción disponible. Ve a la Sección 4 para hacerlo.</p>
+            <div class="step-title">Activa las notificaciones</div>
+            <p class="step-desc">En <strong>Mi perfil → Notificaciones</strong> permite las notificaciones del navegador para enterarte de tus citas nuevas al momento. En iPhone, primero agrega AppointVa a tu pantalla de inicio desde Safari (Compartir → Agregar a pantalla de inicio).</p>
           </div>
         </div>
       </div>
-
-      <div class="tip">
-        <svg class="tip-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-          <circle cx="11" cy="11" r="9" stroke="#C8A961" stroke-width="1.5"/>
-          <line x1="11" y1="7" x2="11" y2="11.5" stroke="#C8A961" stroke-width="2" stroke-linecap="round"/>
-          <circle cx="11" cy="14.5" r="1.2" fill="#C8A961"/>
-        </svg>
-        <p><strong>Primer paso recomendado:</strong> Cambia tu contraseña inicial por una que solo tú conozcas. Ve al menú de usuario (esquina superior derecha) → Mi perfil → Cambiar contraseña.</p>
+      <figure class="shot">
+        <img src="img/empleado/01-inicio-sesion.webp" alt="Pantalla Inicia sesión con correo y contraseña" width="1100" height="688">
+        <figcaption>Pantalla de inicio de sesión.</figcaption>
+      </figure>
+      <p>Tu menú tiene cuatro secciones: <strong>Inicio</strong>, <strong>Mis citas</strong>, <strong>Pagos</strong> (si tu negocio lo usa) y <strong>Mi perfil</strong>. En tu celular se abre con el botón <span class="ui">☰</span>.</p>
+      <figure class="shot phone">
+        <img src="img/empleado/03-movil-menu.webp" alt="Menú del empleado en el celular con Inicio, Mis citas, Pagos y Mi perfil" width="540" height="1169">
+        <figcaption>Menú del empleado en el celular.</figcaption>
+      </figure>
+      <div class="info">
+        <svg class="info-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="9" stroke="#2563eb" stroke-width="1.5"/><circle cx="11" cy="7.2" r="1.2" fill="#2563eb"/><line x1="11" y1="10" x2="11" y2="15.5" stroke="#2563eb" stroke-width="2" stroke-linecap="round"/></svg>
+        <p>Si el propietario <strong>desactiva</strong> tu perfil de empleado, también se desactiva tu acceso al panel. Cuando te reactive, podrás volver a entrar con tus mismos datos.</p>
       </div>
     </div>
   </section>
 
-  <!-- ══════════════════════════════════════════════════════════ -->
-  <!--  02 — MIS CITAS                                            -->
-  <!-- ══════════════════════════════════════════════════════════ -->
-  <section class="section anchor-target" id="mis-citas" aria-labelledby="h-mis-citas">
+
+  <section class="section anchor-target" id="inicio" aria-labelledby="h-inicio">
     <div class="divider" aria-hidden="true"></div>
     <div style="padding-top: 52px;">
       <div class="section-label">Sección 02</div>
-      <h2 class="section-title" id="h-mis-citas">Mis citas</h2>
-      <p style="font-size:14px; color:var(--gray); margin-bottom:24px;">Ve a la sección <strong>Citas</strong> en el menú lateral. Aquí están todas las citas que te han asignado.</p>
-
+      <h2 class="section-title" id="h-inicio">Inicio</h2>
+      <p class="lead">Al entrar ves tus números del día y lo que sigue:</p>
       <div class="feat-list">
         <div class="feat-item">
           <div class="feat-dot"></div>
           <div class="feat-text">
-            <strong>Vista de lista y calendario semanal</strong>
-            <span>Alterna entre la vista de lista (más detalle) y el calendario semanal (visión general de tu semana). Elige la que te resulte más cómoda para tu rutina diaria.</span>
+            <strong>Citas hoy, Completadas e Ingresos</strong>
+            <span>Cuántas citas tienes hoy, cuántas terminaste y lo que se ha cobrado de ellas.</span>
           </div>
         </div>
         <div class="feat-item">
           <div class="feat-dot"></div>
           <div class="feat-text">
-            <strong>Filtros disponibles</strong>
-            <span>Filtra por fecha, o por estado: Pendiente, Confirmada, Completada o Cancelada. Útil para encontrar una cita específica o revisar solo las pendientes del día.</span>
+            <strong>Esta semana</strong>
+            <span>Tus citas completadas de la semana.</span>
           </div>
         </div>
         <div class="feat-item">
           <div class="feat-dot"></div>
           <div class="feat-text">
-            <strong>Información de cada cita</strong>
-            <span>Cada tarjeta muestra: nombre del cliente, servicio a realizar, hora de inicio y fin, y el estado actual de la cita.</span>
+            <strong>Próxima cita</strong>
+            <span>Quién sigue, a qué hora y cuánto falta, con el botón <span class="ui">Completar</span>.</span>
           </div>
         </div>
         <div class="feat-item">
           <div class="feat-dot"></div>
           <div class="feat-text">
-            <strong>Ver el detalle completo</strong>
-            <span>Haz clic en cualquier cita para ver toda la información: datos de contacto del cliente, notas internas previas, y las opciones de gestión disponibles.</span>
+            <strong>Agenda de hoy y Próximas citas</strong>
+            <span>Tus citas en orden de hora; el menú <span class="ui">···</span> abre todas sus acciones.</span>
           </div>
         </div>
       </div>
-
-      <div class="info">
-        <svg class="info-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-          <circle cx="11" cy="11" r="9" stroke="#2563eb" stroke-width="1.5"/>
-          <line x1="11" y1="7" x2="11" y2="11.5" stroke="#2563eb" stroke-width="2" stroke-linecap="round"/>
-          <circle cx="11" cy="14.5" r="1.2" fill="#2563eb"/>
-        </svg>
-        <p><strong>Solo ves tus citas:</strong> El sistema filtra automáticamente para mostrarte únicamente las citas que están asignadas a ti. Las citas de otros empleados no son visibles desde tu cuenta.</p>
-      </div>
+      <figure class="shot">
+        <img src="img/empleado/02-inicio.webp" alt="Inicio del empleado con citas de hoy, completadas, ingresos, próxima cita, agenda de hoy y próximas citas" width="1000" height="916">
+        <figcaption>Inicio de una empleada.</figcaption>
+      </figure>
     </div>
   </section>
 
-  <!-- ══════════════════════════════════════════════════════════ -->
-  <!--  03 — GESTIÓN DE CITAS                                     -->
-  <!-- ══════════════════════════════════════════════════════════ -->
-  <section class="section anchor-target" id="gestion-citas" aria-labelledby="h-gestion-citas">
+
+  <section class="section anchor-target" id="mis-citas" aria-labelledby="h-mis-citas">
     <div class="divider" aria-hidden="true"></div>
     <div style="padding-top: 52px;">
       <div class="section-label">Sección 03</div>
-      <h2 class="section-title" id="h-gestion-citas">Gestión de citas</h2>
-      <p style="font-size:14px; color:var(--gray); margin-bottom:24px;">Desde el detalle de una cita puedes cambiar su estado, agregar notas y reagendarla.</p>
-
-      <h3 style="font-size:16px; font-weight:700; margin-bottom:14px;">Cambiar el estado de una cita</h3>
-
-      <div class="steps">
-        <div class="step-item">
-          <div class="step-num" aria-hidden="true">1</div>
-          <div class="step-body">
-            <div class="step-title">Abre el detalle de la cita</div>
-            <p class="step-desc">Haz clic en la cita desde tu lista o desde el calendario. Se abrirá una vista con toda la información.</p>
-          </div>
-        </div>
-        <div class="step-item">
-          <div class="step-num" aria-hidden="true">2</div>
-          <div class="step-body">
-            <div class="step-title">Haz clic en "Cambiar estado"</div>
-            <p class="step-desc">El botón está visible dentro del detalle de la cita. Se despliega un menú con los estados disponibles.</p>
-          </div>
-        </div>
-        <div class="step-item">
-          <div class="step-num" aria-hidden="true">3</div>
-          <div class="step-body">
-            <div class="step-title">Selecciona el nuevo estado</div>
-            <p class="step-desc">Elige entre: Confirmada, Completada, Cancelada o Inasistencia. El cambio se guarda de inmediato y el propietario también lo verá reflejado.</p>
-          </div>
-        </div>
-      </div>
-
-      <h3 style="font-size:16px; font-weight:700; margin:24px 0 14px;">Estados que puedes aplicar</h3>
-      <div class="status-grid" role="list" aria-label="Estados disponibles para el empleado">
-        <div class="status-pill s-confirm" role="listitem">
-          <div class="dot"></div> Confirmada
-        </div>
-        <div class="status-pill s-complete" role="listitem">
-          <div class="dot"></div> Completada
-        </div>
-        <div class="status-pill s-cancel" role="listitem">
-          <div class="dot"></div> Cancelada
-        </div>
-        <div class="status-pill s-noshow" role="listitem">
-          <div class="dot"></div> Inasistencia
-        </div>
-      </div>
-
-      <div class="grid-2" style="margin-top:20px;">
-        <div class="mini-card">
-          <div class="mini-card-icon bg-gold">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-              <path d="M4 6h12M4 10h8M4 14h10" stroke="#C8A961" stroke-width="1.5" stroke-linecap="round"/>
-            </svg>
-          </div>
-          <h4>Agregar notas internas</h4>
-          <p>Desde el detalle de la cita puedes escribir notas que solo el equipo verá. Úsalas para registrar preferencias del cliente, observaciones del servicio o cualquier detalle relevante.</p>
-        </div>
-        <div class="mini-card">
-          <div class="mini-card-icon bg-blue">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-              <rect x="2" y="3" width="16" height="14" rx="2.5" stroke="#2563eb" stroke-width="1.5"/>
-              <line x1="2" y1="8" x2="18" y2="8" stroke="#2563eb" stroke-width="1.5"/>
-              <path d="M7 12l2 2 4-4" stroke="#2563eb" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </div>
-          <h4>Reagendar una cita</h4>
-          <p>Toca el botón "Reagendar" en el detalle de la cita, selecciona la nueva fecha y hora disponible. La cita se mueve y el cliente recibe una notificación automática.</p>
-        </div>
-      </div>
-
+      <h2 class="section-title" id="h-mis-citas">Mis citas</h2>
+      <p class="lead">En <strong>Mis citas</strong> ves solo las citas que te asignaron. Puedes cambiar entre <strong>Lista</strong>, <strong>Calendario</strong> y <strong>Línea de tiempo</strong>, y filtrar por periodo (Hoy, Semana, Mes), estado o nombre del cliente.</p>
+      <figure class="shot">
+        <img src="img/empleado/04-mis-citas.webp" alt="Mis citas en vista Lista con filtros y una cita confirmada" width="1040" height="420">
+        <figcaption>Tus citas de hoy.</figcaption>
+      </figure>
+      <h3>Acciones de una cita</h3>
+      <p>Toca <span class="ui">···</span> en la cita. Las acciones siempre aparecen en este orden:</p>
+      <ol class="plain">
+        <li><strong>Estado:</strong> <span class="ui">Confirmar cita</span> o <span class="ui">Marcar como completada</span>.</li>
+        <li><strong>Anticipo:</strong> <span class="ui">Registrar anticipo</span> cuando el cliente lo paga (si tu negocio pide anticipo).</li>
+        <li><strong>Gestión:</strong> <span class="ui">Reagendar</span>, <span class="ui">Agregar nota interna</span> y <span class="ui">Repetir cita</span>.</li>
+        <li><strong>Comunicación:</strong> <span class="ui">Enviar recordatorio por WhatsApp</span> y, al completarla, <span class="ui">Solicitar reseña por WhatsApp</span>.</li>
+        <li><strong>Detalle:</strong> <span class="ui">Ver detalle</span>.</li>
+        <li><strong>Al final, en rojo:</strong> <span class="ui">Marcar inasistencia</span> y <span class="ui">Cancelar cita</span>.</li>
+      </ol>
+      <figure class="shot narrow">
+        <img src="img/empleado/05-acciones-cita.webp" alt="Menú de acciones de una cita confirmada con completar, reagendar, nota interna, repetir, recordatorio por WhatsApp, ver detalle, inasistencia y cancelar" width="420" height="680">
+        <figcaption>Acciones de una cita.</figcaption>
+      </figure>
       <div class="tip">
-        <svg class="tip-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-          <circle cx="11" cy="11" r="9" stroke="#C8A961" stroke-width="1.5"/>
-          <line x1="11" y1="7" x2="11" y2="11.5" stroke="#C8A961" stroke-width="2" stroke-linecap="round"/>
-          <circle cx="11" cy="14.5" r="1.2" fill="#C8A961"/>
-        </svg>
-        <p><strong>Consejo:</strong> Marca la cita como <em>Completada</em> al terminar cada servicio — no al final del día. Esto ayuda al propietario a llevar los reportes de ingresos en tiempo real y enviar solicitudes de reseña al cliente oportunamente.</p>
+        <svg class="tip-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="9" stroke="#C8A961" stroke-width="1.5"/><line x1="11" y1="7" x2="11" y2="11.5" stroke="#C8A961" stroke-width="2" stroke-linecap="round"/><circle cx="11" cy="14.5" r="1.2" fill="#C8A961"/></svg>
+        <p><strong>Consejo:</strong> marca tus citas como completadas al terminar cada servicio. Así tus números de Inicio y los reportes del negocio quedan al día.</p>
       </div>
+      <h3>Modo recepción</h3>
+      <p>Si en tu negocio usan una pantalla en el mostrador, puedes abrirla con <span class="ui">Recepción</span> en Mis citas. Muestra la agenda de hoy por empleado. Para salir, mantén presionado <span class="ui">Salir del modo pantalla</span> y escribe tu contraseña (tienes 3 intentos cada 5 minutos).</p>
+      <figure class="shot">
+        <img src="img/empleado/08-recepcion.webp" alt="Modo recepción con reloj y una columna por empleada con sus citas de hoy" width="1100" height="688">
+        <figcaption>Modo recepción.</figcaption>
+      </figure>
     </div>
   </section>
 
-  <!-- ══════════════════════════════════════════════════════════ -->
-  <!--  04 — MI HORARIO                                           -->
-  <!-- ══════════════════════════════════════════════════════════ -->
-  <section class="section anchor-target" id="mi-horario" aria-labelledby="h-mi-horario">
+
+  <section class="section anchor-target" id="pagos" aria-labelledby="h-pagos">
     <div class="divider" aria-hidden="true"></div>
     <div style="padding-top: 52px;">
       <div class="section-label">Sección 04</div>
-      <h2 class="section-title" id="h-mi-horario">Mi horario</h2>
-      <p style="font-size:14px; color:var(--gray); margin-bottom:24px;">Tu horario determina cuándo los clientes pueden reservar citas contigo. Sin horario activo, no aparecerás como opción disponible en el booking.</p>
-
-      <div class="steps">
-        <div class="step-item">
-          <div class="step-num" aria-hidden="true">1</div>
-          <div class="step-body">
-            <div class="step-title">Ve a tu perfil de empleado</div>
-            <p class="step-desc">Haz clic en <strong>Mi perfil</strong> en el menú lateral, o pídele al propietario que configure tu horario desde el panel de empleados.</p>
+      <h2 class="section-title" id="h-pagos">Pagos</h2>
+      <p class="lead">Si tu negocio usa el módulo de pagos, en <strong>Pagos</strong> tienes dos pestañas:</p>
+      <div class="feat-list">
+        <div class="feat-item">
+          <div class="feat-dot"></div>
+          <div class="feat-text">
+            <strong>Cobro</strong>
+            <span>Tus citas del periodo con su botón <span class="ui">Cobrar</span>: eliges método (efectivo, tarjeta o transferencia), capturas lo recibido y la propina, y confirmas. Puedes imprimir o enviar el comprobante.</span>
           </div>
         </div>
-        <div class="step-item">
-          <div class="step-num" aria-hidden="true">2</div>
-          <div class="step-body">
-            <div class="step-title">Abre la pestaña "Horario"</div>
-            <p class="step-desc">Dentro de tu perfil encontrarás la pestaña de horario. Aquí configuras día a día tus horas de atención.</p>
-          </div>
-        </div>
-        <div class="step-item">
-          <div class="step-num" aria-hidden="true">3</div>
-          <div class="step-body">
-            <div class="step-title">Activa los días y define el rango de horas</div>
-            <p class="step-desc">Marca el interruptor del día para habilitarlo y define la hora de inicio y fin. Por ejemplo: Lunes a Viernes de 09:00 a 18:00. Los días que no actives no estarán disponibles para reservas.</p>
-          </div>
-        </div>
-        <div class="step-item">
-          <div class="step-num" aria-hidden="true">4</div>
-          <div class="step-body">
-            <div class="step-title">Guarda los cambios</div>
-            <p class="step-desc">Haz clic en <strong>Guardar horario</strong>. Los cambios aplican a partir del siguiente día — las reservas ya existentes para hoy no se ven afectadas.</p>
+        <div class="feat-item">
+          <div class="feat-dot"></div>
+          <div class="feat-text">
+            <strong>Historial</strong>
+            <span>Los pagos de tus citas del periodo seleccionado.</span>
           </div>
         </div>
       </div>
-
-      <div class="warn">
-        <svg class="warn-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-          <path d="M11 2L2 19h18L11 2z" stroke="#dc2626" stroke-width="1.5" stroke-linejoin="round"/>
-          <line x1="11" y1="9" x2="11" y2="13" stroke="#dc2626" stroke-width="2" stroke-linecap="round"/>
-          <circle cx="11" cy="16" r="1.2" fill="#dc2626"/>
-        </svg>
-        <p><strong>Importante:</strong> Si no tienes horario configurado, los clientes no podrán reservar citas contigo aunque el servicio esté activo. Configura tu horario desde el primer día.</p>
+      <figure class="shot">
+        <img src="img/empleado/06-pagos.webp" alt="Pestaña Cobro del empleado con totales y una cita por cobrar" width="1040" height="480">
+        <figcaption>Pagos del empleado.</figcaption>
+      </figure>
+      <div class="info">
+        <svg class="info-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="9" stroke="#2563eb" stroke-width="1.5"/><circle cx="11" cy="7.2" r="1.2" fill="#2563eb"/><line x1="11" y1="10" x2="11" y2="15.5" stroke="#2563eb" stroke-width="2" stroke-linecap="round"/></svg>
+        <p>El <strong>Corte del día</strong> y revertir un pago son exclusivos del propietario. Si te equivocaste al cobrar, avísale para que lo corrija.</p>
       </div>
     </div>
   </section>
 
-  <!-- ══════════════════════════════════════════════════════════ -->
-  <!--  05 — BLOQUEOS DE TIEMPO                                   -->
-  <!-- ══════════════════════════════════════════════════════════ -->
-  <section class="section anchor-target" id="bloqueos" aria-labelledby="h-bloqueos">
+
+  <section class="section anchor-target" id="mi-perfil" aria-labelledby="h-mi-perfil">
     <div class="divider" aria-hidden="true"></div>
     <div style="padding-top: 52px;">
       <div class="section-label">Sección 05</div>
-      <h2 class="section-title" id="h-bloqueos">Bloqueos de tiempo</h2>
-      <p style="font-size:14px; color:var(--gray); margin-bottom:24px;">Un bloqueo reserva un intervalo de tu horario para que no se puedan agendar citas en ese tiempo — sin necesidad de modificar tu horario permanente.</p>
-
-      <div class="steps">
-        <div class="step-item">
-          <div class="step-num" aria-hidden="true">1</div>
-          <div class="step-body">
-            <div class="step-title">Ve a tu perfil → pestaña "Bloqueos"</div>
-            <p class="step-desc">Accede desde <strong>Mi perfil</strong> en el menú lateral y selecciona la pestaña de bloqueos de tiempo.</p>
+      <h2 class="section-title" id="h-mi-perfil">Mi perfil y bloqueos</h2>
+      <figure class="shot">
+        <img src="img/empleado/07-mi-perfil.webp" alt="Mi perfil del empleado con foto, cambio de contraseña, seguridad, notificaciones y Mis bloqueos de horario" width="1000" height="995">
+        <figcaption>Mi perfil del empleado.</figcaption>
+      </figure>
+      <div class="feat-list">
+        <div class="feat-item">
+          <div class="feat-dot"></div>
+          <div class="feat-text">
+            <strong>Foto y contraseña</strong>
+            <span>Cambia tu foto con el ícono de cámara y tu contraseña (mínimo 6 caracteres, con mayúscula, minúscula y número).</span>
           </div>
         </div>
-        <div class="step-item">
-          <div class="step-num" aria-hidden="true">2</div>
-          <div class="step-body">
-            <div class="step-title">Haz clic en "Agregar bloqueo"</div>
-            <p class="step-desc">Aparecerá un formulario donde ingresas la fecha, la hora de inicio y la hora de fin del bloqueo.</p>
+        <div class="feat-item">
+          <div class="feat-dot"></div>
+          <div class="feat-text">
+            <strong>Notificaciones</strong>
+            <span>Activa las notificaciones del navegador. Si aparecen bloqueadas, sigue los pasos que te muestra la tarjeta.</span>
           </div>
         </div>
-        <div class="step-item">
-          <div class="step-num" aria-hidden="true">3</div>
-          <div class="step-body">
-            <div class="step-title">Agrega un motivo (opcional)</div>
-            <p class="step-desc">Puedes escribir un motivo para el bloqueo — solo el equipo lo verá, no el cliente. Ayuda al propietario a entender tu disponibilidad sin necesidad de preguntar.</p>
-          </div>
-        </div>
-        <div class="step-item">
-          <div class="step-num" aria-hidden="true">4</div>
-          <div class="step-body">
-            <div class="step-title">Guarda y elimina cuando ya no lo necesites</div>
-            <p class="step-desc">El bloqueo aparece en la lista. Cuando haya pasado la situación (regresaste de vacaciones, terminó la reunión), elimínalo para que el horario vuelva a estar disponible.</p>
+        <div class="feat-item">
+          <div class="feat-dot"></div>
+          <div class="feat-text">
+            <strong>Mis bloqueos de horario</strong>
+            <span>Toca <span class="ui">Agregar</span> para registrar un tiempo en el que no estarás (inicio, fin y motivo). En ese tiempo no te pueden agendar. Si borras uno por error, usa <span class="ui">Deshacer</span>.</span>
           </div>
         </div>
       </div>
-
-      <div class="grid-3" style="margin-top:16px;">
-        <div class="mini-card">
-          <div class="mini-card-icon bg-orange">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-              <rect x="2" y="3" width="16" height="14" rx="2.5" stroke="#ea580c" stroke-width="1.5"/>
-              <line x1="2" y1="8" x2="18" y2="8" stroke="#ea580c" stroke-width="1.5"/>
-              <path d="M10 11v3M8.5 12.5h3" stroke="#ea580c" stroke-width="1.5" stroke-linecap="round"/>
-            </svg>
-          </div>
-          <h4>Vacaciones</h4>
-          <p>Bloquea días completos o semanas cuando estarás fuera. Define la fecha de inicio y fin.</p>
-        </div>
-        <div class="mini-card">
-          <div class="mini-card-icon bg-blue">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-              <path d="M10 2a8 8 0 100 16A8 8 0 0010 2z" stroke="#2563eb" stroke-width="1.5"/>
-              <path d="M10 6v4l2.5 2.5" stroke="#2563eb" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </div>
-          <h4>Cita médica</h4>
-          <p>Bloquea unas horas de la mañana o tarde cuando tengas una cita personal.</p>
-        </div>
-        <div class="mini-card">
-          <div class="mini-card-icon bg-purple">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-              <circle cx="10" cy="10" r="8" stroke="#7c3aed" stroke-width="1.5"/>
-              <path d="M7 10h6M10 7v6" stroke="#7c3aed" stroke-width="1.5" stroke-linecap="round"/>
-            </svg>
-          </div>
-          <h4>Reunión de equipo</h4>
-          <p>Bloquea el intervalo exacto de una reunión interna para que no te lleguen citas en ese momento.</p>
-        </div>
+      <div class="info">
+        <svg class="info-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="9" stroke="#2563eb" stroke-width="1.5"/><circle cx="11" cy="7.2" r="1.2" fill="#2563eb"/><line x1="11" y1="10" x2="11" y2="15.5" stroke="#2563eb" stroke-width="2" stroke-linecap="round"/></svg>
+        <p>Tu <strong>horario semanal</strong> lo define el propietario en Empleados → Horarios. Si necesitas cambiarlo, pídeselo; para ausencias puntuales usa tus bloqueos.</p>
       </div>
     </div>
   </section>
 
-  <!-- ══════════════════════════════════════════════════════════ -->
-  <!--  06 — NOTIFICACIONES                                       -->
-  <!-- ══════════════════════════════════════════════════════════ -->
-  <section class="section anchor-target" id="notificaciones" aria-labelledby="h-notificaciones">
-    <div class="divider" aria-hidden="true"></div>
-    <div style="padding-top: 52px;">
-      <div class="section-label">Sección 06</div>
-      <h2 class="section-title" id="h-notificaciones">Notificaciones</h2>
-      <p style="font-size:14px; color:var(--gray); margin-bottom:24px;">AppointVa puede avisarte en tiempo real cuando un cliente agenda una cita contigo — sin necesidad de tener el panel abierto.</p>
 
-      <div class="steps">
-        <div class="step-item">
-          <div class="step-num" aria-hidden="true">1</div>
-          <div class="step-body">
-            <div class="step-title">Haz clic en el ícono de campana en el menú superior</div>
-            <p class="step-desc">Verás la opción <strong>"Activar notificaciones"</strong>. Haz clic en ella para iniciar el proceso de activación.</p>
-          </div>
-        </div>
-        <div class="step-item">
-          <div class="step-num" aria-hidden="true">2</div>
-          <div class="step-body">
-            <div class="step-title">Permite el acceso cuando el navegador lo pida</div>
-            <p class="step-desc">El navegador mostrará un mensaje preguntando si deseas permitir notificaciones de AppointVa. Selecciona <strong>"Permitir"</strong>. Si seleccionas "Bloquear", no recibirás alertas hasta que lo cambies manualmente.</p>
-          </div>
-        </div>
-        <div class="step-item">
-          <div class="step-num" aria-hidden="true">3</div>
-          <div class="step-body">
-            <div class="step-title">Listo — recibirás alertas automáticamente</div>
-            <p class="step-desc">A partir de ese momento, cada vez que un cliente reserve una cita contigo, recibirás una notificación en tu dispositivo aunque el panel no esté abierto en primer plano.</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="feat-list" style="margin-top:20px;">
-        <div class="feat-item">
-          <div class="feat-dot"></div>
-          <div class="feat-text">
-            <strong>Compatibilidad</strong>
-            <span>Funciona en Chrome y Edge en Windows, Mac y Android. En iPhone y iPad con iOS 16.4 o superior, usando Safari.</span>
-          </div>
-        </div>
-        <div class="feat-item">
-          <div class="feat-dot"></div>
-          <div class="feat-text">
-            <strong>Notificaciones en móvil</strong>
-            <span>Se muestran en la barra de notificaciones de tu celular, igual que cualquier otra app — sin necesidad de instalar nada adicional en Android.</span>
-          </div>
-        </div>
-        <div class="feat-item">
-          <div class="feat-dot"></div>
-          <div class="feat-text">
-            <strong>iPhone (iOS) — paso adicional</strong>
-            <span>En iPhone debes instalar AppointVa como app primero: abre Safari, ve al panel, toca el botón compartir → "Agregar a pantalla de inicio". Después activa las notificaciones desde dentro de la app instalada.</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="warn" style="margin-top:16px;">
-        <svg class="warn-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-          <path d="M11 2L2 19h18L11 2z" stroke="#dc2626" stroke-width="1.5" stroke-linejoin="round"/>
-          <line x1="11" y1="9" x2="11" y2="13" stroke="#dc2626" stroke-width="2" stroke-linecap="round"/>
-          <circle cx="11" cy="16" r="1.2" fill="#dc2626"/>
-        </svg>
-        <p><strong>Si el permiso fue denegado anteriormente:</strong> Ve a la configuración de tu navegador → Configuración del sitio → Notificaciones → busca appointva.com → cámbialo a "Permitir". Luego regresa al panel y activa las notificaciones de nuevo.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- ══════════════════════════════════════════════════════════ -->
-  <!--  07 — SEGURIDAD                                            -->
-  <!-- ══════════════════════════════════════════════════════════ -->
   <section class="section anchor-target" id="seguridad" aria-labelledby="h-seguridad">
     <div class="divider" aria-hidden="true"></div>
     <div style="padding-top: 52px;">
-      <div class="section-label">Sección 07</div>
-      <h2 class="section-title" id="h-seguridad">Seguridad</h2>
-      <p style="font-size:14px; color:var(--gray); margin-bottom:24px;">Protege tu cuenta para salvaguardar la información de tus clientes y del negocio.</p>
-
+      <div class="section-label">Sección 06</div>
+      <h2 class="section-title" id="h-seguridad">Verificación en dos pasos</h2>
+      <p class="lead">Desde <strong>Mi perfil → Seguridad</strong> toca <span class="ui">Configurar verificación en dos pasos</span>. Escanea el código QR con una app como Google Authenticator o Authy, escribe el código de 6 dígitos y confirma.</p>
       <div class="steps">
         <div class="step-item">
           <div class="step-num" aria-hidden="true">1</div>
           <div class="step-body">
-            <div class="step-title">Cambia tu contraseña inicial</div>
-            <p class="step-desc">Ve al menú de usuario (arriba a la derecha) → <strong>Mi perfil</strong> → <strong>Cambiar contraseña</strong>. Ingresa la contraseña actual y la nueva dos veces. Usa una que solo tú conozcas.</p>
+            <div class="step-title">Guarda tus 10 códigos de recuperación</div>
+            <p class="step-desc">Al activarla te damos 10 códigos. Cópialos o descárgalos (.txt) y guárdalos fuera de tu celular; no se vuelven a mostrar.</p>
           </div>
         </div>
         <div class="step-item">
           <div class="step-num" aria-hidden="true">2</div>
           <div class="step-body">
-            <div class="step-title">Activa la autenticación de dos factores (2FA)</div>
-            <p class="step-desc">Ve al menú de usuario → <strong>Seguridad</strong> → <strong>Activar 2FA</strong>. Escanea el código QR con una app como Google Authenticator o Authy. A partir de ese momento, al iniciar sesión necesitarás el código de 6 dígitos además de tu contraseña.</p>
+            <div class="step-title">Si pierdes tu celular</div>
+            <p class="step-desc">En la pantalla <strong>Verificación en dos pasos</strong> toca <span class="ui">Usar un código de recuperación</span> y escribe uno. Cada código sirve una sola vez.</p>
           </div>
         </div>
         <div class="step-item">
           <div class="step-num" aria-hidden="true">3</div>
           <div class="step-body">
-            <div class="step-title">Guarda tus códigos de respaldo</div>
-            <p class="step-desc">Al activar el 2FA, AppointVa te muestra códigos de recuperación. Guárdalos en un lugar seguro — son tu única alternativa de acceso si pierdes el teléfono o la app de autenticación.</p>
+            <div class="step-title">Si se te acaban</div>
+            <p class="step-desc">En Seguridad puedes generar 10 códigos nuevos con tu contraseña; los anteriores dejan de servir.</p>
           </div>
         </div>
       </div>
+      <figure class="shot narrow">
+        <img src="img/empleado/09-codigo-recuperacion.webp" alt="Pantalla Verificación en dos pasos con un código de recuperación escrito" width="430" height="490">
+        <figcaption>Entrar con un código de recuperación.</figcaption>
+      </figure>
+    </div>
+  </section>
 
-      <div class="info">
-        <svg class="info-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-          <circle cx="11" cy="11" r="9" stroke="#2563eb" stroke-width="1.5"/>
-          <line x1="11" y1="7" x2="11" y2="11.5" stroke="#2563eb" stroke-width="2" stroke-linecap="round"/>
-          <circle cx="11" cy="14.5" r="1.2" fill="#2563eb"/>
-        </svg>
-        <p><strong>¿Perdiste acceso a tu app de autenticación?</strong> Contacta al propietario del negocio — puede desactivar el 2FA de tu cuenta desde el panel de administración para que puedas volver a acceder.</p>
-      </div>
 
-      <div class="warn" style="margin-top:14px;">
-        <svg class="warn-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-          <path d="M11 2L2 19h18L11 2z" stroke="#dc2626" stroke-width="1.5" stroke-linejoin="round"/>
-          <line x1="11" y1="9" x2="11" y2="13" stroke="#dc2626" stroke-width="2" stroke-linecap="round"/>
-          <circle cx="11" cy="16" r="1.2" fill="#dc2626"/>
-        </svg>
-        <p><strong>No compartas tu contraseña.</strong> AppointVa nunca te pedirá tu contraseña por email, WhatsApp ni por teléfono. Cualquier mensaje que lo solicite es un intento de fraude.</p>
-      </div>
-
-      <div class="tip" style="margin-top:14px;">
-        <svg class="tip-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-          <circle cx="11" cy="11" r="9" stroke="#C8A961" stroke-width="1.5"/>
-          <line x1="11" y1="7" x2="11" y2="11.5" stroke="#C8A961" stroke-width="2" stroke-linecap="round"/>
-          <circle cx="11" cy="14.5" r="1.2" fill="#C8A961"/>
-        </svg>
-        <p><strong>Recomendación:</strong> Activa el 2FA lo antes posible. Tus citas contienen datos personales de los clientes — proteger tu cuenta es también proteger su privacidad.</p>
+  <section class="section anchor-target" id="preguntas" aria-labelledby="h-preguntas">
+    <div class="divider" aria-hidden="true"></div>
+    <div style="padding-top: 52px;">
+      <div class="section-label">Sección 07</div>
+      <h2 class="section-title" id="h-preguntas">Preguntas frecuentes</h2>
+      <div class="feat-list">
+        <div class="feat-item">
+          <div class="feat-dot"></div>
+          <div class="feat-text">
+            <strong>No veo una cita que me dijeron que tenía</strong>
+            <span>Revisa el filtro de periodo (Hoy, Semana, Mes) y el de estado. Si sigue sin aparecer, quizá está asignada a otra persona.</span>
+          </div>
+        </div>
+        <div class="feat-item">
+          <div class="feat-dot"></div>
+          <div class="feat-text">
+            <strong>El cliente quiere cambiar de hora</strong>
+            <span>Usa <span class="ui">Reagendar</span> en las acciones de la cita y elige el nuevo horario disponible.</span>
+          </div>
+        </div>
+        <div class="feat-item">
+          <div class="feat-dot"></div>
+          <div class="feat-text">
+            <strong>Necesito corregir el teléfono de un cliente</strong>
+            <span>Los datos de los clientes los edita el propietario en Clientes. Pídeselo; tú puedes dejar una nota interna en la cita.</span>
+          </div>
+        </div>
+        <div class="feat-item">
+          <div class="feat-dot"></div>
+          <div class="feat-text">
+            <strong>Olvidé mi contraseña</strong>
+            <span>En la pantalla de inicio usa <em>¿Olvidaste tu contraseña?</em> o pide al propietario que te ayude.</span>
+          </div>
+        </div>
+        <div class="feat-item">
+          <div class="feat-dot"></div>
+          <div class="feat-text">
+            <strong>Ya no puedo entrar</strong>
+            <span>Si tu perfil fue desactivado, tu acceso también. Habla con el propietario.</span>
+          </div>
+        </div>
       </div>
     </div>
   </section>
 
-  <!-- ══════════════════════════════════════════════════════════ -->
-  <!--  FOOTER                                                    -->
-  <!-- ══════════════════════════════════════════════════════════ -->
   <div class="divider" aria-hidden="true"></div>
 
 </div><!-- /page -->
 </main>
 
 <footer class="footer">
-  <p><strong>AppointVa</strong> &copy; 2026 &nbsp;·&nbsp; Manual del Empleado &nbsp;·&nbsp; Versión 4.2</p>
-  <p style="margin-top:6px;">Para soporte, contacta al propietario de tu negocio o escríbenos desde el panel en <strong>Ayuda</strong>.</p>
+  <p><strong>AppointVa</strong> &copy; 2026 &nbsp;·&nbsp; Manual del Empleado &nbsp;·&nbsp; v2.0</p>
+  <p style="margin-top:6px;">¿Dudas sobre tu acceso o tu horario? Habla con el propietario de tu negocio. Este manual está en tu panel: menú de tu usuario → <strong>Manual de usuario</strong>.</p>
 </footer>
 
 </body>
