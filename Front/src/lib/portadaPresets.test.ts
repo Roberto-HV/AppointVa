@@ -4,6 +4,7 @@ import {
   PRESETS_PORTADA,
   esPresetPortadaValido,
   fondoPortada,
+  fondoPortadaMuestra,
   normalizarPresetPortada,
   presetsPorFamilia,
   tonoPortada,
@@ -162,40 +163,23 @@ describe("materiales", () => {
     }
   });
 
-  it("produce un estilo válido: SVG en línea sin red, con semillas fijas", () => {
+  it("pinta la imagen pregenerada del material, sin filtros SVG en el navegador", () => {
     for (const preset of MATERIALES) {
       const fondo = fondoPortada(preset.clave, MARCA);
       expect(fondo.background).not.toMatch(/NaN|undefined|null/);
-      expect(fondo.background).toContain('url("data:image/svg+xml,');
-      // Ninguna petición externa: el único http es el espacio de nombres del SVG.
-      const svgs = (fondo.background.match(/data:image\/svg\+xml,[^"]+/g) ?? []).map((u) =>
-        decodeURIComponent(u.slice("data:image/svg+xml,".length)),
-      );
-      for (const svg of svgs) {
-        // XML bien formado: un SVG roto no da error, simplemente no se pinta.
-        const doc = new DOMParser().parseFromString(svg, "image/svg+xml");
-        expect(doc.querySelector("parsererror")).toBeNull();
-        expect(doc.documentElement.tagName).toBe("svg");
-      }
-      const sinNamespace = svgs.join("").replace(/xmlns="http:\/\/www\.w3\.org\/2000\/svg"/g, "");
-      expect(sinNamespace).not.toMatch(/https?:/);
-      // Todo ruido lleva semilla: se ve igual en cualquier navegador y visita.
-      const ruidos = sinNamespace.match(/<feTurbulence[^>]*>/g) ?? [];
-      expect(ruidos.length).toBeGreaterThan(0);
-      for (const r of ruidos) expect(r).toMatch(/seed="\d+"/);
-      // Un modo de mezcla por capa, si los hay.
-      if (fondo.backgroundBlendMode) {
-        const capas = fondo.background.split(/,(?![^(]*\))/).length;
-        expect(fondo.backgroundBlendMode.split(",").length).toBeLessThanOrEqual(capas);
-      }
+      expect(fondo.background).toContain(`url("/portadas/${preset.clave}.webp") center / cover no-repeat`);
+      expect(fondo.background).not.toContain("data:image/svg+xml");
     }
   });
 
-  it("cada SVG es ligero: menos de 6 KB codificado", () => {
+  it("la muestra del selector usa la miniatura; los fondos de marca no cambian", () => {
     for (const preset of MATERIALES) {
-      const { background } = fondoPortada(preset.clave, MARCA);
-      const urls = background.match(/url\("data:image\/svg\+xml,[^"]+"\)/g) ?? [];
-      for (const u of urls) expect(u.length).toBeLessThan(6 * 1024);
+      expect(fondoPortadaMuestra(preset.clave, MARCA).background).toContain(
+        `url("/portadas/${preset.clave}-mini.webp")`,
+      );
+      expect(fondoPortadaMuestra(preset.clave, MARCA)).toBe(fondoPortadaMuestra(preset.clave, MARCA));
     }
+    expect(fondoPortadaMuestra("deg-aurora", MARCA)).toBe(fondoPortada("deg-aurora", MARCA));
+    expect(fondoPortadaMuestra(null, MARCA)).toBe(fondoPortada(null, MARCA));
   });
 });

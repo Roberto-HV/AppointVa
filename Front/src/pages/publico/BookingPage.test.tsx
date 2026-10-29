@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor, fireEvent, within } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, useLocation, useNavigate } from "react-router-dom";
@@ -918,5 +918,72 @@ describe("BookingPage — resumen de la elección", () => {
   it("muestra la fecha y hora elegidas en el paso 3 y siguientes", async () => {
     await avanzarHastaPaso4();
     expect(screen.getByText(/· 10:00$/)).toBeInTheDocument();
+  });
+});
+
+// ── Escritorio: resumen fijo a la derecha con el botón para seguir ────────────
+describe("BookingPage — resumen de escritorio", () => {
+  /** Simula una ventana de escritorio: solo coincide la consulta del breakpoint lg. */
+  function comoEscritorio() {
+    vi.stubGlobal("matchMedia", (consulta: string) => ({
+      matches: consulta === "(min-width: 1024px)",
+      media: consulta,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }));
+  }
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  const resumen = () => screen.getByRole("complementary", { name: "Resumen de tu reserva" });
+
+  it("en móvil no monta el resumen: los botones siguen en la barra de abajo", async () => {
+    vi.mocked(publicoApi.obtenerNegocio).mockResolvedValue(mockNegocio);
+    renderConQuery();
+    await screen.findByTestId("paso-servicio");
+    expect(screen.queryByRole("complementary", { name: "Resumen de tu reserva" })).not.toBeInTheDocument();
+  });
+
+  it("muestra la elección y su Continuar avanza igual que la barra móvil", async () => {
+    comoEscritorio();
+    vi.mocked(publicoApi.obtenerNegocio).mockResolvedValue(mockNegocio);
+    renderConQuery();
+    await screen.findByTestId("paso-servicio");
+
+    expect(within(resumen()).getByText("Salón Test")).toBeInTheDocument();
+    expect(within(resumen()).getByText("Elige un servicio para continuar.")).toBeInTheDocument();
+    // Un solo «Continuar» en pantalla: el de la barra móvil no se monta a la vez.
+    const continuar = screen.getByRole("button", { name: "Continuar" });
+    expect(resumen()).toContainElement(continuar);
+    expect(continuar).toBeDisabled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Corte de cabello" }));
+    expect(within(resumen()).getByText("Corte de cabello")).toBeInTheDocument();
+    expect(within(resumen()).getByText("30 min")).toBeInTheDocument();
+    expect(within(resumen()).getByText("Total")).toBeInTheDocument();
+    expect(within(resumen()).getAllByText("$150")).toHaveLength(2); // precio del servicio y total
+
+    fireEvent.click(within(resumen()).getByRole("button", { name: "Continuar" }));
+    expect(await screen.findByTestId("paso-empleado")).toBeInTheDocument();
+    expect(screen.getByTestId("ubicacion")).toHaveTextContent("?paso=2");
+    // Desde el paso 2 también se puede volver.
+    expect(within(resumen()).getByRole("button", { name: "Atrás" })).toBeInTheDocument();
+  });
+
+  it("suma quién atiende y el horario, y en el último paso envía el formulario", async () => {
+    comoEscritorio();
+    await avanzarHastaPaso4();
+
+    expect(within(resumen()).getByText("Ana García")).toBeInTheDocument();
+    expect(within(resumen()).getByText(/· 10:00$/)).toBeInTheDocument();
+    const confirmar = within(resumen()).getByRole("button", { name: "Confirmar cita" });
+    expect(confirmar).toHaveAttribute("form", "form-datos-cliente");
+    expect(screen.getAllByRole("button", { name: "Confirmar cita" })).toHaveLength(1);
+
+    vi.mocked(publicoApi.crearCita).mockResolvedValueOnce({ codigoConfirmacion: "ABC123" } as never);
+    fireEvent.click(confirmar);
+    await waitFor(() => expect(publicoApi.crearCita).toHaveBeenCalledTimes(1));
   });
 });

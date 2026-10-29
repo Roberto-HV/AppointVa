@@ -16,6 +16,8 @@ import PasoServicio from "../../components/booking/PasoServicio";
 import PasoEmpleado, { SIN_PREFERENCIA_ID } from "../../components/booking/PasoEmpleado";
 import PasoFechaHora from "../../components/booking/PasoFechaHora";
 import PasoDatosCliente, { type DatosClienteForm } from "../../components/booking/PasoDatosCliente";
+import ResumenReserva from "../../components/booking/ResumenReserva";
+import { useMediaQuery } from "../../hooks/useMediaQuery";
 import { Star, X, Tag, AlertCircle, ChevronLeft, ChevronRight, MapPin } from "lucide-react";
 import PublicFooter from "../../components/PublicFooter";
 import { useTituloPagina } from "../../hooks/useTituloPagina";
@@ -65,6 +67,21 @@ const BTN_BASE = "min-h-[48px] rounded-2xl text-sm transition inline-flex items-
 const BTN_PRIMARIO = `${BTN_BASE} text-white font-bold tracking-wide hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed`;
 const BTN_SECUNDARIO = `${BTN_BASE} border-2 border-slate-200 font-medium text-slate-600 hover:border-slate-300`;
 
+// Breakpoint `lg` de Tailwind: desde ahí la reserva va en dos columnas con el
+// resumen fijo a la derecha, que se lleva los botones de la barra de acción.
+const CONSULTA_ESCRITORIO = "(min-width: 1024px)";
+
+/**
+ * El botón principal de cada paso, una sola vez: lo pintan igual la barra móvil
+ * y el resumen de escritorio, así que el «¿se puede seguir?» no se duplica.
+ */
+interface AccionPrincipal {
+  etiqueta: string;
+  deshabilitado: boolean;
+  /** Avanza el wizard; si falta, el botón envía el formulario de datos. */
+  onClick?: () => void;
+  conAtras: boolean;
+}
 // Fija al viewport en móvil (pulgar); en lg vuelve al flujo, bajo la columna de reserva.
 const BARRA_ACCION =
   "fixed bottom-0 left-0 right-0 z-40 rounded-t-2xl border-t border-slate-200 bg-white/95 backdrop-blur px-4 pt-3 " +
@@ -379,7 +396,7 @@ function GaleriaDesktop({ imagenes, onOpen }: { imagenes: ImagenGaleria[]; onOpe
             <img
               src={imagenes[idx].url}
               alt={imagenes[idx].descripcion ?? ""}
-              className="w-full h-[380px] xl:h-[440px] object-cover"
+              className="w-full h-[300px] xl:h-[360px] object-cover"
               draggable={false}
             />
           </button>
@@ -859,6 +876,7 @@ export default function BookingPage() {
   const contenedorPasoRef = useRef<HTMLDivElement>(null);
   const ultimoPasoMostradoRef = useRef<ClavePaso | null>(null);
   const [anuncioPaso, setAnuncioPaso] = useState("");
+  const esEscritorio = useMediaQuery(CONSULTA_ESCRITORIO);
 
   const sinPreferencia = empleado?.id === SIN_PREFERENCIA_ID;
 
@@ -1150,9 +1168,41 @@ export default function BookingPage() {
     </button>
   );
 
+  const accionPrincipal: AccionPrincipal | null = (() => {
+    if (paso === 1) {
+      return { etiqueta: "Continuar", deshabilitado: !servicio, onClick: irSiguiente, conAtras: false };
+    }
+    if (paso === 2 && servicio) {
+      return { etiqueta: "Continuar", deshabilitado: !empleado, onClick: irSiguiente, conAtras: true };
+    }
+    if (paso === 3 && servicio && empleado && !mostrarIntake) {
+      return {
+        etiqueta: cargandoIntake ? "Cargando..." : "Continuar",
+        deshabilitado: !slot || cargandoIntake,
+        onClick: irSiguiente,
+        conAtras: true,
+      };
+    }
+    if (paso === 3 && mostrarIntake && camposIntake.length > 0) {
+      return { etiqueta: "Continuar", deshabilitado: false, onClick: continuarDesdeIntake, conAtras: true };
+    }
+    if (paso === 4 && servicio && empleado && slot) {
+      // Sin aceptar las políticas el botón sigue activo: el formulario explica qué falta.
+      return { etiqueta: enviando ? "Confirmando…" : "Confirmar cita", deshabilitado: enviando, conAtras: true };
+    }
+    return null;
+  })();
+
+  // El último paso envía el <form> de PasoDatosCliente desde fuera, por su id.
+  const propsAccion = (accion: AccionPrincipal) =>
+    accion.onClick
+      ? { onClick: accion.onClick, disabled: accion.deshabilitado }
+      : { type: "submit" as const, form: ID_FORM_DATOS, disabled: accion.deshabilitado };
+
   // Una sola barra para todo el wizard: vive fuera del bloque animado porque un
   // `position: fixed/sticky` dentro de un ancestro transformado se ancla al transform.
   const accionesPaso = (() => {
+    if (!accionPrincipal) return null;
     if (paso === 1) {
       return (
         <>
@@ -1161,8 +1211,7 @@ export default function BookingPage() {
               una sola línea corrida truncaba hasta los nombres cortos.
               El nombre accesible sigue siendo "Continuar"; el resumen va como descripción. */}
           <button
-            onClick={irSiguiente}
-            disabled={!servicio}
+            {...propsAccion(accionPrincipal)}
             aria-label={servicio ? "Continuar" : undefined}
             aria-describedby={servicio ? "resumen-servicio-elegido" : undefined}
             className={`${BTN_PRIMARIO} w-full ${servicio ? "!justify-between gap-3 px-4 py-2" : ""}`}
@@ -1193,73 +1242,44 @@ export default function BookingPage() {
       );
     }
 
-    if (paso === 2 && servicio) {
-      return (
-        <div className="flex gap-3">
-          {botonAtras}
-          <button
-            onClick={irSiguiente}
-            disabled={!empleado}
-            className={`${BTN_PRIMARIO} flex-1`}
-            style={{ background: colorCta }}
-          >
-            Continuar
-          </button>
-        </div>
-      );
-    }
-
-    if (paso === 3 && servicio && empleado && !mostrarIntake) {
-      return (
-        <div className="flex gap-3">
-          {botonAtras}
-          <button
-            onClick={irSiguiente}
-            disabled={!slot || cargandoIntake}
-            className={`${BTN_PRIMARIO} flex-1`}
-            style={{ background: colorCta }}
-          >
-            {cargandoIntake ? "Cargando..." : "Continuar"}
-          </button>
-        </div>
-      );
-    }
-
-    if (paso === 3 && mostrarIntake && camposIntake.length > 0) {
-      return (
-        <div className="flex gap-3">
-          {botonAtras}
-          <button
-            onClick={continuarDesdeIntake}
-            className={`${BTN_PRIMARIO} flex-1`}
-            style={{ background: colorCta }}
-          >
-            Continuar
-          </button>
-        </div>
-      );
-    }
-
-    if (paso === 4 && servicio && empleado && slot) {
-      return (
-        <div className="flex gap-3">
-          {botonAtras}
-          <button
-            type="submit"
-            form={ID_FORM_DATOS}
-            // Sin aceptar las políticas el botón sigue activo: el formulario explica qué falta.
-            disabled={enviando}
-            className={`${BTN_PRIMARIO} flex-1`}
-            style={{ background: colorCta }}
-          >
-            {enviando ? "Confirmando…" : "Confirmar cita"}
-          </button>
-        </div>
-      );
-    }
-
-    return null;
+    return (
+      <div className="flex gap-3">
+        {botonAtras}
+        <button
+          {...propsAccion(accionPrincipal)}
+          className={`${BTN_PRIMARIO} flex-1`}
+          style={{ background: colorCta }}
+        >
+          {accionPrincipal.etiqueta}
+        </button>
+      </div>
+    );
   })();
+
+  // Lo mismo, apilado para el resumen de escritorio: el botón principal a todo
+  // lo ancho y «Atrás» debajo, más discreto.
+  const accionesResumen = accionPrincipal && (
+    <>
+      <button
+        {...propsAccion(accionPrincipal)}
+        className={`${BTN_PRIMARIO} w-full`}
+        style={{ background: colorCta }}
+      >
+        {accionPrincipal.etiqueta}
+      </button>
+      {accionPrincipal.conAtras && (
+        <button onClick={irAtras} className={`${BTN_SECUNDARIO} w-full`}>
+          <ChevronLeft size={15} />
+          Atrás
+        </button>
+      )}
+    </>
+  );
+
+  // Quién atiende, tal como se muestra: con «sin preferencia» es el asignado al horario.
+  const nombreProfesional = empleado
+    ? sinPreferencia ? (slot?.empleadoNombre ?? "Cualquier disponible") : empleado.nombre
+    : null;
 
   return (
     <div data-sector={negocio.sector === "salud" ? "salud" : undefined} className="min-h-screen bg-slate-50">
@@ -1299,11 +1319,12 @@ export default function BookingPage() {
             materiales sí (ver `portadaVelo`). */}
         <div
           data-tinta={tinta.tipo}
-          className="relative z-10 px-5 sm:px-8 pt-[calc(3.5rem+env(safe-area-inset-top))] pb-4 sm:pb-6"
+          className="relative z-10 px-5 sm:px-8 lg:px-0 pt-[calc(3.5rem+env(safe-area-inset-top))] pb-4 sm:pb-6"
           style={veloEnTexto ? { background: veloEnTexto } : undefined}
         >
-          {/* Fila: logo + nombre alineados arriba */}
-          <div className="flex items-start gap-3.5 sm:gap-5">
+          {/* Fila: logo + nombre alineados arriba. En escritorio va en el mismo
+              contenedor centrado que la reserva; el velo sigue a todo lo ancho. */}
+          <div className="flex items-start gap-3.5 sm:gap-5 lg:max-w-6xl lg:mx-auto lg:px-8">
             {/* Logo */}
             <div className="shrink-0">
               {negocio.logoUrl ? (
@@ -1389,45 +1410,29 @@ export default function BookingPage() {
       {/* Tira de pasos — full width, fondo oscuro */}
       <IndicadorPasos pasoActual={pasoIndicador} pasos={pasos} slug={negocio.slug} />
 
-      {/* Contenido */}
-      <div className="lg:max-w-6xl lg:mx-auto lg:px-8 lg:flex lg:gap-8 lg:items-start lg:pt-8 lg:pb-12">
+      {/* Contenido. En escritorio, dos columnas: el paso a la izquierda y el
+          resumen fijo a la derecha, con el botón para seguir siempre a la vista.
+          La galería pasa arriba de los servicios (paso 1), como portada del negocio:
+          una tercera columna dejaba los servicios en ~220px. */}
+      <div className="lg:max-w-6xl lg:mx-auto lg:px-8 lg:flex lg:gap-8 xl:gap-10 lg:items-start lg:pt-8 lg:pb-12">
 
-        {/* Left column — galería + reseñas, solo desktop */}
-        {negocio.galeria?.length > 0 && (
-          <div className="hidden lg:flex w-[440px] xl:w-[500px] shrink-0 sticky top-0 h-screen flex-col justify-start py-8 overflow-y-auto" style={{ overscrollBehavior: "contain" }}>
-            <GaleriaDesktop imagenes={negocio.galeria} onOpen={setGaleriaViewerIdx} />
-            {negocio.resenas?.length > 0 && (
-              <div className="mt-6">
-                <ResenasSection
-                  resenas={negocio.resenas}
-                  promedio={negocio.promedioResenas ?? 0}
-                  total={negocio.totalResenas ?? 0}
-                />
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Right column — flujo de reserva */}
+        {/* Columna del flujo de reserva */}
         {/* pb-32: deja aire bajo el contenido para que la barra fija no tape el final */}
-        <div ref={columnaReservaRef} className="px-4 pt-5 pb-32 lg:flex-1 lg:px-0 lg:pt-0 lg:pb-0">
+        <div ref={columnaReservaRef} className="px-4 pt-5 pb-32 lg:flex-1 lg:min-w-0 lg:px-0 lg:pt-0 lg:pb-0">
 
         {/* Anuncia el paso nuevo a lectores de pantalla */}
         <p role="status" aria-live="polite" className="sr-only">{anuncioPaso}</p>
 
         {/* Mini-resumen breadcrumb */}
+        {/* En escritorio lo repite el resumen de la derecha. */}
         {paso >= 2 && (servicio || empleado) && (
-          <div className="flex items-center gap-1.5 text-xs bg-white border border-slate-100 rounded-xl px-3 py-2 mb-4 flex-wrap shadow-sm">
+          <div className="flex items-center gap-1.5 text-xs bg-white border border-slate-100 rounded-xl px-3 py-2 mb-4 flex-wrap shadow-sm lg:hidden">
             {servicio && (
               <span className="font-semibold text-slate-700">{servicio.nombre}</span>
             )}
             {servicio && empleado && paso >= 3 && <span className="text-slate-300">›</span>}
             {empleado && paso >= 3 && (
-              <span className="text-slate-500">
-                {sinPreferencia
-                  ? (slot?.empleadoNombre ?? "Cualquier disponible")
-                  : empleado.nombre}
-              </span>
+              <span className="text-slate-500">{nombreProfesional}</span>
             )}
             {slot && paso >= 3 && (
               <>
@@ -1458,6 +1463,13 @@ export default function BookingPage() {
         {/* Paso 1 */}
         {paso === 1 && (
           <>
+            {/* Galería — solo escritorio, arriba de los servicios */}
+            {negocio.galeria?.length > 0 && (
+              <div className="hidden lg:block mb-8">
+                <GaleriaDesktop imagenes={negocio.galeria} onOpen={setGaleriaViewerIdx} />
+              </div>
+            )}
+
             <PasoServicio
               servicios={negocio.servicios}
               seleccionado={servicio}
@@ -1484,9 +1496,9 @@ export default function BookingPage() {
               </div>
             )}
 
-            {/* Reseñas — solo mobile; en desktop aparecen en la columna izquierda */}
+            {/* Reseñas — bajo los servicios, en móvil y en escritorio */}
             {negocio.resenas?.length > 0 && (
-              <div className="lg:hidden mt-6">
+              <div className="mt-6 lg:mt-10">
                 <ResenasSection
                   resenas={negocio.resenas}
                   promedio={negocio.promedioResenas ?? 0}
@@ -1636,10 +1648,30 @@ export default function BookingPage() {
         </AnimatePresence>
         </div>
 
-        {accionesPaso && <div className={BARRA_ACCION}>{accionesPaso}</div>}
+        {/* En escritorio los botones viven en el resumen de la derecha. */}
+        {accionesPaso && !esEscritorio && <div className={BARRA_ACCION}>{accionesPaso}</div>}
 
           <PublicFooter />
         </div>
+
+        {esEscritorio && (
+          <div className="w-[340px] xl:w-[380px] shrink-0 sticky top-6">
+            <ResumenReserva
+              negocioNombre={negocio.nombre}
+              servicio={servicio}
+              profesional={nombreProfesional ? { etiqueta: terms.empleado, nombre: nombreProfesional } : null}
+              fechaHora={slot ? `${formatFechaCorta(slot.inicio)} · ${slot.horaTexto}` : null}
+              total={
+                servicio
+                  ? descuentoAplicado
+                    ? precioConDescuento(servicio.precio, descuentoAplicado)
+                    : servicio.precio
+                  : null
+              }
+              acciones={accionesResumen}
+            />
+          </div>
+        )}
       </div>
 
       {nombreEnConflicto !== null && (

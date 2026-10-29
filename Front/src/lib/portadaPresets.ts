@@ -6,7 +6,7 @@ import {
   hexToHsl,
   hslARgb,
 } from "./colorUtils";
-import { CONSTRUCTORES_MATERIALES } from "./portadaMateriales";
+import { CONSTRUCTORES_MATERIALES, MINIATURAS_MATERIALES } from "./portadaMateriales";
 
 // ── Fondos de portada generados por código ────────────────────────────────────
 // Un negocio sin una buena foto igual tiene que verse profesional. En vez de
@@ -389,9 +389,25 @@ export function fondoPortada(clave: string | null | undefined, hex: string): Fon
 }
 
 /**
- * Fondos ya construidos. Un material arma varios KB de SVG y el selector pinta
- * todo el catálogo en cada render; sin caché, cada tecla en el campo de color
- * reconstruía las 25 miniaturas.
+ * Igual que `fondoPortada`, para una muestra del tamaño de una tarjeta: los
+ * materiales usan su imagen chica en vez de bajar la de portada completa.
+ */
+export function fondoPortadaMuestra(clave: string | null | undefined, hex: string): FondoPortada {
+  const vigente = normalizarPresetPortada(clave);
+  const miniatura = vigente ? MINIATURAS_MATERIALES[vigente] : undefined;
+  if (!miniatura) return fondoPortada(clave, hex);
+  const llave = `mini|${vigente}`;
+  const enCache = CACHE_FONDOS.get(llave);
+  if (enCache) return enCache;
+  const fondo = Object.freeze(miniatura());
+  CACHE_FONDOS.set(llave, fondo);
+  return fondo;
+}
+
+/**
+ * Fondos ya construidos. Los de marca arman SVG y degradados con el color, y el
+ * selector pinta todo el catálogo en cada render; sin caché, cada tecla en el
+ * campo de color reconstruía las 25 miniaturas.
  */
 const CACHE_FONDOS = new Map<string, FondoPortada>();
 const TOPE_CACHE = 400;

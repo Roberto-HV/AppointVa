@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import SelectorFondoPortada from "./SelectorFondoPortada";
-import { PRESETS_PORTADA, fondoPortada } from "../../lib/portadaPresets";
+import { PRESETS_PORTADA, fondoPortada, fondoPortadaMuestra } from "../../lib/portadaPresets";
 
 const COLOR = "#9333EA";
 
@@ -115,7 +115,7 @@ describe("SelectorFondoPortada", () => {
       const antes = muestrasMateriales();
       expect(antes).toHaveLength(PRESETS_PORTADA.filter((p) => p.familia === "material").length);
       expect(antes.every((m) => m.dataset.muestra === "provisional")).toBe(true);
-      expect(antes.some((m) => m.style.background.includes("svg"))).toBe(false);
+      expect(antes.some((m) => m.style.background.includes("webp"))).toBe(false);
       // Los grupos de marca no esperan: son baratos y van arriba.
       const aurora = screen.getByRole("radio", { name: "Aurora" }).closest("label")!;
       expect(aurora.querySelector("[data-muestra]")!.getAttribute("data-muestra")).toBe("fondo");
@@ -127,7 +127,8 @@ describe("SelectorFondoPortada", () => {
       const despues = muestrasMateriales();
       expect(despues.every((m) => m.dataset.muestra === "fondo")).toBe(true);
       const esperado = document.createElement("div");
-      esperado.style.background = fondoPortada("mat-cuarzo-blanco", COLOR).background;
+      // La tarjeta baja la miniatura, no la portada completa.
+      esperado.style.background = fondoPortadaMuestra("mat-cuarzo-blanco", COLOR).background;
       expect(despues.map((m) => m.style.background)).toContain(esperado.style.background);
     });
   });

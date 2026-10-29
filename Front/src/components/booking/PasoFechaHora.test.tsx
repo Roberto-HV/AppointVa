@@ -174,7 +174,7 @@ describe("PasoFechaHora — horario previo", () => {
 
     expect(publicoApi.obtenerDisponibilidadSemana).toHaveBeenCalledTimes(1);
     // El día queda abierto: muestra sus horarios (aquí, cargando) sin tocarlo.
-    expect(screen.getByRole("button", { pressed: true, name: new RegExp(`^\\w+ ${manana.getDate()} de`) })).toBeInTheDocument();
+    expect(screen.getByRole("button", { pressed: true, name: new RegExp(`^\\p{L}+ ${manana.getDate()} de`, "u") })).toBeInTheDocument();
     expect(screen.getByText(/Cargando horarios/i)).toBeInTheDocument();
   });
 });

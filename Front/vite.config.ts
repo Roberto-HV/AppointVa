@@ -11,6 +11,9 @@ export default defineConfig({
       injectRegister: 'auto',
       manifest: false,
       workbox: {
+        // Sin webp a propósito: las portadas de materiales (public/portadas) pesan
+        // en total casi 1 MB y cada negocio usa una sola; las cachea la regla de
+        // imágenes de abajo cuando de verdad se piden.
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/api/],

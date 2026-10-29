@@ -16,7 +16,10 @@ const BARRA_PENDIENTE = "rgba(255,255,255,0.15)";
 export default function IndicadorPasos({ pasoActual, pasos, slug }: Props) {
   const nombrePaso = pasos[pasoActual - 1];
   return (
-    <div className="flex items-center justify-between gap-3 px-4 py-3 bg-ink border-b border-white/5">
+    // La tira va a todo lo ancho; en escritorio su contenido se alinea con el
+    // contenedor centrado de la reserva.
+    <div className="bg-ink border-b border-white/5">
+    <div className="flex items-center justify-between gap-3 px-4 py-3 lg:max-w-6xl lg:mx-auto lg:px-8">
       {/* Barras de progreso y, debajo, el paso actual con su nombre. En una sola
           fila junto a "Mis citas" el nombre se cortaba a 375px ("Fecha y h…"). */}
       <div className="flex min-w-0 flex-col gap-1.5">
@@ -60,6 +63,7 @@ export default function IndicadorPasos({ pasoActual, pasos, slug }: Props) {
           <ArrowRight size={12} strokeWidth={2.5} aria-hidden="true" />
         </Link>
       )}
+    </div>
     </div>
   );
 }

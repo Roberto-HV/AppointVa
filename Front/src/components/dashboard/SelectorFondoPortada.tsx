@@ -3,6 +3,7 @@ import { Check } from "lucide-react";
 import {
   FAMILIAS_PORTADA,
   fondoPortada,
+  fondoPortadaMuestra,
   normalizarPresetPortada,
   presetsPorFamilia,
   type FamiliaPortada,
@@ -214,13 +215,13 @@ export default function SelectorFondoPortada({
                 onSeleccionar={() => onCambiar(preset.clave)}
               >
                 {/* Hasta que el grupo se ve, un color liso del material: mismo
-                    tamaño y tono, sin el costo de los filtros SVG. */}
+                    tamaño y tono, sin descargar ninguna imagen. */}
                 <span
                   data-muestra={visible ? "fondo" : "provisional"}
                   className="absolute inset-0"
                   style={
                     visible
-                      ? fondoPortada(preset.clave, color)
+                      ? fondoPortadaMuestra(preset.clave, color)
                       : { background: BASE_MATERIALES[preset.clave] }
                   }
                 />

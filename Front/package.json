@@ -11,7 +11,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "portadas": "node --experimental-strip-types scripts/generar-portadas.mjs"
   },
   "dependencies": {
     "@fontsource-variable/fraunces": "5.3.0",
