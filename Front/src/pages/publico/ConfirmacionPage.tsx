@@ -274,6 +274,8 @@ export default function ConfirmacionPage() {
   const horasCancelacion = cita.horasCancelacion ?? 0;
   const minutosRestantes = (new Date(cita.inicioEn).getTime() - Date.now()) / 60000;
   const puedeCancel = cancelable && minutosRestantes > 0 && (horasCancelacion === 0 || minutosRestantes > horasCancelacion * 60);
+  // El backend rechaza reagendar o cancelar sin el correo de la reserva: sin él no se ofrece.
+  const autogestion = cancelable && !!cita.emailCliente;
 
   // ── Cita cancelada ──────────────────────────────────────────────────────────
   if (cancelada) {
@@ -476,6 +478,7 @@ export default function ConfirmacionPage() {
               <p className="text-sm text-amber-800 leading-snug">
                 Sin correo registrado — guarda el enlace de tu cita o búscate en{" "}
                 <strong>Mis Citas</strong> con tu correo y teléfono.
+                {cancelable && " Para reagendar o cancelar, comunícate con el negocio."}
               </p>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
@@ -716,7 +719,7 @@ export default function ConfirmacionPage() {
           </div>
           {copiaManual?.origen === "cita" && <EnlaceParaCopiar url={copiaManual.url} />}
 
-          {cancelable && !confirmandoCancelar && !reagendando && puedeCancel && (
+          {autogestion && !confirmandoCancelar && !reagendando && puedeCancel && (
             <div className="flex gap-2">
               <button
                 type="button"
@@ -745,12 +748,12 @@ export default function ConfirmacionPage() {
             </button>
           </div>
 
-          {cancelable && horasCancelacion > 0 && !reagendando && !confirmandoCancelar && (
+          {autogestion && horasCancelacion > 0 && !reagendando && !confirmandoCancelar && (
             <p className="text-xs text-center text-slate-400">
               Cancelaciones con al menos {horasCancelacion} hora{horasCancelacion === 1 ? "" : "s"} de anticipación.
             </p>
           )}
-          {cancelable && !puedeCancel && horasCancelacion > 0 && (
+          {autogestion && !puedeCancel && horasCancelacion > 0 && (
             <p className="text-xs text-center text-red-600 font-medium">
               Este negocio no permite cambios con menos de {horasCancelacion} hora{horasCancelacion === 1 ? "" : "s"} de anticipación.
             </p>

@@ -473,6 +473,15 @@ describe("ConfirmacionPage — acciones", () => {
     expect(await screen.findByRole("button", { name: "Reagendar" })).toHaveClass("min-h-[44px]");
     expect(screen.getByRole("button", { name: "Cancelar cita" })).toHaveClass("min-h-[44px]");
   });
+
+  it("sin correo no ofrece Reagendar ni Cancelar y remite al negocio", async () => {
+    vi.mocked(publicoApi.obtenerCita).mockResolvedValue({ ...conCalendario, emailCliente: undefined } as never);
+    renderConQuery();
+
+    expect(await screen.findByText(/para reagendar o cancelar, comunícate con el negocio/i)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Reagendar" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Cancelar cita" })).toBeNull();
+  });
 });
 
 // ── BF-19: reagendar respeta la anticipación mínima ───────────────────────────
