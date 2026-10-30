@@ -263,22 +263,48 @@ export default function ServiciosPage() {
   const [arrastrado, setArrastrado] = useState<ServicioDto | null>(null);
   const [sobre, setSobre] = useState<string | null>(null);
 
+  // No hay endpoint de reorden en lote: es un PUT por servicio, en serie.
+  // `enCurso` cierra el paso en el mismo tick del clic o del soltar, antes de
+  // que `isPending` llegue al render: dos movimientos intercalados mezclarían
+  // sus PUT y el orden final dependería de cuál responde al último.
+  const enCurso = useRef(false);
   const reordenar = useMutation({
     mutationFn: async (cambios: CambioOrden[]) => {
-      for (const c of cambios) await serviciosApi.cambiarOrden(c.servicio, c.orden);
+      for (const c of cambios) {
+        // El PUT reemplaza el servicio completo: se arma con la copia más reciente
+        // de la caché, no con la que se capturó al arrastrar o abrir el menú, para
+        // no pisar lo que otra edición haya guardado mientras tanto.
+        const reciente = qc.getQueryData<ServicioDto[]>(["servicios"])?.find((x) => x.id === c.servicio.id);
+        await serviciosApi.cambiarOrden(reciente ?? c.servicio, c.orden);
+      }
     },
-    // Se mueve al momento y se guarda detrás; si falla, la lista vuelve a la del servidor.
-    onMutate: (cambios) => {
+    // Se mueve al momento y se guarda detrás. Se cancela el refetch en vuelo para
+    // que no pise el movimiento optimista con la lista vieja.
+    onMutate: async (cambios) => {
+      await qc.cancelQueries({ queryKey: ["servicios"] });
+      const previos = qc.getQueryData<ServicioDto[]>(["servicios"]);
       qc.setQueryData<ServicioDto[]>(["servicios"], (prev) => (prev ? aplicarOrden(prev, cambios) : prev));
+      return { previos };
     },
-    onError: () => toast(`No se pudo cambiar el orden. Intenta de nuevo.`, "error"),
-    onSettled: () => qc.invalidateQueries({ queryKey: ["servicios"] }),
+    // Si falla, la lista vuelve a como estaba y el refetch de onSettled trae lo
+    // que el servidor sí alcanzó a guardar (los PUT anteriores al que falló).
+    onError: (_e, _cambios, contexto) => {
+      if (contexto?.previos) qc.setQueryData(["servicios"], contexto.previos);
+      toast(`No se pudo cambiar el orden. Intenta de nuevo.`, "error");
+    },
+    onSettled: () => {
+      enCurso.current = false;
+      return qc.invalidateQueries({ queryKey: ["servicios"] });
+    },
   });
   const moviendo = reordenar.isPending;
   const moverServicio = (s: ServicioDto, delta: number) => {
+    if (enCurso.current || moviendo) return;
     const desde = posicion(s);
     const cambios = cambiosDeOrden(hermanos(s), desde, desde + delta);
-    if (cambios.length > 0) reordenar.mutate(cambios);
+    if (cambios.length === 0) return;
+    enCurso.current = true;
+    reordenar.mutate(cambios);
   };
 
   const serviciosPorCategoria = (catId: string) =>
@@ -366,7 +392,8 @@ export default function ServiciosPage() {
                       }}
                       onDrop={(e) => {
                         e.preventDefault();
-                        if (arrastrado && arrastrado.id !== s.id) moverServicio(arrastrado, posicion(s) - posicion(arrastrado));
+                        // Con un reorden pendiente se ignora, igual que "Mover arriba / abajo".
+                        if (arrastrado && arrastrado.id !== s.id && !moviendo) moverServicio(arrastrado, posicion(s) - posicion(arrastrado));
                         setArrastrado(null); setSobre(null);
                       }}
                       data-sobre={sobre === s.id || undefined}

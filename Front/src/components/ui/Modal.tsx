@@ -58,7 +58,21 @@ function useTecladoVirtual(activo: boolean): number {
  */
 export default function Modal({ abierto, onCerrar, titulo, children, ancho = "md" }: Props) {
   const esMovil = useMediaQuery(CONSULTA_MOVIL);
-  const variante: VarianteModal = esMovil ? "hoja" : "dialogo";
+  const varianteActual: VarianteModal = esMovil ? "hoja" : "dialogo";
+
+  // La variante se decide al abrir y se congela hasta la siguiente apertura. Hoja
+  // y diálogo son componentes distintos en la misma posición: si el ancho cruza
+  // los 640px con el modal abierto (rotar el teléfono, pantalla dividida), React
+  // desmontaría los hijos y se perdería lo escrito, el foco y el scroll. Al
+  // cerrar tampoco cambia, así la animación de salida es la de la misma variante.
+  // El setState durante el render es el patrón de "estado derivado del prop
+  // anterior": React descarta ese render y repite antes de pintar.
+  const [variante, setVariante] = useState<VarianteModal>(varianteActual);
+  const [abiertoPrevio, setAbiertoPrevio] = useState(abierto);
+  if (abierto !== abiertoPrevio) {
+    setAbiertoPrevio(abierto);
+    if (abierto && variante !== varianteActual) setVariante(varianteActual);
+  }
 
   return (
     <Dialog open={abierto} onOpenChange={(open) => { if (!open) onCerrar(); }}>

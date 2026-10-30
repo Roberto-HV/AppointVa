@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import Modal from "./Modal";
@@ -117,5 +117,59 @@ describe("Modal — hoja inferior en el teléfono y diálogo en escritorio (I13)
     render(<Controlado />);
     await userEvent.type(screen.getByLabelText("Nombre"), "Ana");
     expect(screen.getByLabelText("Nombre")).toHaveValue("Ana");
+  });
+});
+
+describe("Modal — cruzar los 640px con el modal abierto no desmonta el contenido", () => {
+  // matchMedia controlable: `cambiarAMovil` dispara "change" como lo haría el
+  // navegador al rotar el teléfono o redimensionar la ventana.
+  let movil = false;
+  const oyentes = new Set<() => void>();
+  function simularControlable(inicial: boolean) {
+    movil = inicial;
+    oyentes.clear();
+    window.matchMedia = ((q: string) => ({
+      get matches() { return movil && q.includes("max-width"); },
+      media: q,
+      addEventListener: (_: string, fn: () => void) => { oyentes.add(fn); },
+      removeEventListener: (_: string, fn: () => void) => { oyentes.delete(fn); },
+    })) as unknown as typeof window.matchMedia;
+  }
+  const cambiarAMovil = (valor: boolean) => {
+    movil = valor;
+    act(() => { oyentes.forEach((fn) => fn()); });
+  };
+
+  // Campo no controlado: su valor solo vive en el DOM, así que sobrevive
+  // únicamente si el input no se vuelve a montar.
+  function Editor({ abierto }: { abierto: boolean }) {
+    return (
+      <Modal abierto={abierto} onCerrar={() => {}} titulo="Editar servicio">
+        <label htmlFor="libre">Notas</label>
+        <input id="libre" defaultValue="" />
+      </Modal>
+    );
+  }
+
+  it.each([
+    ["escritorio → teléfono", false],
+    ["teléfono → escritorio", true],
+  ])("%s: lo escrito sigue ahí y la variante se queda hasta cerrar", async (_, inicial) => {
+    simularControlable(inicial);
+    const varianteInicial = inicial ? "hoja" : "dialogo";
+    const { rerender } = render(<Editor abierto />);
+    const campo = screen.getByLabelText("Notas");
+    await userEvent.type(campo, "a medio escribir");
+
+    cambiarAMovil(!inicial);
+
+    expect(screen.getByLabelText("Notas")).toBe(campo);
+    expect(campo).toHaveValue("a medio escribir");
+    expect(screen.getByRole("dialog")).toHaveAttribute("data-variante", varianteInicial);
+
+    // Al volver a abrir ya se decide con el ancho nuevo.
+    rerender(<Editor abierto={false} />);
+    rerender(<Editor abierto />);
+    expect(screen.getByRole("dialog")).toHaveAttribute("data-variante", inicial ? "dialogo" : "hoja");
   });
 });

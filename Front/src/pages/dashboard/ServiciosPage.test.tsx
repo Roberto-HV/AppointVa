@@ -38,8 +38,9 @@ vi.mock("../../api/citas", () => ({
   ESTADOS: { Pendiente: 1, Confirmada: 2, Completada: 3, Cancelada: 4, Inasistencia: 5 },
 }));
 
+const toastMock = vi.hoisted(() => vi.fn());
 vi.mock("../../store/toastStore", () => ({
-  useToastStore: () => ({ toast: vi.fn() }),
+  useToastStore: () => ({ toast: toastMock }),
 }));
 
 vi.mock("../../components/ui/Modal", () => ({
@@ -206,6 +207,63 @@ describe("ServiciosPage — lista de servicios", () => {
     await waitFor(() => expect(serviciosApi.cambiarOrden).toHaveBeenCalledTimes(2));
     expect(serviciosApi.cambiarOrden).toHaveBeenCalledWith(expect.objectContaining({ id: "svc-2" }), 1);
     expect(serviciosApi.cambiarOrden).toHaveBeenCalledWith(expect.objectContaining({ id: "svc-1" }), 2);
+  });
+});
+
+describe("ServiciosPage — reorden pendiente (M11)", () => {
+  const a = { ...mockServicio, id: "svc-a", nombre: "Corte de cabello", orden: 1 };
+  const b = { ...mockServicio, id: "svc-b", nombre: "Barba", orden: 2 };
+  const c = { ...mockServicio, id: "svc-c", nombre: "Tinte", orden: 3 };
+
+  /** Nombres de las filas en el orden en que se ven. */
+  const ordenVisible = () =>
+    screen.getAllByRole("button", { name: /^Editar / }).map((el) => el.getAttribute("aria-label")!.replace("Editar ", ""));
+
+  /** Fila (destino del arrastre) y asa (origen) de un servicio. */
+  function filaDe(nombre: string) {
+    // La fila es el ancestro más cercano del botón Editar que también contiene el asa.
+    let fila = screen.getByRole("button", { name: `Editar ${nombre}` }).parentElement!;
+    while (!fila.querySelector('[title="Arrastra para cambiar el orden"]')) fila = fila.parentElement!;
+    const asa = fila.querySelector('[title="Arrastra para cambiar el orden"]') as HTMLElement;
+    return { fila, asa };
+  }
+  function arrastrar(origen: string, destino: string) {
+    const dataTransfer = { setData: vi.fn(), getData: vi.fn(), effectAllowed: "" };
+    fireEvent.dragStart(filaDe(origen).asa, { dataTransfer });
+    fireEvent.dragOver(filaDe(destino).fila, { dataTransfer });
+    fireEvent.drop(filaDe(destino).fila, { dataTransfer });
+  }
+
+  it("un segundo arrastre mientras el primero se guarda se ignora", async () => {
+    vi.mocked(serviciosApi.obtenerTodos).mockResolvedValue([a, b, c]);
+    // El primer PUT nunca responde: el reorden queda pendiente.
+    vi.mocked(serviciosApi.cambiarOrden).mockReturnValue(new Promise(() => {}));
+    renderConQuery();
+    await screen.findByText("Tinte");
+
+    arrastrar("Tinte", "Corte de cabello");
+    await waitFor(() => expect(ordenVisible()).toEqual(["Tinte", "Corte de cabello", "Barba"]));
+    expect(serviciosApi.cambiarOrden).toHaveBeenCalledTimes(1);
+
+    arrastrar("Barba", "Tinte");
+    expect(ordenVisible()).toEqual(["Tinte", "Corte de cabello", "Barba"]);
+    expect(serviciosApi.cambiarOrden).toHaveBeenCalledTimes(1);
+  });
+
+  it("si el guardado falla, la lista vuelve a como estaba y avisa", async () => {
+    // La carga inicial responde; el refetch posterior queda pendiente, así que lo
+    // que se vea después del error solo puede venir de la reversión.
+    vi.mocked(serviciosApi.obtenerTodos)
+      .mockResolvedValueOnce([a, b])
+      .mockReturnValue(new Promise(() => {}));
+    vi.mocked(serviciosApi.cambiarOrden).mockRejectedValue(new Error("500"));
+    renderConQuery();
+    await elegirDelMenu("Mover abajo");
+
+    await waitFor(() =>
+      expect(toastMock).toHaveBeenCalledWith("No se pudo cambiar el orden. Intenta de nuevo.", "error")
+    );
+    expect(ordenVisible()).toEqual(["Corte de cabello", "Barba"]);
   });
 });
 
