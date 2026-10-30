@@ -349,42 +349,74 @@ export default function GanttCitas({
                     // lado a lado, como en el Calendario, en vez de taparse.
                     const lugar = carrilesPorEmp.get(emp.id)?.get(cita.id) ?? { carril: 0, carriles: 1 };
                     const ancho = lugar.ancho ?? 1;
+                    const geometria = {
+                      top: top + 2,
+                      height: height - 4,
+                      left: `calc(${(lugar.carril / lugar.carriles) * 100}% + 4px)`,
+                      width: `calc(${(ancho / lugar.carriles) * 100}% - 8px)`,
+                    };
+                    const propsBoton = {
+                      type: "button" as const,
+                      "data-cita": "",
+                      "aria-haspopup": "dialog" as const,
+                      onClick: (e: EventoRaton<HTMLButtonElement>) => onCitaClick(cita, e.currentTarget),
+                      "aria-label": `${cita.nombreCliente}, ${cita.nombreServicio}, ${estilo.etiqueta}. Abrir acciones`,
+                      title: `${cita.nombreCliente} — ${cita.nombreServicio} (${estilo.etiqueta})`,
+                    };
+                    const contenido = (
+                      <>
+                        <span className="text-[10px] font-bold leading-none">
+                          {formatHora(cita.inicioEn)}
+                        </span>
+                        {height > 28 && (
+                          <span className="text-[11px] font-semibold leading-tight truncate">
+                            {cita.nombreCliente}
+                          </span>
+                        )}
+                        {height > 48 && (
+                          <span className="text-[10px] leading-tight truncate">
+                            {cita.nombreServicio}
+                          </span>
+                        )}
+                      </>
+                    );
+
+                    // Cancelada o inasistencia: el horario quedó libre. El bloque
+                    // se dibuja atenuado pero deja pasar el puntero (el hueco se
+                    // ofrece debajo con "+ hora"); solo la etiqueta abre la cita.
+                    if (lugar.deFondo) {
+                      return (
+                        <div
+                          key={cita.id}
+                          data-cita-fondo=""
+                          className={`absolute z-0 rounded-lg pointer-events-none opacity-60 hover:opacity-100 focus-within:opacity-100 ${estilo.bloque}`}
+                          style={geometria}
+                        >
+                          <button
+                            {...propsBoton}
+                            className={`pointer-events-auto max-w-full px-2 py-1 overflow-hidden rounded-lg text-left cursor-pointer
+                              inline-flex flex-col gap-0.5 hover:underline
+                              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
+                              ${cerrada ? "line-through" : ""}`}
+                          >
+                            {contenido}
+                          </button>
+                        </div>
+                      );
+                    }
 
                     return (
                       <button
                         key={cita.id}
-                        type="button"
-                        data-cita=""
-                        aria-haspopup="dialog"
-                        className={`absolute rounded-lg text-left transition-all cursor-pointer
+                        {...propsBoton}
+                        className={`absolute z-10 rounded-lg text-left transition-all cursor-pointer
                           hover:shadow-md active:scale-[0.99]
                           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
-                          ${lugar.deFondo ? "z-0 opacity-60 hover:opacity-100" : "z-10"}
                           ${estilo.bloque}`}
-                        style={{
-                          top: top + 2,
-                          height: height - 4,
-                          left: `calc(${(lugar.carril / lugar.carriles) * 100}% + 4px)`,
-                          width: `calc(${(ancho / lugar.carriles) * 100}% - 8px)`,
-                        }}
-                        onClick={(e) => onCitaClick(cita, e.currentTarget)}
-                        aria-label={`${cita.nombreCliente}, ${cita.nombreServicio}, ${estilo.etiqueta}. Abrir acciones`}
-                        title={`${cita.nombreCliente} — ${cita.nombreServicio} (${estilo.etiqueta})`}
+                        style={geometria}
                       >
                         <div className={`px-2 py-1 overflow-hidden h-full flex flex-col gap-0.5 ${cerrada ? "line-through" : ""}`}>
-                          <span className="text-[10px] font-bold leading-none">
-                            {formatHora(cita.inicioEn)}
-                          </span>
-                          {height > 28 && (
-                            <span className="text-[11px] font-semibold leading-tight truncate">
-                              {cita.nombreCliente}
-                            </span>
-                          )}
-                          {height > 48 && (
-                            <span className="text-[10px] leading-tight truncate">
-                              {cita.nombreServicio}
-                            </span>
-                          )}
+                          {contenido}
                         </div>
                       </button>
                     );

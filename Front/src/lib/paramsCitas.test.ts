@@ -7,13 +7,19 @@ const leer = (q: string) => leerParamsCitas(new URLSearchParams(q), HOY);
 
 describe("leerParamsCitas", () => {
   it("sin parámetros usa hoy y la página 1", () => {
-    expect(leer("")).toEqual({ desde: HOY, hasta: HOY, empleadoId: "", pagina: 1, invalidos: [] });
+    expect(leer("")).toEqual({ desde: HOY, hasta: HOY, empleadoId: "", pagina: 1, dia: HOY, invalidos: [] });
   });
 
   it("respeta valores válidos y el vacío como 'sin límite'", () => {
-    expect(leer(`desde=2026-10-01&hasta=&empleadoId=${GUID}&pagina=3`)).toEqual({
-      desde: "2026-10-01", hasta: "", empleadoId: GUID, pagina: 3, invalidos: [],
+    expect(leer(`desde=2026-10-01&hasta=&empleadoId=${GUID}&pagina=3&dia=2026-11-02`)).toEqual({
+      desde: "2026-10-01", hasta: "", empleadoId: GUID, pagina: 3, dia: "2026-11-02", invalidos: [],
     });
+  });
+
+  it.each(["2026-02-31", "2026-13-45", "", "hoy"])("dia=%s vuelve a hoy y se marca", (d) => {
+    const r = leer(`dia=${d}`);
+    expect(r.dia).toBe(HOY);
+    expect(r.invalidos).toEqual(["dia"]);
   });
 
   it("fechas mal formadas o imposibles vuelven a hoy y se marcan", () => {

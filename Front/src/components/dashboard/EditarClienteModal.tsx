@@ -9,6 +9,7 @@ import { clientesApi } from "../../api/clientes";
 import { useSectorTerms } from "../../hooks/useSectorTerms";
 import { useToastStore } from "../../store/toastStore";
 import { mensajeError } from "../../utils/errores";
+import { validarEmailCliente } from "../../utils/validaciones";
 import type { ClienteDto } from "../../types";
 
 // ── Editar los datos de un cliente ───────────────────────────────────────────
@@ -18,12 +19,7 @@ import type { ClienteDto } from "../../types";
 // teléfono a sólo dígitos y responde 409 si el teléfono o el correo ya son de
 // otro cliente del negocio.
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const TELEFONO_RE = /^\+?[\d\s\-().]+$/;
-
-function validarEmail(v: string): string {
-  return v.trim() && !EMAIL_RE.test(v.trim()) ? "Correo no válido (ej: nombre@dominio.com)" : "";
-}
 
 function validarTelefono(v: string): string {
   const t = v.trim();
@@ -95,7 +91,7 @@ function Formulario({ cliente, onCerrar, onGuardado }: Props & { cliente: Client
   const enviar = (e: FormEvent) => {
     e.preventDefault();
     const errTel = validarTelefono(telefono);
-    const errMail = validarEmail(email);
+    const errMail = validarEmailCliente(email);
     setErrorTelefono(errTel);
     setErrorEmail(errMail);
     if (errTel || errMail || !nombre.trim()) return;
@@ -161,9 +157,9 @@ function Formulario({ cliente, onCerrar, onGuardado }: Props & { cliente: Client
           value={email}
           onChange={(e) => {
             setEmail(e.target.value);
-            if (errorEmail) setErrorEmail(validarEmail(e.target.value));
+            if (errorEmail) setErrorEmail(validarEmailCliente(e.target.value));
           }}
-          onBlur={() => setErrorEmail(validarEmail(email))}
+          onBlur={() => setErrorEmail(validarEmailCliente(email))}
           placeholder="correo@ejemplo.com"
           className={errorEmail ? CAMPO_ERROR : CAMPO_OK}
         />

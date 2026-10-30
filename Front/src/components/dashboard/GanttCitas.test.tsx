@@ -139,6 +139,37 @@ describe("GanttCitas — lote 4: agenda operable", () => {
     expect(uno.style.left).not.toBe(dos.style.left);
     expect(uno.style.width).toContain("50%");
   });
+
+  it("una cita cancelada no tapa el hueco: clic y puntero ofrecen agendar ahí; su etiqueta abre la cita", async () => {
+    const d = new Date(2030, 0, 7, 16, 0).toISOString();
+    vi.mocked(citasApi.obtenerTodas).mockResolvedValue({
+      datos: [{
+        id: "x", codigoConfirmacion: "x", clienteId: "c", empleadoId: "e2", servicioId: "s", telefonoCliente: "55",
+        nombreCliente: "Cancelado", nombreEmpleado: "Beto", nombreServicio: "Corte", duracionMinutos: 60, precio: 1,
+        pagada: false, inicioEn: d, finEn: d, estado: 4, estadoTexto: "Cancelada",
+      }],
+      total: 1, pagina: 1, tamano: 200,
+    });
+    const onCitaClick = vi.fn();
+    const { onHuecoClick } = renderizarCon({ onCitaClick });
+    const etiqueta = await screen.findByRole("button", { name: /^Cancelado,/ });
+    await horarioCargado();
+    const bloque = etiqueta.closest("[data-cita-fondo]") as HTMLElement;
+    expect(bloque).not.toBeNull();
+    expect(bloque).not.toHaveAttribute("data-cita");
+    expect(bloque.className).toContain("pointer-events-none");
+
+    fireEvent.mouseMove(bloque, { clientY: yDe(16) });
+    expect(screen.getByText(/^\+ 4:00/)).toBeInTheDocument();
+    fireEvent.click(bloque, { clientY: yDe(16, 40) });
+    expect(onHuecoClick).toHaveBeenCalledWith({ inicio: new Date(2030, 0, 7, 16, 30), empleadoId: "e2" });
+    expect(onCitaClick).not.toHaveBeenCalled();
+
+    onHuecoClick.mockClear();
+    fireEvent.click(etiqueta);
+    expect(onCitaClick).toHaveBeenCalledWith(expect.objectContaining({ id: "x" }), etiqueta);
+    expect(onHuecoClick).not.toHaveBeenCalled();
+  });
 });
 
 describe("GanttCitas — sondeo fallido con datos", () => {

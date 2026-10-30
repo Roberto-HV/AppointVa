@@ -78,17 +78,24 @@ vi.mock("../../components/ui/DateTimePicker", () => ({
 }));
 
 vi.mock("../../components/dashboard/CalendarioCitas", () => ({
-  default: ({ onHuecoClick }: { onHuecoClick?: (h: { inicio: Date; empleadoId?: string }) => void }) => (
-    <div data-testid="calendario-citas">
+  default: ({ onHuecoClick, fecha, onCambiarFecha }: {
+    onHuecoClick?: (h: { inicio: Date; empleadoId?: string }) => void;
+    fecha?: string;
+    onCambiarFecha?: (f: string) => void;
+  }) => (
+    <div data-testid="calendario-citas" data-fecha={fecha}>
       <button type="button" onClick={() => onHuecoClick?.({ inicio: new Date(2030, 0, 10, 16, 15), empleadoId: "emp-1" })}>
         Hueco simulado
+      </button>
+      <button type="button" onClick={() => onCambiarFecha?.("2030-02-03")}>
+        Ir al 3 de febrero
       </button>
     </div>
   ),
 }));
 
 vi.mock("../../components/dashboard/GanttCitas", () => ({
-  default: () => <div data-testid="gantt-citas" />,
+  default: ({ fecha }: { fecha?: string }) => <div data-testid="gantt-citas" data-fecha={fecha} />,
 }));
 
 vi.mock("../../components/booking/PasoFechaHora", () => ({
@@ -819,6 +826,28 @@ describe("CitasPage — filtros en la URL (DC-16)", () => {
     renderConQuery("/dashboard/citas?pagina=40");
     await waitFor(() => expect(screen.getByTestId("ubicacion")).toHaveTextContent("pagina=2"));
     await waitFor(() => expect(citasApi.obtenerTodas).toHaveBeenCalledWith(expect.objectContaining({ pagina: 2 })));
+  });
+
+  it("Calendario y Línea de tiempo comparten el día de ?dia (I3)", async () => {
+    vi.mocked(citasApi.obtenerTodas).mockResolvedValue(vacio);
+    renderConQuery("/dashboard/citas?vista=calendario&dia=2030-01-10");
+    expect(await screen.findByTestId("calendario-citas")).toHaveAttribute("data-fecha", "2030-01-10");
+    fireEvent.click(screen.getByRole("button", { name: "Línea de tiempo" }));
+    expect(await screen.findByTestId("gantt-citas")).toHaveAttribute("data-fecha", "2030-01-10");
+
+    // Cambiar el día en una pestaña lo cambia también en la otra.
+    fireEvent.click(screen.getByRole("button", { name: "Calendario" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Ir al 3 de febrero" }));
+    await waitFor(() => expect(screen.getByTestId("ubicacion")).toHaveTextContent("dia=2030-02-03"));
+    fireEvent.click(screen.getByRole("button", { name: "Línea de tiempo" }));
+    expect(await screen.findByTestId("gantt-citas")).toHaveAttribute("data-fecha", "2030-02-03");
+  });
+
+  it.each(["2026-02-31", "2026-13-45", "mañana"])("un ?dia imposible (%s) vuelve a hoy y se quita de la URL", async (dia) => {
+    vi.mocked(citasApi.obtenerTodas).mockResolvedValue(vacio);
+    renderConQuery(`/dashboard/citas?vista=gantt&dia=${dia}`);
+    expect(await screen.findByTestId("gantt-citas")).toHaveAttribute("data-fecha", hoy());
+    await waitFor(() => expect(screen.getByTestId("ubicacion")).toHaveTextContent(/^\?vista=gantt$/));
   });
 
   it("ignora un estado desconocido en la URL", async () => {

@@ -28,13 +28,17 @@ export interface ParamsCitas {
   hasta: string;
   empleadoId: string;
   pagina: number;
+  /** Día que comparten Calendario y Línea de tiempo ("YYYY-MM-DD"). */
+  dia: string;
   /** Claves con valor inválido que hay que quitar de la URL. */
   invalidos: string[];
 }
 
 /**
- * Lee desde/hasta/empleadoId/pagina. Sin parámetro, el período es `porDefecto`;
- * un parámetro vacío en desde/hasta significa "sin límite" y se respeta.
+ * Lee desde/hasta/empleadoId/pagina/dia. Sin parámetro, el período y el día son
+ * `porDefecto`; un parámetro vacío en desde/hasta significa "sin límite" y se
+ * respeta. El día siempre es una fecha real: 2026-02-31 se descarta en vez de
+ * pasar a marzo en el Calendario o llegar tal cual a la API desde el Gantt.
  */
 export function leerParamsCitas(params: URLSearchParams, porDefecto: string): ParamsCitas {
   const invalidos: string[] = [];
@@ -62,5 +66,12 @@ export function leerParamsCitas(params: URLSearchParams, porDefecto: string): Pa
     else invalidos.push("pagina");
   }
 
-  return { desde: fecha("desde"), hasta: fecha("hasta"), empleadoId, pagina, invalidos };
+  const diaParam = params.get("dia");
+  let dia = porDefecto;
+  if (diaParam !== null) {
+    if (esFechaValida(diaParam)) dia = diaParam;
+    else invalidos.push("dia");
+  }
+
+  return { desde: fecha("desde"), hasta: fecha("hasta"), empleadoId, pagina, dia, invalidos };
 }

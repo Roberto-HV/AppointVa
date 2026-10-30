@@ -242,8 +242,8 @@ export default function CalendarioCitas({
   // ── Citas ────────────────────────────────────────────────────────────────────
   // Citas que se solapan se dibujan lado a lado y cada una se estira sobre las
   // columnas vecinas libres. Las canceladas e inasistencias no ocupan columna:
-  // van detrás (z-0) a todo el ancho y atenuadas; si caen fuera de las horas
-  // visibles no se dibujan.
+  // van detrás (z-0) a todo el ancho y atenuadas, sin tapar el hueco libre; si
+  // caen fuera de las horas visibles no se dibujan.
   const renderGridCita = (c: CitaDto, carriles: Map<string, Carril>, compacto: boolean) => {
     const info = carriles.get(c.id) ?? { carril: 0, carriles: 1 };
     const { carril, deFondo } = info;
@@ -263,6 +263,39 @@ export default function CalendarioCitas({
     // Angosto: hora y nombre en líneas separadas, sin servicio, en vez de
     // "4:0… Cor…" en una sola línea.
     const angosto = compacto && totalCols / ancho > 1;
+    const geometria = {
+      top,
+      height,
+      left: `calc(${(carril / totalCols) * 100}% + 2px)`,
+      width: `calc(${(ancho / totalCols) * 100}% - 4px)`,
+    };
+    // Cancelada o inasistencia: ese horario quedó libre. El bloque se ve
+    // atenuado pero deja pasar el puntero, así que encima se ofrece el hueco
+    // ("+ hora") para agendar; solo la etiqueta con hora y nombre abre la cita.
+    if (deFondo) {
+      return (
+        <div
+          key={c.id}
+          data-cita-fondo=""
+          className={`absolute z-0 rounded pointer-events-none opacity-60 hover:opacity-100 focus-within:opacity-100 ${estilo.bloque}`}
+          style={geometria}
+        >
+          <button
+            type="button"
+            data-cita=""
+            onClick={(e) => !arrastrando && onCitaClick(c, e.currentTarget)}
+            aria-label={`${hora} ${c.nombreCliente}, ${c.nombreServicio}, ${estilo.etiqueta}. Abrir acciones`}
+            aria-haspopup="dialog"
+            title={`${c.nombreCliente} — ${c.nombreServicio} (${hora})`}
+            className="pointer-events-auto max-w-full rounded px-1.5 py-0.5 text-left text-xs cursor-pointer hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <span className={`block font-semibold truncate leading-tight ${angosto ? "text-[11px]" : ""}`}>
+              {angosto ? hora : `${hora} ${c.nombreCliente}`}
+            </span>
+          </button>
+        </div>
+      );
+    }
     return (
       <button
         key={c.id}
@@ -280,14 +313,8 @@ export default function CalendarioCitas({
         className={`absolute rounded text-left px-1.5 py-0.5 text-xs overflow-hidden transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
           ${puedeMover ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"}
           ${arrastrando?.id === c.id ? "opacity-40" : "hover:brightness-95"}
-          ${deFondo ? "z-0 opacity-60 hover:opacity-100 focus-visible:opacity-100" : "z-10"}
-          ${estilo.bloque}`}
-        style={{
-          top,
-          height,
-          left: `calc(${(carril / totalCols) * 100}% + 2px)`,
-          width: `calc(${(ancho / totalCols) * 100}% - 4px)`,
-        }}
+          z-10 ${estilo.bloque}`}
+        style={geometria}
       >
         {angosto ? (
           <>

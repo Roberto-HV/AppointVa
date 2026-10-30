@@ -15,6 +15,7 @@ import { useToastStore } from "../../store/toastStore";
 import { fechaLocal, hoy } from "../../utils/fechas";
 import { formatFechaHoraCorta, formatHora, formatPrecio } from "../../utils/formatters";
 import { mensajeError } from "../../utils/errores";
+import { validarEmailCliente } from "../../utils/validaciones";
 import type { ClienteDto, SlotDisponible } from "../../types";
 
 // ── Nueva cita ────────────────────────────────────────────────────────────────
@@ -42,10 +43,6 @@ function validarTelefonoCliente(v: string): string {
   const r = esquemaTelefonoCliente.safeParse(v);
   return r.success ? "" : r.error.issues[0]?.message ?? "Teléfono no válido";
 }
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-const validarEmailCliente = (v: string) =>
-  v.trim() && !EMAIL_RE.test(v.trim()) ? "Correo no válido (ej: nombre@dominio.com)" : "";
 
 /** Con más servicios que estos, el paso 2 muestra un buscador. */
 const SERVICIOS_SIN_BUSCADOR = 8;

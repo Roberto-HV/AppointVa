@@ -148,6 +148,38 @@ describe("CalendarioCitas — clic en un hueco abre Nueva cita (I1)", () => {
   });
 });
 
+describe("CalendarioCitas — una cita cancelada no tapa el hueco que dejó", () => {
+  it("clic y puntero sobre el bloque ofrecen el hueco; la etiqueta abre la cita", async () => {
+    fijarAhora();
+    simularMovil(false);
+    vi.mocked(citasApi.obtenerTodas).mockResolvedValue({
+      datos: [citaEn("x", new Date(2030, 0, 8, 16, 0), 60, { estado: 4, estadoTexto: "Cancelada" })],
+      total: 1, pagina: 1, tamano: 15,
+    });
+    const { onHuecoClick, onCitaClick } = renderizarConHueco();
+    const etiqueta = await screen.findByRole("button", { name: /Cliente x, Corte/ });
+    await screen.findByText("Cerrado");
+    const bloque = etiqueta.closest("[data-cita-fondo]") as HTMLElement;
+    expect(bloque).not.toBeNull();
+    expect(bloque).not.toHaveAttribute("data-cita");
+    expect(bloque.className).toContain("pointer-events-none");
+
+    // Puntero sobre la parte vacía del bloque: se ofrece "+ hora".
+    fireEvent.mouseMove(bloque, { clientY: yDe(16) });
+    expect(screen.getByText(/^\+ 4:00/)).toBeInTheDocument();
+    // Clic: Nueva cita precargada con ese horario, no las acciones de la cancelada.
+    fireEvent.click(bloque, { clientY: yDe(16, 20) });
+    expect(onHuecoClick).toHaveBeenCalledWith({ inicio: new Date(2030, 0, 8, 16, 15), empleadoId: undefined });
+    expect(onCitaClick).not.toHaveBeenCalled();
+
+    // La etiqueta sigue abriendo la cita cancelada.
+    onHuecoClick.mockClear();
+    fireEvent.click(etiqueta);
+    expect(onCitaClick).toHaveBeenCalledWith(expect.objectContaining({ id: "x" }), etiqueta);
+    expect(onHuecoClick).not.toHaveBeenCalled();
+  });
+});
+
 describe("CalendarioCitas — citas encimadas en Semana (I2)", () => {
   it("dos citas a la misma hora quedan lado a lado, cada una con su mitad y la hora completa", async () => {
     fijarAhora();

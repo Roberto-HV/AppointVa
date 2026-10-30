@@ -37,6 +37,7 @@ import { useConfirmarRecepcion } from "../../hooks/useConfirmarRecepcion";
 import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
 import { TAMANO_PAGINA } from "../../hooks/usePaginacionLocal";
 import { leerParamsCitas } from "../../lib/paramsCitas";
+import { validarEmailCliente } from "../../utils/validaciones";
 import { mensajeError } from "../../utils/errores";
 import { usePermisos } from "../../hooks/usePermisos";
 import { confirmarEnLote, resumenLote } from "../../lib/confirmarEnLote";
@@ -71,7 +72,7 @@ export default function CitasPage() {
 
   const vistaParam = params.get("vista");
   const vista: VistaCitas = vistaParam === "calendario" || vistaParam === "gantt" ? vistaParam : "lista";
-  const { desde, hasta, empleadoId, pagina, invalidos: paramsInvalidos } = leerParamsCitas(params, hoy());
+  const { desde, hasta, empleadoId, pagina, dia: fechaAgenda, invalidos: paramsInvalidos } = leerParamsCitas(params, hoy());
   const busqueda = params.get("busqueda") ?? "";
   const estadoFiltro = ESTADOS_FILTRO.includes(params.get("estado") ?? "") ? params.get("estado")! : "";
   const TAMANO = TAMANO_PAGINA;
@@ -104,9 +105,8 @@ export default function CitasPage() {
   };
 
   // Día que comparten Calendario y Línea de tiempo (I3): al cambiar de pestaña
-  // se sigue viendo la misma fecha. Vive en la URL como el resto de la vista.
-  const diaParam = params.get("dia") ?? "";
-  const fechaAgenda = /^\d{4}-\d{2}-\d{2}$/.test(diaParam) ? diaParam : hoy();
+  // se sigue viendo la misma fecha. Vive en la URL como el resto de la vista;
+  // `leerParamsCitas` descarta un día imposible (2026-02-31) y vuelve a hoy.
   const setFechaAgenda = (f: string) => actualizarParams({ dia: f === hoy() ? null : f });
 
   // Confirmación para anular un anticipo ya registrado
@@ -129,13 +129,9 @@ export default function CitasPage() {
   // Panel "Nueva cita" (I4). La precarga llega de un hueco de la agenda (I1).
   const [nuevaAbierta, setNuevaAbierta] = useState(false);
   const [precargaNueva, setPrecargaNueva] = useState<PrecargaNuevaCita | undefined>(undefined);
-  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
   // Issue 12 — drag-to-reschedule confirmation
   const [confirmDrag, setConfirmDrag] = useState<{id: string; nombre: string; nuevoInicio: string; label: string} | null>(null);
-
-  const validarEmailCliente = (v: string) =>
-    v.trim() && !EMAIL_RE.test(v.trim()) ? "Correo no válido (ej: nombre@dominio.com)" : "";
 
   // La barra ya entrega el término tras la pausa al teclear; aquí solo vuelve a la página 1.
   const aplicarBusqueda = (v: string) => filtrar({ busqueda: v || null });
