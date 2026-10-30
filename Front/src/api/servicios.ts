@@ -36,6 +36,9 @@ export const serviciosApi = {
 
   toggleDestacado: (s: ServicioDto): Promise<ServicioDto> => guardarCampos(s, { destacado: !s.destacado }),
 
+  /** Mueve el servicio en el catálogo (M11): el orden ya no se teclea en el formulario. */
+  cambiarOrden: (s: ServicioDto, orden: number): Promise<ServicioDto> => guardarCampos(s, { orden }),
+
   crear: async (dto: CrearServicioDto): Promise<ServicioDto> => {
     const { data } = await api.post("/servicios", dto);
     return data;

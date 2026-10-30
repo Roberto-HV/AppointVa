@@ -104,17 +104,6 @@ vi.mock("../../components/ui/DateTimePicker", () => ({
   ESTADOS: { Pendiente: 1, Confirmada: 2, Completada: 3, Cancelada: 4, Inasistencia: 5 },
 }));
 
-vi.mock("../../components/ui/Skeleton", () => ({
-  Skeleton: () => <div data-testid="skeleton" className="animate-pulse" />,
-  SkeletonCards: ({ cantidad }: { cantidad: number }) => (
-    <div data-testid="skeleton-cards">
-      {Array.from({ length: cantidad }).map((_, i) => (
-        <div key={i} className="animate-pulse" />
-      ))}
-    </div>
-  ),
-}));
-
 import { empleadosApi } from "../../api/empleados";
 
 const mockEmpleado = {
@@ -141,6 +130,12 @@ function renderConQuery() {
   );
 }
 
+/** Invitar y Eliminar viven en el menú "⋯" de la tarjeta (I10). */
+async function elegirDelMenu(accion: string, empleado = "María García") {
+  fireEvent.click(await screen.findByRole("button", { name: `Más acciones de ${empleado}` }));
+  fireEvent.click(await screen.findByRole("button", { name: accion }));
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(citasApi.obtenerTodas).mockResolvedValue({ datos: [], total: 0 } as never);
@@ -151,12 +146,11 @@ beforeEach(() => {
 });
 
 describe("EmpleadosPage — estado de carga", () => {
-  it("muestra el skeleton mientras se obtienen los empleados", async () => {
+  it("muestra tarjetas de carga con la forma de la tarjeta de empleado (I14)", async () => {
     vi.mocked(empleadosApi.obtenerTodos).mockReturnValue(new Promise(() => {}));
-    const { getByTestId } = renderConQuery();
-    await waitFor(() =>
-      expect(getByTestId("skeleton-cards")).toBeInTheDocument()
-    );
+    const { container } = renderConQuery();
+    expect(await screen.findByRole("status", { name: "Cargando equipo" })).toBeInTheDocument();
+    expect(container.querySelectorAll('[data-variante="tarjeta-empleado"]')).toHaveLength(4);
   });
 });
 
@@ -306,7 +300,7 @@ describe("EmpleadosPage — eliminar empleado", () => {
     await waitFor(() =>
       expect(screen.getByText("María García")).toBeInTheDocument()
     );
-    fireEvent.click(screen.getByRole("button", { name: "Eliminar" }));
+    await elegirDelMenu("Eliminar empleado");
     await waitFor(() =>
       expect(screen.getByRole("dialog", { name: "Eliminar empleado" })).toBeInTheDocument()
     );
@@ -323,7 +317,7 @@ describe("EmpleadosPage — eliminar empleado", () => {
     // B13: el conteo viene del servidor (`GET /empleados/{id}/citas-futuras`).
     vi.mocked(empleadosApi.contarCitasFuturas).mockResolvedValue(3);
     renderConQuery();
-    fireEvent.click(await screen.findByRole("button", { name: "Eliminar" }));
+    await elegirDelMenu("Eliminar empleado");
     const dialogo = await screen.findByRole("dialog", { name: "No se puede eliminar todavía" });
     expect(dialogo).toHaveTextContent("Tiene 3 citas pendientes o confirmadas desde hoy");
     expect(dialogo).toHaveTextContent("Si eliges «Desactivar», esas 3 citas se mantienen en la agenda.");
@@ -349,7 +343,7 @@ describe("EmpleadosPage — desactivar y reactivar (B13)", () => {
     vi.mocked(empleadosApi.contarCitasFuturas).mockResolvedValue(2);
     vi.mocked(empleadosApi.desactivar).mockResolvedValue({ ...mockEmpleado, activo: false });
     renderConQuery();
-    fireEvent.click(await screen.findByRole("button", { name: "Eliminar" }));
+    await elegirDelMenu("Eliminar empleado");
     const dialogo = await screen.findByRole("dialog", { name: "No se puede eliminar todavía" });
     expect(dialogo).toHaveTextContent("perderá el acceso al panel");
     fireEvent.click(screen.getByRole("button", { name: "Desactivar" }));
@@ -366,7 +360,7 @@ describe("EmpleadosPage — desactivar y reactivar (B13)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Reactivar a María García" }));
     await waitFor(() => expect(empleadosApi.reactivar).toHaveBeenCalledWith("emp-1"));
 
-    fireEvent.click(screen.getByRole("button", { name: "Eliminar" }));
+    await elegirDelMenu("Eliminar empleado");
     await screen.findByRole("button", { name: "Eliminar empleado" });
     expect(screen.queryByRole("button", { name: "Desactivar" })).toBeNull();
   });
@@ -496,7 +490,7 @@ describe("EmpleadosPage — acceso y campos (OM-23, OM-26)", () => {
     vi.mocked(empleadosApi.obtenerTodos).mockResolvedValue([mockEmpleado]);
     renderConQuery();
     await screen.findByText("María García");
-    fireEvent.click(screen.getByRole("button", { name: /Invitar/ }));
+    await elegirDelMenu("Invitar acceso al sistema");
     const ver = await screen.findByRole("button", { name: "Mostrar contraseña" });
     expect(ver).not.toHaveAttribute("tabindex", "-1");
     fireEvent.click(ver);

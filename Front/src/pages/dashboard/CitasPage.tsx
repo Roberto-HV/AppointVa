@@ -28,7 +28,7 @@ import PasoFechaHora from "../../components/booking/PasoFechaHora";
 import NuevaCitaPanel, { type PrecargaNuevaCita } from "../../components/dashboard/NuevaCitaPanel";
 import { useToastStore } from "../../store/toastStore";
 import type { CitaDto, SlotDisponible } from "../../types";
-import { SkeletonTableRows } from "../../components/ui/Skeleton";
+import { SkeletonLista } from "../../components/ui/Skeleton";
 import { reportesApi } from "../../api/reportes";
 import { formatPrecio, formatFechaHoraCorta as formatFechaHora, formatFechaCorta, formatHora } from "../../utils/formatters";
 import Pagination from "../../components/ui/Pagination";
@@ -567,11 +567,9 @@ export default function CitasPage() {
       {/* Vista lista */}
       {vista === "lista" && (
         isLoading ? (
-          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 overflow-x-auto">
-            <table className="w-full text-sm">
-              <tbody><SkeletonTableRows filas={6} columnas={5} /></tbody>
-            </table>
-          </div>
+          // Tarjetas en el teléfono y filas en escritorio, como la lista real (I14):
+          // antes el teléfono veía una tabla de 5 columnas que luego saltaba a tarjetas.
+          <SkeletonLista filas={6} columnas={7} tarjeta="cita" etiqueta={`Cargando ${terms.citas.toLowerCase()}`} />
         ) : errorCitas && citas.length === 0 ? (
           // Un fallo no debe leerse como "no hay citas": es lo más engañoso para una agenda.
           <div role="alert" className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 px-4 py-10 text-center">

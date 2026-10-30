@@ -481,10 +481,11 @@ describe("InicioPage — vista empleado", () => {
 
     renderConQuery();
 
-    // First name extracted from "Ana García"
+    // First name extracted from "Ana García"; same greeting as the owner's Inicio (M10).
     expect(
-      await screen.findByRole("heading", { level: 1, name: "Ana" })
+      await screen.findByRole("heading", { level: 1, name: "Hola, Ana" })
     ).toBeInTheDocument();
+    expect(screen.queryByText(/^Buen(os|as) (días|tardes|noches)$/)).toBeNull();
 
     // Stat labels render before query data arrives
     expect(screen.getByText("Citas hoy")).toBeInTheDocument();
@@ -538,6 +539,20 @@ describe("InicioPage — agenda del empleado (DC-15)", () => {
     await screen.findAllByText("Ana López");
     const tarjeta = screen.getByText("Citas hoy").parentElement!;
     expect(within(tarjeta).getByText("1")).toBeInTheDocument();
+  });
+
+  it("la fila de la agenda usa la gramática de la dueña: hora en línea, sin barra de color (M10)", async () => {
+    vi.mocked(citasApi.obtenerTodas).mockResolvedValue({ ...emptyPage, datos: [citaEmpleado("Confirmada", 3_600_000)], total: 1 });
+    renderConQuery();
+    const fila = await screen.findByRole("button", { name: /Ana López, Corte\. Ver acciones/ });
+    const hora = fila.firstElementChild!;
+    expect(hora.className).toContain("w-16");
+    expect(hora.className).toContain("whitespace-nowrap");
+    expect(within(fila).getByText(/30 min · \$200/)).toBeInTheDocument();
+    expect(fila.querySelector(".w-1.h-10")).toBeNull();
+    // Ingresos en la misma `Tarjeta` oscura que el panel de la dueña.
+    const placas = screen.getAllByText("Ingresos").map((e) => e.parentElement!.className);
+    expect(placas.some((c) => c.includes("bg-slate-900") && c.includes("rounded-2xl border"))).toBe(true);
   });
 
   it("una cita futura no lleva 'Por cerrar' ni acción principal en la fila", async () => {

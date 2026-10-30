@@ -22,6 +22,7 @@ vi.mock("../../api/servicios", () => ({
     subirImagen: vi.fn(),
     toggleActivo: vi.fn(),
     toggleDestacado: vi.fn(),
+    cambiarOrden: vi.fn(),
     contarCitasFuturas: vi.fn(),
   },
   categoriasApi: {
@@ -104,6 +105,16 @@ function renderConQuery() {
   );
 }
 
+/** Destacado, mover y Eliminar viven en el menú "⋯" de la fila (I9). */
+async function abrirMenu(servicio = "Corte de cabello") {
+  fireEvent.click(await screen.findByRole("button", { name: `Más acciones de ${servicio}` }));
+  return screen.findByRole("dialog", { name: `Más acciones de ${servicio}` });
+}
+async function elegirDelMenu(accion: string | RegExp, servicio = "Corte de cabello") {
+  const menu = await abrirMenu(servicio);
+  fireEvent.click(within(menu).getByRole("button", { name: accion }));
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(citasApi.obtenerTodas).mockResolvedValue({ datos: [], total: 0, pagina: 1, tamano: 500 });
@@ -112,12 +123,11 @@ beforeEach(() => {
 });
 
 describe("ServiciosPage — estado de carga", () => {
-  it("muestra texto de carga mientras se obtienen los servicios", async () => {
+  it("muestra filas de carga con la forma de la fila de servicio (I14)", async () => {
     vi.mocked(serviciosApi.obtenerTodos).mockReturnValue(new Promise(() => {}));
-    renderConQuery();
-    await waitFor(() =>
-      expect(screen.getByText("Cargando servicios...")).toBeInTheDocument()
-    );
+    const { container } = renderConQuery();
+    expect(await screen.findByRole("status", { name: "Cargando servicios" })).toBeInTheDocument();
+    expect(container.querySelectorAll('[data-variante="fila-servicio"]').length).toBeGreaterThan(0);
   });
 });
 
@@ -168,13 +178,34 @@ describe("ServiciosPage — lista de servicios", () => {
     );
   });
 
-  it("muestra botones de Editar y Eliminar para cada servicio", async () => {
+  it("deja Editar a la vista y lleva Destacado y Eliminar al menú ⋯ (I9)", async () => {
     vi.mocked(serviciosApi.obtenerTodos).mockResolvedValue([mockServicio]);
     renderConQuery();
-    await waitFor(() => {
-      expect(screen.getByRole("button", { name: "Editar Corte de cabello" })).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: "Eliminar Corte de cabello" })).toBeInTheDocument();
-    });
+    expect(await screen.findByRole("button", { name: "Editar Corte de cabello" })).toBeInTheDocument();
+    expect(screen.getByRole("switch", { name: "Visible en reservas: Corte de cabello" })).toBeInTheDocument();
+    // Fuera de la fila: ni Eliminar ni Destacado como botones sueltos.
+    expect(screen.queryByRole("button", { name: /^Eliminar/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Destacado/ })).toBeNull();
+
+    const menu = await abrirMenu();
+    const acciones = within(menu).getAllByRole("button").map((b) => b.textContent).filter(Boolean);
+    expect(acciones).toEqual(["Marcar como destacado", "Eliminar servicio"]);
+    // La destructiva va al final, separada y en rojo.
+    expect(within(menu).getByRole("separator")).toBeInTheDocument();
+    expect(within(menu).getByRole("button", { name: "Eliminar servicio" }).className).toContain("text-red-700");
+  });
+
+  it("con varios servicios en la categoría, el menú permite moverlos (M11)", async () => {
+    const otro = { ...mockServicio, id: "svc-2", nombre: "Barba", orden: 2 };
+    vi.mocked(serviciosApi.obtenerTodos).mockResolvedValue([{ ...mockServicio, orden: 1 }, otro]);
+    vi.mocked(serviciosApi.cambiarOrden).mockResolvedValue({} as never);
+    renderConQuery();
+    const primero = await abrirMenu("Corte de cabello");
+    expect(within(primero).queryByRole("button", { name: "Mover arriba" })).toBeNull();
+    fireEvent.click(within(primero).getByRole("button", { name: "Mover abajo" }));
+    await waitFor(() => expect(serviciosApi.cambiarOrden).toHaveBeenCalledTimes(2));
+    expect(serviciosApi.cambiarOrden).toHaveBeenCalledWith(expect.objectContaining({ id: "svc-2" }), 1);
+    expect(serviciosApi.cambiarOrden).toHaveBeenCalledWith(expect.objectContaining({ id: "svc-1" }), 2);
   });
 });
 
@@ -214,14 +245,11 @@ describe("ServiciosPage — eliminar servicio", () => {
     vi.mocked(serviciosApi.obtenerTodos).mockResolvedValue([mockServicio]);
     vi.mocked(serviciosApi.eliminar).mockResolvedValue();
     renderConQuery();
-    await waitFor(() =>
-      expect(screen.getByRole("button", { name: "Eliminar Corte de cabello" })).toBeInTheDocument()
-    );
-    fireEvent.click(screen.getByRole("button", { name: "Eliminar Corte de cabello" }));
-    await waitFor(() =>
-      expect(screen.getByRole("dialog", { name: "Eliminar servicio" })).toBeInTheDocument()
-    );
-    fireEvent.click(await screen.findByRole("button", { name: "Eliminar servicio" }));
+    await elegirDelMenu("Eliminar servicio");
+    // Elegirlo en el menú no borra: abre la confirmación de siempre.
+    const confirmacion = await screen.findByRole("dialog", { name: "Eliminar servicio" });
+    expect(serviciosApi.eliminar).not.toHaveBeenCalled();
+    fireEvent.click(await within(confirmacion).findByRole("button", { name: "Eliminar servicio" }));
     await waitFor(() =>
       expect(vi.mocked(serviciosApi.eliminar)).toHaveBeenCalledWith("svc-1")
     );
@@ -232,7 +260,7 @@ describe("ServiciosPage — eliminar servicio", () => {
     // B13: el conteo viene del servidor (`GET /servicios/{id}/citas-futuras`).
     vi.mocked(serviciosApi.contarCitasFuturas).mockResolvedValue(2);
     renderConQuery();
-    fireEvent.click(await screen.findByRole("button", { name: "Eliminar Corte de cabello" }));
+    await elegirDelMenu("Eliminar servicio");
     const dialogo = await screen.findByRole("dialog", { name: "No se puede eliminar todavía" });
     expect(dialogo).toHaveTextContent("Tiene 2 citas pendientes o confirmadas desde hoy");
     expect(serviciosApi.contarCitasFuturas).toHaveBeenCalledWith("svc-1");
@@ -303,17 +331,30 @@ describe("ServiciosPage — precio y campos numéricos (OM-05)", () => {
     llenarNombre();
 
     fireEvent.change(screen.getByLabelText("Duración (min) *"), { target: { value: "2" } });
-    fireEvent.change(screen.getByLabelText(/Descanso tras la cita/), { target: { value: "500" } });
+    fireEvent.change(screen.getByLabelText("Descanso (min)"), { target: { value: "500" } });
     fireEvent.change(screen.getByLabelText("Precio (MXN) *"), { target: { value: "10.555" } });
-    fireEvent.change(screen.getByLabelText("Orden"), { target: { value: "0" } });
     fireEvent.click(screen.getByRole("button", { name: "Crear servicio" }));
 
     expect(await screen.findByText("Mínimo 5 minutos")).toBeInTheDocument();
     expect(screen.getByText("Máximo 120 minutos")).toBeInTheDocument();
     expect(screen.getByText("Usa como máximo dos decimales (centavos)")).toBeInTheDocument();
-    expect(screen.getByText("El orden empieza en 1")).toBeInTheDocument();
     expect(screen.getByLabelText("Precio (MXN) *")).toHaveAttribute("aria-invalid", "true");
     expect(serviciosApi.crear).not.toHaveBeenCalled();
+  });
+
+  it("sin campo Orden y con la etiqueta corta del descanso y su ayuda (M11)", async () => {
+    vi.mocked(serviciosApi.obtenerTodos).mockResolvedValue([{ ...mockServicio, orden: 7 }]);
+    vi.mocked(serviciosApi.crear).mockResolvedValue({} as never);
+    renderConQuery();
+    await screen.findByText("Corte de cabello");
+    fireEvent.click(await screen.findByRole("button", { name: "+ Nuevo servicio" }));
+    await screen.findByRole("dialog", { name: "Nuevo servicio" });
+    expect(screen.queryByLabelText("Orden")).toBeNull();
+    expect(screen.getByLabelText("Descanso (min)")).toHaveAccessibleDescription(/tiempo libre que se aparta después de cada cita/);
+    llenarNombre();
+    fireEvent.click(screen.getByRole("button", { name: "Crear servicio" }));
+    // El nuevo entra al final del catálogo.
+    await waitFor(() => expect(serviciosApi.crear).toHaveBeenCalledWith(expect.objectContaining({ orden: 8 })));
   });
 
   it("el formulario no usa la validación nativa del navegador", async () => {
@@ -339,9 +380,19 @@ describe("ServiciosPage — visibilidad y destacado (OM-30)", () => {
     renderConQuery();
     const sw = await screen.findByRole("switch", { name: "Visible en reservas: Corte de cabello" });
     expect(sw).toHaveAttribute("aria-checked", String(mockServicio.activo));
-    expect(screen.getByRole("button", { name: "Destacado: Corte de cabello" })).toHaveAttribute(
-      "aria-pressed", String(!!mockServicio.destacado),
-    );
+    // El destacado se anuncia con el texto de la acción del menú y, si lo es,
+    // con la insignia junto al nombre.
+    const menu = await abrirMenu();
+    expect(within(menu).getByRole("button", { name: mockServicio.destacado ? "Quitar de destacados" : "Marcar como destacado" })).toBeInTheDocument();
+  });
+
+  it("un servicio destacado lleva la insignia y el menú ofrece quitarlo", async () => {
+    vi.mocked(serviciosApi.obtenerTodos).mockResolvedValue([{ ...mockServicio, destacado: true }]);
+    vi.mocked(serviciosApi.toggleDestacado).mockResolvedValue({} as never);
+    renderConQuery();
+    expect(await screen.findByText("Destacado")).toBeInTheDocument();
+    await elegirDelMenu("Quitar de destacados");
+    await waitFor(() => expect(serviciosApi.toggleDestacado).toHaveBeenCalledWith(expect.objectContaining({ id: "svc-1" })));
   });
 
   it("el texto 'Visible en reservas' va junto al switch, sin encimarse (I9)", async () => {
@@ -363,15 +414,20 @@ describe("ServiciosPage — visibilidad y destacado (OM-30)", () => {
     vi.mocked(serviciosApi.obtenerTodos).mockResolvedValue([mockServicio, otro]);
     vi.mocked(serviciosApi.toggleDestacado).mockReturnValue(new Promise(() => {}));
     renderConQuery();
-    fireEvent.click(await screen.findByRole("button", { name: "Destacado: Corte de cabello" }));
-    await waitFor(() => expect(screen.getByRole("button", { name: "Destacado: Corte de cabello" })).toBeDisabled());
-    expect(screen.getByRole("button", { name: "Destacado: Barba" })).toBeEnabled();
+    await elegirDelMenu("Marcar como destacado");
+    await waitFor(() => expect(serviciosApi.toggleDestacado).toHaveBeenCalled());
+    const menuCorte = await abrirMenu("Corte de cabello");
+    expect(within(menuCorte).getByRole("button", { name: "Marcar como destacado" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Más acciones de Corte de cabello" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    const menuBarba = await abrirMenu("Barba");
+    expect(within(menuBarba).getByRole("button", { name: "Marcar como destacado" })).toBeEnabled();
   });
 
   it("al eliminar sugiere ocultarlo como alternativa reversible (OM-17)", async () => {
     vi.mocked(serviciosApi.obtenerTodos).mockResolvedValue([{ ...mockServicio, activo: true }]);
     renderConQuery();
-    fireEvent.click(await screen.findByRole("button", { name: "Eliminar Corte de cabello" }));
+    await elegirDelMenu("Eliminar servicio");
     expect(await screen.findByText(/ocúltalo de tu página de reservas/)).toBeInTheDocument();
     expect(await screen.findByRole("button", { name: "Ocultar de reservas" })).toBeInTheDocument();
   });

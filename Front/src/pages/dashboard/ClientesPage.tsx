@@ -18,6 +18,7 @@ import { UserX, UserCheck, History, Pencil, ChevronRight } from "lucide-react";
 import Select from "../../components/ui/Select";
 import EmptyState from "../../components/ui/EmptyState";
 import ErrorCarga from "../../components/ui/ErrorCarga";
+import { SkeletonLista } from "../../components/ui/Skeleton";
 import BotonCopiarEnlace from "../../components/dashboard/BotonCopiarEnlace";
 import { tonoDeSector } from "../../lib/vozVacia";
 import BotonAccion from "../../components/ui/BotonAccion";
@@ -457,7 +458,8 @@ export default function ClientesPage() {
       {tab === "todos" && (<>
       {/* Lista */}
       {isLoading ? (
-        <p className="text-slate-400 dark:text-slate-500">Cargando clientes...</p>
+        // Tarjetas en el teléfono y filas en escritorio, como la lista real (I14).
+        <SkeletonLista filas={6} columnas={6} tarjeta="cliente" etiqueta={`Cargando ${terms.clientes.toLowerCase()}`} />
       ) : isError && !paginaClientes ? (
         // Un 500 no es un directorio vacío: "Aún no hay clientes" haría creer
         // que se perdieron los datos.

@@ -7,7 +7,47 @@ import {
   SkeletonList,
   SkeletonStat,
   PageLoader,
+  SkeletonLista,
+  SkeletonTarjetasEmpleado,
+  SkeletonServicios,
+  SkeletonInicio,
+  SkeletonJornada,
 } from "./Skeleton";
+
+// I14: un skeleton por variante, con la forma real de cada pantalla.
+describe("Skeletons por variante (I14)", () => {
+  it("SkeletonLista pinta tarjetas en el teléfono y filas en escritorio, por breakpoint", () => {
+    render(<SkeletonLista filas={4} etiqueta="Cargando citas" />);
+    const carga = screen.getByRole("status", { name: "Cargando citas" });
+    const tarjetas = carga.querySelector('[data-variante="tarjetas"]')!;
+    const filas = carga.querySelector('[data-variante="filas"]')!;
+    expect(tarjetas.className).toContain("sm:hidden");
+    expect(filas.className).toContain("hidden sm:block");
+    expect(tarjetas.querySelectorAll("li")).toHaveLength(4);
+  });
+
+  it("la tarjeta de cita lleva botones de acción y la de cliente un avatar", () => {
+    const { container, rerender } = render(<SkeletonLista filas={1} tarjeta="cita" />);
+    const tarjeta = () => container.querySelector('[data-variante="tarjetas"] li')!;
+    expect(tarjeta().querySelectorAll(".rounded-xl")).toHaveLength(2);
+    rerender(<SkeletonLista filas={1} tarjeta="cliente" />);
+    expect(tarjeta().querySelector(".rounded-full")).not.toBeNull();
+  });
+
+  it("SkeletonTarjetasEmpleado repite la tarjeta con foto y la fila de cuatro acciones", () => {
+    const { container } = render(<SkeletonTarjetasEmpleado cantidad={3} />);
+    const tarjetas = container.querySelectorAll('[data-variante="tarjeta-empleado"]');
+    expect(tarjetas).toHaveLength(3);
+    expect(tarjetas[0].querySelector(".grid-cols-\\[1fr_1fr_1fr_auto\\]")!.children).toHaveLength(4);
+  });
+
+  it("SkeletonServicios, SkeletonInicio y SkeletonJornada se anuncian como carga", () => {
+    render(<><SkeletonServicios filas={2} /><SkeletonInicio /><SkeletonJornada filas={3} /></>);
+    expect(screen.getByRole("status", { name: "Cargando servicios" }).querySelectorAll('[data-variante="fila-servicio"]')).toHaveLength(2);
+    expect(screen.getByRole("status", { name: "Cargando resumen" }).querySelector('[data-variante="agenda"]')).not.toBeNull();
+    expect(screen.getByRole("status", { name: "Cargando jornada" }).querySelectorAll('[data-variante="carril"]')).toHaveLength(3);
+  });
+});
 
 describe("Skeleton", () => {
   it("renderiza un div con animate-pulse", () => {

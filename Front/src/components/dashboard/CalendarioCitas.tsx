@@ -114,7 +114,7 @@ export default function CalendarioCitas({
   const domingo = addDias(lunes, 6);
   const hastaApi = addDias(domingo, 1);
 
-  const { data: citas = [], isError, refetch, isFetching, isSuccess } = useQuery({
+  const { data: citas = [], isError, refetch, isFetching, isSuccess, isLoading: cargando } = useQuery({
     queryKey: ["citas-cal", lunes.toISOString(), empleadoId],
     queryFn: () => citasApi.obtenerTodas({
       desde: fechaLocal(lunes),
@@ -432,6 +432,17 @@ export default function CalendarioCitas({
           <div key={h} className="absolute w-full border-t border-slate-100 dark:border-slate-700/50 pointer-events-none" style={{ top: (h - HORA_INICIO) * PX_POR_HORA }} />
         ))}
         {renderLineaAhora(dia)}
+        {/* Mientras llega la semana, bloques del tamaño de una cita en la propia
+            rejilla (I14): la rejilla no salta y no se lee como una semana vacía. */}
+        {cargando && [0, 1].map((k) => (
+          <div
+            key={k}
+            data-testid="cita-cargando"
+            aria-hidden="true"
+            className="absolute inset-x-1 rounded-md bg-muted animate-pulse pointer-events-none"
+            style={{ top: (((colIdx * 2 + k * 3) % 6) + 1) * PX_POR_HORA, height: PX_POR_HORA * 0.75 }}
+          />
+        ))}
         {esDropTarget && dropTarget && arrastrando && (
           <div
             className="absolute inset-x-0.5 h-1 bg-slate-700/60 rounded z-30 pointer-events-none"

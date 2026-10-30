@@ -19,7 +19,8 @@ import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
 import ConfirmarAccion from "../../components/ui/ConfirmarAccion";
 import Switch from "../../components/ui/Switch";
 import SelectorFondoPortada from "../../components/dashboard/SelectorFondoPortada";
-import { fondoPortada, normalizarPresetPortada } from "../../lib/portadaPresets";
+import { PRESETS_PORTADA, fondoPortada, normalizarPresetPortada } from "../../lib/portadaPresets";
+import { BOTON_MODAL_PRIMARIO, BOTON_MODAL_SECUNDARIO } from "../../components/ui/botonesModal";
 import { VELOS_PORTADA, modoPortada, tintaPortada } from "../../lib/portadaVelo";
 import { DatePicker } from "../../components/ui/DateTimePicker";
 import EditorHorario from "../../components/dashboard/EditorHorario";
@@ -110,7 +111,17 @@ const schema = z.object({
 });
 type PerfilForm = z.infer<typeof schema>;
 
-type Tab = "perfil" | "citas" | "anticipos" | "horarios" | "cuenta";
+// Botones de las imágenes (logo, portada, políticas): antes eran enlaces de 12px
+// sin área táctil; ahora botones de 44px (36px en escritorio) como el resto.
+const BOTON_IMAGEN =
+  "inline-flex items-center justify-center min-h-[44px] lg:min-h-[36px] px-3 rounded-lg border border-border dark:border-slate-600 " +
+  "text-sm font-medium text-foreground hover:bg-muted transition disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+const BOTON_IMAGEN_ELIMINAR =
+  "inline-flex items-center justify-center min-h-[44px] lg:min-h-[36px] px-3 rounded-lg text-sm font-medium text-red-700 dark:text-red-400 " +
+  "hover:bg-red-50 dark:hover:bg-red-950/40 transition disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+
+type Tab = "perfil" | "apariencia" | "citas" | "anticipos" | "horarios" | "cuenta";
+const TABS: Tab[] = ["perfil", "apariencia", "citas", "anticipos", "horarios", "cuenta"];
 
 /** Posición guardada ("top", "center", "50% 20%"…) en el formato del arrastre. */
 function normalizarPosicion(raw: string | null | undefined): string {
@@ -163,20 +174,24 @@ export default function PerfilPage() {
   const politicasRef = useRef<HTMLInputElement>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const tabRaw = searchParams.get("tab");
-  const tab: Tab = (["perfil", "citas", "anticipos", "horarios", "cuenta"] as Tab[]).includes(tabRaw as Tab)
+  const tab: Tab = TABS.includes(tabRaw as Tab)
     ? (tabRaw as Tab)
     : "perfil";
   const setTab = (t: Tab) => setSearchParams({ tab: t }, { replace: true });
   const [modalEliminar, setModalEliminar] = useState(false);
   const [contrasenaEliminar, setContrasenaEliminar] = useState("");
   const [accionPublica, setAccionPublica] = useState<AccionPublica | null>(null);
+  // Panel "Cambiar portada" (I11): la cuadrícula de 25 fondos ya no ocupa media
+  // página; se abre aquí y la elección se aplica al confirmar.
+  const [panelPortada, setPanelPortada] = useState(false);
+  const [borradorPreset, setBorradorPreset] = useState<string | null>(null);
 
   const { data: negocio, isLoading } = useQuery({
     queryKey: ["negocio-perfil"],
     queryFn: negociosApi.obtenerPerfil,
   });
 
-  const { register, handleSubmit, reset, watch, setValue, formState: { errors, isDirty } } = useForm<PerfilForm>({
+  const { register, handleSubmit, reset, watch, setValue, formState: { errors, isDirty, dirtyFields } } = useForm<PerfilForm>({
     resolver: zodResolver(schema) as Resolver<PerfilForm>,
   });
 
@@ -291,6 +306,9 @@ export default function PerfilPage() {
     if (!portadaModal) return;
     setPortadaObjectPosition(portadaModalPos);
     if (portadaModal.file) {
+      // Subir una foto es querer verla: se quita el fondo elegido (queda como
+      // cambio sin guardar, igual que elegir "Tu foto" en el panel).
+      setPortadaPreset(null);
       posicionTrasSubida.current = portadaModalPos;
       portada.subirArchivo(portadaModal.file);
       URL.revokeObjectURL(portadaModal.src);
@@ -546,6 +564,15 @@ export default function PerfilPage() {
   // que el handler síncrono): así el botón queda deshabilitado durante la
   // petición y no se mandan dos PUT. Sin cambios no hay nada que guardar.
   const cambiosFormulario = isDirty || colorSinGuardar || presetSinGuardar || posicionSinGuardar;
+  // Cuántos cambios hay sin guardar (I11): con Apariencia en su pestaña, lo que
+  // se cambió puede no estar a la vista; la barra dice al menos cuánto falta.
+  // Un campo del formulario es un cambio; color, fondo y posición, uno cada uno.
+  const cantidadCambios =
+    Object.values(dirtyFields).filter(Boolean).length
+    + Number(colorSinGuardar) + Number(presetSinGuardar) + Number(posicionSinGuardar);
+  const textoCambios = cantidadCambios <= 1
+    ? "1 cambio sin guardar"
+    : `${cantidadCambios} cambios sin guardar`;
   const guardandoFormulario = guardandoPerfil || guardandoColor;
   const btnGuardar = (
     <button
@@ -568,7 +595,7 @@ export default function PerfilPage() {
       {guardandoFormulario
         ? ""
         : cambiosFormulario
-          ? "Cambios sin guardar"
+          ? textoCambios
           : guardadoReciente
             ? "Guardado"
             : ""}
@@ -669,6 +696,7 @@ export default function PerfilPage() {
         className="mb-6"
         opciones={[
           { id: "perfil", label: "Perfil" },
+          { id: "apariencia", label: "Apariencia" },
           { id: "citas", label: "Citas" },
           { id: "anticipos", label: "Anticipos" },
           { id: "horarios", label: "Horarios" },
@@ -679,7 +707,12 @@ export default function PerfilPage() {
       {/* ── TAB: PERFIL ─────────────────────────────────────────────────────── */}
       {/* noValidate: zod da los mensajes (en español), no el navegador. */}
       <form noValidate onSubmit={handleSubmit(onSubmit, onInvalid)}>
-        <div className={tab !== "perfil" ? "hidden" : "space-y-6"}>
+        {/* Perfil y Apariencia comparten el formulario y la barra de guardar. Van
+            como bloques hermanos con el atributo `hidden` (no la clase): así
+            `space-y-6` los salta y no deja un margen arriba de la pestaña. Los
+            campos del perfil siguen montados aunque se vea otra pestaña. */}
+        <div className="space-y-6">
+        <div hidden={tab !== "perfil"} className="space-y-6">
 
           {/* Información del negocio */}
           <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 p-5">
@@ -720,50 +753,94 @@ export default function PerfilPage() {
             </div>
           </div>
 
-          {/* Imágenes */}
+          {/* Imagen de políticas: es información para el cliente, no apariencia,
+              así que se queda en Perfil. */}
           <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 p-5">
-            <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Imágenes</h2>
+            <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Imagen de políticas</h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
+              Se muestra en tu página de reservas. {TEXTO_FORMATOS_IMAGEN}
+            </p>
+            <div className="flex items-center gap-4">
+              <div className="w-20 h-20 shrink-0 rounded-xl bg-slate-100 dark:bg-slate-700 overflow-hidden flex items-center justify-center">
+                {negocio?.politicasUrl
+                  ? <img src={negocio.politicasUrl} alt="Políticas" className="w-full h-full object-contain" />
+                  : <span className="text-xs text-slate-400 dark:text-slate-500 text-center px-1">Sin políticas</span>}
+              </div>
+              <input ref={politicasRef} type="file" accept={ACCEPT_IMAGEN} className="hidden" aria-label="Archivo de políticas"
+                onChange={(e) => politicas.alElegir(e)} />
+              <div className="flex flex-wrap items-center gap-2">
+                <button type="button" onClick={() => politicasRef.current?.click()} disabled={politicas.subiendo}
+                  className={BOTON_IMAGEN}>
+                  {politicas.subiendo ? "Subiendo…" : "Cambiar políticas"}
+                </button>
+                {negocio?.politicasUrl && (
+                  <button type="button" onClick={() => setAccionPublica({ tipo: "politicas" })} disabled={eliminandoPoliticas}
+                    className={BOTON_IMAGEN_ELIMINAR}>
+                    {eliminandoPoliticas ? "Eliminando..." : "Eliminar"}
+                  </button>
+                )}
+                {politicas.subiendo && <ProgresoSubida className="w-full" porcentaje={politicas.progreso ?? null} etiqueta="Subiendo imagen de políticas" />}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── TAB: APARIENCIA (I11) ─────────────────────────────────────────────
+            Logo, portada y color salen de Perfil: antes había que pasar por la
+            galería de portadas para cambiar el teléfono. */}
+        <div hidden={tab !== "apariencia"} className="space-y-6">
+
+          {/* Logo y portada */}
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 p-5">
+            <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Logo y portada</h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">{TEXTO_FORMATOS_IMAGEN}</p>
-            <div className="grid grid-cols-4 gap-3">
+            <div className="flex flex-col sm:flex-row gap-5">
               {/* Logo */}
-              <div className="flex flex-col items-center">
-                <div className="w-full aspect-square rounded-xl bg-slate-100 dark:bg-slate-700 overflow-hidden mb-2 flex items-center justify-center">
+              <div className="flex sm:flex-col items-center sm:items-stretch gap-3 sm:w-32 shrink-0">
+                <div className="w-20 sm:w-full aspect-square shrink-0 rounded-xl bg-slate-100 dark:bg-slate-700 overflow-hidden flex items-center justify-center">
                   {negocio?.logoUrl
                     ? <img src={negocio.logoUrl} alt="Logo" className="w-full h-full object-cover" />
                     : <span className="text-2xl font-bold text-slate-300 dark:text-slate-600">{negocio?.nombre?.charAt(0)}</span>}
                 </div>
-                <input ref={logoRef} type="file" accept={ACCEPT_IMAGEN} className="hidden"
+                <input ref={logoRef} type="file" accept={ACCEPT_IMAGEN} className="hidden" aria-label="Archivo del logo"
                   onChange={(e) => logo.alElegir(e)} />
-                <button type="button" onClick={() => logoRef.current?.click()} disabled={logo.subiendo}
-                  className="text-xs text-slate-700 dark:text-slate-300 hover:underline disabled:opacity-50">
-                  {logo.subiendo ? "Subiendo…" : "Cambiar logo"}
-                </button>
-                {logo.subiendo && <ProgresoSubida className="mt-1" porcentaje={logo.progreso ?? null} etiqueta="Subiendo logo" />}
-                <div className="mt-auto pt-1 min-h-[1.25rem]">
+                <div className="flex flex-wrap sm:flex-col gap-2">
+                  <button type="button" onClick={() => logoRef.current?.click()} disabled={logo.subiendo}
+                    className={BOTON_IMAGEN}>
+                    {logo.subiendo ? "Subiendo…" : "Cambiar logo"}
+                  </button>
                   {negocio?.logoUrl && (
                     <button type="button" onClick={() => setAccionPublica({ tipo: "logo" })} disabled={eliminandoLogo}
-                      className="text-xs text-red-500 hover:underline disabled:opacity-50">
+                      className={BOTON_IMAGEN_ELIMINAR}>
                       {eliminandoLogo ? "Eliminando..." : "Eliminar"}
                     </button>
                   )}
+                  {logo.subiendo && <ProgresoSubida className="w-full" porcentaje={logo.progreso ?? null} etiqueta="Subiendo logo" />}
                 </div>
               </div>
-              {/* Portada */}
-              <div className="flex flex-col items-center col-span-2">
+
+              {/* Portada: la elegida y "Cambiar portada", que abre la cuadrícula en un panel. */}
+              <div className="flex-1 min-w-0">
                 {/* Muestra lo que realmente se verá en la portada: la foto, o el
                     fondo elegido, que gana sobre ella. */}
+                {/* Sin foto ni fondo, el booking pinta el degradado de marca: se
+                    muestra ese mismo, no un gris de "Sin portada" que no existe. */}
                 <div
-                  className="w-full aspect-[2/1] rounded-xl bg-slate-100 dark:bg-slate-700 overflow-hidden mb-2 flex items-center justify-center"
-                  style={presetPortada ? fondoPortadaActual : undefined}
+                  data-testid="portada-actual"
+                  className="w-full max-w-xl aspect-[3/1] rounded-xl bg-slate-100 dark:bg-slate-700 overflow-hidden flex items-center justify-center"
+                  style={mostrarFotoPortada ? undefined : fondoPortadaActual}
                 >
                   {mostrarFotoPortada && (
                     <img src={negocio!.portadaUrl!} alt="Portada" className="w-full h-full object-cover" style={{ objectPosition: portadaObjectPosition }} />
                   )}
-                  {!mostrarFotoPortada && !presetPortada && (
-                    <span className="text-xs text-slate-400 dark:text-slate-500">Sin portada</span>
-                  )}
                 </div>
-                <input ref={portadaRef} type="file" accept={ACCEPT_IMAGEN} className="hidden"
+                <p className="text-xs text-muted-foreground mt-2">
+                  {presetPortada
+                    ? `Fondo: ${PRESETS_PORTADA.find((p) => p.clave === presetPortada)?.nombre ?? presetPortada}`
+                    : mostrarFotoPortada ? "Tu foto" : "Color de marca"}
+                  {presetSinGuardar && <span className="text-amber-700 dark:text-amber-400"> · sin guardar</span>}
+                </p>
+                <input ref={portadaRef} type="file" accept={ACCEPT_IMAGEN} className="hidden" aria-label="Archivo de la portada"
                   onChange={(e) => {
                     const f = e.target.files?.[0];
                     e.target.value = "";
@@ -774,66 +851,46 @@ export default function PerfilPage() {
                     if (error) { toast(error, "error"); return; }
                     abrirPortadaModal(URL.createObjectURL(f), f);
                   }} />
-                <button type="button" onClick={() => portadaRef.current?.click()} disabled={portada.subiendo}
-                  className="text-xs text-slate-700 dark:text-slate-300 hover:underline disabled:opacity-50">
-                  {portada.subiendo ? "Subiendo…" : "Cambiar portada"}
-                </button>
-                {portada.subiendo && <ProgresoSubida className="mt-1" porcentaje={portada.progreso ?? null} etiqueta="Subiendo portada" />}
+                <div className="flex flex-wrap items-center gap-2 mt-3">
+                  <button
+                    type="button"
+                    onClick={() => { setBorradorPreset(portadaPreset); setPanelPortada(true); }}
+                    disabled={portada.subiendo}
+                    className={BOTON_IMAGEN}
+                  >
+                    {portada.subiendo ? "Subiendo…" : "Cambiar portada"}
+                  </button>
+                  {mostrarFotoPortada && (
+                    <button type="button" onClick={() => abrirPortadaModal(negocio!.portadaUrl!)} className={BOTON_IMAGEN}>
+                      Posicionar
+                    </button>
+                  )}
+                  {negocio?.portadaUrl && (
+                    <button type="button" onClick={() => setAccionPublica({ tipo: "portada" })} disabled={eliminandoPortada}
+                      className={BOTON_IMAGEN_ELIMINAR}>
+                      {eliminandoPortada ? "Eliminando..." : "Eliminar foto"}
+                    </button>
+                  )}
+                </div>
+                {portada.subiendo && <ProgresoSubida className="mt-2" porcentaje={portada.progreso ?? null} etiqueta="Subiendo portada" />}
                 {/* "Confirmar" guarda la posición al momento (B11). El aviso solo
                     queda si ese guardado falló: entonces viaja con "Guardar cambios". */}
                 {guardandoPosicion && (
-                  <p role="status" className="text-xs text-slate-500 dark:text-slate-400 text-center mt-1">
+                  <p role="status" className="text-xs text-slate-500 dark:text-slate-400 mt-2">
                     Guardando posición…
                   </p>
                 )}
                 {posicionSinGuardar && !guardandoPosicion && !portada.subiendo && (
-                  <p role="status" className="text-xs text-amber-700 dark:text-amber-400 text-center mt-1">
+                  <p role="status" className="text-xs text-amber-700 dark:text-amber-400 mt-2">
                     Posición sin guardar — se guardará con "Guardar cambios"
                   </p>
                 )}
-                {/* Sin este aviso, "Eliminar" borraría una foto que la miniatura no muestra. */}
+                {/* Sin este aviso, "Eliminar foto" borraría una foto que la miniatura no muestra. */}
                 {fotoOcultaPorFondo && (
-                  <p className="text-[11px] text-slate-400 dark:text-slate-500 text-center mt-1">
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-2">
                     Tu foto sigue guardada, oculta tras el fondo elegido.
                   </p>
                 )}
-                <div className="mt-auto pt-1 min-h-[1.25rem] flex items-center gap-3">
-                  {negocio?.portadaUrl && (
-                    <>
-                      <button type="button" onClick={() => abrirPortadaModal(negocio.portadaUrl!)}
-                        className="text-xs text-indigo-500 hover:underline">
-                        Posicionar
-                      </button>
-                      <button type="button" onClick={() => setAccionPublica({ tipo: "portada" })} disabled={eliminandoPortada}
-                        className="text-xs text-red-500 hover:underline disabled:opacity-50">
-                        {eliminandoPortada ? "Eliminando..." : "Eliminar"}
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-              {/* Políticas */}
-              <div className="flex flex-col items-center">
-                <div className="w-full aspect-square rounded-xl bg-slate-100 dark:bg-slate-700 overflow-hidden mb-2 flex items-center justify-center">
-                  {negocio?.politicasUrl
-                    ? <img src={negocio.politicasUrl} alt="Políticas" className="w-full h-full object-contain" />
-                    : <span className="text-xs text-slate-400 dark:text-slate-500">Sin políticas</span>}
-                </div>
-                <input ref={politicasRef} type="file" accept={ACCEPT_IMAGEN} className="hidden"
-                  onChange={(e) => politicas.alElegir(e)} />
-                <button type="button" onClick={() => politicasRef.current?.click()} disabled={politicas.subiendo}
-                  className="text-xs text-slate-700 dark:text-slate-300 hover:underline disabled:opacity-50">
-                  {politicas.subiendo ? "Subiendo…" : "Cambiar políticas"}
-                </button>
-                {politicas.subiendo && <ProgresoSubida className="mt-1" porcentaje={politicas.progreso ?? null} etiqueta="Subiendo imagen de políticas" />}
-                <div className="mt-auto pt-1 min-h-[1.25rem]">
-                  {negocio?.politicasUrl && (
-                    <button type="button" onClick={() => setAccionPublica({ tipo: "politicas" })} disabled={eliminandoPoliticas}
-                      className="text-xs text-red-500 hover:underline disabled:opacity-50">
-                      {eliminandoPoliticas ? "Eliminando..." : "Eliminar"}
-                    </button>
-                  )}
-                </div>
               </div>
             </div>
           </div>
@@ -935,28 +992,9 @@ export default function PerfilPage() {
             )}
           </div>
 
-          {/* Fondo de portada */}
-          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 p-5">
-            <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Fondo de portada</h2>
-            <p className="text-xs text-slate-400 dark:text-slate-500 mb-4">
-              {negocio?.portadaUrl
-                ? "Elige un fondo si prefieres no mostrar tu foto. Tu foto se conserva: puedes volver a ella cuando quieras."
-                : "Los patrones se dibujan con tu color de marca; los materiales traen colores propios."}
-            </p>
-            <SelectorFondoPortada
-              valor={portadaPreset}
-              onCambiar={setPortadaPreset}
-              color={colorPrimario}
-              portadaUrl={negocio?.portadaUrl}
-              portadaObjectPosition={portadaObjectPosition}
-            />
-            {presetSinGuardar && (
-              <p className="text-xs text-amber-700 dark:text-amber-400 mt-3">
-                Fondo sin guardar — se guardará con "Guardar cambios"
-              </p>
-            )}
-          </div>
+        </div>
 
+        <div hidden={tab !== "perfil"} className="space-y-6">
           {/* Redes sociales */}
           <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 p-5">
             <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Redes sociales</h2>
@@ -1015,6 +1053,7 @@ export default function PerfilPage() {
               </div>
             </div>
           )}
+        </div>
         </div>
 
         {/* ── TAB: CITAS ──────────────────────────────────────────────────────── */}
@@ -1382,6 +1421,53 @@ export default function PerfilPage() {
     />
 
     {dialogoNavegacion}
+
+    {/* ── Panel "Cambiar portada" (I11) ─────────────────────────────────────
+        La cuadrícula de fondos fuera de la página: se elige en el panel y se
+        aplica al confirmar, como un cambio más de la barra de guardar. En el
+        teléfono es la hoja inferior de `Modal`, con el pie fijo. */}
+    <Modal abierto={panelPortada} onCerrar={() => setPanelPortada(false)} titulo="Cambiar portada" ancho="lg">
+      <div className="space-y-5">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border p-3">
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-foreground">{negocio?.portadaUrl ? "Tu foto de portada" : "Usar una foto"}</p>
+            <p className="text-xs text-muted-foreground">
+              {negocio?.portadaUrl
+                ? "Elige un fondo si prefieres no mostrar tu foto. Tu foto se conserva."
+                : "Sube una foto de tu negocio o elige uno de los fondos de abajo."}
+            </p>
+          </div>
+          <button
+            type="button"
+            // El selector de archivos se abre con el panel ya cerrado: la vista
+            // previa para posicionar la foto no convive con otro diálogo abierto.
+            onClick={() => { setPanelPortada(false); portadaRef.current?.click(); }}
+            className={BOTON_IMAGEN}
+          >
+            {negocio?.portadaUrl ? "Subir otra foto" : "Subir foto"}
+          </button>
+        </div>
+        <SelectorFondoPortada
+          valor={borradorPreset}
+          onCambiar={setBorradorPreset}
+          color={colorPrimario}
+          portadaUrl={negocio?.portadaUrl}
+          portadaObjectPosition={portadaObjectPosition}
+        />
+        <ModalAcciones>
+          <button type="button" onClick={() => setPanelPortada(false)} className={BOTON_MODAL_SECUNDARIO}>
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={() => { setPortadaPreset(borradorPreset); setPanelPortada(false); }}
+            className={BOTON_MODAL_PRIMARIO}
+          >
+            Usar esta portada
+          </button>
+        </ModalAcciones>
+      </div>
+    </Modal>
 
     {/* ── Modal de posicionamiento de portada ─────────────────────────────── */}
     {portadaModal && (

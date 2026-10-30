@@ -98,12 +98,13 @@ beforeEach(() => {
 // ── Estado de carga ────────────────────────────────────────────────────────────
 
 describe("ClientesPage — estado de carga", () => {
-  it("muestra texto de carga mientras la API está pendiente", async () => {
+  it("muestra tarjetas en el teléfono y filas en escritorio mientras carga (I14)", async () => {
     vi.mocked(clientesApi.obtenerTodos).mockReturnValue(new Promise(() => {}));
     renderConQuery();
-    await waitFor(() =>
-      expect(screen.getByText("Cargando clientes...")).toBeInTheDocument()
-    );
+    const carga = await screen.findByRole("status", { name: "Cargando clientes" });
+    // Las dos variantes, cada una con la clase de su breakpoint (`sm`, como la lista real).
+    expect(carga.querySelector('[data-variante="tarjetas"]')!.className).toContain("sm:hidden");
+    expect(carga.querySelector('[data-variante="filas"]')!.className).toContain("hidden sm:block");
   });
 });
 

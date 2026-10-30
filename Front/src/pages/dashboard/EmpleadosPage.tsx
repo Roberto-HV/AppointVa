@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Camera, Eye, EyeOff, Pencil, Clock, CalendarX, Mail, Trash2, AlertCircle, RotateCcw, Users } from "lucide-react";
+import { Camera, Eye, EyeOff, Mail, Trash2, AlertCircle, RotateCcw, Users } from "lucide-react";
 import { empleadosApi } from "../../api/empleados";
 import { serviciosApi } from "../../api/servicios";
 import { negociosApi } from "../../api/negocios";
@@ -15,15 +15,15 @@ import ModalAcciones from "../../components/ui/ModalAcciones";
 import {
   BOTON_MODAL_PRIMARIO,
   BOTON_MODAL_SECUNDARIO,
-  BOTON_MODAL_PELIGRO_SUAVE,
 } from "../../components/ui/botonesModal";
+import MenuAcciones from "../../components/ui/MenuAcciones";
 import ConfirmarAccion from "../../components/ui/ConfirmarAccion";
 import DialogoEliminarConCitas from "../../components/dashboard/DialogoEliminarConCitas";
 import EditorHorario from "../../components/dashboard/EditorHorario";
 import { errorDelDia } from "../../lib/horario";
 import { claseCampo, CLASE_ERROR_CAMPO } from "../../lib/clasesCampo";
 import { DatePicker, TimePicker, citasABusySlots } from "../../components/ui/DateTimePicker";
-import { Skeleton, SkeletonCards } from "../../components/ui/Skeleton";
+import { Skeleton, SkeletonTarjetasEmpleado } from "../../components/ui/Skeleton";
 import EmptyState from "../../components/ui/EmptyState";
 import ErrorCarga from "../../components/ui/ErrorCarga";
 import { FiltroBarra } from "../../components/ui/filtros";
@@ -433,7 +433,7 @@ export default function EmpleadosPage() {
       )}
 
       {isLoading ? (
-        <SkeletonCards cantidad={4} />
+        <SkeletonTarjetasEmpleado cantidad={4} />
       ) : errorCarga ? (
         <ErrorCarga
           mensaje={`No se pudieron cargar los ${terms.empleados.toLowerCase()}.`}
@@ -519,39 +519,50 @@ export default function EmpleadosPage() {
                 </div>
               </div>
 
-              {/* Acciones a todo el ancho de la tarjeta y pegadas a su pie (`mt-auto`),
-                  así quedan a la misma altura en tarjetas vecinas. Rejilla fija de dos
-                  columnas iguales: Editar ocupa la primera fila y las otras cuatro, con
-                  Eliminar al final, completan dos filas sin huérfanos en ningún ancho. */}
-              <div className="mt-auto grid grid-cols-2 gap-2" role="group" aria-label={`Acciones de ${emp.nombre}`}>
-                {/* Inactivo: Reactivar ocupa su propia fila completa encima de Editar,
-                    así la rejilla de dos columnas sigue sin huérfanos. */}
+              {/* Una sola fila de acciones a todo el ancho y pegada al pie (`mt-auto`),
+                  así queda a la misma altura en tarjetas vecinas (I10). Editar es la
+                  acción principal; Horarios y Bloqueos, las secundarias del día a día;
+                  Invitar y Eliminar van en "⋯" para que lo destructivo no compita.
+                  Tres columnas iguales más el "⋯": sin iconos en los botones de
+                  texto, que a 320px de tarjeta no caben con ellos. */}
+              <div className="mt-auto space-y-2" role="group" aria-label={`Acciones de ${emp.nombre}`}>
+                {/* Inactivo: Reactivar ocupa su propia fila completa encima de la fila
+                    de acciones: es lo primero que hay que hacer con esa tarjeta. */}
                 {!emp.activo && (
                   <button
                     type="button"
                     onClick={() => reactivar.mutate(emp.id)}
                     disabled={reactivandoId === emp.id}
                     aria-label={`Reactivar a ${emp.nombre}`}
-                    className={`${BOTON_MODAL_SECUNDARIO} col-span-2`}
+                    className={`${BOTON_MODAL_SECUNDARIO} w-full`}
                   >
                     <RotateCcw size={15} className="text-muted-foreground" aria-hidden="true" /> {reactivandoId === emp.id ? "Reactivando…" : "Reactivar"}
                   </button>
                 )}
-                <button type="button" onClick={() => abrirEditar(emp)} className={`${BOTON_MODAL_PRIMARIO} col-span-2`}>
-                  <Pencil size={15} aria-hidden="true" /> Editar
-                </button>
-                <button type="button" onClick={() => abrirHorario(emp)} className={BOTON_MODAL_SECUNDARIO}>
-                  <Clock size={15} className="text-muted-foreground" aria-hidden="true" /> Horarios
-                </button>
-                <button type="button" onClick={() => abrirBloqueo(emp)} className={BOTON_MODAL_SECUNDARIO}>
-                  <CalendarX size={15} className="text-muted-foreground" aria-hidden="true" /> Bloqueos
-                </button>
-                <button type="button" onClick={() => abrirInvitar(emp)} className={BOTON_MODAL_SECUNDARIO}>
-                  <Mail size={15} className="text-muted-foreground" aria-hidden="true" /> Invitar
-                </button>
-                <button type="button" onClick={() => setEmpleadoEliminar(emp)} className={BOTON_MODAL_PELIGRO_SUAVE}>
-                  <Trash2 size={15} aria-hidden="true" /> Eliminar
-                </button>
+                <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2">
+                  <button type="button" onClick={() => abrirEditar(emp)} aria-label={`Editar a ${emp.nombre}`} className={`${BOTON_MODAL_PRIMARIO} !px-2`}>
+                    Editar
+                  </button>
+                  <button type="button" onClick={() => abrirHorario(emp)} aria-label={`Horarios de ${emp.nombre}`} className={`${BOTON_MODAL_SECUNDARIO} !px-2`}>
+                    Horarios
+                  </button>
+                  <button type="button" onClick={() => abrirBloqueo(emp)} aria-label={`Bloqueos de ${emp.nombre}`} className={`${BOTON_MODAL_SECUNDARIO} !px-2`}>
+                    Bloqueos
+                  </button>
+                  <MenuAcciones
+                    etiqueta={`Más acciones de ${emp.nombre}`}
+                    acciones={[
+                      { id: "invitar", etiqueta: "Invitar acceso al sistema",Icono: Mail, onSelect: () => abrirInvitar(emp) },
+                      {
+                        id: "eliminar",
+                        etiqueta: `Eliminar ${terms.empleado.toLowerCase()}`,
+                        Icono: Trash2,
+                        destructiva: true,
+                        onSelect: () => setEmpleadoEliminar(emp),
+                      },
+                    ]}
+                  />
+                </div>
               </div>
             </motion.div>
           ))}
@@ -619,9 +630,12 @@ export default function EmpleadosPage() {
             </div>
           </div>
 
-          <button type="submit" disabled={guardando} className={`${BOTON_MODAL_PRIMARIO} w-full`}>
-            {guardando ? "Guardando..." : empleadoEdit ? "Guardar cambios" : "Crear empleado"}
-          </button>
+          {/* En el pie del modal: en la hoja del teléfono queda fijo abajo. */}
+          <ModalAcciones apilado>
+            <button type="submit" disabled={guardando} className={BOTON_MODAL_PRIMARIO}>
+              {guardando ? "Guardando..." : empleadoEdit ? "Guardar cambios" : "Crear empleado"}
+            </button>
+          </ModalAcciones>
         </form>
       </Modal>
 
@@ -630,6 +644,9 @@ export default function EmpleadosPage() {
         abierto={modalHorario}
         onCerrar={() => descarte.pedirCierre(horarioSucio, () => { setModalHorario(false); setHorarioOriginal(null); })}
         titulo={`Horarios — ${empleadoHorario?.nombre}`}
+        // Filas compactas con dos horas en línea (M12): con el ancho de "lg" la
+        // fila y la barra de "Aplicar a todos" caben en un renglón.
+        ancho="lg"
       >
         <div className="space-y-3">
           {horarioQuery.isError ? (
@@ -669,13 +686,18 @@ export default function EmpleadosPage() {
             />
           )}
 
-          <button
-            onClick={() => guardarHorario({ id: empleadoHorario!.id, horarios: horarioLocal })}
-            disabled={!horarioCargado || guardandoHorario || horarioLocal.some((h) => !!errorDelDia(h))}
-            className={`${BOTON_MODAL_PRIMARIO} w-full mt-2`}
-          >
-            {guardandoHorario ? "Guardando..." : "Guardar horario"}
-          </button>
+          {/* Siete días con intervalos: en la hoja del teléfono el botón queda fijo
+              abajo en vez de al final del scroll (I13). */}
+          <ModalAcciones apilado className="mt-2">
+            <button
+              type="button"
+              onClick={() => guardarHorario({ id: empleadoHorario!.id, horarios: horarioLocal })}
+              disabled={!horarioCargado || guardandoHorario || horarioLocal.some((h) => !!errorDelDia(h))}
+              className={BOTON_MODAL_PRIMARIO}
+            >
+              {guardandoHorario ? "Guardando..." : "Guardar horario"}
+            </button>
+          </ModalAcciones>
         </div>
       </Modal>
 
@@ -792,13 +814,15 @@ export default function EmpleadosPage() {
                   className={claseCampo(false)}
                 />
               </div>
-              <button
-                type="submit"
-                disabled={creandoBloqueo}
-                className={`${BOTON_MODAL_PRIMARIO} w-full`}
-              >
-                {creandoBloqueo ? "Guardando..." : "Agregar bloqueo"}
-              </button>
+              <ModalAcciones apilado>
+                <button
+                  type="submit"
+                  disabled={creandoBloqueo}
+                  className={BOTON_MODAL_PRIMARIO}
+                >
+                  {creandoBloqueo ? "Guardando..." : "Agregar bloqueo"}
+                </button>
+              </ModalAcciones>
             </form>
           </div>
         </div>

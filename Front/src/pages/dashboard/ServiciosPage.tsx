@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import { Camera, ClipboardList, Pencil, Star, Tag, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Camera, ClipboardList, GripVertical, Pencil, Star, Tag, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useEntradaAnimada } from "../../hooks/useEntradaAnimada";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -28,6 +28,9 @@ import { ACCEPT_IMAGEN } from "../../lib/imagenes";
 import { useSubirImagen } from "../../hooks/useSubirImagen";
 import ProgresoSubida from "../../components/ui/ProgresoSubida";
 import Switch from "../../components/ui/Switch";
+import MenuAcciones from "../../components/ui/MenuAcciones";
+import { SkeletonServicios } from "../../components/ui/Skeleton";
+import { aplicarOrden, cambiosDeOrden, type CambioOrden } from "../../lib/ordenServicios";
 import ErrorCarga from "../../components/ui/ErrorCarga";
 import EmptyState from "../../components/ui/EmptyState";
 import { mensajeError } from "../../utils/errores";
@@ -116,7 +119,9 @@ export default function ServiciosPage() {
 
   const abrirCrearServicio = () => {
     setServicioEdit(null);
-    reset({ nombre: "", categoriaId: "", descripcion: "", duracionMinutos: 30, bufferMinutos: 0, precio: 0, orden: servicios.length + 1 });
+    // Sin campo "Orden" en el formulario: el nuevo entra al final del catálogo.
+    const ultimo = servicios.reduce((max, s) => Math.max(max, s.orden), 0);
+    reset({ nombre: "", categoriaId: "", descripcion: "", duracionMinutos: 30, bufferMinutos: 0, precio: 0, orden: ultimo + 1 });
     setModal(true);
   };
 
@@ -249,6 +254,33 @@ export default function ServiciosPage() {
 
   const paginaCategorias = usePaginacionLocal(categorias);
 
+  // ── Orden (M11) ───────────────────────────────────────────────────────────
+  // El campo numérico "Orden" salió del formulario: se ordena moviendo filas
+  // dentro de su categoría, arrastrando el asa o con "Mover arriba / abajo".
+  const categoriasCompletas = useMemo(() => agruparPorCategoria(servicios), [servicios]);
+  const hermanos = (s: ServicioDto) => categoriasCompletas[s.categoriaNombre ?? "Sin categoría"] ?? [];
+  const posicion = (s: ServicioDto) => hermanos(s).findIndex((x) => x.id === s.id);
+  const [arrastrado, setArrastrado] = useState<ServicioDto | null>(null);
+  const [sobre, setSobre] = useState<string | null>(null);
+
+  const reordenar = useMutation({
+    mutationFn: async (cambios: CambioOrden[]) => {
+      for (const c of cambios) await serviciosApi.cambiarOrden(c.servicio, c.orden);
+    },
+    // Se mueve al momento y se guarda detrás; si falla, la lista vuelve a la del servidor.
+    onMutate: (cambios) => {
+      qc.setQueryData<ServicioDto[]>(["servicios"], (prev) => (prev ? aplicarOrden(prev, cambios) : prev));
+    },
+    onError: () => toast(`No se pudo cambiar el orden. Intenta de nuevo.`, "error"),
+    onSettled: () => qc.invalidateQueries({ queryKey: ["servicios"] }),
+  });
+  const moviendo = reordenar.isPending;
+  const moverServicio = (s: ServicioDto, delta: number) => {
+    const desde = posicion(s);
+    const cambios = cambiosDeOrden(hermanos(s), desde, desde + delta);
+    if (cambios.length > 0) reordenar.mutate(cambios);
+  };
+
   const serviciosPorCategoria = (catId: string) =>
     servicios.filter((s) => s.categoriaId === catId).length;
 
@@ -290,7 +322,8 @@ export default function ServiciosPage() {
       {/* ── Tab Servicios ──────────────────────────────────────────────────── */}
       {tab === "servicios" && (
         isLoading ? (
-          <p className="text-slate-400 dark:text-slate-500">Cargando {terms.servicios.toLowerCase()}...</p>
+          // Filas con imagen, precio y controles, como la lista real (I14).
+          <SkeletonServicios />
         ) : errorServicios ? (
           <ErrorCarga
             mensaje={`No se pudieron cargar los ${terms.servicios.toLowerCase()}.`}
@@ -325,10 +358,43 @@ export default function ServiciosPage() {
                     <motion.div
                       key={s.id}
                       variants={{ hidden: { opacity: 0, x: -10 }, show: { opacity: 1, x: 0, transition: { duration: 0.25 } } }}
+                      // Destino del arrastre: solo filas de la misma categoría.
+                      onDragOver={(e) => {
+                        if (!arrastrado || arrastrado.id === s.id || (arrastrado.categoriaNombre ?? null) !== (s.categoriaNombre ?? null)) return;
+                        e.preventDefault();
+                        if (sobre !== s.id) setSobre(s.id);
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        if (arrastrado && arrastrado.id !== s.id) moverServicio(arrastrado, posicion(s) - posicion(arrastrado));
+                        setArrastrado(null); setSobre(null);
+                      }}
+                      data-sobre={sobre === s.id || undefined}
                       // Móvil: imagen + nombre/descripción arriba y, en su propia línea,
                       // precio · duración y acciones. Desde sm todo va en una fila.
-                      className={`flex flex-wrap sm:flex-nowrap items-start sm:items-center gap-x-3 gap-y-2 px-4 py-3 ${i < items.length - 1 ? "border-b border-slate-50 dark:border-slate-700" : ""}`}
+                      className={`flex flex-wrap sm:flex-nowrap items-start sm:items-center gap-x-3 gap-y-2 px-4 sm:pl-1 py-3 transition-colors ${
+                        i < items.length - 1 ? "border-b border-slate-50 dark:border-slate-700" : ""
+                      } ${sobre === s.id ? "bg-muted ring-2 ring-inset ring-ring/40 rounded-lg" : ""} ${arrastrado?.id === s.id ? "opacity-50" : ""}`}
                     >
+                      {/* Asa para ordenar arrastrando (M11), solo con puntero fino: el
+                          arrastre nativo no existe en pantallas táctiles, ahí se mueve
+                          con "Mover arriba / abajo" del menú "⋯". */}
+                      <span
+                        draggable={hermanos(s).length > 1}
+                        onDragStart={(e) => {
+                          e.dataTransfer.effectAllowed = "move";
+                          e.dataTransfer.setData("text/plain", s.id);
+                          setArrastrado(s);
+                        }}
+                        onDragEnd={() => { setArrastrado(null); setSobre(null); }}
+                        title={hermanos(s).length > 1 ? "Arrastra para cambiar el orden" : undefined}
+                        aria-hidden="true"
+                        className={`hidden sm:flex items-center justify-center w-6 self-stretch shrink-0 rounded text-slate-300 dark:text-slate-600 ${
+                          hermanos(s).length > 1 ? "cursor-grab active:cursor-grabbing hover:text-muted-foreground" : "invisible"
+                        }`}
+                      >
+                        <GripVertical size={16} />
+                      </span>
                       {/* Botón con nombre y la cámara siempre visible: sin hover (táctil)
                           y con teclado también se descubre que aquí se cambia la imagen. */}
                       <button
@@ -357,7 +423,15 @@ export default function ServiciosPage() {
                       )}
 
                       <div className="flex-1 min-w-0 basis-0">
-                        <p className="font-medium text-slate-800 dark:text-slate-200 line-clamp-2 break-words">{s.nombre}</p>
+                        <p className="font-medium text-slate-800 dark:text-slate-200 line-clamp-2 break-words">
+                          {s.nombre}
+                          {/* Destacado ya no es un botón en la fila: queda como insignia. */}
+                          {s.destacado && (
+                            <span className="ml-2 inline-flex items-center gap-1 align-middle text-[11px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+                              <Star size={10} fill="currentColor" aria-hidden="true" /> Destacado
+                            </span>
+                          )}
+                        </p>
                         {s.descripcion && <p className="text-xs text-slate-500 mt-0.5 line-clamp-3 sm:line-clamp-2 break-words dark:text-slate-400">{s.descripcion}</p>}
                         <p className="hidden sm:block text-xs text-slate-500 mt-0.5 tabular-nums dark:text-slate-400">{s.duracionMinutos} min</p>
                       </div>
@@ -383,43 +457,46 @@ export default function ServiciosPage() {
                             />
                             <span aria-hidden="true" className="hidden md:inline text-xs text-muted-foreground whitespace-nowrap">Visible en reservas</span>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => toggleDestacado.mutate(s)}
-                            disabled={destacadoPendiente === s.id}
-                            aria-pressed={s.destacado}
-                            aria-label={`Destacado: ${s.nombre}`}
-                            title={s.destacado ? "Quitar de destacados" : "Mostrar en Destacados de la página pública"}
-                            className={`inline-flex items-center justify-center gap-1.5 min-h-[44px] min-w-[44px] lg:min-h-[36px] lg:min-w-[36px] text-xs font-medium px-2.5 rounded-lg transition disabled:opacity-50
-                              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                              s.destacado
-                                ? "bg-amber-50 text-amber-800 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-300 dark:hover:bg-amber-900/50"
-                                : "bg-muted text-muted-foreground hover:text-foreground"
-                            }`}
-                          >
-                            <Star size={12} fill={s.destacado ? "currentColor" : "none"} aria-hidden="true" />
-                            <span className="hidden sm:inline" aria-hidden="true">Destacado</span>
-                          </button>
+                          {/* Editar sigue a la vista; Destacado, mover y Eliminar van en
+                              "⋯", como los tipos de evento de Calendly (I9). Eliminar
+                              conserva su confirmación. */}
                           <button
                             type="button"
                             onClick={() => abrirEditarServicio(s)}
                             aria-label={`Editar ${s.nombre}`}
-                            className="inline-flex items-center justify-center gap-1.5 min-h-[44px] min-w-[44px] lg:min-h-[36px] lg:min-w-[36px] text-xs font-medium px-2.5 rounded-lg border border-border text-foreground hover:bg-muted transition
+                            className="inline-flex items-center justify-center gap-1.5 min-h-[44px] min-w-[44px] lg:min-h-[36px] lg:min-w-[36px] text-xs font-medium px-2.5 rounded-xl border border-border dark:border-slate-600 text-foreground hover:bg-muted transition
                               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                           >
                             <Pencil size={12} aria-hidden="true" />
                             <span className="hidden sm:inline" aria-hidden="true">Editar</span>
                           </button>
-                          <button
-                            type="button"
-                            onClick={() => setServicioEliminar(s)}
-                            aria-label={`Eliminar ${s.nombre}`}
-                            className="inline-flex items-center justify-center gap-1.5 min-h-[44px] min-w-[44px] lg:min-h-[36px] lg:min-w-[36px] text-xs font-medium px-2.5 rounded-lg bg-red-50 text-red-700 hover:bg-red-100 dark:bg-red-900/40 dark:text-red-300 dark:hover:bg-red-900/60 transition
-                              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                          >
-                            <Trash2 size={12} aria-hidden="true" />
-                            <span className="hidden sm:inline" aria-hidden="true">Eliminar</span>
-                          </button>
+                          <MenuAcciones
+                            etiqueta={`Más acciones de ${s.nombre}`}
+                            acciones={[
+                              {
+                                id: "destacado",
+                                etiqueta: s.destacado ? "Quitar de destacados" : "Marcar como destacado",
+                                Icono: Star,
+                                deshabilitada: destacadoPendiente === s.id,
+                                onSelect: () => toggleDestacado.mutate(s),
+                              },
+                              ...(posicion(s) > 0 ? [{
+                                id: "subir", etiqueta: "Mover arriba", Icono: ArrowUp,
+                                deshabilitada: moviendo, onSelect: () => moverServicio(s, -1),
+                              }] : []),
+                              ...(posicion(s) < hermanos(s).length - 1 ? [{
+                                id: "bajar", etiqueta: "Mover abajo", Icono: ArrowDown,
+                                deshabilitada: moviendo, onSelect: () => moverServicio(s, 1),
+                              }] : []),
+                              {
+                                id: "eliminar",
+                                etiqueta: `Eliminar ${terms.servicio.toLowerCase()}`,
+                                Icono: Trash2,
+                                destructiva: true,
+                                onSelect: () => setServicioEliminar(s),
+                              },
+                            ]}
+                          />
                         </div>
                       </div>
                     </motion.div>
@@ -580,21 +657,28 @@ export default function ServiciosPage() {
               {errors.duracionMinutos && <p id="servicio-duracion-error" className="text-red-600 dark:text-red-400 text-xs mt-1">{errors.duracionMinutos.message}</p>}
             </div>
             <div>
+              {/* Etiqueta corta, de una línea como "Duración (min)": la larga se partía
+                  en dos y bajaba el campo respecto al de al lado (M11). La
+                  explicación va en la ayuda de abajo. */}
               <label htmlFor="servicio-buffer" className="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">
-                Descanso tras la cita (min)
-                <span className="ml-1 text-xs text-slate-500 font-normal dark:text-slate-400">tiempo extra tras la cita</span>
+                Descanso (min)
               </label>
               <input
                 id="servicio-buffer"
                 type="number" min="0" max="120" step="5" inputMode="numeric"
                 {...register("bufferMinutos")}
                 aria-invalid={!!errors.bufferMinutos}
-                aria-describedby={errors.bufferMinutos ? "servicio-buffer-error" : undefined}
+                aria-describedby={errors.bufferMinutos ? "servicio-buffer-error servicio-buffer-ayuda" : "servicio-buffer-ayuda"}
                 className={claseCampo(!!errors.bufferMinutos)}
               />
               {errors.bufferMinutos && <p id="servicio-buffer-error" className="text-red-600 dark:text-red-400 text-xs mt-1">{errors.bufferMinutos.message}</p>}
             </div>
+            <p id="servicio-buffer-ayuda" className="col-span-2 -mt-1 text-xs text-muted-foreground">
+              El descanso es tiempo libre que se aparta después de cada cita, para limpiar o preparar.
+            </p>
           </div>
+          {/* Sin campo "Orden": el lugar en el catálogo se cambia moviendo la fila en
+              la lista (M11). Un servicio nuevo entra al final. */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label htmlFor="servicio-precio" className="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">Precio (MXN) *</label>
@@ -608,18 +692,6 @@ export default function ServiciosPage() {
                 className={claseCampo(!!errors.precio)}
               />
               {errors.precio && <p id="servicio-precio-error" className="text-red-600 dark:text-red-400 text-xs mt-1">{errors.precio.message}</p>}
-            </div>
-            <div>
-              <label htmlFor="servicio-orden" className="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">Orden</label>
-              <input
-                id="servicio-orden"
-                type="number" min="1" inputMode="numeric"
-                {...register("orden")}
-                aria-invalid={!!errors.orden}
-                aria-describedby={errors.orden ? "servicio-orden-error" : undefined}
-                className={claseCampo(!!errors.orden)}
-              />
-              {errors.orden && <p id="servicio-orden-error" className="text-red-600 dark:text-red-400 text-xs mt-1">{errors.orden.message}</p>}
             </div>
           </div>
 

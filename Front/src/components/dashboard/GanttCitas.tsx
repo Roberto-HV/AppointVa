@@ -16,6 +16,7 @@ import {
 } from "../../lib/agenda";
 import { BarraFechaAgenda, LeyendaEstados, type HuecoAgenda } from "./BarraAgenda";
 import { useHorarioAgenda } from "../../hooks/useHorarioAgenda";
+import { SkeletonJornada } from "../ui/Skeleton";
 
 const PX_POR_HORA = 56;
 const COL_MIN_W = 148;
@@ -211,9 +212,8 @@ export default function GanttCitas({
       )}
 
       {isLoading ? (
-        <div className="h-40 flex items-center justify-center text-sm text-muted-foreground">
-          Cargando jornada...
-        </div>
+        // Carriles del tamaño de los reales en vez de un texto (I14).
+        <SkeletonJornada />
       ) : sinDatos ? (
         // Un fallo no debe parecer una jornada vacía.
         <div role="alert" className="h-40 flex flex-col items-center justify-center gap-3 text-sm text-red-700 dark:text-red-400">

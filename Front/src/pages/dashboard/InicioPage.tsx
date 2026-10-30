@@ -15,13 +15,13 @@ import { empleadosApi } from "../../api/empleados";
 import { serviciosApi } from "../../api/servicios";
 import { useAuthStore } from "../../store/authStore";
 import EstadoBadge from "../../components/ui/EstadoBadge";
-import { Skeleton } from "../../components/ui/Skeleton";
+import { Skeleton, SkeletonInicio } from "../../components/ui/Skeleton";
 import ErrorCarga from "../../components/ui/ErrorCarga";
 import AnimatedCounter from "../../components/ui/AnimatedCounter";
 import AccionesCita, { HojaAccionesCita, type VistaHoja } from "../../components/dashboard/AccionesCita";
 import { InsigniaPorCerrar } from "../../components/dashboard/TarjetaCita";
 import { colorCategoria, EJE_TICK, REJILLA } from "../../lib/temaGraficas";
-import { citaAbierta, citaPorCerrar, estiloEstadoCita } from "../../lib/estadoCita";
+import { citaAbierta, citaPorCerrar } from "../../lib/estadoCita";
 import { hoy as hoyLocal, inicioSemana as inicioSemanaLocal, finSemana as finSemanaLocal, fechaLocal, NOMBRE_PERIODO } from "../../utils/fechas";
 import { formatPrecio, formatPrecioCorto, formatFechaHoraResumen as formatFechaHora, capitalizarPrimera } from "../../utils/formatters";
 
@@ -424,19 +424,9 @@ function VistaPropietario({ nombre }: { nombre: string }) {
       ) : (
         <>
           {cargandoPanel ? (
-        <>
-          <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-6">
-            {[0,1,2].map(i => <Skeleton key={i} className="h-20 sm:h-24 rounded-2xl" />)}
-          </div>
-          <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-8">
-            {[0,1,2].map(i => <Skeleton key={i} className="h-20 sm:h-24 rounded-2xl" />)}
-          </div>
-          <Skeleton className="h-72 rounded-2xl mb-6" />
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Skeleton className="lg:col-span-2 h-64 rounded-2xl" />
-            <Skeleton className="h-64 rounded-2xl" />
-          </div>
-        </>
+        // El mismo orden y las mismas cajas que el panel (I14): agenda, citas,
+        // ingresos, gráfica y las dos columnas. Antes faltaba la agenda y todo saltaba.
+        <SkeletonInicio />
       ) : data ? (
         <>
           {/* Highlight próxima cita */}
@@ -781,32 +771,21 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
       {/* Banner de activación de notificaciones push */}
       <NotificacionBanner />
 
-      {/* Encabezado */}
+      {/* Encabezado: la misma gramática que el Inicio de la dueña (M10), "Hola,
+          nombre" y una línea de contexto debajo, en vez de "Buenos días / Sofía". */}
       <div className="mb-6">
-        <p className="text-sm text-muted-foreground mb-0.5">{saludo}</p>
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 leading-none">{nombre}</h1>
+        <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 leading-none mb-1">Hola, {nombre}</h1>
+        <p className="text-sm text-muted-foreground">{saludo}, este es tu día</p>
       </div>
 
-      {/* Stats hoy */}
+      {/* Stats hoy: la misma `Tarjeta` del panel de la dueña, con Ingresos en la
+          placa oscura igual que allá (antes era otra caja con otro tamaño de cifra). */}
       <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-4">
-        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-3 sm:p-4">
-          <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-1.5">Citas hoy</p>
-          <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 leading-none">
-            {cargandoHoy ? "—" : vigentesHoy.length}
-          </p>
-        </div>
-        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-3 sm:p-4">
-          <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-1.5">Completadas</p>
-          <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 leading-none">
-            {cargandoHoy ? "—" : completadas.length}
-          </p>
-        </div>
-        <div className="bg-slate-900 rounded-2xl p-3 sm:p-4">
-          <p className="text-xs font-bold uppercase tracking-wide text-slate-300 mb-1.5">Ingresos</p>
-          <p className="text-xl font-bold text-white leading-none">
-            {cargandoHoy ? "—" : formatPrecioCorto(ingresosHoy)}
-          </p>
-        </div>
+        <Tarjeta label="Citas hoy" valor={cargandoHoy ? "—" : vigentesHoy.length} />
+        <Tarjeta label="Completadas" valor={cargandoHoy ? "—" : completadas.length} />
+        {cargandoHoy
+          ? <Tarjeta label="Ingresos" valor="—" accent />
+          : <Tarjeta label="Ingresos" rawValue={ingresosHoy} accent />}
       </div>
 
       {/* Resumen semanal */}
@@ -882,8 +861,8 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
                     enCurso
                       ? "bg-status-confirmed-bg border border-status-confirmed-dot"
                       : cerrada
-                      ? "bg-transparent border border-border"
-                      : "bg-muted"
+                      ? "opacity-70"
+                      : "bg-slate-50 dark:bg-slate-700/40"
                   }`}
                 >
                   <button
@@ -891,23 +870,23 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
                     onClick={(e) => abrirHoja(c, "menu", e.currentTarget)}
                     aria-haspopup="dialog"
                     aria-label={`${horaTexto(c.inicioEn)} ${c.nombreCliente}, ${c.nombreServicio}${porCerrar ? ", por cerrar" : ""}. Ver acciones`}
-                    className="flex-1 min-w-0 flex items-center gap-3 p-3 text-left rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="flex-1 min-w-0 flex items-center gap-3 px-3 py-2 text-left rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
-                    <div className="shrink-0 text-right w-[52px]">
-                      <p className={`text-xs font-bold ${enCurso ? "text-status-confirmed-fg" : "text-foreground"}`}>
-                        {horaTexto(c.inicioEn)}
-                      </p>
-                      <p className="text-xs text-muted-foreground">{c.duracionMinutos} min</p>
-                    </div>
-                    <div className={`w-1 h-10 rounded-full shrink-0 ${estiloEstadoCita(c.estadoTexto).punto}`} aria-hidden="true" />
+                    {/* La misma fila que la agenda de la dueña (M10): hora en línea,
+                        cliente y servicio, y el estado a la derecha. Sin la barra
+                        de color ni la hora apilada en dos renglones. */}
+                    <span className={`text-xs font-semibold tabular-nums w-16 shrink-0 whitespace-nowrap ${enCurso ? "text-status-confirmed-fg" : "text-slate-600 dark:text-slate-300"}`}>
+                      {horaTexto(c.inicioEn)}
+                    </span>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-foreground truncate">{c.nombreCliente}</p>
-                      <p className="text-xs text-muted-foreground truncate">{c.nombreServicio}</p>
+                      <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">{c.nombreCliente}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {c.nombreServicio} · <span className="tabular-nums">{c.duracionMinutos} min · {formatPrecio(c.precio)}</span>
+                      </p>
                     </div>
-                    <div className="shrink-0 text-right flex flex-col items-end gap-0.5">
+                    <div className="shrink-0 flex flex-col items-end gap-0.5">
                       <EstadoBadge estado={c.estadoTexto} />
                       {porCerrar && <InsigniaPorCerrar cita={c} ahora={ahora} />}
-                      <p className="text-xs font-semibold text-muted-foreground">{formatPrecio(c.precio)}</p>
                     </div>
                   </button>
                   <AccionesCita

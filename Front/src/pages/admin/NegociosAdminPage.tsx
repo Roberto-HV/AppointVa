@@ -15,6 +15,7 @@ import {
   type EditarPagoRequestDto,
 } from "../../api/admin";
 import Modal from "../../components/ui/Modal";
+import ModalAcciones from "../../components/ui/ModalAcciones";
 import ConfirmarAccion from "../../components/ui/ConfirmarAccion";
 import { esPendienteActivacion, ordenarNegociosAdmin, validarEdicionPago, esColorHexValido } from "../../utils/negociosAdmin";
 import BarraProgreso from "../../components/ui/BarraProgreso";
@@ -1769,13 +1770,16 @@ export default function NegociosAdminPage() {
             />
           </div>
 
-          <button
-            type="submit"
-            disabled={creandoNegocio || slugNuevo === "taken" || slugNuevo === "checking"}
-            className={`${BOTON_PIE_PRIMARIO} w-full`}
-          >
-            {creandoNegocio ? "Creando..." : "Crear negocio"}
-          </button>
+          {/* En la hoja del teléfono el pie queda fijo abajo (I13). */}
+          <ModalAcciones apilado>
+            <button
+              type="submit"
+              disabled={creandoNegocio || slugNuevo === "taken" || slugNuevo === "checking"}
+              className={BOTON_PIE_PRIMARIO}
+            >
+              {creandoNegocio ? "Creando..." : "Crear negocio"}
+            </button>
+          </ModalAcciones>
         </form>
       </Modal>
 
@@ -1934,13 +1938,15 @@ export default function NegociosAdminPage() {
                       {errorPropietario}
                     </div>
                   )}
-                  <button
-                    type="submit"
-                    disabled={creandoPropietario}
-                    className={`${BOTON_PIE_PRIMARIO} w-full`}
-                  >
-                    {creandoPropietario ? "Creando cuenta…" : "Crear propietario"}
-                  </button>
+                  <ModalAcciones apilado>
+                    <button
+                      type="submit"
+                      disabled={creandoPropietario}
+                      className={BOTON_PIE_PRIMARIO}
+                    >
+                      {creandoPropietario ? "Creando cuenta…" : "Crear propietario"}
+                    </button>
+                  </ModalAcciones>
                 </form>
               </>
             )}

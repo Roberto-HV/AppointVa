@@ -104,6 +104,15 @@ function marcarCambio() {
   fireEvent.change(screen.getByDisplayValue("Salón Test"), { target: { value: "Salón Test 2" } });
 }
 
+/** Apariencia › "Cambiar portada": elige un fondo en el panel y lo aplica (I11). */
+async function elegirFondo(nombre: string) {
+  await userEvent.click(await screen.findByRole("button", { name: "Cambiar portada" }));
+  const panel = await screen.findByRole("dialog", { name: "Cambiar portada" });
+  await userEvent.click(within(panel).getByRole("radio", { name: nombre }));
+  await userEvent.click(within(panel).getByRole("button", { name: "Usar esta portada" }));
+  await waitFor(() => expect(screen.queryByRole("dialog", { name: "Cambiar portada" })).toBeNull());
+}
+
 function renderPerfilPage(searchParams = "") {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
@@ -121,15 +130,41 @@ describe("PerfilPage — 5 tabs", () => {
     vi.mocked(negociosApi.obtenerPerfil).mockResolvedValue({ ...PERFIL_BASE } as never);
   });
 
-  it("muestra las 5 pestañas", async () => {
+  it("muestra las 6 pestañas", async () => {
     renderPerfilPage();
     await waitFor(() => {
       expect(screen.getByRole("button", { name: "Perfil" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Apariencia" })).toBeInTheDocument();
       expect(screen.getByRole("button", { name: "Citas" })).toBeInTheDocument();
       expect(screen.getByRole("button", { name: "Anticipos" })).toBeInTheDocument();
       expect(screen.getByRole("button", { name: "Horarios" })).toBeInTheDocument();
       expect(screen.getByRole("button", { name: "Cuenta" })).toBeInTheDocument();
     });
+  });
+
+  it("Apariencia es su propia pestaña y la cuadrícula de portadas solo sale en el panel (I11)", async () => {
+    renderPerfilPage();
+    await screen.findByText("Información del negocio");
+    // En Perfil ya no están logo, color ni portadas.
+    expect(screen.getByText("Color de tu página de reservas")).not.toBeVisible();
+    expect(screen.queryByRole("radio", { name: "Arcos" })).toBeNull();
+
+    await userEvent.click(screen.getByRole("button", { name: "Apariencia" }));
+    expect(screen.getByText("Color de tu página de reservas")).toBeVisible();
+    expect(screen.getByText("Información del negocio")).not.toBeVisible();
+    expect(screen.queryByRole("radio", { name: "Arcos" })).toBeNull();
+    // La portada elegida y el botón que abre el panel.
+    expect(screen.getByTestId("portada-actual")).toBeInTheDocument();
+    expect(screen.getByText("Color de marca")).toBeInTheDocument();
+
+    // Cancelar no aplica la elección.
+    await userEvent.click(screen.getByRole("button", { name: "Cambiar portada" }));
+    const panel = await screen.findByRole("dialog", { name: "Cambiar portada" });
+    expect(within(panel).getAllByRole("radio").length).toBeGreaterThanOrEqual(26);
+    await userEvent.click(within(panel).getByRole("radio", { name: "Arcos" }));
+    await userEvent.click(within(panel).getByRole("button", { name: "Cancelar" }));
+    expect(screen.getByRole("button", { name: "Guardar cambios" })).toBeDisabled();
+    expect(screen.getByText("Color de marca")).toBeInTheDocument();
   });
 
   it("la pestaña activa por defecto es Perfil", async () => {
@@ -168,12 +203,9 @@ describe("PerfilPage — 5 tabs", () => {
   });
 
   it("guarda el fondo de portada aunque el negocio no exija anticipo", async () => {
-    renderPerfilPage();
-    await waitFor(() => screen.getByText("Fondo de portada"));
-
-    const grupo = screen.getByRole("group", { name: "Fondo de portada" });
-    await userEvent.click(within(grupo).getByRole("radio", { name: "Arcos" }));
-    expect(screen.getByText(/Fondo sin guardar/)).toBeInTheDocument();
+    renderPerfilPage("?tab=apariencia");
+    await elegirFondo("Arcos");
+    expect(screen.getByText(/Fondo: Arcos/)).toHaveTextContent("sin guardar");
 
     await userEvent.click(screen.getAllByRole("button", { name: "Guardar cambios" })[0]);
 
@@ -185,8 +217,8 @@ describe("PerfilPage — 5 tabs", () => {
   });
 
   it("la vista previa usa tinta oscura y sin velo negro sobre un material claro", async () => {
-    renderPerfilPage();
-    await waitFor(() => screen.getByText("Fondo de portada"));
+    renderPerfilPage("?tab=apariencia");
+    await screen.findByText("Color de tu página de reservas");
     const previa = () => screen.getByTestId("vista-previa-portada");
     const velo = () => screen.queryByTestId("velo-vista-previa")?.style.background ?? "";
 
@@ -195,18 +227,17 @@ describe("PerfilPage — 5 tabs", () => {
     expect(within(previa()).getByText("Tu negocio").className).toContain("text-white");
     expect(velo()).toMatch(/rgba\(12, 12, 15, 0\.42\)/);
 
-    const grupo = screen.getByRole("group", { name: "Fondo de portada" });
-    await userEvent.click(within(grupo).getByRole("radio", { name: "Cuarzo blanco y oro" }));
+    await elegirFondo("Cuarzo blanco y oro");
     expect(previa().dataset.tinta).toBe("oscura");
     expect(within(previa()).getByText("Tu negocio").className).toContain("text-slate-900");
     expect(within(previa()).getByText("Descripción breve...").className).toContain("text-slate-800");
     expect(velo()).not.toMatch(/rgba\(12, 12, 15/);
 
     // Material oscuro y fondo de marca: sin cambios.
-    await userEvent.click(within(grupo).getByRole("radio", { name: "Cuarzo negro y plata" }));
+    await elegirFondo("Cuarzo negro y plata");
     expect(previa().dataset.tinta).toBe("clara");
     expect(velo()).toMatch(/rgba\(12, 12, 15, 0\.42\)/);
-    await userEvent.click(within(grupo).getByRole("radio", { name: "Arcos" }));
+    await elegirFondo("Arcos");
     expect(previa().dataset.tinta).toBe("clara");
     expect(screen.queryByTestId("velo-vista-previa")).toBeNull();
   });
@@ -251,6 +282,7 @@ describe("PerfilPage — 5 tabs", () => {
   // mutaciones y su propio botón.
   it.each([
     ["", "perfil"],
+    ["?tab=apariencia", "apariencia"],
     ["?tab=citas", "citas"],
     ["?tab=anticipos", "anticipos"],
   ])("muestra una sola barra de guardado en %s", async (params) => {
@@ -493,7 +525,7 @@ describe("PerfilPage — posición de la portada (OM-04)", () => {
 
   it("'Confirmar' guarda la nueva posición al momento, sin 'Guardar cambios' (B11)", async () => {
     const user = userEvent.setup();
-    renderPerfilPage();
+    renderPerfilPage("?tab=apariencia");
     await arrastrarYConfirmar(user);
 
     await waitFor(() => expect(negociosApi.actualizarPosicionPortada).toHaveBeenCalledTimes(1));
@@ -509,10 +541,16 @@ describe("PerfilPage — posición de la portada (OM-04)", () => {
     const user = userEvent.setup();
     const crear = vi.fn(() => "blob:portada");
     Object.assign(URL, { createObjectURL: crear, revokeObjectURL: vi.fn() });
-    renderPerfilPage();
-    const boton = await screen.findByRole("button", { name: "Cambiar portada" });
-    const input = boton.previousElementSibling as HTMLInputElement;
-    await user.upload(input, new File(["x"], "portada.png", { type: "image/png" }));
+    renderPerfilPage("?tab=apariencia");
+    // La foto se sube desde el panel "Cambiar portada", que se cierra para dar
+    // paso a la vista previa donde se posiciona.
+    await user.click(await screen.findByRole("button", { name: "Cambiar portada" }));
+    const panel = await screen.findByRole("dialog", { name: "Cambiar portada" });
+    const clicEnInput = vi.spyOn(screen.getByLabelText<HTMLInputElement>("Archivo de la portada"), "click");
+    await user.click(within(panel).getByRole("button", { name: "Subir otra foto" }));
+    expect(clicEnInput).toHaveBeenCalled();
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Cambiar portada" })).toBeNull());
+    await user.upload(screen.getByLabelText("Archivo de la portada"), new File(["x"], "portada.png", { type: "image/png" }));
     await user.click(await screen.findByRole("button", { name: "Confirmar" }));
 
     await waitFor(() => expect(negociosApi.subirPortada).toHaveBeenCalledTimes(1));
@@ -524,7 +562,7 @@ describe("PerfilPage — posición de la portada (OM-04)", () => {
   it("si guardar la posición falla, avisa que falta guardar y la envía con 'Guardar cambios'", async () => {
     vi.mocked(negociosApi.actualizarPosicionPortada).mockRejectedValueOnce(new Error("500"));
     const user = userEvent.setup();
-    renderPerfilPage();
+    renderPerfilPage("?tab=apariencia");
     await arrastrarYConfirmar(user);
 
     expect(await screen.findByText(/Posición sin guardar/)).toBeInTheDocument();
@@ -547,7 +585,7 @@ describe("PerfilPage — acciones públicas con confirmación (OM-11)", () => {
 
   it("eliminar el logo pide confirmación y solo borra al confirmar", async () => {
     const user = userEvent.setup();
-    renderPerfilPage();
+    renderPerfilPage("?tab=apariencia");
     await screen.findByAltText("Logo");
     await user.click(screen.getByRole("button", { name: "Eliminar" }));
     expect(await screen.findByRole("dialog", { name: "Eliminar logo" })).toBeInTheDocument();
@@ -593,7 +631,17 @@ describe("PerfilPage — barra de guardado (OM-13)", () => {
     expect(guardar).toBeDisabled();
     marcarCambio();
     expect(guardar).toBeEnabled();
-    expect(within(screen.getByTestId("barra-guardar")).getByRole("status")).toHaveTextContent("Cambios sin guardar");
+    expect(within(screen.getByTestId("barra-guardar")).getByRole("status")).toHaveTextContent("1 cambio sin guardar");
+  });
+
+  it("la barra cuenta los cambios sin guardar de todas las pestañas (I11)", async () => {
+    renderPerfilPage();
+    await waitFor(() => screen.getByText("Información del negocio"));
+    marcarCambio();
+    fireEvent.change(screen.getByLabelText("Color en hexadecimal"), { target: { value: "#FF0000" } });
+    await userEvent.click(screen.getByRole("button", { name: "Apariencia" }));
+    await elegirFondo("Arcos");
+    expect(within(screen.getByTestId("barra-guardar")).getByRole("status")).toHaveTextContent("3 cambios sin guardar");
   });
 
   it("mientras guarda muestra 'Guardando…' y no deja mandar un segundo PUT", async () => {
@@ -621,22 +669,20 @@ describe("PerfilPage — subidas de imágenes (OM-16)", () => {
     vi.mocked(negociosApi.obtenerPerfil).mockResolvedValue({ ...PERFIL_BASE } as never);
   });
 
-  const inputs = () => Array.from(document.querySelectorAll('input[type="file"]')) as HTMLInputElement[];
-
   it("rechaza un logo que no es imagen sin subirlo y lo explica", async () => {
-    renderPerfilPage();
-    await waitFor(() => screen.getByText("Imágenes"));
-    fireEvent.change(inputs()[0], { target: { files: [new File(["x"], "logo.svg", { type: "image/svg+xml" })] } });
+    renderPerfilPage("?tab=apariencia");
+    const input = await screen.findByLabelText("Archivo del logo");
+    fireEvent.change(input, { target: { files: [new File(["x"], "logo.svg", { type: "image/svg+xml" })] } });
     expect(negociosApi.subirLogo).not.toHaveBeenCalled();
     expect(toastSpy).toHaveBeenCalledWith('"logo.svg" no es JPG, PNG, WebP o GIF.', "error");
   });
 
   it("una portada demasiado grande no abre la vista previa", async () => {
-    renderPerfilPage();
-    await waitFor(() => screen.getByText("Imágenes"));
+    renderPerfilPage("?tab=apariencia");
+    const input = await screen.findByLabelText("Archivo de la portada");
     const grande = new File(["x"], "portada.jpg", { type: "image/jpeg" });
     Object.defineProperty(grande, "size", { value: 40 * 1024 * 1024 });
-    fireEvent.change(inputs()[1], { target: { files: [grande] } });
+    fireEvent.change(input, { target: { files: [grande] } });
     expect(screen.queryByText("Vista previa de portada")).toBeNull();
     expect(toastSpy).toHaveBeenCalledWith(expect.stringContaining("el límite es 10 MB"), "error");
   });
@@ -647,8 +693,10 @@ describe("PerfilPage — subidas de imágenes (OM-16)", () => {
       return new Promise(() => {});
     });
     renderPerfilPage();
-    await waitFor(() => screen.getByText("Imágenes"));
-    fireEvent.change(inputs()[2], { target: { files: [new File(["x"], "p.png", { type: "image/png" })] } });
+    // Las políticas son información para el cliente: se quedan en Perfil.
+    const input = await screen.findByLabelText("Archivo de políticas");
+    expect(screen.getByText("Imagen de políticas")).toBeVisible();
+    fireEvent.change(input, { target: { files: [new File(["x"], "p.png", { type: "image/png" })] } });
     const barra = await screen.findByRole("progressbar", { name: "Subiendo imagen de políticas" });
     await waitFor(() => expect(barra).toHaveAttribute("aria-valuenow", "55"));
   });
