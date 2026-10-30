@@ -67,6 +67,7 @@ export default function ReportesPage() {
   const [empleadoId, setEmpleadoId] = useState("");
   const [servicioId, setServicioId] = useState("");
   const [estado, setEstado] = useState("");
+  const filtraNoVigentes = estado === "4" || estado === "5";
   const [errorFecha, setErrorFecha] = useState<string | null>(null);
 
   const filtros: FiltrosReporteCitas = {
@@ -358,9 +359,11 @@ export default function ReportesPage() {
           {/* Tarjetas resumen */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {/* G3: el total usa la misma definición que Inicio y Pagos (sin canceladas
-                ni inasistencias); las canceladas tienen su propia cifra al lado. */}
-            <Tarjeta label={`Total ${terms.citas.toLowerCase()}`} valor={String(reporteCitas?.totalVigentes ?? "—")}
-              subvalor={reporteCitas ? "Sin canceladas ni inasistencias" : undefined}
+                ni inasistencias); las canceladas tienen su propia cifra al lado. Si el
+                filtro pide justo canceladas (4) o inasistencias (5), se cuentan todas. */}
+            <Tarjeta label={`Total ${terms.citas.toLowerCase()}`}
+              valor={String((filtraNoVigentes ? reporteCitas?.totalCitas : reporteCitas?.totalVigentes) ?? "—")}
+              subvalor={reporteCitas && !filtraNoVigentes ? "Sin canceladas ni inasistencias" : undefined}
               icono={<Calendar size={18} />} />
             <Tarjeta label="Completadas" valor={String(reporteCitas?.totalCompletadas ?? "—")}
               subvalor={reporteCitas ? `${reporteCitas.totalCanceladas} canceladas` : undefined}
