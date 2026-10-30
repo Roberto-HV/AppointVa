@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
-import { Menu, X, LayoutDashboard, CalendarDays, Users, Scissors, UserCheck, Building2, Link, Copy, Check, BarChart2, ShieldCheck, UserCircle, Images, ClipboardList, Tag, LogOut, ChevronLeft, ChevronRight, BookOpen, Moon, Sun, CreditCard, Star } from "lucide-react";
+import { Menu, X, Link, Copy, Check, ShieldCheck, UserCircle, LogOut, ChevronLeft, ChevronRight, BookOpen, Moon, Sun } from "lucide-react";
 import { useTheme } from "../hooks/useTheme";
 import LogoMarca from "../components/LogoMarca";
 import { useQuery } from "@tanstack/react-query";
@@ -17,8 +17,10 @@ import AvisoActivacionPendiente from '../components/dashboard/AvisoActivacionPen
 import { encuestaApi } from '../api/encuesta';
 import { toUtcDate, capitalizarPrimera, formatHoraDe } from '../utils/formatters';
 import { useInactividadTimeout } from '../hooks/useInactividadTimeout';
-import { useSectorTerms, getSectorTerms, type SectorTerms } from "../hooks/useSectorTerms";
+import { useSectorTerms } from "../hooks/useSectorTerms";
 import { useSectorFeatures } from "../hooks/useSectorFeatures";
+import { useConfirmarRecepcion } from "../hooks/useConfirmarRecepcion";
+import { navEmpleado, navPropietario, type NavItem } from "./navegacion";
 import { hoy as hoyLocal } from "../utils/fechas";
 import { useCopiarAlPortapapeles } from "../hooks/useCopiarAlPortapapeles";
 
@@ -64,12 +66,13 @@ interface UserMenuContentProps {
   rolChip: { label: string; cls: string };
   rol: string;
   onProfile: () => void;
+  onSecurity: () => void;
   onLogout: () => void;
   theme: "light" | "dark";
   onToggleTheme: () => void;
 }
 
-function UserMenuContent({ usuario, perfil, iniciales, rolChip, rol, onProfile, onLogout, theme, onToggleTheme }: UserMenuContentProps) {
+function UserMenuContent({ usuario, perfil, iniciales, rolChip, rol, onProfile, onSecurity, onLogout, theme, onToggleTheme }: UserMenuContentProps) {
   return (
     <div className="py-1">
       <div className="px-4 pt-3 pb-3 flex items-center gap-3">
@@ -102,6 +105,14 @@ function UserMenuContent({ usuario, perfil, iniciales, rolChip, rol, onProfile, 
         <UserCircle size={15} className="text-slate-400 dark:text-slate-500 shrink-0" />
         Mi perfil
       </button>
+      {/* I5: Seguridad (2FA) salió del menú principal: se configura una vez. */}
+      <button
+        onClick={onSecurity}
+        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition"
+      >
+        <ShieldCheck size={15} className="text-slate-400 dark:text-slate-500 shrink-0" />
+        Seguridad
+      </button>
       <a
         href={rol === "Empleado" ? "/manuales/manual-empleado.html" : "/manuales/manual-propietario.html"}
         target="_blank"
@@ -132,48 +143,6 @@ function UserMenuContent({ usuario, perfil, iniciales, rolChip, rol, onProfile, 
       <div className="h-2" />
     </div>
   );
-}
-
-const navEmpleado = (terms: SectorTerms): NavItem[] => [
-  { to: "/dashboard", label: "Inicio", end: true, icon: LayoutDashboard },
-  { to: "/dashboard/citas", label: `Mis ${terms.citas.toLowerCase()}`, icon: CalendarDays },
-  { to: "/dashboard/pagos", label: "Pagos", icon: CreditCard },
-  { to: "/dashboard/mi-perfil", label: "Mi perfil", icon: UserCircle },
-];
-
-export interface NavItem {
-  label: string;
-  to: string;
-  end?: boolean;
-  icon: React.ComponentType<{ size?: number; className?: string }>;
-}
-
-const HIDDEN_IN_SALUD = new Set([
-  "/dashboard/pagos",
-  "/dashboard/galeria",
-  "/dashboard/descuentos",
-]);
-
-export function getNav(sector: string): NavItem[] {
-  const terms = getSectorTerms(sector);
-  const all: NavItem[] = [
-    { to: "/dashboard",            label: "Inicio",          end: true, icon: LayoutDashboard },
-    { to: "/dashboard/citas",      label: terms.citas,                  icon: CalendarDays },
-    { to: "/dashboard/pagos",      label: "Pagos",                      icon: CreditCard },
-    { to: "/dashboard/clientes",   label: terms.clientes,               icon: UserCheck },
-    { to: "/dashboard/empleados",  label: terms.empleados,              icon: Users },
-    { to: "/dashboard/servicios",  label: terms.servicios,              icon: Scissors },
-    { to: "/dashboard/descuentos", label: "Descuentos",                 icon: Tag },
-    { to: "/dashboard/resenas",    label: "Reseñas",                    icon: Star },
-    { to: "/dashboard/reportes",   label: "Reportes",                   icon: BarChart2 },
-    { to: "/dashboard/perfil",     label: "Mi negocio",                 icon: Building2 },
-    { to: "/dashboard/galeria",    label: "Galería",                    icon: Images },
-    { to: "/dashboard/intake",     label: "Cuestionario",               icon: ClipboardList },
-    { to: "/dashboard/seguridad",  label: "Seguridad",                  icon: ShieldCheck },
-  ];
-  return sector === "salud"
-    ? all.filter((item) => !HIDDEN_IN_SALUD.has(item.to))
-    : all;
 }
 
 export default function DashboardLayout() {
@@ -208,21 +177,7 @@ export default function DashboardLayout() {
   const terms = useSectorTerms();
   const features = useSectorFeatures();
 
-  const NAV_PROPIETARIO: NavItem[] = [
-    { to: "/dashboard",            label: "Inicio",          end: true, icon: LayoutDashboard },
-    { to: "/dashboard/citas",      label: terms.citas,                  icon: CalendarDays },
-    ...(features.pagos      ? [{ to: "/dashboard/pagos",      label: "Pagos",      icon: CreditCard }] : []),
-    { to: "/dashboard/clientes",   label: terms.clientes,               icon: UserCheck },
-    { to: "/dashboard/empleados",  label: terms.empleados,              icon: Users },
-    { to: "/dashboard/servicios",  label: terms.servicios,              icon: Scissors },
-    ...(features.descuentos ? [{ to: "/dashboard/descuentos", label: "Descuentos", icon: Tag }]      : []),
-    { to: "/dashboard/resenas",    label: "Reseñas",                    icon: Star },
-    { to: "/dashboard/reportes",   label: "Reportes",                   icon: BarChart2 },
-    { to: "/dashboard/perfil",     label: "Mi negocio",                 icon: Building2 },
-    ...(features.galeria    ? [{ to: "/dashboard/galeria",    label: "Galería",    icon: Images }]   : []),
-    { to: "/dashboard/intake",     label: "Cuestionario",               icon: ClipboardList },
-    { to: "/dashboard/seguridad",  label: "Seguridad",                  icon: ShieldCheck },
-  ];
+  const recepcion = useConfirmarRecepcion();
 
   const { data: perfil } = useQuery({
     queryKey: ["negocio-perfil"],
@@ -239,7 +194,7 @@ export default function DashboardLayout() {
   });
   const [encuestaCerrada, setEncuestaCerrada] = useState(false);
 
-  const navItems = esEmpleado ? navEmpleado(terms) : NAV_PROPIETARIO;
+  const navGrupos = esEmpleado ? navEmpleado(terms) : navPropietario(terms, features);
 
   useEffect(() => {
     if (
@@ -415,6 +370,7 @@ export default function DashboardLayout() {
     rolChip,
     rol: usuario?.rol ?? "",
     onProfile: () => { navigate("/dashboard/mi-perfil"); setHeaderMenuOpen(false); cerrarSidebar(); },
+    onSecurity: () => { navigate("/dashboard/seguridad"); setHeaderMenuOpen(false); cerrarSidebar(); },
     onLogout: () => { setHeaderMenuOpen(false); handleLogout(); },
     theme,
     onToggleTheme: toggleTheme,
@@ -425,6 +381,86 @@ export default function DashboardLayout() {
     window.scrollTo(0, 0);
     document.documentElement.scrollTop = 0;
   }, []);
+
+  // Alto de cada entrada: 44px en el cajón táctil; desde `xl` (ratón) 40px, y
+  // colapsado 48px, para que las cuatro secciones quepan en 1440×900 sin scroll.
+  const claseFila = sidebarCollapsed ? "justify-center px-0 py-0.5" : "gap-3 px-3 py-2.5 xl:py-1.5";
+
+  // Una entrada del menú: enlace, o el botón de Recepción que confirma antes de entrar.
+  const renderItem = (item: NavItem) => {
+    const Icon = item.icon;
+    const esCitas = item.to === "/dashboard/citas";
+    if (item.recepcion) {
+      // Recepción no navega directo: entrar cambia la sesión, así que primero confirma (I6).
+      const boton = (
+        <button
+          key={item.to}
+          type="button"
+          onClick={() => { cerrarSidebar(); recepcion.abrir(); }}
+          className={`relative w-full flex items-center rounded-xl text-sm font-medium transition-all ${claseFila} ${temaNav.inactivo}`}
+        >
+          <span className={`rounded-xl flex items-center justify-center shrink-0 ${sidebarCollapsed ? "w-11 h-11" : "w-7 h-7"}`}>
+            <Icon size={sidebarCollapsed ? 22 : 15} className={temaNav.icono} />
+          </span>
+          {sidebarCollapsed
+            ? <span className="sr-only">{item.label}</span>
+            : <span className="flex-1 text-left whitespace-nowrap">{item.label}</span>}
+        </button>
+      );
+      return sidebarCollapsed ? (
+        <Tooltip key={item.to} text={item.label} side="right">
+          <span className="block">{boton}</span>
+        </Tooltip>
+      ) : boton;
+    }
+    const link = (
+      <NavLink
+        key={item.to}
+        to={item.to}
+        end={item.end}
+        onClick={cerrarSidebar}
+        className={({ isActive }) =>
+          `flex items-center rounded-xl text-sm font-medium transition-all ${claseFila} ${
+            isActive ? temaNav.activo : temaNav.inactivo
+          }`
+        }
+      >
+        {({ isActive }) => (
+          <>
+            <div className={`relative rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+              sidebarCollapsed ? "w-11 h-11" : "w-7 h-7"
+            } ${isActive && !sidebarCollapsed ? temaNav.fondoIconoActivo : "bg-transparent"}`}>
+              <Icon size={sidebarCollapsed ? 22 : 15} className={isActive ? temaNav.iconoActivo : temaNav.icono} />
+              {/* Colapsado no cabe el contador: un punto avisa que hay pendientes. */}
+              {sidebarCollapsed && esCitas && pendientesCnt > 0 && (
+                <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-status-pending-dot ring-2 ring-white dark:ring-slate-900" aria-hidden="true" />
+              )}
+            </div>
+            {!sidebarCollapsed && (
+              <>
+                <span className="flex-1 whitespace-nowrap">{item.label}</span>
+                {esCitas && hoyCnt > 0 && (
+                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center leading-none ${
+                    pendientesCnt > 0
+                      ? "bg-status-pending-bg text-status-pending-fg border border-status-pending-dot"
+                      : "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-200"
+                  }`}>
+                    {hoyCnt > 9 ? "9+" : hoyCnt}
+                  </span>
+                )}
+              </>
+            )}
+          </>
+        )}
+      </NavLink>
+    );
+    return sidebarCollapsed ? (
+      <Tooltip key={item.to} text={item.to === "/dashboard/citas" && pendientesCnt > 0 ? `${item.label} · ${etiquetaPendientes}` : item.label} side="right">
+        {/* span wrapper evita que asChild rompa el className-function de NavLink */}
+        <span className="block">{link}</span>
+      </Tooltip>
+    ) : link;
+  };
 
   return (
     <div
@@ -500,59 +536,27 @@ export default function DashboardLayout() {
         </div>
 
         {/* Nav */}
-        <nav className={`flex-1 py-3 space-y-0.5 overflow-y-auto ${sidebarCollapsed ? "px-2" : "px-3"}`}>
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const esCitas = item.to === "/dashboard/citas";
-            const link = (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.end}
-                onClick={cerrarSidebar}
-                className={({ isActive }) =>
-                  `flex items-center rounded-xl text-sm font-medium transition-all ${
-                    sidebarCollapsed ? "justify-center px-0 py-1" : "gap-3 px-3 py-2.5"
-                  } ${
-                    isActive ? temaNav.activo : temaNav.inactivo
-                  }`
-                }
+        <nav className={`flex-1 py-3 overflow-y-auto ${sidebarCollapsed ? "px-2" : "px-3"}`}>
+          {navGrupos.map((grupo, indiceGrupo) => {
+            const idTitulo = `menu-seccion-${indiceGrupo}`;
+            const conTitulo = grupo.titulo !== "" && !sidebarCollapsed;
+            return (
+              <div
+                key={grupo.titulo || indiceGrupo}
+                role={grupo.titulo ? "group" : undefined}
+                // Colapsado no hay rótulo visible: el nombre de la sección sigue en el árbol accesible.
+                aria-labelledby={conTitulo ? idTitulo : undefined}
+                aria-label={grupo.titulo && sidebarCollapsed ? grupo.titulo : undefined}
+                className={`space-y-0.5 ${indiceGrupo > 0 ? (sidebarCollapsed ? "mt-1.5 pt-1.5 border-t " + temaNav.borde : "mt-3") : ""}`}
               >
-                {({ isActive }) => (
-                  <>
-                    <div className={`relative rounded-xl flex items-center justify-center shrink-0 transition-colors ${
-                      sidebarCollapsed ? "w-11 h-11" : "w-7 h-7"
-                    } ${isActive && !sidebarCollapsed ? temaNav.fondoIconoActivo : "bg-transparent"}`}>
-                      <Icon size={sidebarCollapsed ? 22 : 15} className={isActive ? temaNav.iconoActivo : temaNav.icono} />
-                      {/* Colapsado no cabe el contador: un punto avisa que hay pendientes. */}
-                      {sidebarCollapsed && esCitas && pendientesCnt > 0 && (
-                        <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-status-pending-dot ring-2 ring-white dark:ring-slate-900" aria-hidden="true" />
-                      )}
-                    </div>
-                    {!sidebarCollapsed && (
-                      <>
-                        <span className="flex-1 whitespace-nowrap">{item.label}</span>
-                        {esCitas && hoyCnt > 0 && (
-                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center leading-none ${
-                            pendientesCnt > 0
-                              ? "bg-status-pending-bg text-status-pending-fg border border-status-pending-dot"
-                              : "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-200"
-                          }`}>
-                            {hoyCnt > 9 ? "9+" : hoyCnt}
-                          </span>
-                        )}
-                      </>
-                    )}
-                  </>
+                {conTitulo && (
+                  <p id={idTitulo} className={`px-3 pb-1 text-xs font-medium select-none ${temaNav.icono}`}>
+                    {grupo.titulo}
+                  </p>
                 )}
-              </NavLink>
+                {grupo.items.map(renderItem)}
+              </div>
             );
-            return sidebarCollapsed ? (
-              <Tooltip key={item.to} text={item.to === "/dashboard/citas" && pendientesCnt > 0 ? `${item.label} · ${etiquetaPendientes}` : item.label} side="right">
-                {/* span wrapper evita que asChild rompa el className-function de NavLink */}
-                <span className="block">{link}</span>
-              </Tooltip>
-            ) : link;
           })}
         </nav>
 
@@ -714,6 +718,8 @@ export default function DashboardLayout() {
         </main>
 
       </div>
+
+      {recepcion.dialogo}
 
       <AvisoInactividad abierto={inactividad.aviso} onSeguir={inactividad.seguir} onCerrarSesion={() => handleLogout()} />
 

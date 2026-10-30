@@ -27,7 +27,13 @@ export interface FilaCitaReporte {
 }
 
 export interface ReporteCitas {
+  /** Todas las citas del rango, canceladas e inasistencias incluidas (una por fila de `citas`). */
   totalCitas: number;
+  /**
+   * Las que cuentan: pendientes, confirmadas y completadas. Misma definición que
+   * "Hoy / Semana / Mes" de Inicio y que Pagos (G3).
+   */
+  totalVigentes: number;
   totalCompletadas: number;
   totalCanceladas: number;
   totalPendientes: number;

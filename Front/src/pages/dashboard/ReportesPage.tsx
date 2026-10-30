@@ -357,7 +357,11 @@ export default function ReportesPage() {
         <>
           {/* Tarjetas resumen */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <Tarjeta label={`Total ${terms.citas.toLowerCase()}`} valor={String(reporteCitas?.totalCitas ?? "—")} icono={<Calendar size={18} />} />
+            {/* G3: el total usa la misma definición que Inicio y Pagos (sin canceladas
+                ni inasistencias); las canceladas tienen su propia cifra al lado. */}
+            <Tarjeta label={`Total ${terms.citas.toLowerCase()}`} valor={String(reporteCitas?.totalVigentes ?? "—")}
+              subvalor={reporteCitas ? "Sin canceladas ni inasistencias" : undefined}
+              icono={<Calendar size={18} />} />
             <Tarjeta label="Completadas" valor={String(reporteCitas?.totalCompletadas ?? "—")}
               subvalor={reporteCitas ? `${reporteCitas.totalCanceladas} canceladas` : undefined}
               icono={<CheckCircle size={18} />} />

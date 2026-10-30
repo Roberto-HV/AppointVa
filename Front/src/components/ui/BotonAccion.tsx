@@ -67,7 +67,7 @@ interface EnlaceAccionProps extends LinkProps {
   children: ReactNode;
 }
 
-/** Misma pieza cuando la acción navega en vez de ejecutar (Recepción en Citas). */
+/** Misma pieza cuando la acción navega en vez de ejecutar ("Ir a Citas" en Reseñas). */
 export function EnlaceAccion({
   variante = "secundaria",
   className,

@@ -225,7 +225,7 @@ describe("ReportesPage — exportar (OM-19)", () => {
   });
 
   const reporte = {
-    totalCitas: 1, totalCompletadas: 1, totalCanceladas: 0, totalPendientes: 0, totalInasistencias: 0,
+    totalCitas: 1, totalVigentes: 1, totalCompletadas: 1, totalCanceladas: 0, totalPendientes: 0, totalInasistencias: 0,
     totalIngresos: 149.9, totalIngresosEfectivo: 0, totalIngresosTarjeta: 0,
     citas: [{
       id: "c1", codigoConfirmacion: "ABC", nombreCliente: "Ana", telefonoCliente: "55", nombreServicio: "Corte",
@@ -263,5 +263,18 @@ describe("ReportesPage — exportar (OM-19)", () => {
         "No se pudo generar el archivo de Excel. Intenta de nuevo.",
       ),
     );
+  });
+});
+
+describe("ReportesPage — totales con una sola definición (G3)", () => {
+  it("el total no cuenta canceladas ni inasistencias, y las canceladas van aparte", async () => {
+    vi.mocked(reportesApi.obtenerCitas).mockResolvedValue({
+      totalCitas: 16, totalVigentes: 6, totalCompletadas: 0, totalCanceladas: 10, totalPendientes: 6,
+      totalInasistencias: 0, totalIngresos: 0, totalIngresosEfectivo: 0, totalIngresosTarjeta: 0, citas: [],
+    });
+    renderConQuery();
+    const tarjeta = (await screen.findByText("Sin canceladas ni inasistencias")).parentElement!;
+    expect(tarjeta).toHaveTextContent("Total citas6");
+    expect(screen.getByText("10 canceladas")).toBeInTheDocument();
   });
 });

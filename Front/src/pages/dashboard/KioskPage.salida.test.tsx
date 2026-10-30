@@ -25,7 +25,10 @@ const AGENDA: AgendaKiosco = {
   nombreNegocio: "Test Negocio", sector: "belleza", mostrarIngresos: true, empleados: [], citas: [],
 };
 
-function renderApp(inicial = "/dashboard/kiosk") {
+// Llega con la entrada ya confirmada, como desde el menú o Citas (I6).
+const ENTRADA_CONFIRMADA = { pathname: "/dashboard/kiosk", state: { recepcionConfirmada: true } };
+
+function renderApp(inicial: string | typeof ENTRADA_CONFIRMADA = ENTRADA_CONFIRMADA) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>

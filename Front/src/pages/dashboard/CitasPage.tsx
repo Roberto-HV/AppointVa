@@ -34,7 +34,8 @@ import { SkeletonTableRows } from "../../components/ui/Skeleton";
 import { reportesApi } from "../../api/reportes";
 import { formatPrecio, formatFechaHoraCorta as formatFechaHora, formatFechaCorta, formatHora } from "../../utils/formatters";
 import Pagination from "../../components/ui/Pagination";
-import BotonAccion, { EnlaceAccion } from "../../components/ui/BotonAccion";
+import BotonAccion from "../../components/ui/BotonAccion";
+import { useConfirmarRecepcion } from "../../hooks/useConfirmarRecepcion";
 import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
 import { TAMANO_PAGINA } from "../../hooks/usePaginacionLocal";
 import { leerParamsCitas } from "../../lib/paramsCitas";
@@ -69,6 +70,7 @@ export default function CitasPage() {
   const sector = useSector();
   const esMovil = useMediaQuery(CONSULTA_MOVIL);
   const permisos = usePermisos();
+  const recepcion = useConfirmarRecepcion();
 
   // Vista, filtros y página viven en la URL: al volver del detalle de una cita
   // (o recargar) la lista sigue donde estaba, y otras pantallas pueden enlazar
@@ -536,14 +538,16 @@ export default function CitasPage() {
                ancho que la pantalla. Crear la cita es la única que queda. */
             <>
               {/* Misma pestaña: entrar al modo recepción cierra la sesión de
-                  este navegador (B9), y otra pestaña la seguiría usando. */}
-              <EnlaceAccion
-                to="/dashboard/kiosk"
+                  este navegador (B9), y otra pestaña la seguiría usando.
+                  Pide confirmación antes de cambiar la sesión (I6). */}
+              <BotonAccion
+                variante="secundaria"
+                onClick={recepcion.abrir}
                 className="hidden sm:inline-flex"
               >
                 <Monitor size={16} aria-hidden="true" />
                 Recepción
-              </EnlaceAccion>
+              </BotonAccion>
               {permisos.exportar && citas.length > 0 && vista === "lista" && (
                 <BotonAccion
                   variante="secundaria"
@@ -1302,6 +1306,7 @@ export default function CitasPage() {
           </>
         )}
       </Modal>
+      {recepcion.dialogo}
     </div>
   );
 }

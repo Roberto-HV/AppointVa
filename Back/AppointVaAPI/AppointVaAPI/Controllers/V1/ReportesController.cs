@@ -1,5 +1,6 @@
 using AppointVaAPI.Constants;
 using AppointVaAPI.Data;
+using AppointVaAPI.Models;
 using AppointVaAPI.Models.Dtos.Reportes;
 using AppointVaAPI.Services.IServices;
 using Microsoft.AspNetCore.Authorization;
@@ -69,30 +70,20 @@ namespace AppointVaAPI.Controllers.V1
             Guid negocioId, DateTime? desde, DateTime? hasta, Guid? empleadoId, Guid? servicioId, byte? estado)
         {
             var (desdeUtc, hastaUtc) = NormalizarRango(desde, hasta);
-
-            var query = _db.Citas
-                .Include(c => c.Cliente)
-                .Include(c => c.Empleado)
-                .Include(c => c.Servicio)
-                .Where(c => c.NegocioId == negocioId && c.InicioEn >= desdeUtc && c.InicioEn < hastaUtc)
-                .AsNoTracking()
-                .AsQueryable();
-
-            if (empleadoId.HasValue)   query = query.Where(c => c.EmpleadoId == empleadoId.Value);
-            if (servicioId.HasValue)   query = query.Where(c => c.ServicioId == servicioId.Value);
-            if (estado.HasValue)       query = query.Where(c => c.Estado == estado.Value);
-
-            var citas = await query.OrderBy(c => c.InicioEn).ToListAsync();
+            var (citas, clientes) = await ObtenerCitasDelRangoAsync(negocioId, desdeUtc, hastaUtc, empleadoId, servicioId, estado);
 
             var completadas = citas.Where(c => c.Estado == EstadosCitas.Completada).ToList();
+            var canceladas = citas.Count(c => c.Estado == EstadosCitas.Cancelada);
+            var inasistencias = citas.Count(c => c.Estado == EstadosCitas.Inasistencia);
 
             var dto = new ReporteCitasDto
             {
                 TotalCitas          = citas.Count,
+                TotalVigentes       = citas.Count - canceladas - inasistencias,
                 TotalCompletadas    = completadas.Count,
-                TotalCanceladas     = citas.Count(c => c.Estado == EstadosCitas.Cancelada),
+                TotalCanceladas     = canceladas,
                 TotalPendientes     = citas.Count(c => c.Estado == EstadosCitas.Pendiente || c.Estado == EstadosCitas.Confirmada),
-                TotalInasistencias  = citas.Count(c => c.Estado == EstadosCitas.Inasistencia),
+                TotalInasistencias  = inasistencias,
                 TotalIngresos       = completadas.Sum(c => c.MontoCobrado ?? c.Precio),
                 TotalIngresosEfectivo = completadas
                     .Where(c => c.Pagada && (
@@ -126,9 +117,9 @@ namespace AppointVaAPI.Controllers.V1
                 {
                     Id                  = c.Id,
                     CodigoConfirmacion  = c.CodigoConfirmacion,
-                    NombreCliente       = c.Cliente?.NombreCompleto ?? string.Empty,
-                    TelefonoCliente     = c.Cliente?.Telefono ?? string.Empty,
-                    EmailCliente        = c.Cliente?.Email,
+                    NombreCliente       = clientes.GetValueOrDefault(c.ClienteId)?.NombreCompleto ?? ClienteEliminado,
+                    TelefonoCliente     = clientes.GetValueOrDefault(c.ClienteId)?.Telefono ?? string.Empty,
+                    EmailCliente        = clientes.GetValueOrDefault(c.ClienteId)?.Email,
                     NombreServicio      = c.Servicio?.Nombre ?? string.Empty,
                     NombreEmpleado      = c.Empleado?.Nombre ?? string.Empty,
                     InicioEn            = c.InicioEn,
@@ -143,6 +134,41 @@ namespace AppointVaAPI.Controllers.V1
             };
 
             return dto;
+        }
+
+        /// <summary>Name shown for an appointment whose client was deleted (soft delete).</summary>
+        public const string ClienteEliminado = "Cliente eliminado";
+
+        /// <summary>
+        /// Appointments of the range with employee and service, plus their clients by id.
+        /// G3: Cita.Cliente is a required navigation and Cliente has a soft-delete query
+        /// filter, so Include(c => c.Cliente) became an INNER JOIN that silently dropped
+        /// every appointment of a deleted client (October: 16 in the database, 9 here).
+        /// Clients are read apart through the same filter: the appointment always counts,
+        /// and a deleted client's contact data is not served again (missing from the map).
+        /// </summary>
+        private async Task<(List<Cita> citas, Dictionary<Guid, Cliente> clientes)> ObtenerCitasDelRangoAsync(
+            Guid negocioId, DateTime desdeUtc, DateTime hastaUtc, Guid? empleadoId, Guid? servicioId, byte? estado)
+        {
+            var query = _db.Citas
+                .Include(c => c.Empleado)
+                .Include(c => c.Servicio)
+                .Where(c => c.NegocioId == negocioId && c.InicioEn >= desdeUtc && c.InicioEn < hastaUtc)
+                .AsNoTracking();
+
+            if (empleadoId.HasValue)  query = query.Where(c => c.EmpleadoId == empleadoId.Value);
+            if (servicioId.HasValue)  query = query.Where(c => c.ServicioId == servicioId.Value);
+            if (estado.HasValue)      query = query.Where(c => c.Estado == estado.Value);
+
+            var citas = await query.OrderBy(c => c.InicioEn).ToListAsync();
+
+            var clienteIds = citas.Select(c => c.ClienteId).Distinct().ToList();
+            var clientes = await _db.Clientes
+                .Where(cl => cl.NegocioId == negocioId && clienteIds.Contains(cl.Id))
+                .AsNoTracking()
+                .ToDictionaryAsync(cl => cl.Id);
+
+            return (citas, clientes);
         }
 
         // GET api/reportes/citas/exportar — descarga CSV
@@ -160,20 +186,7 @@ namespace AppointVaAPI.Controllers.V1
             var negocioId = _contexto.NegocioId.Value;
 
             var (desdeUtc, hastaUtc) = NormalizarRango(desde, hasta);
-
-            var query = _db.Citas
-                .Include(c => c.Cliente)
-                .Include(c => c.Empleado)
-                .Include(c => c.Servicio)
-                .Where(c => c.NegocioId == negocioId && c.InicioEn >= desdeUtc && c.InicioEn < hastaUtc)
-                .AsNoTracking()
-                .AsQueryable();
-
-            if (empleadoId.HasValue)  query = query.Where(c => c.EmpleadoId == empleadoId.Value);
-            if (servicioId.HasValue)  query = query.Where(c => c.ServicioId == servicioId.Value);
-            if (estado.HasValue)      query = query.Where(c => c.Estado == estado.Value);
-
-            var citas = await query.OrderBy(c => c.InicioEn).ToListAsync();
+            var (citas, clientes) = await ObtenerCitasDelRangoAsync(negocioId, desdeUtc, hastaUtc, empleadoId, servicioId, estado);
 
             var cultura = new CultureInfo("es-MX");
             var sb = new StringBuilder();
@@ -181,12 +194,13 @@ namespace AppointVaAPI.Controllers.V1
 
             foreach (var c in citas)
             {
+                var cliente = clientes.GetValueOrDefault(c.ClienteId);
                 var campos = new[]
                 {
                     Escapar(c.CodigoConfirmacion),
-                    Escapar(c.Cliente?.NombreCompleto ?? ""),
-                    Escapar(c.Cliente?.Telefono ?? ""),
-                    Escapar(c.Cliente?.Email ?? ""),
+                    Escapar(cliente?.NombreCompleto ?? ClienteEliminado),
+                    Escapar(cliente?.Telefono ?? ""),
+                    Escapar(cliente?.Email ?? ""),
                     Escapar(c.Servicio?.Nombre ?? ""),
                     Escapar(c.Empleado?.Nombre ?? ""),
                     c.InicioEn.ToString("dd/MM/yyyy h:mm tt", System.Globalization.CultureInfo.InvariantCulture),

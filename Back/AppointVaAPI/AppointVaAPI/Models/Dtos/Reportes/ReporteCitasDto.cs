@@ -2,7 +2,13 @@ namespace AppointVaAPI.Models.Dtos.Reportes
 {
     public class ReporteCitasDto
     {
+        /// <summary>Every appointment in the range, cancelled and no-show included (one per row of <see cref="Citas"/>).</summary>
         public int TotalCitas { get; set; }
+        /// <summary>
+        /// Appointments that count (pending, confirmed, completed): TotalCitas minus cancelled
+        /// and no-shows. Same definition as Inicio's "Hoy / Semana / Mes" and Pagos (G3).
+        /// </summary>
+        public int TotalVigentes { get; set; }
         public int TotalCompletadas { get; set; }
         public int TotalCanceladas { get; set; }
         public int TotalPendientes { get; set; }

@@ -77,10 +77,15 @@ function makeQC() {
   });
 }
 
-function renderKiosk() {
+/**
+ * `confirmada`: llega como desde el menú o Citas, con la entrada ya confirmada
+ * (I6). Con la sesión de kiosco ya activa no hace falta la marca.
+ */
+function renderKiosk(confirmada = false) {
+  const entrada = { pathname: "/dashboard/kiosk", state: confirmada ? { recepcionConfirmada: true } : null };
   return render(
     <QueryClientProvider client={makeQC()}>
-      <MemoryRouter>
+      <MemoryRouter initialEntries={[entrada]}>
         <KioskPage />
       </MemoryRouter>
     </QueryClientProvider>
@@ -162,7 +167,7 @@ describe("KioskPage — entrar al modo recepción (B9)", () => {
       token: "t-kiosco", tokenExpiracion: "", usuario: USUARIO_KIOSCO as never,
     });
 
-    renderKiosk();
+    renderKiosk(true);
 
     expect(screen.getByRole("status")).toHaveTextContent("Activando modo recepción…");
     await screen.findByText("No hay empleados activos");
@@ -178,7 +183,7 @@ describe("KioskPage — entrar al modo recepción (B9)", () => {
     auth.poner({ token: "t-dueno", refreshToken: "r-dueno", usuario: { email: "dueno@negocio.mx", rol: "Propietario" } });
     vi.mocked(kioscoApi.iniciar).mockRejectedValueOnce(new Error("red"));
 
-    renderKiosk();
+    renderKiosk(true);
 
     expect(await screen.findByRole("alert")).toHaveTextContent("No se pudo activar el modo recepción.");
     expect(kioscoApi.agenda).not.toHaveBeenCalled();
@@ -189,6 +194,45 @@ describe("KioskPage — entrar al modo recepción (B9)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Reintentar" }));
     await screen.findByText("No hay empleados activos");
     expect(kioscoApi.iniciar).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("KioskPage — confirmación al entrar (I6)", () => {
+  beforeEach(() => {
+    auth.poner({ token: "t-dueno", refreshToken: "r-dueno", usuario: { email: "dueno@negocio.mx", rol: "Propietario" } });
+    vi.mocked(kioscoApi.iniciar).mockResolvedValue({
+      token: "t-kiosco", tokenExpiracion: "", usuario: USUARIO_KIOSCO as never,
+    });
+  });
+
+  it("sin confirmar (URL escrita) pregunta antes y no cambia la sesión", async () => {
+    renderKiosk(false);
+
+    const dialogo = await screen.findByRole("dialog", { name: "¿Activar el modo recepción?" });
+    expect(dialogo).toHaveTextContent("Para volver al panel tendrás que escribir la contraseña de tu cuenta");
+    await act(async () => { await vi.advanceTimersByTimeAsync(50); });
+    expect(kioscoApi.iniciar).not.toHaveBeenCalled();
+    expect(auth.leer().refreshToken).toBe("r-dueno");
+
+    fireEvent.click(within(dialogo).getByRole("button", { name: "Volver" }));
+    expect(mockNavigate).toHaveBeenCalledWith("/dashboard/citas", { replace: true });
+    expect(kioscoApi.iniciar).not.toHaveBeenCalled();
+  });
+
+  it("al confirmar ahí mismo entra al modo recepción", async () => {
+    renderKiosk(false);
+
+    const dialogo = await screen.findByRole("dialog", { name: "¿Activar el modo recepción?" });
+    fireEvent.click(within(dialogo).getByRole("button", { name: "Activar recepción" }));
+
+    await screen.findByText("No hay empleados activos");
+    expect(kioscoApi.iniciar).toHaveBeenCalledTimes(1);
+  });
+
+  it("la marca de confirmación se borra del historial al leerla", async () => {
+    renderKiosk(true);
+    await screen.findByText("No hay empleados activos");
+    expect(mockNavigate).toHaveBeenCalledWith("/dashboard/kiosk", { replace: true, state: null });
   });
 });
 

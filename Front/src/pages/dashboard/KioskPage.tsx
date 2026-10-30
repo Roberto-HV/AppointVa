@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { isAxiosError } from "axios";
 import { kioscoApi, type CitaKiosco } from "../../api/kiosco";
@@ -9,6 +9,8 @@ import Modal from "../../components/ui/Modal";
 import ModalAcciones from "../../components/ui/ModalAcciones";
 import { BOTON_MODAL_PRIMARIO, BOTON_MODAL_SECUNDARIO } from "../../components/ui/botonesModal";
 import { usePulsacionLarga } from "../../hooks/usePulsacionLarga";
+import DialogoConfirmarRecepcion from "../../components/dashboard/ConfirmarRecepcion";
+import { recepcionConfirmada } from "../../lib/recepcion";
 import {
   completarSalida2FA,
   entrarAlKiosco,
@@ -64,17 +66,41 @@ export default function KioskPage() {
   // (el servidor lo revocaba) y el dispositivo quedaba otra vez en modo recepción.
   const [debeEntrar, setDebeEntrar] = useState(() => !esKiosco);
   const entrando = useRef(false);
+  // I6: el menú y Citas confirman antes de navegar aquí. Quien llega sin esa
+  // marca (URL escrita, enlace guardado) ve la misma confirmación aquí mismo.
+  const location = useLocation();
+  const [confirmada, setConfirmada] = useState(() => esKiosco || recepcionConfirmada(location.state));
+
+  // La marca se borra del historial al leerla: volver con "atrás" a esta entrada
+  // tras salir no debe activar el modo otra vez sin preguntar.
+  useEffect(() => {
+    if (recepcionConfirmada(location.state)) {
+      navigate(location.pathname, { replace: true, state: null });
+    }
+  }, [location.state, location.pathname, navigate]);
 
   // Abrir la pantalla con la sesión normal la cambia por un token de kiosco (B9):
   // a partir de aquí el dispositivo no guarda nada que devuelva la sesión del dueño.
   useEffect(() => {
-    if (!debeEntrar || esKiosco || entrando.current) return;
+    if (!confirmada || !debeEntrar || esKiosco || entrando.current) return;
     entrando.current = true;
     entrarAlKiosco()
       .then(() => setDebeEntrar(false))
       .catch((err) => setErrorEntrada(mensajeError(err, "No se pudo activar el modo recepción.")))
       .finally(() => { entrando.current = false; });
-  }, [debeEntrar, esKiosco, intentoEntrada]);
+  }, [confirmada, debeEntrar, esKiosco, intentoEntrada]);
+
+  if (!esKiosco && !confirmada) {
+    return (
+      <div className="dark min-h-screen bg-slate-950">
+        <DialogoConfirmarRecepcion
+          abierto
+          onConfirmar={() => setConfirmada(true)}
+          onCerrar={() => navigate("/dashboard/citas", { replace: true })}
+        />
+      </div>
+    );
+  }
 
   if (!esKiosco && !debeEntrar) {
     // Saliendo: la sesión normal ya está guardada y la navegación a Citas, en curso.
@@ -489,21 +515,23 @@ function SalidaProtegida({ email }: { email: string }) {
 
   return (
     <>
-      <div className="flex flex-col items-end">
+      {/* I6: antes era texto gris tenue de 12px; ahora es un botón con borde,
+          texto legible y 44px de alto. La pulsación larga sigue igual. */}
+      <div className="flex flex-col items-end gap-1">
         <button
           type="button"
           {...pulsacion.props}
           aria-describedby={idPista}
-          className="relative overflow-hidden text-xs text-white/40 hover:text-white/70 focus-visible:text-white/85 transition flex items-center gap-1 min-h-[44px] px-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 touch-none select-none"
+          className="relative overflow-hidden text-sm font-medium text-white/90 border border-white/30 bg-white/[0.06] hover:bg-white/10 hover:text-white focus-visible:text-white transition flex items-center gap-2 min-h-[44px] px-4 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 touch-none select-none"
         >
-          <ArrowLeft size={14} aria-hidden="true" />
+          <ArrowLeft size={16} aria-hidden="true" />
           Salir del modo pantalla
           <span
             aria-hidden="true"
-            className={`absolute left-0 bottom-0 h-0.5 bg-white/70 ${pulsacion.presionando ? "w-full transition-[width] duration-[1500ms] ease-linear" : "w-0"}`}
+            className={`absolute left-0 bottom-0 h-1 bg-white/80 ${pulsacion.presionando ? "w-full transition-[width] duration-[1500ms] ease-linear" : "w-0"}`}
           />
         </button>
-        <span id={idPista} className="text-[11px] text-white/40">
+        <span id={idPista} className="text-xs text-white/70">
           Mantén presionado para salir
         </span>
       </div>
