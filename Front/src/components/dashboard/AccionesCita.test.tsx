@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
@@ -165,6 +165,65 @@ describe("AccionesCita — hoja de acciones", () => {
   it("enlaza al detalle de la cita", async () => {
     renderizar(<HojaAccionesCita cita={cita()} onCerrar={vi.fn()} />);
     expect(await screen.findByRole("link", { name: "Ver detalle" })).toHaveAttribute("href", "/dashboard/citas/cita-1");
+  });
+});
+
+describe("AccionesCita — popover en escritorio, hoja en el teléfono (M8)", () => {
+  const matchMediaOriginal = window.matchMedia;
+  const simular = (movil: boolean) => {
+    window.matchMedia = ((q: string) => ({
+      matches: movil && q.includes("max-width"),
+      media: q,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    })) as unknown as typeof window.matchMedia;
+  };
+  afterEach(() => { window.matchMedia = matchMediaOriginal; });
+
+  it("en escritorio las acciones salen junto a su botón, sin velo y sin ocultar la página", async () => {
+    simular(false);
+    renderizar(<AccionesCita cita={cita()} />);
+    const disparador = screen.getByRole("button", { name: "Acciones de la cita de Ana López" });
+    await userEvent.click(disparador);
+    const pop = await screen.findByRole("dialog", { name: "Cita de Ana López" });
+    expect(pop).toHaveAttribute("data-popover");
+    // No modal: la fila sigue accesible mientras el menú está abierto.
+    expect(disparador.closest("[aria-hidden='true']")).toBeNull();
+    expect(within(pop).getByRole("button", { name: "Reagendar" })).toBeInTheDocument();
+  });
+
+  it("en el teléfono se abre la hoja de siempre (Modal), no el popover", async () => {
+    simular(true);
+    renderizar(<AccionesCita cita={cita()} />);
+    await userEvent.click(screen.getByRole("button", { name: "Acciones de la cita de Ana López" }));
+    const hoja = await screen.findByRole("dialog", { name: "Cita de Ana López" });
+    expect(hoja).not.toHaveAttribute("data-popover");
+  });
+
+  it("sin ancla (p. ej. la fila ya no está) usa la hoja aunque sea escritorio", async () => {
+    simular(false);
+    const huerfano = document.createElement("button"); // nunca se monta en la página
+    renderizar(<HojaAccionesCita cita={cita()} onCerrar={vi.fn()} ancla={huerfano} />);
+    const hoja = await screen.findByRole("dialog", { name: "Cita de Ana López" });
+    expect(hoja).not.toHaveAttribute("data-popover");
+  });
+
+  it("se coloca debajo del ancla si cabe, si no arriba, y nunca fuera de la pantalla", async () => {
+    const { posicionPopover } = await import("../../lib/posicionPopover");
+    const vista = { ancho: 1440, alto: 900 };
+    // Debajo, alineado a la izquierda del ancla.
+    expect(posicionPopover({ top: 100, bottom: 140, left: 200, right: 240 }, { ancho: 360, alto: 300 }, vista))
+      .toEqual({ top: 148, left: 200, maxHeight: 744 });
+    // Cerca del borde inferior: arriba.
+    const arriba = posicionPopover({ top: 700, bottom: 740, left: 200, right: 240 }, { ancho: 360, alto: 300 }, vista);
+    expect(arriba.top).toBe(700 - 8 - 300);
+    // Cerca del borde derecho: alineado al borde derecho del ancla.
+    expect(posicionPopover({ top: 100, bottom: 140, left: 1380, right: 1420 }, { ancho: 360, alto: 300 }, vista).left)
+      .toBe(1420 - 360);
+    // Alto que no cabe arriba ni abajo (bloque a media rejilla): a un lado, completo.
+    const lado = posicionPopover({ top: 540, bottom: 600, left: 1100, right: 1175 }, { ancho: 360, alto: 600 }, vista);
+    expect(lado.left).toBe(1100 - 8 - 360);
+    expect(lado.top + 600).toBeLessThanOrEqual(900 - 8);
   });
 });
 

@@ -11,9 +11,7 @@ import Tabs from "../../components/ui/Tabs";
 import EmptyState from "../../components/ui/EmptyState";
 import { FiltroBarra, campoActivo, type CampoFiltro } from "../../components/ui/filtros";
 import { empleadosApi } from "../../api/empleados";
-import { serviciosApi } from "../../api/servicios";
 import { negociosApi } from "../../api/negocios";
-import { api } from "../../api/axios";
 import EstadoBadge from "../../components/ui/EstadoBadge";
 import Modal from "../../components/ui/Modal";
 import ModalAcciones from "../../components/ui/ModalAcciones";
@@ -24,10 +22,10 @@ import TarjetaCita, { InsigniasCita } from "../../components/dashboard/TarjetaCi
 import { useMediaQuery, CONSULTA_MOVIL } from "../../hooks/useMediaQuery";
 import { invalidarCitas, useReagendarCita } from "../../hooks/useMutacionesCita";
 import { urlResenaWhatsApp } from "../../utils/whatsapp";
-import { DatePicker } from "../../components/ui/DateTimePicker";
 import CalendarioCitas from "../../components/dashboard/CalendarioCitas";
 import GanttCitas from "../../components/dashboard/GanttCitas";
 import PasoFechaHora from "../../components/booking/PasoFechaHora";
+import NuevaCitaPanel, { type PrecargaNuevaCita } from "../../components/dashboard/NuevaCitaPanel";
 import { useToastStore } from "../../store/toastStore";
 import type { CitaDto, SlotDisponible } from "../../types";
 import { SkeletonTableRows } from "../../components/ui/Skeleton";
@@ -40,28 +38,12 @@ import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
 import { TAMANO_PAGINA } from "../../hooks/usePaginacionLocal";
 import { leerParamsCitas } from "../../lib/paramsCitas";
 import { mensajeError } from "../../utils/errores";
-import { z } from "zod";
 import { usePermisos } from "../../hooks/usePermisos";
 import { confirmarEnLote, resumenLote } from "../../lib/confirmarEnLote";
 
 
 type VistaCitas = "lista" | "calendario" | "gantt";
 const ESTADOS_FILTRO = ["Pendiente", "Confirmada", "Completada", "Cancelada", "Inasistencia"];
-
-/**
- * `POST /citas` exige `TelefonoCliente` (`[Required]`, máx. 20): el teléfono
- * identifica al cliente del negocio, así que no puede ir vacío.
- */
-const esquemaTelefonoCliente = z.string()
-  .trim()
-  .min(1, "Ingresa el teléfono del cliente")
-  .max(20, "Máximo 20 caracteres")
-  .regex(/^\+?[\d\s\-().]+$/, "Solo dígitos, +, - o espacios");
-
-function validarTelefonoCliente(v: string): string {
-  const r = esquemaTelefonoCliente.safeParse(v);
-  return r.success ? "" : r.error.issues[0]?.message ?? "Teléfono no válido";
-}
 
 export default function CitasPage() {
   const qc = useQueryClient();
@@ -113,10 +95,19 @@ export default function CitasPage() {
   // que no se pierde (ni lo escrito en ella) al cruzar los 640px.
   const [citaAcciones, setCitaAcciones] = useState<CitaDto | null>(null);
   const [vistaAcciones, setVistaAcciones] = useState<VistaHoja>("menu");
-  const abrirAcciones = (cita: CitaDto, vistaHoja: VistaHoja = "menu") => {
+  // Botón o bloque que abrió la hoja: en escritorio sale junto a él (M8).
+  const [anclaAcciones, setAnclaAcciones] = useState<HTMLElement | null>(null);
+  const abrirAcciones = (cita: CitaDto, vistaHoja: VistaHoja = "menu", ancla?: HTMLElement) => {
     setCitaAcciones(cita);
     setVistaAcciones(vistaHoja);
+    setAnclaAcciones(ancla ?? null);
   };
+
+  // Día que comparten Calendario y Línea de tiempo (I3): al cambiar de pestaña
+  // se sigue viendo la misma fecha. Vive en la URL como el resto de la vista.
+  const diaParam = params.get("dia") ?? "";
+  const fechaAgenda = /^\d{4}-\d{2}-\d{2}$/.test(diaParam) ? diaParam : hoy();
+  const setFechaAgenda = (f: string) => actualizarParams({ dia: f === hoy() ? null : f });
 
   // Confirmación para anular un anticipo ya registrado
   const [citaAnularAnticipo, setCitaAnularAnticipo] = useState<CitaDto | null>(null);
@@ -135,21 +126,13 @@ export default function CitasPage() {
   const [fClienteRepetir, setFClienteRepetir] = useState({ nombre: "", telefono: "", email: "", notas: "" });
   const [emailRepetirError, setEmailRepetirError] = useState("");
 
-  // Modal nueva cita
-  const [modalNueva, setModalNueva] = useState(false);
-  const [pasoCita, setPasoCita] = useState<1 | 2>(1);
-  const [svcSel, setSvcSel] = useState("");
-  const [empSel, setEmpSel] = useState("");
-  const [fechaNueva, setFechaNueva] = useState("");
-  const [slotNuevo, setSlotNuevo] = useState("");
-  const [fCliente, setFCliente] = useState({ nombre: "", telefono: "", email: "", notas: "" });
-  const [emailClienteError, setEmailClienteError] = useState("");
+  // Panel "Nueva cita" (I4). La precarga llega de un hueco de la agenda (I1).
+  const [nuevaAbierta, setNuevaAbierta] = useState(false);
+  const [precargaNueva, setPrecargaNueva] = useState<PrecargaNuevaCita | undefined>(undefined);
   const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
   // Issue 12 — drag-to-reschedule confirmation
   const [confirmDrag, setConfirmDrag] = useState<{id: string; nombre: string; nuevoInicio: string; label: string} | null>(null);
-
-  const [telefonoClienteError, setTelefonoClienteError] = useState("");
 
   const validarEmailCliente = (v: string) =>
     v.trim() && !EMAIL_RE.test(v.trim()) ? "Correo no válido (ej: nombre@dominio.com)" : "";
@@ -205,69 +188,13 @@ export default function CitasPage() {
     queryFn: () => empleadosApi.obtenerTodos(),
   });
 
-  const { data: servicios = [] } = useQuery({
-    queryKey: ["servicios"],
-    queryFn: () => serviciosApi.obtenerTodos(),
-  });
-
-  const empleadosFiltrados = svcSel
-    ? empleados.filter((e) => e.servicioIds.includes(svcSel) && e.activo)
-    : empleados.filter((e) => e.activo);
-
-  const { data: slotsNueva = [], isFetching: cargandoSlotsNueva, isError: errorSlotsNueva } = useQuery({
-    queryKey: ["slots-nueva", svcSel, empSel, fechaNueva],
-    queryFn: async (): Promise<SlotDisponible[]> => {
-      const { data } = await api.get("/publico/disponibilidad", {
-        params: { servicioId: svcSel, empleadoId: empSel, fecha: fechaNueva },
-      });
-      return data;
-    },
-    enabled: !!svcSel && !!empSel && !!fechaNueva,
-  });
-
-
-
   // ── Mutations ────────────────────────────────────────────────────────────────
   // Solo para soltar una cita en el calendario: el resto de acciones vive en la hoja.
   const { mutate: reagendar } = useReagendarCita();
 
-  const { mutate: crearCita, isPending: creando } = useMutation({
-    mutationFn: () => citasApi.crear({
-      servicioId: svcSel,
-      empleadoId: empSel,
-      inicioEn: slotNuevo,
-      nombreCliente: fCliente.nombre.trim(),
-      telefonoCliente: fCliente.telefono.trim(),
-      emailCliente: fCliente.email.trim() || undefined,
-      notas: fCliente.notas.trim() || undefined,
-    }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["citas"] });
-      qc.invalidateQueries({ queryKey: ["citas-cal"] });
-      qc.invalidateQueries({ queryKey: ["citas-badge"] });
-      qc.invalidateQueries({ queryKey: ["citas-gantt"] });
-      qc.invalidateQueries({ queryKey: ["dashboard-resumen"] });
-      qc.invalidateQueries({ queryKey: ["clientes"] });
-      setModalNueva(false);
-      setPasoCita(1);
-      setSvcSel(""); setEmpSel(""); setFechaNueva(""); setSlotNuevo("");
-      setFCliente({ nombre: "", telefono: "", email: "", notas: "" });
-      setEmailClienteError("");
-      setTelefonoClienteError("");
-      toast(`${terms.cita} creada`);
-    },
-    onError: (err: unknown) => {
-      toast(mensajeError(err, `No se pudo crear la ${terms.cita.toLowerCase()}`), "error");
-    },
-  });
-
-  const abrirNuevaCita = () => {
-    setModalNueva(true);
-    setPasoCita(1);
-    setSvcSel(""); setEmpSel(""); setFechaNueva(""); setSlotNuevo("");
-    setFCliente({ nombre: "", telefono: "", email: "", notas: "" });
-    setEmailClienteError("");
-    setTelefonoClienteError("");
+  const abrirNuevaCita = (precarga?: PrecargaNuevaCita) => {
+    setPrecargaNueva(precarga);
+    setNuevaAbierta(true);
   };
 
   const abrirRepetirCita = (c: CitaDto) => {
@@ -560,7 +487,7 @@ export default function CitasPage() {
                   Exportar Excel
                 </BotonAccion>
               )}
-              <BotonAccion onClick={abrirNuevaCita}>
+              <BotonAccion onClick={() => abrirNuevaCita()}>
                 {`+ Nueva ${terms.cita.toLowerCase()}`}
               </BotonAccion>
             </>
@@ -581,8 +508,8 @@ export default function CitasPage() {
 
       </div>
 
-      {/* Filtros — la vista calendario reusa el mismo campo de profesional */}
-      {(vista === "lista" || (vista === "calendario" && empleados.length > 1)) && (
+      {/* Filtros — Calendario y Línea de tiempo reusan el mismo campo de profesional */}
+      {(vista === "lista" || empleados.length > 1) && (
         <FiltroBarra
           etiqueta={`Filtros de ${terms.citas.toLowerCase()}`}
           busqueda={
@@ -605,7 +532,10 @@ export default function CitasPage() {
         <CalendarioCitas
           empleadoId={empleadoId}
           terms={terms}
-          onCitaClick={(c: CitaDto) => abrirAcciones(c)}
+          onCitaClick={(c: CitaDto, ancla) => abrirAcciones(c, "menu", ancla)}
+          fecha={fechaAgenda}
+          onCambiarFecha={setFechaAgenda}
+          onHuecoClick={(h) => abrirNuevaCita({ inicio: h.inicio, empleadoId: h.empleadoId })}
           onReagendar={(cita, nuevoInicio) => {
             const nueva = new Date(nuevoInicio).toLocaleString("es-MX", {
               weekday: "short", day: "numeric", month: "short",
@@ -618,7 +548,14 @@ export default function CitasPage() {
 
       {/* Vista línea de tiempo (Gantt) */}
       {vista === "gantt" && (
-        <GanttCitas onCitaClick={(c: CitaDto) => abrirAcciones(c)} terms={terms} />
+        <GanttCitas
+          onCitaClick={(c: CitaDto, ancla) => abrirAcciones(c, "menu", ancla)}
+          terms={terms}
+          fecha={fechaAgenda}
+          onCambiarFecha={setFechaAgenda}
+          empleadoId={empleadoId}
+          onHuecoClick={(h) => abrirNuevaCita({ inicio: h.inicio, empleadoId: h.empleadoId })}
+        />
       )}
 
       {/* Un fallo al refrescar no borra la lista que ya se ve, pero se avisa. */}
@@ -667,7 +604,7 @@ export default function CitasPage() {
                 voz="citasRango"
                 tono={tonoDeSector(sector)}
                 action={
-                  <BotonAccion onClick={abrirNuevaCita}>
+                  <BotonAccion onClick={() => abrirNuevaCita()}>
                     {`Nueva ${terms.cita.toLowerCase()}`}
                   </BotonAccion>
                 }
@@ -793,7 +730,7 @@ export default function CitasPage() {
                         cita={c}
                         accionesExtra={accionesExtra(c)}
                         nombreNegocio={nombreNegocio}
-                        onAbrirHoja={(v) => abrirAcciones(c, v)}
+                        onAbrirHoja={(v, ancla) => abrirAcciones(c, v, ancla)}
                       />
                     </td>
                   </tr>
@@ -884,241 +821,8 @@ export default function CitasPage() {
         )}
       </Modal>
 
-      {/* ── Modal: Nueva cita ── */}
-      <Modal abierto={modalNueva} onCerrar={() => setModalNueva(false)} titulo={`Nueva ${terms.cita.toLowerCase()}`} ancho="md">
-        {/* Paso 1 — Servicio, empleado, fecha, slot */}
-        {pasoCita === 1 && (
-          <div className="space-y-4">
-            {/* Servicio */}
-            <div>
-              <p id="nueva-servicio" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Servicio</p>
-              <div role="group" aria-labelledby="nueva-servicio" className="max-h-48 overflow-y-auto border border-slate-200 dark:border-slate-600 rounded-lg divide-y divide-slate-100 dark:divide-slate-600">
-                {servicios.filter((s) => s.activo).map((s) => (
-                  <button
-                    key={s.id}
-                    type="button"
-                    aria-pressed={svcSel === s.id}
-                    onClick={() => { setSvcSel(s.id); setEmpSel(""); setFechaNueva(""); setSlotNuevo(""); }}
-                    className={`w-full text-left px-3 py-2.5 text-sm transition ${
-                      svcSel === s.id
-                        ? "bg-slate-700 text-white"
-                        : "hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200"
-                    }`}
-                  >
-                    <span className="font-medium">{s.nombre}</span>
-                    <span className={`ml-2 text-xs ${svcSel === s.id ? "text-slate-300" : "text-slate-400 dark:text-slate-500"}`}>
-                      {s.duracionMinutos} min · {formatPrecio(s.precio)}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Empleado */}
-            {svcSel && (
-              <div>
-                <p id="nueva-profesional" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{terms.empleado}</p>
-                {empleadosFiltrados.length === 0 ? (
-                  <p className="text-sm text-slate-400 dark:text-slate-500">Ningún empleado ofrece este servicio</p>
-                ) : (
-                  <div role="group" aria-labelledby="nueva-profesional" className="max-h-36 overflow-y-auto border border-slate-200 dark:border-slate-600 rounded-lg divide-y divide-slate-100 dark:divide-slate-600">
-                    {empleadosFiltrados.map((e) => (
-                      <button
-                        key={e.id}
-                        type="button"
-                        aria-pressed={empSel === e.id}
-                        onClick={() => { setEmpSel(e.id); setFechaNueva(""); setSlotNuevo(""); }}
-                        className={`w-full text-left px-3 py-2.5 text-sm transition ${
-                          empSel === e.id
-                            ? "bg-slate-700 text-white"
-                            : "hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200"
-                        }`}
-                      >
-                        {e.nombre}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Fecha */}
-            {svcSel && empSel && (
-              <div>
-                <DatePicker
-                  label="Fecha"
-                  value={fechaNueva}
-                  minDate={hoy()}
-                  onChange={(v) => { setFechaNueva(v); setSlotNuevo(""); }}
-                />
-              </div>
-            )}
-
-            {/* Slots */}
-            {svcSel && empSel && fechaNueva && (
-              <div>
-                <p id="nueva-horario" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Horario disponible</p>
-                {cargandoSlotsNueva ? (
-                  <p className="text-sm text-slate-400 dark:text-slate-500">Cargando horarios...</p>
-                ) : errorSlotsNueva ? (
-                  <p className="text-xs text-red-700 dark:text-red-400 text-center py-2" role="alert">Error al cargar horarios. Intenta de nuevo.</p>
-                ) : slotsNueva.length === 0 ? (
-                  <p className="text-xs text-muted-foreground text-center py-2">Sin horarios disponibles para esta fecha</p>
-                ) : (
-                  <div role="group" aria-labelledby="nueva-horario" className="grid grid-cols-3 gap-2 max-h-44 overflow-y-auto pr-1">
-                    {slotsNueva.map((s) => (
-                      <button
-                        key={s.inicio}
-                        type="button"
-                        aria-pressed={slotNuevo === s.inicio}
-                        onClick={() => setSlotNuevo(s.inicio)}
-                        className={`py-2 text-sm rounded-lg border transition ${
-                          slotNuevo === s.inicio
-                            ? "bg-slate-700 text-white border-slate-700"
-                            : "border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:border-slate-700 dark:hover:border-slate-400"
-                        }`}
-                      >
-                        {s.horaTexto}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            <ModalAcciones>
-              <button
-                onClick={() => slotNuevo && setPasoCita(2)}
-                disabled={!slotNuevo}
-                type="button"
-                className={BOTON_MODAL_PRIMARIO}
-              >
-                Continuar
-              </button>
-            </ModalAcciones>
-          </div>
-        )}
-
-        {/* Paso 2 — Datos del cliente */}
-        {pasoCita === 2 && (
-          <div className="space-y-4">
-            {/* Resumen */}
-            <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-3 text-sm space-y-1">
-              <p><span className="text-slate-500 dark:text-slate-400">Servicio:</span> <span className="font-medium dark:text-slate-200">{servicios.find((s) => s.id === svcSel)?.nombre}</span></p>
-              <p><span className="text-slate-500 dark:text-slate-400">{`${terms.empleado}:`}</span> <span className="font-medium dark:text-slate-200">{empleados.find((e) => e.id === empSel)?.nombre}</span></p>
-              <p><span className="text-slate-500 dark:text-slate-400">Hora:</span> <span className="font-medium dark:text-slate-200">{slotNuevo ? formatFechaHora(slotNuevo) : ""}</span></p>
-            </div>
-
-            <div>
-              <label htmlFor="nueva-nombre" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nombre del cliente <span className="text-red-700 dark:text-red-400" aria-hidden="true">*</span></label>
-              <input
-                id="nueva-nombre"
-                type="text"
-                required
-                value={fCliente.nombre}
-                onChange={(e) => setFCliente((p) => ({ ...p, nombre: e.target.value }))}
-                placeholder="Nombre completo"
-                className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm outline-none focus:border-accent-brand"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="nueva-telefono" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Teléfono <span className="text-red-700 dark:text-red-400" aria-hidden="true">*</span>
-              </label>
-              <input
-                id="nueva-telefono"
-                type="tel"
-                required
-                aria-required="true"
-                aria-invalid={!!telefonoClienteError || undefined}
-                aria-describedby={telefonoClienteError ? "nueva-telefono-error" : undefined}
-                value={fCliente.telefono}
-                onChange={(e) => {
-                  setFCliente((p) => ({ ...p, telefono: e.target.value }));
-                  if (telefonoClienteError) setTelefonoClienteError(validarTelefonoCliente(e.target.value));
-                }}
-                onBlur={() => { if (fCliente.telefono) setTelefonoClienteError(validarTelefonoCliente(fCliente.telefono)); }}
-                placeholder="10 dígitos"
-                className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-accent-brand dark:bg-slate-800 dark:text-slate-100 ${
-                  telefonoClienteError ? "border-red-400 bg-red-50 dark:bg-red-900/20" : "border-slate-200 dark:border-slate-600"
-                }`}
-              />
-              {telefonoClienteError && (
-                <p id="nueva-telefono-error" className="text-red-700 dark:text-red-400 text-xs mt-1 flex items-center gap-1">
-                  <AlertTriangle size={12} aria-hidden="true" /> {telefonoClienteError}
-                </p>
-              )}
-            </div>
-
-            <div>
-              <label htmlFor="nueva-email" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Email <span className="text-muted-foreground font-normal">(opcional — para recordatorio)</span>
-              </label>
-              <input
-                id="nueva-email"
-                type="email"
-                aria-invalid={!!emailClienteError || undefined}
-                aria-describedby={emailClienteError ? "nueva-email-error" : undefined}
-                value={fCliente.email}
-                onChange={(e) => {
-                  setFCliente((p) => ({ ...p, email: e.target.value }));
-                  if (emailClienteError) setEmailClienteError(validarEmailCliente(e.target.value));
-                }}
-                onBlur={() => setEmailClienteError(validarEmailCliente(fCliente.email))}
-                placeholder="correo@ejemplo.com"
-                className={`w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-accent-brand dark:bg-slate-800 dark:text-slate-100 ${
-                  emailClienteError ? "border-red-400 bg-red-50 dark:bg-red-900/20" : "border-slate-200 dark:border-slate-600"
-                }`}
-              />
-              {emailClienteError && (
-                <p id="nueva-email-error" className="text-red-700 dark:text-red-400 text-xs mt-1 flex items-center gap-1">
-                  <AlertTriangle size={12} aria-hidden="true" /> {emailClienteError}
-                </p>
-              )}
-            </div>
-
-            <div>
-              <label htmlFor="nueva-nota" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Nota interna <span className="text-muted-foreground font-normal">(opcional)</span>
-              </label>
-              <textarea
-                id="nueva-nota"
-                value={fCliente.notas}
-                onChange={(e) => setFCliente((p) => ({ ...p, notas: e.target.value }))}
-                rows={2}
-                placeholder="Preferencias, indicaciones..."
-                className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 text-sm outline-none focus:border-accent-brand resize-none"
-              />
-            </div>
-
-            <ModalAcciones>
-              <button
-                onClick={() => setPasoCita(1)}
-                type="button"
-                className={BOTON_MODAL_SECUNDARIO}
-              >
-                Atrás
-              </button>
-              <button
-                onClick={() => {
-                  const errTel = validarTelefonoCliente(fCliente.telefono);
-                  const err = validarEmailCliente(fCliente.email);
-                  setTelefonoClienteError(errTel);
-                  setEmailClienteError(err);
-                  if (errTel) document.getElementById("nueva-telefono")?.focus();
-                  if (!err && !errTel) crearCita();
-                }}
-                disabled={!fCliente.nombre.trim() || creando || !!emailClienteError}
-                type="button"
-                className={BOTON_MODAL_PRIMARIO}
-              >
-                {creando ? "Creando..." : `Crear ${terms.cita.toLowerCase()}`}
-              </button>
-            </ModalAcciones>
-          </div>
-        )}
-      </Modal>
+      {/* ── Panel: Nueva cita (I4) ── */}
+      <NuevaCitaPanel abierto={nuevaAbierta} onCerrar={() => setNuevaAbierta(false)} precarga={precargaNueva} />
 
       {/* ── Modal: Ver comprobante ── */}
       <Modal abierto={!!urlComprobante} onCerrar={() => setUrlComprobante(null)} titulo="Comprobante de anticipo" ancho="sm">
@@ -1148,6 +852,7 @@ export default function CitasPage() {
         onCerrar={() => setCitaAcciones(null)}
         accionesExtra={citaHoja ? accionesExtra(citaHoja) : []}
         nombreNegocio={nombreNegocio}
+        ancla={anclaAcciones}
       />
 
       {/* ── Anular anticipo: cambia lo que se cobra al final ── */}

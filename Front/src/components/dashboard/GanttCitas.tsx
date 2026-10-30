@@ -1,6 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, type MouseEvent as EventoRaton } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import { getSectorTerms, type SectorTerms } from "../../hooks/useSectorTerms";
 import { colorCategoria, TEXTO_SOBRE_CATEGORIA } from "../../lib/temaGraficas";
 import { citasApi } from "../../api/citas";
@@ -8,17 +7,20 @@ import { empleadosApi } from "../../api/empleados";
 import { useAuthStore } from "../../store/authStore";
 import type { CitaDto } from "../../types";
 import { formatHora, formatHoraEje, toUtcDate } from "../../utils/formatters";
-import { DatePicker } from "../ui/DateTimePicker";
-import { hoy as hoyLocal } from "../../utils/fechas";
-import { ESTADO_CITA, ESTADOS_CITA, estiloEstadoCita } from "../../lib/estadoCita";
-import { dentroDelRango, ocupaAgenda, rangoHoras } from "../../lib/carrilesCitas";
+import { deFechaLocal, hoy as hoyLocal } from "../../utils/fechas";
+import { estiloEstadoCita } from "../../lib/estadoCita";
+import { asignarCarriles, dentroDelRango, ocupaAgenda, rangoHoras } from "../../lib/carrilesCitas";
+import {
+  bandasFueraDeHorario, diaCerrado, instanteEnRejilla, motivoHuecoBloqueado, rangoDelHorario,
+  TEXTO_HUECO_BLOQUEADO, type MotivoHuecoBloqueado,
+} from "../../lib/agenda";
+import { BarraFechaAgenda, LeyendaEstados, type HuecoAgenda } from "./BarraAgenda";
+import { useHorarioAgenda } from "../../hooks/useHorarioAgenda";
 
 const PX_POR_HORA = 56;
-const BOTON_ICONO =
-  "inline-flex items-center justify-center min-h-[44px] min-w-[44px] lg:min-h-[36px] lg:min-w-[36px] rounded-lg " +
-  "hover:bg-slate-100 dark:hover:bg-slate-700 transition text-slate-600 dark:text-slate-300 " +
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 const COL_MIN_W = 148;
+const DIAS_CORTOS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+const MESES = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
 
 
 
@@ -40,18 +42,42 @@ function navFecha(base: string, delta: number): string {
 }
 
 interface Props {
-  onCitaClick: (cita: CitaDto) => void;
+  /** `ancla` es el bloque tocado: en escritorio las acciones se abren junto a él. */
+  onCitaClick: (cita: CitaDto, ancla?: HTMLElement) => void;
   /** Vocabulario del sector ("consultas" en salud) (DC-34). */
   terms?: SectorTerms;
+  /** Día mostrado ("YYYY-MM-DD"). Lo comparte con el Calendario. */
+  fecha?: string;
+  onCambiarFecha?: (fecha: string) => void;
+  /** Filtro de empleado de la página: deja solo su columna. */
+  empleadoId?: string;
+  /** Clic en un hueco libre de una columna: abre "Nueva cita" con ese empleado (I1). */
+  onHuecoClick?: (hueco: HuecoAgenda) => void;
 }
 
-export default function GanttCitas({ onCitaClick, terms = getSectorTerms(null) }: Props) {
+interface HuecoSenalado {
+  empleadoId: string;
+  inicio: Date;
+  motivo: MotivoHuecoBloqueado | null;
+}
+
+export default function GanttCitas({
+  onCitaClick, terms = getSectorTerms(null), fecha: fechaProp, onCambiarFecha, empleadoId = "", onHuecoClick,
+}: Props) {
   const contar = (n: number) => `${n} ${(n === 1 ? terms.cita : terms.citas).toLowerCase()}`;
   const hoy = hoyLocal();
-  const [fecha, setFecha] = useState(hoy);
+  const [fechaInterna, setFechaInterna] = useState(() => fechaProp ?? hoy);
+  const fecha = fechaProp ?? fechaInterna;
+  const setFecha = (f: string) => {
+    setFechaInterna(f);
+    onCambiarFecha?.(f);
+  };
+  const dia = deFechaLocal(fecha);
   const [nowTop, setNowTop] = useState<number | null>(null);
+  const [hueco, setHueco] = useState<HuecoSenalado | null>(null);
   const usuario = useAuthStore((s) => s.usuario);
   const esEmpleado = usuario?.rol === "Empleado";
+  const { horarios, bloqueados } = useHorarioAgenda();
 
   const { data, isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ["citas-gantt", fecha],
@@ -62,7 +88,7 @@ export default function GanttCitas({ onCitaClick, terms = getSectorTerms(null) }
   const citas = data?.datos ?? [];
 
   // Las horas visibles se amplían para que ninguna cita quede fuera de la rejilla.
-  const { inicio: HORA_INICIO, fin: HORA_FIN } = rangoHoras(citas);
+  const { inicio: HORA_INICIO, fin: HORA_FIN } = rangoHoras(citas, rangoDelHorario(horarios));
   const GRID_H = (HORA_FIN - HORA_INICIO) * PX_POR_HORA;
 
   useEffect(() => {
@@ -103,8 +129,12 @@ export default function GanttCitas({ onCitaClick, terms = getSectorTerms(null) }
   if (esEmpleado) {
     const miEmpleado = activos.find((e) => e.email === usuario?.email);
     emps = miEmpleado ? [miEmpleado] : conCitas;
+  } else if (empleadoId) {
+    emps = activos.filter((e) => e.id === empleadoId);
   } else {
-    emps = conCitas.length > 0 ? conCitas : activos;
+    // Con la creación desde un hueco (I1) hacen falta las columnas de todos,
+    // también de quien todavía no tiene citas ese día.
+    emps = onHuecoClick ? activos : conCitas.length > 0 ? conCitas : activos;
   }
 
   const porEmp = new Map<string, CitaDto[]>(emps.map((e) => [e.id, []]));
@@ -115,51 +145,56 @@ export default function GanttCitas({ onCitaClick, terms = getSectorTerms(null) }
 
   const horas = Array.from({ length: HORA_FIN - HORA_INICIO }, (_, i) => HORA_INICIO + i);
   const citasActivas = citas.filter((c) => c.estadoTexto !== "Cancelada" && c.estadoTexto !== "Inasistencia");
+  const cerrado = diaCerrado(dia, horarios, bloqueados);
+  const etiquetaDia = `${DIAS_CORTOS[dia.getDay()]}, ${dia.getDate()} de ${MESES[dia.getMonth()]} ${dia.getFullYear()}`;
+
+  // ── Huecos (I1) ──────────────────────────────────────────────────────────────
+  const sobreCita = (e: EventoRaton) => !!(e.target as HTMLElement).closest("[data-cita]");
+  const huecoBajo = (e: EventoRaton<HTMLDivElement>, empId: string): HuecoSenalado => {
+    const y = e.clientY - e.currentTarget.getBoundingClientRect().top;
+    const inicio = instanteEnRejilla(dia, y, HORA_INICIO, PX_POR_HORA);
+    return { empleadoId: empId, inicio, motivo: motivoHuecoBloqueado(inicio, horarios, bloqueados) };
+  };
+  const propsHueco = (empId: string) => onHuecoClick ? {
+    onMouseMove: (e: EventoRaton<HTMLDivElement>) => {
+      if (sobreCita(e)) { if (hueco) setHueco(null); return; }
+      const h = huecoBajo(e, empId);
+      if (!hueco || hueco.empleadoId !== empId || hueco.inicio.getTime() !== h.inicio.getTime()) setHueco(h);
+    },
+    onMouseLeave: () => setHueco(null),
+    onClick: (e: EventoRaton<HTMLDivElement>) => {
+      if (sobreCita(e)) return;
+      const h = huecoBajo(e, empId);
+      if (h.motivo) return;
+      setHueco(null);
+      onHuecoClick({ inicio: h.inicio, empleadoId: empId });
+    },
+  } : {};
+
+  const carrilesPorEmp = new Map(emps.map((e) => [e.id, asignarCarriles(porEmp.get(e.id) ?? [])]));
+  const bandas = bandasFueraDeHorario(dia, horarios, bloqueados, { inicio: HORA_INICIO, fin: HORA_FIN });
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-700 overflow-hidden">
-      {/* Toolbar */}
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-100 dark:border-slate-700 flex-wrap">
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => setFecha(navFecha(fecha, -1))}
-            className={BOTON_ICONO}
-            aria-label="Día anterior"
-          >
-            <ChevronLeft size={16} aria-hidden="true" />
-          </button>
-          <div className="w-44">
-            <DatePicker value={fecha} onChange={(v) => setFecha(v)} />
-          </div>
-          <button
-            onClick={() => setFecha(navFecha(fecha, 1))}
-            className={BOTON_ICONO}
-            aria-label="Día siguiente"
-          >
-            <ChevronRight size={16} aria-hidden="true" />
-          </button>
-        </div>
-        <button
-          onClick={() => setFecha(hoy)}
-          disabled={fecha === hoy}
-          className="min-h-[44px] lg:min-h-[36px] text-xs text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-40 px-3 rounded-lg transition"
-        >
-          Hoy
-        </button>
-        <div className="ml-auto flex items-center gap-4">
-          <span className="text-xs text-muted-foreground">
-            {isLoading ? "Cargando..." : sinDatos ? "Sin datos" : contar(citasActivas.length)}
-          </span>
-          <ul className="hidden sm:flex items-center gap-3" aria-label="Leyenda de estados">
-            {ESTADOS_CITA.map((estado) => (
-              <li key={estado} className="flex items-center gap-1.5">
-                <span className={`w-2.5 h-2.5 rounded-sm ${ESTADO_CITA[estado].punto}`} aria-hidden="true" />
-                <span className="text-xs text-slate-600 dark:text-slate-300">{ESTADO_CITA[estado].etiqueta}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
+    <div>
+      <BarraFechaAgenda
+        etiqueta={etiquetaDia}
+        etiquetaAnterior="Día anterior"
+        etiquetaSiguiente="Día siguiente"
+        onAnterior={() => setFecha(navFecha(fecha, -1))}
+        onSiguiente={() => setFecha(navFecha(fecha, 1))}
+        onHoy={() => setFecha(hoy)}
+        fecha={fecha}
+        onElegirFecha={setFecha}
+      />
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+        <LeyendaEstados />
+        <span className="text-xs text-muted-foreground">
+          {isLoading ? "Cargando..." : sinDatos ? "Sin datos" : contar(citasActivas.length)}
+          {cerrado && <span className="ml-2 font-semibold text-red-700 dark:text-red-400">Cerrado</span>}
+        </span>
       </div>
+
+    <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-700 overflow-hidden">
 
       {datosDesactualizados && (
         <div role="alert" className="flex flex-wrap items-center justify-between gap-2 px-4 py-2 border-b border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 text-sm text-red-800 dark:text-red-300">
@@ -270,9 +305,36 @@ export default function GanttCitas({ onCitaClick, terms = getSectorTerms(null) }
               {emps.map((emp) => (
                 <div
                   key={emp.id}
-                  className="flex-1 relative border-r border-slate-100 dark:border-slate-700 last:border-r-0"
+                  data-testid={`columna-${emp.id}`}
+                  className={`flex-1 relative border-r border-slate-100 dark:border-slate-700 last:border-r-0 ${onHuecoClick ? "cursor-pointer" : ""}`}
                   style={{ minWidth: COL_MIN_W }}
+                  {...propsHueco(emp.id)}
                 >
+                  {/* Fuera del horario del negocio: sombreado, el hueco no se ofrece. */}
+                  {bandas.map(([a, b]) => (
+                    <div
+                      key={`${a}-${b}`}
+                      aria-hidden="true"
+                      className="absolute inset-x-0 pointer-events-none bg-slate-100/80 dark:bg-slate-800/60"
+                      style={{ top: (a - HORA_INICIO) * PX_POR_HORA, height: (b - a) * PX_POR_HORA }}
+                    />
+                  ))}
+                  {hueco?.empleadoId === emp.id && (
+                    <div
+                      aria-hidden="true"
+                      className={`absolute inset-x-1 z-[5] pointer-events-none rounded-lg px-2 text-[11px] font-medium flex items-start pt-0.5 ${
+                        hueco.motivo
+                          ? "bg-slate-200/70 dark:bg-slate-700/60 text-slate-500 dark:text-slate-400"
+                          : "border border-dashed border-slate-400 dark:border-slate-500 bg-slate-50/90 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200"
+                      }`}
+                      style={{
+                        top: ((hueco.inicio.getHours() + hueco.inicio.getMinutes() / 60) - HORA_INICIO) * PX_POR_HORA,
+                        height: PX_POR_HORA / 2,
+                      }}
+                    >
+                      {hueco.motivo ? TEXTO_HUECO_BLOQUEADO[hueco.motivo] : `+ ${formatHora(hueco.inicio.toISOString())}`}
+                    </div>
+                  )}
                   {(porEmp.get(emp.id) ?? []).map((cita) => {
                     // Las canceladas e inasistencias no amplían las horas visibles;
                     // si quedan fuera de ellas no se dibujan (no ocupan la agenda).
@@ -283,17 +345,29 @@ export default function GanttCitas({ onCitaClick, terms = getSectorTerms(null) }
                     // token, nunca texto blanco sobre el color del estado.
                     const estilo = estiloEstadoCita(cita.estadoTexto);
                     const cerrada = cita.estadoTexto === "Cancelada" || cita.estadoTexto === "Inasistencia";
+                    // Dos citas encimadas del mismo empleado (doble reserva) van
+                    // lado a lado, como en el Calendario, en vez de taparse.
+                    const lugar = carrilesPorEmp.get(emp.id)?.get(cita.id) ?? { carril: 0, carriles: 1 };
+                    const ancho = lugar.ancho ?? 1;
 
                     return (
                       <button
                         key={cita.id}
                         type="button"
-                        className={`absolute left-1 right-1 rounded-lg text-left transition-all cursor-pointer
-                          hover:left-0.5 hover:right-0.5 hover:shadow-md active:scale-[0.99]
+                        data-cita=""
+                        aria-haspopup="dialog"
+                        className={`absolute rounded-lg text-left transition-all cursor-pointer
+                          hover:shadow-md active:scale-[0.99]
                           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
+                          ${lugar.deFondo ? "z-0 opacity-60 hover:opacity-100" : "z-10"}
                           ${estilo.bloque}`}
-                        style={{ top: top + 2, height: height - 4 }}
-                        onClick={() => onCitaClick(cita)}
+                        style={{
+                          top: top + 2,
+                          height: height - 4,
+                          left: `calc(${(lugar.carril / lugar.carriles) * 100}% + 4px)`,
+                          width: `calc(${(ancho / lugar.carriles) * 100}% - 8px)`,
+                        }}
+                        onClick={(e) => onCitaClick(cita, e.currentTarget)}
                         aria-label={`${cita.nombreCliente}, ${cita.nombreServicio}, ${estilo.etiqueta}. Abrir acciones`}
                         title={`${cita.nombreCliente} — ${cita.nombreServicio} (${estilo.etiqueta})`}
                       >
@@ -335,6 +409,7 @@ export default function GanttCitas({ onCitaClick, terms = getSectorTerms(null) }
           </div>
         </div>
       )}
+    </div>
     </div>
   );
 }

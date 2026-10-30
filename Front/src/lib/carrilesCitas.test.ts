@@ -30,6 +30,38 @@ describe("asignarCarriles", () => {
     expect(r.get("b")).toEqual({ carril: 1, carriles: 2 });
     expect(r.get("c")).toEqual({ carril: 0, carriles: 2 });
   });
+
+  it("dos citas encimadas reciben columnas y anchos distintos, sin taparse", () => {
+    const r = asignarCarriles([cita("a", 16, 0, 60), cita("b", 16, 0, 45)]);
+    const a = r.get("a")!, b = r.get("b")!;
+    expect(a.carril).not.toBe(b.carril);
+    expect(a.carriles).toBe(2);
+    // Cada una ocupa su mitad: ninguna se estira sobre la otra.
+    expect(a.ancho ?? 1).toBe(1);
+    expect(b.ancho ?? 1).toBe(1);
+  });
+
+  it("una cita se estira sobre las columnas vecinas libres durante su horario", () => {
+    // a 16:00–18:00 y b 16:00–16:30 abren dos columnas; c 17:00–17:30 cae en la
+    // columna de b (libre desde 16:30). a no se estira: b y c ocupan la vecina.
+    const r = asignarCarriles([
+      cita("a", 16, 0, 120), cita("b", 16, 0, 30), cita("c", 17, 0, 30), cita("x", 18, 0, 30),
+    ]);
+    expect(r.get("a")).toEqual({ carril: 0, carriles: 2 });
+    expect(r.get("c")).toEqual({ carril: 1, carriles: 2 });
+    // x empieza cuando a termina: grupo nuevo a todo el ancho.
+    expect(r.get("x")).toEqual({ carril: 0, carriles: 1 });
+  });
+
+  it("con tres columnas, una cita se estira si la de su derecha está libre en su horario", () => {
+    // c 10:00–12:00 (col 0), a 10:00–11:00 (col 1), b 10:00–10:30 (col 2).
+    // e 11:00–11:30 reutiliza la col 1, y la col 2 ya está libre: ocupa dos.
+    const r = asignarCarriles([
+      cita("a", 10, 0, 60), cita("b", 10, 0, 30), cita("c", 10, 0, 120), cita("e", 11, 0, 30),
+    ]);
+    expect(r.get("c")?.carril).toBe(0);
+    expect(r.get("e")).toEqual({ carril: 1, carriles: 3, ancho: 2 });
+  });
 });
 
 describe("rangoHoras", () => {

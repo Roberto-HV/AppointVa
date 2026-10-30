@@ -59,7 +59,7 @@ interface Props {
   /** Muestra si la cita ya está pagada (módulo de pagos activo). */
   mostrarPago?: boolean;
   /** Ver `AccionesCita`: el padre renderiza la hoja para que sobreviva a cambios de diseño. */
-  onAbrirHoja?: (vista: VistaHoja) => void;
+  onAbrirHoja?: (vista: VistaHoja, ancla?: HTMLElement) => void;
 }
 
 export default function TarjetaCita({ cita, accionesExtra, nombreNegocio, mostrarPago = false, onAbrirHoja }: Props) {

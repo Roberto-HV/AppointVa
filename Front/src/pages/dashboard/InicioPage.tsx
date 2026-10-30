@@ -713,7 +713,11 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
   // Tocar una cita de la agenda abre sus acciones.
   const [citaHoja, setCitaHoja] = useState<CitaDto | null>(null);
   const [vistaHoja, setVistaHoja] = useState<VistaHoja>("menu");
-  const abrirHoja = (c: CitaDto, v: VistaHoja = "menu") => { setCitaHoja(c); setVistaHoja(v); };
+  // En escritorio la hoja sale junto al botón que la abrió (M8).
+  const [anclaHoja, setAnclaHoja] = useState<HTMLElement | null>(null);
+  const abrirHoja = (c: CitaDto, v: VistaHoja = "menu", ancla?: HTMLElement) => {
+    setCitaHoja(c); setVistaHoja(v); setAnclaHoja(ancla ?? null);
+  };
 
   const { data: citasHoy = [], isLoading: cargandoHoy, isError: errorCitasHoy, refetch: reintentarHoy } = useQuery({
     queryKey: ["mis-citas-hoy", hoy],
@@ -884,7 +888,7 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
                 >
                   <button
                     type="button"
-                    onClick={() => abrirHoja(c)}
+                    onClick={(e) => abrirHoja(c, "menu", e.currentTarget)}
                     aria-haspopup="dialog"
                     aria-label={`${horaTexto(c.inicioEn)} ${c.nombreCliente}, ${c.nombreServicio}${porCerrar ? ", por cerrar" : ""}. Ver acciones`}
                     className="flex-1 min-w-0 flex items-center gap-3 p-3 text-left rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -911,7 +915,7 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
                     whatsapp={false}
                     primaria={porCerrar}
                     className="pr-1"
-                    onAbrirHoja={(v) => abrirHoja(c, v)}
+                    onAbrirHoja={(v, ancla) => abrirHoja(c, v, ancla)}
                   />
                 </div>
               );
@@ -954,6 +958,7 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
         cita={citaHoja}
         vistaInicial={vistaHoja}
         onCerrar={() => setCitaHoja(null)}
+        ancla={anclaHoja}
       />
     </div>
   );

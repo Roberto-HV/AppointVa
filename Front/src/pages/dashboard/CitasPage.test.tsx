@@ -78,7 +78,13 @@ vi.mock("../../components/ui/DateTimePicker", () => ({
 }));
 
 vi.mock("../../components/dashboard/CalendarioCitas", () => ({
-  default: () => <div data-testid="calendario-citas" />,
+  default: ({ onHuecoClick }: { onHuecoClick?: (h: { inicio: Date; empleadoId?: string }) => void }) => (
+    <div data-testid="calendario-citas">
+      <button type="button" onClick={() => onHuecoClick?.({ inicio: new Date(2030, 0, 10, 16, 15), empleadoId: "emp-1" })}>
+        Hueco simulado
+      </button>
+    </div>
+  ),
 }));
 
 vi.mock("../../components/dashboard/GanttCitas", () => ({
@@ -456,6 +462,17 @@ describe("CitasPage — tabs de vista", () => {
     await waitFor(() =>
       expect(screen.getByTestId("calendario-citas")).toBeInTheDocument()
     );
+  });
+
+  it("un hueco del calendario abre el panel Nueva cita con el hueco precargado (I1)", async () => {
+    vi.mocked(citasApi.obtenerTodas).mockResolvedValue({ datos: [], total: 0, pagina: 1, tamano: 15 });
+    vi.mocked(empleadosApi.obtenerTodos).mockResolvedValue([
+      { id: "emp-1", nombre: "Ana", activo: true, servicioIds: [] },
+    ] as never);
+    renderConQuery("/dashboard/citas?vista=calendario");
+    fireEvent.click(await screen.findByRole("button", { name: "Hueco simulado" }));
+    const panel = await screen.findByRole("dialog", { name: "Nueva cita" });
+    expect(await within(panel).findByText(/Hueco elegido: .* · Ana/)).toBeInTheDocument();
   });
 
   it("muestra el Gantt al cambiar a la vista Línea de tiempo", async () => {
@@ -968,7 +985,8 @@ describe("CitasPage — Confirmar seleccionadas (DC-30, decisión 14)", () => {
 
 describe("CitasPage — nueva cita: teléfono obligatorio", () => {
   // POST /citas rechaza el alta sin TelefonoCliente ([Required] en CrearCitaDto).
-  async function llegarADatosDelCliente() {
+  // El cliente es el primer paso del panel (I4).
+  async function abrirPanel() {
     vi.mocked(citasApi.obtenerTodas).mockResolvedValue({ datos: [], total: 0, pagina: 1, tamano: 15 });
     vi.mocked(serviciosApi.obtenerTodos).mockResolvedValue([
       { id: "svc-1", nombre: "Corte", activo: true, duracionMinutos: 45, precio: 280 },
@@ -983,37 +1001,39 @@ describe("CitasPage — nueva cita: teléfono obligatorio", () => {
     );
     renderConQuery();
     fireEvent.click(await screen.findByRole("button", { name: "+ Nueva cita" }));
-    const modal = await screen.findByRole("dialog", { name: "Nueva cita" });
-    fireEvent.click(await within(modal).findByRole("button", { name: /Corte/ }));
-    fireEvent.click(within(modal).getByRole("button", { name: "Ana" }));
-    fireEvent.change(modal.querySelector('input[type="date"]')!, { target: { value: "2030-01-10" } });
-    fireEvent.click(await within(modal).findByRole("button", { name: "10:00" }));
-    fireEvent.click(within(modal).getByRole("button", { name: "Continuar" }));
-    return modal;
+    return screen.findByRole("dialog", { name: "Nueva cita" });
   }
 
-  it("marca el teléfono como obligatorio y no envía sin él", async () => {
-    const modal = await llegarADatosDelCliente();
-    const telefono = within(modal).getByLabelText(/Teléfono/);
+  it("marca el teléfono como obligatorio y no avanza sin él", async () => {
+    const panel = await abrirPanel();
+    const telefono = within(panel).getByLabelText(/Teléfono/);
     expect(telefono).toBeRequired();
-    expect(modal.querySelector('label[for="nueva-telefono"]')).not.toHaveTextContent(/opcional/i);
+    expect(panel.querySelector('label[for="nueva-telefono"]')).not.toHaveTextContent(/opcional/i);
 
-    fireEvent.change(within(modal).getByLabelText(/Nombre del cliente/), { target: { value: "Luis" } });
-    fireEvent.click(within(modal).getByRole("button", { name: "Crear cita" }));
+    fireEvent.change(within(panel).getByLabelText(/Nombre del cliente/), { target: { value: "Luis" } });
+    fireEvent.click(within(panel).getByRole("button", { name: "Continuar" }));
 
-    expect(await within(modal).findByText("Ingresa el teléfono del cliente")).toBeInTheDocument();
+    expect(await within(panel).findByText("Ingresa el teléfono del cliente")).toBeInTheDocument();
     expect(telefono).toHaveAttribute("aria-invalid", "true");
+    expect(within(panel).getByText("Paso 1 de 4 · Cliente")).toBeInTheDocument();
     expect(citasApi.crear).not.toHaveBeenCalled();
   });
 
-  it("con teléfono válido envía la cita", async () => {
+  it("con teléfono válido recorre los pasos y envía la cita", async () => {
     vi.mocked(citasApi.crear).mockResolvedValue({} as never);
-    const modal = await llegarADatosDelCliente();
-    fireEvent.change(within(modal).getByLabelText(/Nombre del cliente/), { target: { value: "Luis" } });
-    fireEvent.change(within(modal).getByLabelText(/Teléfono/), { target: { value: "55 1122 3344" } });
-    fireEvent.click(within(modal).getByRole("button", { name: "Crear cita" }));
+    const panel = await abrirPanel();
+    fireEvent.change(within(panel).getByLabelText(/Nombre del cliente/), { target: { value: "Luis" } });
+    fireEvent.change(within(panel).getByLabelText(/Teléfono/), { target: { value: "55 1122 3344" } });
+    fireEvent.click(within(panel).getByRole("button", { name: "Continuar" }));
+    // Elegir el servicio pasa solo al paso de horario; Ana es la única que lo ofrece.
+    fireEvent.click(await within(panel).findByRole("button", { name: /Corte/ }));
+    expect(within(panel).getByRole("button", { name: "Ana" })).toHaveAttribute("aria-pressed", "true");
+    fireEvent.change(panel.querySelector('input[type="date"]')!, { target: { value: "2030-01-10" } });
+    fireEvent.click(await within(panel).findByRole("button", { name: "10:00" }));
+    fireEvent.click(within(panel).getByRole("button", { name: "Continuar" }));
+    fireEvent.click(within(panel).getByRole("button", { name: "Crear cita" }));
     await waitFor(() => expect(citasApi.crear).toHaveBeenCalledWith(
-      expect.objectContaining({ telefonoCliente: "55 1122 3344" })
+      expect.objectContaining({ telefonoCliente: "55 1122 3344", servicioId: "svc-1", empleadoId: "emp-1" })
     ));
   });
 });

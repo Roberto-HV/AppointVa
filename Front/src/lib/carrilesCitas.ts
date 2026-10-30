@@ -22,6 +22,13 @@ export interface Carril {
   carril: number;
   /** Columnas que necesita su grupo de solapes. */
   carriles: number;
+  /**
+   * Columnas que ocupa a lo ancho (1 por defecto). Como en Google Calendar,
+   * una cita se estira hacia la derecha mientras las columnas vecinas estén
+   * libres durante su horario: tres citas en cadena no quedan todas a un
+   * tercio del ancho si solo dos coinciden a la vez.
+   */
+  ancho?: number;
   /** Cita que ya no ocupa la agenda: se dibuja detrás y atenuada. */
   deFondo?: boolean;
 }
@@ -44,12 +51,21 @@ export function asignarCarriles(citas: CitaEnRejilla[]): Map<string, Carril> {
   }
   const ordenadas = citas.filter(ocupaAgenda).sort((a, b) => inicioMs(a) - inicioMs(b) || finMs(b) - finMs(a));
 
-  let grupo: { id: string; carril: number }[] = [];
+  let grupo: { id: string; carril: number; ini: number; fin: number }[] = [];
   let finesPorCarril: number[] = [];
   let finGrupo = -Infinity;
 
   const cerrarGrupo = () => {
-    for (const g of grupo) resultado.set(g.id, { carril: g.carril, carriles: finesPorCarril.length });
+    const total = finesPorCarril.length;
+    for (const g of grupo) {
+      let ancho = 1;
+      for (let k = g.carril + 1; k < total; k++) {
+        const ocupada = grupo.some((o) => o.carril === k && o.ini < g.fin && g.ini < o.fin);
+        if (ocupada) break;
+        ancho++;
+      }
+      resultado.set(g.id, ancho > 1 ? { carril: g.carril, carriles: total, ancho } : { carril: g.carril, carriles: total });
+    }
     grupo = [];
     finesPorCarril = [];
   };
@@ -64,7 +80,7 @@ export function asignarCarriles(citas: CitaEnRejilla[]): Map<string, Carril> {
     } else {
       finesPorCarril[carril] = finMs(c);
     }
-    grupo.push({ id: c.id, carril });
+    grupo.push({ id: c.id, carril, ini, fin: finMs(c) });
     finGrupo = Math.max(finGrupo, finMs(c));
   }
   cerrarGrupo();

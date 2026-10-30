@@ -7,6 +7,8 @@ import {
 } from "lucide-react";
 import Modal from "../ui/Modal";
 import ModalAcciones from "../ui/ModalAcciones";
+import PopoverDialogo from "../ui/PopoverDialogo";
+import { useMediaQuery, CONSULTA_MOVIL } from "../../hooks/useMediaQuery";
 import EstadoBadge from "../ui/EstadoBadge";
 import { DatePicker } from "../ui/DateTimePicker";
 import { api } from "../../api/axios";
@@ -66,6 +68,12 @@ interface HojaProps {
   nombreNegocio?: string | null;
   /** Enlace "Ver detalle". Falso en la propia página de detalle. */
   mostrarDetalle?: boolean;
+  /**
+   * Botón o bloque que abrió la hoja. En escritorio la hoja sale junto a él
+   * como popover (M8); en el teléfono, o si el ancla ya no está en la página
+   * (p. ej. la fila pasó a tarjeta), se abre como siempre con `Modal`.
+   */
+  ancla?: HTMLElement | null;
 }
 
 const ITEM =
@@ -130,9 +138,13 @@ export function HojaAccionesCita({ cita, ...resto }: HojaProps) {
 }
 
 function HojaAbierta({
-  cita, onCerrar, vistaInicial = "menu", accionesExtra = [], nombreNegocio, mostrarDetalle = true,
+  cita, onCerrar, vistaInicial = "menu", accionesExtra = [], nombreNegocio, mostrarDetalle = true, ancla,
 }: HojaProps & { cita: CitaDto }) {
   const terms = useSectorTerms();
+  const esMovil = useMediaQuery(CONSULTA_MOVIL);
+  // El estado (vista, motivo, fecha) vive aquí, fuera del contenedor: al cruzar
+  // los 640px cambia popover ↔ Modal sin perder lo escrito.
+  const comoPopover = !esMovil && !!ancla && ancla.isConnected;
   const cita1 = terms.cita.toLowerCase();
   const [vista, setVista] = useState<VistaHoja>(vistaInicial);
   const [motivo, setMotivo] = useState("");
@@ -193,8 +205,8 @@ function HojaAbierta({
   const confirmada = cita.estadoTexto === "Confirmada";
   const abierta = citaAbierta(cita.estadoTexto);
 
-  return (
-    <Modal abierto onCerrar={onCerrar} titulo={titulos[vista]} ancho="sm">
+  const contenido = (
+    <>
       {vista === "menu" && (
         <div className="space-y-4">
           {resumen}
@@ -401,6 +413,16 @@ function HojaAbierta({
           </ModalAcciones>
         </div>
       )}
+    </>
+  );
+
+  return comoPopover ? (
+    <PopoverDialogo ancla={ancla!} titulo={titulos[vista]} onCerrar={onCerrar}>
+      {contenido}
+    </PopoverDialogo>
+  ) : (
+    <Modal abierto onCerrar={onCerrar} titulo={titulos[vista]} ancho="sm">
+      {contenido}
     </Modal>
   );
 }
@@ -425,7 +447,7 @@ interface Props {
    * escribiendo en ella) sobrevive aunque la fila se desmonte, p. ej. al pasar
    * de tabla a tarjetas cuando la pantalla cruza los 640px.
    */
-  onAbrirHoja?: (vista: VistaHoja) => void;
+  onAbrirHoja?: (vista: VistaHoja, ancla?: HTMLElement) => void;
 }
 
 const BOTON_ICONO =
@@ -439,8 +461,13 @@ export default function AccionesCita({
   const terms = useSectorTerms();
   const cita1 = terms.cita.toLowerCase();
   const [vistaAbierta, setVistaAbierta] = useState<VistaHoja | null>(null);
+  const [ancla, setAncla] = useState<HTMLElement | null>(null);
   const cambiarEstado = useCambiarEstadoCita();
-  const abrirHoja = (vista: VistaHoja) => (onAbrirHoja ? onAbrirHoja(vista) : setVistaAbierta(vista));
+  const abrirHoja = (vista: VistaHoja, el: HTMLElement) => {
+    if (onAbrirHoja) return onAbrirHoja(vista, el);
+    setAncla(el);
+    setVistaAbierta(vista);
+  };
 
   return (
     <div className={`flex items-center justify-end gap-1 ${className}`}>
@@ -463,7 +490,7 @@ export default function AccionesCita({
         <button
           type="button"
           aria-label={`Completar ${cita1} de ${cita.nombreCliente}`}
-          onClick={() => abrirHoja("completar")}
+          onClick={(e) => abrirHoja("completar", e.currentTarget)}
           className={`${BOTON_ICONO} px-2.5 bg-status-completed-bg text-status-completed-fg hover:opacity-80`}
         >
           <CheckCheck size={16} aria-hidden="true" />
@@ -487,7 +514,7 @@ export default function AccionesCita({
         type="button"
         aria-label={`Acciones de la ${cita1} de ${cita.nombreCliente}`}
         aria-haspopup="dialog"
-        onClick={() => abrirHoja("menu")}
+        onClick={(e) => abrirHoja("menu", e.currentTarget)}
         className={`${BOTON_ICONO} text-muted-foreground hover:bg-muted hover:text-foreground ${
           conEtiqueta ? "px-3 border border-border text-foreground" : ""
         }`}
@@ -504,6 +531,7 @@ export default function AccionesCita({
           accionesExtra={accionesExtra}
           nombreNegocio={nombreNegocio}
           mostrarDetalle={mostrarDetalle}
+          ancla={ancla}
         />
       )}
     </div>
