@@ -10,7 +10,7 @@ import { negociosApi } from "../../api/negocios";
 import { useToastStore } from "../../store/toastStore";
 import { exportarExcel } from "../../utils/exportarExcel";
 import { usePermisos } from "../../hooks/usePermisos";
-import { hoy, inicioSemana, finSemana, inicioMes, finMes } from "../../utils/fechas";
+import { hoy, inicioSemana, finSemana, inicioMes, finMes, NOMBRE_PERIODO } from "../../utils/fechas";
 import Modal from "../../components/ui/Modal";
 import ModalAcciones from "../../components/ui/ModalAcciones";
 import { BOTON_MODAL_PRIMARIO } from "../../components/ui/botonesModal";
@@ -35,9 +35,9 @@ type FiltroPeriodo = "hoy" | "semana" | "mes";
 type Tab = "cobro" | "historial" | "corte";
 
 const PERIODOS: { key: FiltroPeriodo; label: string; desde: () => string; hasta: () => string }[] = [
-  { key: "hoy",    label: "Hoy",    desde: hoy,          hasta: hoy },
-  { key: "semana", label: "Semana", desde: inicioSemana, hasta: finSemana },
-  { key: "mes",    label: "Mes",    desde: inicioMes,    hasta: finMes },
+  { key: "hoy",    label: NOMBRE_PERIODO.hoy,    desde: hoy,          hasta: hoy },
+  { key: "semana", label: NOMBRE_PERIODO.semana, desde: inicioSemana, hasta: finSemana },
+  { key: "mes",    label: NOMBRE_PERIODO.mes,    desde: inicioMes,    hasta: finMes },
 ];
 
 const TAMANO_COBRO = TAMANO_PAGINA;
@@ -124,7 +124,7 @@ export default function PagosPage() {
     setMetodoPago2(primera);
   }, [metodoPago]);
 
-  // La búsqueda ya llega confirmada desde la barra; aquí solo vuelve a la página 1.
+  // La barra ya entrega el término tras la pausa al teclear; aquí solo vuelve a la página 1.
   const aplicarBusquedaCobro = (v: string) => { setBusquedaCobro(v); setPaginaCobro(1); };
 
   useEffect(() => { setPaginaCobro(1); }, [periodo, filtroPago]);
@@ -668,9 +668,9 @@ export default function PagosPage() {
                   rangoNeutro: { desde: inicioMes(), hasta: hoy() },
                   onChange: (d, h) => { setHistDesde(d); setHistHasta(h); },
                   presets: [
-                    { etiqueta: "Hoy", desde: hoy(), hasta: hoy() },
-                    { etiqueta: "Semana", desde: inicioSemana(), hasta: finSemana() },
-                    { etiqueta: "Mes", desde: inicioMes(), hasta: finMes() },
+                    { etiqueta: NOMBRE_PERIODO.hoy, desde: hoy(), hasta: hoy() },
+                    { etiqueta: NOMBRE_PERIODO.semana, desde: inicioSemana(), hasta: finSemana() },
+                    { etiqueta: NOMBRE_PERIODO.mes, desde: inicioMes(), hasta: finMes() },
                   ],
                 },
               ]}
@@ -727,9 +727,11 @@ export default function PagosPage() {
               ))}
             </div>
           ) : histFiltrado.length === 0 ? (
-            <div className="text-center py-16 text-slate-400 dark:text-slate-500">
-              <Receipt size={40} className="mx-auto mb-3 opacity-30" />
-              <p className="font-medium">No hay pagos registrados en este período</p>
+            <div className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl">
+              <EmptyState
+                icon={<Receipt size={40} strokeWidth={1.5} />}
+                title="No hay pagos registrados en este período"
+              />
             </div>
           ) : (
             <div className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl overflow-hidden">
@@ -807,9 +809,11 @@ export default function PagosPage() {
               {[1, 2, 3].map(i => <div key={i} className="h-20 bg-slate-100 dark:bg-slate-700 rounded-xl animate-pulse" />)}
             </div>
           ) : corteData.length === 0 ? (
-            <div className="text-center py-16 text-slate-400 dark:text-slate-500">
-              <Receipt size={36} className="mx-auto mb-3 opacity-30" />
-              <p className="text-sm font-medium">Sin cobros registrados para esta fecha</p>
+            <div className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl">
+              <EmptyState
+                icon={<Receipt size={40} strokeWidth={1.5} />}
+                title="Sin cobros registrados para esta fecha"
+              />
             </div>
           ) : (
             <>

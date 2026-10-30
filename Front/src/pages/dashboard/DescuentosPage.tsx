@@ -15,6 +15,7 @@ import Modal from "../../components/ui/Modal";
 import ModalAcciones from "../../components/ui/ModalAcciones";
 import Select from "../../components/ui/Select";
 import ErrorCarga from "../../components/ui/ErrorCarga";
+import EmptyState from "../../components/ui/EmptyState";
 import { DatePicker } from "../../components/ui/DateTimePicker";
 import { usePaginacionLocal } from "../../hooks/usePaginacionLocal";
 import ConfirmarAccion from "../../components/ui/ConfirmarAccion";
@@ -214,7 +215,7 @@ export default function DescuentosPage() {
   return (
     <div className="p-4 sm:p-8 space-y-6">
       <EncabezadoPagina
-        titulo="Cupones de descuento"
+        titulo="Descuentos"
         subtitulo="Los clientes ingresan el código al reservar para obtener un descuento"
         acciones={
           <BotonAccion onClick={abrirNuevo}>
@@ -341,10 +342,12 @@ export default function DescuentosPage() {
       ) : isError ? (
         <ErrorCarga mensaje="No se pudieron cargar los cupones." onReintentar={() => refetch()} reintentando={isFetching} />
       ) : descuentos.length === 0 ? (
-        <div className="text-center py-16 text-slate-500 dark:text-slate-400">
-          <Tag size={40} className="mx-auto mb-3 opacity-30" aria-hidden="true" />
-          <p className="font-medium">No hay cupones configurados</p>
-          <p className="text-sm mt-1">Crea cupones para ofrecer descuentos a tus clientes</p>
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700">
+          <EmptyState
+            icon={<Tag size={40} strokeWidth={1.5} />}
+            title="No hay cupones configurados"
+            description="Crea cupones para ofrecer descuentos a tus clientes"
+          />
         </div>
       ) : (
         <>

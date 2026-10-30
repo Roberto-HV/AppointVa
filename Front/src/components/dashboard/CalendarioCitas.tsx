@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, CalendarDays, List } from "lucide-react";
 import { getSectorTerms, type SectorTerms } from "../../hooks/useSectorTerms";
 import { citasApi } from "../../api/citas";
 import type { CitaDto } from "../../types";
-import { toUtcDate } from "../../utils/formatters";
+import { formatHora, formatHoraEje, toUtcDate } from "../../utils/formatters";
 import { fechaLocal } from "../../utils/fechas";
 import { CONSULTA_MOVIL } from "../../hooks/useMediaQuery";
 import { ESTADO_CITA, ESTADOS_CITA, citaAbierta, estiloEstadoCita } from "../../lib/estadoCita";
@@ -137,7 +137,7 @@ export default function CalendarioCitas({ empleadoId, onCitaClick, onReagendar, 
     const top = calcTop(c);
     const height = calcAltura(c);
     const estilo = estiloEstadoCita(c.estadoTexto);
-    const hora = new Date(c.inicioEn).toLocaleTimeString("es-MX", { hour: "numeric", minute: "2-digit", hour12: true });
+    const hora = formatHora(c.inicioEn);
     const puedeMover = onReagendar && citaAbierta(c.estadoTexto);
     return (
       <button
@@ -281,7 +281,7 @@ export default function CalendarioCitas({ empleadoId, onCitaClick, onReagendar, 
         <div ref={scrollRef} className="overflow-y-auto" style={{ maxHeight: 620 }}>
         {/* Cabecera días */}
         <div className="flex border-b border-slate-100 dark:border-slate-700 sticky top-0 bg-white dark:bg-slate-900 z-10">
-          <div className="w-12 shrink-0" />
+          <div className="w-14 shrink-0" />
           {dias.map((dia, i) => {
             const esHoy = dia.toDateString() === hoy.toDateString();
             const count = citasDelDia(dia).length;
@@ -304,10 +304,10 @@ export default function CalendarioCitas({ empleadoId, onCitaClick, onReagendar, 
         {/* Grid */}
         <div className="flex">
           {/* Columna de horas */}
-          <div className="w-12 shrink-0 relative bg-white dark:bg-slate-900" style={{ height: GRID_HEIGHT }}>
+          <div className="w-14 shrink-0 relative bg-white dark:bg-slate-900" style={{ height: GRID_HEIGHT }}>
             {horas.map((h) => (
               <div key={h} className="absolute w-full pr-1.5" style={{ top: h === HORA_INICIO ? 2 : (h - HORA_INICIO) * PX_POR_HORA - 8 }}>
-                <span className="text-xs text-slate-400 dark:text-slate-600 float-right">{h === 12 ? "12 PM" : h > 12 ? `${h - 12} PM` : `${h} AM`}</span>
+                <span className="text-xs text-slate-400 dark:text-slate-600 float-right whitespace-nowrap tabular-nums">{formatHoraEje(h)}</span>
               </div>
             ))}
           </div>
@@ -375,7 +375,7 @@ export default function CalendarioCitas({ empleadoId, onCitaClick, onReagendar, 
       {vista === "dia" && (
         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-700 overflow-hidden">
           <div className="flex border-b border-slate-100 dark:border-slate-700 sticky top-0 bg-white dark:bg-slate-900 z-10">
-            <div className="w-12 shrink-0" />
+            <div className="w-14 shrink-0" />
             <div className="flex-1 py-3 text-center border-l border-slate-100 dark:border-slate-700">
               <p className={`text-sm font-semibold ${diaActivo.toDateString() === hoy.toDateString() ? "text-slate-700 dark:text-slate-300" : "text-slate-800 dark:text-slate-200"}`}>
                 {diaActivoLabel}
@@ -388,10 +388,10 @@ export default function CalendarioCitas({ empleadoId, onCitaClick, onReagendar, 
           </div>
 
           <div ref={scrollRef} className="flex overflow-y-auto" style={{ maxHeight: 640 }}>
-            <div className="w-12 shrink-0 relative bg-white dark:bg-slate-900" style={{ height: GRID_HEIGHT }}>
+            <div className="w-14 shrink-0 relative bg-white dark:bg-slate-900" style={{ height: GRID_HEIGHT }}>
               {horas.map((h) => (
                 <div key={h} className="absolute w-full pr-1.5" style={{ top: (h - HORA_INICIO) * PX_POR_HORA - 8 }}>
-                  <span className="text-xs text-slate-400 dark:text-slate-600 float-right">{h === 12 ? "12 PM" : h > 12 ? `${h - 12} PM` : `${h} AM`}</span>
+                  <span className="text-xs text-slate-400 dark:text-slate-600 float-right whitespace-nowrap tabular-nums">{formatHoraEje(h)}</span>
                 </div>
               ))}
             </div>

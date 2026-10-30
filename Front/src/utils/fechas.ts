@@ -7,6 +7,19 @@
 // en México (UTC-6) a partir de las 18:00 locales devuelve el día siguiente, así
 // que el preset "Hoy" terminaba consultando un rango futuro y vacío.
 
+/**
+ * Nombres de los periodos en todo el panel: Inicio, Citas, Pagos y Reportes.
+ * Antes unas pantallas decían "Semana / Mes" y otras "Esta semana / Este mes"
+ * para lo mismo. Son periodos de calendario (lunes a domingo, día 1 al último),
+ * no ventanas móviles de 7 o 30 días, y el nombre lo dice.
+ */
+export const NOMBRE_PERIODO = {
+  hoy: "Hoy",
+  semana: "Esta semana",
+  mes: "Este mes",
+  anio: "Este año",
+} as const;
+
 /** Convierte un Date a "YYYY-MM-DD" respetando la zona horaria local. */
 export function fechaLocal(d: Date): string {
   const anio = d.getFullYear();

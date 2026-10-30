@@ -1025,8 +1025,8 @@ export default function PerfilPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Zona horaria</label>
-                  <Select {...register("zonaHoraria")} value={watch("zonaHoraria") ?? ""} className="w-full">
+                  <label id="ajuste-zona" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Zona horaria</label>
+                  <Select {...register("zonaHoraria")} value={watch("zonaHoraria") ?? ""} aria-labelledby="ajuste-zona" className="w-full">
                     <option value="">Seleccionar...</option>
                     {ZONAS_HORARIAS.map((z) => (
                       <option key={z.valor} value={z.valor}>{z.texto}</option>
@@ -1034,8 +1034,8 @@ export default function PerfilPage() {
                   </Select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Recordatorio al cliente</label>
-                  <Select {...register("horasRecordatorio")} value={watch("horasRecordatorio") ?? ""} className="w-full">
+                  <label id="ajuste-recordatorio" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Recordatorio al cliente</label>
+                  <Select {...register("horasRecordatorio")} value={watch("horasRecordatorio") ?? ""} aria-labelledby="ajuste-recordatorio" className="w-full">
                     {HORAS_RECORDATORIO.map((h) => (
                       <option key={h.valor} value={h.valor}>{h.texto}</option>
                     ))}
@@ -1043,8 +1043,8 @@ export default function PerfilPage() {
                   <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Cuánto antes se envía el recordatorio por email.</p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Política de cancelación</label>
-                  <Select {...register("horasCancelacion")} value={watch("horasCancelacion") ?? ""} className="w-full">
+                  <label id="ajuste-cancelacion" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Política de cancelación</label>
+                  <Select {...register("horasCancelacion")} value={watch("horasCancelacion") ?? ""} aria-labelledby="ajuste-cancelacion" className="w-full">
                     {HORAS_CANCELACION.map((h) => (
                       <option key={h.valor} value={h.valor}>{h.texto}</option>
                     ))}
@@ -1052,16 +1052,20 @@ export default function PerfilPage() {
                   <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Anticipación mínima para que el cliente cancele.</p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Anticipación mínima para agendar</label>
-                  <select
+                  <label id="ajuste-anticipacion" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Anticipación mínima para agendar</label>
+                  {/* El `Select` del sistema, como los tres de al lado: antes era
+                      un `<select>` nativo con otra flecha y otra altura. */}
+                  <Select
                     {...register("diasAnticipacionMinima")}
-                    className="w-full border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100"
+                    value={String(watch("diasAnticipacionMinima") ?? 0)}
+                    aria-labelledby="ajuste-anticipacion"
+                    className="w-full"
                   >
                     <option value={0}>Mismo día</option>
                     <option value={1}>1 día antes</option>
                     <option value={2}>2 días antes</option>
                     <option value={3}>3 días antes</option>
-                  </select>
+                  </Select>
                   <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Días mínimos de anticipación para que el cliente pueda reservar.</p>
                 </div>
               </div>
@@ -1120,12 +1124,21 @@ export default function PerfilPage() {
             <div className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl p-5 space-y-4">
               <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200">Anticipo al reservar</h3>
 
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Requerir anticipo al reservar</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">El cliente deberá pagar un anticipo antes de confirmar su cita</p>
+              {/* Mismo `Switch` y la misma fila que "Confirmación automática" y
+                  "Lista de espera" en la pestaña Citas: un sí/no se ve igual en
+                  todo Mi negocio. */}
+              <div className="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-700 rounded-lg border border-slate-100 dark:border-slate-600">
+                <div className="flex-1">
+                  <p id="ajuste-requiere-anticipo" className="text-sm font-medium text-slate-700 dark:text-slate-200">Requerir anticipo al reservar</p>
+                  <p id="ajuste-requiere-anticipo-desc" className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">El cliente deberá pagar un anticipo antes de confirmar su cita</p>
                 </div>
-                <input type="checkbox" {...register("requiereAnticipo")} className="w-4 h-4 rounded" />
+                <Switch
+                  activo={!!watch("requiereAnticipo")}
+                  onCambiar={(v) => setValue("requiereAnticipo", v, { shouldDirty: true })}
+                  idEtiqueta="ajuste-requiere-anticipo"
+                  idDescripcion="ajuste-requiere-anticipo-desc"
+                  className="-my-2.5"
+                />
               </div>
 
               {watch("requiereAnticipo") && (

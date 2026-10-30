@@ -60,6 +60,26 @@ export function NotificacionBanner({ visible = true }: Props) {
   );
 }
 
+/** Una línea con el estado y los pasos detrás de un enlace de ayuda que se despliega. */
+function AvisoNotificacionesCompacto({ texto, ayuda, pasos }: { texto: string; ayuda: string; pasos: string[] }) {
+  return (
+    <div className="rounded-lg border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800 px-4 py-3">
+      <details className="group">
+        <summary className="flex flex-wrap items-center gap-x-2 gap-y-1 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+          <BellOff className="h-4 w-4 shrink-0 text-slate-400" aria-hidden="true" />
+          <span className="text-sm text-slate-700 dark:text-slate-200">{texto}</span>
+          <span className="text-sm font-medium text-accent-brand underline underline-offset-2 group-open:no-underline">
+            {ayuda}
+          </span>
+        </summary>
+        <ol className="mt-2 ml-6 list-decimal pl-4 text-xs text-muted-foreground space-y-0.5">
+          {pasos.map((p) => <li key={p}>{p}</li>)}
+        </ol>
+      </details>
+    </div>
+  );
+}
+
 /** Sección para la página de perfil — muestra el estado actual y permite activar/desactivar */
 export function NotificacionPerfilSection() {
   const { permiso, suscrito, soportado, cargando, error, setError, activar, desactivar } =
@@ -80,47 +100,35 @@ export function NotificacionPerfilSection() {
     );
   }
 
+  // Los dos casos sin salida desde aquí (abrir desde el ícono instalado o
+  // desbloquear en el navegador) son una sola línea con la ayuda plegada. Antes
+  // eran un panel amarillo permanente, más alto que el cambio de contraseña, para
+  // algo que la persona no puede resolver en esta pantalla.
   if (needsPWA) {
     return (
-      <div className="rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/20 p-4">
-        <div className="flex items-start gap-3">
-          <BellOff className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
-          <div>
-            <p className="text-sm font-semibold text-amber-900 dark:text-amber-100">
-              Abre la app desde la pantalla de inicio
-            </p>
-            <p className="mt-1 text-xs text-amber-800 dark:text-amber-200">
-              Las notificaciones push solo funcionan cuando usas AppointVa desde el ícono instalado en tu pantalla de inicio, no desde Safari.
-            </p>
-            <ol className="mt-2 list-decimal pl-4 text-xs text-amber-800 dark:text-amber-200 space-y-0.5">
-              <li>Cierra esta pestaña de Safari</li>
-              <li>Busca el ícono de AppointVa en tu pantalla de inicio</li>
-              <li>Ábrelo desde ahí y regresa aquí</li>
-            </ol>
-          </div>
-        </div>
-      </div>
+      <AvisoNotificacionesCompacto
+        texto="Las notificaciones solo funcionan al abrir AppointVa desde el ícono de tu pantalla de inicio."
+        ayuda="¿Cómo?"
+        pasos={[
+          "Cierra esta pestaña de Safari.",
+          "Busca el ícono de AppointVa en tu pantalla de inicio.",
+          "Ábrelo desde ahí y regresa aquí.",
+        ]}
+      />
     );
   }
 
   if (permiso === "denied") {
     return (
-      <div className="rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/20 p-4">
-        <div className="flex items-start gap-3">
-          <BellOff className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
-          <div>
-            <p className="text-sm font-semibold text-amber-900 dark:text-amber-100">
-              Notificaciones bloqueadas en el navegador
-            </p>
-            <p className="mt-1 text-xs text-amber-800 dark:text-amber-200">Para activarlas:</p>
-            <ol className="mt-1 list-decimal pl-4 text-xs text-amber-800 dark:text-amber-200 space-y-0.5">
-              <li>Toca el icono del candado 🔒 en la barra de URL</li>
-              <li>Selecciona <strong>Notificaciones → Permitir</strong></li>
-              <li>Recarga la página</li>
-            </ol>
-          </div>
-        </div>
-      </div>
+      <AvisoNotificacionesCompacto
+        texto="Las notificaciones están bloqueadas en este navegador."
+        ayuda="¿Cómo desbloquearlas?"
+        pasos={[
+          "Toca el ícono del candado en la barra de direcciones.",
+          "Elige Notificaciones → Permitir.",
+          "Recarga la página.",
+        ]}
+      />
     );
   }
 

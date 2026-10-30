@@ -13,7 +13,6 @@ import { DatePicker, TimePicker, citasABusySlots } from "../../components/ui/Dat
 import type { BloqueoDto, HorarioDiaDto } from "../../types";
 import { mensajeError } from "../../utils/errores";
 import { comoUtc } from "../../utils/fechas";
-import { Link } from "react-router-dom";
 
 import PasswordStrengthBar from "../../components/PasswordStrengthBar";
 import ReglasContrasena from "../../components/ReglasContrasena";
@@ -278,8 +277,6 @@ export default function MiPerfilPage() {
         }
       />
 
-      {esPropietario && usuario && <AvisoDosFactores usuarioId={usuario.id} />}
-
       <div className="flex flex-col lg:flex-row gap-6 items-start">
 
         {/* ── Columna izquierda: identidad ── */}
@@ -394,19 +391,10 @@ export default function MiPerfilPage() {
 
       </div>
 
-      {/* ── Seguridad: antes los empleados no tenían forma de llegar a la verificación en dos pasos ── */}
-      <div className="mt-6 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-5 flex flex-wrap items-center justify-between gap-3">
-        <div className="min-w-0">
-          <h2 className="text-base font-semibold text-slate-800 dark:text-slate-200">Seguridad</h2>
-          <p className="text-sm text-muted-foreground">Verificación en dos pasos para proteger tu cuenta.</p>
-        </div>
-        <Link
-          to="/dashboard/seguridad"
-          className="inline-flex items-center justify-center min-h-[44px] lg:min-h-[36px] px-4 rounded-xl border border-border text-sm font-medium text-foreground hover:bg-muted transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          Configurar verificación en dos pasos
-        </Link>
-      </div>
+      {/* ── Verificación en dos pasos: el único aviso de Mi perfil. Dice el
+          estado y enlaza a Seguridad, que es donde se configura. También la
+          ven los empleados, que antes no tenían forma de llegar a ella. ── */}
+      <AvisoDosFactores esPropietario={esPropietario} className="mt-6" />
 
       {/* ── Notificaciones push ── */}
       <div className="mt-6">

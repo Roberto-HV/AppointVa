@@ -450,10 +450,12 @@ export default function AccionesCita({
           aria-label={`Confirmar ${cita1} de ${cita.nombreCliente}`}
           disabled={cambiarEstado.isPending}
           onClick={() => cambiarEstado.mutate({ id: cita.id, estado: ESTADOS.Confirmada })}
-          className={`${BOTON_ICONO} sm:px-2.5 bg-status-confirmed-bg text-status-confirmed-fg hover:opacity-80`}
+          className={`${BOTON_ICONO} px-2.5 bg-status-confirmed-bg text-status-confirmed-fg hover:opacity-80`}
         >
           <CheckCircle2 size={16} aria-hidden="true" />
-          <span className="hidden sm:inline">Confirmar</span>
+          {/* Con texto también en el teléfono: un icono de palomita sola no
+              dice qué hace, y es la acción principal de la cita. */}
+          <span>Confirmar</span>
         </button>
       )}
 
@@ -462,10 +464,10 @@ export default function AccionesCita({
           type="button"
           aria-label={`Completar ${cita1} de ${cita.nombreCliente}`}
           onClick={() => abrirHoja("completar")}
-          className={`${BOTON_ICONO} sm:px-2.5 bg-status-completed-bg text-status-completed-fg hover:opacity-80`}
+          className={`${BOTON_ICONO} px-2.5 bg-status-completed-bg text-status-completed-fg hover:opacity-80`}
         >
           <CheckCheck size={16} aria-hidden="true" />
-          <span className="hidden sm:inline">Completar</span>
+          <span>Completar</span>
         </button>
       )}
 

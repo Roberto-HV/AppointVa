@@ -2,7 +2,7 @@ import { useId, useState, type ReactNode } from "react";
 import { SlidersHorizontal, X } from "lucide-react";
 import { cn } from "../../../lib/utils";
 import Select from "../Select";
-import FiltroBusqueda, { FiltroBotonBuscar } from "./FiltroBusqueda";
+import FiltroBusqueda from "./FiltroBusqueda";
 import FiltroPills from "./FiltroPills";
 import FiltroRangoFechas from "./FiltroRangoFechas";
 import { campoActivo, type CampoFiltro } from "./tipos";
@@ -10,7 +10,7 @@ import { campoActivo, type CampoFiltro } from "./tipos";
 interface BusquedaProps {
   /** Término ya aplicado; `FiltroBusqueda` lleva el borrador por dentro. */
   valor: string;
-  /** Se dispara al confirmar la búsqueda o al vaciar el campo, no al teclear. */
+  /** Se dispara al dejar de teclear (~300ms), con Enter y al vaciar el campo. */
   onChange: (valor: string) => void;
   etiqueta?: string;
   placeholder?: string;
@@ -61,7 +61,6 @@ export default function FiltroBarra({
   const [abierto, setAbierto] = useState(false);
   const idPanel = useId();
   const idBase = useId();
-  const idFormBusqueda = useId();
 
   // El badge cuenta lo que queda oculto tras el toggle; la búsqueda se ve sola.
   const activosColapsados = campos.filter(campoActivo).length;
@@ -81,7 +80,7 @@ export default function FiltroBarra({
         // línea y los campos declarados comparten contenedor y renglón.
         //
         // `items-end` y no `items-start`: los campos llevan label encima y la
-        // búsqueda y "Buscar" no, así que alinear por arriba alinearía etiquetas
+        // búsqueda no, así que alinear por arriba alinearía etiquetas
         // contra inputs. Alineando por abajo —y como todo control mide 44px— lo
         // que queda a la misma altura son los controles, que es lo que se mira.
         "lg:flex lg:flex-wrap lg:items-end lg:gap-x-4 lg:gap-y-3",
@@ -93,20 +92,16 @@ export default function FiltroBarra({
           controles, no las etiquetas. `flex-wrap` deja que una acción `w-full`
           baje sola de línea en móvil sin arrastrar el toggle de filtros.
 
-          Orden de la fila: campo, filtros en línea, y "Buscar" al final. Los
-          filtros van seguidos y la acción que confirma cierra; con el botón
-          pegado al campo, el desplegable quedaba al otro lado y la fila se leía
-          partida. Cuando la página no declara controles en línea —lo normal—
-          "Buscar" queda igualmente justo después del campo.
+          La búsqueda es en vivo, igual que los desplegables: no hay botón
+          "Buscar" que confirme, así que la fila es campo, acción y toggle.
 
           Desde `lg` esta caja desaparece (`contents`) y los campos declarados
-          continúan este mismo renglón, después de "Buscar". */}
+          continúan este mismo renglón. */}
       <div className="flex flex-wrap items-end gap-2 lg:contents">
         {busqueda && (
           <FiltroBusqueda
             valor={busqueda.valor}
             onChange={busqueda.onChange}
-            formId={idFormBusqueda}
             etiqueta={busqueda.etiqueta}
             placeholder={busqueda.placeholder}
             // `basis-64` es el umbral de salto: con el toggle "Filtros" al lado
@@ -144,8 +139,6 @@ export default function FiltroBarra({
             )}
           </button>
         )}
-
-        {busqueda && <FiltroBotonBuscar formId={idFormBusqueda} />}
       </div>
 
       {campos.length > 0 && (

@@ -517,7 +517,7 @@ describe("CitasPage — atajo 'Hoy'", () => {
     const { container } = renderConQuery();
 
     // Cambiar a Semana para que al menos una fecha difiera de hoy
-    const btnSemana = await screen.findByRole("button", { name: "Semana" });
+    const btnSemana = await screen.findByRole("button", { name: "Esta semana" });
     fireEvent.click(btnSemana);
 
     // Volver a Hoy

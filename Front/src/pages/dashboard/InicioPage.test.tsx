@@ -227,10 +227,11 @@ describe("InicioPage — vista propietario", () => {
     const hoyLabels = await screen.findAllByText("Hoy");
     expect(hoyLabels.length).toBeGreaterThanOrEqual(1);
 
-    const semanaLabels = screen.getAllByText("Semana");
+    // Los mismos nombres de periodo que Citas, Pagos y Reportes.
+    const semanaLabels = screen.getAllByText("Esta semana");
     expect(semanaLabels.length).toBeGreaterThanOrEqual(1);
 
-    const mesLabels = screen.getAllByText("Mes");
+    const mesLabels = screen.getAllByText("Este mes");
     expect(mesLabels.length).toBeGreaterThanOrEqual(1);
   });
 

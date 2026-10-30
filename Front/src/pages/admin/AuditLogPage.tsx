@@ -119,8 +119,8 @@ export default function AuditLogPage() {
         etiqueta="Filtros del registro de auditoría"
         busqueda={{
           valor: busqueda,
-          // La búsqueda se confirma con "Buscar" o Enter, no al teclear: así no
-          // se dispara una consulta por carácter.
+          // La barra aplica la búsqueda al dejar de teclear (o con Enter), no
+          // en cada tecla: así no se dispara una consulta por carácter.
           onChange: (v) => { setBusqueda(v.trim()); setPagina(1); },
           etiqueta: "Buscar por correo o ID de usuario",
           placeholder: "Correo o ID de usuario",

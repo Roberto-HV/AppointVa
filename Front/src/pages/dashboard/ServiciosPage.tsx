@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import { Camera, Pencil, Star, Trash2 } from "lucide-react";
+import { Camera, ClipboardList, Pencil, Star, Tag, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useEntradaAnimada } from "../../hooks/useEntradaAnimada";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -29,6 +29,7 @@ import { useSubirImagen } from "../../hooks/useSubirImagen";
 import ProgresoSubida from "../../components/ui/ProgresoSubida";
 import Switch from "../../components/ui/Switch";
 import ErrorCarga from "../../components/ui/ErrorCarga";
+import EmptyState from "../../components/ui/EmptyState";
 import { mensajeError } from "../../utils/errores";
 
 // ── Schemas ───────────────────────────────────────────────────────────────────
@@ -297,20 +298,17 @@ export default function ServiciosPage() {
             reintentando={actualizandoServicios}
           />
         ) : servicios.length === 0 ? (
-          <div className="bg-white rounded-xl border border-slate-100 p-12 text-center dark:bg-slate-800 dark:border-slate-700">
-            <div className="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 dark:bg-slate-700">
-              <svg className="w-7 h-7 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
-            </div>
-            <p className="font-medium text-slate-700 mb-1 dark:text-slate-300">Aún no tienes {terms.servicios.toLowerCase()}</p>
-            <p className="text-sm text-slate-400 mb-5 dark:text-slate-500">Crea tus {terms.servicios.toLowerCase()} para que los clientes puedan reservar</p>
-            <button
-              onClick={abrirCrearServicio}
-              className="bg-slate-700 hover:bg-slate-800 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition"
-            >
-              Crear primer {terms.servicio.toLowerCase()}
-            </button>
+          <div className="bg-white rounded-xl border border-slate-100 dark:bg-slate-800 dark:border-slate-700">
+            <EmptyState
+              icon={<ClipboardList size={40} strokeWidth={1.5} />}
+              title={`Aún no tienes ${terms.servicios.toLowerCase()}`}
+              description={`Crea tus ${terms.servicios.toLowerCase()} para que los clientes puedan reservar`}
+              action={
+                <BotonAccion variante="primaria" onClick={abrirCrearServicio}>
+                  {`Crear primer ${terms.servicio.toLowerCase()}`}
+                </BotonAccion>
+              }
+            />
           </div>
         ) : (
           <div className="space-y-6">
@@ -456,20 +454,17 @@ export default function ServiciosPage() {
             reintentando={actualizandoCategorias}
           />
         ) : categorias.length === 0 ? (
-          <div className="bg-white rounded-xl border border-slate-100 p-12 text-center dark:bg-slate-800 dark:border-slate-700">
-            <div className="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 dark:bg-slate-700">
-              <svg className="w-7 h-7 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a2 2 0 012-2z" />
-              </svg>
-            </div>
-            <p className="font-medium text-slate-700 mb-1 dark:text-slate-300">Aún no tienes categorías</p>
-            <p className="text-sm text-slate-400 mb-5 dark:text-slate-500">Las categorías agrupan tus servicios en el catálogo público</p>
-            <button
-              onClick={abrirCrearCategoria}
-              className="bg-slate-700 hover:bg-slate-800 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition"
-            >
-              Crear primera categoría
-            </button>
+          <div className="bg-white rounded-xl border border-slate-100 dark:bg-slate-800 dark:border-slate-700">
+            <EmptyState
+              icon={<Tag size={40} strokeWidth={1.5} />}
+              title="Aún no tienes categorías"
+              description="Las categorías agrupan tus servicios en el catálogo público"
+              action={
+                <BotonAccion variante="primaria" onClick={abrirCrearCategoria}>
+                  Crear primera categoría
+                </BotonAccion>
+              }
+            />
           </div>
         ) : (
           <div className="space-y-2">

@@ -73,14 +73,14 @@ async function elegirAccion(opcion: string) {
   await user.click(screen.getByRole("option", { name: opcion }));
 }
 
-/** La búsqueda se confirma; teclear no dispara la consulta. */
+/** La búsqueda es en vivo; Enter la aplica sin esperar la pausa al teclear. */
 async function buscarUsuario(valor: string) {
   const user = userEvent.setup();
   await user.clear(screen.getByRole("searchbox", { name: "Buscar por correo o ID de usuario" }));
   if (valor) {
     await user.type(screen.getByRole("searchbox", { name: "Buscar por correo o ID de usuario" }), valor);
   }
-  await user.click(screen.getByRole("button", { name: "Buscar" }));
+  await user.keyboard("{Enter}");
 }
 
 // ── Lifecycle ─────────────────────────────────────────────────────────────────

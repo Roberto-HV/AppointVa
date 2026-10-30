@@ -19,8 +19,8 @@ import { empleadosApi } from "../../api/empleados";
 import { serviciosApi } from "../../api/servicios";
 import EstadoBadge from "../../components/ui/EstadoBadge";
 import { SkeletonTableRows } from "../../components/ui/Skeleton";
-import { formatPrecio, formatFechaHora as formatFecha } from "../../utils/formatters";
-import { hoy, inicioSemana, inicioMes, finMes, inicioAnio, fechaLargaLocal } from "../../utils/fechas";
+import { formatPrecio, formatFechaHora as formatFecha, formatHoraEje, formatHoraTexto } from "../../utils/formatters";
+import { hoy, inicioSemana, inicioMes, finMes, inicioAnio, fechaLargaLocal, NOMBRE_PERIODO } from "../../utils/fechas";
 import { negociosApi } from "../../api/negocios";
 import { useToastStore } from "../../store/toastStore";
 import ErrorCarga from "../../components/ui/ErrorCarga";
@@ -105,10 +105,10 @@ export default function ReportesPage() {
         setErrorFecha(d > h ? "La fecha de inicio debe ser anterior a la de fin." : null);
       },
       presets: [
-        { etiqueta: "Hoy", desde: hoy(), hasta: hoy() },
-        { etiqueta: "Esta semana", desde: inicioSemana(), hasta: hoy() },
-        { etiqueta: "Este mes", desde: inicioMes(), hasta: finMes() },
-        { etiqueta: "Este año", desde: inicioAnio(), hasta: hoy() },
+        { etiqueta: NOMBRE_PERIODO.hoy, desde: hoy(), hasta: hoy() },
+        { etiqueta: NOMBRE_PERIODO.semana, desde: inicioSemana(), hasta: hoy() },
+        { etiqueta: NOMBRE_PERIODO.mes, desde: inicioMes(), hasta: finMes() },
+        { etiqueta: NOMBRE_PERIODO.anio, desde: inicioAnio(), hasta: hoy() },
       ],
     },
     // Empleado, servicio y estado solo aplican al reporte de citas.
@@ -730,7 +730,7 @@ export default function ReportesPage() {
             <>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                 <Tarjeta label={`Total ${terms.citas.toLowerCase()} analizadas`} valor={String(heatmap.totalCitas)} icono={<Calendar size={18} />} />
-                <Tarjeta label="Hora pico" valor={heatmap.horaPico} subvalor="hora con más demanda" icono={<TrendingUp size={18} />} />
+                <Tarjeta label="Hora pico" valor={formatHoraTexto(heatmap.horaPico)} subvalor="hora con más demanda" icono={<TrendingUp size={18} />} />
                 <Tarjeta label="Día pico" valor={heatmap.diaPico} subvalor="día con más demanda" icono={<CheckCircle size={18} />} />
               </div>
 
@@ -739,16 +739,16 @@ export default function ReportesPage() {
                 <p className="text-xs text-muted-foreground mb-4">{`Número de ${terms.citas.toLowerCase()} por franja horaria, dentro del horario de atención.`}</p>
                 <div className="overflow-x-auto">
                   <div className="min-w-[480px]" role="table" aria-label={`${terms.citas} por hora y día de la semana`}>
-                    <div role="row" className="grid grid-cols-[48px_repeat(7,1fr)] gap-1 mb-1">
+                    <div role="row" className="grid grid-cols-[60px_repeat(7,1fr)] gap-1 mb-1">
                       <div role="columnheader" />
                       {DIAS_HEATMAP.map((d) => (
                         <div key={d} role="columnheader" className="text-center text-xs font-semibold text-muted-foreground">{d}</div>
                       ))}
                     </div>
                     {horasVisiblesHeatmap(heatmap.matriz, horariosNegocio).map((hora) => (
-                      <div key={hora} role="row" className="grid grid-cols-[48px_repeat(7,1fr)] gap-1 mb-1">
-                        <div role="rowheader" className="text-right text-xs text-muted-foreground pr-2 self-center leading-none tabular-nums">
-                          {`${hora}:00`}
+                      <div key={hora} role="row" className="grid grid-cols-[60px_repeat(7,1fr)] gap-1 mb-1">
+                        <div role="rowheader" className="text-right text-xs text-muted-foreground pr-2 self-center leading-none tabular-nums whitespace-nowrap">
+                          {formatHoraEje(hora)}
                         </div>
                         {Array.from({ length: 7 }, (_, dia) => {
                           const val = heatmap.matriz[hora]?.[dia] ?? 0;
@@ -759,7 +759,7 @@ export default function ReportesPage() {
                             <div
                               key={dia}
                               role="cell"
-                              aria-label={`${DIAS_HEATMAP_LARGOS[dia]} ${hora}:00, ${texto}`}
+                              aria-label={`${DIAS_HEATMAP_LARGOS[dia]} ${formatHoraEje(hora)}, ${texto}`}
                               title={texto}
                               className="h-7 rounded-md flex items-center justify-center text-xs font-medium cursor-default"
                               // Escala sobre el color del texto del tema (oscuro en claro,

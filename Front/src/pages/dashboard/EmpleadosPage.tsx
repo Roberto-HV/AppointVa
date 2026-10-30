@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Camera, Eye, EyeOff, Pencil, Clock, CalendarX, Mail, Trash2, AlertCircle, RotateCcw } from "lucide-react";
+import { Camera, Eye, EyeOff, Pencil, Clock, CalendarX, Mail, Trash2, AlertCircle, RotateCcw, Users } from "lucide-react";
 import { empleadosApi } from "../../api/empleados";
 import { serviciosApi } from "../../api/servicios";
 import { negociosApi } from "../../api/negocios";
@@ -441,17 +441,17 @@ export default function EmpleadosPage() {
           reintentando={isFetching}
         />
       ) : empleados.length === 0 ? (
-        <div className="bg-white rounded-xl border border-slate-100 p-12 text-center dark:bg-slate-800 dark:border-slate-700">
-          <div className="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 dark:bg-slate-700">
-            <svg className="w-7 h-7 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a4 4 0 00-5.196-3.793M9 20H4v-2a4 4 0 015.196-3.793M15 7a4 4 0 11-8 0 4 4 0 018 0zm6 4a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-          </div>
-          <p className="font-medium text-slate-700 mb-1 dark:text-slate-300">Aún no tienes {terms.empleados.toLowerCase()}</p>
-          <p className="text-sm text-slate-400 mb-5 dark:text-slate-500">Agrega a tu equipo para que puedan recibir citas</p>
-          <BotonAccion onClick={abrirCrear}>
-            Agregar primer {terms.empleado.toLowerCase()}
-          </BotonAccion>
+        <div className="bg-white rounded-xl border border-slate-100 dark:bg-slate-800 dark:border-slate-700">
+          <EmptyState
+            icon={<Users size={40} strokeWidth={1.5} />}
+            title={`Aún no tienes ${terms.empleados.toLowerCase()}`}
+            description="Agrega a tu equipo para que puedan recibir citas"
+            action={
+              <BotonAccion onClick={abrirCrear}>
+                {`Agregar primer ${terms.empleado.toLowerCase()}`}
+              </BotonAccion>
+            }
+          />
         </div>
       ) : empleadosFiltrados.length === 0 ? (
         <div className="bg-white rounded-xl border border-slate-100 dark:bg-slate-800 dark:border-slate-700">

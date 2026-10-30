@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { useSectorTerms, useSector } from "../../hooks/useSectorTerms";
 import { tonoDeSector } from "../../lib/vozVacia";
 
-import { hoy, inicioSemana, finSemana, inicioMes, finMes } from "../../utils/fechas";
+import { hoy, inicioSemana, finSemana, inicioMes, finMes, NOMBRE_PERIODO } from "../../utils/fechas";
 import { CheckCircle2, RotateCcw, StickyNote, Receipt, Banknote, Star, AlertTriangle, Monitor } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { citasApi, ESTADOS } from "../../api/citas";
@@ -152,7 +152,7 @@ export default function CitasPage() {
   const validarEmailCliente = (v: string) =>
     v.trim() && !EMAIL_RE.test(v.trim()) ? "Correo no válido (ej: nombre@dominio.com)" : "";
 
-  // La búsqueda ya llega confirmada desde la barra; aquí solo vuelve a la página 1.
+  // La barra ya entrega el término tras la pausa al teclear; aquí solo vuelve a la página 1.
   const aplicarBusqueda = (v: string) => filtrar({ busqueda: v || null });
 
   // ── Queries ──────────────────────────────────────────────────────────────────
@@ -434,9 +434,9 @@ export default function CitasPage() {
       hasta,
       onChange: (d, h) => filtrar({ desde: d, hasta: h }),
       presets: [
-        { etiqueta: "Hoy", desde: hoy(), hasta: hoy() },
-        { etiqueta: "Semana", desde: inicioSemana(), hasta: finSemana() },
-        { etiqueta: "Mes", desde: inicioMes(), hasta: finMes() },
+        { etiqueta: NOMBRE_PERIODO.hoy, desde: hoy(), hasta: hoy() },
+        { etiqueta: NOMBRE_PERIODO.semana, desde: inicioSemana(), hasta: finSemana() },
+        { etiqueta: NOMBRE_PERIODO.mes, desde: inicioMes(), hasta: finMes() },
       ],
     },
   ];
@@ -526,7 +526,9 @@ export default function CitasPage() {
 
         {/* Fila 1 — título + acciones desktop */}
         <EncabezadoPagina
-          titulo={terms.citas}
+          // El título repite la etiqueta del menú: la empleada lo ve como
+          // "Mis citas" (ver `navEmpleado` en DashboardLayout).
+          titulo={permisos.esEmpleado ? `Mis ${terms.citas.toLowerCase()}` : terms.citas}
           subtitulo="Agenda del día, confirmaciones y reprogramaciones"
           acciones={
             /* Recepción y Exportar siguen ocultas bajo `sm`: son atajos de

@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import ReportesPage from "./ReportesPage";
+import { formatHoraEje, formatHoraTexto } from "../../utils/formatters";
 
 vi.mock("../../api/reportes", () => ({
   reportesApi: {
@@ -96,8 +97,9 @@ describe("ReportesPage — tab Horarios (heatmap)", () => {
     await waitFor(() =>
       expect(screen.getByText("42")).toBeInTheDocument()
     );
-    // "10:00" aparece en la tarjeta de hora pico y como fila del mapa.
-    expect(screen.getAllByText("10:00").length).toBeGreaterThan(0);
+    // La hora pico llega como "10:00" y se muestra en el formato único de hora.
+    expect(screen.getByText(formatHoraTexto("10:00"))).toBeInTheDocument();
+    expect(screen.queryByText("10:00")).not.toBeInTheDocument();
     expect(screen.getByText("Lunes")).toBeInTheDocument();
   });
 
@@ -185,7 +187,8 @@ describe("ReportesPage — mapa de calor (OM-18)", () => {
     renderConQuery();
     fireEvent.click(screen.getByRole("button", { name: "Horarios" }));
     await waitFor(() => expect(screen.getAllByRole("rowheader")).toHaveLength(3));
-    expect(screen.getAllByRole("rowheader").map((r) => r.textContent)).toEqual(["9:00", "10:00", "11:00"]);
+    // Mismo formato de eje que Calendario y Línea de tiempo: "9 a. m.".
+    expect(screen.getAllByRole("rowheader").map((r) => r.textContent)).toEqual([9, 10, 11].map(formatHoraEje));
     expect(screen.getByLabelText("Escala: de 0 a 8 citas")).toBeInTheDocument();
   });
 });

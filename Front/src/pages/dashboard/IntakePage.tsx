@@ -10,6 +10,7 @@ import BotonAccion from "../../components/ui/BotonAccion";
 import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
 import ConfirmarAccion from "../../components/ui/ConfirmarAccion";
 import ErrorCarga from "../../components/ui/ErrorCarga";
+import EmptyState from "../../components/ui/EmptyState";
 import { useConfirmarDescarte } from "../../hooks/useCambiosSinGuardar";
 import { claseCampo, CLASE_ERROR_CAMPO } from "../../lib/clasesCampo";
 import { leerOpciones, serializarOpciones } from "../../lib/opcionesIntake";
@@ -347,12 +348,12 @@ export default function IntakePage() {
       ) : isError ? (
         <ErrorCarga mensaje="No se pudieron cargar las preguntas." onReintentar={() => refetch()} reintentando={isFetching} />
       ) : campos.length === 0 ? (
-        <div className="text-center py-16 text-slate-500 dark:text-slate-400">
-          <ClipboardList size={40} className="mx-auto mb-3 opacity-30" aria-hidden="true" />
-          <p className="font-medium">No hay preguntas configuradas</p>
-          <p className="text-sm mt-1">
-            Agrega preguntas que se mostrarán al cliente antes de confirmar su reserva
-          </p>
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700">
+          <EmptyState
+            icon={<ClipboardList size={40} strokeWidth={1.5} />}
+            title="No hay preguntas configuradas"
+            description="Agrega preguntas que se mostrarán al cliente antes de confirmar su reserva"
+          />
         </div>
       ) : (
         <ol className="space-y-2" aria-label="Preguntas del formulario, en orden">

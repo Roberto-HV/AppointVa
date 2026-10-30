@@ -10,7 +10,11 @@ vi.mock("../../store/authStore", () => ({
 }));
 
 vi.mock("../../api/auth", () => ({
-  authApi: { cambiarPassword: vi.fn(), subirFotoPerfil: vi.fn() },
+  authApi: {
+    cambiarPassword: vi.fn(),
+    subirFotoPerfil: vi.fn(),
+    obtenerEstado2FA: vi.fn().mockResolvedValue({ habilitado: false, tieneConfiguracion: false, codigosRecuperacionRestantes: 0 }),
+  },
 }));
 
 vi.mock("../../api/me", () => ({
@@ -79,9 +83,16 @@ describe("MiPerfilPage — contraseñas (DC-19)", () => {
 });
 
 describe("MiPerfilPage — seguridad (DC-29)", () => {
-  it("el empleado llega a la verificación en dos pasos desde su perfil", () => {
+  it("el empleado llega a la verificación en dos pasos desde su perfil", async () => {
     renderizar();
-    expect(screen.getByRole("link", { name: "Configurar verificación en dos pasos" })).toHaveAttribute("href", "/dashboard/seguridad");
+    expect(await screen.findByRole("link", { name: "Activar verificación en dos pasos" })).toHaveAttribute("href", "/dashboard/seguridad");
+  });
+
+  it("la verificación en dos pasos se menciona una sola vez (M4)", async () => {
+    renderizar();
+    await screen.findByRole("link", { name: "Activar verificación en dos pasos" });
+    expect(screen.getAllByRole("link", { name: /verificación en dos pasos/i })).toHaveLength(1);
+    expect(screen.getAllByRole("heading", { name: /verificación en dos pasos/i })).toHaveLength(1);
   });
 });
 

@@ -93,6 +93,12 @@ describe("AccionesCita — botones de la fila", () => {
     expect(screen.getByRole("button", { name: "Completar cita de Ana López" })).toBeInTheDocument();
   });
 
+  it("la acción principal lleva texto también en el teléfono, no solo el icono", () => {
+    renderizar(<AccionesCita cita={cita({ estadoTexto: "Confirmada", estado: 2 })} />);
+    const texto = screen.getByText("Completar");
+    expect(texto.className).not.toMatch(/(^|\s)hidden(\s|$)/);
+  });
+
   it("Confirmar cambia el estado sin pasar por la hoja", async () => {
     renderizar(<AccionesCita cita={cita()} />);
     await userEvent.click(screen.getByRole("button", { name: "Confirmar cita de Ana López" }));

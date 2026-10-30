@@ -7,7 +7,7 @@ import { citasApi } from "../../api/citas";
 import { empleadosApi } from "../../api/empleados";
 import { useAuthStore } from "../../store/authStore";
 import type { CitaDto } from "../../types";
-import { toUtcDate } from "../../utils/formatters";
+import { formatHora, formatHoraEje, toUtcDate } from "../../utils/formatters";
 import { DatePicker } from "../ui/DateTimePicker";
 import { hoy as hoyLocal } from "../../utils/fechas";
 import { ESTADO_CITA, ESTADOS_CITA, estiloEstadoCita } from "../../lib/estadoCita";
@@ -21,11 +21,6 @@ const BOTON_ICONO =
 const COL_MIN_W = 148;
 
 
-
-function horaLabel(h: number): string {
-  if (h === 12) return "12 PM";
-  return h > 12 ? `${h - 12} PM` : `${h} AM`;
-}
 
 function calcTop(iso: string, horaInicio: number): number {
   const d = toUtcDate(iso);
@@ -248,7 +243,7 @@ export default function GanttCitas({ onCitaClick, terms = getSectorTerms(null) }
                     className="absolute left-0 right-0 flex justify-end pr-2"
                     style={{ top: (h - HORA_INICIO) * PX_POR_HORA - 7 }}
                   >
-                    <span className="text-[10px] text-slate-400 dark:text-slate-600 font-medium">{horaLabel(h)}</span>
+                    <span className="text-[10px] text-slate-400 dark:text-slate-600 font-medium whitespace-nowrap tabular-nums">{formatHoraEje(h)}</span>
                   </div>
                 ))}
               </div>
@@ -304,11 +299,7 @@ export default function GanttCitas({ onCitaClick, terms = getSectorTerms(null) }
                       >
                         <div className={`px-2 py-1 overflow-hidden h-full flex flex-col gap-0.5 ${cerrada ? "line-through" : ""}`}>
                           <span className="text-[10px] font-bold leading-none">
-                            {toUtcDate(cita.inicioEn).toLocaleTimeString("es-MX", {
-                              hour: "numeric",
-                              minute: "2-digit",
-                              hour12: true,
-                            })}
+                            {formatHora(cita.inicioEn)}
                           </span>
                           {height > 28 && (
                             <span className="text-[11px] font-semibold leading-tight truncate">

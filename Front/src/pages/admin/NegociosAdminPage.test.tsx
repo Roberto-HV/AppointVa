@@ -284,9 +284,7 @@ describe('NegociosAdminPage — filtros y paginación', () => {
     await screen.findByText('Barbería Luis');
 
     await user.type(screen.getByRole('searchbox', { name: 'Buscar negocio' }), 'Aramis');
-    expect(screen.getByText('Barbería Luis')).toBeInTheDocument();
-
-    await user.click(screen.getByRole('button', { name: 'Buscar' }));
+    // Filtra en vivo, sin botón "Buscar".
 
     await waitFor(() => {
       expect(screen.queryByText('Barbería Luis')).not.toBeInTheDocument();
@@ -321,7 +319,6 @@ describe('NegociosAdminPage — filtros y paginación', () => {
     await screen.findByText('Negocio 01');
 
     await user.type(screen.getByRole('searchbox', { name: 'Buscar negocio' }), 'zzz');
-    await user.click(screen.getByRole('button', { name: 'Buscar' }));
 
     const reset = await screen.findByRole('button', { name: 'Ver todos los negocios' });
     await user.click(reset);

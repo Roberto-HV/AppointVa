@@ -153,15 +153,19 @@ export default function ListaEsperaPage() {
       ) : isError ? (
         <ErrorCarga mensaje="No se pudo cargar la lista de espera." onReintentar={() => refetch()} reintentando={isFetching} />
       ) : lista.length === 0 ? (
-        filtroEstado ? (
-          <EmptyState
-            variante="sinResultados"
-            title={`Ningún registro con estado "${ESTADOS_CONFIG[filtroEstado]?.label ?? filtroEstado}"`}
-            onLimpiarFiltros={() => setFiltroEstado("")}
-          />
-        ) : (
-          <EmptyState voz="listaEspera" tono={tonoDeSector(perfil?.sector)} />
-        )
+        // En tarjeta, como el vacío de Clientes, Empleados o Reseñas: suelto
+        // sobre el fondo se leía como texto perdido.
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700">
+          {filtroEstado ? (
+            <EmptyState
+              variante="sinResultados"
+              title={`Ningún registro con estado "${ESTADOS_CONFIG[filtroEstado]?.label ?? filtroEstado}"`}
+              onLimpiarFiltros={() => setFiltroEstado("")}
+            />
+          ) : (
+            <EmptyState voz="listaEspera" tono={tonoDeSector(perfil?.sector)} />
+          )}
+        </div>
       ) : (
         <div className="space-y-3">
           {paginada.visibles.map((entrada) => (

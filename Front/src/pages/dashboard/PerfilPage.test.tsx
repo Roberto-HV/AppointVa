@@ -157,8 +157,12 @@ describe("PerfilPage — 5 tabs", () => {
 
     expect(screen.queryByText("Porcentaje del anticipo")).toBeNull();
 
-    const toggle = screen.getByRole("checkbox");
+    // Es un `Switch`, como los demás sí/no de Mi negocio, no un checkbox suelto.
+    expect(screen.queryByRole("checkbox")).toBeNull();
+    const toggle = screen.getByRole("switch", { name: "Requerir anticipo al reservar" });
+    expect(toggle).toHaveAttribute("aria-checked", "false");
     await userEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-checked", "true");
 
     expect(screen.getByText("Porcentaje del anticipo")).toBeInTheDocument();
   });

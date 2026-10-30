@@ -239,7 +239,6 @@ describe("ClientesPage — estado vacío después de búsqueda", () => {
       screen.getByPlaceholderText("Buscar por nombre o teléfono..."),
       { target: { value: "Inexistente" } }
     );
-    fireEvent.click(screen.getByRole("button", { name: "Buscar" }));
     await waitFor(() =>
       expect(screen.getByText("Sin resultados")).toBeInTheDocument()
     );
@@ -265,15 +264,15 @@ describe("ClientesPage — buscador", () => {
     expect(input).toHaveValue("Ana");
   });
 
-  it("llama a la API con el término de búsqueda al hacer clic en Buscar", async () => {
+  it("llama a la API con el término de búsqueda al dejar de teclear, sin botón", async () => {
     vi.mocked(clientesApi.obtenerTodos).mockResolvedValue(paginaVacia);
     renderConQuery();
     await waitFor(() =>
       expect(clientesApi.obtenerTodos).toHaveBeenCalledWith(undefined, 1, 15)
     );
+    expect(screen.queryByRole("button", { name: "Buscar" })).not.toBeInTheDocument();
     const input = screen.getByPlaceholderText("Buscar por nombre o teléfono...");
     fireEvent.change(input, { target: { value: "Ana" } });
-    fireEvent.click(screen.getByRole("button", { name: "Buscar" }));
     await waitFor(() =>
       expect(clientesApi.obtenerTodos).toHaveBeenCalledWith("Ana", 1, 15)
     );
@@ -289,7 +288,7 @@ describe("ClientesPage — buscador", () => {
     );
   });
 
-  it("no consulta mientras se teclea: solo al confirmar", async () => {
+  it("no consulta por cada tecla: solo con el término completo", async () => {
     vi.mocked(clientesApi.obtenerTodos).mockResolvedValue(paginaVacia);
     renderConQuery();
     await waitFor(() =>
@@ -299,10 +298,10 @@ describe("ClientesPage — buscador", () => {
     const input = screen.getByPlaceholderText("Buscar por nombre o teléfono...");
     await userEvent.type(input, "Carlos");
     expect(clientesApi.obtenerTodos).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", { name: "Buscar" }));
     await waitFor(() =>
       expect(clientesApi.obtenerTodos).toHaveBeenCalledWith("Carlos", 1, 15)
     );
+    expect(clientesApi.obtenerTodos).toHaveBeenCalledTimes(1);
   });
 
   it("borrar vacía el campo y restablece la búsqueda sin confirmar", async () => {
@@ -310,14 +309,13 @@ describe("ClientesPage — buscador", () => {
     renderConQuery();
     const input = screen.getByPlaceholderText("Buscar por nombre o teléfono...");
     fireEvent.change(input, { target: { value: "Carlos" } });
-    fireEvent.click(screen.getByRole("button", { name: "Buscar" }));
     await waitFor(() =>
       expect(clientesApi.obtenerTodos).toHaveBeenCalledWith("Carlos", 1, 15)
     );
 
     fireEvent.click(screen.getByRole("button", { name: /^Borrar buscar/i }));
     expect(input).toHaveValue("");
-    // Vaciar se aplica solo: no hace falta volver a pulsar "Buscar".
+    // Vaciar se aplica al instante, sin esperar la pausa.
     await waitFor(() =>
       expect(clientesApi.obtenerTodos).toHaveBeenLastCalledWith(undefined, 1, 15)
     );

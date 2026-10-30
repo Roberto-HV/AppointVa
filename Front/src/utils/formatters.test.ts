@@ -12,6 +12,8 @@ import {
   capitalizarPrimera,
   formatHora,
   formatHoraDe,
+  formatHoraEje,
+  formatHoraTexto,
   monogramaNegocio,
   formatCuandoCita,
   describirCuandoCita,
@@ -225,6 +227,19 @@ describe("formato único de hora", () => {
   it("no pone cero a la izquierda en la hora", () => {
     expect(formatHora("2026-06-15T09:05:00")).toMatch(/^9:05\s?[ap]/);
     expect(formatHoraDe(new Date(2026, 5, 15, 16, 30))).toMatch(/^4:30\s?p/);
+  });
+
+  it("los ejes usan el mismo formato, sin minutos", () => {
+    expect(formatHoraEje(9)).toMatch(/^9\s?a\.\s?m\.$/);
+    expect(formatHoraEje(12)).toMatch(/^12\s?p\.\s?m\.$/);
+    expect(formatHoraEje(16)).toMatch(/^4\s?p\.\s?m\.$/);
+  });
+
+  it("convierte la hora en texto del API al formato único", () => {
+    expect(formatHoraTexto("16:00")).toBe(formatHoraDe(new Date(2026, 0, 1, 16, 0)));
+    expect(formatHoraTexto("09:30")).toMatch(/^9:30\s?a/);
+    // Lo que no es una hora ("--" sin datos) se deja tal cual.
+    expect(formatHoraTexto("--")).toBe("--");
   });
 
   it("usa el mismo formato en las fechas con hora", () => {

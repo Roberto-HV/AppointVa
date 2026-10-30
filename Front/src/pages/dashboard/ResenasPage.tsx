@@ -6,6 +6,9 @@ import Pagination from "../../components/ui/Pagination";
 import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
 import { Star } from "lucide-react";
 import ErrorCarga from "../../components/ui/ErrorCarga";
+import EmptyState from "../../components/ui/EmptyState";
+import { EnlaceAccion } from "../../components/ui/BotonAccion";
+import { useSectorTerms } from "../../hooks/useSectorTerms";
 
 import { TAMANO_PAGINA } from "../../hooks/usePaginacionLocal";
 
@@ -76,6 +79,7 @@ function Distribucion({ distribucion, total }: { distribucion: Record<string, nu
 
 export default function ResenasPage() {
   const [pagina, setPagina] = useState(1);
+  const terms = useSectorTerms();
 
   const { data, isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ["resenas", pagina],
@@ -132,14 +136,15 @@ export default function ResenasPage() {
       ) : isError ? (
         <ErrorCarga mensaje="No se pudieron cargar las reseñas." onReintentar={() => refetch()} reintentando={isFetching} />
       ) : total === 0 ? (
-        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 p-12 text-center">
-          <div className="flex justify-center mb-4">
-            <Star size={36} className="text-slate-200 dark:text-slate-600" />
-          </div>
-          <p className="font-medium text-slate-700 dark:text-slate-300 mb-1">Aún no tienes reseñas</p>
-          <p className="text-sm text-slate-400 dark:text-slate-500">
-            Las reseñas aparecerán aquí cuando tus clientes las dejen
-          </p>
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700">
+          {/* Con un siguiente paso: las reseñas se piden desde la cita
+              completada ("Solicitar reseña por WhatsApp" en sus acciones). */}
+          <EmptyState
+            icon={<Star size={40} strokeWidth={1.5} />}
+            title="Aún no tienes reseñas"
+            description={`Al completar una ${terms.cita.toLowerCase()}, pídela desde sus acciones con «Solicitar reseña por WhatsApp».`}
+            action={<EnlaceAccion to="/dashboard/citas">{`Ir a ${terms.citas}`}</EnlaceAccion>}
+          />
         </div>
       ) : (
         <>

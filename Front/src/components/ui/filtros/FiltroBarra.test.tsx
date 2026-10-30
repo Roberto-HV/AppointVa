@@ -1,7 +1,8 @@
-import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi, afterEach } from "vitest";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import FiltroBarra from "./FiltroBarra";
+import { ESPERA_BUSQUEDA_MS } from "./FiltroBusqueda";
 import { campoActivo, type CampoFiltro } from "./tipos";
 
 const camposBase = (): CampoFiltro[] => [
@@ -58,6 +59,8 @@ describe("campoActivo", () => {
 });
 
 describe("FiltroBarra", () => {
+  afterEach(() => { vi.useRealTimers(); });
+
   it("etiqueta la región de filtros", () => {
     render(<FiltroBarra campos={camposBase()} onLimpiar={vi.fn()} />);
     expect(screen.getByRole("region", { name: "Filtros" })).toBeInTheDocument();
@@ -115,19 +118,7 @@ describe("FiltroBarra", () => {
     expect(input.className).not.toMatch(/(^|\s)text-xs/);
   });
 
-  it("sin controles en línea, 'Buscar' queda inmediatamente después del campo", () => {
-    render(
-      <FiltroBarra
-        busqueda={{ valor: "", onChange: vi.fn(), etiqueta: "Buscar cliente" }}
-        campos={[]}
-        onLimpiar={vi.fn()}
-      />
-    );
-    const form = screen.getByRole("search");
-    expect(form.nextElementSibling).toBe(screen.getByRole("button", { name: "Buscar" }));
-  });
-
-  it("'Buscar' cierra la fila: va después de la acción y del toggle", () => {
+  it("no hay botón 'Buscar': la búsqueda es en vivo como los desplegables", () => {
     render(
       <FiltroBarra
         busqueda={{ valor: "", onChange: vi.fn(), etiqueta: "Buscar cliente" }}
@@ -136,39 +127,32 @@ describe("FiltroBarra", () => {
         onLimpiar={vi.fn()}
       />
     );
-    const fila = screen.getByRole("search").parentElement!;
-    const posicion = (el: Element) => Array.from(fila.children).indexOf(el);
-    const buscar = screen.getByRole("button", { name: "Buscar" });
-
-    expect(posicion(screen.getByRole("search"))).toBeLessThan(
-      posicion(screen.getByRole("button", { name: "Actividad" }))
-    );
-    expect(posicion(screen.getByRole("button", { name: /^filtros/i }))).toBeLessThan(posicion(buscar));
-    expect(posicion(buscar)).toBe(fila.children.length - 1);
+    expect(screen.queryByRole("button", { name: "Buscar" })).not.toBeInTheDocument();
   });
 
-  it("'Buscar' envía el formulario aunque viva fuera de él", async () => {
-    const user = userEvent.setup();
+  it("aplica la búsqueda una sola vez al dejar de teclear", () => {
+    vi.useFakeTimers();
     const onChange = vi.fn();
     render(
       <FiltroBarra
         busqueda={{ valor: "", onChange, etiqueta: "Buscar cliente" }}
-        accion={<button type="button">Actividad</button>}
-        campos={camposBase()}
+        campos={[]}
         onLimpiar={vi.fn()}
       />
     );
-    const buscar = screen.getByRole("button", { name: "Buscar" });
-    // El botón queda fuera del landmark `search`; lo une al form el atributo `form`.
-    expect(screen.getByRole("search").contains(buscar)).toBe(false);
-
-    await user.type(screen.getByLabelText("Buscar cliente"), "ana");
+    const input = screen.getByLabelText("Buscar cliente");
+    for (const parcial of ["a", "an", "ana"]) {
+      fireEvent.change(input, { target: { value: parcial } });
+      act(() => { vi.advanceTimersByTime(ESPERA_BUSQUEDA_MS - 50); });
+    }
+    // Mientras se teclea no sale ninguna consulta.
     expect(onChange).not.toHaveBeenCalled();
-    await user.click(buscar);
+    act(() => { vi.advanceTimersByTime(50); });
+    expect(onChange).toHaveBeenCalledTimes(1);
     expect(onChange).toHaveBeenCalledWith("ana");
   });
 
-  it("Enter y 'Buscar' son la misma acción", async () => {
+  it("Enter aplica sin esperar la pausa", async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
     render(
@@ -179,10 +163,11 @@ describe("FiltroBarra", () => {
       />
     );
     await user.type(screen.getByLabelText("Buscar cliente"), "ana{Enter}");
+    expect(onChange).toHaveBeenCalledTimes(1);
     expect(onChange).toHaveBeenCalledWith("ana");
   });
 
-  it("vaciar el campo se aplica solo, sin pasar por 'Buscar'", async () => {
+  it("vaciar el campo se aplica al instante", async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
     render(
@@ -196,9 +181,49 @@ describe("FiltroBarra", () => {
     expect(onChange).toHaveBeenCalledWith("");
   });
 
-  it("sin búsqueda declarada no hay botón 'Buscar'", () => {
-    render(<FiltroBarra campos={camposBase()} onLimpiar={vi.fn()} />);
-    expect(screen.queryByRole("button", { name: "Buscar" })).not.toBeInTheDocument();
+  it("el eco del término aplicado no pisa lo que se siguió tecleando", () => {
+    vi.useFakeTimers();
+    const onChange = vi.fn();
+    const { rerender } = render(
+      <FiltroBarra
+        busqueda={{ valor: "", onChange, etiqueta: "Buscar cliente" }}
+        campos={[]}
+        onLimpiar={vi.fn()}
+      />
+    );
+    const input = screen.getByLabelText("Buscar cliente");
+    fireEvent.change(input, { target: { value: "an" } });
+    act(() => { vi.advanceTimersByTime(ESPERA_BUSQUEDA_MS); });
+    fireEvent.change(input, { target: { value: "ana" } });
+    // El padre recibe "an" y lo devuelve mientras ya se escribió "ana".
+    rerender(
+      <FiltroBarra
+        busqueda={{ valor: "an", onChange, etiqueta: "Buscar cliente" }}
+        campos={[]}
+        onLimpiar={vi.fn()}
+      />
+    );
+    expect(input).toHaveValue("ana");
+    act(() => { vi.advanceTimersByTime(ESPERA_BUSQUEDA_MS); });
+    expect(onChange).toHaveBeenLastCalledWith("ana");
+  });
+
+  it("si el padre repone el término desde fuera, el campo lo sigue", () => {
+    const { rerender } = render(
+      <FiltroBarra
+        busqueda={{ valor: "ana", onChange: vi.fn(), etiqueta: "Buscar cliente" }}
+        campos={[]}
+        onLimpiar={vi.fn()}
+      />
+    );
+    rerender(
+      <FiltroBarra
+        busqueda={{ valor: "", onChange: vi.fn(), etiqueta: "Buscar cliente" }}
+        campos={[]}
+        onLimpiar={vi.fn()}
+      />
+    );
+    expect(screen.getByLabelText("Buscar cliente")).toHaveValue("");
   });
 
   it("solo ofrece limpiar cuando hay algo que limpiar", async () => {

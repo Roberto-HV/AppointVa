@@ -101,6 +101,22 @@ export function formatHora(iso: string): string {
 }
 
 /**
+ * Hora en punto para ejes y rejillas (Calendario, Línea de tiempo, Reportes):
+ * "9 a. m.", "12 p. m.". Es el mismo formato que `formatHora`, sin los minutos
+ * para que quepa en la columna de horas.
+ */
+export function formatHoraEje(hora: number): string {
+  return new Date(2000, 0, 1, hora).toLocaleTimeString("es-MX", { hour: "numeric", hour12: true });
+}
+
+/** Hora "HH:mm" que llega como texto del API ("16:00") en el formato único: "4:00 p. m.". */
+export function formatHoraTexto(hhmm: string): string {
+  const m = /^(\d{1,2}):(\d{2})/.exec(hhmm);
+  if (!m) return hhmm;
+  return formatHoraDe(new Date(2000, 0, 1, Number(m[1]), Number(m[2])));
+}
+
+/**
  * Cuándo es una cita, dicho como en una conversación: "hoy a las 9:00 a. m.",
  * "mañana a la 1:00 p. m.", "el jueves 22 a las 5:30 p. m." (dentro de la
  * semana) o "el jueves 22 de octubre a las …" (más lejos; con año si no es

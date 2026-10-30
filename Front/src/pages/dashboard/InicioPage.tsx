@@ -22,7 +22,7 @@ import AccionesCita, { HojaAccionesCita, type VistaHoja } from "../../components
 import { InsigniaPorCerrar } from "../../components/dashboard/TarjetaCita";
 import { colorCategoria, EJE_TICK, REJILLA } from "../../lib/temaGraficas";
 import { citaAbierta, citaPorCerrar, estiloEstadoCita } from "../../lib/estadoCita";
-import { hoy as hoyLocal, inicioSemana as inicioSemanaLocal, finSemana as finSemanaLocal, fechaLocal } from "../../utils/fechas";
+import { hoy as hoyLocal, inicioSemana as inicioSemanaLocal, finSemana as finSemanaLocal, fechaLocal, NOMBRE_PERIODO } from "../../utils/fechas";
 import { formatPrecio, formatPrecioCorto, formatFechaHoraResumen as formatFechaHora, capitalizarPrimera } from "../../utils/formatters";
 
 interface TarjetaProps { label: string; valor?: string | number; rawValue?: number; valorCorto?: string; color?: string; accent?: boolean }
@@ -31,7 +31,9 @@ function Tarjeta({ label, valor, rawValue, color = "text-slate-900 dark:text-sla
   return (
     <div className={`rounded-2xl border p-3 sm:p-4 transition-all ${accent ? "bg-slate-900 border-slate-800" : "bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700"}`}>
       {/* 12px mínimo y gris informativo (≥4.5:1): antes 9–10px slate-400, ~2.6:1. */}
-      <p className={`text-xs font-bold uppercase tracking-wide mb-1.5 line-clamp-1 ${accent ? "text-slate-300" : "text-muted-foreground"}`}>{label}</p>
+      {/* Sin espaciado extra en el teléfono: "Esta semana" (el mismo nombre de
+          periodo que Citas, Pagos y Reportes) no cabía en un tercio de 390px. */}
+      <p className={`text-xs font-bold uppercase tracking-normal sm:tracking-wide mb-1.5 line-clamp-1 ${accent ? "text-slate-300" : "text-muted-foreground"}`}>{label}</p>
       {typeof valor === "number" ? (
         <AnimatedCounter to={valor} className={numCls} />
       ) : rawValue !== undefined ? (
@@ -544,9 +546,9 @@ function VistaPropietario({ nombre }: { nombre: string }) {
             className="grid grid-cols-3 gap-2 sm:gap-3 mb-6"
           >
             {[
-              { label: "Hoy", valor: data.citasHoy },
-              { label: "Semana", valor: data.citasSemana },
-              { label: "Mes", valor: data.citasMes },
+              { label: NOMBRE_PERIODO.hoy, valor: data.citasHoy },
+              { label: NOMBRE_PERIODO.semana, valor: data.citasSemana },
+              { label: NOMBRE_PERIODO.mes, valor: data.citasMes },
             ].map(({ label, valor }) => (
               <motion.div key={label} variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0, transition: { duration: 0.3 } } }}>
                 <Tarjeta label={label} valor={valor} />
@@ -561,9 +563,9 @@ function VistaPropietario({ nombre }: { nombre: string }) {
             className="grid grid-cols-3 gap-2 sm:gap-3 mb-8"
           >
             {[
-              { label: "Hoy", rawValue: data.ingresosHoy },
-              { label: "Semana", rawValue: data.ingresosSemana },
-              { label: "Mes", rawValue: data.ingresosMes },
+              { label: NOMBRE_PERIODO.hoy, rawValue: data.ingresosHoy },
+              { label: NOMBRE_PERIODO.semana, rawValue: data.ingresosSemana },
+              { label: NOMBRE_PERIODO.mes, rawValue: data.ingresosMes },
             ].map(({ label, rawValue }) => (
               <motion.div key={label} variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0, transition: { duration: 0.3 } } }}>
                 <Tarjeta label={label} rawValue={rawValue} accent />

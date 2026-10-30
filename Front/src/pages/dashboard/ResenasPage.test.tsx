@@ -1,9 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { MemoryRouter } from "react-router-dom";
 import ResenasPage from "./ResenasPage";
 
 vi.mock("../../api/me", () => ({ meApi: { obtenerResenas: vi.fn() } }));
+vi.mock("../../api/negocios", () => ({
+  negociosApi: { obtenerPerfil: vi.fn().mockResolvedValue({ sector: "belleza" }) },
+}));
 import { meApi } from "../../api/me";
 
 const resena = (over: Record<string, unknown> = {}) => ({
@@ -13,7 +17,11 @@ const resena = (over: Record<string, unknown> = {}) => ({
 
 function renderizar() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(<QueryClientProvider client={qc}><ResenasPage /></QueryClientProvider>);
+  return render(
+    <MemoryRouter>
+      <QueryClientProvider client={qc}><ResenasPage /></QueryClientProvider>
+    </MemoryRouter>
+  );
 }
 
 beforeEach(() => vi.clearAllMocks());
@@ -59,6 +67,8 @@ describe("ResenasPage (OM-21)", () => {
     renderizar();
     expect(await screen.findByText("Aún no tienes reseñas")).toBeInTheDocument();
     expect(screen.queryByText("promedio de todas")).toBeNull();
+    // El vacío ofrece un siguiente paso: las reseñas se piden desde la cita.
+    expect(screen.getByRole("link", { name: /ir a citas/i })).toHaveAttribute("href", "/dashboard/citas");
   });
 
   it("un fallo de carga ofrece reintentar", async () => {

@@ -108,8 +108,8 @@ export default function DosFactoresPage() {
 
   if (isLoading) {
     return (
-      <div className="p-6 max-w-lg mx-auto">
-        <div className="animate-pulse space-y-4">
+      <div className="p-4 sm:p-8">
+        <div className="animate-pulse space-y-4 max-w-2xl">
           <div className="h-6 bg-slate-200 dark:bg-slate-700 rounded w-1/3" />
           <div className="h-32 bg-slate-200 dark:bg-slate-700 rounded-xl" />
         </div>
@@ -138,8 +138,12 @@ export default function DosFactoresPage() {
   );
 
   return (
-    <div className="p-6 w-full flex flex-col items-center">
-    <div className="w-full max-w-lg space-y-6">
+    // Alineada a la izquierda con el mismo margen que el resto del panel: antes
+    // era una columna centrada de ~500px y era la única pantalla así. El
+    // contenido conserva un ancho de lectura (`max-w-2xl`), pero arranca donde
+    // arrancan los demás títulos.
+    <div className="p-4 sm:p-8">
+    <div className="w-full max-w-2xl space-y-6">
       <EncabezadoPagina titulo="Seguridad" subtitulo="Autenticación de dos factores (2FA)" />
 
       {/* Estado actual */}
