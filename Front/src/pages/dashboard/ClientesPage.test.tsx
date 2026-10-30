@@ -164,6 +164,68 @@ describe("ClientesPage — estado vacío sin búsqueda", () => {
   });
 });
 
+// ── G2: un error del servidor no es un directorio vacío ───────────────────────
+
+describe("ClientesPage — error de carga (G2)", () => {
+  it("muestra ErrorCarga con Reintentar y no el estado vacío", async () => {
+    vi.mocked(clientesApi.obtenerTodos).mockRejectedValue(new Error("500"));
+    renderConQuery();
+
+    const alerta = await screen.findByRole("alert");
+    expect(within(alerta).getByText("No se pudieron cargar los clientes.")).toBeInTheDocument();
+    expect(within(alerta).getByRole("button", { name: "Reintentar" })).toBeInTheDocument();
+    expect(screen.queryByText("Aún no hay clientes")).toBeNull();
+    expect(screen.queryByText(/Llegan solos con su primera reserva/i)).toBeNull();
+  });
+
+  it("Reintentar vuelve a pedir el directorio y muestra los clientes", async () => {
+    vi.mocked(clientesApi.obtenerTodos)
+      .mockRejectedValueOnce(new Error("500"))
+      .mockResolvedValue(paginaCon([makeCliente()]));
+    renderConQuery();
+
+    fireEvent.click(await screen.findByRole("button", { name: "Reintentar" }));
+
+    await waitFor(() =>
+      expect(within(screen.getByRole("table")).getByText("Juan Pérez")).toBeInTheDocument()
+    );
+  });
+});
+
+// ── G3: "Última visita" es la última cita completada, nunca una futura ───────
+
+describe("ClientesPage — Última visita (G3)", () => {
+  it("muestra la última visita completada y no la última cita agendada", async () => {
+    vi.mocked(clientesApi.obtenerTodos).mockResolvedValue(
+      paginaCon([makeCliente({
+        // Reserva futura: no es una visita.
+        ultimaCitaEn: "2099-11-03T17:00:00Z",
+        ultimaVisitaEn: "2026-07-01T17:00:00Z",
+      })])
+    );
+    renderConQuery();
+
+    const tabla = await screen.findByRole("table");
+    await waitFor(() => expect(within(tabla).getByText(/2026/)).toBeInTheDocument());
+    expect(within(tabla).queryByText(/2099/)).toBeNull();
+    expect(screen.queryByText(/Última visita: .*2099/)).toBeNull();
+  });
+
+  it("sin visitas completadas muestra un guion, aunque tenga una cita por venir", async () => {
+    vi.mocked(clientesApi.obtenerTodos).mockResolvedValue(
+      paginaCon([makeCliente({ ultimaCitaEn: "2099-11-03T17:00:00Z", ultimaVisitaEn: null })])
+    );
+    renderConQuery();
+
+    const tabla = await screen.findByRole("table");
+    // Columnas: cliente, contacto, citas, inasistencias, última visita, acciones.
+    const celdas = await waitFor(() => within(tabla).getAllByRole("cell"));
+    expect(celdas[4]).toHaveTextContent("—");
+    expect(within(tabla).queryByText(/2099/)).toBeNull();
+    expect(screen.getByText("Sin visitas")).toBeInTheDocument();
+  });
+});
+
 describe("ClientesPage — estado vacío después de búsqueda", () => {
   it("muestra 'Sin resultados' cuando la búsqueda no tiene coincidencias", async () => {
     vi.mocked(clientesApi.obtenerTodos).mockResolvedValue(paginaVacia);
@@ -530,14 +592,16 @@ describe("ClientesPage — paginación", () => {
 // ── Error de API ───────────────────────────────────────────────────────────────
 
 describe("ClientesPage — error de API", () => {
-  it("muestra el estado vacío sin lanzar excepción cuando la API falla", async () => {
+  // Antes esperaba "Aún no hay clientes": el error se disfrazaba de vacío (G2).
+  it("muestra el aviso de error sin lanzar excepción cuando la API falla", async () => {
     vi.mocked(clientesApi.obtenerTodos).mockRejectedValue(
       new Error("Error de red")
     );
     renderConQuery();
     await waitFor(() =>
-      expect(screen.getByText("Aún no hay clientes")).toBeInTheDocument()
+      expect(screen.getByText("No se pudieron cargar los clientes.")).toBeInTheDocument()
     );
+    expect(screen.queryByText("Aún no hay clientes")).toBeNull();
   });
 });
 
@@ -596,7 +660,7 @@ describe("ClientesPage — exportar todo el directorio", () => {
     vi.mocked(clientesApi.obtenerTodos).mockResolvedValue(paginaCon([makeCliente()], 40));
     const todos = Array.from({ length: 40 }, (_, i) => ({
       nombreCompleto: `Cliente ${i}`, telefono: `55${i}`, email: null, totalCitas: 1,
-      cantidadInasistencias: 0, ultimaCitaEn: null, fechaCreacion: "2025-01-01T00:00:00",
+      cantidadInasistencias: 0, ultimaCitaEn: null, ultimaVisitaEn: null, fechaCreacion: "2025-01-01T00:00:00",
     }));
     vi.mocked(clientesApi.exportar).mockResolvedValue(todos);
     renderConQuery();

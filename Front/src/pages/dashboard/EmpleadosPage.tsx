@@ -25,6 +25,7 @@ import { claseCampo, CLASE_ERROR_CAMPO } from "../../lib/clasesCampo";
 import { DatePicker, TimePicker, citasABusySlots } from "../../components/ui/DateTimePicker";
 import { Skeleton, SkeletonCards } from "../../components/ui/Skeleton";
 import EmptyState from "../../components/ui/EmptyState";
+import ErrorCarga from "../../components/ui/ErrorCarga";
 import { FiltroBarra } from "../../components/ui/filtros";
 import Pagination from "../../components/ui/Pagination";
 import BotonAccion from "../../components/ui/BotonAccion";
@@ -129,10 +130,14 @@ export default function EmpleadosPage() {
   // B13: también los desactivados, para poder reactivarlos. La clave cuelga de
   // ["empleados"], así que invalidarla refresca también los selectores de otras
   // pantallas, que solo piden los activos.
-  const { data: empleados = [], isLoading } = useQuery({
+  const { data: empleadosData, isLoading, isError, isFetching, refetch } = useQuery({
     queryKey: ["empleados", { incluirInactivos: true }],
     queryFn: () => empleadosApi.obtenerTodos(true),
   });
+  const empleados = useMemo(() => empleadosData ?? [], [empleadosData]);
+  // Un fallo del servidor sin datos previos no es un equipo vacío: "Agregar
+  // primer empleado" invitaba a dar de alta otra vez a todo el equipo.
+  const errorCarga = isError && !empleadosData;
 
   const { data: servicios = [] } = useQuery({
     queryKey: ["servicios"],
@@ -429,6 +434,12 @@ export default function EmpleadosPage() {
 
       {isLoading ? (
         <SkeletonCards cantidad={4} />
+      ) : errorCarga ? (
+        <ErrorCarga
+          mensaje={`No se pudieron cargar los ${terms.empleados.toLowerCase()}.`}
+          onReintentar={() => refetch()}
+          reintentando={isFetching}
+        />
       ) : empleados.length === 0 ? (
         <div className="bg-white rounded-xl border border-slate-100 p-12 text-center dark:bg-slate-800 dark:border-slate-700">
           <div className="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 dark:bg-slate-700">

@@ -372,14 +372,18 @@ export default function ServiciosPage() {
                         <div className="flex items-center gap-2">
                           {/* Interruptor con nombre de acción: "Activo" parecía una
                               insignia y al pulsarlo sacaba el servicio de reservas. */}
-                          <div className="flex items-center">
+                          {/* El riel del switch ocupa todo su botón de 44 px: el
+                              texto va al lado con su propio hueco (`gap-2`). El
+                              `-ml-1` de antes lo metía bajo el riel y se leía
+                              "isible en reservas". */}
+                          <div className="flex items-center gap-2 shrink-0">
                             <Switch
                               activo={s.activo}
                               onCambiar={() => (s.activo ? setServicioOcultar(s) : mutToggleActivo(s))}
                               disabled={activoPendiente === s.id}
                               etiqueta={`Visible en reservas: ${s.nombre}`}
                             />
-                            <span aria-hidden="true" className="hidden md:inline text-xs text-muted-foreground -ml-1">Visible en reservas</span>
+                            <span aria-hidden="true" className="hidden md:inline text-xs text-muted-foreground whitespace-nowrap">Visible en reservas</span>
                           </div>
                           <button
                             type="button"

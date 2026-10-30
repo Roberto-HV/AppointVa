@@ -88,11 +88,12 @@ namespace AppointVaAPI.Controllers.V1
 
             Response.Headers["X-Total-Count"] = lista.Count.ToString();
 
-            var resultado = tamano > 0
+            var resultado = (tamano > 0
                 ? lista.Skip((pagina - 1) * tamano).Take(tamano)
-                : lista.AsEnumerable();
+                : lista.AsEnumerable()).ToList();
 
-            return Ok(resultado.Select(MapearDto));
+            var visitas = await UltimasVisitasAsync(resultado.Select(c => c.Id));
+            return Ok(resultado.Select(c => MapearDto(c, visitas.GetValueOrDefault(c.Id))));
         }
 
         // GET api/clientes/exportar?buscar=
@@ -110,6 +111,7 @@ namespace AppointVaAPI.Controllers.V1
                 .AsNoTracking()
                 .Select(c => new ClienteExportacionDto
                 {
+                    Id = c.Id,
                     NombreCompleto = c.NombreCompleto,
                     Telefono = c.Telefono,
                     Email = c.Email,
@@ -119,6 +121,11 @@ namespace AppointVaAPI.Controllers.V1
                     FechaCreacion = c.FechaCreacion
                 })
                 .ToListAsync();
+
+            // La columna "Última visita" del archivo es la misma que la de la pantalla.
+            var visitas = await UltimasVisitasAsync(clientes.Select(c => c.Id));
+            foreach (var fila in clientes)
+                fila.UltimaVisitaEn = visitas.GetValueOrDefault(fila.Id);
 
             var filtro = string.IsNullOrWhiteSpace(buscar) ? "directorio completo" : "búsqueda";
             // Fail closed: an export that left no audit row is not served.
@@ -175,7 +182,7 @@ namespace AppointVaAPI.Controllers.V1
             var cliente = await _repo.ObtenerPorIdAsync(id, _contexto.NegocioId.Value);
             if (cliente is null) return NotFound(new { mensaje = "Cliente no encontrado" });
 
-            return Ok(MapearDto(cliente));
+            return Ok(await MapearConVisitaAsync(cliente));
         }
 
         // GET api/clientes/{id}/citas
@@ -262,7 +269,7 @@ namespace AppointVaAPI.Controllers.V1
             cliente.FechaActualizacion = DateTime.UtcNow;
             await _repo.ActualizarAsync(cliente);
 
-            return Ok(MapearDto(cliente));
+            return Ok(await MapearConVisitaAsync(cliente));
         }
 
         // PATCH api/clientes/{id}/notas
@@ -278,7 +285,7 @@ namespace AppointVaAPI.Controllers.V1
             cliente.FechaActualizacion = DateTime.UtcNow;
             await _repo.ActualizarAsync(cliente);
 
-            return Ok(MapearDto(cliente));
+            return Ok(await MapearConVisitaAsync(cliente));
         }
 
         // DELETE api/clientes/{id}
@@ -334,7 +341,37 @@ namespace AppointVaAPI.Controllers.V1
             return query;
         }
 
-        private static object MapearDto(Cliente c) => new
+        /// <summary>
+        /// Última visita de cada cliente: la última cita completada que ya
+        /// empezó. No es `UltimaCitaEn`, que guarda la última cita agendada
+        /// (puede estar en el futuro) y sigue mandando en Activos/Inactivos:
+        /// quien ya tiene una reserva por venir no es un cliente perdido, pero
+        /// "Última visita: 3 de noviembre" leído el 30 de octubre es falso.
+        /// </summary>
+        private async Task<Dictionary<Guid, DateTime?>> UltimasVisitasAsync(IEnumerable<Guid> clienteIds)
+        {
+            var ids = clienteIds.Distinct().ToList();
+            if (ids.Count == 0) return new Dictionary<Guid, DateTime?>();
+
+            var negocioId = _contexto.NegocioId!.Value;
+            var ahora = DateTime.UtcNow;
+            return await _db.Citas
+                .Where(c => c.NegocioId == negocioId &&
+                            ids.Contains(c.ClienteId) &&
+                            c.Estado == EstadosCitas.Completada &&
+                            c.InicioEn <= ahora)
+                .GroupBy(c => c.ClienteId)
+                .Select(g => new { ClienteId = g.Key, Ultima = g.Max(c => c.InicioEn) })
+                .ToDictionaryAsync(x => x.ClienteId, x => (DateTime?)x.Ultima);
+        }
+
+        private async Task<object> MapearConVisitaAsync(Cliente c)
+        {
+            var visitas = await UltimasVisitasAsync(new[] { c.Id });
+            return MapearDto(c, visitas.GetValueOrDefault(c.Id));
+        }
+
+        private static object MapearDto(Cliente c, DateTime? ultimaVisitaEn) => new
         {
             id = c.Id,
             nombreCompleto = c.NombreCompleto,
@@ -344,6 +381,7 @@ namespace AppointVaAPI.Controllers.V1
             totalCitas = c.TotalCitas,
             cantidadInasistencias = c.CantidadInasistencias,
             ultimaCitaEn = c.UltimaCitaEn,
+            ultimaVisitaEn = ultimaVisitaEn,
             fechaCreacion = c.FechaCreacion
         };
 
@@ -361,12 +399,16 @@ namespace AppointVaAPI.Controllers.V1
     /// <summary>One exported row. Internal notes are deliberately left out of the file.</summary>
     public class ClienteExportacionDto
     {
+        /// <summary>Only to join the last visit; never written to the file.</summary>
+        [System.Text.Json.Serialization.JsonIgnore]
+        public Guid Id { get; set; }
         public string NombreCompleto { get; set; } = string.Empty;
         public string Telefono { get; set; } = string.Empty;
         public string? Email { get; set; }
         public int TotalCitas { get; set; }
         public int CantidadInasistencias { get; set; }
         public DateTime? UltimaCitaEn { get; set; }
+        public DateTime? UltimaVisitaEn { get; set; }
         public DateTime FechaCreacion { get; set; }
     }
 

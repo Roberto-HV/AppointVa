@@ -24,6 +24,7 @@ export interface ClienteExportacion {
   totalCitas: number;
   cantidadInasistencias: number;
   ultimaCitaEn: string | null;
+  ultimaVisitaEn: string | null;
   fechaCreacion: string;
 }
 

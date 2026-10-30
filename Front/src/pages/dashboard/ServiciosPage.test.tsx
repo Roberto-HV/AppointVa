@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent, within } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import ServiciosPage from "./ServiciosPage";
@@ -342,6 +342,20 @@ describe("ServiciosPage — visibilidad y destacado (OM-30)", () => {
     expect(screen.getByRole("button", { name: "Destacado: Corte de cabello" })).toHaveAttribute(
       "aria-pressed", String(!!mockServicio.destacado),
     );
+  });
+
+  it("el texto 'Visible en reservas' va junto al switch, sin encimarse (I9)", async () => {
+    vi.mocked(serviciosApi.obtenerTodos).mockResolvedValue([mockServicio]);
+    renderConQuery();
+    const sw = await screen.findByRole("switch", { name: "Visible en reservas: Corte de cabello" });
+    const grupo = sw.parentElement!;
+    const texto = within(grupo).getByText("Visible en reservas");
+    // El texto es hermano del switch, no está dentro de su botón de 44 px.
+    expect(sw.contains(texto)).toBe(false);
+    // Separación propia y ningún margen negativo que lo meta bajo el riel.
+    expect(grupo.className).toMatch(/\bgap-\d/);
+    expect(texto.className).not.toMatch(/(^|\s)-m[lx]-/);
+    expect(texto.className).toContain("whitespace-nowrap");
   });
 
   it("una petición en curso solo bloquea la fila de ese servicio", async () => {

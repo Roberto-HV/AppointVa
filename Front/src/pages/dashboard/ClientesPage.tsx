@@ -17,6 +17,7 @@ import { SiWhatsapp } from "react-icons/si";
 import { UserX, UserCheck, History, Pencil, ChevronRight } from "lucide-react";
 import Select from "../../components/ui/Select";
 import EmptyState from "../../components/ui/EmptyState";
+import ErrorCarga from "../../components/ui/ErrorCarga";
 import BotonCopiarEnlace from "../../components/dashboard/BotonCopiarEnlace";
 import { tonoDeSector } from "../../lib/vozVacia";
 import BotonAccion from "../../components/ui/BotonAccion";
@@ -59,7 +60,7 @@ export default function ClientesPage() {
   const [paginaActividad, setPaginaActividad] = useState(1);
   const idActividad = useId();
 
-  const { data: paginaClientes, isLoading } = useQuery({
+  const { data: paginaClientes, isLoading, isError, isFetching, refetch } = useQuery({
     queryKey: ["clientes", buscarActivo, pagina],
     queryFn: () => clientesApi.obtenerTodos(buscarActivo || undefined, pagina, TAMANO),
     // Los modos de actividad traen su propio listado del servidor; sin esto el
@@ -76,7 +77,13 @@ export default function ClientesPage() {
   // El reparto en activos / inactivos / sin visitas lo hace el servidor. Antes
   // se traía una página de 500 y se repartía en memoria, así que un negocio con
   // más clientes que eso analizaba solo a los primeros 500 sin saberlo.
-  const { data: listaActividad, isLoading: cargandoActividad } = useQuery({
+  const {
+    data: listaActividad,
+    isLoading: cargandoActividad,
+    isError: errorActividad,
+    isFetching: recargandoActividad,
+    refetch: reintentarActividad,
+  } = useQuery({
     queryKey: ["clientes-actividad", tab, diasInactivo, paginaActividad],
     queryFn: () =>
       clientesApi.obtenerPorActividad(
@@ -202,7 +209,7 @@ export default function ClientesPage() {
         c.email ?? "",
         c.totalCitas,
         c.cantidadInasistencias,
-        c.ultimaCitaEn ? soloFecha(c.ultimaCitaEn) : "",
+        c.ultimaVisitaEn ? soloFecha(c.ultimaVisitaEn) : "",
         soloFecha(c.fechaCreacion),
       ]);
       await exportarExcel(enc, [filas], "clientes", terms.clientes)
@@ -307,6 +314,12 @@ export default function ClientesPage() {
                 <div key={i} className="h-16 bg-slate-100 dark:bg-slate-800 rounded-xl animate-pulse" />
               ))}
             </div>
+          ) : errorActividad && !listaActividad ? (
+            <ErrorCarga
+              mensaje={`No se pudieron cargar los ${terms.clientes.toLowerCase()}.`}
+              onReintentar={() => reintentarActividad()}
+              reintentando={recargandoActividad}
+            />
           ) : (
             <>
               {/* El resumen va antes del listado —y también cuando el grupo
@@ -445,6 +458,14 @@ export default function ClientesPage() {
       {/* Lista */}
       {isLoading ? (
         <p className="text-slate-400 dark:text-slate-500">Cargando clientes...</p>
+      ) : isError && !paginaClientes ? (
+        // Un 500 no es un directorio vacío: "Aún no hay clientes" haría creer
+        // que se perdieron los datos.
+        <ErrorCarga
+          mensaje={`No se pudieron cargar los ${terms.clientes.toLowerCase()}.`}
+          onReintentar={() => refetch()}
+          reintentando={isFetching}
+        />
       ) : clientes.length === 0 ? (
         <div className="bg-white rounded-xl border border-slate-100 dark:bg-slate-800 dark:border-slate-700">
           {buscarActivo ? (
@@ -485,7 +506,7 @@ export default function ClientesPage() {
                     <span className="block font-medium text-slate-800 dark:text-slate-200 truncate">{c.nombreCompleto}</span>
                     <span className="block text-xs text-slate-500 dark:text-slate-400">{c.telefono}</span>
                     <span className="block text-xs text-slate-500 dark:text-slate-400">
-                      {c.ultimaCitaEn ? `Última visita: ${formatFecha(c.ultimaCitaEn)}` : "Sin visitas"}
+                      {c.ultimaVisitaEn ? `Última visita: ${formatFecha(c.ultimaVisitaEn)}` : "Sin visitas"}
                       {c.cantidadInasistencias > 0 && (
                         <span className="text-red-600 dark:text-red-400">{` · ${c.cantidadInasistencias} inasistencia${c.cantidadInasistencias === 1 ? "" : "s"}`}</span>
                       )}
@@ -541,8 +562,10 @@ export default function ClientesPage() {
                         <span className="text-slate-400 dark:text-slate-500">—</span>
                       )}
                     </td>
+                    {/* Última cita completada, no la última agendada: esa puede
+                        estar en el futuro y "Última visita" no puede ser mañana. */}
                     <td className="px-5 py-3 text-slate-600 text-sm dark:text-slate-400">
-                      {c.ultimaCitaEn ? formatFecha(c.ultimaCitaEn) : <span className="text-slate-400 dark:text-slate-500">—</span>}
+                      {c.ultimaVisitaEn ? formatFecha(c.ultimaVisitaEn) : <span className="text-slate-400 dark:text-slate-500">—</span>}
                     </td>
                     <td className="px-5 py-3 text-right whitespace-nowrap">
                       <div className="inline-flex items-center gap-1.5">

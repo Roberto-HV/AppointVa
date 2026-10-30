@@ -732,11 +732,19 @@ namespace AppointVaAPI.Controllers.V1
             if (filtroEmpleado.HasValue)
                 query = query.Where(c => c.EmpleadoId == filtroEmpleado.Value);
 
-            var totalCitas = await query.CountAsync();
-            var totalPendiente = await query.Where(c => !c.Pagada).SumAsync(c => (decimal?)c.Precio) ?? 0m;
+            // "Por cobrar" y "Citas pagadas x/y" solo cuentan citas vigentes: una
+            // cancelada o una inasistencia no se va a cobrar. Antes la cita
+            // cancelada del día inflaba "Por cobrar" y el total de "x/y".
+            var vigentes = query.Where(c =>
+                c.Estado != EstadosCitas.Cancelada && c.Estado != EstadosCitas.Inasistencia);
+            var totalCitas = await vigentes.CountAsync();
+            var totalPendiente = await vigentes.Where(c => !c.Pagada).SumAsync(c => (decimal?)c.Precio) ?? 0m;
+            var citasPagadas = await vigentes.CountAsync(c => c.Pagada);
 
             // Solo las columnas del cobro: el reparto de un pago mixto no se puede
             // expresar en SQL sin duplicar la lógica en cada motor soportado.
+            // "Total cobrado" sí incluye cualquier cita pagada: es dinero que
+            // ya entró a caja aunque la cita se haya cancelado después.
             var pagos = await query
                 .Where(c => c.Pagada)
                 .Select(c => new
@@ -774,7 +782,7 @@ namespace AppointVaAPI.Controllers.V1
             {
                 TotalCobrado = totalCobrado,
                 TotalPendiente = totalPendiente,
-                CitasPagadas = pagos.Count,
+                CitasPagadas = citasPagadas,
                 TotalCitas = totalCitas,
                 Desglose = desglose,
             });

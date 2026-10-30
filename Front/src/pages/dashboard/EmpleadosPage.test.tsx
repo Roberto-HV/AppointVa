@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
@@ -177,6 +177,30 @@ describe("EmpleadosPage — estado vacío", () => {
         screen.getByRole("button", { name: "Agregar primer empleado" })
       ).toBeInTheDocument()
     );
+  });
+});
+
+describe("EmpleadosPage — error de carga (G2)", () => {
+  it("muestra ErrorCarga con Reintentar y no el estado vacío", async () => {
+    vi.mocked(empleadosApi.obtenerTodos).mockRejectedValue(new Error("500"));
+    renderConQuery();
+
+    const alerta = await screen.findByRole("alert");
+    expect(within(alerta).getByText("No se pudieron cargar los empleados.")).toBeInTheDocument();
+    expect(within(alerta).getByRole("button", { name: "Reintentar" })).toBeInTheDocument();
+    expect(screen.queryByText("Aún no tienes empleados")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Agregar primer empleado" })).toBeNull();
+  });
+
+  it("Reintentar vuelve a pedir el equipo y lo muestra", async () => {
+    vi.mocked(empleadosApi.obtenerTodos)
+      .mockRejectedValueOnce(new Error("500"))
+      .mockResolvedValue([mockEmpleado]);
+    renderConQuery();
+
+    fireEvent.click(await screen.findByRole("button", { name: "Reintentar" }));
+
+    expect(await screen.findByText(mockEmpleado.nombre)).toBeInTheDocument();
   });
 });
 

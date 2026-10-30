@@ -252,7 +252,10 @@ export interface ClienteDto {
   notas?: string | null;
   totalCitas: number;
   cantidadInasistencias: number;
+  /** Última cita agendada, puede ser futura. Decide Activos/Inactivos. */
   ultimaCitaEn?: string;
+  /** Última cita completada que ya ocurrió: lo que la pantalla llama "Última visita". */
+  ultimaVisitaEn?: string | null;
   fechaCreacion: string;
 }
 

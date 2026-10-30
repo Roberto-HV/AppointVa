@@ -249,6 +249,95 @@ describe("InicioPage — vista propietario", () => {
   });
 });
 
+// ── 1b. G1: el onboarding solo con datos reales ───────────────────────────────
+describe("InicioPage — carga y error no muestran el onboarding (G1)", () => {
+  // Una promesa que nunca resuelve deja la consulta cargando.
+  const nunca = () => new Promise<never>(() => {});
+
+  it("mientras carga muestra el skeleton, no la bienvenida ni la guía", async () => {
+    vi.spyOn(Storage.prototype, "getItem").mockReturnValue(null);
+    vi.mocked(dashboardApi.obtenerResumen).mockImplementation(nunca);
+    vi.mocked(serviciosApi.obtenerTodos).mockImplementation(nunca);
+    vi.mocked(negociosApi.obtenerHorarios).mockImplementation(nunca);
+
+    const { container } = renderConQuery();
+
+    // Dar tiempo a que el resto de consultas resuelvan.
+    await waitFor(() => expect(negociosApi.obtenerPerfil).toHaveBeenCalled());
+    await screen.findByText("Salón Test");
+    expect(container.querySelector(".animate-pulse")).not.toBeNull();
+    expect(screen.queryByText("Tu página está casi lista")).toBeNull();
+    expect(screen.queryByText(/Faltan \d pasos?/)).toBeNull();
+    expect(screen.queryByText("Configura tu negocio")).toBeNull();
+  });
+
+  it("con el resumen cargado pero servicios y horarios aún en camino, no asume que faltan", async () => {
+    vi.spyOn(Storage.prototype, "getItem").mockReturnValue(null);
+    vi.mocked(serviciosApi.obtenerTodos).mockImplementation(nunca);
+    vi.mocked(negociosApi.obtenerHorarios).mockImplementation(nunca);
+
+    renderConQuery();
+
+    await waitFor(() => expect(dashboardApi.obtenerResumen).toHaveBeenCalled());
+    await screen.findByText("Salón Test");
+    expect(screen.queryByText("Tu página está casi lista")).toBeNull();
+    expect(screen.queryByText("Configura tu negocio")).toBeNull();
+  });
+
+  it("si el resumen falla muestra solo ErrorCarga con Reintentar", async () => {
+    vi.spyOn(Storage.prototype, "getItem").mockReturnValue(null);
+    vi.mocked(dashboardApi.obtenerResumen).mockRejectedValue(new Error("500"));
+    // Incluso con un negocio sin servicios: el error no se convierte en bienvenida.
+    vi.mocked(serviciosApi.obtenerTodos).mockResolvedValue([]);
+
+    renderConQuery();
+
+    const alerta = await screen.findByRole("alert");
+    expect(within(alerta).getByText("No se pudo cargar el resumen del negocio.")).toBeInTheDocument();
+    expect(within(alerta).getByRole("button", { name: "Reintentar" })).toBeInTheDocument();
+    expect(screen.queryByText("Tu página está casi lista")).toBeNull();
+    expect(screen.queryByText("Configura tu negocio")).toBeNull();
+    expect(screen.queryByText("Agenda de hoy")).toBeNull();
+  });
+
+  it("Reintentar vuelve a pedir el resumen", async () => {
+    vi.mocked(dashboardApi.obtenerResumen).mockRejectedValueOnce(new Error("500"));
+
+    renderConQuery();
+
+    fireEvent.click(await screen.findByRole("button", { name: "Reintentar" }));
+    expect(await screen.findByRole("heading", { name: "Agenda de hoy" })).toBeInTheDocument();
+    expect(dashboardApi.obtenerResumen).toHaveBeenCalledTimes(2);
+  });
+
+  it("si fallan servicios u horarios no muestra la bienvenida", async () => {
+    vi.spyOn(Storage.prototype, "getItem").mockReturnValue(null);
+    vi.mocked(serviciosApi.obtenerTodos).mockRejectedValue(new Error("500"));
+
+    renderConQuery();
+
+    expect(await screen.findByRole("heading", { name: "Agenda de hoy" })).toBeInTheDocument();
+    expect(screen.queryByText("Tu página está casi lista")).toBeNull();
+    expect(screen.queryByText("Configura tu negocio")).toBeNull();
+  });
+
+  it("el subtítulo muestra el nombre del negocio, no 'Tu negocio'", async () => {
+    renderConQuery();
+
+    expect(await screen.findByText("Salón Test")).toBeInTheDocument();
+    expect(screen.queryByText("Tu negocio")).toBeNull();
+  });
+
+  it("mientras llega el perfil no muestra 'Tu negocio'", async () => {
+    vi.mocked(negociosApi.obtenerPerfil).mockImplementation(nunca);
+
+    renderConQuery();
+
+    await screen.findByRole("heading", { level: 1, name: "Hola, Roberto" });
+    expect(screen.queryByText("Tu negocio")).toBeNull();
+  });
+});
+
 // ── 2. Wizard visible when localStorage key is absent ────────────────────────
 describe("InicioPage — wizard de onboarding", () => {
   it("shows wizard when the onboarding localStorage key is absent", async () => {
@@ -432,6 +521,22 @@ describe("InicioPage — agenda del empleado (DC-15)", () => {
     renderConQuery();
     expect(await screen.findByText("Por cerrar")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Completar cita de Ana López" })).toBeInTheDocument();
+  });
+
+  it("'Citas hoy' no cuenta canceladas ni inasistencias (G3)", async () => {
+    vi.mocked(citasApi.obtenerTodas).mockResolvedValue({
+      ...emptyPage,
+      datos: [
+        { ...citaEmpleado("Confirmada", 3_600_000), id: "c-1" },
+        { ...citaEmpleado("Cancelada", 7_200_000), id: "c-2" },
+        { ...citaEmpleado("Inasistencia", -7_200_000), id: "c-3" },
+      ],
+      total: 3,
+    });
+    renderConQuery();
+    await screen.findAllByText("Ana López");
+    const tarjeta = screen.getByText("Citas hoy").parentElement!;
+    expect(within(tarjeta).getByText("1")).toBeInTheDocument();
   });
 
   it("una cita futura no lleva 'Por cerrar' ni acción principal en la fila", async () => {

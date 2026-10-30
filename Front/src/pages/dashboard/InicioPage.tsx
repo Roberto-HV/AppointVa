@@ -16,6 +16,7 @@ import { serviciosApi } from "../../api/servicios";
 import { useAuthStore } from "../../store/authStore";
 import EstadoBadge from "../../components/ui/EstadoBadge";
 import { Skeleton } from "../../components/ui/Skeleton";
+import ErrorCarga from "../../components/ui/ErrorCarga";
 import AnimatedCounter from "../../components/ui/AnimatedCounter";
 import AccionesCita, { HojaAccionesCita, type VistaHoja } from "../../components/dashboard/AccionesCita";
 import { InsigniaPorCerrar } from "../../components/dashboard/TarjetaCita";
@@ -291,14 +292,14 @@ function VistaPropietario({ nombre }: { nombre: string }) {
   // Fecha local: en UTC-6, `toISOString()` ya es "mañana" desde las 18:00.
   const hoy = hoyLocal();
 
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, isFetching, refetch } = useQuery({
     queryKey: ["dashboard-resumen"],
     queryFn: dashboardApi.obtenerResumen,
     staleTime: 0,
     refetchInterval: 30_000,
   });
 
-  const { data: negocio } = useQuery({
+  const { data: negocio, isPending: cargandoNegocio } = useQuery({
     queryKey: ["negocio-perfil"],
     queryFn: negociosApi.obtenerPerfil,
     staleTime: 1000 * 60 * 10,
@@ -309,33 +310,40 @@ function VistaPropietario({ nombre }: { nombre: string }) {
     queryFn: () => dashboardApi.obtenerTendencia(dias),
   });
 
-  const { data: empleados = [] } = useQuery({
+  const empleadosQ = useQuery({
     queryKey: ["empleados-wizard"],
     queryFn: () => empleadosApi.obtenerTodos(),
     staleTime: 1000 * 60 * 10,
   });
 
-  const { data: servicios = [] } = useQuery({
+  const serviciosQ = useQuery({
     queryKey: ["servicios-wizard"],
     queryFn: () => serviciosApi.obtenerTodos(),
     staleTime: 1000 * 60 * 10,
   });
 
-  const { data: horarios = [] } = useQuery({
+  const horariosQ = useQuery({
     queryKey: ["horarios-wizard"],
     queryFn: () => negociosApi.obtenerHorarios(),
     staleTime: 1000 * 60 * 10,
   });
 
-  const { data: galeria = [] } = useQuery({
+  const galeriaQ = useQuery({
     queryKey: ["galeria-wizard"],
     queryFn: negociosApi.obtenerGaleria,
     staleTime: 1000 * 60 * 10,
   });
 
+  // Los pasos pendientes solo se conocen cuando su consulta terminó bien. Antes
+  // `data = []` mientras cargaba (o tras un error) se leía como "no hay
+  // servicios ni horarios" y el negocio veía "Faltan 2 pasos" con 8 servicios.
+  const servicios = serviciosQ.data ?? [];
+  const horarios = horariosQ.data ?? [];
   const tieneServicios = servicios.length > 0;
   const tieneHorarios = horarios.some(h => h.activo);
-  const enBienvenida = mostrarWizard && (!tieneServicios || !tieneHorarios);
+  const configuracionConocida = serviciosQ.isSuccess && horariosQ.isSuccess;
+  const configuracionPendiente = serviciosQ.isPending || horariosQ.isPending;
+  const guiaConocida = configuracionConocida && empleadosQ.isSuccess && galeriaQ.isSuccess;
 
   const { data: citasDeHoy = [], isLoading: cargandoAgenda, isError: errorAgenda, refetch: reintentarAgenda } = useQuery({
     queryKey: ["citas-agenda-hoy", hoy],
@@ -345,16 +353,22 @@ function VistaPropietario({ nombre }: { nombre: string }) {
     refetchInterval: 30_000,
   });
 
+  // El resumen manda: si falló, la pantalla muestra solo el error, sin
+  // bienvenida ni guía debajo; si carga, el skeleton de Inicio.
+  const errorResumen = isError && !data;
+  const enBienvenida = mostrarWizard && !errorResumen && configuracionConocida && (!tieneServicios || !tieneHorarios);
+  const cargandoPanel = isLoading || (mostrarWizard && configuracionPendiente);
+
   // La guía de inicio va después de la agenda de hoy, no encima.
-  const guiaInicio = negocio && usuario?.negocioId ? (
+  const guiaInicio = negocio && usuario?.negocioId && guiaConocida ? (
     <WizardOnboarding
       negocioId={usuario.negocioId}
       slug={negocio.slug ?? ""}
       tieneServicios={tieneServicios}
       tieneHorarios={tieneHorarios}
-      tieneEmpleados={empleados.length > 0}
+      tieneEmpleados={(empleadosQ.data ?? []).length > 0}
       tieneDescripcion={!!negocio.descripcion}
-      tieneGaleria={galeria.length > 0}
+      tieneGaleria={(galeriaQ.data ?? []).length > 0}
       cargando={isLoading}
       visible={mostrarWizard}
       onClose={() => { localStorage.setItem(keyOnboarding, "1"); setMostrarWizard(false); }}
@@ -369,7 +383,13 @@ function VistaPropietario({ nombre }: { nombre: string }) {
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 leading-none mb-1">Hola, {nombre}</h1>
         <div className="flex items-center gap-3">
-          <p className="text-sm text-muted-foreground">{negocio?.nombre ?? "Tu negocio"}</p>
+          {/* Mientras llega el perfil, un hueco del tamaño del nombre; "Tu
+              negocio" solo si el nombre de verdad no está disponible. */}
+          {cargandoNegocio ? (
+            <Skeleton className="h-4 w-36 rounded" aria-hidden="true" />
+          ) : (
+            <p className="text-sm text-muted-foreground">{negocio?.nombre || "Tu negocio"}</p>
+          )}
           {!mostrarWizard && keyOnboarding && (
             <button
               onClick={() => { localStorage.removeItem(keyOnboarding); setMostrarWizard(true); }}
@@ -381,14 +401,15 @@ function VistaPropietario({ nombre }: { nombre: string }) {
         </div>
       </div>
 
-      {isError && !data && (
-        <div className="rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-6 text-center mb-6">
-          <p className="text-sm font-medium text-red-600 dark:text-red-400">No se pudo cargar el resumen del negocio</p>
-          <button onClick={() => refetch()} className="mt-3 min-h-[44px] px-4 rounded-lg text-sm font-medium text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/40 transition">Reintentar</button>
-        </div>
-      )}
-
-      {enBienvenida ? (
+      {/* Un solo estado a la vez: error, carga, bienvenida o panel. Antes la
+          bienvenida y la guía se pintaban debajo del error y durante la carga. */}
+      {errorResumen ? (
+        <ErrorCarga
+          mensaje="No se pudo cargar el resumen del negocio."
+          onReintentar={() => refetch()}
+          reintentando={isFetching}
+        />
+      ) : enBienvenida && !isLoading ? (
         <BienvenidaScreen
           tieneServicios={tieneServicios}
           tieneHorarios={tieneHorarios}
@@ -396,7 +417,7 @@ function VistaPropietario({ nombre }: { nombre: string }) {
         />
       ) : (
         <>
-          {isLoading ? (
+          {cargandoPanel ? (
         <>
           <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-6">
             {[0,1,2].map(i => <Skeleton key={i} className="h-20 sm:h-24 rounded-2xl" />)}
@@ -664,7 +685,7 @@ function VistaPropietario({ nombre }: { nombre: string }) {
             </div>
           </div>
         </>
-          ) : guiaInicio}
+          ) : null}
         </>
       )}
     </div>
@@ -720,7 +741,9 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
   const ingresosSemana = completadasSemana.reduce((s, c) => s + c.precio, 0);
   const totalSemana = citasSemana.filter((c) => c.estadoTexto !== "Cancelada" && c.estadoTexto !== "Inasistencia").length;
 
-  // Stats computados
+  // Stats computados. "Citas hoy" sigue la misma definición que el panel del
+  // dueño: las canceladas y las inasistencias no cuentan (la agenda sí las lista).
+  const vigentesHoy = citasHoy.filter((c) => c.estadoTexto !== "Cancelada" && c.estadoTexto !== "Inasistencia");
   const completadas = citasHoy.filter((c) => c.estadoTexto === "Completada");
   const ingresosHoy = completadas.reduce((s, c) => s + c.precio, 0);
   const citasOrdenadas = [...citasHoy].sort(
@@ -759,7 +782,7 @@ function VistaEmpleado({ nombre }: { nombre: string }) {
         <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-3 sm:p-4">
           <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-1.5">Citas hoy</p>
           <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 leading-none">
-            {cargandoHoy ? "—" : citasHoy.length}
+            {cargandoHoy ? "—" : vigentesHoy.length}
           </p>
         </div>
         <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-3 sm:p-4">

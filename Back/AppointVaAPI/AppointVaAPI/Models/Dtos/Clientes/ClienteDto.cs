@@ -10,6 +10,8 @@
         public int TotalCitas { get; set; }
         public int CantidadInasistencias { get; set; }
         public DateTime? UltimaCitaEn { get; set; }
+        /// <summary>Última cita completada que ya empezó; nunca una fecha futura.</summary>
+        public DateTime? UltimaVisitaEn { get; set; }
         public DateTime FechaCreacion { get; set; }
     }
 }

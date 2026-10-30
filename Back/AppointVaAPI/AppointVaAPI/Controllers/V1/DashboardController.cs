@@ -35,20 +35,28 @@ namespace AppointVaAPI.Controllers.V1
             var hoyFin = hoyInicio.AddDays(1);
             var diaSemana = (int)hoyInicio.DayOfWeek;
             var inicioSemana = hoyInicio.AddDays(diaSemana == 0 ? -6 : -(diaSemana - 1));
+            var finSemana = inicioSemana.AddDays(7);
             var inicioMes = new DateTime(hoyInicio.Year, hoyInicio.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+            var finMes = inicioMes.AddMonths(1);
 
             var base_ = _db.Citas.Where(c => c.NegocioId == negocioId);
 
-            // Conteos — SQL COUNT
-            var citasHoy     = await base_.CountAsync(c => c.InicioEn >= hoyInicio && c.InicioEn < hoyFin);
-            var citasSemana  = await base_.CountAsync(c => c.InicioEn >= inicioSemana);
-            var citasMes     = await base_.CountAsync(c => c.InicioEn >= inicioMes);
+            // Conteos — SQL COUNT. Una sola definición de "cita" para Inicio, Pagos
+            // y la agenda: las canceladas y las inasistencias no cuentan. Antes
+            // "Hoy 1" convivía con "Sin citas para hoy" cuando la única cita del
+            // día estaba cancelada. Semana y Mes llevan tope: sin él sumaban
+            // también las reservas de semanas y meses siguientes.
+            var vigentes = base_.Where(c =>
+                c.Estado != EstadosCitas.Cancelada && c.Estado != EstadosCitas.Inasistencia);
+            var citasHoy     = await vigentes.CountAsync(c => c.InicioEn >= hoyInicio && c.InicioEn < hoyFin);
+            var citasSemana  = await vigentes.CountAsync(c => c.InicioEn >= inicioSemana && c.InicioEn < finSemana);
+            var citasMes     = await vigentes.CountAsync(c => c.InicioEn >= inicioMes && c.InicioEn < finMes);
 
             // Ingresos — SQL SUM sobre completadas
             var completadasBase = base_.Where(c => c.Estado == EstadosCitas.Completada);
             var ingresosHoy    = await completadasBase.Where(c => c.InicioEn >= hoyInicio && c.InicioEn < hoyFin).SumAsync(c => c.Precio);
-            var ingresosSemana = await completadasBase.Where(c => c.InicioEn >= inicioSemana).SumAsync(c => c.Precio);
-            var ingresosMes    = await completadasBase.Where(c => c.InicioEn >= inicioMes).SumAsync(c => c.Precio);
+            var ingresosSemana = await completadasBase.Where(c => c.InicioEn >= inicioSemana && c.InicioEn < finSemana).SumAsync(c => c.Precio);
+            var ingresosMes    = await completadasBase.Where(c => c.InicioEn >= inicioMes && c.InicioEn < finMes).SumAsync(c => c.Precio);
 
             // Próximas 5 citas — carga mínima con proyección
             var proximas = await base_
