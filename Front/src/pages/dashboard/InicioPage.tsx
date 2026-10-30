@@ -342,7 +342,11 @@ function VistaPropietario({ nombre }: { nombre: string }) {
   const tieneServicios = servicios.length > 0;
   const tieneHorarios = horarios.some(h => h.activo);
   const configuracionConocida = serviciosQ.isSuccess && horariosQ.isSuccess;
-  const configuracionPendiente = serviciosQ.isPending || horariosQ.isPending;
+  // Solo se espera el primer intento: si servicios u horarios fallan, el panel
+  // no se queda en skeleton durante todos los reintentos.
+  const configuracionPendiente =
+    (serviciosQ.isPending && serviciosQ.failureCount === 0) ||
+    (horariosQ.isPending && horariosQ.failureCount === 0);
   const guiaConocida = configuracionConocida && empleadosQ.isSuccess && galeriaQ.isSuccess;
 
   const { data: citasDeHoy = [], isLoading: cargandoAgenda, isError: errorAgenda, refetch: reintentarAgenda } = useQuery({
