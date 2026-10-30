@@ -2,6 +2,8 @@ using AppointVaAPI.Models;
 using AppointVaAPI.Services;
 using AppointVaAPI.Constants;
 using FluentAssertions;
+using Microsoft.Extensions.Configuration;
+using NSubstitute;
 
 namespace AppointVaAPI.Tests.Services;
 
@@ -335,5 +337,182 @@ public class EmailTemplatesTests
         html.Should().Contain("Ir a mi panel →");
         html.Should().Contain(urlDash);
         html.Should().Contain("hola@appointva.com");
+    }
+
+    // ─── HTML injection ──────────────────────────────────────────────────────
+
+    private const string NombreMalicioso  = "<b>Ana</b><script>x</script>";
+    private const string NombreCodificado = "&lt;b&gt;Ana&lt;/b&gt;&lt;script&gt;x&lt;/script&gt;";
+
+    public static IEnumerable<object[]> PlantillasConNombreMalicioso()
+    {
+        var cita = BuildCita();
+        yield return new object[] { "ticket", EmailService.PlantillaTicket(
+            NombreMalicioso, "Salón Prueba", "Corte", cita.InicioEn, 250m, "Efectivo", null) };
+        yield return new object[] { "confirmacion", EmailService.PlantillaConfirmacion(
+            cita, NombreMalicioso, null, null, null, null, false) };
+        yield return new object[] { "cancelacion", EmailService.PlantillaCancelacion(cita, NombreMalicioso) };
+        yield return new object[] { "recordatorio", EmailService.PlantillaRecordatorio(
+            cita, NombreMalicioso, "mañana", null, null) };
+        yield return new object[] { "reagendar", EmailService.PlantillaReagendar(
+            cita, NombreMalicioso, cita.InicioEn.AddDays(-1)) };
+    }
+
+    [Theory]
+    [MemberData(nameof(PlantillasConNombreMalicioso))]
+    public void Plantillas_EncodeClientName(string plantilla, string html)
+    {
+        html.Should().NotContain("<script>", because: $"the {plantilla} template must encode the client name");
+        html.Should().NotContain("<b>Ana</b>", because: $"the {plantilla} template must encode the client name");
+        html.Should().Contain(NombreCodificado, because: $"the {plantilla} template must show the name as text");
+    }
+
+    [Fact]
+    public void Plantillas_EncodeBusinessServiceEmployeeAndReason()
+    {
+        var cita = BuildCita(
+            negocioNombre: "<i>Neg</i>",
+            servicioNombre: "<img src=x onerror=alert(1)>",
+            empleadoNombre: "\"Emp\" & 'Co'",
+            motivoCancelacion: "<a href=\"https://evil\">clic</a>");
+
+        var cancelacion = EmailService.PlantillaCancelacion(cita, "Ana");
+        cancelacion.Should().NotContain("<i>Neg</i>");
+        cancelacion.Should().Contain("&lt;i&gt;Neg&lt;/i&gt;");
+        cancelacion.Should().NotContain("<img src=x");
+        cancelacion.Should().NotContain("<a href=\"https://evil\">");
+        cancelacion.Should().Contain("&lt;a href=&quot;https://evil&quot;&gt;clic&lt;/a&gt;");
+
+        var confirmacion = EmailService.PlantillaConfirmacion(cita, "Ana", null, null, null, null, false);
+        confirmacion.Should().Contain("&quot;Emp&quot; &amp; &#39;Co&#39;");
+    }
+
+    [Fact]
+    public void Plantillas_KeepAccentsReadable()
+    {
+        var html = EmailService.PlantillaConfirmacion(BuildCita(), "José Núñez", null, null, null, null, false);
+
+        html.Should().Contain("José Núñez");
+        html.Should().Contain("Salón Prueba");
+    }
+
+    [Fact]
+    public void Plantillas_UrlWithQueryString_IsAttributeEncodedAndStillAValidLink()
+    {
+        var url = "https://cal.example.com/ical?id=1&token=abc";
+        var html = EmailService.PlantillaConfirmacion(BuildCita(), "Ana", null, url, null, null, false);
+
+        // &amp; inside an attribute is decoded back to & by every HTML parser.
+        html.Should().Contain("href=\"https://cal.example.com/ical?id=1&amp;token=abc\"");
+        System.Net.WebUtility.HtmlDecode("https://cal.example.com/ical?id=1&amp;token=abc").Should().Be(url);
+    }
+
+    [Fact]
+    public void Plantillas_UrlCannotBreakOutOfHrefAttribute()
+    {
+        var html = EmailService.PlantillaSolicitudResena(BuildCita(), "Ana", "https://x\" onclick=\"alert(1)");
+
+        html.Should().NotContain("\" onclick=\"");
+        html.Should().Contain("href=\"https://x&quot; onclick=&quot;alert(1)\"");
+    }
+
+    // ─── Hour format ─────────────────────────────────────────────────────────
+
+    [Theory]
+    [InlineData(16, 0, "4:00 p.m.")]
+    [InlineData(9, 5, "9:05 a.m.")]
+    [InlineData(0, 0, "12:00 a.m.")]
+    [InlineData(12, 30, "12:30 p.m.")]
+    public void Hora12_UsesSpanishPeriods(int hora, int minuto, string esperado)
+    {
+        EmailService.Hora12(new DateTime(2026, 8, 10, hora, minuto, 0)).Should().Be(esperado);
+    }
+
+    [Fact]
+    public void Plantillas_RenderSpanishTime_WithoutTimeZoneConversion()
+    {
+        var cita = BuildCita();
+        cita.InicioEn = new DateTime(2026, 8, 10, 16, 0, 0, DateTimeKind.Utc);
+        cita.FinEn    = cita.InicioEn.AddHours(1);
+
+        var ticket = EmailService.PlantillaTicket("Ana", "Salón", "Corte",
+            new DateTime(2026, 8, 10, 9, 5, 0), 100m, "Efectivo", null);
+        ticket.Should().Contain("9:05 a.m.");
+        ticket.Should().NotContain("AM");
+
+        EmailService.PlantillaConfirmacion(cita, "Ana", null, null, null, null, false).Should().Contain("4:00 p.m.");
+        EmailService.PlantillaCancelacion(cita, "Ana").Should().Contain("4:00 p.m.");
+        EmailService.PlantillaRecordatorio(cita, "Ana", "hoy", null, null).Should().Contain("4:00 p.m.");
+        EmailService.PlantillaReagendar(cita, "Ana", cita.InicioEn.AddDays(-1))
+            .Should().Contain("4:00 p.m. – 5:00 p.m.");
+    }
+
+    // ─── Subject header injection ────────────────────────────────────────────
+
+    [Fact]
+    public void LimpiarAsunto_RemovesCrLf()
+    {
+        EmailService.LimpiarAsunto("Recibo de pago — Salón\r\nBcc: x@evil.com")
+            .Should().Be("Recibo de pago — Salón Bcc: x@evil.com");
+    }
+
+    [Fact]
+    public async Task EnviarTicketCitaAsync_CrLfInBusinessName_DoesNotReachSubject()
+    {
+        var (service, handler) = BuildService();
+
+        await service.EnviarTicketCitaAsync("ana@example.com", "Ana", "Salón\r\nBcc: x@evil.com",
+            "Corte", new DateTime(2026, 8, 10, 16, 0, 0), 100m, "Efectivo", null);
+
+        handler.Subject.Should().NotBeNull();
+        handler.Subject.Should().NotContainAny("\r", "\n");
+        handler.Subject.Should().Be("Recibo de pago — Salón Bcc: x@evil.com");
+    }
+
+    [Fact]
+    public async Task EnviarCancelacionCitaAsync_CrLfInServiceName_DoesNotReachSubject()
+    {
+        var (service, handler) = BuildService();
+        var cita = BuildCita(servicioNombre: "Corte\nBcc: x@evil.com");
+        cita.NegocioId = Guid.Empty; // skip EmailLog registration
+
+        await service.EnviarCancelacionCitaAsync(cita, "ana@example.com", "Ana");
+
+        handler.Subject.Should().NotBeNull();
+        handler.Subject.Should().NotContainAny("\r", "\n");
+        handler.Subject.Should().Be("Cita cancelada — Corte Bcc: x@evil.com");
+    }
+
+    private static (EmailService, CapturingHandler) BuildService()
+    {
+        var config = new Microsoft.Extensions.Configuration.ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Email:Habilitado"] = "true",
+                ["Email:ApiKey"]     = "test-key",
+            })
+            .Build();
+        var handler = new CapturingHandler();
+        var factory = NSubstitute.Substitute.For<IHttpClientFactory>();
+        factory.CreateClient("Brevo").Returns(_ => new HttpClient(handler));
+        var scopeFactory = NSubstitute.Substitute.For<Microsoft.Extensions.DependencyInjection.IServiceScopeFactory>();
+        var service = new EmailService(config,
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<EmailService>.Instance,
+            scopeFactory, factory);
+        return (service, handler);
+    }
+
+    private sealed class CapturingHandler : HttpMessageHandler
+    {
+        public string? Subject { get; private set; }
+
+        protected override async Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var json = await request.Content!.ReadAsStringAsync(cancellationToken);
+            using var doc = System.Text.Json.JsonDocument.Parse(json);
+            Subject = doc.RootElement.GetProperty("subject").GetString();
+            return new HttpResponseMessage(System.Net.HttpStatusCode.Created);
+        }
     }
 }

@@ -136,7 +136,7 @@ namespace AppointVaAPI.Services
                 {
                     sender  = new { name = senderName, email = senderEmail },
                     to      = new[] { new { email = destino } },
-                    subject = asunto,
+                    subject = LimpiarAsunto(asunto),
                     htmlContent = html
                 };
 
@@ -197,10 +197,11 @@ namespace AppointVaAPI.Services
 
         internal static string PlantillaConfirmacion(Cita cita, string nombreCliente, string? urlCita = null, string? icalUrl = null, string? googleCalUrl = null, string? urlCancelacion = null, bool esPendiente = false)
         {
-            nombreCliente = nombreCliente.Trim();
-            var negocio  = cita.Negocio?.Nombre ?? "el negocio";
-            var servicio = cita.Servicio?.Nombre ?? "el servicio";
-            var empleado = cita.Empleado?.Nombre ?? string.Empty;
+            nombreCliente = Html(nombreCliente.Trim());
+            var negocio  = Html(cita.Negocio?.Nombre ?? "el negocio");
+            var servicio = Html(cita.Servicio?.Nombre ?? "el servicio");
+            var empleado = Html(cita.Empleado?.Nombre);
+            var codigo   = Html(cita.CodigoConfirmacion);
             var inicio   = cita.InicioEn.ToString("dddd dd 'de' MMMM 'de' yyyy", new System.Globalization.CultureInfo("es-MX"));
             var horaInicio  = Hora12(cita.InicioEn);
             var duracionMin = (int)(cita.FinEn - cita.InicioEn).TotalMinutes;
@@ -221,7 +222,7 @@ namespace AppointVaAPI.Services
 """;
             var seccionCta = string.IsNullOrEmpty(urlCita) ? "" : $"""
                   <div style="text-align:center;margin:0 0 20px;">
-                    <a href="{urlCita}" style="background:#c8a961;color:#1e293b;font-weight:700;font-size:15px;padding:14px 36px;border-radius:9px;text-decoration:none;display:inline-block;">Ver mi cita →</a>
+                    <a href="{Html(urlCita)}" style="background:#c8a961;color:#1e293b;font-weight:700;font-size:15px;padding:14px 36px;border-radius:9px;text-decoration:none;display:inline-block;">Ver mi cita →</a>
                   </div>
 """;
             var seccionCalendario = (!esPendiente && (icalUrl is not null || googleCalUrl is not null)) ? $"""
@@ -229,14 +230,14 @@ namespace AppointVaAPI.Services
         <tr>
           {(googleCalUrl is not null ? $"""
           <td width="{(icalUrl is not null ? "50%" : "100%")}" style="{(icalUrl is not null ? "padding-right:6px;" : "")}">
-            <a href="{googleCalUrl}" style="display:block;background:#f1f5f9;color:#475569;font-size:13px;font-weight:600;padding:11px 8px;border-radius:8px;text-decoration:none;border:1px solid #e2e8f0;text-align:center;box-sizing:border-box;">
+            <a href="{Html(googleCalUrl)}" style="display:block;background:#f1f5f9;color:#475569;font-size:13px;font-weight:600;padding:11px 8px;border-radius:8px;text-decoration:none;border:1px solid #e2e8f0;text-align:center;box-sizing:border-box;">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" style="display:inline-block;vertical-align:middle;margin-right:6px;" role="img" aria-label="Google Calendar"><path d="M18.316 5.684H24v12.632h-5.684V5.684zM5.684 24h12.632v-5.684H5.684V24zM18.316 5.684V0H1.895A1.894 1.894 0 0 0 0 1.895v16.421h5.684V5.684h12.632zm-7.207 6.25v-.065c.272-.144.5-.349.687-.617s.279-.595.279-.982c0-.379-.099-.72-.3-1.025a2.05 2.05 0 0 0-.832-.714 2.703 2.703 0 0 0-1.197-.257c-.6 0-1.094.156-1.481.467-.386.311-.65.671-.793 1.078l1.085.452c.086-.249.224-.461.413-.633.189-.172.445-.257.767-.257.33 0 .602.088.816.264a.86.86 0 0 1 .322.703c0 .33-.12.589-.36.778-.24.19-.535.284-.886.284h-.567v1.085h.633c.407 0 .748.109 1.02.327.272.218.407.499.407.843 0 .336-.129.614-.387.832s-.565.327-.924.327c-.351 0-.651-.103-.897-.311-.248-.208-.422-.502-.521-.881l-1.096.452c.178.616.505 1.082.977 1.401.472.319.984.478 1.538.477a2.84 2.84 0 0 0 1.293-.291c.382-.193.684-.458.902-.794.218-.336.327-.72.327-1.149 0-.429-.115-.797-.344-1.105a2.067 2.067 0 0 0-.881-.689zm2.093-1.931l.602.913L15 10.045v5.744h1.187V8.446h-.827l-2.158 1.557zM22.105 0h-3.289v5.184H24V1.895A1.894 1.894 0 0 0 22.105 0zm-3.289 23.5l4.684-4.684h-4.684V23.5zM0 22.105C0 23.152.848 24 1.895 24h3.289v-5.184H0v3.289z" fill="#1a73e8"/></svg>Google Calendar
             </a>
           </td>
           """ : "")}
           {(icalUrl is not null ? $"""
           <td width="{(googleCalUrl is not null ? "50%" : "100%")}" style="{(googleCalUrl is not null ? "padding-left:6px;" : "")}">
-            <a href="{icalUrl}" style="display:block;background:#f1f5f9;color:#475569;font-size:13px;font-weight:600;padding:11px 8px;border-radius:8px;text-decoration:none;border:1px solid #e2e8f0;text-align:center;box-sizing:border-box;">
+            <a href="{Html(icalUrl)}" style="display:block;background:#f1f5f9;color:#475569;font-size:13px;font-weight:600;padding:11px 8px;border-radius:8px;text-decoration:none;border:1px solid #e2e8f0;text-align:center;box-sizing:border-box;">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" style="display:inline-block;vertical-align:middle;margin-right:6px;" role="img" aria-label="Apple"><path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701" fill="#000000"/></svg>iCal / Apple
             </a>
           </td>
@@ -246,10 +247,10 @@ namespace AppointVaAPI.Services
 """ : "";
             var seccionCancelacion = string.IsNullOrEmpty(urlCancelacion) ? "" : $"""
                   <div style="text-align:center;margin:0 0 20px;">
-                    <a href="{urlCancelacion}" style="background:#f1f5f9;color:#475569;font-size:13px;font-weight:600;padding:10px 22px;border-radius:8px;text-decoration:none;border:1px solid #e2e8f0;display:inline-block;margin:0 4px;">Cancelar mi cita</a>
+                    <a href="{Html(urlCancelacion)}" style="background:#f1f5f9;color:#475569;font-size:13px;font-weight:600;padding:10px 22px;border-radius:8px;text-decoration:none;border:1px solid #e2e8f0;display:inline-block;margin:0 4px;">Cancelar mi cita</a>
                   </div>
 """;
-            var footerLinkCancelacion = string.IsNullOrEmpty(urlCancelacion) ? "" : $"""<a href="{urlCancelacion}" style="color:#64748b;text-decoration:none;">Cancelar mi cita</a> · """;
+            var footerLinkCancelacion = string.IsNullOrEmpty(urlCancelacion) ? "" : $"""<a href="{Html(urlCancelacion)}" style="color:#64748b;text-decoration:none;">Cancelar mi cita</a> · """;
 
             return $"""
                 <!DOCTYPE html>
@@ -298,7 +299,7 @@ namespace AppointVaAPI.Services
                       </table>
                       <div style="background:#fffbeb;border:1.5px solid #fde68a;border-radius:10px;padding:16px 20px;text-align:center;margin-bottom:24px;">
                         <div style="font-size:10px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Código de confirmación</div>
-                        <div style="font-size:27px;font-weight:800;color:#c8a961;letter-spacing:6px;">{cita.CodigoConfirmacion}</div>
+                        <div style="font-size:27px;font-weight:800;color:#c8a961;letter-spacing:6px;">{codigo}</div>
                       </div>
                       {seccionCta}
                       {seccionCalendario}
@@ -317,21 +318,55 @@ namespace AppointVaAPI.Services
                 """;
         }
 
-        private static string Hora12(DateTime dt) =>
-            dt.ToString("h:mm tt", System.Globalization.CultureInfo.InvariantCulture);
+        /// <summary>
+        /// Spanish 12-hour time, the same wording the front shows: "4:00 p.m.", "9:05 a.m.".
+        /// Built by hand instead of with a culture so the output does not depend on the
+        /// ICU data installed on the server. The value is shown as-is: appointment times
+        /// are already the business's local wall time, so no zone conversion here.
+        /// </summary>
+        internal static string Hora12(DateTime dt)
+        {
+            var hora = dt.Hour % 12 == 0 ? 12 : dt.Hour % 12;
+            var periodo = dt.Hour < 12 ? "a.m." : "p.m.";
+            return $"{hora}:{dt.Minute:00} {periodo}";
+        }
+
+        /// <summary>
+        /// Escapes a value for HTML text or a quoted attribute. Only the five markup
+        /// characters are escaped (WebUtility.HtmlEncode would also turn every accent
+        /// into a numeric entity, which is valid but noisy in Spanish text).
+        /// </summary>
+        internal static string Html(string? valor)
+        {
+            if (string.IsNullOrEmpty(valor)) return string.Empty;
+            return valor
+                .Replace("&", "&amp;")
+                .Replace("<", "&lt;")
+                .Replace(">", "&gt;")
+                .Replace("\"", "&quot;")
+                .Replace("'", "&#39;");
+        }
+
+        /// <summary>
+        /// Subjects are plain text (no HTML encoding), but a CR or LF coming from a
+        /// business or service name must never reach the mail header.
+        /// </summary>
+        internal static string LimpiarAsunto(string asunto) =>
+            string.Join(" ", asunto.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)).Trim();
 
         internal static string PlantillaCancelacion(Cita cita, string nombreCliente)
         {
-            nombreCliente = nombreCliente.Trim();
-            var negocio  = cita.Negocio?.Nombre ?? "el negocio";
-            var servicio = cita.Servicio?.Nombre ?? "el servicio";
+            nombreCliente = Html(nombreCliente.Trim());
+            var negocio  = Html(cita.Negocio?.Nombre ?? "el negocio");
+            var servicio = Html(cita.Servicio?.Nombre ?? "el servicio");
+            var motivo   = Html(cita.MotivoCancelacion);
             var inicio   = cita.InicioEn.ToString("dddd dd 'de' MMMM 'de' yyyy", new System.Globalization.CultureInfo("es-MX"));
             var hora     = Hora12(cita.InicioEn);
 
-            var bloqueMotivo = string.IsNullOrEmpty(cita.MotivoCancelacion) ? "" : $"""
+            var bloqueMotivo = string.IsNullOrEmpty(motivo) ? "" : $"""
                       <div style="background:#fef2f2;border:1.5px solid #fecaca;border-radius:9px;padding:16px 18px;margin-bottom:24px;">
                         <div style="color:#991b1b;font-weight:600;font-size:14px;margin-bottom:4px;">Motivo de cancelación</div>
-                        <div style="color:#7f1d1d;font-size:14px;">{cita.MotivoCancelacion}</div>
+                        <div style="color:#7f1d1d;font-size:14px;">{motivo}</div>
                       </div>
 """;
 
@@ -388,10 +423,11 @@ namespace AppointVaAPI.Services
 
         internal static string PlantillaRecordatorio(Cita cita, string nombreCliente, string cuandoTexto, string? icalUrl = null, string? googleCalUrl = null)
         {
-            nombreCliente = nombreCliente.Trim();
-            var negocio  = cita.Negocio?.Nombre ?? "el negocio";
-            var servicio = cita.Servicio?.Nombre ?? "el servicio";
-            var empleado = cita.Empleado?.Nombre ?? string.Empty;
+            nombreCliente = Html(nombreCliente.Trim());
+            var negocio  = Html(cita.Negocio?.Nombre ?? "el negocio");
+            var servicio = Html(cita.Servicio?.Nombre ?? "el servicio");
+            var empleado = Html(cita.Empleado?.Nombre);
+            var codigo   = Html(cita.CodigoConfirmacion);
             var inicio   = cita.InicioEn.ToString("dddd dd 'de' MMMM 'de' yyyy", new System.Globalization.CultureInfo("es-MX"));
             var horaInicio  = Hora12(cita.InicioEn);
             var duracionMin = (int)(cita.FinEn - cita.InicioEn).TotalMinutes;
@@ -407,14 +443,14 @@ namespace AppointVaAPI.Services
         <tr>
           {(googleCalUrl is not null ? $"""
           <td width="{(icalUrl is not null ? "50%" : "100%")}" style="{(icalUrl is not null ? "padding-right:6px;" : "")}">
-            <a href="{googleCalUrl}" style="display:block;background:#f1f5f9;color:#475569;font-size:13px;font-weight:600;padding:11px 8px;border-radius:8px;text-decoration:none;border:1px solid #e2e8f0;text-align:center;box-sizing:border-box;">
+            <a href="{Html(googleCalUrl)}" style="display:block;background:#f1f5f9;color:#475569;font-size:13px;font-weight:600;padding:11px 8px;border-radius:8px;text-decoration:none;border:1px solid #e2e8f0;text-align:center;box-sizing:border-box;">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" style="display:inline-block;vertical-align:middle;margin-right:6px;" role="img" aria-label="Google Calendar"><path d="M18.316 5.684H24v12.632h-5.684V5.684zM5.684 24h12.632v-5.684H5.684V24zM18.316 5.684V0H1.895A1.894 1.894 0 0 0 0 1.895v16.421h5.684V5.684h12.632zm-7.207 6.25v-.065c.272-.144.5-.349.687-.617s.279-.595.279-.982c0-.379-.099-.72-.3-1.025a2.05 2.05 0 0 0-.832-.714 2.703 2.703 0 0 0-1.197-.257c-.6 0-1.094.156-1.481.467-.386.311-.65.671-.793 1.078l1.085.452c.086-.249.224-.461.413-.633.189-.172.445-.257.767-.257.33 0 .602.088.816.264a.86.86 0 0 1 .322.703c0 .33-.12.589-.36.778-.24.19-.535.284-.886.284h-.567v1.085h.633c.407 0 .748.109 1.02.327.272.218.407.499.407.843 0 .336-.129.614-.387.832s-.565.327-.924.327c-.351 0-.651-.103-.897-.311-.248-.208-.422-.502-.521-.881l-1.096.452c.178.616.505 1.082.977 1.401.472.319.984.478 1.538.477a2.84 2.84 0 0 0 1.293-.291c.382-.193.684-.458.902-.794.218-.336.327-.72.327-1.149 0-.429-.115-.797-.344-1.105a2.067 2.067 0 0 0-.881-.689zm2.093-1.931l.602.913L15 10.045v5.744h1.187V8.446h-.827l-2.158 1.557zM22.105 0h-3.289v5.184H24V1.895A1.894 1.894 0 0 0 22.105 0zm-3.289 23.5l4.684-4.684h-4.684V23.5zM0 22.105C0 23.152.848 24 1.895 24h3.289v-5.184H0v3.289z" fill="#1a73e8"/></svg>Google Calendar
             </a>
           </td>
           """ : "")}
           {(icalUrl is not null ? $"""
           <td width="{(googleCalUrl is not null ? "50%" : "100%")}" style="{(googleCalUrl is not null ? "padding-left:6px;" : "")}">
-            <a href="{icalUrl}" style="display:block;background:#f1f5f9;color:#475569;font-size:13px;font-weight:600;padding:11px 8px;border-radius:8px;text-decoration:none;border:1px solid #e2e8f0;text-align:center;box-sizing:border-box;">
+            <a href="{Html(icalUrl)}" style="display:block;background:#f1f5f9;color:#475569;font-size:13px;font-weight:600;padding:11px 8px;border-radius:8px;text-decoration:none;border:1px solid #e2e8f0;text-align:center;box-sizing:border-box;">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" style="display:inline-block;vertical-align:middle;margin-right:6px;" role="img" aria-label="Apple"><path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701" fill="#000000"/></svg>iCal / Apple
             </a>
           </td>
@@ -466,7 +502,7 @@ namespace AppointVaAPI.Services
                       </table>
                       <div style="background:#fffbeb;border:1.5px solid #fde68a;border-radius:10px;padding:16px 20px;text-align:center;margin-bottom:24px;">
                         <div style="font-size:10px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Tu código de confirmación</div>
-                        <div style="font-size:27px;font-weight:800;color:#c8a961;letter-spacing:6px;">{cita.CodigoConfirmacion}</div>
+                        <div style="font-size:27px;font-weight:800;color:#c8a961;letter-spacing:6px;">{codigo}</div>
                       </div>
                       {seccionCalendario}
                     </div>
@@ -482,10 +518,11 @@ namespace AppointVaAPI.Services
 
         internal static string PlantillaReagendar(Cita cita, string nombreCliente, DateTime fechaOriginal)
         {
-            nombreCliente    = nombreCliente.Trim();
-            var negocio      = cita.Negocio?.Nombre ?? "el negocio";
-            var servicio     = cita.Servicio?.Nombre ?? "el servicio";
-            var empleado     = cita.Empleado?.Nombre ?? string.Empty;
+            nombreCliente    = Html(nombreCliente.Trim());
+            var negocio      = Html(cita.Negocio?.Nombre ?? "el negocio");
+            var servicio     = Html(cita.Servicio?.Nombre ?? "el servicio");
+            var empleado     = Html(cita.Empleado?.Nombre);
+            var codigo       = Html(cita.CodigoConfirmacion);
             var nuevaFecha   = cita.InicioEn.ToString("dddd dd 'de' MMMM 'de' yyyy", new System.Globalization.CultureInfo("es-MX"));
             var nuevaHora    = $"{Hora12(cita.InicioEn)} – {Hora12(cita.FinEn)}";
             var fechaOriginalStr = fechaOriginal.ToString("dddd dd 'de' MMMM 'de' yyyy", new System.Globalization.CultureInfo("es-MX")) + " " + Hora12(fechaOriginal);
@@ -535,7 +572,7 @@ namespace AppointVaAPI.Services
                         {filaEmpleado}
                       </table>
                       <div style="background:#f8fafc;border-radius:9px;padding:16px 18px;font-size:14px;color:#475569;line-height:1.6;">
-                        Tu código de confirmación sigue siendo: <strong style="color:#c8a961;letter-spacing:3px;">{cita.CodigoConfirmacion}</strong>
+                        Tu código de confirmación sigue siendo: <strong style="color:#c8a961;letter-spacing:3px;">{codigo}</strong>
                       </div>
                     </div>
                     <div style="background:#0f172a;padding:20px 40px;text-align:center;">
@@ -550,8 +587,9 @@ namespace AppointVaAPI.Services
 
         internal static string PlantillaSolicitudResena(Cita cita, string nombreCliente, string urlResena)
         {
-            var negocio  = cita.Negocio?.Nombre ?? "el negocio";
-            var servicio = cita.Servicio?.Nombre ?? "el servicio";
+            nombreCliente = Html(nombreCliente.Trim());
+            var negocio  = Html(cita.Negocio?.Nombre ?? "el negocio");
+            var servicio = Html(cita.Servicio?.Nombre ?? "el servicio");
 
             return $"""
                 <!DOCTYPE html>
@@ -583,7 +621,7 @@ namespace AppointVaAPI.Services
                         </tr>
                       </table>
                       <div style="text-align:center;margin:0 0 20px;">
-                        <a href="{urlResena}" style="background:#c8a961;color:#1e293b;font-weight:700;font-size:15px;padding:14px 36px;border-radius:9px;text-decoration:none;display:inline-block;">Dejar mi reseña →</a>
+                        <a href="{Html(urlResena)}" style="background:#c8a961;color:#1e293b;font-weight:700;font-size:15px;padding:14px 36px;border-radius:9px;text-decoration:none;display:inline-block;">Dejar mi reseña →</a>
                       </div>
                       <div style="background:#f8fafc;border-radius:9px;padding:16px 18px;font-size:14px;color:#475569;line-height:1.6;text-align:center;">
                         Este enlace expira en <strong>7 días</strong>. Solo toma 1 minuto.
@@ -601,6 +639,10 @@ namespace AppointVaAPI.Services
 
         internal static string PlantillaListaEspera(string nombreCliente, string nombreNegocio, string nombreServicio, string urlReserva)
         {
+            nombreCliente  = Html(nombreCliente.Trim());
+            nombreNegocio  = Html(nombreNegocio);
+            nombreServicio = Html(nombreServicio);
+            urlReserva     = Html(urlReserva);
             return $"""
                 <!DOCTYPE html>
                 <html lang="es">
@@ -622,7 +664,7 @@ namespace AppointVaAPI.Services
                           </td>
                         </tr>
                       </table>
-                      <p style="font-size:15px;color:#374151;line-height:1.6;margin:0 0 20px;">Hola, <strong>{nombreCliente.Trim()}</strong>. Estabas en la lista de espera de <strong>{nombreNegocio}</strong> y se liberó un lugar para ti.</p>
+                      <p style="font-size:15px;color:#374151;line-height:1.6;margin:0 0 20px;">Hola, <strong>{nombreCliente}</strong>. Estabas en la lista de espera de <strong>{nombreNegocio}</strong> y se liberó un lugar para ti.</p>
                       <div style="text-align:center;margin-bottom:20px;">
                         <span style="background:#fef3c7;color:#92400e;font-size:13px;font-weight:700;padding:6px 16px;border-radius:99px;border:1px solid #fde68a;display:inline-block;">⏱ Tienes 2 horas para reservar</span>
                       </div>
@@ -651,6 +693,7 @@ namespace AppointVaAPI.Services
 
         internal static string PlantillaRecuperacion(string nombre, string urlReset)
         {
+            urlReset = Html(urlReset);
             return $"""
                 <!DOCTYPE html>
                 <html lang="es">
@@ -695,6 +738,8 @@ namespace AppointVaAPI.Services
 
         internal static string PlantillaVerificacion(string nombre, string urlVerificacion)
         {
+            nombre          = Html(nombre);
+            urlVerificacion = Html(urlVerificacion);
             return $"""
                 <!DOCTYPE html>
                 <html lang="es">
@@ -739,6 +784,9 @@ namespace AppointVaAPI.Services
 
         internal static string PlantillaBienvenida(string nombre, string negocioNombre, string urlReservas, string urlDashboard)
         {
+            nombre       = Html(nombre);
+            urlReservas  = Html(urlReservas);
+            urlDashboard = Html(urlDashboard);
             return $"""
                 <!DOCTYPE html>
                 <html lang="es">
@@ -856,10 +904,14 @@ namespace AppointVaAPI.Services
             await EnviarAsync(destinoEmail, $"Recibo de pago — {negocioNombre}", html);
         }
 
-        private static string PlantillaTicket(
+        internal static string PlantillaTicket(
             string clienteNombre, string negocioNombre, string servicio,
             DateTime fechaCita, decimal montoCobrado, string metodoPago, decimal? cambio)
         {
+            clienteNombre = Html(clienteNombre);
+            negocioNombre = Html(negocioNombre);
+            servicio      = Html(servicio);
+            metodoPago    = Html(metodoPago);
             var fecha = fechaCita.ToString("dd 'de' MMMM yyyy", new System.Globalization.CultureInfo("es-MX")) + ", " + Hora12(fechaCita);
             var cambioHtml = cambio.HasValue && cambio > 0
                 ? $"<tr><td style=\"padding:8px 12px;\">Cambio</td><td style=\"padding:8px 12px;\"><strong>${cambio:F2}</strong></td></tr>"
