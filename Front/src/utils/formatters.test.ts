@@ -216,6 +216,11 @@ describe("nombreConInicial (DC-28)", () => {
     expect(nombreConInicial("Ana de")).toBe("Ana");
   });
 
+  it("deja entero el marcador de cliente eliminado", async () => {
+    const { nombreConInicial, CLIENTE_ELIMINADO } = await import("./formatters");
+    expect(nombreConInicial(CLIENTE_ELIMINADO)).toBe("Cliente eliminado");
+  });
+
   it("limitación conocida: un nombre de pila compuesto toma la segunda palabra como apellido", async () => {
     const { nombreConInicial } = await import("./formatters");
     expect(nombreConInicial("Juan Carlos Pérez")).toBe("Juan C.");

@@ -137,7 +137,7 @@ namespace AppointVaAPI.Controllers.V1
         }
 
         /// <summary>Name shown for an appointment whose client was deleted (soft delete).</summary>
-        public const string ClienteEliminado = "Cliente eliminado";
+        public const string ClienteEliminado = AppointVaAPI.Helpers.ClientesDeCitasHelper.ClienteEliminado;
 
         /// <summary>
         /// Appointments of the range with employee and service, plus their clients by id.
@@ -162,11 +162,8 @@ namespace AppointVaAPI.Controllers.V1
 
             var citas = await query.OrderBy(c => c.InicioEn).ToListAsync();
 
-            var clienteIds = citas.Select(c => c.ClienteId).Distinct().ToList();
-            var clientes = await _db.Clientes
-                .Where(cl => cl.NegocioId == negocioId && clienteIds.Contains(cl.Id))
-                .AsNoTracking()
-                .ToDictionaryAsync(cl => cl.Id);
+            var clientes = await AppointVaAPI.Helpers.ClientesDeCitasHelper.CargarAsync(
+                _db, negocioId, citas.Select(c => c.ClienteId));
 
             return (citas, clientes);
         }

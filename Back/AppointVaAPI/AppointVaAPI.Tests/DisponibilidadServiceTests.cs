@@ -327,6 +327,57 @@ public class DisponibilidadServiceTests
         result[0].HoraTexto.Should().Be("10:00 am", "el slot de 09:00 debe estar bloqueado por la cita Pendiente");
     }
 
+    // G3: Cliente has a soft-delete query filter. Availability reads Citas without going
+    // through Cita.Cliente, so a deleted client's future appointment keeps its slot.
+    [Fact]
+    public async Task ObtenerSlots_BloquearSlot_CuandoLaCitaEsDeUnClienteEliminado()
+    {
+        var db = CreateDb();
+        var svc = CreateService(db);
+        var (negocioId, servicio) = SeedServicio(db, duracionMinutos: 60);
+        var empleado = SeedEmpleado(db, negocioId);
+        SeedEmpleadoServicio(db, empleado.Id, servicio.Id);
+        var fecha = NextWeekday(DayOfWeek.Monday);
+        SeedHorario(db, empleado.Id, ToDiaSemana(DayOfWeek.Monday),
+            new TimeSpan(9, 0, 0), new TimeSpan(11, 0, 0));
+        SeedHorarioNegocio(db, negocioId, (byte)(int)DayOfWeek.Monday,
+            new TimeSpan(9, 0, 0), new TimeSpan(11, 0, 0));
+        var fechaDt = fecha.ToDateTime(TimeOnly.MinValue);
+        var clienteEliminado = new Cliente
+        {
+            Id = Guid.NewGuid(),
+            NegocioId = negocioId,
+            NombreCompleto = "Cliente Borrado",
+            Telefono = "5500000009",
+            FechaCreacion = DateTime.UtcNow,
+            FechaActualizacion = DateTime.UtcNow,
+            FechaEliminacion = DateTime.UtcNow,
+        };
+        db.Clientes.Add(clienteEliminado);
+        db.Citas.Add(new Cita
+        {
+            Id = Guid.NewGuid(),
+            NegocioId = negocioId,
+            EmpleadoId = empleado.Id,
+            ServicioId = servicio.Id,
+            ClienteId = clienteEliminado.Id,
+            CodigoConfirmacion = Guid.NewGuid().ToString("N"),
+            InicioEn = fechaDt.AddHours(9),
+            FinEn = fechaDt.AddHours(10),
+            Estado = EstadosCitas.Confirmada,
+            Precio = 100m,
+            FechaCreacion = DateTime.UtcNow,
+            FechaActualizacion = DateTime.UtcNow,
+        });
+        await db.SaveChangesAsync();
+        db.ChangeTracker.Clear();
+
+        var result = await svc.ObtenerSlotsDisponiblesAsync(negocioId, servicio.Id, empleado.Id, fecha);
+
+        result.Should().ContainSingle().Which.HoraTexto.Should().Be("10:00 am",
+            "the deleted client's appointment still occupies 09:00");
+    }
+
     [Fact]
     public async Task ObtenerSlots_BloquearSlot_CuandoCitaConfirmadaOcupaHorario()
     {

@@ -1,5 +1,6 @@
 ﻿using AppointVaAPI.Constants;
 using AppointVaAPI.Data;
+using AppointVaAPI.Helpers;
 using AppointVaAPI.Models;
 using AppointVaAPI.Repository.IRepository;
 using Microsoft.EntityFrameworkCore;
@@ -15,10 +16,13 @@ namespace AppointVaAPI.Repository
             _db = db;
         }
 
+        // Panel list, detail and agenda: the owner and the employees see every real
+        // appointment of their business, a deleted client's included (it still holds its
+        // slot). The client is attached apart (ClientesDeCitasHelper): an Include here was
+        // an INNER JOIN through the soft-delete filter and dropped those appointments.
         public async Task<List<Cita>> ObtenerCitasAsync(Guid negocioId, DateTime? desde, DateTime? hasta, Guid? empleadoId, string? busqueda = null, byte? estado = null, bool? pagada = null)
         {
             var query = _db.Citas
-                .Include(c => c.Cliente)
                 .Include(c => c.Empleado)
                 .Include(c => c.Servicio)
                 .Where(c => c.NegocioId == negocioId);
@@ -36,33 +40,46 @@ namespace AppointVaAPI.Repository
             if (!string.IsNullOrWhiteSpace(busqueda))
             {
                 var q = busqueda.ToLower();
+                // Name and phone are matched in a subquery over the (filtered) Clientes, not
+                // through c.Cliente, so the search by code or service still finds the
+                // appointments of a deleted client; their name and phone no longer match.
                 query = query.Where(c =>
-                    c.Cliente!.NombreCompleto.ToLower().Contains(q) ||
-                    c.Cliente.Telefono.Contains(q) ||
+                    _db.Clientes.Any(cl => cl.Id == c.ClienteId &&
+                        (cl.NombreCompleto.ToLower().Contains(q) || cl.Telefono.Contains(q))) ||
                     c.CodigoConfirmacion.ToLower().Contains(q) ||
                     c.Servicio!.Nombre.ToLower().Contains(q));
             }
 
-            return await query.OrderBy(c => c.InicioEn).AsNoTracking().ToListAsync();
+            var citas = await query.OrderBy(c => c.InicioEn).AsNoTracking().ToListAsync();
+            await ClientesDeCitasHelper.AdjuntarAsync(_db, citas);
+            return citas;
         }
 
+        // Panel detail and every panel action (state, payment, notes, reschedule): a
+        // deleted client's appointment is found too, with Cliente null.
         public async Task<Cita?> ObtenerPorIdAsync(Guid id, Guid negocioId)
         {
-            return await _db.Citas
-                .Include(c => c.Cliente)
+            var cita = await _db.Citas
                 .Include(c => c.Empleado)
                 .Include(c => c.Servicio)
                 .FirstOrDefaultAsync(c => c.Id == id && c.NegocioId == negocioId);
+            return await ClientesDeCitasHelper.AdjuntarAsync(_db, cita);
         }
 
+        // Public lookup by confirmation code (confirmation page, iCal, client cancel and
+        // reschedule). Deliberately null for an appointment whose client was deleted: the
+        // code alone would otherwise keep exposing that person's booking to whoever holds
+        // the link, and cancel/reschedule need the client's email, which is gone. The
+        // business still sees and manages the appointment from the panel.
         public async Task<Cita?> ObtenerPorCodigoAsync(string codigo)
         {
-            return await _db.Citas
-                .Include(c => c.Cliente)
+            var cita = await _db.Citas
                 .Include(c => c.Empleado)
                 .Include(c => c.Servicio)
                 .Include(c => c.Negocio)
                 .FirstOrDefaultAsync(c => c.CodigoConfirmacion == codigo);
+            await ClientesDeCitasHelper.AdjuntarAsync(_db, cita);
+            return cita?.Cliente is null ? null : cita;
         }
 
         public async Task<Cita> CrearAsync(Cita cita)

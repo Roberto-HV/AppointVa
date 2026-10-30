@@ -1,5 +1,6 @@
 using AppointVaAPI.Constants;
 using AppointVaAPI.Data;
+using AppointVaAPI.Helpers;
 using AppointVaAPI.Services.IServices;
 using Microsoft.EntityFrameworkCore;
 
@@ -21,14 +22,18 @@ namespace AppointVaAPI.Services
         public async Task EnviarRecordatorioCitaAsync(Guid citaId)
         {
             var cita = await _db.Citas
-                .Include(c => c.Cliente)
                 .Include(c => c.Servicio)
                 .Include(c => c.Empleado)
                 .Include(c => c.Negocio)
                 .FirstOrDefaultAsync(c => c.Id == citaId);
+            await ClientesDeCitasHelper.AdjuntarAsync(_db, cita);
 
             if (cita is null) return;
             if (cita.Estado == EstadosCitas.Cancelada || cita.Estado == EstadosCitas.Completada || cita.Estado == EstadosCitas.Inasistencia) return;
+            // Deliberate: a client deleted after booking gets no reminder (no contact data
+            // to use). Before, an Include(c => c.Cliente) hid the appointment by accident;
+            // returning normally keeps Hangfire from retrying the job.
+            if (cita.Cliente is null) return;
 
             var icalUrl = AppointVaAPI.Helpers.IcalHelper.UrlPublica(_config["BackendUrl"], cita.CodigoConfirmacion);
             var googleCalUrl = GenerarGoogleCalendarUrl(cita);

@@ -1,5 +1,6 @@
 using AppointVaAPI.Constants;
 using AppointVaAPI.Data;
+using AppointVaAPI.Helpers;
 using AppointVaAPI.Models;
 using AppointVaAPI.Services.IServices;
 using Microsoft.EntityFrameworkCore;
@@ -24,6 +25,21 @@ namespace AppointVaAPI.Services
             _config = config;
             _logger = logger;
             _http = httpFactory.CreateClient("WebPush");
+        }
+
+        // Staff pushes (new, rescheduled, cancelled, confirmed, 15-minute reminder) go out
+        // for a deleted client's appointment too: staff still has to attend that slot.
+        // The client is attached apart (ClientesDeCitasHelper) — an Include(c => c.Cliente)
+        // was an INNER JOIN through the soft-delete filter, so the job found no appointment
+        // and silently sent nothing. The payload then says "Cliente eliminado".
+        internal async Task<Cita?> CargarCitaAsync(Guid citaId)
+        {
+            var cita = await _db.Citas
+                .Include(c => c.Servicio)
+                .Include(c => c.Negocio)
+                .Include(c => c.Empleado)
+                .FirstOrDefaultAsync(c => c.Id == citaId);
+            return await ClientesDeCitasHelper.AdjuntarAsync(_db, cita);
         }
 
         // ── Guardar / eliminar suscripción ────────────────────────────────────────
@@ -66,12 +82,7 @@ namespace AppointVaAPI.Services
 
         public async Task EnviarNuevaCitaEmpleadoAsync(Guid citaId)
         {
-            var cita = await _db.Citas
-                .Include(c => c.Cliente)
-                .Include(c => c.Servicio)
-                .Include(c => c.Negocio)
-                .Include(c => c.Empleado)
-                .FirstOrDefaultAsync(c => c.Id == citaId);
+            var cita = await CargarCitaAsync(citaId);
 
             if (cita is null)
             {
@@ -137,12 +148,7 @@ namespace AppointVaAPI.Services
 
         public async Task EnviarReagendarEmpleadoAsync(Guid citaId)
         {
-            var cita = await _db.Citas
-                .Include(c => c.Cliente)
-                .Include(c => c.Servicio)
-                .Include(c => c.Negocio)
-                .Include(c => c.Empleado)
-                .FirstOrDefaultAsync(c => c.Id == citaId);
+            var cita = await CargarCitaAsync(citaId);
 
             if (cita is null) return;
 
@@ -191,12 +197,7 @@ namespace AppointVaAPI.Services
 
         public async Task EnviarCancelacionAsync(Guid citaId)
         {
-            var cita = await _db.Citas
-                .Include(c => c.Cliente)
-                .Include(c => c.Servicio)
-                .Include(c => c.Negocio)
-                .Include(c => c.Empleado)
-                .FirstOrDefaultAsync(c => c.Id == citaId);
+            var cita = await CargarCitaAsync(citaId);
 
             if (cita is null)
             {
@@ -262,12 +263,7 @@ namespace AppointVaAPI.Services
 
         public async Task EnviarConfirmacionCitaAsync(Guid citaId)
         {
-            var cita = await _db.Citas
-                .Include(c => c.Cliente)
-                .Include(c => c.Servicio)
-                .Include(c => c.Negocio)
-                .Include(c => c.Empleado)
-                .FirstOrDefaultAsync(c => c.Id == citaId);
+            var cita = await CargarCitaAsync(citaId);
 
             if (cita is null)
             {
@@ -353,12 +349,7 @@ namespace AppointVaAPI.Services
 
         public async Task EnviarRecordatorio15MinAsync(Guid citaId)
         {
-            var cita = await _db.Citas
-                .Include(c => c.Cliente)
-                .Include(c => c.Servicio)
-                .Include(c => c.Negocio)
-                .Include(c => c.Empleado)
-                .FirstOrDefaultAsync(c => c.Id == citaId);
+            var cita = await CargarCitaAsync(citaId);
 
             if (cita is null)
             {
@@ -802,9 +793,9 @@ namespace AppointVaAPI.Services
 
         // ── Payload builders ──────────────────────────────────────────────────────
 
-        private static string BuildPayloadNuevaCita(Cita cita, string? icalUrl, string? googleCalUrl)
+        internal static string BuildPayloadNuevaCita(Cita cita, string? icalUrl, string? googleCalUrl)
         {
-            var cliente  = cita.Cliente?.NombreCompleto ?? "Un cliente";
+            var cliente  = ClientesDeCitasHelper.Nombre(cita.Cliente);
             var servicio = cita.Servicio?.Nombre ?? "Servicio";
             var negocio  = cita.Negocio?.Nombre ?? "AppointVa";
             var hora     = cita.InicioEn.ToString("h:mm tt", System.Globalization.CultureInfo.InvariantCulture);
@@ -822,7 +813,7 @@ namespace AppointVaAPI.Services
 
         private static string BuildPayloadReagendar(Cita cita, string? icalUrl, string? googleCalUrl)
         {
-            var cliente  = cita.Cliente?.NombreCompleto ?? "Un cliente";
+            var cliente  = ClientesDeCitasHelper.Nombre(cita.Cliente);
             var servicio = cita.Servicio?.Nombre ?? "Servicio";
             var negocio  = cita.Negocio?.Nombre ?? "AppointVa";
             var hora     = cita.InicioEn.ToString("h:mm tt", System.Globalization.CultureInfo.InvariantCulture);
@@ -840,7 +831,7 @@ namespace AppointVaAPI.Services
 
         private static string BuildPayloadRecordatorio(Cita cita, string? icalUrl, string? googleCalUrl)
         {
-            var cliente  = cita.Cliente?.NombreCompleto ?? "Un cliente";
+            var cliente  = ClientesDeCitasHelper.Nombre(cita.Cliente);
             var servicio = cita.Servicio?.Nombre ?? "Servicio";
             var negocio  = cita.Negocio?.Nombre ?? "AppointVa";
 
@@ -856,7 +847,7 @@ namespace AppointVaAPI.Services
 
         private static string BuildPayloadCancelacion(Cita cita)
         {
-            var cliente  = cita.Cliente?.NombreCompleto ?? "Un cliente";
+            var cliente  = ClientesDeCitasHelper.Nombre(cita.Cliente);
             var servicio = cita.Servicio?.Nombre ?? "Servicio";
 
             TimeZoneInfo tz;
@@ -877,7 +868,7 @@ namespace AppointVaAPI.Services
 
         private static string BuildPayloadConfirmacionCita(Cita cita)
         {
-            var cliente  = cita.Cliente?.NombreCompleto ?? "Un cliente";
+            var cliente  = ClientesDeCitasHelper.Nombre(cita.Cliente);
             var servicio = cita.Servicio?.Nombre ?? "Servicio";
 
             TimeZoneInfo tz;
@@ -919,14 +910,14 @@ namespace AppointVaAPI.Services
             });
         }
 
-        private static string BuildGoogleCalendarUrl(Cita cita)
+        internal static string BuildGoogleCalendarUrl(Cita cita)
         {
             var titulo = Uri.EscapeDataString(
                 $"{cita.Servicio?.Nombre ?? "Cita"} — {cita.Negocio?.Nombre ?? "AppointVa"}");
             var inicio   = cita.InicioEn.ToString("yyyyMMddTHHmmssZ");
             var fin      = cita.FinEn.ToString("yyyyMMddTHHmmssZ");
             var detalles = Uri.EscapeDataString(
-                $"Cliente: {cita.Cliente?.NombreCompleto ?? "—"}\nTel: {cita.Cliente?.Telefono ?? "—"}");
+                $"Cliente: {ClientesDeCitasHelper.Nombre(cita.Cliente)}\nTel: {cita.Cliente?.Telefono ?? "—"}");
             return $"https://calendar.google.com/calendar/render?action=TEMPLATE&text={titulo}&dates={inicio}/{fin}&details={detalles}";
         }
 

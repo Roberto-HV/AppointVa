@@ -4,6 +4,7 @@ using AppointVaAPI.Jobs;
 using AppointVaAPI.Models;
 using AppointVaAPI.Services.IServices;
 using AppointVaAPI.Tests.Controllers;
+using FluentAssertions;
 using Hangfire;
 using Microsoft.Extensions.Configuration;
 using NSubstitute;
@@ -230,5 +231,68 @@ public class NotificacionJobCitasTests
 
         await notificacion.DidNotReceive().EnviarSolicitudResenaAsync(
             Arg.Any<Cita>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>());
+    }
+
+    // ── Client deleted after the job was enqueued (G3) ─────────────────────────
+    // A deleted client is deliberately not messaged, even with the email captured at
+    // enqueue time, and the job returns normally (no exception, so no Hangfire retry).
+
+    private static async Task<Cita> SeedCitaDeClienteEliminadoAsync(ApplicationDbContext db)
+    {
+        var cita = await SeedCitaAsync(db);
+        var cliente = await db.Clientes.FindAsync(cita.ClienteId);
+        cliente!.FechaEliminacion = DateTime.UtcNow;
+        await db.SaveChangesAsync();
+        // A fresh job runs on a fresh context: nothing of the seed stays tracked.
+        db.ChangeTracker.Clear();
+        return cita;
+    }
+
+    [Fact]
+    public async Task ClienteEliminado_NingunMensajeAlCliente_YElJobTerminaSinError()
+    {
+        var (db, job, notificacion, _) = CrearComponentes(
+            nameof(ClienteEliminado_NingunMensajeAlCliente_YElJobTerminaSinError));
+        var cita = await SeedCitaDeClienteEliminadoAsync(db);
+
+        var enviar = async () =>
+        {
+            await job.EnviarConfirmacionAsync(cita.Id, "cliente@test.com", "Cliente Test");
+            await job.EnviarCancelacionAsync(cita.Id, "cliente@test.com", "Cliente Test");
+            await job.EnviarReagendaAsync(cita.Id, "cliente@test.com", "Cliente Test", DateTime.UtcNow);
+            await job.EnviarSolicitudResenaAsync(cita.Id, "cliente@test.com", "Cliente Test", "http://url/resena");
+        };
+
+        await enviar.Should().NotThrowAsync();
+        notificacion.ReceivedCalls().Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task ClienteEliminado_EnviarTicket_NoEnviaCorreo()
+    {
+        var db           = DbContextFactory.Create(nameof(ClienteEliminado_EnviarTicket_NoEnviaCorreo));
+        var emailService = Substitute.For<IEmailService>();
+        var job = new NotificacionJob(db, Substitute.For<INotificacionService>(),
+            new ConfigurationBuilder().Build(), Substitute.For<IBackgroundJobClient>(), emailService);
+        var cita = await SeedCitaDeClienteEliminadoAsync(db);
+
+        await job.EnviarTicketAsync(cita.Id);
+
+        emailService.ReceivedCalls().Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task ClienteVivo_EnviarTicket_SiEnviaCorreo()
+    {
+        var db           = DbContextFactory.Create(nameof(ClienteVivo_EnviarTicket_SiEnviaCorreo));
+        var emailService = Substitute.For<IEmailService>();
+        var job = new NotificacionJob(db, Substitute.For<INotificacionService>(),
+            new ConfigurationBuilder().Build(), Substitute.For<IBackgroundJobClient>(), emailService);
+        var cita = await SeedCitaAsync(db);
+        db.ChangeTracker.Clear();
+
+        await job.EnviarTicketAsync(cita.Id);
+
+        emailService.ReceivedCalls().Should().ContainSingle();
     }
 }

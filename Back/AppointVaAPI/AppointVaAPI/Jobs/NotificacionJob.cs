@@ -29,17 +29,28 @@ namespace AppointVaAPI.Jobs
             _emailService = emailService;
         }
 
-        private Task<Cita?> CargarCitaAsync(Guid citaId) =>
-            _db.Citas
-                .Include(c => c.Cliente)
+        /// <summary>
+        /// The appointment to message its client about, or null when there is nothing to
+        /// send. Deliberately null when the client was deleted (soft delete) after the job
+        /// was enqueued: a deleted client is not messaged by email or WhatsApp, even with
+        /// the address captured at enqueue time. Before, an Include(c => c.Cliente) dropped
+        /// the appointment by accident (INNER JOIN through the soft-delete filter); now the
+        /// exclusion is explicit. Returning normally (no throw) means Hangfire does not retry.
+        /// </summary>
+        private async Task<Cita?> CargarCitaParaMensajeAlClienteAsync(Guid citaId)
+        {
+            var cita = await _db.Citas
                 .Include(c => c.Empleado)
                 .Include(c => c.Servicio)
                 .Include(c => c.Negocio)
                 .FirstOrDefaultAsync(c => c.Id == citaId);
+            await ClientesDeCitasHelper.AdjuntarAsync(_db, cita);
+            return cita?.Cliente is null ? null : cita;
+        }
 
         public async Task EnviarConfirmacionAsync(Guid citaId, string emailDestino, string nombreCliente)
         {
-            var cita = await CargarCitaAsync(citaId);
+            var cita = await CargarCitaParaMensajeAlClienteAsync(citaId);
             if (cita is null) return;
 
             var frontendUrl = _config["FrontendUrl"] ?? "https://appointva.com";
@@ -55,7 +66,7 @@ namespace AppointVaAPI.Jobs
 
         public async Task EnviarCancelacionAsync(Guid citaId, string emailDestino, string nombreCliente)
         {
-            var cita = await CargarCitaAsync(citaId);
+            var cita = await CargarCitaParaMensajeAlClienteAsync(citaId);
             if (cita is null) return;
             await _notificacion.EnviarCancelacionCitaAsync(cita, emailDestino, nombreCliente);
         }
@@ -76,14 +87,14 @@ namespace AppointVaAPI.Jobs
 
         public async Task EnviarReagendaAsync(Guid citaId, string emailDestino, string nombreCliente, DateTime fechaOriginal)
         {
-            var cita = await CargarCitaAsync(citaId);
+            var cita = await CargarCitaParaMensajeAlClienteAsync(citaId);
             if (cita is null) return;
             await _notificacion.EnviarReagendarCitaAsync(cita, emailDestino, nombreCliente, fechaOriginal);
         }
 
         public async Task EnviarSolicitudResenaAsync(Guid citaId, string emailDestino, string nombreCliente, string urlResena)
         {
-            var cita = await CargarCitaAsync(citaId);
+            var cita = await CargarCitaParaMensajeAlClienteAsync(citaId);
             if (cita is null) return;
             await _notificacion.EnviarSolicitudResenaAsync(cita, emailDestino, nombreCliente, urlResena);
         }
@@ -132,11 +143,8 @@ namespace AppointVaAPI.Jobs
 
         public async Task EnviarTicketAsync(Guid citaId)
         {
-            var cita = await _db.Citas
-                .Include(c => c.Cliente)
-                .Include(c => c.Servicio)
-                .Include(c => c.Negocio)
-                .FirstOrDefaultAsync(c => c.Id == citaId);
+            // Same rule as the other client messages: no ticket for a deleted client.
+            var cita = await CargarCitaParaMensajeAlClienteAsync(citaId);
 
             if (cita is null || cita.Cliente is null || cita.Servicio is null || cita.Negocio is null) return;
             if (string.IsNullOrEmpty(cita.Cliente.Email)) return;

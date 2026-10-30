@@ -504,7 +504,10 @@ export default function CitasPage() {
       marcador: !!c.notas,
       onSelect: () => abrirNotas(c),
     },
-    { id: "repetir", grupo: "gestion", etiqueta: `Repetir ${terms.cita.toLowerCase()}`, Icono: RotateCcw, onSelect: () => abrirRepetirCita(c) },
+    // A deleted client has no name or phone left to book again with.
+    ...(c.clienteEliminado
+      ? []
+      : [{ id: "repetir", grupo: "gestion" as const, etiqueta: `Repetir ${terms.cita.toLowerCase()}`, Icono: RotateCcw, onSelect: () => abrirRepetirCita(c) }]),
     ...(c.estadoTexto === "Completada" && c.telefonoCliente
       ? [{ id: "resena", grupo: "comunicacion" as const, etiqueta: "Solicitar reseña por WhatsApp", Icono: Star, href: urlResenaWhatsApp(c, nombreNegocio, perfil?.slug) }]
       : []),

@@ -1,5 +1,6 @@
 ﻿using AppointVaAPI.Constants;
 using AppointVaAPI.Data;
+using AppointVaAPI.Helpers;
 using AppointVaAPI.Jobs;
 using AppointVaAPI.Models;
 using AppointVaAPI.Models.Dtos.Citas;
@@ -782,11 +783,15 @@ namespace AppointVaAPI.Controllers.V1
             if (archivo == null || archivo.Length == 0)
                 return BadRequest(new { mensaje = "El archivo es obligatorio" });
 
+            // Same rule as every public lookup by code (CitaRepository.ObtenerPorCodigoAsync):
+            // an appointment whose client was deleted is not reachable from the public link.
+            // Explicit check instead of the old Include(c => c.Cliente), whose INNER JOIN
+            // through the soft-delete filter did the same thing by accident.
             var cita = await _db.Citas
                 .Include(c => c.Negocio)
-                .Include(c => c.Cliente)
                 .FirstOrDefaultAsync(c => c.CodigoConfirmacion == codigo);
-            if (cita is null)
+            await ClientesDeCitasHelper.AdjuntarAsync(_db, cita);
+            if (cita?.Cliente is null)
                 return NotFound(new { mensaje = "Cita no encontrada" });
 
             if (cita.Estado == EstadosCitas.Cancelada || cita.Estado == EstadosCitas.Completada)
@@ -905,14 +910,19 @@ namespace AppointVaAPI.Controllers.V1
             var emailNorm = email?.ToLower().Trim();
             var telefonoNorm = telefono?.Trim();
 
-            var baseQuery = _db.Citas
-                .Where(c => c.NegocioId == negocio.Id && c.Cliente != null)
-                .AsNoTracking();
-
+            // "Mis citas" matches the client by email/phone over _db.Clientes, whose
+            // soft-delete filter applies on purpose: once a client is deleted, typing their
+            // email or phone no longer lists their history (that data is gone). The match
+            // is an explicit subquery, not a navigation through c.Cliente.
+            var clientesQuery = _db.Clientes.Where(cl => cl.NegocioId == negocio.Id);
             if (!string.IsNullOrWhiteSpace(emailNorm))
-                baseQuery = baseQuery.Where(c => c.Cliente!.Email != null && c.Cliente.Email.ToLower() == emailNorm);
+                clientesQuery = clientesQuery.Where(cl => cl.Email != null && cl.Email.ToLower() == emailNorm);
             if (!string.IsNullOrWhiteSpace(telefonoNorm))
-                baseQuery = baseQuery.Where(c => c.Cliente!.Telefono == telefonoNorm);
+                clientesQuery = clientesQuery.Where(cl => cl.Telefono == telefonoNorm);
+
+            var baseQuery = _db.Citas
+                .Where(c => c.NegocioId == negocio.Id && clientesQuery.Any(cl => cl.Id == c.ClienteId))
+                .AsNoTracking();
 
             var total = await baseQuery.CountAsync();
 

@@ -195,6 +195,9 @@ export function formatFechaHoraCompleta(iso: string): string {
   return capitalizarPrimera(s);
 }
 
+/** Name the API sends for an appointment whose client was deleted (ClientesDeCitasHelper). */
+export const CLIENTE_ELIMINADO = "Cliente eliminado";
+
 // Partículas de apellidos compuestos ("de la Cruz", "del Valle", "y Gasset").
 const PARTICULAS_APELLIDO = new Set(["de", "del", "la", "las", "los", "y"]);
 
@@ -204,6 +207,8 @@ const PARTICULAS_APELLIDO = new Set(["de", "del", "la", "las", "los", "y"]);
  * Lo usa el modo recepción, que se ve desde la sala de espera (decisión 12, DC-28).
  */
 export function nombreConInicial(nombreCompleto: string | null | undefined): string {
+  // The API's placeholder for a deleted client is not a person's name: keep it whole.
+  if (nombreCompleto === CLIENTE_ELIMINADO) return CLIENTE_ELIMINADO;
   const partes = (nombreCompleto ?? "").trim().split(/\s+/).filter(Boolean);
   if (partes.length === 0) return "";
   if (partes.length === 1) return partes[0];

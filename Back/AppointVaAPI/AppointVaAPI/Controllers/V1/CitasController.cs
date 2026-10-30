@@ -1,5 +1,6 @@
 ﻿using AppointVaAPI.Constants;
 using AppointVaAPI.Data;
+using AppointVaAPI.Helpers;
 using AppointVaAPI.Jobs;
 using AppointVaAPI.Models;
 using AppointVaAPI.Models.Dtos.Citas;
@@ -354,7 +355,7 @@ namespace AppointVaAPI.Controllers.V1
                     {
                         NegocioId = cita.NegocioId,
                         Tipo = "Cancelacion",
-                        Titulo = $"Cita cancelada — {cita.Cliente?.NombreCompleto ?? ""}",
+                        Titulo = $"Cita cancelada — {ClientesDeCitasHelper.Nombre(cita.Cliente)}",
                         Descripcion = $"{cita.Servicio?.Nombre ?? "Servicio"} con {cita.Empleado?.Nombre ?? "Empleado"} · {cita.InicioEn.ToString("ddd d 'de' MMM, h:mm tt", new System.Globalization.CultureInfo("es-MX"))}",
                         CitaId = cita.Id
                     });
@@ -670,8 +671,9 @@ namespace AppointVaAPI.Controllers.V1
         {
             if (_contexto.NegocioId is null) return Unauthorized();
 
+            // Pagos: a paid appointment of a deleted client is still money in the till, so
+            // it is listed; the client is attached apart (no INNER JOIN through Cliente).
             var query = _db.Citas
-                .Include(c => c.Cliente)
                 .Include(c => c.Empleado)
                 .Include(c => c.Servicio)
                 .Where(c => c.NegocioId == _contexto.NegocioId.Value && c.Pagada);
@@ -695,6 +697,7 @@ namespace AppointVaAPI.Controllers.V1
                 .OrderByDescending(c => c.FechaPago)
                 .AsNoTracking()
                 .ToListAsync();
+            await ClientesDeCitasHelper.AdjuntarAsync(_db, citas);
 
             return Ok(citas.Select(MapearDto));
         }
@@ -813,7 +816,10 @@ namespace AppointVaAPI.Controllers.V1
             CodigoConfirmacion = c.CodigoConfirmacion,
             NegocioId = c.NegocioId,
             ClienteId = c.ClienteId,
-            NombreCliente = c.Cliente?.NombreCompleto ?? string.Empty,
+            // Cliente is null only when the client was deleted (ClientesDeCitasHelper):
+            // the appointment is listed, without the deleted client's contact data.
+            ClienteEliminado = c.Cliente is null,
+            NombreCliente = ClientesDeCitasHelper.Nombre(c.Cliente),
             TelefonoCliente = c.Cliente?.Telefono ?? string.Empty,
             EmailCliente = c.Cliente?.Email,
             EmpleadoId = c.EmpleadoId,

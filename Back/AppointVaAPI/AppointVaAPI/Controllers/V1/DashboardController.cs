@@ -1,5 +1,6 @@
 using AppointVaAPI.Constants;
 using AppointVaAPI.Data;
+using AppointVaAPI.Helpers;
 using AppointVaAPI.Models.Dtos.Dashboard;
 using AppointVaAPI.Services.IServices;
 using Microsoft.AspNetCore.Authorization;
@@ -58,24 +59,38 @@ namespace AppointVaAPI.Controllers.V1
             var ingresosSemana = await completadasBase.Where(c => c.InicioEn >= inicioSemana && c.InicioEn < finSemana).SumAsync(c => c.Precio);
             var ingresosMes    = await completadasBase.Where(c => c.InicioEn >= inicioMes && c.InicioEn < finMes).SumAsync(c => c.Precio);
 
-            // Próximas 5 citas — carga mínima con proyección
-            var proximas = await base_
+            // Próximas 5 citas — carga mínima con proyección. The client name is resolved
+            // apart (ClientesDeCitasHelper): projecting c.Cliente was an INNER JOIN through
+            // the soft-delete filter and hid a deleted client's upcoming appointment.
+            var proximasFilas = await base_
                 .Where(c => c.InicioEn >= ahora &&
                             (c.Estado == EstadosCitas.Pendiente || c.Estado == EstadosCitas.Confirmada))
                 .OrderBy(c => c.InicioEn)
                 .Take(5)
-                .Select(c => new CitaResumenDto
+                .Select(c => new
                 {
-                    Id = c.Id,
-                    CodigoConfirmacion = c.CodigoConfirmacion,
-                    NombreCliente  = c.Cliente != null ? c.Cliente.NombreCompleto : string.Empty,
+                    c.Id,
+                    c.CodigoConfirmacion,
+                    c.ClienteId,
                     NombreServicio = c.Servicio != null ? c.Servicio.Nombre : string.Empty,
                     NombreEmpleado = c.Empleado != null ? c.Empleado.Nombre : string.Empty,
-                    InicioEn   = c.InicioEn,
-                    Estado     = c.Estado,
-                    EstadoTexto = PublicoController.ObtenerEstadoTexto(c.Estado)
+                    c.InicioEn,
+                    c.Estado,
                 })
                 .ToListAsync();
+            var clientesProximas = await ClientesDeCitasHelper.CargarAsync(
+                _db, negocioId, proximasFilas.Select(c => c.ClienteId));
+            var proximas = proximasFilas.Select(c => new CitaResumenDto
+            {
+                Id = c.Id,
+                CodigoConfirmacion = c.CodigoConfirmacion,
+                NombreCliente  = ClientesDeCitasHelper.Nombre(clientesProximas.GetValueOrDefault(c.ClienteId)),
+                NombreServicio = c.NombreServicio,
+                NombreEmpleado = c.NombreEmpleado,
+                InicioEn   = c.InicioEn,
+                Estado     = c.Estado,
+                EstadoTexto = PublicoController.ObtenerEstadoTexto(c.Estado)
+            }).ToList();
 
             // Top 5 servicios — GROUP BY en SQL
             var topServicios = await base_

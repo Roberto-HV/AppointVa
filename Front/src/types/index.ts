@@ -185,6 +185,8 @@ export interface CitaDto {
   id: string;
   codigoConfirmacion: string;
   clienteId: string;
+  /** The client was deleted: nombreCliente is "Cliente eliminado", no phone or email. */
+  clienteEliminado?: boolean;
   empleadoId: string;
   servicioId: string;
   nombreCliente: string;

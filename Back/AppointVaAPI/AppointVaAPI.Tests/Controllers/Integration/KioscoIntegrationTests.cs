@@ -223,6 +223,32 @@ public class KioscoIntegrationTests : IntegrationTestBase
         citas.Should().AllSatisfy(c => c.GetProperty("nombreCliente").GetString().Should().Be("María C."));
     }
 
+    // G3: projecting c.Cliente was an INNER JOIN through the soft-delete filter, so the
+    // reception screen hid today's appointments of a deleted client.
+    [Fact]
+    public async Task Agenda_ClienteEliminado_SusCitasDeHoySiguenComoClienteEliminado()
+    {
+        var cuenta = await CrearCuentaAsync();
+        await SembrarAgendaAsync(cuenta.NegocioId);
+        await using (var scope = Factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var cliente = await db.Clientes.SingleAsync(c => c.NegocioId == cuenta.NegocioId);
+            cliente.FechaEliminacion = DateTime.UtcNow;
+            await db.SaveChangesAsync();
+        }
+        var kiosco = await AbrirKioscoAsync(cuenta);
+
+        var resp = await NewClient(kiosco).GetAsync("/api/kiosco/agenda");
+
+        resp.StatusCode.Should().Be(HttpStatusCode.OK);
+        var texto = await resp.Content.ReadAsStringAsync();
+        texto.Should().NotContain("María").And.NotContain("5512345678");
+        var citas = JsonDocument.Parse(texto).RootElement.GetProperty("citas").EnumerateArray().ToList();
+        citas.Should().HaveCount(2, "today's appointments still occupy their slots");
+        citas.Should().AllSatisfy(c => c.GetProperty("nombreCliente").GetString().Should().Be("Cliente eliminado"));
+    }
+
     [Fact]
     public async Task Agenda_AbiertaPorEmpleado_SoloSusCitasYSinIngresos()
     {

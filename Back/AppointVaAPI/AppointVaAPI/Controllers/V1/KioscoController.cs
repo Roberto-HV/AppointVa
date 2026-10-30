@@ -144,11 +144,14 @@ namespace AppointVaAPI.Controllers.V1
                 .Select(c => new
                 {
                     c.Id, c.EmpleadoId, c.InicioEn, c.FinEn, c.Estado, c.Precio, c.Pagada,
-                    Cliente = c.Cliente!.NombreCompleto,
+                    c.ClienteId,
                     Servicio = c.Servicio!.Nombre,
                     Duracion = c.Servicio.DuracionMinutos
                 })
                 .ToListAsync();
+            // Reception shows every appointment of the day, a deleted client's too (it still
+            // occupies the chair): the name is resolved apart, as "Cliente eliminado".
+            var clientes = await ClientesDeCitasHelper.CargarAsync(_db, negocioId, citas.Select(c => c.ClienteId));
 
             var empleados = await _db.Empleados.AsNoTracking()
                 .Where(e => e.NegocioId == negocioId && e.Activo == 1 && e.FechaEliminacion == null)
@@ -167,7 +170,9 @@ namespace AppointVaAPI.Controllers.V1
                 {
                     Id = c.Id,
                     EmpleadoId = c.EmpleadoId,
-                    NombreCliente = NombreConInicial(c.Cliente),
+                    NombreCliente = clientes.TryGetValue(c.ClienteId, out var cliente)
+                        ? NombreConInicial(cliente.NombreCompleto)
+                        : ClientesDeCitasHelper.ClienteEliminado,
                     NombreServicio = c.Servicio,
                     DuracionMinutos = c.Duracion,
                     Precio = mostrarIngresos ? c.Precio : 0,

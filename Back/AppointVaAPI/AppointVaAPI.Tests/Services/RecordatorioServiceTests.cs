@@ -4,6 +4,7 @@ using AppointVaAPI.Models;
 using AppointVaAPI.Services;
 using AppointVaAPI.Services.IServices;
 using AppointVaAPI.Tests.Controllers;
+using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using NSubstitute;
 
@@ -168,5 +169,23 @@ public class RecordatorioServiceTests
         await notificacion.DidNotReceive().EnviarRecordatorioCitaAsync(
             Arg.Any<Cita>(), Arg.Any<string>(), Arg.Any<string>(),
             Arg.Any<string?>(), Arg.Any<string?>());
+    }
+
+    // G3: a client deleted after booking gets no reminder (deliberate, not an accidental
+    // join), and the job ends normally so Hangfire does not retry it.
+    [Fact]
+    public async Task EnviarRecordatorio_ClienteEliminado_NoLlamaNotificacionNiFalla()
+    {
+        var (db, service, notificacion) = CrearComponentes(
+            nameof(EnviarRecordatorio_ClienteEliminado_NoLlamaNotificacionNiFalla));
+        var cita = await SeedCitaAsync(db, EstadosCitas.Confirmada, "test@test.com");
+        (await db.Clientes.FindAsync(cita.ClienteId))!.FechaEliminacion = DateTime.UtcNow;
+        await db.SaveChangesAsync();
+        db.ChangeTracker.Clear();
+
+        var enviar = () => service.EnviarRecordatorioCitaAsync(cita.Id);
+
+        await enviar.Should().NotThrowAsync();
+        notificacion.ReceivedCalls().Should().BeEmpty();
     }
 }

@@ -8,6 +8,11 @@
 
         // Cliente
         public Guid ClienteId { get; set; }
+        /// <summary>
+        /// True when the client was deleted (soft delete): NombreCliente is "Cliente
+        /// eliminado", phone and email are empty, and ClienteId no longer opens a client.
+        /// </summary>
+        public bool ClienteEliminado { get; set; }
         public string NombreCliente { get; set; } = string.Empty;
         public string TelefonoCliente { get; set; } = string.Empty;
         public string? EmailCliente { get; set; }

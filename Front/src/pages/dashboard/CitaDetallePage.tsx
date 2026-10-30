@@ -85,7 +85,7 @@ export default function CitaDetallePage() {
     `${cita.nombreServicio} — ${cita.nombreEmpleado}`,
     inicio,
     fin,
-    `Cliente: ${cita.nombreCliente}\nTel: ${cita.telefonoCliente}${cita.notas ? `\nNotas: ${cita.notas}` : ""}`,
+    `Cliente: ${cita.nombreCliente}${cita.telefonoCliente ? `\nTel: ${cita.telefonoCliente}` : ""}${cita.notas ? `\nNotas: ${cita.notas}` : ""}`,
   );
 
   return (
@@ -140,7 +140,7 @@ export default function CitaDetallePage() {
           <User size={18} className="text-slate-400 dark:text-slate-500 mt-0.5 shrink-0" />
           <div>
             <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{cita.nombreCliente}</p>
-            <p className="text-sm text-slate-500 dark:text-slate-400">{cita.telefonoCliente}</p>
+            {cita.telefonoCliente && <p className="text-sm text-slate-500 dark:text-slate-400">{cita.telefonoCliente}</p>}
             {cita.emailCliente && <p className="text-sm text-slate-500 dark:text-slate-400">{cita.emailCliente}</p>}
           </div>
         </div>
