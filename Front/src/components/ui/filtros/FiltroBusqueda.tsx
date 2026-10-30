@@ -67,9 +67,10 @@ export default function FiltroBusqueda({
   // El padre puede reponer el término desde fuera ("Limpiar filtros", cambio de
   // pestaña); el borrador tiene que seguirlo o el campo miente. El eco de lo que
   // este campo aplicó no cuenta: si lo copiáramos, pisaría lo que se siguió
-  // tecleando mientras la consulta iba y venía.
+  // tecleando mientras la consulta iba y venía. Algunas páginas guardan el término
+  // recortado ("juan " → "juan"): ese eco tampoco es un cambio externo.
   useEffect(() => {
-    if (valor === emitido.current) return;
+    if (valor === emitido.current || valor === emitido.current.trim()) return;
     cancelarEspera();
     emitido.current = valor;
     setTexto(valor);

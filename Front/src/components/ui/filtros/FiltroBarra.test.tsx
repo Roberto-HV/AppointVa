@@ -208,6 +208,30 @@ describe("FiltroBarra", () => {
     expect(onChange).toHaveBeenLastCalledWith("ana");
   });
 
+  it("el eco recortado del padre no borra el espacio que se está tecleando", () => {
+    vi.useFakeTimers();
+    const onChange = vi.fn();
+    const { rerender } = render(
+      <FiltroBarra
+        busqueda={{ valor: "", onChange, etiqueta: "Buscar cliente" }}
+        campos={[]}
+        onLimpiar={vi.fn()}
+      />
+    );
+    const input = screen.getByLabelText("Buscar cliente");
+    fireEvent.change(input, { target: { value: "juan " } });
+    act(() => { vi.advanceTimersByTime(ESPERA_BUSQUEDA_MS); });
+    // Como AuditLogPage, el padre guarda el término recortado.
+    rerender(
+      <FiltroBarra
+        busqueda={{ valor: "juan", onChange, etiqueta: "Buscar cliente" }}
+        campos={[]}
+        onLimpiar={vi.fn()}
+      />
+    );
+    expect(input).toHaveValue("juan ");
+  });
+
   it("si el padre repone el término desde fuera, el campo lo sigue", () => {
     const { rerender } = render(
       <FiltroBarra
