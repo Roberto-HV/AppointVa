@@ -1,185 +1,164 @@
+import { useEffect, useMemo, useRef, useState } from "react";
+import { flushSync } from "react-dom";
+import { createRoot } from "react-dom/client";
+import { QRCodeSVG } from "qrcode.react";
 import { Printer, Mail } from "lucide-react";
 import type { CitaDto } from "../../types";
-import { toUtcDate } from "../../utils/formatters";
-import { escapeHtml } from "../../utils/html";
+import { useToastStore } from "../../store/toastStore";
+import {
+  htmlTicket, leerPapelGuardado, guardarPapel, urlReservas, MEDIDAS_PAPEL,
+  type NegocioTicket, type PapelTicket,
+} from "../../utils/ticketRecibo";
 
 interface Props {
   cita: CitaDto;
-  negocioNombre: string;
-  negocioLogo?: string;
+  negocio: NegocioTicket;
   onClose: () => void;
   onEnviarEmail: () => void;
   enviandoEmail: boolean;
 }
 
-export default function TicketRecibo({ cita, negocioNombre, negocioLogo, onClose, onEnviarEmail, enviandoEmail }: Props) {
-  const fecha = cita.inicioEn
-    ? toUtcDate(cita.inicioEn).toLocaleString("es-MX", {
-        day: "2-digit", month: "long", year: "numeric", hour: "numeric", minute: "2-digit",
-      })
-    : "—";
+/**
+ * El QR como texto `<svg>` para escribirlo en el documento del ticket. Se
+ * renderiza en un nodo suelto (no en el árbol del modal) y se descarta.
+ */
+function qrComoSvg(url: string): string {
+  const nodo = document.createElement("div");
+  const raiz = createRoot(nodo);
+  flushSync(() => {
+    raiz.render(<QRCodeSVG value={url} size={160} level="M" marginSize={0} />);
+  });
+  const svg = nodo.innerHTML;
+  raiz.unmount();
+  return svg;
+}
 
-  const mostrarCambio = cita.metodoPago === "Efectivo" && cita.cambio != null && cita.cambio > 0;
+/** Espera a que carguen las imágenes (logo) antes de imprimir; nunca más de 2 s. */
+function imprimirCuandoCargue(ventana: Window) {
+  const imagenes = Array.from(ventana.document.images ?? []);
+  const pendientes = imagenes.filter((img) => !img.complete);
+  let impreso = false;
+  const imprimir = () => {
+    if (impreso) return;
+    impreso = true;
+    ventana.focus();
+    ventana.print();
+    ventana.close();
+  };
+  if (pendientes.length === 0) {
+    setTimeout(imprimir, 300);
+    return;
+  }
+  let restantes = pendientes.length;
+  const listo = () => { restantes -= 1; if (restantes <= 0) imprimir(); };
+  pendientes.forEach((img) => {
+    img.addEventListener("load", listo, { once: true });
+    img.addEventListener("error", listo, { once: true });
+  });
+  setTimeout(imprimir, 2000);
+}
 
-  // Se escribe en una ventana del mismo origen: todo valor pasa por escapeHtml
-  // (el nombre del cliente llega desde la reserva pública).
+const OPCIONES_PAPEL: { valor: PapelTicket; etiqueta: string }[] = [
+  { valor: "80", etiqueta: "80 mm" },
+  { valor: "58", etiqueta: "58 mm" },
+];
+
+export default function TicketRecibo({ cita, negocio, onClose, onEnviarEmail, enviandoEmail }: Props) {
+  const { toast } = useToastStore();
+  const [papel, setPapel] = useState<PapelTicket>(leerPapelGuardado);
+  const [qr, setQr] = useState<{ url: string; svg: string } | null>(null);
+  const [altoVista, setAltoVista] = useState(480);
+  const vistaRef = useRef<HTMLIFrameElement>(null);
+
+  const origen = window.location.origin;
+  const reservas = urlReservas(negocio.slug, origen);
+
+  // El QR se genera en una tarea aparte: flushSync no puede correr mientras
+  // React está en render ni en commit (y los efectos pasivos cuentan como commit).
+  useEffect(() => {
+    if (!reservas) return;
+    const tarea = setTimeout(() => setQr({ url: reservas, svg: qrComoSvg(reservas) }), 0);
+    return () => clearTimeout(tarea);
+  }, [reservas]);
+  const qrSvg = qr && qr.url === reservas ? qr.svg : undefined;
+
+  // Un solo documento para la vista previa y para la impresión.
+  const html = useMemo(
+    () => htmlTicket({ cita, negocio, papel, origen, qrSvg }),
+    [cita, negocio, papel, origen, qrSvg],
+  );
+
+  const cambiarPapel = (valor: PapelTicket) => {
+    setPapel(valor);
+    guardarPapel(valor);
+  };
+
+  const ajustarAlto = () => {
+    const doc = vistaRef.current?.contentDocument;
+    const alto = doc?.documentElement?.scrollHeight;
+    if (alto) setAltoVista(alto);
+  };
+
   const handlePrint = () => {
-    const monto = (cita.montoCobrado ?? cita.precio).toFixed(2);
-    const filaEmpleado = cita.nombreEmpleado
-      ? `<tr><td style="color:#6b7280;padding:3px 8px 3px 0">Atendió</td><td style="text-align:right;font-weight:500">${escapeHtml(cita.nombreEmpleado)}</td></tr>`
-      : "";
-    const filaRecibido = cita.montoRecibido != null
-      ? `<tr><td style="color:#6b7280;padding:3px 8px 3px 0">Recibido</td><td style="text-align:right">$${cita.montoRecibido.toFixed(2)}</td></tr>`
-      : "";
-    const filaCambio = mostrarCambio
-      ? `<tr><td style="color:#6b7280;padding:3px 8px 3px 0">Cambio</td><td style="text-align:right;font-weight:700">$${cita.cambio!.toFixed(2)}</td></tr>`
-      : "";
-    const filaPropina = cita.propina && cita.propina > 0
-      ? `<tr><td style="color:#6b7280;padding:3px 8px 3px 0">Propina</td><td style="text-align:right">${cita.propina.toFixed(2)}</td></tr>`
-      : "";
-
-    const html = `<!DOCTYPE html><html><head>
-      <meta charset="utf-8"/>
-      <style>
-        @page { size: 80mm auto; margin: 4mm; }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Courier New', Courier, monospace; font-size: 12px; width: 80mm; color: #111827; }
-        table { width: 100%; border-collapse: collapse; }
-        td { padding: 3px 0; vertical-align: top; }
-      </style>
-    </head><body>
-      <div style="text-align:center;padding-bottom:8px;border-bottom:1px dashed #d1d5db;margin-bottom:10px">
-        ${negocioLogo ? `<img src="${escapeHtml(negocioLogo)}" alt="${escapeHtml(negocioNombre)}" style="height:40px;width:auto;object-fit:contain;margin:0 auto 6px;display:block"/>` : ""}
-        <div style="font-weight:700;font-size:14px">${escapeHtml(negocioNombre)}</div>
-        <div style="color:#6b7280;font-size:10px;margin-top:2px">Comprobante de pago</div>
-      </div>
-      <table style="margin-bottom:10px">
-        <tr><td style="color:#6b7280;padding:3px 8px 3px 0">Cliente</td><td style="text-align:right;font-weight:500">${escapeHtml(cita.nombreCliente)}</td></tr>
-        <tr><td style="color:#6b7280;padding:3px 8px 3px 0">Servicio</td><td style="text-align:right">${escapeHtml(cita.nombreServicio)}</td></tr>
-        ${filaEmpleado}
-        <tr><td style="color:#6b7280;padding:3px 8px 3px 0">Fecha</td><td style="text-align:right">${escapeHtml(fecha)}</td></tr>
-      </table>
-      <div style="border-top:1px dashed #d1d5db;padding-top:10px;margin-bottom:10px">
-        <table>
-          <tr><td style="color:#6b7280;padding:3px 8px 3px 0">Método</td><td style="text-align:right">${escapeHtml(cita.metodoPago)}</td></tr>
-          <tr><td style="color:#6b7280;padding:3px 8px 3px 0">Total</td><td style="text-align:right;font-weight:700">$${monto}</td></tr>
-          ${filaRecibido}
-          ${filaCambio}
-          ${filaPropina}
-        </table>
-      </div>
-      <div style="text-align:center;font-size:10px;color:#9ca3af;border-top:1px dashed #d1d5db;padding-top:8px">
-        <div>Gracias por su visita</div>
-        <div style="margin-top:2px">AppointVa</div>
-      </div>
-    </body></html>`;
-
-    const ventana = window.open("", "_blank", "width=320,height=500");
-    if (!ventana) return;
+    const ventana = window.open("", "_blank", "width=360,height=640");
+    if (!ventana) {
+      toast("El navegador bloqueó la ventana de impresión. Permite popups para este sitio.", "error");
+      return;
+    }
     ventana.document.write(html);
     ventana.document.close();
-    ventana.focus();
-    setTimeout(() => { ventana.print(); ventana.close(); }, 300);
+    imprimirCuandoCargue(ventana);
   };
 
   return (
     <>
-<div id="ticket-recibo-wrapper">
-        <div
-          id="ticket-recibo"
-          className="bg-white text-slate-900 font-mono text-xs leading-relaxed p-4"
-          style={{ width: "100%", maxWidth: "302px", margin: "0 auto" }}
-        >
-          {/* Header */}
-          <div className="text-center mb-3 border-b border-dashed border-slate-300 pb-3">
-            {negocioLogo && (
-              <img
-                src={negocioLogo}
-                alt={negocioNombre}
-                className="h-10 w-auto object-contain mx-auto mb-2"
-              />
-            )}
-            <p className="font-bold text-sm">{negocioNombre}</p>
-            <p className="text-slate-500 text-[10px]">Comprobante de pago</p>
-          </div>
-
-          {/* Appointment details */}
-          <table className="w-full mb-3">
-            <tbody>
-              <tr>
-                <td className="text-slate-500 pr-2">Cliente</td>
-                <td className="text-right font-medium">{cita.nombreCliente}</td>
-              </tr>
-              <tr>
-                <td className="text-slate-500 pr-2">Servicio</td>
-                <td className="text-right">{cita.nombreServicio}</td>
-              </tr>
-              {cita.nombreEmpleado && (
-                <tr>
-                  <td className="text-slate-500 pr-2">Atendió</td>
-                  <td className="text-right">{cita.nombreEmpleado}</td>
-                </tr>
-              )}
-              <tr>
-                <td className="text-slate-500 pr-2">Fecha</td>
-                <td className="text-right">{fecha}</td>
-              </tr>
-            </tbody>
-          </table>
-
-          {/* Amounts */}
-          <div className="border-t border-dashed border-slate-300 pt-3 mb-3">
-            <table className="w-full">
-              <tbody>
-                <tr>
-                  <td className="text-slate-500 pr-2">Método</td>
-                  <td className="text-right">{cita.metodoPago}</td>
-                </tr>
-                <tr>
-                  <td className="text-slate-500 pr-2">Total</td>
-                  <td className="text-right font-bold">
-                    ${(cita.montoCobrado ?? cita.precio).toFixed(2)}
-                  </td>
-                </tr>
-                {cita.montoRecibido != null && (
-                  <tr>
-                    <td className="text-slate-500 pr-2">Recibido</td>
-                    <td className="text-right">${cita.montoRecibido.toFixed(2)}</td>
-                  </tr>
-                )}
-                {mostrarCambio && (
-                  <tr>
-                    <td className="text-slate-500 pr-2">Cambio</td>
-                    <td className="text-right font-bold">${cita.cambio!.toFixed(2)}</td>
-                  </tr>
-                )}
-                {cita.propina && cita.propina > 0 && (
-                  <tr>
-                    <td className="text-slate-500 pr-2">Propina</td>
-                    <td className="text-right">${cita.propina.toFixed(2)}</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Footer */}
-          <div className="text-center text-[10px] text-slate-400 border-t border-dashed border-slate-300 pt-3">
-            <p>Gracias por su visita</p>
-            <p>AppointVa</p>
-          </div>
-        </div>
+      {/* Vista previa: el mismo HTML que se imprime, al ancho del papel. */}
+      <div className="bg-slate-100 dark:bg-slate-900/60 rounded-xl p-3 flex justify-center overflow-x-auto">
+        <iframe
+          ref={vistaRef}
+          title="Vista previa del comprobante"
+          srcDoc={html}
+          sandbox="allow-same-origin"
+          onLoad={ajustarAlto}
+          className="bg-white shadow-sm border border-slate-200 dark:border-slate-700 shrink-0"
+          style={{ width: MEDIDAS_PAPEL[papel].anchoPx, height: altoVista }}
+        />
       </div>
 
       {/* Action buttons — hidden on print */}
-      <div className="print:hidden flex gap-2 mt-4 justify-end">
+      <div className="print:hidden flex flex-wrap items-center gap-2 mt-4 justify-end">
+        <div
+          role="radiogroup"
+          aria-label="Papel"
+          className="flex items-center gap-1 mr-auto text-xs text-slate-500 dark:text-slate-400"
+        >
+          <span aria-hidden="true">Papel:</span>
+          {OPCIONES_PAPEL.map((o) => (
+            <button
+              key={o.valor}
+              type="button"
+              role="radio"
+              aria-checked={papel === o.valor}
+              onClick={() => cambiarPapel(o.valor)}
+              className={`px-2 py-1 rounded-md border transition ${
+                papel === o.valor
+                  ? "bg-slate-700 text-white border-slate-700"
+                  : "border-slate-200 dark:border-slate-600 hover:border-slate-400"
+              }`}
+            >
+              {o.etiqueta}
+            </button>
+          ))}
+        </div>
         <button
+          type="button"
           onClick={handlePrint}
-          className="flex items-center gap-2 px-3 py-2 text-sm border border-slate-200 rounded-lg hover:bg-slate-50 transition"
+          className="flex items-center gap-2 px-3 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50 transition"
         >
           <Printer size={15} /> Imprimir ticket
         </button>
         <button
+          type="button"
           onClick={onEnviarEmail}
           disabled={enviandoEmail}
           className="flex items-center gap-2 px-3 py-2 text-sm bg-slate-700 text-white rounded-lg hover:opacity-90 disabled:opacity-50 transition"
@@ -187,6 +166,7 @@ export default function TicketRecibo({ cita, negocioNombre, negocioLogo, onClose
           <Mail size={15} /> {enviandoEmail ? "Enviando…" : "Enviar por email"}
         </button>
         <button
+          type="button"
           onClick={onClose}
           className="px-3 py-2 text-sm text-slate-500 hover:text-slate-700 transition"
         >

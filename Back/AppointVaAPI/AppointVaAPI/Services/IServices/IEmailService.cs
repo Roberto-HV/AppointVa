@@ -1,4 +1,5 @@
 ﻿using AppointVaAPI.Models;
+using AppointVaAPI.Models.Dtos.Citas;
 
 namespace AppointVaAPI.Services.IServices
 {
@@ -13,14 +14,6 @@ namespace AppointVaAPI.Services.IServices
         Task EnviarSolicitudResenaAsync(Cita cita, string emailDestino, string nombreCliente, string urlResena);
         Task EnviarNotificacionListaEsperaAsync(string emailDestino, string nombreCliente, string nombreNegocio, string nombreServicio, string urlReserva);
         Task EnviarBienvenidaAsync(string emailDestino, string nombre, string negocioNombre, string slug, string urlDashboard);
-        Task EnviarTicketCitaAsync(
-            string destinoEmail,
-            string clienteNombre,
-            string negocioNombre,
-            string servicio,
-            DateTime fechaCita,
-            decimal montoCobrado,
-            string metodoPago,
-            decimal? cambio);
+        Task EnviarTicketCitaAsync(string destinoEmail, TicketCitaDatos datos);
     }
 }

@@ -1,4 +1,5 @@
 using AppointVaAPI.Models;
+using AppointVaAPI.Models.Dtos.Citas;
 using AppointVaAPI.Services;
 using AppointVaAPI.Constants;
 using FluentAssertions;
@@ -348,7 +349,7 @@ public class EmailTemplatesTests
     {
         var cita = BuildCita();
         yield return new object[] { "ticket", EmailService.PlantillaTicket(
-            NombreMalicioso, "Salón Prueba", "Corte", cita.InicioEn, 250m, "Efectivo", null) };
+            Ticket() with { ClienteNombre = NombreMalicioso }) };
         yield return new object[] { "confirmacion", EmailService.PlantillaConfirmacion(
             cita, NombreMalicioso, null, null, null, null, false) };
         yield return new object[] { "cancelacion", EmailService.PlantillaCancelacion(cita, NombreMalicioso) };
@@ -435,8 +436,7 @@ public class EmailTemplatesTests
         cita.InicioEn = new DateTime(2026, 8, 10, 16, 0, 0, DateTimeKind.Utc);
         cita.FinEn    = cita.InicioEn.AddHours(1);
 
-        var ticket = EmailService.PlantillaTicket("Ana", "Salón", "Corte",
-            new DateTime(2026, 8, 10, 9, 5, 0), 100m, "Efectivo", null);
+        var ticket = EmailService.PlantillaTicket(Ticket() with { InicioEn = new DateTime(2026, 8, 10, 9, 5, 0) });
         ticket.Should().Contain("9:05 a.m.");
         ticket.Should().NotContain("AM");
 
@@ -452,8 +452,8 @@ public class EmailTemplatesTests
     [Fact]
     public void LimpiarAsunto_RemovesCrLf()
     {
-        EmailService.LimpiarAsunto("Recibo de pago — Salón\r\nBcc: x@evil.com")
-            .Should().Be("Recibo de pago — Salón Bcc: x@evil.com");
+        EmailService.LimpiarAsunto("Comprobante de pago — Salón\r\nBcc: x@evil.com")
+            .Should().Be("Comprobante de pago — Salón Bcc: x@evil.com");
     }
 
     [Fact]
@@ -461,12 +461,198 @@ public class EmailTemplatesTests
     {
         var (service, handler) = BuildService();
 
-        await service.EnviarTicketCitaAsync("ana@example.com", "Ana", "Salón\r\nBcc: x@evil.com",
-            "Corte", new DateTime(2026, 8, 10, 16, 0, 0), 100m, "Efectivo", null);
+        await service.EnviarTicketCitaAsync("ana@example.com",
+            Ticket() with { NegocioNombre = "Salón\r\nBcc: x@evil.com" });
 
         handler.Subject.Should().NotBeNull();
         handler.Subject.Should().NotContainAny("\r", "\n");
-        handler.Subject.Should().Be("Recibo de pago — Salón Bcc: x@evil.com");
+        handler.Subject.Should().Be("Comprobante de pago — Salón Bcc: x@evil.com");
+    }
+
+    // ─── PlantillaTicket ─────────────────────────────────────────────────────
+
+    /// <summary>A plain cash payment, no discount, no advance, no tip.</summary>
+    private static TicketCitaDatos Ticket() => new()
+    {
+        ClienteNombre   = "Ana García",
+        NegocioNombre   = "Salón Aramis",
+        Folio           = "A1B2C3D4",
+        InicioEn        = new DateTime(2026, 10, 30, 16, 0, 0),
+        EmpleadoNombre  = "Sofía Hernández",
+        Servicio        = "Corte de dama",
+        DuracionMinutos = 45,
+        Precio          = 280m,
+        PrecioServicio  = 280m,
+        MontoCobrado    = 280m,
+        MetodoPago      = "Tarjeta",
+    };
+
+    [Fact]
+    public void PlantillaTicket_ShowsHeaderFolioDateEmployeeAndServiceWithDuration()
+    {
+        var html = EmailService.PlantillaTicket(Ticket() with
+        {
+            NegocioLogoUrl   = "https://res.cloudinary.com/demo/logo.png",
+            NegocioDireccion = "Av. Juárez 120, Centro",
+            NegocioTelefono  = "55 1234 5678",
+            UrlReserva       = "https://appointva.com/b/salon-aramis",
+        });
+
+        html.Should().Contain("Comprobante de pago");
+        html.Should().Contain("<img src=\"https://res.cloudinary.com/demo/logo.png\"");
+        html.Should().Contain("Salón Aramis");
+        html.Should().Contain("Av. Juárez 120, Centro");
+        html.Should().Contain("Tel. 55 1234 5678");
+        html.Should().Contain("A1B2C3D4");
+        html.Should().Contain("4:00 p.m.");
+        html.Should().Contain(">Atendió<");
+        html.Should().Contain("Sofía Hernández");
+        html.Should().Contain("Corte de dama");
+        html.Should().Contain(" · 45 min");
+        html.Should().Contain("$280.00");
+        html.Should().Contain("href=\"https://appointva.com/b/salon-aramis\"");
+        html.Should().Contain("Reserva tu próxima cita");
+        html.Should().Contain("Gracias por tu visita");
+        html.Should().Contain("Agenda en línea con");
+        html.Should().Contain("appointva.com");
+    }
+
+    [Fact]
+    public void PlantillaTicket_WithoutOptionalData_HidesTheirRows()
+    {
+        var html = EmailService.PlantillaTicket(Ticket() with { EmpleadoNombre = null });
+
+        html.Should().NotContain("<img");
+        html.Should().NotContain("Tel. ");
+        html.Should().NotContain("Atendió");
+        html.Should().NotContain("Subtotal");
+        html.Should().NotContain("Descuento");
+        html.Should().NotContain("Anticipo pagado");
+        html.Should().NotContain("Propina");
+        html.Should().NotContain("Recibido");
+        html.Should().NotContain("Cambio");
+        html.Should().NotContain("Reserva tu próxima cita");
+        html.Should().Contain("Gracias por tu visita");
+    }
+
+    [Fact]
+    public void PlantillaTicket_HealthSector_UsesProfesional()
+    {
+        var html = EmailService.PlantillaTicket(Ticket() with { Sector = "salud" });
+
+        html.Should().Contain(">Profesional<");
+        html.Should().NotContain("Atendió");
+    }
+
+    [Fact]
+    public void PlantillaTicket_CouponCashAndTip_RowsCloseOnPaper()
+    {
+        // 10% coupon at booking (300 → 270), cash 300 received, change 30, tip 40.
+        var html = EmailService.PlantillaTicket(Ticket() with
+        {
+            Precio         = 270m,
+            PrecioServicio = 300m,
+            MontoCobrado   = 270m,
+            MetodoPago     = "Efectivo",
+            MontoRecibido  = 300m,
+            Cambio         = 30m,
+            Propina        = 40m,
+        });
+
+        html.Should().Contain("Subtotal");
+        html.Should().Contain("$300.00");
+        html.Should().Contain("Descuento 10%");
+        html.Should().Contain("-$30.00");
+        html.Should().Contain("$270.00");
+        html.Should().Contain(">Recibido<");
+        html.Should().Contain(">Cambio<");
+        html.Should().Contain(">Propina<");
+        html.Should().Contain("$40.00");
+        html.Should().NotContain("Anticipo pagado");
+    }
+
+    [Fact]
+    public void PlantillaTicket_AdvanceAndSplitPayment_ShowsBothMethods()
+    {
+        // 1,200 service, 300 advance already paid, 900 charged: 500 card + 400 transfer.
+        var html = EmailService.PlantillaTicket(Ticket() with
+        {
+            Precio         = 1200m,
+            PrecioServicio = 1200m,
+            Anticipo       = 300m,
+            MontoCobrado   = 900m,
+            MetodoPago     = "Tarjeta",
+            MetodoPago2    = "Transferencia",
+            MontoPago2     = 400m,
+        });
+
+        html.Should().Contain("Subtotal");
+        html.Should().Contain("$1,200.00");
+        html.Should().Contain("Anticipo pagado");
+        html.Should().Contain("-$300.00");
+        html.Should().Contain("$900.00");
+        html.Should().Contain(">Tarjeta<");
+        html.Should().Contain("$500.00");
+        html.Should().Contain(">Transferencia<");
+        html.Should().Contain("$400.00");
+        html.Should().NotContain("Descuento");
+        html.Should().NotContain("Recibido");
+    }
+
+    [Fact]
+    public void ResumirTicket_ChargedLessThanExpected_CountsTheDifferenceAsDiscount()
+    {
+        var r = EmailService.ResumirTicket(Ticket() with { Anticipo = 100m, MontoCobrado = 150m });
+
+        r.PrecioLista.Should().Be(280m);
+        r.Anticipo.Should().Be(100m);
+        r.Descuento.Should().Be(30m);
+        r.CargoAdicional.Should().Be(0m);
+        (r.PrecioLista - r.Descuento - r.Anticipo + r.CargoAdicional).Should().Be(r.Total);
+    }
+
+    [Fact]
+    public void ResumirTicket_ListPriceBelowPrice_NeverShowsANegativeDiscount()
+    {
+        var r = EmailService.ResumirTicket(Ticket() with { PrecioServicio = 250m });
+
+        r.PrecioLista.Should().Be(280m);
+        r.Descuento.Should().Be(0m);
+        r.HayAjustes.Should().BeFalse();
+    }
+
+    [Fact]
+    public void PlantillaTicket_EncodesEveryTextValue()
+    {
+        const string ataque = "<script>alert(1)</script>";
+        var html = EmailService.PlantillaTicket(Ticket() with
+        {
+            NegocioNombre    = ataque,
+            NegocioDireccion = ataque,
+            NegocioTelefono  = ataque,
+            Folio            = ataque,
+            EmpleadoNombre   = ataque,
+            Servicio         = ataque,
+            MetodoPago       = ataque,
+            MetodoPago2      = ataque,
+            MontoPago2       = 10m,
+            NegocioLogoUrl   = "https://x\" onerror=\"alert(1)",
+            UrlReserva       = "https://x\" onclick=\"alert(1)",
+        });
+
+        html.Should().NotContain("<script>");
+        html.Should().Contain("&lt;script&gt;alert(1)&lt;/script&gt;");
+        html.Should().NotContain("\" onerror=\"");
+        html.Should().NotContain("\" onclick=\"");
+    }
+
+    [Fact]
+    public void PlantillaTicket_NonHttpLogo_IsNotRendered()
+    {
+        var html = EmailService.PlantillaTicket(Ticket() with { NegocioLogoUrl = "javascript:alert(1)" });
+
+        html.Should().NotContain("<img");
+        html.Should().NotContain("javascript:");
     }
 
     [Fact]

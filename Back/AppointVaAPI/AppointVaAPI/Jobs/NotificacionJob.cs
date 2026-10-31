@@ -1,6 +1,7 @@
 using AppointVaAPI.Data;
 using AppointVaAPI.Helpers;
 using AppointVaAPI.Models;
+using AppointVaAPI.Models.Dtos.Citas;
 using AppointVaAPI.Services.IServices;
 using Hangfire;
 using Microsoft.EntityFrameworkCore;
@@ -149,15 +150,36 @@ namespace AppointVaAPI.Jobs
             if (cita is null || cita.Cliente is null || cita.Servicio is null || cita.Negocio is null) return;
             if (string.IsNullOrEmpty(cita.Cliente.Email)) return;
 
-            await _emailService.EnviarTicketCitaAsync(
-                destinoEmail:  cita.Cliente.Email,
-                clienteNombre: cita.Cliente.NombreCompleto,
-                negocioNombre: cita.Negocio.Nombre,
-                servicio:      cita.Servicio.Nombre,
-                fechaCita:     cita.InicioEn,
-                montoCobrado:  cita.MontoCobrado ?? cita.Precio,
-                metodoPago:    cita.MetodoPago ?? "No especificado",
-                cambio:        cita.Cambio);
+            // Same numbers as the printed ticket: an advance already received is
+            // subtracted, and the charged amount defaults to what was left to pay.
+            var anticipo = cita.AnticipoRecibido && cita.MontoAnticipo is > 0m ? cita.MontoAnticipo.Value : 0m;
+            var frontendUrl = _config["FrontendUrl"] ?? "https://appointva.com";
+
+            await _emailService.EnviarTicketCitaAsync(cita.Cliente.Email, new TicketCitaDatos
+            {
+                ClienteNombre    = cita.Cliente.NombreCompleto,
+                NegocioNombre    = cita.Negocio.Nombre,
+                NegocioLogoUrl   = cita.Negocio.LogoUrl,
+                NegocioDireccion = cita.Negocio.Direccion,
+                NegocioTelefono  = cita.Negocio.Telefono,
+                Sector           = cita.Negocio.Sector,
+                Folio            = cita.CodigoConfirmacion,
+                InicioEn         = cita.InicioEn,
+                EmpleadoNombre   = cita.Empleado?.Nombre,
+                Servicio         = cita.Servicio.Nombre,
+                DuracionMinutos  = cita.Servicio.DuracionMinutos,
+                Precio           = cita.Precio,
+                PrecioServicio   = cita.Servicio.Precio,
+                Anticipo         = anticipo,
+                MontoCobrado     = cita.MontoCobrado ?? Math.Max(0m, cita.Precio - anticipo),
+                Propina          = cita.Propina,
+                MetodoPago       = cita.MetodoPago ?? "No especificado",
+                MetodoPago2      = cita.MetodoPago2,
+                MontoPago2       = cita.MontoPago2,
+                MontoRecibido    = cita.MontoRecibido,
+                Cambio           = cita.Cambio,
+                UrlReserva       = string.IsNullOrEmpty(cita.Negocio.Slug) ? null : $"{frontendUrl}/b/{cita.Negocio.Slug}",
+            });
         }
     }
 }

@@ -2,6 +2,7 @@ using AppointVaAPI.Constants;
 using AppointVaAPI.Data;
 using AppointVaAPI.Jobs;
 using AppointVaAPI.Models;
+using AppointVaAPI.Models.Dtos.Citas;
 using AppointVaAPI.Services.IServices;
 using AppointVaAPI.Tests.Controllers;
 using FluentAssertions;
@@ -294,5 +295,62 @@ public class NotificacionJobCitasTests
         await job.EnviarTicketAsync(cita.Id);
 
         emailService.ReceivedCalls().Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task EnviarTicket_PasaNegocioAnticipoPagoDivididoYEnlaceDeReservas()
+    {
+        var db           = DbContextFactory.Create(nameof(EnviarTicket_PasaNegocioAnticipoPagoDivididoYEnlaceDeReservas));
+        var emailService = Substitute.For<IEmailService>();
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?> { ["FrontendUrl"] = "https://appointva.com" })
+            .Build();
+        var job = new NotificacionJob(db, Substitute.For<INotificacionService>(),
+            config, Substitute.For<IBackgroundJobClient>(), emailService);
+        var cita = await SeedCitaAsync(db);
+
+        var negocio = await db.Negocios.FindAsync(cita.NegocioId);
+        negocio!.LogoUrl   = "https://cdn.example.com/logo.png";
+        negocio.Direccion  = "Av. Juárez 120";
+        negocio.Telefono   = "5512345678";
+        negocio.Sector     = "salud";
+        var registrada = await db.Citas.FindAsync(cita.Id);
+        registrada!.Precio           = 180m; // coupon applied at booking (list price: 200)
+        registrada.AnticipoRecibido  = true;
+        registrada.MontoAnticipo     = 50m;
+        registrada.Pagada            = true;
+        registrada.MetodoPago        = "Tarjeta";
+        registrada.MetodoPago2       = "Efectivo";
+        registrada.MontoPago2        = 30m;
+        registrada.MontoRecibido     = 50m;
+        registrada.Cambio            = 20m;
+        registrada.Propina           = 15m;
+        await db.SaveChangesAsync();
+        db.ChangeTracker.Clear();
+
+        TicketCitaDatos? datos = null;
+        await emailService.EnviarTicketCitaAsync("cliente@test.com",
+            Arg.Do<TicketCitaDatos>(d => datos = d));
+
+        await job.EnviarTicketAsync(cita.Id);
+
+        datos.Should().NotBeNull();
+        datos!.NegocioLogoUrl.Should().Be("https://cdn.example.com/logo.png");
+        datos.NegocioDireccion.Should().Be("Av. Juárez 120");
+        datos.NegocioTelefono.Should().Be("5512345678");
+        datos.Sector.Should().Be("salud");
+        datos.Folio.Should().Be(cita.CodigoConfirmacion);
+        datos.EmpleadoNombre.Should().Be("Ana");
+        datos.DuracionMinutos.Should().Be(30);
+        datos.Precio.Should().Be(180m);
+        datos.PrecioServicio.Should().Be(200m);
+        datos.Anticipo.Should().Be(50m);
+        datos.MontoCobrado.Should().Be(130m, "without a stored charge it is what was left after the advance");
+        datos.MetodoPago2.Should().Be("Efectivo");
+        datos.MontoPago2.Should().Be(30m);
+        datos.MontoRecibido.Should().Be(50m);
+        datos.Cambio.Should().Be(20m);
+        datos.Propina.Should().Be(15m);
+        datos.UrlReserva.Should().Be($"https://appointva.com/b/{negocio.Slug}");
     }
 }

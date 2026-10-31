@@ -196,6 +196,8 @@ export interface CitaDto {
   nombreServicio: string;
   duracionMinutos: number;
   precio: number;
+  /** List price of the service today; above `precio` when a coupon lowered it at booking. */
+  precioServicio?: number | null;
   pagada: boolean;
   metodoPago?: string | null;
   metodoPago2?: string | null;

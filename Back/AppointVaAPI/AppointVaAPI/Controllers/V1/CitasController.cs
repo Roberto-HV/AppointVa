@@ -828,6 +828,7 @@ namespace AppointVaAPI.Controllers.V1
             NombreServicio = c.Servicio?.Nombre ?? string.Empty,
             DuracionMinutos = c.Servicio?.DuracionMinutos ?? 0,
             Precio = c.Precio,
+            PrecioServicio = c.Servicio?.Precio,
             Pagada = c.Pagada,
             MetodoPago = c.MetodoPago,
             MetodoPago2  = c.MetodoPago2,

@@ -1,6 +1,7 @@
 ﻿using AppointVaAPI.Constants;
 using AppointVaAPI.Data;
 using AppointVaAPI.Models;
+using AppointVaAPI.Models.Dtos.Citas;
 using AppointVaAPI.Services.IServices;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -893,44 +894,169 @@ namespace AppointVaAPI.Services
                 """;
         }
 
-        public async Task EnviarTicketCitaAsync(
-            string destinoEmail, string clienteNombre, string negocioNombre,
-            string servicio, DateTime fechaCita, decimal montoCobrado,
-            string metodoPago, decimal? cambio)
+        public async Task EnviarTicketCitaAsync(string destinoEmail, TicketCitaDatos datos)
         {
             if (!EstaHabilitado()) return;
-            var html = PlantillaTicket(clienteNombre, negocioNombre, servicio,
-                                       fechaCita, montoCobrado, metodoPago, cambio);
-            await EnviarAsync(destinoEmail, $"Recibo de pago — {negocioNombre}", html);
+            var html = PlantillaTicket(datos);
+            await EnviarAsync(destinoEmail, $"Comprobante de pago — {datos.NegocioNombre}", html);
         }
 
-        internal static string PlantillaTicket(
-            string clienteNombre, string negocioNombre, string servicio,
-            DateTime fechaCita, decimal montoCobrado, string metodoPago, decimal? cambio)
+        /// <summary>"$1,280.00": always with cents, without depending on the server's ICU data.</summary>
+        internal static string Dinero(decimal monto) =>
+            "$" + monto.ToString("N2", System.Globalization.CultureInfo.InvariantCulture);
+
+        /// <summary>
+        /// Same breakdown as the printed ticket (Front/src/utils/ticketRecibo.ts), so the
+        /// rows close on paper: Subtotal − Descuento − Anticipo (+ Cargo adicional) = TOTAL.
+        /// The tip has its own row and is never added to the TOTAL: the change is
+        /// computed without it.
+        /// </summary>
+        internal sealed record ResumenTicket(
+            decimal PrecioLista, decimal Descuento, string EtiquetaDescuento,
+            decimal CargoAdicional, decimal Anticipo, decimal Total)
         {
-            clienteNombre = Html(clienteNombre);
-            negocioNombre = Html(negocioNombre);
-            servicio      = Html(servicio);
-            metodoPago    = Html(metodoPago);
-            var fecha = fechaCita.ToString("dd 'de' MMMM yyyy", new System.Globalization.CultureInfo("es-MX")) + ", " + Hora12(fechaCita);
-            var cambioHtml = cambio.HasValue && cambio > 0
-                ? $"<tr><td style=\"padding:8px 12px;\">Cambio</td><td style=\"padding:8px 12px;\"><strong>${cambio:F2}</strong></td></tr>"
+            public bool HayAjustes => Descuento > 0 || Anticipo > 0 || CargoAdicional > 0;
+        }
+
+        internal static ResumenTicket ResumirTicket(TicketCitaDatos d)
+        {
+            var precioLista = d.PrecioServicio is { } lista && lista > d.Precio ? lista : d.Precio;
+            var anticipo = Math.Max(0, d.Anticipo);
+            var descuentoReserva = precioLista - d.Precio;
+            var diferenciaCaja = d.Precio - anticipo - d.MontoCobrado;
+            var descuento = descuentoReserva + Math.Max(0, diferenciaCaja);
+            var cargo = Math.Max(0, -diferenciaCaja);
+
+            // "Descuento 10%" only when the percentage is exact.
+            var etiqueta = "Descuento";
+            if (precioLista > 0 && descuento > 0)
+            {
+                var pct = descuento / precioLista * 100m;
+                var redondo = Math.Round(pct);
+                if (redondo > 0 && Math.Abs(pct - redondo) < 0.01m) etiqueta = $"Descuento {redondo:0}%";
+            }
+            return new ResumenTicket(precioLista, descuento, etiqueta, cargo, anticipo, d.MontoCobrado);
+        }
+
+        internal static string PlantillaTicket(TicketCitaDatos d)
+        {
+            var r = ResumirTicket(d);
+            var cliente   = Html(d.ClienteNombre.Trim());
+            var negocio   = Html(d.NegocioNombre);
+            var folio     = Html(d.Folio);
+            var servicio  = Html(d.Servicio);
+            var empleado  = Html(d.EmpleadoNombre);
+            var esSalud   = d.Sector == "salud";
+            // Sector term already used by the app: "Profesional" in health businesses.
+            var etiquetaEmpleado = esSalud ? "Profesional" : "Atendió";
+            var fechaTexto = d.InicioEn.ToString("dddd dd 'de' MMMM 'de' yyyy", new System.Globalization.CultureInfo("es-MX"));
+            var fecha = Html(fechaTexto.Length > 0 ? char.ToUpper(fechaTexto[0]) + fechaTexto[1..] : fechaTexto);
+            var hora  = Hora12(d.InicioEn);
+            var duracion = d.DuracionMinutos > 0 ? $" · {d.DuracionMinutos} min" : "";
+
+            const string celdaEtiqueta = "padding:6px 0;color:#64748b;font-size:14px;";
+            const string celdaValor    = "padding:6px 0;color:#0f172a;font-size:14px;text-align:right;";
+            string Fila(string etiqueta, string valor, bool fuerte = false) => $"""
+                        <tr>
+                          <td style="{celdaEtiqueta}">{etiqueta}</td>
+                          <td style="{celdaValor}{(fuerte ? "font-weight:700;" : "")}">{valor}</td>
+                        </tr>
+""";
+
+            var logo = d.NegocioLogoUrl is { } url && (url.StartsWith("https://", StringComparison.OrdinalIgnoreCase) || url.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
+                ? $"""<img src="{Html(url)}" alt="{negocio}" style="display:block;margin:0 auto 12px;max-height:64px;max-width:180px;height:auto;border:0;">"""
                 : "";
+            var direccion = string.IsNullOrWhiteSpace(d.NegocioDireccion) ? "" :
+                $"""<div style="font-size:13px;color:#64748b;line-height:1.5;">{Html(d.NegocioDireccion.Trim())}</div>""";
+            var telefono = string.IsNullOrWhiteSpace(d.NegocioTelefono) ? "" :
+                $"""<div style="font-size:13px;color:#64748b;line-height:1.5;">Tel. {Html(d.NegocioTelefono.Trim())}</div>""";
+
+            var datos = new StringBuilder()
+                .Append(Fila("Folio", folio, fuerte: true))
+                .Append(Fila("Fecha", fecha))
+                .Append(Fila("Hora", hora));
+            if (!string.IsNullOrEmpty(empleado)) datos.Append(Fila(etiquetaEmpleado, empleado));
+
+            var totales = new StringBuilder();
+            if (r.HayAjustes) totales.Append(Fila("Subtotal", Dinero(r.PrecioLista)));
+            if (r.Descuento > 0) totales.Append(Fila(Html(r.EtiquetaDescuento), "-" + Dinero(r.Descuento)));
+            if (r.CargoAdicional > 0) totales.Append(Fila("Cargo adicional", Dinero(r.CargoAdicional)));
+            if (r.Anticipo > 0) totales.Append(Fila("Anticipo pagado", "-" + Dinero(r.Anticipo)));
+
+            // Split payment: the first method covers what the second one did not.
+            var pagos = new StringBuilder();
+            var metodo1 = string.IsNullOrWhiteSpace(d.MetodoPago) ? "Pago" : d.MetodoPago;
+            var m2 = !string.IsNullOrWhiteSpace(d.MetodoPago2) && d.MontoPago2 is > 0m ? d.MontoPago2.Value : 0m;
+            if (m2 > 0)
+            {
+                pagos.Append(Fila(Html(metodo1), Dinero(Math.Max(0, r.Total - m2))));
+                pagos.Append(Fila(Html(d.MetodoPago2), Dinero(m2)));
+            }
+            else
+            {
+                pagos.Append(Fila(Html(metodo1), Dinero(r.Total)));
+            }
+            var hayEfectivo = d.MetodoPago == "Efectivo" || (m2 > 0 && d.MetodoPago2 == "Efectivo");
+            if (hayEfectivo && d.MontoRecibido is > 0m) pagos.Append(Fila("Recibido", Dinero(d.MontoRecibido.Value)));
+            if (hayEfectivo && d.Cambio is > 0m) pagos.Append(Fila("Cambio", Dinero(d.Cambio.Value), fuerte: true));
+            if (d.Propina is > 0m) pagos.Append(Fila("Propina", Dinero(d.Propina.Value)));
+
+            var reservar = string.IsNullOrEmpty(d.UrlReserva) ? "" : $"""
+                      <div style="text-align:center;margin:28px 0 8px;">
+                        <a href="{Html(d.UrlReserva)}" style="background:#0f172a;color:#ffffff;font-weight:700;font-size:15px;padding:13px 32px;border-radius:9px;text-decoration:none;display:inline-block;">Reserva tu próxima cita</a>
+                      </div>
+""";
+            const string separador = """<div style="border-top:1px dashed #cbd5e1;margin:18px 0;font-size:0;line-height:0;">&nbsp;</div>""";
+
             return $"""
-            <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;">
-              <h2 style="color:#334155;margin-bottom:4px;">{negocioNombre}</h2>
-              <p style="color:#6b7280;font-size:13px;margin:0 0 24px;">Recibo de pago</p>
-              <table style="width:100%;border-collapse:collapse;font-size:14px;">
-                <tr style="background:#f8fafc;"><td style="padding:8px 12px;">Cliente</td><td style="padding:8px 12px;"><strong>{clienteNombre}</strong></td></tr>
-                <tr><td style="padding:8px 12px;">Servicio</td><td style="padding:8px 12px;">{servicio}</td></tr>
-                <tr style="background:#f8fafc;"><td style="padding:8px 12px;">Fecha</td><td style="padding:8px 12px;">{fecha}</td></tr>
-                <tr><td style="padding:8px 12px;">Método</td><td style="padding:8px 12px;">{metodoPago}</td></tr>
-                <tr style="background:#f8fafc;"><td style="padding:8px 12px;">Total</td><td style="padding:8px 12px;"><strong style="color:#c8a961;">${montoCobrado:F2}</strong></td></tr>
-                {cambioHtml}
-              </table>
-              <p style="margin-top:24px;font-size:12px;color:#9ca3af;text-align:center;">Gracias por su visita · AppointVa</p>
-            </div>
-            """;
+                <!DOCTYPE html>
+                <html lang="es">
+                <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+                <body style="margin:0;padding:24px 12px;background:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+                  <div style="max-width:520px;margin:0 auto;">
+                    <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;padding:32px 32px 28px;">
+                      <div style="text-align:center;">
+                        {logo}
+                        <div style="font-size:20px;font-weight:800;color:#0f172a;line-height:1.3;">{negocio}</div>
+                        {direccion}
+                        {telefono}
+                      </div>
+                      {separador}
+                      <div style="text-align:center;font-size:12px;font-weight:700;color:#475569;letter-spacing:1.5px;text-transform:uppercase;">Comprobante de pago</div>
+                      <p style="font-size:15px;color:#334155;line-height:1.6;margin:14px 0 6px;text-align:center;">Hola, <strong>{cliente}</strong>. Este es el comprobante de tu pago.</p>
+                      {separador}
+                      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+                        {datos}
+                      </table>
+                      {separador}
+                      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+                        <tr>
+                          <td style="padding:6px 0;color:#0f172a;font-size:15px;font-weight:600;">{servicio}<span style="color:#64748b;font-weight:400;">{duracion}</span></td>
+                          <td style="padding:6px 0;color:#0f172a;font-size:15px;text-align:right;white-space:nowrap;">{Dinero(r.PrecioLista)}</td>
+                        </tr>
+                      </table>
+                      {separador}
+                      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+                        {totales}
+                        <tr>
+                          <td style="padding:10px 0 4px;color:#0f172a;font-size:18px;font-weight:800;">TOTAL</td>
+                          <td style="padding:10px 0 4px;color:#0f172a;font-size:24px;font-weight:800;text-align:right;white-space:nowrap;">{Dinero(r.Total)}</td>
+                        </tr>
+                      </table>
+                      {separador}
+                      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+                        {pagos}
+                      </table>
+                      {reservar}
+                      <p style="text-align:center;font-size:15px;font-weight:700;color:#0f172a;margin:20px 0 0;">Gracias por tu visita</p>
+                    </div>
+                    <div style="text-align:center;padding:18px 12px 0;font-size:11px;color:#94a3b8;line-height:1.6;">
+                      Agenda en línea con <span style="font-weight:700;color:#94a3b8;">AppointVa</span> · <a href="https://appointva.com" style="color:#94a3b8;text-decoration:underline;">appointva.com</a>
+                    </div>
+                  </div>
+                </body>
+                </html>
+                """;
         }
     }
 }

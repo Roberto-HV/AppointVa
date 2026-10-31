@@ -1248,8 +1248,7 @@ export default function PagosPage() {
         {citaPagada && (
           <TicketRecibo
             cita={citaPagada}
-            negocioNombre={negocio?.nombre ?? ""}
-            negocioLogo={negocio?.logoUrl}
+            negocio={negocio ?? { nombre: "" }}
             onClose={() => setCitaPagada(null)}
             onEnviarEmail={handleEnviarEmail}
             enviandoEmail={enviandoEmail}

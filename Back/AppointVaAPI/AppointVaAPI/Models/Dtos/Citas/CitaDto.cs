@@ -28,6 +28,11 @@
 
         // Cita
         public decimal Precio { get; set; }
+        /// <summary>
+        /// Current list price of the service. Above Precio when a coupon lowered it at
+        /// booking: the receipt shows the difference as a discount.
+        /// </summary>
+        public decimal? PrecioServicio { get; set; }
         public bool Pagada { get; set; }
         public string? MetodoPago { get; set; }
         public string? MetodoPago2 { get; set; }
