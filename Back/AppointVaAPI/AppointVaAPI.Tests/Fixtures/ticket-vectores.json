@@ -1,0 +1,210 @@
+{
+  "descripcion": "Shared golden vectors for the payment receipt. Read by EmailService.ResumirTicket tests (TicketVectoresTests.cs) and by Front/src/utils/ticketRecibo.test.ts: both implementations must produce exactly these rows. 'entrada' uses the CitaDto field names; 'totales' are the rows above TOTAL, 'saldoAFavor' the row below it, 'pagos' the payment block.",
+  "vectores": [
+    {
+      "nombre": "efectivo con cambio, sin ajustes",
+      "entrada": { "precio": 280, "precioLista": 280, "montoCobrado": 280, "metodoPago": "Efectivo", "montoRecibido": 300, "cambio": 20 },
+      "esperado": {
+        "servicio": "$280.00",
+        "totales": [],
+        "total": "$280.00",
+        "saldoAFavor": null,
+        "pagos": [["Efectivo", "$280.00"], ["Recibido", "$300.00"], ["Cambio", "$20.00"]],
+        "etiquetaEmpleado": "Atendió"
+      }
+    },
+    {
+      "nombre": "cupón del 10 % guardado en la cita",
+      "entrada": { "precio": 315, "precioLista": 350, "codigoDescuento": "VERANO10", "descuentoPorcentaje": 10, "montoCobrado": 315, "metodoPago": "Efectivo", "montoRecibido": 400, "cambio": 85 },
+      "esperado": {
+        "servicio": "$350.00",
+        "totales": [["Subtotal", "$350.00"], ["Descuento 10%", "-$35.00"]],
+        "total": "$315.00",
+        "saldoAFavor": null,
+        "pagos": [["Efectivo", "$315.00"], ["Recibido", "$400.00"], ["Cambio", "$85.00"]],
+        "etiquetaEmpleado": "Atendió"
+      }
+    },
+    {
+      "nombre": "cupón con porcentaje fraccionario",
+      "entrada": { "precio": 262.5, "precioLista": 300, "codigoDescuento": "DOCEYMEDIO", "descuentoPorcentaje": 12.5, "montoCobrado": 262.5, "metodoPago": "Tarjeta" },
+      "esperado": {
+        "servicio": "$300.00",
+        "totales": [["Subtotal", "$300.00"], ["Descuento 12.5%", "-$37.50"]],
+        "total": "$262.50",
+        "saldoAFavor": null,
+        "pagos": [["Tarjeta", "$262.50"]],
+        "etiquetaEmpleado": "Atendió"
+      }
+    },
+    {
+      "nombre": "cupón de monto fijo: descuento sin porcentaje",
+      "entrada": { "precio": 250, "precioLista": 300, "codigoDescuento": "MENOS50", "descuentoPorcentaje": null, "montoCobrado": 250, "metodoPago": "Tarjeta" },
+      "esperado": {
+        "servicio": "$300.00",
+        "totales": [["Subtotal", "$300.00"], ["Descuento", "-$50.00"]],
+        "total": "$250.00",
+        "saldoAFavor": null,
+        "pagos": [["Tarjeta", "$250.00"]],
+        "etiquetaEmpleado": "Atendió"
+      }
+    },
+    {
+      "nombre": "cita anterior sin campos de cupón tras subir el precio del servicio: sin descuento",
+      "entrada": { "precio": 280, "precioLista": null, "codigoDescuento": null, "descuentoPorcentaje": null, "montoCobrado": 280, "metodoPago": "Tarjeta" },
+      "esperado": {
+        "servicio": "$280.00",
+        "totales": [],
+        "total": "$280.00",
+        "saldoAFavor": null,
+        "pagos": [["Tarjeta", "$280.00"]],
+        "etiquetaEmpleado": "Atendió"
+      }
+    },
+    {
+      "nombre": "cobrado de menos en caja: descuento en caja",
+      "entrada": { "precio": 280, "precioLista": null, "montoCobrado": 250, "metodoPago": "Tarjeta" },
+      "esperado": {
+        "servicio": "$280.00",
+        "totales": [["Subtotal", "$280.00"], ["Descuento en caja", "-$30.00"]],
+        "total": "$250.00",
+        "saldoAFavor": null,
+        "pagos": [["Tarjeta", "$250.00"]],
+        "etiquetaEmpleado": "Atendió"
+      }
+    },
+    {
+      "nombre": "cobrado de más en caja: cargo adicional",
+      "entrada": { "precio": 280, "precioLista": 280, "montoCobrado": 300, "metodoPago": "Tarjeta" },
+      "esperado": {
+        "servicio": "$280.00",
+        "totales": [["Subtotal", "$280.00"], ["Cargo adicional", "$20.00"]],
+        "total": "$300.00",
+        "saldoAFavor": null,
+        "pagos": [["Tarjeta", "$300.00"]],
+        "etiquetaEmpleado": "Atendió"
+      }
+    },
+    {
+      "nombre": "diferencia de lista menor a medio centavo: sin descuento",
+      "entrada": { "precio": 280, "precioLista": 280.004, "montoCobrado": 280, "metodoPago": "Tarjeta" },
+      "esperado": {
+        "servicio": "$280.00",
+        "totales": [],
+        "total": "$280.00",
+        "saldoAFavor": null,
+        "pagos": [["Tarjeta", "$280.00"]],
+        "etiquetaEmpleado": "Atendió"
+      }
+    },
+    {
+      "nombre": "anticipo menor que lo debido",
+      "entrada": { "precio": 1200, "precioLista": 1200, "anticipoRecibido": true, "montoAnticipo": 300, "montoCobrado": 900, "metodoPago": "Tarjeta" },
+      "esperado": {
+        "servicio": "$1,200.00",
+        "totales": [["Subtotal", "$1,200.00"], ["Anticipo pagado", "-$300.00"]],
+        "total": "$900.00",
+        "saldoAFavor": null,
+        "pagos": [["Tarjeta", "$900.00"]],
+        "etiquetaEmpleado": "Atendió"
+      }
+    },
+    {
+      "nombre": "anticipo sin monto cobrado guardado: se cobra lo que faltaba",
+      "entrada": { "precio": 1200, "precioLista": 1200, "anticipoRecibido": true, "montoAnticipo": 300, "montoCobrado": null, "metodoPago": "Transferencia" },
+      "esperado": {
+        "servicio": "$1,200.00",
+        "totales": [["Subtotal", "$1,200.00"], ["Anticipo pagado", "-$300.00"]],
+        "total": "$900.00",
+        "saldoAFavor": null,
+        "pagos": [["Transferencia", "$900.00"]],
+        "etiquetaEmpleado": "Atendió"
+      }
+    },
+    {
+      "nombre": "anticipo registrado pero no recibido: no se resta",
+      "entrada": { "precio": 280, "precioLista": 280, "anticipoRequerido": true, "anticipoRecibido": false, "montoAnticipo": 100, "montoCobrado": 280, "metodoPago": "Tarjeta" },
+      "esperado": {
+        "servicio": "$280.00",
+        "totales": [],
+        "total": "$280.00",
+        "saldoAFavor": null,
+        "pagos": [["Tarjeta", "$280.00"]],
+        "etiquetaEmpleado": "Atendió"
+      }
+    },
+    {
+      "nombre": "anticipo mayor que lo debido: se aplica hasta el precio y el resto es saldo a favor, nunca cargo",
+      "entrada": { "precio": 200, "precioLista": 200, "anticipoRecibido": true, "montoAnticipo": 300, "montoCobrado": 0, "metodoPago": "Efectivo" },
+      "esperado": {
+        "servicio": "$200.00",
+        "totales": [["Subtotal", "$200.00"], ["Anticipo aplicado", "-$200.00"]],
+        "total": "$0.00",
+        "saldoAFavor": ["Saldo a favor", "$100.00"],
+        "pagos": [["Efectivo", "$0.00"]],
+        "etiquetaEmpleado": "Atendió"
+      }
+    },
+    {
+      "nombre": "anticipo mayor con cupón y sin monto cobrado; método en blanco",
+      "entrada": { "precio": 270, "precioLista": 300, "codigoDescuento": "VERANO10", "descuentoPorcentaje": 10, "anticipoRecibido": true, "montoAnticipo": 300, "montoCobrado": null, "metodoPago": "   " },
+      "esperado": {
+        "servicio": "$300.00",
+        "totales": [["Subtotal", "$300.00"], ["Descuento 10%", "-$30.00"], ["Anticipo aplicado", "-$270.00"]],
+        "total": "$0.00",
+        "saldoAFavor": ["Saldo a favor", "$30.00"],
+        "pagos": [["Pago", "$0.00"]],
+        "etiquetaEmpleado": "Atendió"
+      }
+    },
+    {
+      "nombre": "pago dividido con anticipo; segundo método con espacios",
+      "entrada": { "precio": 1200, "precioLista": 1200, "anticipoRecibido": true, "montoAnticipo": 300, "montoCobrado": 900, "metodoPago": "Tarjeta", "metodoPago2": " Efectivo ", "montoPago2": 400, "montoRecibido": 500, "cambio": 100 },
+      "esperado": {
+        "servicio": "$1,200.00",
+        "totales": [["Subtotal", "$1,200.00"], ["Anticipo pagado", "-$300.00"]],
+        "total": "$900.00",
+        "saldoAFavor": null,
+        "pagos": [["Tarjeta", "$500.00"], ["Efectivo", "$400.00"], ["Recibido", "$500.00"], ["Cambio", "$100.00"]],
+        "etiquetaEmpleado": "Atendió"
+      }
+    },
+    {
+      "nombre": "segundo método solo con espacios: no hay pago dividido",
+      "entrada": { "precio": 280, "precioLista": 280, "montoCobrado": 280, "metodoPago": "Tarjeta", "metodoPago2": "   ", "montoPago2": 100 },
+      "esperado": {
+        "servicio": "$280.00",
+        "totales": [],
+        "total": "$280.00",
+        "saldoAFavor": null,
+        "pagos": [["Tarjeta", "$280.00"]],
+        "etiquetaEmpleado": "Atendió"
+      }
+    },
+    {
+      "nombre": "propina con tarjeta: renglón propio, fuera del TOTAL; sin efectivo no hay recibido ni cambio",
+      "entrada": { "precio": 280, "precioLista": 280, "montoCobrado": 280, "metodoPago": "Tarjeta", "montoRecibido": 300, "cambio": 20, "propina": 40 },
+      "esperado": {
+        "servicio": "$280.00",
+        "totales": [],
+        "total": "$280.00",
+        "saldoAFavor": null,
+        "pagos": [["Tarjeta", "$280.00"], ["Propina", "$40.00"]],
+        "etiquetaEmpleado": "Atendió"
+      }
+    },
+    {
+      "nombre": "salud: el término del sector para quien atendió",
+      "sector": "salud",
+      "entrada": { "precio": 280, "precioLista": 280, "montoCobrado": 280, "metodoPago": "Tarjeta" },
+      "esperado": {
+        "servicio": "$280.00",
+        "totales": [],
+        "total": "$280.00",
+        "saldoAFavor": null,
+        "pagos": [["Tarjeta", "$280.00"]],
+        "etiquetaEmpleado": "Profesional"
+      }
+    }
+  ]
+}

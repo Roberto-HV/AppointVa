@@ -215,6 +215,7 @@ namespace AppointVaAPI.Controllers.V1
                         FinEn = finEn,
                         Estado = EstadosCitas.Confirmada,
                         Precio = servicio.Precio,
+                        PrecioLista = servicio.Precio, // no coupon from the panel
                         AnticipoRequerido = negocioAnticipo?.RequiereAnticipo ?? false,
                         MontoAnticipo = (negocioAnticipo?.RequiereAnticipo == true && negocioAnticipo.PorcentajeAnticipo > 0)
                             ? Math.Round(servicio.Precio * negocioAnticipo.PorcentajeAnticipo / 100m, 2)
@@ -828,7 +829,9 @@ namespace AppointVaAPI.Controllers.V1
             NombreServicio = c.Servicio?.Nombre ?? string.Empty,
             DuracionMinutos = c.Servicio?.DuracionMinutos ?? 0,
             Precio = c.Precio,
-            PrecioServicio = c.Servicio?.Precio,
+            PrecioLista = c.PrecioLista,
+            CodigoDescuento = c.CodigoDescuento,
+            DescuentoPorcentaje = c.DescuentoPorcentaje,
             Pagada = c.Pagada,
             MetodoPago = c.MetodoPago,
             MetodoPago2  = c.MetodoPago2,

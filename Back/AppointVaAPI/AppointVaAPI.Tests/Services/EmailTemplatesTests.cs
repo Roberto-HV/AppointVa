@@ -482,7 +482,7 @@ public class EmailTemplatesTests
         Servicio        = "Corte de dama",
         DuracionMinutos = 45,
         Precio          = 280m,
-        PrecioServicio  = 280m,
+        PrecioLista     = 280m,
         MontoCobrado    = 280m,
         MetodoPago      = "Tarjeta",
     };
@@ -551,7 +551,8 @@ public class EmailTemplatesTests
         var html = EmailService.PlantillaTicket(Ticket() with
         {
             Precio         = 270m,
-            PrecioServicio = 300m,
+            PrecioLista    = 300m,
+            DescuentoPorcentaje = 10m,
             MontoCobrado   = 270m,
             MetodoPago     = "Efectivo",
             MontoRecibido  = 300m,
@@ -578,8 +579,9 @@ public class EmailTemplatesTests
         var html = EmailService.PlantillaTicket(Ticket() with
         {
             Precio         = 1200m,
-            PrecioServicio = 1200m,
-            Anticipo       = 300m,
+            PrecioLista    = 1200m,
+            AnticipoRecibido = true,
+            MontoAnticipo  = 300m,
             MontoCobrado   = 900m,
             MetodoPago     = "Tarjeta",
             MetodoPago2    = "Transferencia",
@@ -602,23 +604,49 @@ public class EmailTemplatesTests
     [Fact]
     public void ResumirTicket_ChargedLessThanExpected_CountsTheDifferenceAsDiscount()
     {
-        var r = EmailService.ResumirTicket(Ticket() with { Anticipo = 100m, MontoCobrado = 150m });
+        var r = EmailService.ResumirTicket(Ticket() with { AnticipoRecibido = true, MontoAnticipo = 100m, MontoCobrado = 150m });
 
         r.PrecioLista.Should().Be(280m);
         r.Anticipo.Should().Be(100m);
-        r.Descuento.Should().Be(30m);
+        r.DescuentoCupon.Should().Be(0m);
+        r.DescuentoCaja.Should().Be(30m);
         r.CargoAdicional.Should().Be(0m);
-        (r.PrecioLista - r.Descuento - r.Anticipo + r.CargoAdicional).Should().Be(r.Total);
+        (r.PrecioLista - r.DescuentoCupon - r.DescuentoCaja - r.Anticipo + r.CargoAdicional).Should().Be(r.Total);
     }
 
     [Fact]
     public void ResumirTicket_ListPriceBelowPrice_NeverShowsANegativeDiscount()
     {
-        var r = EmailService.ResumirTicket(Ticket() with { PrecioServicio = 250m });
+        var r = EmailService.ResumirTicket(Ticket() with { PrecioLista = 250m });
 
         r.PrecioLista.Should().Be(280m);
-        r.Descuento.Should().Be(0m);
-        r.HayAjustes.Should().BeFalse();
+        r.DescuentoCupon.Should().Be(0m);
+        r.Totales.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void PlantillaTicket_AdvanceLargerThanDue_ShowsSaldoAFavorAndNoSurcharge()
+    {
+        var html = EmailService.PlantillaTicket(Ticket() with
+        {
+            Precio = 200m, PrecioLista = 200m, AnticipoRecibido = true, MontoAnticipo = 300m,
+            MontoCobrado = null, MetodoPago = "Efectivo",
+        });
+
+        html.Should().Contain("Anticipo aplicado");
+        html.Should().Contain("-$200.00");
+        html.Should().Contain(">Saldo a favor<");
+        html.Should().Contain("$100.00");
+        html.Should().NotContain("Cargo adicional");
+    }
+
+    [Fact]
+    public void PlantillaTicket_LegacyAppointmentWithoutStoredListPrice_ShowsNoCoupon()
+    {
+        var html = EmailService.PlantillaTicket(Ticket() with { PrecioLista = null, DescuentoPorcentaje = null });
+
+        html.Should().NotContain("Descuento");
+        html.Should().NotContain("Subtotal");
     }
 
     [Fact]

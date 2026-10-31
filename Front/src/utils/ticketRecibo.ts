@@ -51,83 +51,124 @@ export interface RenglonTicket {
 /** Los números del ticket ya resueltos: qué renglones aparecen y con qué importe. */
 export interface ResumenTicket {
   servicio: RenglonTicket;
-  subtotal: string | null;
-  descuento: RenglonTicket | null;
-  cargoAdicional: string | null;
-  anticipo: string | null;
+  /** Los renglones arriba del TOTAL: Subtotal, descuentos, cargo y anticipo. */
+  totales: RenglonTicket[];
   total: string;
+  /** Debajo del TOTAL, solo cuando el anticipo superó lo que se debía. */
+  saldoAFavor: RenglonTicket | null;
+  /** Métodos de pago, Recibido, Cambio y Propina. */
   pagos: RenglonTicket[];
-  recibido: string | null;
-  cambio: string | null;
-  propina: string | null;
+  /** Quién atendió: el término del sector en salud, «Atendió» en el resto. */
+  etiquetaEmpleado: string;
 }
-
-const CENTAVO = 0.005;
 
 /** "$1,280.00": siempre con centavos, como en cualquier ticket. */
 export function dinero(n: number): string {
   return "$" + n.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-const redondear = (n: number) => Math.round(n * 100) / 100;
+/**
+ * A centavos, con el medio centavo hacia arriba: igual que
+ * Math.Round(x, 2, MidpointRounding.AwayFromZero) en el servidor.
+ */
+const centavos = (n: number) => Math.sign(n) * Math.round((Math.abs(n) + Number.EPSILON) * 100) / 100;
+
+/** Montos ya redondeados: cualquier residuo menor a medio centavo es cero. */
+const positivo = (n: number) => n > 0.005;
+
+/** "10", "12.5": el porcentaje del cupón tal como se escribe en el ticket. */
+const porcentaje = (pct: number) => String(centavos(pct));
+
+/**
+ * Quién atendió: el término del sector en salud ("Profesional"), «Atendió» en
+ * el resto. El correo del servidor (EmailService.EtiquetaEmpleado) usa el mismo.
+ */
+export function etiquetaEmpleadoTicket(sector: string | null | undefined): string {
+  return sector === "salud" ? getSectorTerms(sector).empleado : "Atendió";
+}
 
 /**
  * Reparte el cobro en renglones que cierran en el papel:
- * Subtotal − Descuento − Anticipo pagado (+ Cargo adicional) = TOTAL.
+ * Subtotal − Descuento − Descuento en caja − Anticipo (+ Cargo adicional) = TOTAL.
  *
- * - El cupón de la reserva ya viene restado en `precio`; el precio de lista del
- *   servicio (`precioServicio`) permite mostrarlo como descuento.
- * - Si en caja se cobró menos de lo esperado, la diferencia también es descuento.
+ * - El cupón sale solo de lo guardado en la reserva (`precioLista`): una cita sin
+ *   esos datos no muestra cupón, cueste lo que cueste hoy el servicio.
+ * - Si en caja se cobró menos de lo que se debía, la diferencia es «Descuento en
+ *   caja»; si se cobró más, «Cargo adicional».
+ * - Un anticipo mayor que lo que se debía se aplica solo hasta el precio
+ *   («Anticipo aplicado»); el resto va debajo del TOTAL como «Saldo a favor»,
+ *   nunca como cargo.
  * - La propina va en su propio renglón y nunca se suma al TOTAL: el cambio se
  *   calcula sin ella y «Recibido − TOTAL = Cambio» tiene que cerrar.
+ *
+ * El correo (EmailService.ResumirTicket) sigue las mismas reglas; los vectores de
+ * AppointVaAPI.Tests/Fixtures/ticket-vectores.json lo comprueban en los dos lados.
  */
-export function resumirTicket(cita: CitaDto): ResumenTicket {
-  const precio = cita.precio;
-  const precioLista = cita.precioServicio != null && cita.precioServicio > precio + CENTAVO
-    ? cita.precioServicio
-    : precio;
-  const anticipo = cita.anticipoRecibido && cita.montoAnticipo && cita.montoAnticipo > 0
-    ? cita.montoAnticipo
+export function resumirTicket(cita: CitaDto, sector?: string | null): ResumenTicket {
+  const precio = centavos(cita.precio);
+  const lista = cita.precioLista != null ? centavos(cita.precioLista) : null;
+  const precioLista = lista != null && positivo(lista - precio) ? lista : precio;
+  const anticipoTotal = cita.anticipoRecibido && cita.montoAnticipo != null && positivo(centavos(cita.montoAnticipo))
+    ? centavos(cita.montoAnticipo)
     : 0;
-  const cobrado = cita.montoCobrado ?? Math.max(0, precio - anticipo);
+  const anticipo = Math.min(anticipoTotal, precio);
+  const saldoAFavor = centavos(anticipoTotal - anticipo);
+  const cobrado = centavos(Math.max(0, cita.montoCobrado ?? precio - anticipo));
 
-  const descuentoReserva = redondear(precioLista - precio);
-  const diferenciaCaja = redondear(precio - anticipo - cobrado);
-  const descuento = redondear(descuentoReserva + Math.max(0, diferenciaCaja));
-  const cargoAdicional = redondear(Math.max(0, -diferenciaCaja));
+  const descuentoCupon = centavos(precioLista - precio);
+  const diferenciaCaja = centavos(precio - anticipo - cobrado);
+  const descuentoCaja = Math.max(0, diferenciaCaja);
+  const cargo = Math.max(0, -diferenciaCaja);
 
-  // "Descuento 10%" solo cuando el porcentaje es exacto; si no, solo el importe.
-  const pct = precioLista > 0 ? (descuento / precioLista) * 100 : 0;
-  const pctExacto = Math.abs(pct - Math.round(pct)) < 0.01 && Math.round(pct) > 0;
-  const etiquetaDescuento = pctExacto ? `Descuento ${Math.round(pct)}%` : "Descuento";
+  const totales: RenglonTicket[] = [];
+  if (positivo(descuentoCupon) || positivo(descuentoCaja) || positivo(cargo) || positivo(anticipoTotal)) {
+    totales.push({ etiqueta: "Subtotal", monto: dinero(precioLista) });
+  }
+  if (positivo(descuentoCupon)) {
+    const pct = cita.descuentoPorcentaje;
+    const etiqueta = pct != null && pct > 0 ? `Descuento ${porcentaje(pct)}%` : "Descuento";
+    totales.push({ etiqueta, monto: `-${dinero(descuentoCupon)}` });
+  }
+  if (positivo(descuentoCaja)) totales.push({ etiqueta: "Descuento en caja", monto: `-${dinero(descuentoCaja)}` });
+  if (positivo(cargo)) totales.push({ etiqueta: "Cargo adicional", monto: dinero(cargo) });
+  if (positivo(anticipoTotal)) {
+    totales.push({
+      etiqueta: positivo(saldoAFavor) ? "Anticipo aplicado" : "Anticipo pagado",
+      monto: `-${dinero(anticipo)}`,
+    });
+  }
 
-  const hayAjustes = descuento > CENTAVO || anticipo > CENTAVO || cargoAdicional > CENTAVO;
+  // Pago dividido: el primer método se lleva lo que no cubrió el segundo.
+  const metodo1 = cita.metodoPago?.trim() || "Pago";
+  const metodo2 = cita.metodoPago2?.trim() ?? "";
+  const m2 = metodo2 && cita.montoPago2 != null && positivo(centavos(cita.montoPago2)) ? centavos(cita.montoPago2) : 0;
+  const pagos: RenglonTicket[] = [];
+  if (m2 > 0) {
+    pagos.push({ etiqueta: metodo1, monto: dinero(Math.max(0, centavos(cobrado - m2))) });
+    pagos.push({ etiqueta: metodo2, monto: dinero(m2) });
+  } else {
+    pagos.push({ etiqueta: metodo1, monto: dinero(cobrado) });
+  }
+  const hayEfectivo = metodo1 === "Efectivo" || (m2 > 0 && metodo2 === "Efectivo");
+  if (hayEfectivo && cita.montoRecibido != null && positivo(centavos(cita.montoRecibido))) {
+    pagos.push({ etiqueta: "Recibido", monto: dinero(centavos(cita.montoRecibido)) });
+  }
+  if (hayEfectivo && cita.cambio != null && positivo(centavos(cita.cambio))) {
+    pagos.push({ etiqueta: "Cambio", monto: dinero(centavos(cita.cambio)) });
+  }
+  if (cita.propina != null && positivo(centavos(cita.propina))) {
+    pagos.push({ etiqueta: "Propina", monto: dinero(centavos(cita.propina)) });
+  }
 
   const duracion = cita.duracionMinutos > 0 ? ` · ${cita.duracionMinutos} min` : "";
 
-  // Pago dividido: el primer método se lleva lo que no cubrió el segundo.
-  const m2 = cita.metodoPago2 && cita.montoPago2 && cita.montoPago2 > 0 ? cita.montoPago2 : 0;
-  const pagos: RenglonTicket[] = [];
-  if (m2 > 0) {
-    pagos.push({ etiqueta: cita.metodoPago || "Pago", monto: dinero(Math.max(0, cobrado - m2)) });
-    pagos.push({ etiqueta: cita.metodoPago2!, monto: dinero(m2) });
-  } else {
-    pagos.push({ etiqueta: cita.metodoPago || "Pago", monto: dinero(cobrado) });
-  }
-
-  const hayEfectivo = cita.metodoPago === "Efectivo" || (m2 > 0 && cita.metodoPago2 === "Efectivo");
-
   return {
     servicio: { etiqueta: `${cita.nombreServicio}${duracion}`, monto: dinero(precioLista) },
-    subtotal: hayAjustes ? dinero(precioLista) : null,
-    descuento: descuento > CENTAVO ? { etiqueta: etiquetaDescuento, monto: `-${dinero(descuento)}` } : null,
-    cargoAdicional: cargoAdicional > CENTAVO ? dinero(cargoAdicional) : null,
-    anticipo: anticipo > CENTAVO ? `-${dinero(anticipo)}` : null,
+    totales,
     total: dinero(cobrado),
+    saldoAFavor: positivo(saldoAFavor) ? { etiqueta: "Saldo a favor", monto: dinero(saldoAFavor) } : null,
     pagos,
-    recibido: hayEfectivo && cita.montoRecibido != null && cita.montoRecibido > 0 ? dinero(cita.montoRecibido) : null,
-    cambio: hayEfectivo && cita.cambio != null && cita.cambio > CENTAVO ? dinero(cita.cambio) : null,
-    propina: cita.propina != null && cita.propina > CENTAVO ? dinero(cita.propina) : null,
+    etiquetaEmpleado: etiquetaEmpleadoTicket(sector),
   };
 }
 
@@ -160,9 +201,8 @@ const fila = (etiqueta: string, valor: string, clase = "") =>
 /** El documento completo del ticket, listo para `document.write` o `srcdoc`. */
 export function htmlTicket({ cita, negocio, papel, origen, qrSvg }: OpcionesTicket): string {
   const m = MEDIDAS_PAPEL[papel];
-  const r = resumirTicket(cita);
+  const r = resumirTicket(cita, negocio.sector);
   const terminos = getSectorTerms(negocio.sector);
-  const esSalud = negocio.sector === "salud";
   const logo = urlImagenSegura(negocio.logoUrl);
   const reservas = urlReservas(negocio.slug, origen);
   const reservasVisible = reservas?.replace(/^https?:\/\//i, "");
@@ -179,24 +219,16 @@ export function htmlTicket({ cita, negocio, papel, origen, qrSvg }: OpcionesTick
     fila("Fecha", formatFechaMx(cita.inicioEn)),
     fila("Hora", formatHora(cita.inicioEn)),
     cita.nombreCliente ? fila(terminos.cliente, cita.nombreCliente) : "",
-    // En salud el término del sector ("Profesional"); en el resto, "Atendió".
-    cita.nombreEmpleado ? fila(esSalud ? terminos.empleado : "Atendió", cita.nombreEmpleado) : "",
+    cita.nombreEmpleado ? fila(r.etiquetaEmpleado, cita.nombreEmpleado) : "",
   ].join("");
 
   const totales = [
-    r.subtotal ? fila("Subtotal", r.subtotal) : "",
-    r.descuento ? fila(r.descuento.etiqueta, r.descuento.monto) : "",
-    r.cargoAdicional ? fila("Cargo adicional", r.cargoAdicional) : "",
-    r.anticipo ? fila("Anticipo pagado", r.anticipo) : "",
+    ...r.totales.map((t) => fila(t.etiqueta, t.monto)),
     fila("TOTAL", r.total, "total"),
+    r.saldoAFavor ? fila(r.saldoAFavor.etiqueta, r.saldoAFavor.monto) : "",
   ].join("");
 
-  const pagos = [
-    ...r.pagos.map((p) => fila(p.etiqueta, p.monto)),
-    r.recibido ? fila("Recibido", r.recibido) : "",
-    r.cambio ? fila("Cambio", r.cambio) : "",
-    r.propina ? fila("Propina", r.propina) : "",
-  ].join("");
+  const pagos = r.pagos.map((p) => fila(p.etiqueta, p.monto)).join("");
 
   const reserva = reservas
     ? `<div class="centro reserva">

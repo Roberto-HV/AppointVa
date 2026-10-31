@@ -29,10 +29,15 @@
         // Cita
         public decimal Precio { get; set; }
         /// <summary>
-        /// Current list price of the service. Above Precio when a coupon lowered it at
-        /// booking: the receipt shows the difference as a discount.
+        /// The service's list price stored at booking. Above Precio when a coupon
+        /// lowered it: the receipt shows the difference as a discount. NULL on older
+        /// appointments, which then show no coupon discount.
         /// </summary>
-        public decimal? PrecioServicio { get; set; }
+        public decimal? PrecioLista { get; set; }
+        /// <summary>The booking coupon code, when one was applied.</summary>
+        public string? CodigoDescuento { get; set; }
+        /// <summary>The coupon's percentage (10 = 10%); NULL for a fixed-amount coupon.</summary>
+        public decimal? DescuentoPorcentaje { get; set; }
         public bool Pagada { get; set; }
         public string? MetodoPago { get; set; }
         public string? MetodoPago2 { get; set; }

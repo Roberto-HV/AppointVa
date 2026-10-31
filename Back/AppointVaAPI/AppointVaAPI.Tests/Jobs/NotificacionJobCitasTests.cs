@@ -3,6 +3,7 @@ using AppointVaAPI.Data;
 using AppointVaAPI.Jobs;
 using AppointVaAPI.Models;
 using AppointVaAPI.Models.Dtos.Citas;
+using AppointVaAPI.Services;
 using AppointVaAPI.Services.IServices;
 using AppointVaAPI.Tests.Controllers;
 using FluentAssertions;
@@ -315,7 +316,10 @@ public class NotificacionJobCitasTests
         negocio.Telefono   = "5512345678";
         negocio.Sector     = "salud";
         var registrada = await db.Citas.FindAsync(cita.Id);
-        registrada!.Precio           = 180m; // coupon applied at booking (list price: 200)
+        registrada!.Precio           = 180m; // 10% coupon applied at booking (list price: 200)
+        registrada.PrecioLista       = 200m;
+        registrada.CodigoDescuento   = "VERANO10";
+        registrada.DescuentoPorcentaje = 10m;
         registrada.AnticipoRecibido  = true;
         registrada.MontoAnticipo     = 50m;
         registrada.Pagada            = true;
@@ -343,9 +347,13 @@ public class NotificacionJobCitasTests
         datos.EmpleadoNombre.Should().Be("Ana");
         datos.DuracionMinutos.Should().Be(30);
         datos.Precio.Should().Be(180m);
-        datos.PrecioServicio.Should().Be(200m);
-        datos.Anticipo.Should().Be(50m);
-        datos.MontoCobrado.Should().Be(130m, "without a stored charge it is what was left after the advance");
+        datos.PrecioLista.Should().Be(200m);
+        datos.DescuentoPorcentaje.Should().Be(10m);
+        datos.AnticipoRecibido.Should().BeTrue();
+        datos.MontoAnticipo.Should().Be(50m);
+        datos.MontoCobrado.Should().BeNull("the summary defaults it to what was left after the advance");
+        EmailService.ResumirTicket(datos).Total.Should().Be(130m);
+        datos.MetodoPago.Should().Be("Tarjeta");
         datos.MetodoPago2.Should().Be("Efectivo");
         datos.MontoPago2.Should().Be(30m);
         datos.MontoRecibido.Should().Be(50m);

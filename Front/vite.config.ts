@@ -1,4 +1,5 @@
 import path from "path";
+import { searchForWorkspaceRoot } from 'vite';
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
@@ -53,6 +54,18 @@ export default defineConfig({
         secure: false,
       },
     },
+    // Only under Vitest: the receipt's golden vectors live with the backend tests
+    // (Back/AppointVaAPI/AppointVaAPI.Tests/Fixtures) and both suites read them.
+    ...(process.env.VITEST
+      ? {
+          fs: {
+            allow: [
+              searchForWorkspaceRoot(process.cwd()),
+              path.resolve(__dirname, "../Back/AppointVaAPI/AppointVaAPI.Tests/Fixtures"),
+            ],
+          },
+        }
+      : {}),
   },
   test: {
     environment: "jsdom",

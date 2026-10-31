@@ -383,6 +383,48 @@ public class PublicoControllerCrearCitaTests
             "AutoConfirmar=true debe crear la cita directamente como Confirmada");
     }
 
+    [Theory]
+    [InlineData("VERANO10", "Porcentaje", 10, 135, 10)]
+    [InlineData("MENOS50", "MontoFijo", 50, 100, null)]
+    [InlineData(null, null, 0, 150, null)]
+    public async Task GuardaPrecioListaYCupon_ParaElComprobante(
+        string? codigo, string? tipo, decimal valor, decimal precioEsperado, int? porcentajeEsperado)
+    {
+        var (controller, negocioRepo, citaRepo, clienteRepo, _, _, db) = CrearComponentes(
+            nameof(GuardaPrecioListaYCupon_ParaElComprobante) + codigo);
+        var negocio = NegocioActivo();
+        negocioRepo.ObtenerPorSlugAsync(negocio.Slug).Returns(negocio);
+        var (servicio, empleado) = await SeedDataAsync(db, negocio);
+        if (codigo is not null)
+        {
+            db.Descuentos.Add(new Descuento
+            {
+                Id = Guid.NewGuid(), NegocioId = negocio.Id, Codigo = codigo, Tipo = tipo!, Valor = valor,
+                Activo = true, FechaCreacion = DateTime.UtcNow,
+            });
+            await db.SaveChangesAsync();
+        }
+        citaRepo.ExisteSolapamientoAsync(
+            Arg.Any<Guid>(), Arg.Any<DateTime>(), Arg.Any<DateTime>(), Arg.Any<Guid?>())
+            .Returns(false);
+        clienteRepo.ObtenerOCrearAsync(
+            Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<bool>())
+            .Returns(Creado(ClienteDemo(negocio.Id)));
+        Cita? creada = null;
+        await citaRepo.CrearAsync(Arg.Do<Cita>(c => creada = c));
+
+        var dto = DtoBase(negocio, servicio, empleado);
+        dto.CodigoDescuento = codigo?.ToLowerInvariant();
+        var result = await controller.CrearCita(dto);
+
+        result.Should().BeOfType<CreatedAtActionResult>();
+        creada.Should().NotBeNull();
+        creada!.Precio.Should().Be(precioEsperado);
+        creada.PrecioLista.Should().Be(150m, "the list price at booking, whatever the service costs later");
+        creada.CodigoDescuento.Should().Be(codigo);
+        creada.DescuentoPorcentaje.Should().Be(porcentajeEsperado is null ? null : (decimal)porcentajeEsperado);
+    }
+
     [Fact]
     public async Task CreaPendiente_CuandoAutoConfirmarEsFalse()
     {

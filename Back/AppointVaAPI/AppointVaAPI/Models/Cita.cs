@@ -33,6 +33,18 @@ namespace AppointVaAPI.Models
         public byte Estado { get; set; }
         [Required]
         public decimal Precio { get; set; }
+        // Frozen at booking so the receipt never depends on today's service price.
+        // NULL on appointments created before these columns existed: the receipt
+        // shows no coupon discount for them.
+        /// <summary>The service's list price when the appointment was created.</summary>
+        [Column(TypeName = "decimal(10,2)")]
+        public decimal? PrecioLista { get; set; }
+        /// <summary>The booking coupon applied (Descuento.Codigo); Precio already has it subtracted.</summary>
+        [MaxLength(50)]
+        public string? CodigoDescuento { get; set; }
+        /// <summary>The coupon's percentage when it was a percentage coupon (10 = 10%); NULL for a fixed amount.</summary>
+        [Column(TypeName = "decimal(5,2)")]
+        public decimal? DescuentoPorcentaje { get; set; }
         public string? Notas { get; set; }
         public string? MotivoCancelacion { get; set; }
         public bool Pagada { get; set; }

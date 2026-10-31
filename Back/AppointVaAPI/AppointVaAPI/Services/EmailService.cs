@@ -905,38 +905,102 @@ namespace AppointVaAPI.Services
         internal static string Dinero(decimal monto) =>
             "$" + monto.ToString("N2", System.Globalization.CultureInfo.InvariantCulture);
 
+        /// <summary>One receipt row: label and amount, the amount already formatted ("-$30.00").</summary>
+        internal sealed record RenglonTicket(string Etiqueta, string Monto, bool Destacado = false);
+
         /// <summary>
-        /// Same breakdown as the printed ticket (Front/src/utils/ticketRecibo.ts), so the
-        /// rows close on paper: Subtotal − Descuento − Anticipo (+ Cargo adicional) = TOTAL.
-        /// The tip has its own row and is never added to the TOTAL: the change is
-        /// computed without it.
+        /// The receipt's numbers, row by row. Same rules as the printed ticket
+        /// (Front/src/utils/ticketRecibo.ts resumirTicket); both are pinned by the shared
+        /// vectors in AppointVaAPI.Tests/Fixtures/ticket-vectores.json.
         /// </summary>
         internal sealed record ResumenTicket(
-            decimal PrecioLista, decimal Descuento, string EtiquetaDescuento,
-            decimal CargoAdicional, decimal Anticipo, decimal Total)
-        {
-            public bool HayAjustes => Descuento > 0 || Anticipo > 0 || CargoAdicional > 0;
-        }
+            decimal PrecioLista, decimal DescuentoCupon, decimal DescuentoCaja, decimal CargoAdicional,
+            decimal Anticipo, decimal SaldoAFavor, decimal Total,
+            IReadOnlyList<RenglonTicket> Totales, RenglonTicket? FilaSaldoAFavor,
+            IReadOnlyList<RenglonTicket> Pagos, string EtiquetaEmpleado);
 
+        private static decimal Centavos(decimal monto) => Math.Round(monto, 2, MidpointRounding.AwayFromZero);
+
+        /// <summary>"10", "12.5": the coupon percentage as written on the receipt.</summary>
+        internal static string Porcentaje(decimal pct) =>
+            Centavos(pct).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+
+        /// <summary>
+        /// Splits the payment into rows that close on paper:
+        /// Subtotal − Descuento − Descuento en caja − Anticipo (+ Cargo adicional) = TOTAL.
+        /// <list type="bullet">
+        /// <item>The coupon comes only from the amounts stored at booking (PrecioLista):
+        /// an appointment without them shows no coupon, whatever the service costs today.</item>
+        /// <item>Charging less than what was due at the counter shows as "Descuento en caja";
+        /// charging more, as "Cargo adicional".</item>
+        /// <item>An advance larger than what was due is applied only up to the price
+        /// ("Anticipo aplicado"); the rest is shown after the TOTAL as "Saldo a favor",
+        /// never as a charge.</item>
+        /// <item>The tip has its own row and is never added to the TOTAL.</item>
+        /// </list>
+        /// </summary>
         internal static ResumenTicket ResumirTicket(TicketCitaDatos d)
         {
-            var precioLista = d.PrecioServicio is { } lista && lista > d.Precio ? lista : d.Precio;
-            var anticipo = Math.Max(0, d.Anticipo);
-            var descuentoReserva = precioLista - d.Precio;
-            var diferenciaCaja = d.Precio - anticipo - d.MontoCobrado;
-            var descuento = descuentoReserva + Math.Max(0, diferenciaCaja);
-            var cargo = Math.Max(0, -diferenciaCaja);
+            var precio = Centavos(d.Precio);
+            var precioLista = d.PrecioLista is { } lista && Centavos(lista) > precio ? Centavos(lista) : precio;
+            var anticipoTotal = d.AnticipoRecibido && d.MontoAnticipo is { } a && Centavos(a) > 0 ? Centavos(a) : 0m;
+            var anticipo = Math.Min(anticipoTotal, precio);
+            var saldoAFavor = anticipoTotal - anticipo;
+            var cobrado = Centavos(Math.Max(0m, d.MontoCobrado ?? precio - anticipo));
 
-            // "Descuento 10%" only when the percentage is exact.
-            var etiqueta = "Descuento";
-            if (precioLista > 0 && descuento > 0)
+            var descuentoCupon = precioLista - precio;
+            var diferenciaCaja = precio - anticipo - cobrado;
+            var descuentoCaja = Math.Max(0m, diferenciaCaja);
+            var cargo = Math.Max(0m, -diferenciaCaja);
+
+            var totales = new List<RenglonTicket>();
+            if (descuentoCupon > 0 || descuentoCaja > 0 || cargo > 0 || anticipoTotal > 0)
+                totales.Add(new("Subtotal", Dinero(precioLista)));
+            if (descuentoCupon > 0)
             {
-                var pct = descuento / precioLista * 100m;
-                var redondo = Math.Round(pct);
-                if (redondo > 0 && Math.Abs(pct - redondo) < 0.01m) etiqueta = $"Descuento {redondo:0}%";
+                var etiqueta = d.DescuentoPorcentaje is { } pct && pct > 0 ? $"Descuento {Porcentaje(pct)}%" : "Descuento";
+                totales.Add(new(etiqueta, "-" + Dinero(descuentoCupon)));
             }
-            return new ResumenTicket(precioLista, descuento, etiqueta, cargo, anticipo, d.MontoCobrado);
+            if (descuentoCaja > 0) totales.Add(new("Descuento en caja", "-" + Dinero(descuentoCaja)));
+            if (cargo > 0) totales.Add(new("Cargo adicional", Dinero(cargo)));
+            if (anticipoTotal > 0)
+                totales.Add(new(saldoAFavor > 0 ? "Anticipo aplicado" : "Anticipo pagado", "-" + Dinero(anticipo)));
+
+            // Split payment: the first method covers what the second one did not.
+            var metodo1 = string.IsNullOrWhiteSpace(d.MetodoPago) ? "Pago" : d.MetodoPago.Trim();
+            var metodo2 = d.MetodoPago2?.Trim() ?? "";
+            var m2 = metodo2.Length > 0 && d.MontoPago2 is { } p2 && Centavos(p2) > 0 ? Centavos(p2) : 0m;
+            var pagos = new List<RenglonTicket>();
+            if (m2 > 0)
+            {
+                pagos.Add(new(metodo1, Dinero(Math.Max(0m, cobrado - m2))));
+                pagos.Add(new(metodo2, Dinero(m2)));
+            }
+            else
+            {
+                pagos.Add(new(metodo1, Dinero(cobrado)));
+            }
+            var hayEfectivo = metodo1 == "Efectivo" || (m2 > 0 && metodo2 == "Efectivo");
+            if (hayEfectivo && d.MontoRecibido is { } recibido && Centavos(recibido) > 0)
+                pagos.Add(new("Recibido", Dinero(Centavos(recibido))));
+            if (hayEfectivo && d.Cambio is { } cambio && Centavos(cambio) > 0)
+                pagos.Add(new("Cambio", Dinero(Centavos(cambio)), Destacado: true));
+            if (d.Propina is { } propina && Centavos(propina) > 0)
+                pagos.Add(new("Propina", Dinero(Centavos(propina))));
+
+            return new ResumenTicket(
+                precioLista, descuentoCupon, descuentoCaja, cargo, anticipo, saldoAFavor, cobrado,
+                totales,
+                saldoAFavor > 0 ? new RenglonTicket("Saldo a favor", Dinero(saldoAFavor)) : null,
+                pagos,
+                EtiquetaEmpleado(d.Sector));
         }
+
+        /// <summary>
+        /// Who attended: the sector's term in health businesses (Front's useSectorTerms:
+        /// TERMINOS_SALUD.empleado), "Atendió" everywhere else.
+        /// </summary>
+        internal static string EtiquetaEmpleado(string? sector) => sector == "salud" ? "Profesional" : "Atendió";
 
         internal static string PlantillaTicket(TicketCitaDatos d)
         {
@@ -946,9 +1010,6 @@ namespace AppointVaAPI.Services
             var folio     = Html(d.Folio);
             var servicio  = Html(d.Servicio);
             var empleado  = Html(d.EmpleadoNombre);
-            var esSalud   = d.Sector == "salud";
-            // Sector term already used by the app: "Profesional" in health businesses.
-            var etiquetaEmpleado = esSalud ? "Profesional" : "Atendió";
             var fechaTexto = d.InicioEn.ToString("dddd dd 'de' MMMM 'de' yyyy", new System.Globalization.CultureInfo("es-MX"));
             var fecha = Html(fechaTexto.Length > 0 ? char.ToUpper(fechaTexto[0]) + fechaTexto[1..] : fechaTexto);
             var hora  = Hora12(d.InicioEn);
@@ -975,31 +1036,14 @@ namespace AppointVaAPI.Services
                 .Append(Fila("Folio", folio, fuerte: true))
                 .Append(Fila("Fecha", fecha))
                 .Append(Fila("Hora", hora));
-            if (!string.IsNullOrEmpty(empleado)) datos.Append(Fila(etiquetaEmpleado, empleado));
+            if (!string.IsNullOrEmpty(empleado)) datos.Append(Fila(r.EtiquetaEmpleado, empleado));
 
             var totales = new StringBuilder();
-            if (r.HayAjustes) totales.Append(Fila("Subtotal", Dinero(r.PrecioLista)));
-            if (r.Descuento > 0) totales.Append(Fila(Html(r.EtiquetaDescuento), "-" + Dinero(r.Descuento)));
-            if (r.CargoAdicional > 0) totales.Append(Fila("Cargo adicional", Dinero(r.CargoAdicional)));
-            if (r.Anticipo > 0) totales.Append(Fila("Anticipo pagado", "-" + Dinero(r.Anticipo)));
+            foreach (var t in r.Totales) totales.Append(Fila(Html(t.Etiqueta), t.Monto, t.Destacado));
+            var saldoAFavor = r.FilaSaldoAFavor is { } s ? Fila(s.Etiqueta, s.Monto) : "";
 
-            // Split payment: the first method covers what the second one did not.
             var pagos = new StringBuilder();
-            var metodo1 = string.IsNullOrWhiteSpace(d.MetodoPago) ? "Pago" : d.MetodoPago;
-            var m2 = !string.IsNullOrWhiteSpace(d.MetodoPago2) && d.MontoPago2 is > 0m ? d.MontoPago2.Value : 0m;
-            if (m2 > 0)
-            {
-                pagos.Append(Fila(Html(metodo1), Dinero(Math.Max(0, r.Total - m2))));
-                pagos.Append(Fila(Html(d.MetodoPago2), Dinero(m2)));
-            }
-            else
-            {
-                pagos.Append(Fila(Html(metodo1), Dinero(r.Total)));
-            }
-            var hayEfectivo = d.MetodoPago == "Efectivo" || (m2 > 0 && d.MetodoPago2 == "Efectivo");
-            if (hayEfectivo && d.MontoRecibido is > 0m) pagos.Append(Fila("Recibido", Dinero(d.MontoRecibido.Value)));
-            if (hayEfectivo && d.Cambio is > 0m) pagos.Append(Fila("Cambio", Dinero(d.Cambio.Value), fuerte: true));
-            if (d.Propina is > 0m) pagos.Append(Fila("Propina", Dinero(d.Propina.Value)));
+            foreach (var p in r.Pagos) pagos.Append(Fila(Html(p.Etiqueta), p.Monto, p.Destacado));
 
             var reservar = string.IsNullOrEmpty(d.UrlReserva) ? "" : $"""
                       <div style="text-align:center;margin:28px 0 8px;">
@@ -1042,6 +1086,7 @@ namespace AppointVaAPI.Services
                           <td style="padding:10px 0 4px;color:#0f172a;font-size:18px;font-weight:800;">TOTAL</td>
                           <td style="padding:10px 0 4px;color:#0f172a;font-size:24px;font-weight:800;text-align:right;white-space:nowrap;">{Dinero(r.Total)}</td>
                         </tr>
+                        {saldoAFavor}
                       </table>
                       {separador}
                       <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">

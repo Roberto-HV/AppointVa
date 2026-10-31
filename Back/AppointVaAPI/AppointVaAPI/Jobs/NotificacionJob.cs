@@ -150,9 +150,8 @@ namespace AppointVaAPI.Jobs
             if (cita is null || cita.Cliente is null || cita.Servicio is null || cita.Negocio is null) return;
             if (string.IsNullOrEmpty(cita.Cliente.Email)) return;
 
-            // Same numbers as the printed ticket: an advance already received is
-            // subtracted, and the charged amount defaults to what was left to pay.
-            var anticipo = cita.AnticipoRecibido && cita.MontoAnticipo is > 0m ? cita.MontoAnticipo.Value : 0m;
+            // The stored amounts go as-is: EmailService.ResumirTicket applies the same
+            // rules as the printed ticket (advance, default charge, stored coupon).
             var frontendUrl = _config["FrontendUrl"] ?? "https://appointva.com";
 
             await _emailService.EnviarTicketCitaAsync(cita.Cliente.Email, new TicketCitaDatos
@@ -169,11 +168,13 @@ namespace AppointVaAPI.Jobs
                 Servicio         = cita.Servicio.Nombre,
                 DuracionMinutos  = cita.Servicio.DuracionMinutos,
                 Precio           = cita.Precio,
-                PrecioServicio   = cita.Servicio.Precio,
-                Anticipo         = anticipo,
-                MontoCobrado     = cita.MontoCobrado ?? Math.Max(0m, cita.Precio - anticipo),
+                PrecioLista      = cita.PrecioLista,
+                DescuentoPorcentaje = cita.DescuentoPorcentaje,
+                AnticipoRecibido = cita.AnticipoRecibido,
+                MontoAnticipo    = cita.MontoAnticipo,
+                MontoCobrado     = cita.MontoCobrado,
                 Propina          = cita.Propina,
-                MetodoPago       = cita.MetodoPago ?? "No especificado",
+                MetodoPago       = cita.MetodoPago,
                 MetodoPago2      = cita.MetodoPago2,
                 MontoPago2       = cita.MontoPago2,
                 MontoRecibido    = cita.MontoRecibido,

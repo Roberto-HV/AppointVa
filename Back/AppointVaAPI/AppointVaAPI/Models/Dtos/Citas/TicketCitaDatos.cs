@@ -23,18 +23,22 @@ namespace AppointVaAPI.Models.Dtos.Citas
         public string Servicio { get; init; } = string.Empty;
         public int DuracionMinutos { get; init; }
 
-        // Amounts
+        // Amounts: the appointment's stored values as-is (same names as CitaDto), so
+        // EmailService.ResumirTicket and the front's resumirTicket read the same input.
         /// <summary>Price stored on the appointment (a booking coupon is already applied).</summary>
         public decimal Precio { get; init; }
-        /// <summary>Current list price of the service; above Precio when a coupon was used.</summary>
-        public decimal? PrecioServicio { get; init; }
-        /// <summary>Advance already received (0 when there was none).</summary>
-        public decimal Anticipo { get; init; }
-        public decimal MontoCobrado { get; init; }
+        /// <summary>List price stored at booking; NULL on older appointments (no coupon shown).</summary>
+        public decimal? PrecioLista { get; init; }
+        /// <summary>Coupon percentage stored at booking (10 = 10%); NULL for a fixed amount.</summary>
+        public decimal? DescuentoPorcentaje { get; init; }
+        public bool AnticipoRecibido { get; init; }
+        public decimal? MontoAnticipo { get; init; }
+        /// <summary>NULL when the payment did not store it: what was left after the advance.</summary>
+        public decimal? MontoCobrado { get; init; }
         public decimal? Propina { get; init; }
 
         // Payment
-        public string MetodoPago { get; init; } = string.Empty;
+        public string? MetodoPago { get; init; }
         public string? MetodoPago2 { get; init; }
         public decimal? MontoPago2 { get; init; }
         public decimal? MontoRecibido { get; init; }

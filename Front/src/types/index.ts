@@ -196,8 +196,15 @@ export interface CitaDto {
   nombreServicio: string;
   duracionMinutos: number;
   precio: number;
-  /** List price of the service today; above `precio` when a coupon lowered it at booking. */
-  precioServicio?: number | null;
+  /**
+   * The service's list price stored at booking; above `precio` when a coupon lowered
+   * it. null on older appointments, which then show no coupon discount.
+   */
+  precioLista?: number | null;
+  /** The booking coupon code, when one was applied. */
+  codigoDescuento?: string | null;
+  /** The coupon's percentage (10 = 10%); null for a fixed-amount coupon. */
+  descuentoPorcentaje?: number | null;
   pagada: boolean;
   metodoPago?: string | null;
   metodoPago2?: string | null;

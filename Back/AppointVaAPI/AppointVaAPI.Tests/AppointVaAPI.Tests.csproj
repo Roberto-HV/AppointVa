@@ -30,6 +30,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Shared with the front's Vitest suite (Front/src/utils/ticketRecibo.test.ts). -->
+    <None Update="Fixtures\**\*.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\AppointVaAPI\AppointVaAPI.csproj" />
   </ItemGroup>
 

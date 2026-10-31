@@ -375,8 +375,10 @@ namespace AppointVaAPI.Controllers.V1
                     !(descuentoAplicado.FechaExpiracion.HasValue && descuentoAplicado.FechaExpiracion < DateTime.UtcNow) &&
                     !(descuentoAplicado.UsoMaximo.HasValue && descuentoAplicado.UsoActual >= descuentoAplicado.UsoMaximo))
                 {
+                    // Rounded to cents like the numeric(10,2) column, so the stored list
+                    // price minus the stored price is exactly the discount on the receipt.
                     if (descuentoAplicado.Tipo == "Porcentaje")
-                        precioFinal = servicio.Precio * (1 - descuentoAplicado.Valor / 100m);
+                        precioFinal = Math.Round(servicio.Precio * (1 - descuentoAplicado.Valor / 100m), 2, MidpointRounding.AwayFromZero);
                     else
                         precioFinal = Math.Max(0, servicio.Precio - descuentoAplicado.Valor);
                 }
@@ -475,6 +477,9 @@ namespace AppointVaAPI.Controllers.V1
                         FinEn = finEn,
                         Estado = negocio.AutoConfirmar ? EstadosCitas.Confirmada : EstadosCitas.Pendiente,
                         Precio = precioFinal,
+                        PrecioLista = servicio.Precio,
+                        CodigoDescuento = descuentoAplicado?.Codigo,
+                        DescuentoPorcentaje = descuentoAplicado?.Tipo == "Porcentaje" ? descuentoAplicado.Valor : null,
                         AnticipoRequerido = negocio.RequiereAnticipo,
                         MontoAnticipo = (negocio.RequiereAnticipo && negocio.PorcentajeAnticipo > 0)
                             ? Math.Round(precioFinal * negocio.PorcentajeAnticipo / 100m, 2)

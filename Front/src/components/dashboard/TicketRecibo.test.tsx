@@ -29,7 +29,7 @@ const citaBase: CitaDto = {
   nombreServicio: "Corte de dama",
   duracionMinutos: 45,
   precio: 280,
-  precioServicio: 280,
+  precioLista: 280,
   montoCobrado: 280,
   metodoPago: "Tarjeta",
   fechaPago: "2026-10-30T16:50:00",
@@ -122,7 +122,7 @@ describe("TicketRecibo — contenido", () => {
 
   it("cupón del 10 %, efectivo con cambio y propina: los renglones cierran", () => {
     renderTicket({
-      precio: 315, precioServicio: 350, montoCobrado: 315,
+      precio: 315, precioLista: 350, codigoDescuento: "VERANO10", descuentoPorcentaje: 10, montoCobrado: 315,
       metodoPago: "Efectivo", montoRecibido: 400, cambio: 85, propina: 50,
     });
     const f = filas();
@@ -138,7 +138,7 @@ describe("TicketRecibo — contenido", () => {
 
   it("anticipo pagado y pago dividido: cada método con su parte", () => {
     renderTicket({
-      precio: 1200, precioServicio: 1200, anticipoRecibido: true, montoAnticipo: 300,
+      precio: 1200, precioLista: 1200, anticipoRecibido: true, montoAnticipo: 300,
       montoCobrado: 900, metodoPago: "Tarjeta", metodoPago2: "Efectivo", montoPago2: 400,
       montoRecibido: 500, cambio: 100,
     });
@@ -157,12 +157,33 @@ describe("TicketRecibo — contenido", () => {
     expect(filas()["Anticipo pagado"]).toBeUndefined();
   });
 
-  it("si en caja se cobró menos de lo esperado, la diferencia es descuento", () => {
+  it("si en caja se cobró menos de lo esperado, la diferencia es descuento en caja", () => {
     renderTicket({ montoCobrado: 250 });
     const f = filas();
     expect(f["Subtotal"]).toBe("$280.00");
-    expect(f["Descuento"]).toBe("-$30.00");
+    expect(f["Descuento en caja"]).toBe("-$30.00");
     expect(f["TOTAL"]).toBe("$250.00");
+  });
+
+  it("anticipo mayor que lo debido: saldo a favor debajo del TOTAL, nunca cargo adicional", () => {
+    renderTicket({
+      precio: 200, precioLista: 200, anticipoRecibido: true, montoAnticipo: 300,
+      montoCobrado: 0, metodoPago: "Efectivo",
+    });
+    const f = filas();
+    expect(f["Anticipo aplicado"]).toBe("-$200.00");
+    expect(f["TOTAL"]).toBe("$0.00");
+    expect(f["Saldo a favor"]).toBe("$100.00");
+    expect(f["Cargo adicional"]).toBeUndefined();
+    const etiquetas = Array.from(documentoVista().querySelectorAll(".fila > span:first-child")).map((s) => s.textContent);
+    expect(etiquetas.indexOf("Saldo a favor")).toBe(etiquetas.indexOf("TOTAL") + 1);
+  });
+
+  it("una cita anterior sin precio de lista guardado no muestra cupón", () => {
+    renderTicket({ precioLista: null });
+    const f = filas();
+    expect(f["Subtotal"]).toBeUndefined();
+    expect(Object.keys(f).some((k) => k.startsWith("Descuento"))).toBe(false);
   });
 
   it("sin efectivo no hay Recibido ni Cambio aunque lleguen datos", () => {

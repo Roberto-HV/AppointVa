@@ -367,11 +367,18 @@ namespace AppointVaAPI.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("CodigoDescuento")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
                     b.Property<string>("ComprobanteUrl")
                         .HasColumnType("text");
 
                     b.Property<Guid?>("CreadoPorUsuarioId")
                         .HasColumnType("uuid");
+
+                    b.Property<decimal?>("DescuentoPorcentaje")
+                        .HasColumnType("decimal(5,2)");
 
                     b.Property<Guid>("EmpleadoId")
                         .HasColumnType("uuid");
@@ -432,6 +439,9 @@ namespace AppointVaAPI.Migrations
                     b.Property<decimal>("Precio")
                         .HasPrecision(10, 2)
                         .HasColumnType("numeric(10,2)");
+
+                    b.Property<decimal?>("PrecioLista")
+                        .HasColumnType("decimal(10,2)");
 
                     b.Property<decimal?>("Propina")
                         .HasColumnType("numeric");
