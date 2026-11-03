@@ -650,7 +650,8 @@ function ModalSuscripcion({
                   </div>
                 ))}
               </div>
-            ) : errorHistorial ? (
+            ) : errorHistorial && historial.length === 0 ? (
+              // Si un refetch falla con pagos ya cargados, se siguen mostrando.
               <ErrorCarga
                 className="py-6"
                 mensaje="No se pudo cargar el historial de pagos."
