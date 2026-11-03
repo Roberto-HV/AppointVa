@@ -418,8 +418,8 @@ namespace AppointVaAPI.Controllers.V1
             if (negocio is null) return NotFound(new { mensaje = "Negocio no encontrado" });
 
             // Mandatory audit, written first and inside the transaction of the deletes: if it
-            // cannot be written nothing is touched (images included); if a delete fails, the
-            // rollback takes the entry with it. The name goes in the detail because the
+            // cannot be written nothing is touched; if a delete fails, the rollback takes the
+            // entry with it and images and jobs are still intact (they are removed after commit). The name goes in the detail because the
             // business row will no longer exist to resolve it.
             await using var tx = await _db.Database.BeginTransactionAsync();
             var citas = await _db.Citas.CountAsync(c => c.NegocioId == id);
@@ -452,35 +452,14 @@ namespace AppointVaAPI.Controllers.V1
                 .Select(s => s.ImagenUrl)
                 .ToListAsync();
             urls.AddRange(imagenesServicios);
-
-            // Eliminar imágenes de Cloudinary (o local) — errores individuales no bloquean el delete
             var urlsValidas = urls.Where(u => !string.IsNullOrWhiteSpace(u)).Select(u => u!).ToList();
-            int eliminadas = 0;
 
-            foreach (var url in urlsValidas)
-            {
-                try
-                {
-                    var ok = await _blob.EliminarImagenAsync(url);
-                    if (ok) eliminadas++;
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "No se pudo eliminar imagen de Cloudinary: {Url}", url);
-                }
-            }
-
-            _logger.LogInformation(
-                "Negocio {NegocioId}: {Eliminadas}/{Total} imágenes eliminadas de Cloudinary antes del delete.",
-                id, eliminadas, urlsValidas.Count);
-
-            // ── Cancelar Hangfire jobs pendientes de citas ───────────────────────────
+            // Los jobs de Hangfire de las citas se leen ahora (las citas se borran abajo)
+            // y se cancelan después del commit, junto con las imágenes.
             var jobIds = await _db.Citas
                 .Where(c => c.NegocioId == id && c.HangfireJobId != null)
                 .Select(c => c.HangfireJobId!)
                 .ToListAsync();
-            foreach (var jobId in jobIds)
-                BackgroundJob.Delete(jobId);
 
             // ── Eliminaciones explícitas en orden (hijos antes que padres) ───────────
             // Las relaciones con OnDelete(NoAction) bloquean el DELETE del negocio;
@@ -538,6 +517,33 @@ namespace AppointVaAPI.Controllers.V1
             _db.Negocios.Remove(negocio);
             await _db.SaveChangesAsync();
             await tx.CommitAsync();
+
+            // Efectos externos irreversibles solo cuando el borrado y su registro ya están
+            // confirmados: si algo de arriba falla, el negocio sigue intacto con sus
+            // imágenes y recordatorios. Un fallo aquí deja, a lo sumo, archivos huérfanos.
+            foreach (var jobId in jobIds)
+            {
+                try { BackgroundJob.Delete(jobId); }
+                catch (Exception ex) { _logger.LogWarning(ex, "No se pudo cancelar el job {JobId}", jobId); }
+            }
+
+            int eliminadas = 0;
+            foreach (var url in urlsValidas)
+            {
+                try
+                {
+                    var ok = await _blob.EliminarImagenAsync(url);
+                    if (ok) eliminadas++;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "No se pudo eliminar imagen de Cloudinary: {Url}", url);
+                }
+            }
+
+            _logger.LogInformation(
+                "Negocio {NegocioId}: {Eliminadas}/{Total} imágenes eliminadas de Cloudinary después del delete.",
+                id, eliminadas, urlsValidas.Count);
 
             return NoContent();
         }
