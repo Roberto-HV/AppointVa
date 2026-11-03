@@ -15,5 +15,17 @@ namespace AppointVaAPI.Services.IServices
         Task EnviarNotificacionListaEsperaAsync(string emailDestino, string nombreCliente, string nombreNegocio, string nombreServicio, string urlReserva);
         Task EnviarBienvenidaAsync(string emailDestino, string nombre, string negocioNombre, string slug, string urlDashboard);
         Task EnviarTicketCitaAsync(string destinoEmail, TicketCitaDatos datos);
+
+        /// <summary>
+        /// Lote 5: sending is switched on and configured. Flows that hand a link to someone check it
+        /// first and refuse with a clear error instead of pretending the email went out.
+        /// </summary>
+        bool EnvioDisponible { get; }
+
+        /// <summary>
+        /// Lote 5 (I4, I8): invitation or reset link for an owner, sent by the platform. Returns true
+        /// only when the provider accepted the message.
+        /// </summary>
+        Task<bool> EnviarEnlaceAccesoAsync(string emailDestino, string nombre, string urlEnlace, bool esInvitacion, string? negocioNombre);
     }
 }

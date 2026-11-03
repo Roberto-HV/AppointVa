@@ -30,6 +30,9 @@ namespace AppointVaAPI.Constants
         public const string CodigosRecuperacionRegeneracionFallida = "CodigosRecuperacionRegeneracionFallida";
         public const string CodigoRecuperacionUsado = "CodigoRecuperacionUsado";
         public const string CodigoRecuperacionFallido = "CodigoRecuperacionFallido";
+        /// <summary>Lote 5: the SuperAdmin confirmed password and 2FA code before a sensitive action.</summary>
+        public const string Reautenticado = "Reautenticado";
+        public const string ReautenticacionFallida = "ReautenticacionFallida";
 
         // ── Reception kiosk (B9) ────────────────────────────────────────────────
         public const string KioscoIniciado = "KioscoIniciado";
@@ -86,6 +89,8 @@ namespace AppointVaAPI.Constants
             new(CodigosRecuperacionRegeneracionFallida, "Generación de códigos rechazada", GrupoCuenta),
             new(CodigoRecuperacionUsado, "Código de recuperación usado", GrupoCuenta),
             new(CodigoRecuperacionFallido, "Código de recuperación incorrecto", GrupoCuenta),
+            new(Reautenticado, "Identidad confirmada para una acción sensible", GrupoCuenta),
+            new(ReautenticacionFallida, "Confirmación de identidad rechazada", GrupoCuenta),
 
             new(KioscoIniciado, "Kiosco iniciado", GrupoKiosco),
             new(KioscoSalida, "Salida del kiosco", GrupoKiosco),
@@ -100,7 +105,9 @@ namespace AppointVaAPI.Constants
             new(NegocioArchivado, "Negocio archivado", GrupoAdministracion),
             new(NegocioEliminado, "Negocio eliminado", GrupoAdministracion),
             new(PropietarioCreado, "Propietario creado", GrupoAdministracion),
-            new(PasswordPropietarioRestablecido, "Contraseña del propietario restablecida", GrupoAdministracion),
+            // Lote 5: the admin no longer types the password; the entry now records the reset link
+            // sent to the owner (older rows are the typed resets). Same action, so history keeps its label.
+            new(PasswordPropietarioRestablecido, "Restablecimiento de contraseña del propietario", GrupoAdministracion),
             new(CorreoConfirmadoManual, "Correo confirmado por el admin", GrupoAdministracion),
             new(ColoresCambiados, "Colores cambiados", GrupoAdministracion),
             new(PlanCambiado, "Plan cambiado", GrupoAdministracion),

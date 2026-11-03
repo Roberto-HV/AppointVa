@@ -1,8 +1,10 @@
 using AppointVaAPI.Constants;
 using AppointVaAPI.Data;
+using AppointVaAPI.Filters;
 using AppointVaAPI.Helpers;
 using AppointVaAPI.Models;
 using AppointVaAPI.Models.Dtos.Admin;
+using AppointVaAPI.Services;
 using AppointVaAPI.Services.IServices;
 using Hangfire;
 using Microsoft.AspNetCore.Authorization;
@@ -21,13 +23,16 @@ namespace AppointVaAPI.Controllers.V1
         private readonly IBlobStorageService _blob;
         private readonly ILogger<SuscripcionAdminController> _logger;
         private readonly IAuditService _audit;
+        private readonly IReautenticacionService _reautenticacion;
 
         public SuscripcionAdminController(
             ApplicationDbContext db,
             IBlobStorageService blob,
             ILogger<SuscripcionAdminController> logger,
-            IAuditService audit)
+            IAuditService audit,
+            IReautenticacionService reautenticacion)
         {
+            _reautenticacion = reautenticacion;
             _db = db;
             _blob = blob;
             _logger = logger;
@@ -126,6 +131,12 @@ namespace AppointVaAPI.Controllers.V1
         {
             var negocio = await _db.Negocios.FindAsync(id);
             if (negocio == null) return NotFound();
+
+            // Lote 5 (G1): a lifetime payment grants a century of access in one click, so it
+            // needs the step-up proof; ordinary monthly payments do not.
+            if (FacturacionAdmin.EsPagoDeAccesoPermanente(dto.MesesPagados) &&
+                !await _reautenticacion.ValidarAsync(User, Request.Headers[ReautenticacionService.Encabezado].FirstOrDefault()))
+                return RequiereReautenticacionAttribute.Rechazo();
 
             var adminId = Guid.Parse(User.FindFirstValue("sub")!);
 
@@ -415,7 +426,49 @@ namespace AppointVaAPI.Controllers.V1
         // DELETE /api/admin/negocios/{id}
         // Hard delete — elimina imágenes en Cloudinary, luego el negocio con sus dependencias
         // en el orden correcto para evitar violaciones de FK (NoAction en varias relaciones).
+        // GET /api/admin/negocios/{id}/impacto — lote 5 (I3)
+        // What a hard delete would erase, counted the same way the delete removes it, so the
+        // admin sees concrete figures (and the "deactivate instead" option) before confirming.
+        [HttpGet("negocios/{id:guid}/impacto")]
+        public async Task<IActionResult> ObtenerImpactoEliminacion(Guid id)
+        {
+            var negocio = await _db.Negocios.AsNoTracking().FirstOrDefaultAsync(n => n.Id == id);
+            if (negocio is null) return NotFound(new { mensaje = "Negocio no encontrado" });
+
+            // Appointment times are the business's wall time, so "now" is too.
+            var ahora = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, ZonaHorariaHelper.Resolver(negocio.ZonaHoraria));
+            var citasProximas = await _db.Citas.CountAsync(c => c.NegocioId == id && c.InicioEn >= ahora);
+            var citasTotales = await _db.Citas.CountAsync(c => c.NegocioId == id);
+
+            return Ok(new ImpactoEliminacionDto
+            {
+                NegocioId     = id,
+                Activo        = negocio.Activo == 1,
+                CitasProximas = citasProximas,
+                CitasPasadas  = citasTotales - citasProximas,
+                Clientes      = await _db.Clientes.IgnoreQueryFilters().CountAsync(c => c.NegocioId == id),
+                Empleados     = await _db.Empleados.CountAsync(e => e.NegocioId == id),
+                Servicios     = await _db.Servicios.CountAsync(s => s.NegocioId == id),
+                Pagos         = await _db.PagosSuscripcion.CountAsync(p => p.NegocioId == id),
+                Imagenes      = (await UrlsImagenesAsync(negocio)).Count,
+                Resenas       = await _db.Resenas.CountAsync(r => r.NegocioId == id)
+            });
+        }
+
+        /// <summary>Every stored image of the business and its children: what the delete removes from Cloudinary.</summary>
+        private async Task<List<string>> UrlsImagenesAsync(Negocio negocio)
+        {
+            var id = negocio.Id;
+            var urls = new List<string?> { negocio.LogoUrl, negocio.PortadaUrl };
+            urls.AddRange(await _db.ImagenesNegocios.Where(i => i.NegocioId == id).Select(i => i.Url).ToListAsync());
+            urls.AddRange(await _db.Empleados.Where(e => e.NegocioId == id).Select(e => e.FotoUrl).ToListAsync());
+            urls.AddRange(await _db.Servicios.Where(s => s.NegocioId == id).Select(s => s.ImagenUrl).ToListAsync());
+            return urls.Where(u => !string.IsNullOrWhiteSpace(u)).Select(u => u!).ToList();
+        }
+
+        // Lote 5 (G1): needs the step-up proof (X-Reautenticacion), checked before anything runs.
         [HttpDelete("negocios/{id:guid}")]
+        [RequiereReautenticacion]
         public async Task<IActionResult> EliminarNegocio(Guid id)
         {
             var negocio = await _db.Negocios.FindAsync(id);
@@ -434,29 +487,7 @@ namespace AppointVaAPI.Controllers.V1
                 return AuditoriaAdmin.NoDisponible(this);
 
             // Recopilar todas las URLs de imágenes del negocio y sus entidades hijo
-            var urls = new List<string?>();
-
-            urls.Add(negocio.LogoUrl);
-            urls.Add(negocio.PortadaUrl);
-
-            var imagenesGaleria = await _db.ImagenesNegocios
-                .Where(i => i.NegocioId == id)
-                .Select(i => i.Url)
-                .ToListAsync();
-            urls.AddRange(imagenesGaleria);
-
-            var fotosEmpleados = await _db.Empleados
-                .Where(e => e.NegocioId == id)
-                .Select(e => e.FotoUrl)
-                .ToListAsync();
-            urls.AddRange(fotosEmpleados);
-
-            var imagenesServicios = await _db.Servicios
-                .Where(s => s.NegocioId == id)
-                .Select(s => s.ImagenUrl)
-                .ToListAsync();
-            urls.AddRange(imagenesServicios);
-            var urlsValidas = urls.Where(u => !string.IsNullOrWhiteSpace(u)).Select(u => u!).ToList();
+            var urlsValidas = await UrlsImagenesAsync(negocio);
 
             // Los jobs de Hangfire de las citas se leen ahora (las citas se borran abajo)
             // y se cancelan después del commit, junto con las imágenes.

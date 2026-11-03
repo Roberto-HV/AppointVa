@@ -14,5 +14,9 @@
         public const string KioscoSello     = "kiosco_sello";
         /// <summary>Present only on the 2FA challenge JWT, which must never authorize an endpoint.</summary>
         public const string Desafio2FA      = "2fa_challenge";
+
+        // Step-up proof only (lote 5).
+        /// <summary>Hash of the security stamp when the identity was confirmed: a password or 2FA change voids the proof.</summary>
+        public const string ReautenticacionSello = "reautenticacion_sello";
     }
 }

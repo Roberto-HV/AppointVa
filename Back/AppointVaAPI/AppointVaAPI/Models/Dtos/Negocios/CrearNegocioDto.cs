@@ -25,5 +25,19 @@ namespace AppointVaAPI.Models.Dtos.Negocios
         public string? Descripcion { get; set; }
 
         public Guid? PlanId { get; set; }
+
+        /// <summary>
+        /// Lote 5 (I8): optional owner, created in the same transaction and invited by email link.
+        /// </summary>
+        public CrearPropietarioDto? Propietario { get; set; }
+    }
+
+    /// <summary>Answer of POST api/negocios: the business plus what happened with the owner invitation.</summary>
+    public class NegocioCreadoDto : NegocioDto
+    {
+        public string? PropietarioEmail { get; set; }
+
+        /// <summary>Null without owner; false when the account was created but the email could not be sent.</summary>
+        public bool? InvitacionEnviada { get; set; }
     }
 }

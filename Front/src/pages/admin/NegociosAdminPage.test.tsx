@@ -22,11 +22,15 @@ vi.mock('../../api/admin', () => ({
     registrarPago: vi.fn(),
     confirmarEmail: vi.fn(),
     eliminarPago: vi.fn(),
+    crearNegocio: vi.fn(),
+    obtenerImpactoEliminacion: vi.fn(),
   },
 }));
 
+const authMock = vi.hoisted(() => ({ reautenticar: vi.fn(), obtenerEstado2FA: vi.fn() }));
 vi.mock('../../api/auth', () => ({
   verificarSlug: vi.fn().mockResolvedValue({ disponible: true }),
+  authApi: authMock,
 }));
 import { verificarSlug } from '../../api/auth';
 
@@ -520,6 +524,28 @@ describe('ModalSuscripcion — cambios con confirmación y aviso', () => {
     await waitFor(() => expect(monto).toHaveValue('1347'));
     expect(screen.getByRole('button', { name: /Registrar pago/ })).toBeEnabled();
   });
+
+  // Lote 5 (G1): un acceso de por vida pide "Confirma que eres tú"; el mensual no.
+  it('el acceso de por vida pide la identidad del admin antes de registrarse', async () => {
+    const user = userEvent.setup();
+    vi.mocked(adminModule.adminApi.registrarPago).mockReset().mockResolvedValue({} as never);
+    authMock.obtenerEstado2FA.mockResolvedValue({ habilitado: true, tieneConfiguracion: true, codigosRecuperacionRestantes: 10 });
+    authMock.reautenticar.mockResolvedValue({ token: 'prueba-vida', expiracion: new Date(Date.now() + 5 * 60_000).toISOString() });
+    await abrirSuscripcion();
+    await user.click(screen.getByRole('button', { name: 'Pagos' }));
+    await user.click(screen.getByRole('button', { name: 'De por vida' }));
+    await user.type(screen.getByLabelText('Monto (MXN)'), '9999');
+    await user.click(screen.getByRole('button', { name: 'Registrar acceso de por vida' }));
+
+    expect(await screen.findByText('Confirma que eres tú')).toBeInTheDocument();
+    expect(adminModule.adminApi.registrarPago).not.toHaveBeenCalled();
+    await user.type(screen.getByLabelText('Tu contraseña'), 'Admin-Clave-1');
+    await user.type(screen.getByLabelText('Código de verificación'), '654321');
+    await user.click(screen.getByRole('button', { name: 'Confirmar y continuar' }));
+
+    await waitFor(() => expect(adminModule.adminApi.registrarPago).toHaveBeenCalledWith(
+      'neg-1', { mesesPagados: 1200, monto: 9999, notas: undefined }, 'prueba-vida'));
+  });
 });
 
 // ── Cambio de plan con confirmación (I2) ────────────────────────────────────
@@ -826,7 +852,62 @@ describe('NegociosAdminPage — Nuevo negocio (AP-23)', () => {
 
     expect(await within(dialogo).findByText(/Ya está en uso/, {}, { timeout: 2000 })).toBeInTheDocument();
     expect(verificarSlug).toHaveBeenLastCalledWith('barberia-luis');
-    expect(within(dialogo).getByRole('button', { name: 'Crear negocio' })).toBeDisabled();
+    expect(within(dialogo).getByRole('button', { name: 'Crear negocio e invitar' })).toBeDisabled();
+  });
+
+  // Lote 5 (I8): slug propuesto desde el nombre y propietario invitado en el mismo paso.
+  it('propone el slug desde el nombre y crea el negocio con su propietario invitado', async () => {
+    const user = userEvent.setup();
+    vi.mocked(adminModule.adminApi.obtenerMetricas).mockResolvedValue([]);
+    vi.mocked(adminModule.adminApi.obtenerSuscripciones).mockResolvedValue([]);
+    vi.mocked(adminModule.adminApi.obtenerPlanes).mockResolvedValue([]);
+    vi.mocked(verificarSlug).mockResolvedValue({ disponible: true });
+    vi.mocked(adminModule.adminApi.crearNegocio).mockResolvedValue({
+      id: 'nuevo', nombre: 'Estética Ñandú', slug: 'estetica-nandu', propietarioEmail: 'ana@nandu.mx', invitacionEnviada: true,
+    } as never);
+    renderPage();
+
+    await user.click(await screen.findByRole('button', { name: '+ Nuevo negocio' }));
+    const dialogo = await screen.findByRole('dialog', { name: 'Nuevo negocio' });
+    await user.type(within(dialogo).getByLabelText('Nombre *', { selector: '#nuevo-nombre' }), 'Estética Ñandú');
+    expect(within(dialogo).getByPlaceholderText('barberia-luis')).toHaveValue('estetica-nandu');
+    // Sin contraseña: el propietario la crea desde la invitación.
+    expect(within(dialogo).queryByLabelText(/Contraseña/)).not.toBeInTheDocument();
+    await user.type(within(dialogo).getByLabelText('Nombre *', { selector: '#nuevo-prop-nombre' }), 'Ana');
+    await user.type(within(dialogo).getByLabelText('Correo de acceso del propietario *'), 'ana@nandu.mx');
+    expect(await within(dialogo).findByText('Disponible', {}, { timeout: 2000 })).toBeInTheDocument();
+    await user.click(within(dialogo).getByRole('button', { name: 'Crear negocio e invitar' }));
+
+    await waitFor(() => expect(adminModule.adminApi.crearNegocio).toHaveBeenCalledWith(expect.objectContaining({
+      nombre: 'Estética Ñandú',
+      slug: 'estetica-nandu',
+      propietario: { nombre: 'Ana', apellido: '', email: 'ana@nandu.mx' },
+    })));
+    await waitFor(() => expect(toastMock).toHaveBeenCalledWith('Negocio creado. Enviamos la invitación a ana@nandu.mx.'));
+  });
+
+  it('un slug editado a mano ya no sigue al nombre; sin invitar, no manda propietario', async () => {
+    const user = userEvent.setup();
+    vi.mocked(adminModule.adminApi.obtenerMetricas).mockResolvedValue([]);
+    vi.mocked(adminModule.adminApi.obtenerSuscripciones).mockResolvedValue([]);
+    vi.mocked(adminModule.adminApi.obtenerPlanes).mockResolvedValue([]);
+    vi.mocked(verificarSlug).mockResolvedValue({ disponible: true });
+    vi.mocked(adminModule.adminApi.crearNegocio).mockReset().mockResolvedValue({ id: 'n', nombre: 'Spa', slug: 'mi-spa' } as never);
+    renderPage();
+
+    await user.click(await screen.findByRole('button', { name: '+ Nuevo negocio' }));
+    const dialogo = await screen.findByRole('dialog', { name: 'Nuevo negocio' });
+    const slug = within(dialogo).getByPlaceholderText('barberia-luis');
+    await user.type(slug, 'mi-spa');
+    await user.type(within(dialogo).getByLabelText('Nombre *', { selector: '#nuevo-nombre' }), 'Spa Central');
+    expect(slug).toHaveValue('mi-spa');
+    await user.click(within(dialogo).getByRole('checkbox', { name: /Invitar al propietario ahora/ }));
+    expect(within(dialogo).queryByLabelText('Correo de acceso del propietario *')).not.toBeInTheDocument();
+    expect(await within(dialogo).findByText('Disponible', {}, { timeout: 2000 })).toBeInTheDocument();
+    await user.click(within(dialogo).getByRole('button', { name: 'Crear negocio' }));
+
+    await waitFor(() => expect(adminModule.adminApi.crearNegocio).toHaveBeenCalled());
+    expect(vi.mocked(adminModule.adminApi.crearNegocio).mock.calls[0][0].propietario).toBeUndefined();
   });
 });
 
@@ -971,16 +1052,21 @@ describe('NegociosAdminPage — Lote 3: acciones de la tarjeta en "⋯"', () => 
     expect(within(menu).getByRole('separator')).toBeInTheDocument();
   });
 
-  it('"Eliminar negocio" abre la misma confirmación de dos pasos que pide el nombre', async () => {
+  it('"Eliminar negocio" abre la confirmación con cifras que pide el nombre', async () => {
     const user = userEvent.setup();
+    vi.mocked(adminModule.adminApi.obtenerImpactoEliminacion).mockResolvedValue({
+      negocioId: 'neg-1', activo: true, citasProximas: 0, citasPasadas: 1, clientes: 1,
+      empleados: 1, servicios: 1, pagos: 0, imagenes: 0, resenas: 0,
+    });
     renderPage();
     await user.click(await screen.findByRole('button', { name: 'Más acciones de Peluquería Test' }));
     await user.click(await screen.findByRole('button', { name: 'Eliminar negocio' }));
 
     const dialogo = await screen.findByRole('dialog', { name: 'Eliminar negocio' });
-    expect(within(dialogo).getByRole('button', { name: 'Continuar' })).toBeDisabled();
+    expect(await within(dialogo).findByText('1 cliente')).toBeInTheDocument();
+    expect(within(dialogo).getByRole('button', { name: 'Eliminar definitivamente' })).toBeDisabled();
     await user.type(within(dialogo).getByPlaceholderText('Peluquería Test'), 'Peluquería Test');
-    expect(within(dialogo).getByRole('button', { name: 'Continuar' })).toBeEnabled();
+    expect(within(dialogo).getByRole('button', { name: 'Eliminar definitivamente' })).toBeEnabled();
   });
 
   it('"Ver página de reservas" abre /b/:slug en otra pestaña', async () => {

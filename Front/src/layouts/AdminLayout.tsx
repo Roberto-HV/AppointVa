@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Link, Navigate, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Menu, X, ExternalLink, ShieldAlert } from "lucide-react";
 import { useAuthStore } from "../store/authStore";
@@ -14,6 +14,7 @@ import MenuUsuarioAdmin from "./MenuUsuarioAdmin";
 import { inicialesDe } from "../utils/iniciales";
 import { RUTA_CUENTA_ADMIN, RUTA_FACTURACION_ADMIN, RUTA_NEGOCIOS_ADMIN, RUTA_SEGURIDAD_ADMIN } from "./rutasAdmin";
 import { esPendienteActivacion } from "../utils/negociosAdmin";
+import { olvidarPrueba } from "../lib/pruebaReautenticacion";
 
 /** Desde `md` el sidebar es fijo; por debajo es un cajón modal. */
 const CONSULTA_ESCRITORIO = "(min-width: 768px)";
@@ -32,7 +33,10 @@ const ENLACE_NAV_INACTIVO =
  */
 const CHIP_ADMIN = "text-xs bg-[#C8A961] text-slate-900 font-bold px-2 py-0.5 rounded-full shrink-0";
 
-const claseEnlaceNav = ({ isActive }: { isActive: boolean }) =>
+/** Lo único que se puede abrir sin 2FA: activarla y la propia cuenta (cerrar sesión es un botón). */
+const RUTAS_PERMITIDAS_SIN_2FA = [RUTA_SEGURIDAD_ADMIN, RUTA_CUENTA_ADMIN];
+
+const claseEnlaceNav =({ isActive }: { isActive: boolean }) =>
   `${ENLACE_NAV} ${isActive ? ENLACE_NAV_ACTIVO : ENLACE_NAV_INACTIVO}`;
 
 export default function AdminLayout() {
@@ -50,14 +54,19 @@ export default function AdminLayout() {
   const botonUsuarioMovilRef = useRef<HTMLButtonElement>(null);
   const botonUsuarioEscritorioRef = useRef<HTMLButtonElement>(null);
 
-  // G1: la cuenta con más poder sin verificación en dos pasos se avisa en todas
-  // las pantallas del admin hasta que la active (menos en la propia Seguridad).
-  const { data: estado2FA } = useQuery({
+  // G1 (lote 5): la verificación en dos pasos es obligatoria para el SuperAdmin.
+  // Sin ella, cada pantalla del admin lleva a Seguridad para activarla. Nunca se
+  // bloquea el inicio de sesión ni se le saca de la cuenta: Seguridad, Mi cuenta
+  // y "Cerrar sesión" siguen a mano. Si el estado no se puede leer, no se bloquea:
+  // las acciones sensibles las cuida el servidor (exige 2FA al reautenticar).
+  const { data: estado2FA, isPending: cargando2FA } = useQuery({
     queryKey: ["2fa-estado"],
     queryFn: authApi.obtenerEstado2FA,
     staleTime: 1000 * 60,
   });
-  const avisar2FA = estado2FA?.habilitado === false && pathname !== RUTA_SEGURIDAD_ADMIN;
+  const falta2FA = estado2FA?.habilitado === false;
+  const rutaPermitidaSin2FA = RUTAS_PERMITIDAS_SIN_2FA.includes(pathname);
+  const redirigirASeguridad = falta2FA && !rutaPermitidaSin2FA;
 
   // I7: cuántas altas esperan activación, junto a "Negocios". Misma consulta (y
   // caché) que la lista, así que no cuesta una petición más.
@@ -76,6 +85,11 @@ export default function AdminLayout() {
   const abrirHangfire = async () => {
     cerrarSidebar();
     setErrorHangfire(null);
+    // Sin 2FA, ni el panel de tareas: primero se activa (lote 5).
+    if (falta2FA) {
+      navigate(RUTA_SEGURIDAD_ADMIN);
+      return;
+    }
     const ventana = window.open("about:blank", "_blank");
     if (!ventana) {
       setErrorHangfire("El navegador bloqueó la pestaña nueva. Permite las ventanas emergentes para este sitio e intenta de nuevo.");
@@ -96,6 +110,7 @@ export default function AdminLayout() {
     try {
       if (refreshToken) await authApi.logout(refreshToken);
     } finally {
+      olvidarPrueba();
       cerrarSesion();
       navigate("/login");
     }
@@ -351,26 +366,35 @@ export default function AdminLayout() {
             )}
           </div>
         </div>
-        {avisar2FA && (
+        {falta2FA && (
           <div
             role="status"
             className="shrink-0 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800 px-4 sm:px-6 py-2.5 flex flex-wrap items-center gap-x-3 gap-y-1"
           >
             <ShieldAlert size={16} className="text-amber-700 dark:text-amber-300 shrink-0" aria-hidden="true" />
             <p className="text-xs text-amber-800 dark:text-amber-200 flex-1 min-w-[12rem]">
-              <span className="font-semibold">Activa la verificación en dos pasos.</span>{" "}
-              Esta cuenta puede eliminar negocios y cambiar cobros: además de la contraseña, pide un código de tu teléfono al entrar.
+              <span className="font-semibold">La verificación en dos pasos es obligatoria.</span>{" "}
+              Esta cuenta puede eliminar negocios y cambiar cobros. Actívala para seguir usando la consola: además de la contraseña, pedirá un código de tu teléfono al entrar.
             </p>
-            <Link
-              to={RUTA_SEGURIDAD_ADMIN}
-              className="inline-flex items-center min-h-[44px] lg:min-h-[32px] px-3 rounded-lg text-xs font-semibold text-amber-900 dark:text-amber-100 underline underline-offset-2 hover:bg-amber-100 dark:hover:bg-amber-900/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-brand/40"
-            >
-              Activar ahora
-            </Link>
+            {pathname !== RUTA_SEGURIDAD_ADMIN && (
+              <Link
+                to={RUTA_SEGURIDAD_ADMIN}
+                className="inline-flex items-center min-h-[44px] lg:min-h-[32px] px-3 rounded-lg text-xs font-semibold text-amber-900 dark:text-amber-100 underline underline-offset-2 hover:bg-amber-100 dark:hover:bg-amber-900/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-brand/40"
+              >
+                Activar ahora
+              </Link>
+            )}
           </div>
         )}
         <div className="flex-1">
-          <Outlet />
+          {redirigirASeguridad ? (
+            <Navigate to={RUTA_SEGURIDAD_ADMIN} replace />
+          ) : cargando2FA && !rutaPermitidaSin2FA ? (
+            // Mientras se sabe si tiene 2FA, no se enseña una pantalla que quizá se cierre enseguida.
+            <div className="p-4 sm:p-8" aria-busy="true" aria-label="Cargando" />
+          ) : (
+            <Outlet />
+          )}
         </div>
       </main>
 

@@ -235,25 +235,64 @@ describe("AdminLayout — menú de usuario", () => {
   });
 });
 
-describe("AdminLayout — aviso de verificación en dos pasos", () => {
-  it("sin 2FA avisa en todas las pantallas y enlaza a Seguridad", async () => {
+// Lote 5 (G1): sin 2FA, el admin solo puede activarla, ver su cuenta o salir.
+describe("AdminLayout — verificación en dos pasos obligatoria", () => {
+  const sin2FA = () =>
     obtenerEstado2FA.mockResolvedValue({ habilitado: false, tieneConfiguracion: false, codigosRecuperacionRestantes: 0 });
-    renderizar();
-    expect(await screen.findByText("Activa la verificación en dos pasos.")).toBeInTheDocument();
+  const AVISO = "La verificación en dos pasos es obligatoria.";
+
+  it.each(["/admin", "/admin/facturacion", "/admin/negocios/neg-1"])("sin 2FA, %s lleva a Seguridad", async (ruta) => {
+    sin2FA();
+    renderizar(ruta);
+    expect(await screen.findByText("Pantalla Seguridad")).toBeInTheDocument();
+    expect(screen.queryByText("Contenido admin")).not.toBeInTheDocument();
+    expect(screen.queryByText("Pantalla Facturación")).not.toBeInTheDocument();
+    expect(screen.queryByText("Ficha del negocio")).not.toBeInTheDocument();
+    expect(screen.getByText(AVISO)).toBeInTheDocument();
+    // Ya está en Seguridad: no hace falta el enlace.
+    expect(screen.queryByRole("link", { name: "Activar ahora" })).not.toBeInTheDocument();
+  });
+
+  it("sin 2FA, Mi cuenta sigue abierta y enlaza a Seguridad", async () => {
+    sin2FA();
+    renderizar("/admin/cuenta");
+    expect(await screen.findByText(AVISO)).toBeInTheDocument();
+    expect(screen.getByText("Pantalla Mi cuenta")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Activar ahora" })).toHaveAttribute("href", "/admin/seguridad");
   });
 
-  it("no avisa en la propia página de Seguridad", async () => {
-    obtenerEstado2FA.mockResolvedValue({ habilitado: false, tieneConfiguracion: false, codigosRecuperacionRestantes: 0 });
-    renderizar("/admin/seguridad");
-    await waitFor(() => expect(obtenerEstado2FA).toHaveBeenCalled());
-    expect(screen.queryByText("Activa la verificación en dos pasos.")).not.toBeInTheDocument();
+  it("sin 2FA, cerrar sesión sigue funcionando", async () => {
+    sin2FA();
+    const user = userEvent.setup();
+    renderizar();
+    await screen.findByText("Pantalla Seguridad");
+    await user.click(screen.getByRole("button", { hidden: true, name: "Cerrar sesión" }));
+    await waitFor(() => expect(cerrarSesion).toHaveBeenCalled());
+    expect(await screen.findByText("Pantalla de login")).toBeInTheDocument();
   });
 
-  it("con 2FA activa no avisa", async () => {
+  it("sin 2FA, el panel de tareas tampoco se abre: lleva a Seguridad", async () => {
+    sin2FA();
+    const open = vi.spyOn(window, "open").mockReturnValue(null);
+    renderizar("/admin/cuenta");
+    await screen.findByText(AVISO);
+    fireEvent.click(screen.getByRole("button", { hidden: true, name: /Tareas programadas/ }));
+    expect(await screen.findByText("Pantalla Seguridad")).toBeInTheDocument();
+    expect(open).not.toHaveBeenCalled();
+    expect(emitirTicketHangfire).not.toHaveBeenCalled();
+    open.mockRestore();
+  });
+
+  it("con 2FA activa no avisa ni redirige", async () => {
     renderizar();
-    await waitFor(() => expect(obtenerEstado2FA).toHaveBeenCalled());
-    expect(screen.queryByText("Activa la verificación en dos pasos.")).not.toBeInTheDocument();
+    expect(await screen.findByText("Contenido admin")).toBeInTheDocument();
+    expect(screen.queryByText(AVISO)).not.toBeInTheDocument();
+  });
+
+  it("si no se puede leer el estado, no bloquea la consola (el servidor cuida las acciones sensibles)", async () => {
+    obtenerEstado2FA.mockRejectedValue(new Error("500"));
+    renderizar();
+    expect(await screen.findByText("Contenido admin")).toBeInTheDocument();
   });
 });
 
@@ -302,7 +341,7 @@ describe("AdminLayout — tareas programadas (Hangfire)", () => {
     expect(await screen.findByRole("alert", { hidden: true })).toHaveTextContent("Permite las ventanas emergentes");
     expect(emitirTicketHangfire).not.toHaveBeenCalled();
     expect(window.location.href).toBe(urlAntes);
-    expect(screen.getByText("Contenido admin")).toBeInTheDocument();
+    expect(await screen.findByText("Contenido admin")).toBeInTheDocument();
     open.mockRestore();
   });
 });
@@ -315,7 +354,7 @@ describe("AdminLayout — navegación del lote 4", () => {
     const enlace = within(nav()).getByRole("link", { hidden: true, name: "Facturación" });
     expect(enlace).toHaveAttribute("href", "/admin/facturacion");
     expect(enlace).toHaveAttribute("aria-current", "page");
-    expect(screen.getByText("Pantalla Facturación")).toBeInTheDocument();
+    expect(await screen.findByText("Pantalla Facturación")).toBeInTheDocument();
   });
 
   it("'Negocios' sigue marcado en la ficha de un negocio", () => {

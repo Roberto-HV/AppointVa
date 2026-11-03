@@ -202,7 +202,14 @@ export function useAccionesNegocio({ onEliminado }: { onEliminado?: (id: string)
       </Modal>
 
       <ModalPropietario negocio={negocioSel} abierto={modal === "propietario"} onCerrar={cerrarModal} />
-      <ModalEliminarNegocio negocio={negocioSel} abierto={modal === "eliminar"} onCerrar={cerrarModal} onEliminado={onEliminado} />
+      <ModalEliminarNegocio
+        negocio={negocioSel}
+        abierto={modal === "eliminar"}
+        onCerrar={cerrarModal}
+        onEliminado={onEliminado}
+        // "Desactivar en su lugar" (I3): la misma confirmación de siempre.
+        onDesactivar={(neg) => { cerrarModal(); setNegocioADesactivar(neg); }}
+      />
       <ModalColores negocio={negocioSel} abierto={modal === "colores"} onCerrar={cerrarModal} />
     </>
   );

@@ -26,6 +26,7 @@ namespace AppointVaAPI.Controllers.V1
         private readonly IAuditService _audit;
         private readonly ApplicationDbContext _db;
         private readonly IPanelJobsAccesoService _panelJobs;
+        private readonly IReautenticacionService _reautenticacion;
 
         public AutenticacionController(
             UserManager<ApplicationUser> userManager,
@@ -35,8 +36,10 @@ namespace AppointVaAPI.Controllers.V1
             IBlobStorageService storage,
             IAuditService audit,
             ApplicationDbContext db,
-            IPanelJobsAccesoService panelJobs)
+            IPanelJobsAccesoService panelJobs,
+            IReautenticacionService reautenticacion)
         {
+            _reautenticacion = reautenticacion;
             _userManager = userManager;
             _jwtService = jwtService;
             _email = email;
@@ -461,6 +464,71 @@ namespace AppointVaAPI.Controllers.V1
             await _audit.RegistrarAsync(AccionesAuditoria.DosFactoresDesactivado, "Usuario", usuario.Id.ToString(), usuarioId: usuario.Id);
 
             return Ok(new { mensaje = "Autenticación de dos factores desactivada." });
+        }
+
+        public const string CodigoDosFactoresRequerido = "2FA_REQUERIDO";
+
+        // POST api/auth/reautenticar — lote 5 (G1): step-up before a sensitive admin action.
+        // Checks the password AND the current 2FA code and returns a 5-minute proof that the
+        // protected endpoints ask for in the X-Reautenticacion header (see ReautenticacionService).
+        // 2FA is required here, never at login: the admin area sends an admin without 2FA to set
+        // it up first, so this can never lock the account out. A wrong password counts toward
+        // the normal lockout, like the login.
+        [Authorize(Roles = Roles.SuperAdmin)]
+        [EnableRateLimiting(AppointVaAPI.Constants.Politicas.LimiteGestion2FA)]
+        [HttpPost("reautenticar")]
+        public async Task<IActionResult> Reautenticar([FromBody] ReautenticarDto dto)
+        {
+            var usuarioId = User.FindFirst("sub")?.Value;
+            if (usuarioId is null) return Unauthorized();
+
+            var usuario = await _userManager.FindByIdAsync(usuarioId);
+            if (usuario is null || !usuario.Activo) return Unauthorized();
+
+            if (!await _userManager.GetTwoFactorEnabledAsync(usuario))
+                return StatusCode(403, new
+                {
+                    mensaje = "Activa la verificación en dos pasos para hacer esta acción. Es obligatoria en la cuenta de administración.",
+                    codigoError = CodigoDosFactoresRequerido
+                });
+
+            const string rechazo = "La contraseña o el código no son correctos.";
+
+            if (await _userManager.IsLockedOutAsync(usuario))
+            {
+                await _audit.RegistrarAsync(AccionesAuditoria.ReautenticacionFallida, "Usuario", usuario.Id.ToString(), "Cuenta bloqueada", usuario.Id);
+                return BadRequest(new { mensaje = rechazo });
+            }
+
+            if (string.IsNullOrEmpty(dto.Contrasena) || string.IsNullOrWhiteSpace(dto.Codigo))
+                return BadRequest(new { mensaje = "Escribe tu contraseña y el código de tu app autenticadora." });
+
+            if (!await _userManager.CheckPasswordAsync(usuario, dto.Contrasena))
+            {
+                await _userManager.AccessFailedAsync(usuario);
+                await _audit.RegistrarAsync(AccionesAuditoria.ReautenticacionFallida, "Usuario", usuario.Id.ToString(), "Contraseña incorrecta", usuario.Id);
+                return BadRequest(new { mensaje = rechazo });
+            }
+
+            // Six digits are an app code; anything else is tried as a recovery code (spent on use).
+            var codigo = dto.Codigo.Trim();
+            var limpio = codigo.Replace(" ", "").Replace("-", "");
+            var codigoValido = limpio.Length == 6 && limpio.All(char.IsDigit)
+                ? await _userManager.VerifyTwoFactorTokenAsync(usuario, _userManager.Options.Tokens.AuthenticatorTokenProvider, limpio)
+                : (await _userManager.RedeemTwoFactorRecoveryCodeAsync(usuario, codigo)).Succeeded;
+            if (!codigoValido)
+            {
+                await _audit.RegistrarAsync(AccionesAuditoria.ReautenticacionFallida, "Usuario", usuario.Id.ToString(), "Código incorrecto", usuario.Id);
+                return BadRequest(new { mensaje = rechazo });
+            }
+
+            await _userManager.ResetAccessFailedCountAsync(usuario);
+            // Re-read so the proof carries the stamp as it is now stored.
+            usuario = (await _userManager.FindByIdAsync(usuarioId))!;
+            var (token, expiracion) = _reautenticacion.Emitir(usuario);
+            await _audit.RegistrarAsync(AccionesAuditoria.Reautenticado, "Usuario", usuario.Id.ToString(), usuarioId: usuario.Id);
+
+            return Ok(new ReautenticacionRespuestaDto { Token = token, Expiracion = expiracion });
         }
 
         // DELETE api/auth/cuenta — eliminar cuenta (anonimización LFPDPPP)

@@ -41,12 +41,52 @@ export interface PlanDto {
   habilitaModuloPagos: boolean;
 }
 
+/**
+ * Lote 5 (I4): el propietario se crea por invitación. El admin no escribe ni ve su
+ * contraseña: el propietario la elige desde el enlace que le llega por correo.
+ */
 export interface CrearPropietarioAdminDto {
   email: string;
-  password: string;
   nombre: string;
   apellido: string;
 }
+
+export interface RespuestaPropietarioCreado {
+  mensaje: string;
+  email: string;
+  nombreCompleto: string;
+  /** false: la cuenta quedó creada pero el correo no salió; se puede reenviar el enlace. */
+  invitacionEnviada: boolean;
+}
+
+/** Alta de negocio con su propietario opcional en el mismo paso (lote 5, I8). */
+export interface CrearNegocioAdminDto extends CrearNegocioDto {
+  propietario?: CrearPropietarioAdminDto;
+}
+
+export type NegocioCreadoDto = NegocioDto & {
+  propietarioEmail?: string | null;
+  /** null sin propietario; false si la cuenta se creó pero la invitación no salió. */
+  invitacionEnviada?: boolean | null;
+};
+
+/** Lote 5 (I3): lo que borraría eliminar el negocio, contado igual que el borrado. */
+export interface ImpactoEliminacionDto {
+  negocioId: string;
+  activo: boolean;
+  citasProximas: number;
+  citasPasadas: number;
+  clientes: number;
+  empleados: number;
+  servicios: number;
+  pagos: number;
+  imagenes: number;
+  resenas: number;
+}
+
+/** Encabezado con la prueba de reautenticación (ver `ReautenticacionService` en el backend). */
+export const ENCABEZADO_REAUTENTICACION = "X-Reautenticacion";
+const conPrueba = (prueba?: string) => (prueba ? { headers: { [ENCABEZADO_REAUTENTICACION]: prueba } } : undefined);
 
 export interface NegocioMetricasDto {
   id: string;
@@ -138,7 +178,7 @@ export const adminApi = {
     return data;
   },
 
-  crearNegocio: async (dto: CrearNegocioDto): Promise<NegocioDto> => {
+  crearNegocio: async (dto: CrearNegocioAdminDto): Promise<NegocioCreadoDto> => {
     const { data } = await api.post("/negocios", dto);
     return data;
   },
@@ -157,8 +197,22 @@ export const adminApi = {
     return data;
   },
 
-  crearPropietario: async (negocioId: string, dto: CrearPropietarioAdminDto) => {
+  crearPropietario: async (negocioId: string, dto: CrearPropietarioAdminDto): Promise<RespuestaPropietarioCreado> => {
     const { data } = await api.post(`/negocios/${negocioId}/propietario`, dto);
+    return data;
+  },
+
+  /** Lote 5 (I4): manda al propietario el enlace para elegir su contraseña. Pide reautenticación. */
+  enviarEnlaceContrasena: async (
+    negocioId: string,
+    prueba: string,
+  ): Promise<{ mensaje: string; email: string; esInvitacion: boolean }> => {
+    const { data } = await api.post(`/negocios/${negocioId}/propietario/enlace-contrasena`, null, conPrueba(prueba));
+    return data;
+  },
+
+  obtenerImpactoEliminacion: async (negocioId: string): Promise<ImpactoEliminacionDto> => {
+    const { data } = await api.get(`/admin/negocios/${negocioId}/impacto`);
     return data;
   },
 
@@ -167,8 +221,9 @@ export const adminApi = {
     return data;
   },
 
-  eliminar: async (id: string): Promise<void> => {
-    await api.delete(`/negocios/${id}`);
+  /** Archiva (borrado lógico). Pide reautenticación, como el borrado definitivo. */
+  eliminar: async (id: string, prueba: string): Promise<void> => {
+    await api.delete(`/negocios/${id}`, conPrueba(prueba));
   },
 
   obtenerPlanes: async (): Promise<PlanDto[]> => {
@@ -216,8 +271,9 @@ export const adminApi = {
     return data;
   },
 
-  registrarPago: async (negocioId: string, dto: RegistrarPagoDto): Promise<PagoSuscripcionDto> => {
-    const { data } = await api.post(`/admin/negocios/${negocioId}/pagos`, dto);
+  /** Un pago "De por vida" pide la prueba de reautenticación; los mensuales no. */
+  registrarPago: async (negocioId: string, dto: RegistrarPagoDto, prueba?: string): Promise<PagoSuscripcionDto> => {
+    const { data } = await api.post(`/admin/negocios/${negocioId}/pagos`, dto, conPrueba(prueba));
     return data;
   },
 
@@ -256,10 +312,6 @@ export const adminApi = {
     await api.delete(`/admin/pagos/${pagoId}`);
   },
 
-  restablecerPasswordPropietario: async (negocioId: string, nuevaPassword: string): Promise<void> => {
-    await api.patch(`/negocios/${negocioId}/propietario/password`, { nuevaPassword });
-  },
-
   setPlan: async (negocioId: string, planId: string | null): Promise<void> => {
     await api.patch(`/admin/negocios/${negocioId}/plan`, { planId });
   },
@@ -274,7 +326,8 @@ export const adminApi = {
     return data;
   },
 
-  eliminarNegocio: async (id: string): Promise<void> => {
-    await api.delete(`/admin/negocios/${id}`);
+  /** Borrado definitivo. Pide la prueba de reautenticación (lote 5, G1). */
+  eliminarNegocio: async (id: string, prueba: string): Promise<void> => {
+    await api.delete(`/admin/negocios/${id}`, conPrueba(prueba));
   },
 };

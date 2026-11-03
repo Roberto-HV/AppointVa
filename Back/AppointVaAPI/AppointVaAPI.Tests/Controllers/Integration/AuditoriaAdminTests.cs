@@ -4,6 +4,7 @@ using System.Text.Json;
 using AppointVaAPI.Constants;
 using AppointVaAPI.Data;
 using AppointVaAPI.Models;
+using AppointVaAPI.Services;
 using AppointVaAPI.Services.IServices;
 using FluentAssertions;
 using Microsoft.AspNetCore.Identity;
@@ -112,6 +113,24 @@ public class AuditoriaAdminTests : IntegrationTestBase
     private HttpClient ClienteAdmin(Guid adminId) =>
         NewClient(TestTokenHelper.GenerarToken(Roles.SuperAdmin, userId: adminId));
 
+    /// <summary>Lote 5: a valid step-up proof for the admin, as POST api/auth/reautenticar would return.</summary>
+    private async Task<string> PruebaReautenticacionAsync(Guid adminId)
+    {
+        await using var scope = Factory.Services.CreateAsyncScope();
+        var um = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var admin = (await um.FindByIdAsync(adminId.ToString()))!;
+        return scope.ServiceProvider.GetRequiredService<IReautenticacionService>().Emitir(admin).Token;
+    }
+
+    /// <summary>Email switched on and accepting every message, so the owner flows can run.</summary>
+    private static IEmailService CorreoDisponible()
+    {
+        var email = Substitute.For<IEmailService>();
+        email.EnvioDisponible.Returns(true);
+        email.EnviarEnlaceAccesoAsync(default!, default!, default!, default, default).ReturnsForAnyArgs(true);
+        return email;
+    }
+
     // ── NegociosController ──────────────────────────────────────────────────
 
     [Fact]
@@ -147,8 +166,10 @@ public class AuditoriaAdminTests : IntegrationTestBase
     {
         var adminId = await CrearAdminAsync();
         var negocio = await CrearNegocioAsync();
+        var cliente = ClienteAdmin(adminId);
+        cliente.DefaultRequestHeaders.Add(ReautenticacionService.Encabezado, await PruebaReautenticacionAsync(adminId));
 
-        (await ClienteAdmin(adminId).DeleteAsync($"/api/negocios/{negocio.Id}")).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await cliente.DeleteAsync($"/api/negocios/{negocio.Id}")).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         (await EntradaAsync(negocio.Id, AccionesAuditoria.NegocioArchivado, adminId)).Detalles.Should().Contain(negocio.Slug);
     }
@@ -183,34 +204,23 @@ public class AuditoriaAdminTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task CrearPropietario_QuedaAuditado_SinLaContrasena()
+    public async Task CrearPropietario_QuedaAuditado_ComoInvitacion()
     {
         var adminId = await CrearAdminAsync();
         var negocio = await CrearNegocioAsync();
-        const string inicial = "Inicial-Secreta-77";
+        var cliente = Factory.WithWebHostBuilder(b => b.ConfigureTestServices(s =>
+        {
+            s.RemoveAll<IEmailService>();
+            s.AddScoped(_ => CorreoDisponible());
+        })).CreateClient();
+        cliente.DefaultRequestHeaders.Authorization = new("Bearer", TestTokenHelper.GenerarToken(Roles.SuperAdmin, userId: adminId));
 
-        var resp = await ClienteAdmin(adminId).PostAsJsonAsync($"/api/negocios/{negocio.Id}/propietario",
-            new { email = $"nuevo-{Guid.NewGuid():N}@ejemplo.com", password = inicial, nombre = "Nueva", apellido = "Dueña" });
+        var resp = await cliente.PostAsJsonAsync($"/api/negocios/{negocio.Id}/propietario",
+            new { email = $"nuevo-{Guid.NewGuid():N}@ejemplo.com", nombre = "Nueva", apellido = "Dueña" });
         resp.StatusCode.Should().Be(HttpStatusCode.OK, await resp.Content.ReadAsStringAsync());
 
         var e = await EntradaAsync(negocio.Id, AccionesAuditoria.PropietarioCreado, adminId);
-        e.Detalles.Should().NotContain(inicial);
-    }
-
-    [Fact]
-    public async Task RestablecerPasswordPropietario_QuedaAuditado_SinLaContrasena()
-    {
-        var adminId = await CrearAdminAsync();
-        var negocio = await CrearNegocioAsync();
-        var dueno = await CrearPropietarioAsync(negocio.Id);
-        const string nueva = "Nueva-Secreta-88";
-
-        var resp = await ClienteAdmin(adminId).PatchAsJsonAsync($"/api/negocios/{negocio.Id}/propietario/password",
-            new { nuevaPassword = nueva });
-        resp.StatusCode.Should().Be(HttpStatusCode.OK, await resp.Content.ReadAsStringAsync());
-
-        var e = await EntradaAsync(negocio.Id, AccionesAuditoria.PasswordPropietarioRestablecido, adminId);
-        e.Detalles.Should().Contain(dueno.Id.ToString()).And.NotContain(nueva).And.NotContain(ContrasenaPropietario);
+        e.Detalles.Should().Contain("invitado por enlace");
     }
 
     // ── SuscripcionAdminController ──────────────────────────────────────────
@@ -372,6 +382,7 @@ public class AuditoriaAdminTests : IntegrationTestBase
         }));
         var cliente = factory.CreateClient();
         cliente.DefaultRequestHeaders.Authorization = new("Bearer", TestTokenHelper.GenerarToken(Roles.SuperAdmin, userId: adminId));
+        cliente.DefaultRequestHeaders.Add(ReautenticacionService.Encabezado, await PruebaReautenticacionAsync(adminId));
 
         var resp = await cliente.DeleteAsync($"/api/admin/negocios/{negocio.Id}");
 
@@ -386,25 +397,30 @@ public class AuditoriaAdminTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task RestablecerPassword_SiLaBitacoraFalla_Responde503()
+    public async Task EnlaceContrasena_SiLaBitacoraFalla_Responde503_YNoEnviaElCorreo()
     {
         var adminId = await CrearAdminAsync();
         var negocio = await CrearNegocioAsync();
         await CrearPropietarioAsync(negocio.Id);
         var audit = Substitute.For<IAuditService>();
         audit.RegistrarObligatorioAsync(default!).ReturnsForAnyArgs(false);
+        var email = CorreoDisponible();
         var cliente = Factory.WithWebHostBuilder(b => b.ConfigureTestServices(s =>
         {
             s.RemoveAll<IAuditService>();
             s.AddScoped(_ => audit);
+            s.RemoveAll<IEmailService>();
+            s.AddScoped(_ => email);
         })).CreateClient();
         cliente.DefaultRequestHeaders.Authorization = new("Bearer", TestTokenHelper.GenerarToken(Roles.SuperAdmin, userId: adminId));
+        cliente.DefaultRequestHeaders.Add(ReautenticacionService.Encabezado, await PruebaReautenticacionAsync(adminId));
 
-        var resp = await cliente.PatchAsJsonAsync($"/api/negocios/{negocio.Id}/propietario/password", new { nuevaPassword = "Otra-Clave-55" });
+        var resp = await cliente.PostAsync($"/api/negocios/{negocio.Id}/propietario/enlace-contrasena", null);
 
         resp.StatusCode.Should().Be(HttpStatusCode.ServiceUnavailable);
         (await resp.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("mensaje").GetString()
             .Should().Contain("bitácora");
+        await email.DidNotReceiveWithAnyArgs().EnviarEnlaceAccesoAsync(default!, default!, default!, default, default);
     }
 
     // ── AuditAdminController ────────────────────────────────────────────────

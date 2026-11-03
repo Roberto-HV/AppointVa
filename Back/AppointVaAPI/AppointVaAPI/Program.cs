@@ -144,6 +144,7 @@ builder.Services.AddCors(opt =>
 // ── Servicios propios ──────────────────────────────────────────────────────────
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IJwtService, JwtService>();
+builder.Services.AddScoped<IReautenticacionService, ReautenticacionService>();
 builder.Services.AddScoped<IContextoNegocio, ContextoNegocio>();
 
 // ── Repositorios ───────────────────────────────────────────────────────────────

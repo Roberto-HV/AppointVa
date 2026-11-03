@@ -6,6 +6,7 @@ import { vi, describe, it, expect, beforeEach } from 'vitest';
 import NegocioDetalleAdminPage from './NegocioDetalleAdminPage';
 import * as adminModule from '../../api/admin';
 import type { NegocioMetricasDto, SuscripcionResumenDto } from '../../api/admin';
+import { olvidarPrueba } from '../../lib/pruebaReautenticacion';
 
 // Lote 4: la ficha del negocio reúne lo que estaba en la tarjeta y sus modales.
 // Las acciones son las mismas (mismas llamadas, mismas confirmaciones): aquí se
@@ -26,10 +27,15 @@ vi.mock('../../api/admin', () => ({
     setTester: vi.fn(),
     setPlan: vi.fn(),
     eliminarNegocio: vi.fn(),
-    restablecerPasswordPropietario: vi.fn(),
+    enviarEnlaceContrasena: vi.fn(),
     crearPropietario: vi.fn(),
+    obtenerImpactoEliminacion: vi.fn(),
   },
 }));
+
+// Lote 5: "Confirma que eres tú" pide la contraseña y el código al servidor.
+const authMock = vi.hoisted(() => ({ reautenticar: vi.fn(), obtenerEstado2FA: vi.fn() }));
+vi.mock('../../api/auth', () => ({ authApi: authMock }));
 
 const toastMock = vi.hoisted(() => vi.fn());
 vi.mock('../../store/toastStore', () => ({
@@ -109,7 +115,25 @@ async function abrirSeccion(user: ReturnType<typeof userEvent.setup>, nombre: st
   await user.click(within(tabs).getByRole('button', { name: nombre }));
 }
 
+const impacto = {
+  negocioId: 'neg-1', activo: true, citasProximas: 12, citasPasadas: 124, clientes: 58,
+  empleados: 3, servicios: 9, pagos: 6, imagenes: 14, resenas: 1,
+};
+
+/** Responde el paso "Confirma que eres tú" con contraseña y código. */
+async function confirmarIdentidad(user: ReturnType<typeof userEvent.setup>, dialogo: HTMLElement) {
+  expect(await within(dialogo).findByText('Confirma que eres tú')).toBeInTheDocument();
+  await user.type(within(dialogo).getByLabelText('Tu contraseña'), 'Admin-Clave-1');
+  await user.type(within(dialogo).getByLabelText('Código de verificación'), '123456');
+  await user.click(within(dialogo).getByRole('button', { name: 'Confirmar y continuar' }));
+}
+
 beforeEach(() => {
+  vi.clearAllMocks();
+  olvidarPrueba();
+  authMock.reautenticar.mockReset().mockResolvedValue({ token: 'prueba-1', expiracion: new Date(Date.now() + 5 * 60_000).toISOString() });
+  authMock.obtenerEstado2FA.mockResolvedValue({ habilitado: true, tieneConfiguracion: true, codigosRecuperacionRestantes: 10 });
+  vi.mocked(adminModule.adminApi.obtenerImpactoEliminacion).mockReset().mockResolvedValue(impacto);
   toastMock.mockReset();
   vi.mocked(adminModule.adminApi.obtenerMetricas).mockResolvedValue([negocio]);
   vi.mocked(adminModule.adminApi.obtenerSuscripciones).mockResolvedValue([suscripcion]);
@@ -238,13 +262,59 @@ describe('Ficha del negocio — suscripción y pagos', () => {
 });
 
 describe('Ficha del negocio — propietario', () => {
-  it('"Restablecer contraseña" abre el modal de siempre', async () => {
+  it('el admin no escribe la contraseña: manda el enlace tras confirmar su identidad', async () => {
     const user = userEvent.setup();
+    vi.mocked(adminModule.adminApi.enviarEnlaceContrasena).mockResolvedValue({
+      mensaje: 'ok', email: 'luis@barberia.mx', esInvitacion: false,
+    });
     renderFicha('/admin/negocios/neg-1?seccion=propietario');
-    await user.click(await screen.findByRole('button', { name: 'Restablecer contraseña' }));
+    await user.click(await screen.findByRole('button', { name: 'Enviar enlace de contraseña' }));
     const dialogo = await screen.findByRole('dialog', { name: 'Propietario' });
     expect(within(dialogo).getByText('luis@barberia.mx')).toBeInTheDocument();
-    expect(within(dialogo).getByRole('button', { name: 'Restablecer contraseña' })).toBeDisabled();
+    // Ya no hay campos para teclear la contraseña de otra persona.
+    expect(within(dialogo).queryByLabelText(/Nueva contraseña|Confirmar contraseña/)).not.toBeInTheDocument();
+
+    await user.click(within(dialogo).getByRole('button', { name: 'Enviar enlace para restablecer' }));
+    expect(adminModule.adminApi.enviarEnlaceContrasena).not.toHaveBeenCalled();
+    await confirmarIdentidad(user, dialogo);
+
+    await waitFor(() => expect(adminModule.adminApi.enviarEnlaceContrasena).toHaveBeenCalledWith('neg-1', 'prueba-1'));
+    expect(authMock.reautenticar).toHaveBeenCalledWith('Admin-Clave-1', '123456');
+    const enviado = await within(dialogo).findByRole('status');
+    expect(enviado).toHaveTextContent('Enlace enviado');
+    expect(enviado).toHaveTextContent('luis@barberia.mx');
+    expect(enviado).toHaveTextContent('Su contraseña actual sigue funcionando');
+  });
+
+  it('con el correo apagado muestra el error del servidor y no finge el envío', async () => {
+    const user = userEvent.setup();
+    vi.mocked(adminModule.adminApi.enviarEnlaceContrasena).mockRejectedValue({
+      response: { status: 503, data: { mensaje: 'El envío de correos está apagado o sin configurar.', codigoError: 'CORREO_NO_DISPONIBLE' } },
+    });
+    renderFicha('/admin/negocios/neg-1?seccion=propietario');
+    await user.click(await screen.findByRole('button', { name: 'Enviar enlace de contraseña' }));
+    const dialogo = await screen.findByRole('dialog', { name: 'Propietario' });
+    await user.click(within(dialogo).getByRole('button', { name: 'Enviar enlace para restablecer' }));
+    await confirmarIdentidad(user, dialogo);
+
+    expect(await within(dialogo).findByRole('alert')).toHaveTextContent('El envío de correos está apagado o sin configurar.');
+    expect(within(dialogo).queryByText('Enlace enviado')).not.toBeInTheDocument();
+  });
+
+  it('si la contraseña o el código fallan, lo dice y no envía nada', async () => {
+    const user = userEvent.setup();
+    authMock.reautenticar.mockRejectedValue({ response: { status: 400, data: { mensaje: 'La contraseña o el código no son correctos.' } } });
+    renderFicha('/admin/negocios/neg-1?seccion=propietario');
+    await user.click(await screen.findByRole('button', { name: 'Enviar enlace de contraseña' }));
+    const dialogo = await screen.findByRole('dialog', { name: 'Propietario' });
+    await user.click(within(dialogo).getByRole('button', { name: 'Enviar enlace para restablecer' }));
+    await confirmarIdentidad(user, dialogo);
+
+    expect(await within(dialogo).findByRole('alert')).toHaveTextContent('La contraseña o el código no son correctos.');
+    expect(adminModule.adminApi.enviarEnlaceContrasena).not.toHaveBeenCalled();
+    // Cancelar vuelve a la pantalla anterior sin enviar.
+    await user.click(within(dialogo).getByRole('button', { name: 'Cancelar' }));
+    expect(await within(dialogo).findByRole('button', { name: 'Enviar enlace para restablecer' })).toBeEnabled();
   });
 
   it('"Confirmar correo" pide confirmación antes de marcarlo', async () => {
@@ -258,16 +328,49 @@ describe('Ficha del negocio — propietario', () => {
     await waitFor(() => expect(adminModule.adminApi.confirmarEmail).toHaveBeenCalledWith('neg-1'));
   });
 
-  it('sin propietario, ofrece crearlo con el formulario de siempre', async () => {
+  it('sin propietario, lo crea por invitación sin definirle contraseña', async () => {
     const user = userEvent.setup();
     vi.mocked(adminModule.adminApi.obtenerMetricas).mockResolvedValue([
       { ...negocio, propietarioEmail: undefined, propietarioNombre: undefined, emailConfirmado: null },
     ]);
+    vi.mocked(adminModule.adminApi.crearPropietario).mockResolvedValue({
+      mensaje: 'ok', email: 'nueva@barberia.mx', nombreCompleto: 'Nueva Dueña', invitacionEnviada: true,
+    });
     renderFicha('/admin/negocios/neg-1?seccion=propietario');
     expect(await screen.findByText('Sin propietario')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Crear propietario' }));
     const dialogo = await screen.findByRole('dialog', { name: 'Propietario' });
-    expect(within(dialogo).getByText('Contraseña inicial *')).toBeInTheDocument();
+    expect(within(dialogo).queryByText(/Contraseña inicial/)).not.toBeInTheDocument();
+
+    await user.type(within(dialogo).getByLabelText('Nombre *'), 'Nueva');
+    await user.type(within(dialogo).getByLabelText('Apellido'), 'Dueña');
+    await user.type(within(dialogo).getByLabelText('Correo de acceso *'), 'nueva@barberia.mx');
+    await user.click(within(dialogo).getByRole('button', { name: 'Crear e invitar' }));
+
+    await waitFor(() => expect(adminModule.adminApi.crearPropietario).toHaveBeenCalledWith('neg-1', {
+      email: 'nueva@barberia.mx', nombre: 'Nueva', apellido: 'Dueña',
+    }));
+    expect(await within(dialogo).findByRole('status')).toHaveTextContent('Invitación enviada');
+  });
+
+  it('si la invitación no salió, lo dice en vez de darla por enviada', async () => {
+    const user = userEvent.setup();
+    vi.mocked(adminModule.adminApi.obtenerMetricas).mockResolvedValue([
+      { ...negocio, propietarioEmail: undefined, propietarioNombre: undefined, emailConfirmado: null },
+    ]);
+    vi.mocked(adminModule.adminApi.crearPropietario).mockResolvedValue({
+      mensaje: 'Creamos la cuenta, pero no pudimos enviar la invitación.', email: 'n@b.mx', nombreCompleto: 'N', invitacionEnviada: false,
+    });
+    renderFicha('/admin/negocios/neg-1?seccion=propietario');
+    await user.click(await screen.findByRole('button', { name: 'Crear propietario' }));
+    const dialogo = await screen.findByRole('dialog', { name: 'Propietario' });
+    await user.type(within(dialogo).getByLabelText('Nombre *'), 'Nueva');
+    await user.type(within(dialogo).getByLabelText('Correo de acceso *'), 'n@b.mx');
+    await user.click(within(dialogo).getByRole('button', { name: 'Crear e invitar' }));
+
+    const estado = await within(dialogo).findByRole('status');
+    expect(estado).toHaveTextContent('Cuenta creada, sin invitación');
+    expect(estado).toHaveTextContent('no pudimos enviar la invitación');
   });
 });
 
@@ -315,7 +418,7 @@ describe('Ficha del negocio — configuración', () => {
     await waitFor(() => expect(adminModule.adminApi.desactivar).toHaveBeenCalledWith('neg-1'));
   });
 
-  it('eliminar sigue pidiendo el nombre en dos pasos y, al terminar, vuelve a la lista', async () => {
+  it('eliminar muestra lo que se pierde, pide el nombre y la identidad y, al terminar, vuelve a la lista', async () => {
     const user = userEvent.setup();
     vi.mocked(adminModule.adminApi.eliminarNegocio).mockResolvedValue(undefined);
     renderFicha('/admin/negocios/neg-1?seccion=configuracion');
@@ -323,13 +426,82 @@ describe('Ficha del negocio — configuración', () => {
     await user.click(within(zona).getByRole('button', { name: 'Eliminar negocio' }));
 
     const dialogo = await screen.findByRole('dialog', { name: 'Eliminar negocio' });
-    expect(within(dialogo).getByRole('button', { name: 'Continuar' })).toBeDisabled();
-    await user.type(within(dialogo).getByPlaceholderText('Barbería Luis'), 'Barbería Luis');
-    await user.click(within(dialogo).getByRole('button', { name: 'Continuar' }));
-    await user.click(within(dialogo).getByRole('button', { name: 'Eliminar definitivamente' }));
+    // I3: cifras concretas antes de confirmar.
+    const cifras = await within(dialogo).findByRole('region', { name: 'Se borrará para siempre' });
+    for (const texto of ['12 citas próximas', '124 citas en el historial', '58 clientes', '3 empleados y 9 servicios',
+      '6 pagos de suscripción registrados', '14 imágenes y 1 reseña']) {
+      expect(within(cifras).getByText(texto)).toBeInTheDocument();
+    }
+    expect(adminModule.adminApi.obtenerImpactoEliminacion).toHaveBeenCalledWith('neg-1');
+    expect(within(dialogo).getByRole('button', { name: 'Desactivar en su lugar' })).toBeInTheDocument();
 
-    await waitFor(() => expect(adminModule.adminApi.eliminarNegocio).toHaveBeenCalledWith('neg-1'));
+    const eliminar = within(dialogo).getByRole('button', { name: 'Eliminar definitivamente' });
+    expect(eliminar).toBeDisabled();
+    // Sin importar mayúsculas (I3).
+    await user.type(within(dialogo).getByPlaceholderText('Barbería Luis'), 'barbería LUIS');
+    expect(eliminar).toBeEnabled();
+    await user.click(eliminar);
+    expect(adminModule.adminApi.eliminarNegocio).not.toHaveBeenCalled();
+    await confirmarIdentidad(user, dialogo);
+
+    await waitFor(() => expect(adminModule.adminApi.eliminarNegocio).toHaveBeenCalledWith('neg-1', 'prueba-1'));
     await waitFor(() => expect(screen.getByTestId('ubicacion')).toHaveTextContent(/^\/admin$/));
+  });
+
+  it('"Desactivar en su lugar" cierra Eliminar y abre la confirmación de desactivar', async () => {
+    const user = userEvent.setup();
+    vi.mocked(adminModule.adminApi.desactivar).mockResolvedValue(undefined as never);
+    renderFicha('/admin/negocios/neg-1?seccion=configuracion');
+    const zona = await screen.findByRole('region', { name: 'Estado y eliminación' });
+    await user.click(within(zona).getByRole('button', { name: 'Eliminar negocio' }));
+    const dialogo = await screen.findByRole('dialog', { name: 'Eliminar negocio' });
+    await user.click(within(dialogo).getByRole('button', { name: 'Desactivar en su lugar' }));
+
+    const confirmar = await screen.findByRole('dialog', { name: '¿Desactivar Barbería Luis?' });
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Eliminar negocio' })).not.toBeInTheDocument());
+    await user.click(within(confirmar).getByRole('button', { name: 'Desactivar negocio' }));
+    await waitFor(() => expect(adminModule.adminApi.desactivar).toHaveBeenCalledWith('neg-1'));
+    expect(adminModule.adminApi.eliminarNegocio).not.toHaveBeenCalled();
+  });
+
+  it('si las cifras no cargan, no deja eliminar a ciegas y ofrece reintentar', async () => {
+    const user = userEvent.setup();
+    vi.mocked(adminModule.adminApi.obtenerImpactoEliminacion).mockReset()
+      .mockRejectedValueOnce(new Error('500')).mockResolvedValue(impacto);
+    renderFicha('/admin/negocios/neg-1?seccion=configuracion');
+    const zona = await screen.findByRole('region', { name: 'Estado y eliminación' });
+    await user.click(within(zona).getByRole('button', { name: 'Eliminar negocio' }));
+    const dialogo = await screen.findByRole('dialog', { name: 'Eliminar negocio' });
+
+    expect(await within(dialogo).findByText('No se pudo calcular qué se borraría.')).toBeInTheDocument();
+    await user.type(within(dialogo).getByPlaceholderText('Barbería Luis'), 'Barbería Luis');
+    expect(within(dialogo).getByRole('button', { name: 'Eliminar definitivamente' })).toBeDisabled();
+    await user.click(within(dialogo).getByRole('button', { name: 'Reintentar' }));
+    expect(await within(dialogo).findByText('58 clientes')).toBeInTheDocument();
+    expect(within(dialogo).getByRole('button', { name: 'Eliminar definitivamente' })).toBeEnabled();
+  });
+
+  it('si el servidor rechaza la prueba (venció), la pide de nuevo y reintenta', async () => {
+    const user = userEvent.setup();
+    vi.mocked(adminModule.adminApi.eliminarNegocio).mockReset()
+      .mockRejectedValueOnce({ response: { status: 403, data: { codigoError: 'REAUTENTICACION_REQUERIDA' } } })
+      .mockResolvedValue(undefined);
+    authMock.reautenticar
+      .mockResolvedValueOnce({ token: 'prueba-vieja', expiracion: new Date(Date.now() + 5 * 60_000).toISOString() })
+      .mockResolvedValueOnce({ token: 'prueba-nueva', expiracion: new Date(Date.now() + 5 * 60_000).toISOString() });
+    renderFicha('/admin/negocios/neg-1?seccion=configuracion');
+    const zona = await screen.findByRole('region', { name: 'Estado y eliminación' });
+    await user.click(within(zona).getByRole('button', { name: 'Eliminar negocio' }));
+    const dialogo = await screen.findByRole('dialog', { name: 'Eliminar negocio' });
+    await within(dialogo).findByText('58 clientes');
+    await user.type(within(dialogo).getByPlaceholderText('Barbería Luis'), 'Barbería Luis');
+    await user.click(within(dialogo).getByRole('button', { name: 'Eliminar definitivamente' }));
+    await confirmarIdentidad(user, dialogo);
+    // El servidor rechazó la primera: se pide otra vez y se reintenta con la nueva.
+    await confirmarIdentidad(user, dialogo);
+
+    await waitFor(() => expect(adminModule.adminApi.eliminarNegocio).toHaveBeenLastCalledWith('neg-1', 'prueba-nueva'));
+    expect(adminModule.adminApi.eliminarNegocio).toHaveBeenCalledTimes(2);
   });
 });
 

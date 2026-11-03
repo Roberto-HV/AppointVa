@@ -22,7 +22,9 @@ import { formatFecha, formatFechaCorta, formatPrecio } from "../../../utils/form
 import { generarHTMLComprobante } from "../../../utils/comprobanteSuscripcion";
 import { mensajeError } from "../../../utils/errores";
 import { validarEdicionPago, nombrePlan } from "../../../utils/negociosAdmin";
+import { esCancelacion } from "../../../lib/pruebaReautenticacion";
 import BadgeSuscripcion from "./BadgeSuscripcion";
+import { useReautenticacion } from "./useReautenticacion";
 import { DIAS_DE_POR_VIDA, LIFETIME_SENTINEL } from "./formatoSuscripcion";
 import { BOTON_PIE_PRIMARIO, BOTON_PIE_SECUNDARIO, CAMPO_MODAL, CAMPO_OK } from "./estilos";
 
@@ -101,13 +103,16 @@ export default function SuscripcionNegocio({
 
   const paginaHistorial = usePaginacionLocal(historial);
 
+  // Lote 5 (G1): un acceso de por vida pide reautenticación; los pagos mensuales no.
+  const reautenticacion = useReautenticacion(`registrar un acceso de por vida para ${negocio.nombre}`);
+
   const { mutate: registrar, isPending: registrando } = useMutation({
-    mutationFn: () =>
-      adminApi.registrarPago(negocio.id, {
-        mesesPagados: meses,
-        monto: parseFloat(monto) || 0,
-        notas: notas.trim() || undefined,
-      }),
+    mutationFn: () => {
+      const dto = { mesesPagados: meses, monto: parseFloat(monto) || 0, notas: notas.trim() || undefined };
+      return meses === LIFETIME_SENTINEL
+        ? reautenticacion.conReautenticacion((prueba) => adminApi.registrarPago(negocio.id, dto, prueba))
+        : adminApi.registrarPago(negocio.id, dto);
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["pagos-negocio", negocio.id] });
       qc.invalidateQueries({ queryKey: ["admin-suscripciones"] });
@@ -117,6 +122,7 @@ export default function SuscripcionNegocio({
       toast("Pago registrado correctamente");
     },
     onError: (err: unknown) => {
+      if (esCancelacion(err)) return;
       toast(mensajeError(err, "No se pudo registrar el pago."), "error");
     },
   });
@@ -592,6 +598,11 @@ export default function SuscripcionNegocio({
       </div>
     </div>
   );
+
+  // Pago de por vida: "Confirma que eres tú" en lugar del contenido, hasta confirmar o cancelar.
+  if (reautenticacion.formulario) {
+    return <div className="max-w-md">{reautenticacion.formulario}</div>;
+  }
 
   return (
     <div className="space-y-4">

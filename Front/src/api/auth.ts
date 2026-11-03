@@ -52,6 +52,16 @@ export const authApi = {
     return data;
   },
 
+  /**
+   * Lote 5 (G1): confirma la identidad del SuperAdmin (contraseña y código de la app)
+   * antes de una acción sensible. Devuelve una prueba de 5 minutos que se manda en el
+   * encabezado `X-Reautenticacion`; nunca se guarda fuera de la memoria.
+   */
+  reautenticar: async (contrasena: string, codigo: string): Promise<{ token: string; expiracion: string }> => {
+    const { data } = await api.post("/auth/reautenticar", { contrasena, codigo });
+    return data;
+  },
+
   // 2FA
   obtenerEstado2FA: async (): Promise<EstadoDosFactores> => {
     const { data } = await api.get("/auth/2fa/estado");

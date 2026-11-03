@@ -41,10 +41,13 @@ const schema = z
 type FormData = z.infer<typeof schema>;
 
 export default function RestablecerContrasenaPage() {
-  useTituloPagina("Nueva contraseña");
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token") ?? "";
   const email = searchParams.get("email") ?? "";
+  // Lote 5: el mismo enlace sirve de invitación cuando el admin crea la cuenta
+  // del propietario; solo cambia el texto (la cuenta aún no tiene contraseña).
+  const esInvitacion = searchParams.get("invitacion") === "1";
+  useTituloPagina(esInvitacion ? "Crea tu contraseña" : "Nueva contraseña");
 
   const [exito, setExito] = useState(false);
   const [error, setError] = useState("");
@@ -113,9 +116,11 @@ export default function RestablecerContrasenaPage() {
             </div>
           ) : (
             <>
-              <h1 className={TITULO_AUTH}>Nueva contraseña</h1>
+              <h1 className={TITULO_AUTH}>{esInvitacion ? "Crea tu contraseña" : "Nueva contraseña"}</h1>
               <p className="text-sm text-slate-500 mb-6">
-                Crea una contraseña segura para tu cuenta.
+                {esInvitacion
+                  ? "Elige la contraseña con la que entrarás a tu panel de AppointVa."
+                  : "Crea una contraseña segura para tu cuenta."}
               </p>
 
               <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-5">
@@ -196,7 +201,7 @@ export default function RestablecerContrasenaPage() {
                   disabled={isSubmitting}
                   className={BOTON_PRIMARIO_AUTH}
                 >
-                  {isSubmitting ? "Guardando..." : "Restablecer contraseña"}
+                  {isSubmitting ? "Guardando..." : esInvitacion ? "Crear contraseña" : "Restablecer contraseña"}
                 </button>
               </form>
             </>

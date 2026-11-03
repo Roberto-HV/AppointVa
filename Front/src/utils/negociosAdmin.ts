@@ -243,3 +243,18 @@ export function validarEdicionPago({ monto, desde, hasta }: EdicionPago): string
 export function esColorHexValido(valor: string): boolean {
   return /^#[0-9a-f]{6}$/i.test(valor.trim());
 }
+
+/**
+ * Slug propuesto a partir del nombre (lote 5, I8), con la misma regla que el
+ * registro público: minúsculas sin acentos, espacios a guiones, solo [a-z0-9-].
+ * "Barbería Luis" → "barberia-luis". El admin lo puede editar.
+ */
+export function slugDesdeNombre(nombre: string): string {
+  return normalizar(nombre)
+    .replace(/[^a-z0-9\s-]/g, "")
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 80);
+}

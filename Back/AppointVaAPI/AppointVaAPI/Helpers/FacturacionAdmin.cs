@@ -56,6 +56,9 @@ namespace AppointVaAPI.Helpers
 
         public static bool EsAccesoPermanente(int? diasRestantes) => diasRestantes >= DiasAccesoPermanente;
 
+        /// <summary>A payment of fifty years or more is the lifetime access ("De por vida", 1200 months).</summary>
+        public static bool EsPagoDeAccesoPermanente(int mesesPagados) => mesesPagados >= 12 * 50;
+
         /// <summary>
         /// What the business adds to the monthly recurring income: its monthly price while the
         /// subscription is current. Zero without a payment, once it expired, for test businesses

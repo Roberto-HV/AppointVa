@@ -112,7 +112,18 @@ namespace AppointVaAPI.Services
             await EnviarAsync(emailDestino, asunto, PlantillaBienvenida(nombre, negocioNombre, urlReservas, urlDashboard));
         }
 
-        private async Task EnviarAsync(string destino, string asunto, string html)
+        /// <summary>Sending is on (Email:Habilitado) and has a key: a link sent now can actually arrive.</summary>
+        public bool EnvioDisponible => EstaHabilitado() && !string.IsNullOrWhiteSpace(_config["Email:ApiKey"]);
+
+        public async Task<bool> EnviarEnlaceAccesoAsync(string emailDestino, string nombre, string urlEnlace, bool esInvitacion, string? negocioNombre)
+        {
+            if (!EnvioDisponible) return false;
+            var asunto = esInvitacion ? "Crea tu contraseña de AppointVa" : "Elige una contraseña nueva — AppointVa";
+            return await EnviarAsync(emailDestino, asunto, PlantillaEnlaceAcceso(nombre, urlEnlace, esInvitacion, negocioNombre));
+        }
+
+        /// <summary>True only when the provider accepted the message.</summary>
+        private async Task<bool> EnviarAsync(string destino, string asunto, string html)
         {
             try
             {
@@ -120,7 +131,7 @@ namespace AppointVaAPI.Services
                 if (string.IsNullOrWhiteSpace(apiKey))
                 {
                     _logger.LogWarning("Email:ApiKey no configurada — email omitido.");
-                    return;
+                    return false;
                 }
 
                 var origen = _config["Email:Origen"] ?? "AppointVa <notificaciones@appointva.com>";
@@ -153,16 +164,19 @@ namespace AppointVaAPI.Services
                     var err = await response.Content.ReadAsStringAsync();
                     _logger.LogWarning("Brevo API {Status} al enviar a {Destino}: {Error}",
                         (int)response.StatusCode, MascarEmail(destino), err);
+                    return false;
                 }
+                return true;
             }
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Error al enviar email a {Destino}: {Mensaje}",
                     MascarEmail(destino), ex.Message);
+                return false;
             }
         }
 
-        private static string MascarEmail(string email)
+        internal static string MascarEmail(string email)
         {
             var i = email.IndexOf('@');
             if (i <= 1) return "***";
@@ -685,6 +699,55 @@ namespace AppointVaAPI.Services
                     <div style="background:#0f172a;padding:20px 40px;text-align:center;">
                       <div style="font-size:14px;font-weight:700;margin-bottom:7px;"><span style="color:#94a3b8;">Appoint</span><span style="color:#c8a961;">Va</span></div>
                       <div style="font-size:11px;color:#475569;line-height:1.8;">{nombreNegocio} · <a href="mailto:hola@appointva.com" style="color:#64748b;text-decoration:none;">hola@appointva.com</a></div>
+                    </div>
+                  </div>
+                </body>
+                </html>
+                """;
+        }
+
+        /// <summary>
+        /// Lote 5 (I4, I8): link sent by the AppointVa team so the owner chooses the password
+        /// (the admin never sees it). An invitation for a new account, or a reset for an existing
+        /// one, whose current password keeps working until the owner changes it.
+        /// </summary>
+        internal static string PlantillaEnlaceAcceso(string nombre, string urlEnlace, bool esInvitacion, string? negocioNombre)
+        {
+            var url = Html(urlEnlace);
+            var saludo = string.IsNullOrWhiteSpace(nombre) ? "Hola." : $"Hola, <strong>{Html(nombre.Trim())}</strong>.";
+            var negocio = string.IsNullOrWhiteSpace(negocioNombre) ? "" : $" de <strong>{Html(negocioNombre)}</strong>";
+            var titulo = esInvitacion ? "Crea tu contraseña" : "Elige una contraseña nueva";
+            var intro = esInvitacion
+                ? $"{saludo} El equipo de AppointVa creó tu cuenta para administrar la agenda{negocio}. Para entrar, crea tu contraseña con el botón."
+                : $"{saludo} El equipo de AppointVa te envió este enlace para que elijas una contraseña nueva para tu cuenta{negocio}.";
+            var nota = esInvitacion
+                ? "Si no esperabas esta invitación, puedes ignorar este correo."
+                : "Tu contraseña actual sigue funcionando hasta que elijas la nueva. Si no pediste este cambio, ignora este correo y avísanos.";
+            var boton = esInvitacion ? "Crear mi contraseña →" : "Elegir contraseña nueva →";
+
+            return $"""
+                <!DOCTYPE html>
+                <html lang="es">
+                <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+                <body style="margin:0;padding:20px 0;background:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+                  <div style="max-width:600px;margin:0 auto;">
+                    <div style="height:4px;background:#334155;font-size:0;"></div>
+                    <div style="background:#0f172a;padding:28px 40px 24px;">
+                      <span style="font-size:18px;"><span style="color:#ffffff;font-weight:800;">Appoint</span><span style="color:#c8a961;font-weight:800;">Va</span></span>
+                    </div>
+                    <div style="background:#ffffff;padding:32px 40px 36px;border-left:1px solid #e2e8f0;border-right:1px solid #e2e8f0;">
+                      <div style="font-size:20px;font-weight:800;color:#0f172a;margin-bottom:16px;">{titulo}</div>
+                      <p style="font-size:15px;color:#374151;line-height:1.6;margin:0 0 24px;">{intro}</p>
+                      <div style="text-align:center;margin:0 0 24px;">
+                        <a href="{url}" style="background:#334155;color:#ffffff;font-weight:700;font-size:15px;padding:14px 36px;border-radius:9px;text-decoration:none;display:inline-block;">{boton}</a>
+                      </div>
+                      <div style="background:#f8fafc;border-radius:9px;padding:16px 18px;font-size:14px;color:#475569;line-height:1.6;">
+                        {nota}<br>El enlace sirve una sola vez y vence en <strong>24 horas</strong>.<br>Si el botón no funciona, copia este enlace en tu navegador:<br><span style="color:#64748b;font-size:12px;word-break:break-all;">{url}</span>
+                      </div>
+                    </div>
+                    <div style="background:#0f172a;padding:20px 40px;text-align:center;">
+                      <div style="font-size:14px;font-weight:700;margin-bottom:7px;"><span style="color:#94a3b8;">Appoint</span><span style="color:#c8a961;">Va</span></div>
+                      <div style="font-size:11px;color:#475569;line-height:1.8;"><a href="mailto:hola@appointva.com" style="color:#64748b;text-decoration:none;">hola@appointva.com</a></div>
                     </div>
                   </div>
                 </body>

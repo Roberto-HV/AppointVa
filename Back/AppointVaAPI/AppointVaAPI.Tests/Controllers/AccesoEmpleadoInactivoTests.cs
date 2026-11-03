@@ -41,7 +41,7 @@ public class AccesoEmpleadoInactivoTests
     private AutenticacionController CrearAuth() => new(
         _userManager, _jwt, Substitute.For<IEmailService>(), Substitute.For<IConfiguration>(),
         Substitute.For<IBlobStorageService>(), Substitute.For<IAuditService>(), _db,
-        Substitute.For<IPanelJobsAccesoService>());
+        Substitute.For<IPanelJobsAccesoService>(), Substitute.For<IReautenticacionService>());
 
     private (ApplicationUser Usuario, Empleado Empleado) Sembrar(string rol, int empleadoActivo)
     {

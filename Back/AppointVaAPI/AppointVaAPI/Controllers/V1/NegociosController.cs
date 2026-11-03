@@ -1,10 +1,12 @@
 ﻿using AppointVaAPI.Constants;
 using AppointVaAPI.Data;
+using AppointVaAPI.Filters;
 using AppointVaAPI.Helpers;
 using AppointVaAPI.Models;
 using AppointVaAPI.Models.Dtos.Horarios;
 using AppointVaAPI.Models.Dtos.Negocios;
 using AppointVaAPI.Repository.IRepository;
+using AppointVaAPI.Services;
 using AppointVaAPI.Services.IServices;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -27,6 +29,8 @@ namespace AppointVaAPI.Controllers.V1
         private readonly ApplicationDbContext _db;
         private readonly IOutputCacheStore _cacheStore;
         private readonly IAuditService _audit;
+        private readonly IEmailService _email;
+        private readonly IConfiguration _config;
 
         public NegociosController(
             INegocioRepository repo,
@@ -36,8 +40,12 @@ namespace AppointVaAPI.Controllers.V1
             RoleManager<IdentityRole<Guid>> roleManager,
             ApplicationDbContext db,
             IOutputCacheStore cacheStore,
-            IAuditService audit)
+            IAuditService audit,
+            IEmailService email,
+            IConfiguration config)
         {
+            _email = email;
+            _config = config;
             _repo = repo;
             _contexto = contexto;
             _storage = storage;
@@ -176,6 +184,15 @@ namespace AppointVaAPI.Controllers.V1
             if (await _repo.SlugExisteAsync(dto.Slug))
                 return Conflict(new { mensaje = "El slug ya está en uso" });
 
+            // Lote 5 (I8): with an owner, everything is checked before anything is written, so a
+            // refused request never leaves a business without its owner behind.
+            if (dto.Propietario is not null)
+            {
+                if (!_email.EnvioDisponible) return CorreoNoDisponible();
+                if (await _userManager.FindByEmailAsync(dto.Propietario.Email) is not null)
+                    return Conflict(new { mensaje = "El correo del propietario ya está registrado en el sistema" });
+            }
+
             var negocio = new Negocio
             {
                 Id = Guid.NewGuid(),
@@ -190,13 +207,34 @@ namespace AppointVaAPI.Controllers.V1
                 FechaActualizacion = DateTime.UtcNow
             };
 
+            // Business, owner account and both audit rows commit together; the invitation goes
+            // out after the commit (an email cannot be rolled back).
+            await using var tx = await _db.Database.BeginTransactionAsync();
             var creado = await _repo.CrearAsync(negocio);
             var plan = creado.PlanId.HasValue
                 ? await _db.Planes.Where(p => p.Id == creado.PlanId.Value).Select(p => p.Nombre).FirstOrDefaultAsync()
                 : null;
             await _audit.RegistrarNegocioAsync(AccionesAuditoria.NegocioCreado, creado.Id,
-                $"Nombre: {creado.Nombre}; Slug: {creado.Slug}; Plan: {plan ?? "sin plan"}");
-            return CreatedAtAction(nameof(ObtenerPorId), new { id = creado.Id }, MapearDto(creado));
+                $"Nombre: {creado.Nombre}; Slug: {creado.Slug}; Plan: {plan ?? "sin plan"}" +
+                (dto.Propietario is null ? "" : "; con propietario invitado"));
+
+            ApplicationUser? propietario = null;
+            if (dto.Propietario is not null)
+            {
+                var (cuenta, error) = await CrearCuentaPropietarioAsync(creado.Id, dto.Propietario);
+                if (error is not null) return error;
+                propietario = cuenta;
+            }
+            await tx.CommitAsync();
+
+            bool? invitacionEnviada = propietario is null
+                ? null
+                : await EnviarEnlaceAccesoAsync(propietario, esInvitacion: true, creado.Nombre);
+
+            var respuesta = MapearDto<NegocioCreadoDto>(creado);
+            respuesta.PropietarioEmail = propietario?.Email;
+            respuesta.InvitacionEnviada = invitacionEnviada;
+            return CreatedAtAction(nameof(ObtenerPorId), new { id = creado.Id }, respuesta);
         }
 
         // GET api/negocios/{id} — super-admin ve un negocio específico
@@ -272,8 +310,10 @@ namespace AppointVaAPI.Controllers.V1
 
         // DELETE api/negocios/{id} — super-admin elimina un negocio (soft delete)
         // Mandatory audit, in the same transaction: the business disappears from every list.
+        // Lote 5 (G1): needs the step-up proof, like the hard delete.
         [HttpDelete("{id:guid}")]
         [Authorize(Roles = Roles.SuperAdmin)]
+        [RequiereReautenticacion]
         public async Task<IActionResult> Eliminar(Guid id)
         {
             var negocio = await _repo.ObtenerPorIdAsync(id);
@@ -291,6 +331,8 @@ namespace AppointVaAPI.Controllers.V1
         // ── Propietario ────────────────────────────────────────────────────────
 
         // POST api/negocios/{id}/propietario — super-admin crea el propietario de un negocio
+        // Lote 5 (I4): by invitation. The account has no password until the owner opens the
+        // link and chooses one; the admin never types or sees it.
         [HttpPost("{id:guid}/propietario")]
         [Authorize(Roles = Roles.SuperAdmin)]
         public async Task<IActionResult> CrearPropietario(Guid id, [FromBody] CrearPropietarioDto dto)
@@ -298,42 +340,141 @@ namespace AppointVaAPI.Controllers.V1
             var negocio = await _repo.ObtenerPorIdAsync(id);
             if (negocio is null) return NotFound(new { mensaje = "Negocio no encontrado" });
 
+            if (!_email.EnvioDisponible) return CorreoNoDisponible();
+
             var usuarioExistente = await _userManager.FindByEmailAsync(dto.Email);
             if (usuarioExistente is not null)
                 return Conflict(new { mensaje = "El correo ya está registrado en el sistema" });
 
+            // Mandatory audit in the same transaction as the account.
+            await using var tx = await _db.Database.BeginTransactionAsync();
+            var (propietario, error) = await CrearCuentaPropietarioAsync(id, dto);
+            if (error is not null) return error;
+            await tx.CommitAsync();
+
+            var enviada = await EnviarEnlaceAccesoAsync(propietario!, esInvitacion: true, negocio.Nombre);
+
+            return Ok(new
+            {
+                mensaje = enviada
+                    ? $"Le enviamos a {dto.Email} un enlace para crear su contraseña."
+                    : "Creamos la cuenta, pero no pudimos enviar la invitación. Usa \"Enviar enlace\" para intentarlo de nuevo.",
+                email = dto.Email,
+                nombreCompleto = $"{dto.Nombre} {dto.Apellido}".Trim(),
+                invitacionEnviada = enviada
+            });
+        }
+
+        // POST api/negocios/{id}/propietario/enlace-contrasena — lote 5 (I4)
+        // Replaces "the admin types a new password": the owner gets the same reset link as
+        // /recuperar-contrasena and chooses the password. The current one keeps working until
+        // then. Needs the step-up proof. The audit row is written first, in a transaction that
+        // only commits once the provider accepted the email, so a failed send leaves no row.
+        [HttpPost("{id:guid}/propietario/enlace-contrasena")]
+        [Authorize(Roles = Roles.SuperAdmin)]
+        [RequiereReautenticacion]
+        public async Task<IActionResult> EnviarEnlaceContrasenaPropietario(Guid id)
+        {
+            var negocio = await _repo.ObtenerPorIdAsync(id);
+            if (negocio is null) return NotFound(new { mensaje = "Negocio no encontrado" });
+
+            var propietario = await ObtenerPropietarioAsync(id);
+            if (propietario is null) return NotFound(new { mensaje = "Este negocio no tiene propietario registrado." });
+
+            if (!_email.EnvioDisponible) return CorreoNoDisponible();
+
+            // An invited owner who never chose a password gets the invitation wording again.
+            var esInvitacion = !await _userManager.HasPasswordAsync(propietario);
+
+            await using var tx = await _db.Database.BeginTransactionAsync();
+            if (!await _audit.RegistrarNegocioObligatorioAsync(AccionesAuditoria.PasswordPropietarioRestablecido, id,
+                    $"Usuario: {propietario.Id}; enlace enviado a {EmailService.MascarEmail(propietario.Email!)}; " +
+                    (esInvitacion ? "invitación (aún sin contraseña)" : "la contraseña actual sigue hasta que la cambie")))
+                return AuditoriaAdmin.NoDisponible(this);
+
+            if (!await EnviarEnlaceAccesoAsync(propietario, esInvitacion, negocio.Nombre))
+                return CorreoNoEnviado();
+            await tx.CommitAsync();
+
+            return Ok(new
+            {
+                mensaje = $"Le enviamos a {propietario.Email} un enlace para elegir su contraseña.",
+                email = propietario.Email,
+                esInvitacion
+            });
+        }
+
+        // ── Owner account and access links (lote 5) ───────────────────────────
+
+        public const string CodigoCorreoNoDisponible = "CORREO_NO_DISPONIBLE";
+        public const string CodigoCorreoNoEnviado = "CORREO_NO_ENVIADO";
+
+        /// <summary>Email is switched off or has no key: say so instead of pretending a link went out.</summary>
+        private ObjectResult CorreoNoDisponible() => StatusCode(StatusCodes.Status503ServiceUnavailable, new
+        {
+            mensaje = "El envío de correos está apagado o sin configurar, así que no podemos mandar el enlace. Revisa la configuración de correo e intenta de nuevo.",
+            codigoError = CodigoCorreoNoDisponible
+        });
+
+        private ObjectResult CorreoNoEnviado() => StatusCode(StatusCodes.Status502BadGateway, new
+        {
+            mensaje = "No pudimos enviar el correo. Intenta de nuevo en unos minutos.",
+            codigoError = CodigoCorreoNoEnviado
+        });
+
+        /// <summary>
+        /// Owner account without a password, plus its mandatory audit row. The caller owns the
+        /// transaction. The admin vouches for the address (as before), so it starts confirmed.
+        /// </summary>
+        private async Task<(ApplicationUser? Usuario, IActionResult? Error)> CrearCuentaPropietarioAsync(Guid negocioId, CrearPropietarioDto dto)
+        {
             var propietario = new ApplicationUser
             {
                 UserName = dto.Email,
                 Email = dto.Email,
                 Nombre = dto.Nombre,
                 Apellido = dto.Apellido,
-                NegocioId = id,
+                NegocioId = negocioId,
                 EmailConfirmed = true,
                 Activo = true,
                 FechaCreacion = DateTime.UtcNow,
                 FechaActualizacion = DateTime.UtcNow
             };
 
-            // Mandatory audit in the same transaction: the admin sets someone else's credentials.
-            await using var tx = await _db.Database.BeginTransactionAsync();
-            var resultado = await _userManager.CreateAsync(propietario, dto.Password);
+            var resultado = await _userManager.CreateAsync(propietario);
             if (!resultado.Succeeded)
-                return BadRequest(new { errores = resultado.Errors.Select(e => e.Description) });
+                return (null, BadRequest(new { errores = resultado.Errors.Select(e => e.Description) }));
 
             await _userManager.AddToRoleAsync(propietario, Roles.Propietario);
 
-            if (!await _audit.RegistrarNegocioObligatorioAsync(AccionesAuditoria.PropietarioCreado, id,
-                    $"Usuario: {propietario.Id}; contraseña inicial definida por el admin"))
-                return AuditoriaAdmin.NoDisponible(this);
-            await tx.CommitAsync();
+            if (!await _audit.RegistrarNegocioObligatorioAsync(AccionesAuditoria.PropietarioCreado, negocioId,
+                    $"Usuario: {propietario.Id}; invitado por enlace a {EmailService.MascarEmail(dto.Email)}"))
+                return (null, AuditoriaAdmin.NoDisponible(this));
 
-            return Ok(new
-            {
-                mensaje = "Propietario creado exitosamente",
-                email = dto.Email,
-                nombreCompleto = $"{dto.Nombre} {dto.Apellido}".Trim()
-            });
+            return (propietario, null);
+        }
+
+        /// <summary>
+        /// The same reset token and page as "¿Olvidaste tu contraseña?" (/restablecer-contrasena).
+        /// <c>invitacion=1</c> only changes the page's wording to "Crea tu contraseña".
+        /// </summary>
+        private async Task<bool> EnviarEnlaceAccesoAsync(ApplicationUser usuario, bool esInvitacion, string? negocioNombre)
+        {
+            var token = await _userManager.GeneratePasswordResetTokenAsync(usuario);
+            var frontendUrl = _config["FrontendUrl"] ?? "https://appointva.com";
+            var url = $"{frontendUrl}/restablecer-contrasena?token={Uri.EscapeDataString(token)}" +
+                      $"&email={Uri.EscapeDataString(usuario.Email!)}{(esInvitacion ? "&invitacion=1" : "")}";
+            return await _email.EnviarEnlaceAccesoAsync(usuario.Email!, usuario.Nombre ?? "", url, esInvitacion, negocioNombre);
+        }
+
+        private async Task<ApplicationUser?> ObtenerPropietarioAsync(Guid negocioId)
+        {
+            var rolePropietario = await _roleManager.FindByNameAsync(Roles.Propietario);
+            if (rolePropietario is null) return null;
+
+            return await _userManager.Users
+                .Where(u => u.NegocioId == negocioId)
+                .FirstOrDefaultAsync(u => _db.UserRoles.Any(ur => ur.UserId == u.Id && ur.RoleId == rolePropietario.Id));
         }
 
         // ── Horarios del negocio ──────────────────────────────────────────────
@@ -797,46 +938,12 @@ namespace AppointVaAPI.Controllers.V1
                 await _cacheStore.EvictByTagAsync($"negocio-{slug}", CancellationToken.None);
         }
 
-        // PATCH api/negocios/{id}/propietario/password — super-admin restablece la contraseña del propietario
-        [HttpPatch("{id:guid}/propietario/password")]
-        [Authorize(Roles = Roles.SuperAdmin)]
-        public async Task<IActionResult> RestablecerPasswordPropietario(Guid id, [FromBody] RestablecerPasswordDto dto)
-        {
-            if (string.IsNullOrWhiteSpace(dto.NuevaPassword) || dto.NuevaPassword.Length < 6)
-                return BadRequest(new { mensaje = "La contraseña debe tener al menos 6 caracteres." });
+        // PATCH api/negocios/{id}/propietario/password (the admin typing the owner's new password)
+        // was removed in lote 5 (I4): see EnviarEnlaceContrasenaPropietario.
 
-            var rolePropietario = await _roleManager.FindByNameAsync(Roles.Propietario);
-            if (rolePropietario is null) return NotFound(new { mensaje = "Rol Propietario no encontrado." });
+        private static NegocioDto MapearDto(Negocio n) => MapearDto<NegocioDto>(n);
 
-            var propietario = await _userManager.Users
-                .Where(u => u.NegocioId == id)
-                .FirstOrDefaultAsync(u => _db.UserRoles.Any(ur => ur.UserId == u.Id && ur.RoleId == rolePropietario.Id));
-
-            if (propietario is null) return NotFound(new { mensaje = "Este negocio no tiene propietario registrado." });
-
-            // Mandatory audit in the same transaction: a rejected new password (or a failed
-            // audit write) rolls back the removal of the old one too.
-            await using var tx = await _db.Database.BeginTransactionAsync();
-            var removeResult = await _userManager.RemovePasswordAsync(propietario);
-            if (!removeResult.Succeeded)
-                return BadRequest(new { mensaje = "No se pudo remover la contraseña actual." });
-
-            var addResult = await _userManager.AddPasswordAsync(propietario, dto.NuevaPassword);
-            if (!addResult.Succeeded)
-            {
-                var errores = string.Join(", ", addResult.Errors.Select(e => e.Description));
-                return BadRequest(new { mensaje = errores });
-            }
-
-            if (!await _audit.RegistrarNegocioObligatorioAsync(AccionesAuditoria.PasswordPropietarioRestablecido, id,
-                    $"Usuario: {propietario.Id}"))
-                return AuditoriaAdmin.NoDisponible(this);
-            await tx.CommitAsync();
-
-            return Ok(new { mensaje = "Contraseña restablecida correctamente." });
-        }
-
-        private static NegocioDto MapearDto(Negocio n) => new()
+        private static T MapearDto<T>(Negocio n) where T : NegocioDto, new() => new()
         {
             Id = n.Id,
             Slug = n.Slug,

@@ -155,7 +155,7 @@ export function PropietarioNegocio({ negocio, acciones }: { negocio: NegocioMetr
         <EmptyState
           icon={<UserPlus size={32} strokeWidth={1.5} />}
           title="Sin propietario"
-          description="Nadie puede entrar al panel de este negocio todavía. Crea la cuenta de su propietario."
+          description="Nadie puede entrar al panel de este negocio todavía. Crea la cuenta de su propietario y le enviaremos una invitación."
           action={
             <button type="button" onClick={() => acciones.abrirPropietario(negocio)} className={`${ACCION_TARJETA} px-4 ${TINTE_PROPIETARIO}`}>
               <UserPlus size={12} aria-hidden="true" /> Crear propietario
@@ -187,7 +187,7 @@ export function PropietarioNegocio({ negocio, acciones }: { negocio: NegocioMetr
       </dl>
       <div className="flex flex-wrap gap-2">
         <button type="button" onClick={() => acciones.abrirPropietario(negocio)} className={`${ACCION_TARJETA} px-3 ${TINTE_PROPIETARIO}`}>
-          <KeyRound size={12} aria-hidden="true" /> Restablecer contraseña
+          <KeyRound size={12} aria-hidden="true" /> Enviar enlace de contraseña
         </button>
         {negocio.emailConfirmado === false && (
           <button type="button" onClick={() => acciones.pedirConfirmarCorreo(negocio)} className={`${ACCION_TARJETA} px-3 border-slate-300 bg-white text-slate-700 hover:border-slate-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200`}>
