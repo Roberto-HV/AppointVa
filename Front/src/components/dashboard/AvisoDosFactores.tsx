@@ -24,10 +24,12 @@ const CLASE_ENLACE_SECUNDARIO =
 interface Props {
   /** El propietario recibe la recomendación con el porqué para su negocio. */
   esPropietario?: boolean;
+  /** Dónde se configura: el panel la tiene en /dashboard/seguridad y el admin en /admin/seguridad. */
+  rutaSeguridad?: string;
   className?: string;
 }
 
-export default function AvisoDosFactores({ esPropietario = false, className = "" }: Props) {
+export default function AvisoDosFactores({ esPropietario = false, rutaSeguridad = "/dashboard/seguridad", className = "" }: Props) {
   const { data: estado } = useQuery({
     queryKey: ["2fa-estado"],
     queryFn: authApi.obtenerEstado2FA,
@@ -81,7 +83,7 @@ export default function AvisoDosFactores({ esPropietario = false, className = ""
         </div>
       </div>
       <Link
-        to="/dashboard/seguridad"
+        to={rutaSeguridad}
         className={enlace.primario ? CLASE_ENLACE_PRIMARIO : CLASE_ENLACE_SECUNDARIO}
       >
         {enlace.texto}

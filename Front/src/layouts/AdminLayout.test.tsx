@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { CLAVE_TEMA } from "../lib/temaPorRuta";
 
 const estadoInactividad = vi.hoisted(() => ({ aviso: false, seguir: vi.fn() }));
@@ -20,23 +21,29 @@ vi.mock("../store/authStore", () => ({
   })),
 }));
 
-vi.mock("../api/auth", () => ({ authApi: { logout: vi.fn() } }));
+const obtenerEstado2FA = vi.hoisted(() => vi.fn());
+vi.mock("../api/auth", () => ({ authApi: { logout: vi.fn(), obtenerEstado2FA } }));
 
 const emitirTicketHangfire = vi.hoisted(() => vi.fn());
 vi.mock("../api/admin", () => ({ adminApi: { emitirTicketHangfire } }));
 
 import AdminLayout from "./AdminLayout";
 
-function renderizar() {
+function renderizar(ruta = "/admin") {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <MemoryRouter initialEntries={["/admin"]}>
-      <Routes>
-        <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<p>Contenido admin</p>} />
-        </Route>
-        <Route path="/login" element={<p>Pantalla de login</p>} />
-      </Routes>
-    </MemoryRouter>,
+    <QueryClientProvider client={qc}>
+      <MemoryRouter initialEntries={[ruta]}>
+        <Routes>
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<p>Contenido admin</p>} />
+            <Route path="cuenta" element={<p>Pantalla Mi cuenta</p>} />
+            <Route path="seguridad" element={<p>Pantalla Seguridad</p>} />
+          </Route>
+          <Route path="/login" element={<p>Pantalla de login</p>} />
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
 }
 
@@ -46,6 +53,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   estadoInactividad.aviso = false;
   localStorage.removeItem(CLAVE_TEMA);
+  obtenerEstado2FA.mockResolvedValue({ habilitado: true, tieneConfiguracion: true, codigosRecuperacionRestantes: 10 });
 });
 
 afterEach(() => {
@@ -136,6 +144,90 @@ describe("AdminLayout — logo", () => {
     const logo = screen.getByRole("img", { hidden: true, name: "AppointVa" });
     expect(logo).toHaveAttribute("src", "/logo-appointva-oscuro.png");
     expect(document.querySelector('img[src*="MasterLogo"], img[src*="MaterLogo"]')).toBeNull();
+  });
+});
+
+// Lote 1, G1: el admin tiene menú de usuario con Mi cuenta y Seguridad.
+describe("AdminLayout — menú de usuario", () => {
+  // jsdom no aplica `md:hidden`: están el avatar de la barra móvil (primero) y el de escritorio.
+  const avatares = () => screen.getAllByRole("button", { name: "Menú de usuario" });
+
+  it("el avatar abre el menú con Mi cuenta, Seguridad y Cerrar sesión", async () => {
+    const user = userEvent.setup();
+    renderizar();
+    const [movil, escritorio] = avatares();
+    expect(movil).toHaveAttribute("aria-expanded", "false");
+
+    await user.click(escritorio);
+
+    expect(escritorio).toHaveAttribute("aria-expanded", "true");
+    const menu = document.getElementById(escritorio.getAttribute("aria-controls")!)!;
+    expect(within(menu).getByText("Admin Uno")).toBeInTheDocument();
+    expect(within(menu).getByText("Super Admin")).toBeInTheDocument();
+    expect(within(menu).getByRole("button", { name: "Mi cuenta" })).toBeInTheDocument();
+    expect(within(menu).getByRole("button", { name: "Seguridad" })).toBeInTheDocument();
+    expect(within(menu).getByRole("button", { name: "Cerrar sesión" })).toBeInTheDocument();
+    // Solo se abre el menú del avatar que se tocó.
+    expect(movil).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("Mi cuenta lleva a /admin/cuenta y cierra el menú", async () => {
+    const user = userEvent.setup();
+    renderizar();
+    await user.click(avatares()[0]);
+    await user.click(screen.getByRole("button", { name: "Mi cuenta" }));
+    expect(screen.getByText("Pantalla Mi cuenta")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Mi cuenta" })).not.toBeInTheDocument();
+  });
+
+  it("Seguridad lleva a /admin/seguridad", async () => {
+    const user = userEvent.setup();
+    renderizar();
+    await user.click(avatares()[1]);
+    await user.click(screen.getByRole("button", { name: "Seguridad" }));
+    expect(screen.getByText("Pantalla Seguridad")).toBeInTheDocument();
+  });
+
+  it("Escape cierra el menú y devuelve el foco al avatar", async () => {
+    const user = userEvent.setup();
+    renderizar();
+    const escritorio = avatares()[1];
+    await user.click(escritorio);
+    await user.keyboard("{Escape}");
+    expect(escritorio).toHaveAttribute("aria-expanded", "false");
+    expect(escritorio).toHaveFocus();
+  });
+
+  it("Cerrar sesión desde el menú cierra la sesión y va al login", async () => {
+    const user = userEvent.setup();
+    renderizar();
+    await user.click(avatares()[1]);
+    const menu = document.getElementById("menu-usuario-admin-escritorio")!;
+    await user.click(within(menu).getByRole("button", { name: "Cerrar sesión" }));
+    await waitFor(() => expect(cerrarSesion).toHaveBeenCalled());
+    expect(await screen.findByText("Pantalla de login")).toBeInTheDocument();
+  });
+});
+
+describe("AdminLayout — aviso de verificación en dos pasos", () => {
+  it("sin 2FA avisa en todas las pantallas y enlaza a Seguridad", async () => {
+    obtenerEstado2FA.mockResolvedValue({ habilitado: false, tieneConfiguracion: false, codigosRecuperacionRestantes: 0 });
+    renderizar();
+    expect(await screen.findByText("Activa la verificación en dos pasos.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Activar ahora" })).toHaveAttribute("href", "/admin/seguridad");
+  });
+
+  it("no avisa en la propia página de Seguridad", async () => {
+    obtenerEstado2FA.mockResolvedValue({ habilitado: false, tieneConfiguracion: false, codigosRecuperacionRestantes: 0 });
+    renderizar("/admin/seguridad");
+    await waitFor(() => expect(obtenerEstado2FA).toHaveBeenCalled());
+    expect(screen.queryByText("Activa la verificación en dos pasos.")).not.toBeInTheDocument();
+  });
+
+  it("con 2FA activa no avisa", async () => {
+    renderizar();
+    await waitFor(() => expect(obtenerEstado2FA).toHaveBeenCalled());
+    expect(screen.queryByText("Activa la verificación en dos pasos.")).not.toBeInTheDocument();
   });
 });
 

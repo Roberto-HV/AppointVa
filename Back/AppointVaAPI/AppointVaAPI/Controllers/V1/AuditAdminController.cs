@@ -19,9 +19,20 @@ namespace AppointVaAPI.Controllers.V1
             _db = db;
         }
 
-        // GET /api/admin/audit?pagina=1&tamano=50&accion=Login&usuarioId=...&email=...&desde=...&hasta=...
+        // GET /api/admin/audit/acciones
+        // The catalog of every action the backend writes, with its Spanish label and group.
+        // The audit page builds its filter and labels from here (single source).
+        [HttpGet("acciones")]
+        public IActionResult ObtenerCatalogo() => Ok(new
+        {
+            grupos = AccionesAuditoria.Grupos.Select(g => new { id = g.Id, etiqueta = g.Etiqueta }),
+            acciones = AccionesAuditoria.Catalogo.Select(a => new { accion = a.Accion, etiqueta = a.Etiqueta, grupo = a.Grupo }),
+        });
+
+        // GET /api/admin/audit?pagina=1&tamano=50&accion=Login&grupo=administracion&usuarioId=...&email=...&desde=...&hasta=...
         // B24 (AP-24): `email` matches part of the user's email (case-insensitive);
         // `desde` is inclusive and `hasta` exclusive, both instants (send UTC/ISO 8601).
+        // `grupo` keeps only the actions of one catalog group (e.g. the admin's own actions).
         [HttpGet]
         public async Task<IActionResult> ObtenerAuditLogs(
             [FromQuery] int pagina = 1,
@@ -30,7 +41,8 @@ namespace AppointVaAPI.Controllers.V1
             [FromQuery] Guid? usuarioId = null,
             [FromQuery] string? email = null,
             [FromQuery] DateTime? desde = null,
-            [FromQuery] DateTime? hasta = null)
+            [FromQuery] DateTime? hasta = null,
+            [FromQuery] string? grupo = null)
         {
             tamano = Math.Clamp(tamano, 1, 200);
             pagina = Math.Max(pagina, 1);
@@ -50,6 +62,14 @@ namespace AppointVaAPI.Controllers.V1
 
             if (!string.IsNullOrWhiteSpace(accion))
                 query = query.Where(a => a.Accion == accion);
+
+            if (!string.IsNullOrWhiteSpace(grupo))
+            {
+                if (AccionesAuditoria.Grupos.All(g => g.Id != grupo))
+                    return BadRequest(new { mensaje = "El grupo de acciones no existe." });
+                var delGrupo = AccionesAuditoria.DelGrupo(grupo);
+                query = query.Where(a => delGrupo.Contains(a.Accion));
+            }
 
             if (usuarioId.HasValue)
                 query = query.Where(a => a.UsuarioId == usuarioId);
@@ -83,6 +103,25 @@ namespace AppointVaAPI.Controllers.V1
                     FechaEn      = a.FechaEn
                 })
                 .ToListAsync();
+
+            // Name of the affected business for the admin's entries (one query per page).
+            var negocioIds = datos
+                .Where(d => d.Entidad == AccionesAuditoria.EntidadNegocio && Guid.TryParse(d.EntidadId, out _))
+                .Select(d => Guid.Parse(d.EntidadId!))
+                .Distinct()
+                .ToList();
+            if (negocioIds.Count > 0)
+            {
+                var nombres = await _db.Negocios
+                    .IgnoreQueryFilters()
+                    .Where(n => negocioIds.Contains(n.Id))
+                    .Select(n => new { n.Id, n.Nombre })
+                    .ToDictionaryAsync(n => n.Id.ToString(), n => n.Nombre);
+                foreach (var d in datos)
+                    if (d.Entidad == AccionesAuditoria.EntidadNegocio && d.EntidadId is not null
+                        && nombres.TryGetValue(d.EntidadId, out var nombre))
+                        d.NegocioNombre = nombre;
+            }
 
             return Ok(new { total, pagina, tamano, datos });
         }

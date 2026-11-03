@@ -11,6 +11,17 @@ export interface AuditLogDto {
   detalles: string | null;
   ipAddress: string | null;
   fechaEn: string;
+  /** Nombre actual del negocio afectado (acciones del admin); null si ya no existe. */
+  negocioNombre?: string | null;
+}
+
+/**
+ * Catálogo de acciones de auditoría que sirve el backend (`AccionesAuditoria`).
+ * Es la única fuente del filtro y de las etiquetas de la página de auditoría.
+ */
+export interface CatalogoAuditoria {
+  grupos: { id: string; etiqueta: string }[];
+  acciones: { accion: string; etiqueta: string; grupo: string }[];
 }
 
 export interface AuditLogsRespuesta {
@@ -168,8 +179,15 @@ export const adminApi = {
     desde?: string;
     /** B24: instante ISO 8601 (excluido). */
     hasta?: string;
+    /** Solo las acciones de un grupo del catálogo (p. ej. "administracion"). */
+    grupo?: string;
   }): Promise<AuditLogsRespuesta> => {
     const { data } = await api.get("/admin/audit", { params });
+    return data;
+  },
+
+  obtenerCatalogoAuditoria: async (): Promise<CatalogoAuditoria> => {
+    const { data } = await api.get("/admin/audit/acciones");
     return data;
   },
 

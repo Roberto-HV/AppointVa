@@ -1,5 +1,6 @@
 ﻿using AppointVaAPI.Constants;
 using AppointVaAPI.Data;
+using AppointVaAPI.Helpers;
 using AppointVaAPI.Models;
 using AppointVaAPI.Models.Dtos.Horarios;
 using AppointVaAPI.Models.Dtos.Negocios;
@@ -25,6 +26,7 @@ namespace AppointVaAPI.Controllers.V1
         private readonly RoleManager<IdentityRole<Guid>> _roleManager;
         private readonly ApplicationDbContext _db;
         private readonly IOutputCacheStore _cacheStore;
+        private readonly IAuditService _audit;
 
         public NegociosController(
             INegocioRepository repo,
@@ -33,7 +35,8 @@ namespace AppointVaAPI.Controllers.V1
             UserManager<ApplicationUser> userManager,
             RoleManager<IdentityRole<Guid>> roleManager,
             ApplicationDbContext db,
-            IOutputCacheStore cacheStore)
+            IOutputCacheStore cacheStore,
+            IAuditService audit)
         {
             _repo = repo;
             _contexto = contexto;
@@ -42,6 +45,7 @@ namespace AppointVaAPI.Controllers.V1
             _roleManager = roleManager;
             _db = db;
             _cacheStore = cacheStore;
+            _audit = audit;
         }
 
         // GET api/negocios/perfil — el propietario ve su propio negocio
@@ -143,12 +147,15 @@ namespace AppointVaAPI.Controllers.V1
             var negocio = await _repo.ObtenerPorIdAsync(id);
             if (negocio is null) return NotFound(new { mensaje = "Negocio no encontrado" });
 
+            var antes = $"{negocio.ColorPrimario ?? "—"} / {negocio.ColorSecundario ?? "—"}";
             negocio.ColorPrimario = string.IsNullOrWhiteSpace(dto.ColorPrimario) ? null : dto.ColorPrimario;
             negocio.ColorSecundario = string.IsNullOrWhiteSpace(dto.ColorSecundario) ? null : dto.ColorSecundario;
             negocio.FechaActualizacion = DateTime.UtcNow;
 
             await _repo.ActualizarAsync(negocio);
             await _cacheStore.EvictByTagAsync($"negocio-{negocio.Slug}", CancellationToken.None);
+            await _audit.RegistrarNegocioAsync(AccionesAuditoria.ColoresCambiados, negocio.Id,
+                $"Primario / secundario: {antes} → {negocio.ColorPrimario ?? "—"} / {negocio.ColorSecundario ?? "—"}");
             return Ok(MapearDto(negocio));
         }
 
@@ -184,6 +191,11 @@ namespace AppointVaAPI.Controllers.V1
             };
 
             var creado = await _repo.CrearAsync(negocio);
+            var plan = creado.PlanId.HasValue
+                ? await _db.Planes.Where(p => p.Id == creado.PlanId.Value).Select(p => p.Nombre).FirstOrDefaultAsync()
+                : null;
+            await _audit.RegistrarNegocioAsync(AccionesAuditoria.NegocioCreado, creado.Id,
+                $"Nombre: {creado.Nombre}; Slug: {creado.Slug}; Plan: {plan ?? "sin plan"}");
             return CreatedAtAction(nameof(ObtenerPorId), new { id = creado.Id }, MapearDto(creado));
         }
 
@@ -206,13 +218,17 @@ namespace AppointVaAPI.Controllers.V1
             var negocio = await _repo.ObtenerPorIdAsync(id);
             if (negocio is null) return NotFound(new { mensaje = "Negocio no encontrado" });
 
+            var estabaActivo = negocio.Activo == 1;
             negocio.Activo = 1;
             negocio.FechaActualizacion = DateTime.UtcNow;
             await _repo.ActualizarAsync(negocio);
+            await _audit.RegistrarNegocioAsync(AccionesAuditoria.NegocioActivado, negocio.Id,
+                $"Nombre: {negocio.Nombre}{(estabaActivo ? "; ya estaba activo" : "")}");
             return Ok(MapearDto(negocio));
         }
 
         // PATCH api/negocios/{id}/confirmar-email — super-admin confirma el email del propietario
+        // Mandatory audit: it skips the owner's own verification of the address.
         [HttpPatch("{id:guid}/confirmar-email")]
         [Authorize(Roles = Roles.SuperAdmin)]
         public async Task<IActionResult> ConfirmarEmail(Guid id)
@@ -225,8 +241,13 @@ namespace AppointVaAPI.Controllers.V1
 
             if (!propietario.EmailConfirmed)
             {
+                await using var tx = await _db.Database.BeginTransactionAsync();
                 propietario.EmailConfirmed = true;
                 await _userManager.UpdateAsync(propietario);
+                if (!await _audit.RegistrarNegocioObligatorioAsync(AccionesAuditoria.CorreoConfirmadoManual, id,
+                        $"Usuario: {propietario.Id}"))
+                    return AuditoriaAdmin.NoDisponible(this);
+                await tx.CommitAsync();
             }
 
             return Ok(new { mensaje = "Email confirmado correctamente." });
@@ -240,13 +261,17 @@ namespace AppointVaAPI.Controllers.V1
             var negocio = await _repo.ObtenerPorIdAsync(id);
             if (negocio is null) return NotFound(new { mensaje = "Negocio no encontrado" });
 
+            var estabaActivo = negocio.Activo == 1;
             negocio.Activo = 0;
             negocio.FechaActualizacion = DateTime.UtcNow;
             await _repo.ActualizarAsync(negocio);
+            await _audit.RegistrarNegocioAsync(AccionesAuditoria.NegocioDesactivado, negocio.Id,
+                $"Nombre: {negocio.Nombre}{(estabaActivo ? "" : "; ya estaba inactivo")}");
             return Ok(MapearDto(negocio));
         }
 
         // DELETE api/negocios/{id} — super-admin elimina un negocio (soft delete)
+        // Mandatory audit, in the same transaction: the business disappears from every list.
         [HttpDelete("{id:guid}")]
         [Authorize(Roles = Roles.SuperAdmin)]
         public async Task<IActionResult> Eliminar(Guid id)
@@ -254,7 +279,12 @@ namespace AppointVaAPI.Controllers.V1
             var negocio = await _repo.ObtenerPorIdAsync(id);
             if (negocio is null) return NotFound(new { mensaje = "Negocio no encontrado" });
 
+            await using var tx = await _db.Database.BeginTransactionAsync();
             await _repo.EliminarAsync(negocio);
+            if (!await _audit.RegistrarNegocioObligatorioAsync(AccionesAuditoria.NegocioArchivado, negocio.Id,
+                    $"Nombre: {negocio.Nombre}; Slug: {negocio.Slug}"))
+                return AuditoriaAdmin.NoDisponible(this);
+            await tx.CommitAsync();
             return NoContent();
         }
 
@@ -285,11 +315,18 @@ namespace AppointVaAPI.Controllers.V1
                 FechaActualizacion = DateTime.UtcNow
             };
 
+            // Mandatory audit in the same transaction: the admin sets someone else's credentials.
+            await using var tx = await _db.Database.BeginTransactionAsync();
             var resultado = await _userManager.CreateAsync(propietario, dto.Password);
             if (!resultado.Succeeded)
                 return BadRequest(new { errores = resultado.Errors.Select(e => e.Description) });
 
             await _userManager.AddToRoleAsync(propietario, Roles.Propietario);
+
+            if (!await _audit.RegistrarNegocioObligatorioAsync(AccionesAuditoria.PropietarioCreado, id,
+                    $"Usuario: {propietario.Id}; contraseña inicial definida por el admin"))
+                return AuditoriaAdmin.NoDisponible(this);
+            await tx.CommitAsync();
 
             return Ok(new
             {
@@ -777,6 +814,9 @@ namespace AppointVaAPI.Controllers.V1
 
             if (propietario is null) return NotFound(new { mensaje = "Este negocio no tiene propietario registrado." });
 
+            // Mandatory audit in the same transaction: a rejected new password (or a failed
+            // audit write) rolls back the removal of the old one too.
+            await using var tx = await _db.Database.BeginTransactionAsync();
             var removeResult = await _userManager.RemovePasswordAsync(propietario);
             if (!removeResult.Succeeded)
                 return BadRequest(new { mensaje = "No se pudo remover la contraseña actual." });
@@ -787,6 +827,11 @@ namespace AppointVaAPI.Controllers.V1
                 var errores = string.Join(", ", addResult.Errors.Select(e => e.Description));
                 return BadRequest(new { mensaje = errores });
             }
+
+            if (!await _audit.RegistrarNegocioObligatorioAsync(AccionesAuditoria.PasswordPropietarioRestablecido, id,
+                    $"Usuario: {propietario.Id}"))
+                return AuditoriaAdmin.NoDisponible(this);
+            await tx.CommitAsync();
 
             return Ok(new { mensaje = "Contraseña restablecida correctamente." });
         }

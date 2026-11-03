@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import AuditLogPage from "./AuditLogPage";
 import { adminApi } from "../../api/admin";
-import type { AuditLogDto, AuditLogsRespuesta } from "../../api/admin";
+import type { AuditLogDto, AuditLogsRespuesta, CatalogoAuditoria } from "../../api/admin";
 
 // ── Hoisted mocks ─────────────────────────────────────────────────────────────
 
@@ -13,8 +13,29 @@ const mockToast = vi.hoisted(() => vi.fn());
 vi.mock("../../api/admin", () => ({
   adminApi: {
     obtenerAuditLogs: vi.fn(),
+    obtenerCatalogoAuditoria: vi.fn(),
   },
 }));
+
+/** Extracto del catálogo que sirve el backend (`AccionesAuditoria`). */
+const catalogo: CatalogoAuditoria = {
+  grupos: [
+    { id: "acceso", etiqueta: "Inicios de sesión" },
+    { id: "cuenta", etiqueta: "Cuenta y seguridad" },
+    { id: "kiosco", etiqueta: "Recepción (kiosco)" },
+    { id: "administracion", etiqueta: "Administración" },
+  ],
+  acciones: [
+    { accion: "Login", etiqueta: "Inicio de sesión", grupo: "acceso" },
+    { accion: "LoginFallido", etiqueta: "Inicio de sesión fallido", grupo: "acceso" },
+    { accion: "Logout", etiqueta: "Cierre de sesión", grupo: "acceso" },
+    { accion: "2FAActivado", etiqueta: "Verificación en dos pasos activada", grupo: "cuenta" },
+    { accion: "CodigoRecuperacionUsado", etiqueta: "Código de recuperación usado", grupo: "cuenta" },
+    { accion: "KioscoSalida", etiqueta: "Salida del kiosco", grupo: "kiosco" },
+    { accion: "NegocioEliminado", etiqueta: "Negocio eliminado", grupo: "administracion" },
+    { accion: "PlanCambiado", etiqueta: "Plan cambiado", grupo: "administracion" },
+  ],
+};
 
 vi.mock("../../store/toastStore", () => ({
   useToastStore: () => ({ toast: mockToast }),
@@ -67,11 +88,13 @@ function makeLog(overrides: Partial<AuditLogDto> = {}): AuditLogDto {
 }
 
 /** El filtro usa el `Select` del dashboard: botón visible + lista de opciones. */
-async function elegirAccion(opcion: string) {
+async function elegir(filtro: string, opcion: string) {
   const user = userEvent.setup();
-  await user.click(screen.getByRole("button", { name: "Acción" }));
-  await user.click(screen.getByRole("option", { name: opcion }));
+  await user.click(screen.getByRole("button", { name: filtro }));
+  await user.click(await screen.findByRole("option", { name: opcion }));
 }
+
+const elegirAccion = (opcion: string) => elegir("Acción", opcion);
 
 /** La búsqueda es en vivo; Enter la aplica sin esperar la pausa al teclear. */
 async function buscarUsuario(valor: string) {
@@ -88,6 +111,7 @@ async function buscarUsuario(valor: string) {
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(adminApi.obtenerAuditLogs).mockResolvedValue(emptyResponse);
+  vi.mocked(adminApi.obtenerCatalogoAuditoria).mockResolvedValue(catalogo);
 });
 
 afterEach(() => {
@@ -182,7 +206,9 @@ describe("AuditLogPage — lectura de los eventos (AP-24)", () => {
       datos: [makeLog({ accion: "LoginFallido" })], total: 1, pagina: 1, tamano: 15,
     });
     renderAuditLog();
-    expect(await screen.findByText("Inicio de sesión fallido")).toBeInTheDocument();
+    // En la tabla: el filtro "Acción" también lista la etiqueta.
+    const tabla = await screen.findByRole("table");
+    expect(await within(tabla).findByText("Inicio de sesión fallido")).toBeInTheDocument();
     expect(screen.queryByText("LoginFallido")).not.toBeInTheDocument();
   });
 
@@ -242,6 +268,64 @@ describe("AuditLogPage — búsqueda por correo o ID de usuario (B24)", () => {
     renderAuditLog();
     await screen.findByText("Sin registros");
     expect(screen.getByRole("group", { name: "Período" })).toBeInTheDocument();
+  });
+});
+
+describe("AuditLogPage — catálogo de acciones del backend (Lote 1, G2)", () => {
+  it("el filtro 'Acción' lista todo lo que el backend escribe, también 2FA y kiosco", async () => {
+    renderAuditLog();
+    await screen.findByText("Sin registros");
+    await waitFor(() => expect(adminApi.obtenerCatalogoAuditoria).toHaveBeenCalled());
+
+    fireEvent.click(screen.getByRole("button", { name: "Acción" }));
+
+    const opciones = screen.getAllByRole("option").map((o) => o.textContent);
+    expect(opciones).toEqual(["Todas las acciones", ...catalogo.acciones.map((a) => a.etiqueta)]);
+  });
+
+  it("'Administración' filtra por grupo y deja en 'Acción' solo las de ese grupo", async () => {
+    renderAuditLog();
+    await screen.findByText("Sin registros");
+
+    await elegir("Tipo", "Administración");
+
+    await waitFor(() =>
+      expect(adminApi.obtenerAuditLogs).toHaveBeenLastCalledWith(expect.objectContaining({ grupo: "administracion" }))
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Acción" }));
+    const opciones = screen.getAllByRole("option").map((o) => o.textContent);
+    expect(opciones).toEqual(["Todas las acciones", "Negocio eliminado", "Plan cambiado"]);
+  });
+
+  it("muestra la acción del admin con nombre legible y el negocio afectado", async () => {
+    vi.mocked(adminApi.obtenerAuditLogs).mockResolvedValue({
+      datos: [
+        makeLog({ id: "a", accion: "PlanCambiado", entidad: "Negocio", entidadId: "n-1", negocioNombre: "Estética Luna", detalles: "Plan: Basico → Pro" }),
+        makeLog({ id: "b", accion: "NegocioEliminado", entidad: "Negocio", entidadId: "n-2", negocioNombre: null, detalles: "Nombre: Demo borrado" }),
+        makeLog({ id: "c", accion: "2FAActivado", entidad: "Usuario", entidadId: "user-1" }),
+      ],
+      total: 3, pagina: 1, tamano: 15,
+    });
+    renderAuditLog();
+
+    const tabla = await screen.findByRole("table");
+    expect(await within(tabla).findByText("Plan cambiado")).toBeInTheDocument();
+    expect(within(tabla).getByText("Estética Luna")).toBeInTheDocument();
+    // El negocio ya no existe: se dice, y su nombre queda en los detalles.
+    expect(within(tabla).getByText("Negocio que ya no existe")).toBeInTheDocument();
+    expect(within(tabla).getByText("Verificación en dos pasos activada")).toBeInTheDocument();
+    expect(screen.queryByText("PlanCambiado")).not.toBeInTheDocument();
+    expect(screen.queryByText("2FAActivado")).not.toBeInTheDocument();
+  });
+
+  it("si el catálogo no llega, la tabla sigue mostrando los eventos con el nombre interno", async () => {
+    vi.mocked(adminApi.obtenerCatalogoAuditoria).mockRejectedValue(new Error("caído"));
+    vi.mocked(adminApi.obtenerAuditLogs).mockResolvedValue({
+      datos: [makeLog({ accion: "KioscoSalida" })], total: 1, pagina: 1, tamano: 15,
+    });
+    renderAuditLog();
+    expect(await screen.findByText("KioscoSalida")).toBeInTheDocument();
+    expect(screen.getByText("user@test.com")).toBeInTheDocument();
   });
 });
 

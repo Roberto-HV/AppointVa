@@ -1,7 +1,7 @@
 import { Fragment, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { adminApi, type AuditLogDto } from "../../api/admin";
+import { adminApi, type AuditLogDto, type CatalogoAuditoria } from "../../api/admin";
 import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
 import EmptyState from "../../components/ui/EmptyState";
 import Pagination from "../../components/ui/Pagination";
@@ -12,34 +12,21 @@ import { rangoAuditoria } from "../../utils/fechas";
 import { useTituloPagina } from "../../hooks/useTituloPagina";
 
 /**
- * Acciones que `AuditService` llega a escribir.
- *
- * La lista traía además "SubirFoto", que es el nombre de dos endpoints pero
- * nunca un valor de `AuditLog.Accion`: filtrar por ella devolvía siempre cero
- * registros sin decir por qué. Esta lista debe seguir a las llamadas de
- * `RegistrarAsync` del backend; si se agrega una acción allá, va aquí.
+ * Las acciones del filtro y sus nombres legibles (AP-24) vienen del catálogo
+ * del backend (`GET /api/admin/audit/acciones`, `AccionesAuditoria`). Antes
+ * había aquí una lista a mano de 5 acciones que se quedó atrás: el backend ya
+ * escribía 2FA, kiosco y exportaciones que no se podían filtrar y salían con el
+ * nombre interno. Una prueba del backend exige que toda acción escrita esté en
+ * el catálogo, así que esta página ya no tiene que seguirle el paso.
  */
-const ACCIONES = [
-  "Login",
-  "LoginFallido",
-  "Logout",
-  "CambiarPassword",
-  "EliminarCuenta",
-];
+const GRUPO_ADMINISTRACION = "administracion";
 
-/**
- * Nombre legible de cada acción (AP-24). El filtro sigue enviando el valor
- * interno; solo cambia lo que se muestra.
- */
-const ETIQUETA_ACCION: Record<string, string> = {
-  Login: "Inicio de sesión",
-  LoginFallido: "Inicio de sesión fallido",
-  Logout: "Cierre de sesión",
-  CambiarPassword: "Cambio de contraseña",
-  EliminarCuenta: "Eliminación de cuenta",
-};
+/** Mientras llega el catálogo (o si falla), se muestra el valor interno. */
+const etiquetaDe = (catalogo: CatalogoAuditoria | undefined, accion: string) =>
+  catalogo?.acciones.find((a) => a.accion === accion)?.etiqueta ?? accion;
 
-const etiquetaAccion = (accion: string) => ETIQUETA_ACCION[accion] ?? accion;
+const grupoDe = (catalogo: CatalogoAuditoria | undefined, accion: string) =>
+  catalogo?.acciones.find((a) => a.accion === accion)?.grupo;
 
 /** Un UUID completo se busca como `usuarioId`; cualquier otro texto, como parte del correo (B24). */
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -48,6 +35,8 @@ export default function AuditLogPage() {
   useTituloPagina("Registro de auditoría · Admin");
   const [pagina, setPagina] = useState(1);
   const [accion, setAccion] = useState("");
+  // Grupo del catálogo ("Acciones de administración", "Inicios de sesión"…).
+  const [grupo, setGrupo] = useState("");
   // Correo (o parte de él) o el ID completo de un usuario.
   const [busqueda, setBusqueda] = useState("");
   const [desde, setDesde] = useState("");
@@ -60,12 +49,20 @@ export default function AuditLogPage() {
   const email = busqueda && !usuarioId ? busqueda : "";
   const rango = rangoAuditoria(desde, hasta);
 
+  // El catálogo no cambia mientras corre el API: se pide una vez por sesión.
+  const { data: catalogo } = useQuery({
+    queryKey: ["audit-catalogo"],
+    queryFn: adminApi.obtenerCatalogoAuditoria,
+    staleTime: Infinity,
+  });
+
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ["audit-logs", pagina, accion, usuarioId, email, rango.desde, rango.hasta],
+    queryKey: ["audit-logs", pagina, accion, grupo, usuarioId, email, rango.desde, rango.hasta],
     queryFn: () => adminApi.obtenerAuditLogs({
       pagina,
       tamano: TAMANO_PAGINA,
       accion: accion || undefined,
+      grupo: grupo || undefined,
       usuarioId: usuarioId || undefined,
       email: email || undefined,
       desde: rango.desde,
@@ -75,10 +72,20 @@ export default function AuditLogPage() {
   });
 
   const totalPaginas = data ? Math.max(1, Math.ceil(data.total / data.tamano)) : 1;
-  const hayFiltros = Boolean(accion || busqueda || desde || hasta);
+  const hayFiltros = Boolean(accion || grupo || busqueda || desde || hasta);
+  const etiquetaAccion = (a: string) => etiquetaDe(catalogo, a);
+  // Con un tipo elegido, "Acción" solo ofrece las de ese tipo.
+  const accionesDelFiltro = (catalogo?.acciones ?? []).filter((a) => !grupo || a.grupo === grupo);
+
+  const cambiarGrupo = (g: string) => {
+    setGrupo(g);
+    if (accion && g && grupoDe(catalogo, accion) !== g) setAccion("");
+    setPagina(1);
+  };
 
   const limpiarFiltros = () => {
     setAccion("");
+    setGrupo("");
     setBusqueda("");
     setDesde("");
     setHasta("");
@@ -95,10 +102,19 @@ export default function AuditLogPage() {
   };
 
   const badgeColor = (a: string) => {
-    if (a.includes("Fallido") || a.includes("Eliminar")) return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400";
+    if (/Fallid|Elimin|Bloquead/.test(a)) return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400";
     if (a === "Login") return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400";
     if (a === "Logout") return "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300";
+    // Mismo tono que el chip "Super Admin": se distinguen de un vistazo.
+    if (grupoDe(catalogo, a) === GRUPO_ADMINISTRACION) return "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300";
     return "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400";
+  };
+
+  /** A quién afecta el evento: el negocio por su nombre; si ya no existe, se dice. */
+  const afectado = (log: AuditLogDto) => {
+    if (log.negocioNombre) return log.negocioNombre;
+    if (log.entidad === "Negocio") return "Negocio que ya no existe";
+    return log.entidad ?? "—";
   };
 
   const sinRegistros = !isLoading && !isError && data?.datos.length === 0;
@@ -111,7 +127,7 @@ export default function AuditLogPage() {
         subtitulo={
           data
             ? `${data.total} ${data.total === 1 ? "evento registrado" : "eventos registrados"} en total`
-            : "Accesos y cambios sensibles de la cuenta"
+            : "Accesos, cambios de cuenta y acciones de administración"
         }
       />
 
@@ -127,13 +143,22 @@ export default function AuditLogPage() {
         }}
         campos={[
           {
+            id: "grupo",
+            tipo: "select",
+            etiqueta: "Tipo",
+            valor: grupo,
+            onChange: cambiarGrupo,
+            etiquetaNeutra: "Todos los tipos",
+            opciones: (catalogo?.grupos ?? []).map((g) => ({ valor: g.id, etiqueta: g.etiqueta })),
+          },
+          {
             id: "accion",
             tipo: "select",
             etiqueta: "Acción",
             valor: accion,
             onChange: (v) => { setAccion(v); setPagina(1); },
             etiquetaNeutra: "Todas las acciones",
-            opciones: ACCIONES.map((a) => ({ valor: a, etiqueta: etiquetaAccion(a) })),
+            opciones: accionesDelFiltro.map((a) => ({ valor: a.accion, etiqueta: a.etiqueta })),
           },
           {
             id: "periodo",
@@ -157,7 +182,7 @@ export default function AuditLogPage() {
                 <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide whitespace-nowrap">Fecha</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Acción</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Usuario</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Entidad</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Afecta a</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Detalles</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">IP</th>
               </tr>
@@ -221,8 +246,8 @@ export default function AuditLogPage() {
                           {log.usuarioEmail ?? <span className="text-slate-500 dark:text-slate-400">{log.usuarioId ? "Usuario sin correo" : "—"}</span>}
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-xs text-slate-500 dark:text-slate-400">
-                        {log.entidad ?? "—"}
+                      <td className="px-4 py-3 text-xs text-slate-700 dark:text-slate-200">
+                        <div className="truncate max-w-[180px]">{afectado(log)}</div>
                       </td>
                       <td className="px-4 py-3 text-xs text-slate-500 dark:text-slate-400">
                         <div className="flex items-center gap-2">
@@ -249,6 +274,12 @@ export default function AuditLogPage() {
                             <dd className="whitespace-pre-wrap break-words">{log.detalles ?? "—"}</dd>
                             <dt className="font-semibold text-slate-500 dark:text-slate-400">ID de usuario</dt>
                             <dd className="font-mono break-all">{log.usuarioId ?? "—"}</dd>
+                            {log.negocioNombre && (
+                              <>
+                                <dt className="font-semibold text-slate-500 dark:text-slate-400">Negocio</dt>
+                                <dd className="break-words">{log.negocioNombre}</dd>
+                              </>
+                            )}
                             {log.entidad && (
                               <>
                                 <dt className="font-semibold text-slate-500 dark:text-slate-400">Entidad</dt>

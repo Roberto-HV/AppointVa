@@ -37,7 +37,7 @@ namespace AppointVaAPI.Controllers.V1
         }
 
         /// <summary>Audit action written for every export that carries client data (B18 / S7).</summary>
-        public const string AccionExportarClientes = "ExportarClientes";
+        public const string AccionExportarClientes = AccionesAuditoria.ExportarClientes;
 
         /// <summary>Umbral por omisión, igual al que la pantalla trae preseleccionado.</summary>
         private const int DiasActividadPorDefecto = 60;

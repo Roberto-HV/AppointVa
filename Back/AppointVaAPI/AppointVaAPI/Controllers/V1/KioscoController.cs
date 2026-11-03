@@ -51,8 +51,8 @@ namespace AppointVaAPI.Controllers.V1
             _reloj = reloj;
         }
 
-        public const string AccionSalidaFallida = "KioscoSalidaFallida";
-        public const string AccionSalidaBloqueada = "KioscoSalidaBloqueada";
+        public const string AccionSalidaFallida = AccionesAuditoria.KioscoSalidaFallida;
+        public const string AccionSalidaBloqueada = AccionesAuditoria.KioscoSalidaBloqueada;
 
         /// <summary>Per-IP ASP.NET rate limit policy for POST api/kiosco/salir (see Program.cs).</summary>
         public const string PoliticaLimiteSalida = "KioscoSalida";
@@ -92,7 +92,7 @@ namespace AppointVaAPI.Controllers.V1
                 }
             }
 
-            await _audit.RegistrarAsync("KioscoIniciado", "Negocio", usuario.NegocioId.ToString(), $"Rol: {rol}", usuario.Id);
+            await _audit.RegistrarAsync(AccionesAuditoria.KioscoIniciado, "Negocio", usuario.NegocioId.ToString(), $"Rol: {rol}", usuario.Id);
 
             return Ok(new SesionKioscoDto
             {
@@ -226,7 +226,7 @@ namespace AppointVaAPI.Controllers.V1
             // /api/auth/2fa/verificar, which has its own limit.
             if (await _userManager.GetTwoFactorEnabledAsync(usuario))
             {
-                await _audit.RegistrarAsync("KioscoSalida", "Negocio", negocioId.ToString(), "Contraseña correcta; falta 2FA", usuario.Id);
+                await _audit.RegistrarAsync(AccionesAuditoria.KioscoSalida, "Negocio", negocioId.ToString(), "Contraseña correcta; falta 2FA", usuario.Id);
                 return Ok(new LoginRespuestaDto
                 {
                     Requiere2FA = true,
@@ -236,7 +236,7 @@ namespace AppointVaAPI.Controllers.V1
 
             var token = _jwt.GenerarToken(usuario, rol);
             var refreshToken = await _jwt.GenerarRefreshTokenAsync(usuario.Id);
-            await _audit.RegistrarAsync("KioscoSalida", "Negocio", negocioId.ToString(), usuarioId: usuario.Id);
+            await _audit.RegistrarAsync(AccionesAuditoria.KioscoSalida, "Negocio", negocioId.ToString(), usuarioId: usuario.Id);
 
             return Ok(new LoginRespuestaDto
             {

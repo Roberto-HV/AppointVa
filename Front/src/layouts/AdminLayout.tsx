@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { Menu, X, ExternalLink, Sun, Moon } from "lucide-react";
+import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { Menu, X, ExternalLink, ShieldAlert } from "lucide-react";
 import { useAuthStore } from "../store/authStore";
 import { authApi } from "../api/auth";
 import { adminApi } from "../api/admin";
@@ -9,6 +10,9 @@ import { useTheme } from "../hooks/useTheme";
 import { useMediaQuery } from "../hooks/useMediaQuery";
 import LogoMarca from "../components/LogoMarca";
 import AvisoInactividad from "../components/AvisoInactividad";
+import MenuUsuarioAdmin from "./MenuUsuarioAdmin";
+import { inicialesDe } from "../utils/iniciales";
+import { RUTA_CUENTA_ADMIN, RUTA_SEGURIDAD_ADMIN } from "./rutasAdmin";
 
 /** Desde `md` el sidebar es fijo; por debajo es un cajón modal. */
 const CONSULTA_ESCRITORIO = "(min-width: 768px)";
@@ -26,8 +30,26 @@ const claseEnlaceNav = ({ isActive }: { isActive: boolean }) =>
 export default function AdminLayout() {
   const { usuario, refreshToken, cerrarSesion } = useAuthStore();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { theme, toggle } = useTheme();
+
+  // Menú de usuario: se abre desde el avatar de la barra móvil o de la de
+  // escritorio; se guarda cuál para devolverle el foco y no duplicar el menú.
+  const [menuUsuario, setMenuUsuario] = useState<null | "movil" | "escritorio">(null);
+  const menuMovilRef = useRef<HTMLDivElement>(null);
+  const menuEscritorioRef = useRef<HTMLDivElement>(null);
+  const botonUsuarioMovilRef = useRef<HTMLButtonElement>(null);
+  const botonUsuarioEscritorioRef = useRef<HTMLButtonElement>(null);
+
+  // G1: la cuenta con más poder sin verificación en dos pasos se avisa en todas
+  // las pantallas del admin hasta que la active (menos en la propia Seguridad).
+  const { data: estado2FA } = useQuery({
+    queryKey: ["2fa-estado"],
+    queryFn: authApi.obtenerEstado2FA,
+    staleTime: 1000 * 60,
+  });
+  const avisar2FA = estado2FA?.habilitado === false && pathname !== RUTA_SEGURIDAD_ADMIN;
 
   const [errorHangfire, setErrorHangfire] = useState<string | null>(null);
 
@@ -101,6 +123,48 @@ export default function AdminLayout() {
     return () => document.removeEventListener("keydown", onKey);
   }, [sidebarOpen, esEscritorio]);
 
+  // Mismo comportamiento que el menú de usuario del panel: se cierra al tocar o
+  // enfocar fuera, y con Escape el foco vuelve al avatar.
+  useEffect(() => {
+    if (!menuUsuario) return;
+    const contenedor = menuUsuario === "movil" ? menuMovilRef : menuEscritorioRef;
+    const boton = menuUsuario === "movil" ? botonUsuarioMovilRef : botonUsuarioEscritorioRef;
+    const fuera = (target: Node) => !contenedor.current?.contains(target);
+    const onPointer = (e: PointerEvent) => { if (fuera(e.target as Node)) setMenuUsuario(null); };
+    const onFocus = (e: FocusEvent) => { if (fuera(e.target as Node)) setMenuUsuario(null); };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      setMenuUsuario(null);
+      boton.current?.focus();
+    };
+    document.addEventListener("pointerdown", onPointer);
+    document.addEventListener("focusin", onFocus);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onPointer);
+      document.removeEventListener("focusin", onFocus);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [menuUsuario]);
+
+  const propsMenu = {
+    usuario,
+    theme,
+    onAlternarTema: toggle,
+    onCuenta: () => { setMenuUsuario(null); navigate(RUTA_CUENTA_ADMIN); },
+    onSeguridad: () => { setMenuUsuario(null); navigate(RUTA_SEGURIDAD_ADMIN); },
+    onCerrarSesion: () => { setMenuUsuario(null); handleLogout(); },
+  };
+
+  const avatar = (
+    usuario?.fotoUrl
+      ? <img src={usuario.fotoUrl} alt="" className="w-full h-full object-cover" />
+      : <span className="text-[11px] font-bold text-white">{inicialesDe(usuario?.nombreCompleto)}</span>
+  );
+
+  const CLASE_DESPLEGABLE =
+    "absolute top-full right-0 mt-2 w-64 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-2xl overflow-hidden z-50";
+
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-slate-50 dark:bg-slate-950">
 
@@ -122,15 +186,28 @@ export default function AdminLayout() {
         <span className="text-xs bg-yellow-400 text-slate-900 font-bold px-2 py-0.5 rounded-full">
           Admin
         </span>
-        {/* El tema vivía solo en la cabecera de escritorio: en un teléfono no
-            había forma de cambiarlo. */}
-        <button
-          onClick={toggle}
-          aria-label={theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
-          className="ml-auto min-h-[44px] min-w-[44px] -mr-2 flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-brand/40 dark:focus-visible:ring-accent-brand/40"
-        >
-          {theme === "dark" ? <Sun size={18} aria-hidden="true" /> : <Moon size={18} aria-hidden="true" />}
-        </button>
+        {/* Menú de usuario (cuenta, seguridad, tema y salir), como en el panel.
+            El tema está dentro: antes era un botón suelto en cada cabecera. */}
+        <div ref={menuMovilRef} className="ml-auto -mr-2 relative">
+          <button
+            ref={botonUsuarioMovilRef}
+            type="button"
+            onClick={() => setMenuUsuario((m) => (m === "movil" ? null : "movil"))}
+            aria-label="Menú de usuario"
+            aria-expanded={menuUsuario === "movil"}
+            aria-controls="menu-usuario-admin-movil"
+            className="w-11 h-11 rounded-full flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-brand/40"
+          >
+            <span className="w-8 h-8 rounded-full bg-slate-900 dark:bg-slate-600 dark:ring-1 dark:ring-white/25 flex items-center justify-center overflow-hidden">
+              {avatar}
+            </span>
+          </button>
+          {menuUsuario === "movil" && (
+            <div id="menu-usuario-admin-movil" className={CLASE_DESPLEGABLE}>
+              <MenuUsuarioAdmin {...propsMenu} />
+            </div>
+          )}
+        </div>
       </header>
 
       {/* ── Overlay backdrop (móvil) ── */}
@@ -195,8 +272,15 @@ export default function AdminLayout() {
 
         {/* Usuario */}
         <div className="p-4 border-t border-slate-200 dark:border-slate-800">
-          <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">{usuario?.nombreCompleto}</p>
-          <p className="text-xs text-slate-400 dark:text-slate-500 truncate mb-3">{usuario?.email}</p>
+          {/* El nombre lleva a Mi cuenta: en el cajón móvil es el camino más corto. */}
+          <NavLink
+            to={RUTA_CUENTA_ADMIN}
+            onClick={cerrarSidebar}
+            className="block -mx-2 px-2 py-1 mb-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-brand/40"
+          >
+            <span className="block text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">{usuario?.nombreCompleto}</span>
+            <span className="block text-xs text-slate-500 dark:text-slate-400 truncate">{usuario?.email}</span>
+          </NavLink>
           <button
             onClick={handleLogout}
             className="min-h-[44px] lg:min-h-[36px] px-2 -mx-2 rounded-lg text-xs text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-brand/40 dark:focus-visible:ring-accent-brand/40"
@@ -217,15 +301,43 @@ export default function AdminLayout() {
               Admin
             </span>
           </div>
-          <button
-            onClick={toggle}
-            aria-label={theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
-            className="min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-brand/40 dark:focus-visible:ring-accent-brand/40"
-            title={theme === "dark" ? "Modo claro" : "Modo oscuro"}
-          >
-            {theme === "dark" ? <Sun size={18} aria-hidden="true" /> : <Moon size={18} aria-hidden="true" />}
-          </button>
+          <div ref={menuEscritorioRef} className="relative flex items-center">
+            <button
+              ref={botonUsuarioEscritorioRef}
+              type="button"
+              onClick={() => setMenuUsuario((m) => (m === "escritorio" ? null : "escritorio"))}
+              aria-label="Menú de usuario"
+              aria-expanded={menuUsuario === "escritorio"}
+              aria-controls="menu-usuario-admin-escritorio"
+              className="w-9 h-9 rounded-full bg-slate-900 dark:bg-slate-600 dark:ring-1 dark:ring-white/25 flex items-center justify-center overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              {avatar}
+            </button>
+            {menuUsuario === "escritorio" && (
+              <div id="menu-usuario-admin-escritorio" className={CLASE_DESPLEGABLE}>
+                <MenuUsuarioAdmin {...propsMenu} />
+              </div>
+            )}
+          </div>
         </div>
+        {avisar2FA && (
+          <div
+            role="status"
+            className="shrink-0 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800 px-4 sm:px-6 py-2.5 flex flex-wrap items-center gap-x-3 gap-y-1"
+          >
+            <ShieldAlert size={16} className="text-amber-700 dark:text-amber-300 shrink-0" aria-hidden="true" />
+            <p className="text-xs text-amber-800 dark:text-amber-200 flex-1 min-w-[12rem]">
+              <span className="font-semibold">Activa la verificación en dos pasos.</span>{" "}
+              Esta cuenta puede eliminar negocios y cambiar cobros: además de la contraseña, pide un código de tu teléfono al entrar.
+            </p>
+            <Link
+              to={RUTA_SEGURIDAD_ADMIN}
+              className="inline-flex items-center min-h-[44px] lg:min-h-[32px] px-3 rounded-lg text-xs font-semibold text-amber-900 dark:text-amber-100 underline underline-offset-2 hover:bg-amber-100 dark:hover:bg-amber-900/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-brand/40"
+            >
+              Activar ahora
+            </Link>
+          </div>
+        )}
         <div className="flex-1">
           <Outlet />
         </div>

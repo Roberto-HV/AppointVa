@@ -57,6 +57,7 @@ const ResenasPage = lazy(() => import("./pages/dashboard/ResenasPage"));
 // ── Admin ─────────────────────────────────────────────────────────────────
 const NegociosAdminPage = lazy(() => import("./pages/admin/NegociosAdminPage"));
 const AuditLogPage = lazy(() => import("./pages/admin/AuditLogPage"));
+const CuentaAdminPage = lazy(() => import("./pages/admin/CuentaAdminPage"));
 
 // ── Landing ───────────────────────────────────────────────────────────────
 const LandingPage = lazy(() => import("./pages/publico/LandingPage"));
@@ -150,6 +151,9 @@ export default function App() {
                   <Route element={<AdminLayout />}>
                     <Route path="/admin" element={<NegociosAdminPage />} />
                     <Route path="/admin/audit" element={<AuditLogPage />} />
+                    {/* G1: la cuenta del SuperAdmin; Seguridad reutiliza la página del panel. */}
+                    <Route path="/admin/cuenta" element={<CuentaAdminPage />} />
+                    <Route path="/admin/seguridad" element={<DosFactoresPage />} />
                   </Route>
                 </Route>
 

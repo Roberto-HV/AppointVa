@@ -59,7 +59,7 @@ namespace AppointVaAPI.Controllers.V1
             // A deactivated employee answers exactly like invalid credentials (no enumeration).
             if (await AccesoEmpleadoHelper.AccesoBloqueadoAsync(_db, _userManager, usuario))
             {
-                await _audit.RegistrarAsync("LoginFallido", detalles: "Empleado inactivo", usuarioId: usuario.Id);
+                await _audit.RegistrarAsync(AccionesAuditoria.LoginFallido, detalles: "Empleado inactivo", usuarioId: usuario.Id);
                 return Unauthorized(new { mensaje = "Credenciales inválidas" });
             }
 
@@ -68,14 +68,14 @@ namespace AppointVaAPI.Controllers.V1
             // invalid credentials; the lockout itself still blocks the attempt and is audited.
             if (await _userManager.IsLockedOutAsync(usuario))
             {
-                await _audit.RegistrarAsync("LoginFallido", detalles: "Cuenta bloqueada", usuarioId: usuario.Id);
+                await _audit.RegistrarAsync(AccionesAuditoria.LoginFallido, detalles: "Cuenta bloqueada", usuarioId: usuario.Id);
                 return Unauthorized(new { mensaje = "Credenciales inválidas" });
             }
 
             if (!await _userManager.CheckPasswordAsync(usuario, dto.Contrasena))
             {
                 await _userManager.AccessFailedAsync(usuario);
-                await _audit.RegistrarAsync("LoginFallido", detalles: "Contraseña incorrecta", usuarioId: usuario.Id);
+                await _audit.RegistrarAsync(AccionesAuditoria.LoginFallido, detalles: "Contraseña incorrecta", usuarioId: usuario.Id);
                 return Unauthorized(new { mensaje = "Credenciales inválidas" });
             }
 
@@ -101,7 +101,7 @@ namespace AppointVaAPI.Controllers.V1
             var token = _jwtService.GenerarToken(usuario, rol);
             var refreshToken = await _jwtService.GenerarRefreshTokenAsync(usuario.Id);
 
-            await _audit.RegistrarAsync("Login", usuarioId: usuario.Id);
+            await _audit.RegistrarAsync(AccionesAuditoria.Login, usuarioId: usuario.Id);
 
             return Ok(new LoginRespuestaDto
             {
@@ -171,7 +171,7 @@ namespace AppointVaAPI.Controllers.V1
             if (Guid.TryParse(sub, out var usuarioId))
                 _panelJobs.RevocarSesionesDeUsuario(usuarioId);
 
-            await _audit.RegistrarAsync("Logout");
+            await _audit.RegistrarAsync(AccionesAuditoria.Logout);
             return NoContent();
         }
 
@@ -281,7 +281,7 @@ namespace AppointVaAPI.Controllers.V1
             // Revocar todos los refresh tokens para forzar nuevo login
             await _jwtService.RevocarTodosRefreshTokensAsync(usuario.Id);
 
-            await _audit.RegistrarAsync("CambiarPassword");
+            await _audit.RegistrarAsync(AccionesAuditoria.CambiarPassword);
 
             return Ok(new { mensaje = "Contraseña actualizada correctamente. Inicia sesión nuevamente." });
         }
@@ -380,7 +380,7 @@ namespace AppointVaAPI.Controllers.V1
 
             // B8: a fresh set on every activation; the plain codes leave the server only here.
             var codigos = await _userManager.GenerateNewTwoFactorRecoveryCodesAsync(usuario, CantidadCodigosRecuperacion);
-            await _audit.RegistrarAsync("2FAActivado", "Usuario", usuario.Id.ToString(), usuarioId: usuario.Id);
+            await _audit.RegistrarAsync(AccionesAuditoria.DosFactoresActivado, "Usuario", usuario.Id.ToString(), usuarioId: usuario.Id);
 
             return Ok(new CodigosRecuperacionDto
             {
@@ -419,12 +419,12 @@ namespace AppointVaAPI.Controllers.V1
 
             if (!verificado)
             {
-                await _audit.RegistrarAsync("CodigosRecuperacionRegeneracionFallida", "Usuario", usuario.Id.ToString(), usuarioId: usuario.Id);
+                await _audit.RegistrarAsync(AccionesAuditoria.CodigosRecuperacionRegeneracionFallida, "Usuario", usuario.Id.ToString(), usuarioId: usuario.Id);
                 return BadRequest(new { mensaje = "La contraseña o el código no son correctos." });
             }
 
             var codigos = await _userManager.GenerateNewTwoFactorRecoveryCodesAsync(usuario, CantidadCodigosRecuperacion);
-            await _audit.RegistrarAsync("CodigosRecuperacionRegenerados", "Usuario", usuario.Id.ToString(), usuarioId: usuario.Id);
+            await _audit.RegistrarAsync(AccionesAuditoria.CodigosRecuperacionRegenerados, "Usuario", usuario.Id.ToString(), usuarioId: usuario.Id);
 
             return Ok(new CodigosRecuperacionDto
             {
@@ -458,7 +458,7 @@ namespace AppointVaAPI.Controllers.V1
             // B8: leftover recovery codes must not survive into a later activation.
             await _userManager.RemoveAuthenticationTokenAsync(
                 usuario, UserStoreCodigosRecuperacion.ProveedorInterno, UserStoreCodigosRecuperacion.NombreToken);
-            await _audit.RegistrarAsync("2FADesactivado", "Usuario", usuario.Id.ToString(), usuarioId: usuario.Id);
+            await _audit.RegistrarAsync(AccionesAuditoria.DosFactoresDesactivado, "Usuario", usuario.Id.ToString(), usuarioId: usuario.Id);
 
             return Ok(new { mensaje = "Autenticación de dos factores desactivada." });
         }
@@ -518,7 +518,7 @@ namespace AppointVaAPI.Controllers.V1
             await _userManager.UpdateAsync(usuario);
             await _db.SaveChangesAsync();
 
-            await _audit.RegistrarAsync("EliminarCuenta", usuarioId: usuario.Id);
+            await _audit.RegistrarAsync(AccionesAuditoria.EliminarCuenta, usuarioId: usuario.Id);
 
             return NoContent();
         }
@@ -544,11 +544,11 @@ namespace AppointVaAPI.Controllers.V1
                 var canje = await _userManager.RedeemTwoFactorRecoveryCodeAsync(usuario, dto.CodigoRecuperacion.Trim());
                 if (!canje.Succeeded)
                 {
-                    await _audit.RegistrarAsync("CodigoRecuperacionFallido", "Usuario", usuario.Id.ToString(), usuarioId: usuario.Id);
+                    await _audit.RegistrarAsync(AccionesAuditoria.CodigoRecuperacionFallido, "Usuario", usuario.Id.ToString(), usuarioId: usuario.Id);
                     return Unauthorized(new { mensaje = "Código de recuperación incorrecto o ya usado." });
                 }
                 codigosRestantes = await _userManager.CountRecoveryCodesAsync(usuario);
-                await _audit.RegistrarAsync("CodigoRecuperacionUsado", "Usuario", usuario.Id.ToString(),
+                await _audit.RegistrarAsync(AccionesAuditoria.CodigoRecuperacionUsado, "Usuario", usuario.Id.ToString(),
                     $"Restantes: {codigosRestantes}", usuario.Id);
             }
             else

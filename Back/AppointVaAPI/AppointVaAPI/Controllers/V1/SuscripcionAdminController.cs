@@ -1,5 +1,6 @@
 using AppointVaAPI.Constants;
 using AppointVaAPI.Data;
+using AppointVaAPI.Helpers;
 using AppointVaAPI.Models;
 using AppointVaAPI.Models.Dtos.Admin;
 using AppointVaAPI.Services.IServices;
@@ -19,16 +20,23 @@ namespace AppointVaAPI.Controllers.V1
         private readonly ApplicationDbContext _db;
         private readonly IBlobStorageService _blob;
         private readonly ILogger<SuscripcionAdminController> _logger;
+        private readonly IAuditService _audit;
 
         public SuscripcionAdminController(
             ApplicationDbContext db,
             IBlobStorageService blob,
-            ILogger<SuscripcionAdminController> logger)
+            ILogger<SuscripcionAdminController> logger,
+            IAuditService audit)
         {
             _db = db;
             _blob = blob;
             _logger = logger;
+            _audit = audit;
         }
+
+        private static string Fecha(DateTime? fecha) => fecha?.ToString("yyyy-MM-dd") ?? "—";
+
+        private static string Monto(decimal monto) => monto.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
 
         // GET /api/admin/suscripciones
         // Resumen de todos los negocios con estado de suscripción
@@ -148,11 +156,19 @@ namespace AppointVaAPI.Controllers.V1
                 NumeroPago      = numeroPago
             };
 
+            var vencimientoAntes = negocio.FechaVencimiento;
             negocio.FechaVencimiento    = periodoHasta;
             negocio.FechaActualizacion  = DateTime.UtcNow;
 
+            // Mandatory audit in the same transaction: money records never change without a trace.
+            await using var tx = await _db.Database.BeginTransactionAsync();
             _db.PagosSuscripcion.Add(pago);
             await _db.SaveChangesAsync();
+            if (!await _audit.RegistrarNegocioObligatorioAsync(AccionesAuditoria.PagoRegistrado, id,
+                    $"Pago #{numeroPago} ({pago.Id}); Monto: {Monto(pago.Monto)}; Meses: {pago.MesesPagados}; " +
+                    $"Periodo: {Fecha(periodoDesde)} a {Fecha(periodoHasta)}; Vence: {Fecha(vencimientoAntes)} → {Fecha(periodoHasta)}"))
+                return AuditoriaAdmin.NoDisponible(this);
+            await tx.CommitAsync();
 
             // Cargar relaciones para el DTO de respuesta
             await _db.Entry(pago).Reference(p => p.RegistradoPor).LoadAsync();
@@ -206,6 +222,10 @@ namespace AppointVaAPI.Controllers.V1
             var negocio = await _db.Negocios.FindAsync(pago.NegocioId);
             if (negocio is null) return NotFound(new { mensaje = "Negocio no encontrado" });
 
+            var antes = $"Monto: {Monto(pago.Monto)}; Periodo: {Fecha(pago.PeriodoDesde)} a {Fecha(pago.PeriodoHasta)}";
+            var notasCambiaron = (pago.Notas ?? "") != (dto.Notas?.Trim() ?? "");
+            var vencimientoAntes = negocio.FechaVencimiento;
+
             pago.Monto        = dto.Monto;
             pago.Notas        = dto.Notas?.Trim();
             pago.PeriodoDesde = dto.PeriodoDesde.Date;
@@ -221,7 +241,17 @@ namespace AppointVaAPI.Controllers.V1
             negocio.FechaVencimiento   = todasHasta.Any() ? todasHasta.Max() : null;
             negocio.FechaActualizacion = DateTime.UtcNow;
 
-            await _db.SaveChangesAsync();
+            await using (var tx = await _db.Database.BeginTransactionAsync())
+            {
+                await _db.SaveChangesAsync();
+                // Notes are free text: only whether they changed is recorded.
+                if (!await _audit.RegistrarNegocioObligatorioAsync(AccionesAuditoria.PagoEditado, negocio.Id,
+                        $"Pago #{pago.NumeroPago} ({pago.Id}); Antes: {antes}; " +
+                        $"Después: Monto: {Monto(pago.Monto)}; Periodo: {Fecha(pago.PeriodoDesde)} a {Fecha(pago.PeriodoHasta)}; " +
+                        $"Notas cambiadas: {AuditoriaAdmin.SiNo(notasCambiaron)}; Vence: {Fecha(vencimientoAntes)} → {Fecha(negocio.FechaVencimiento)}"))
+                    return AuditoriaAdmin.NoDisponible(this);
+                await tx.CommitAsync();
+            }
 
             await _db.Entry(pago).Reference(p => p.RegistradoPor).LoadAsync();
             await _db.Entry(pago).Reference(p => p.Negocio).LoadAsync();
@@ -239,6 +269,11 @@ namespace AppointVaAPI.Controllers.V1
             var negocio = await _db.Negocios.FindAsync(pago.NegocioId);
             if (negocio is null) return NotFound(new { mensaje = "Negocio no encontrado" });
 
+            var vencimientoAntes = negocio.FechaVencimiento;
+            var resumen = $"Pago #{pago.NumeroPago} ({pago.Id}); Monto: {Monto(pago.Monto)}; Meses: {pago.MesesPagados}; " +
+                          $"Periodo: {Fecha(pago.PeriodoDesde)} a {Fecha(pago.PeriodoHasta)}";
+
+            await using var tx = await _db.Database.BeginTransactionAsync();
             _db.PagosSuscripcion.Remove(pago);
             await _db.SaveChangesAsync();
 
@@ -249,6 +284,11 @@ namespace AppointVaAPI.Controllers.V1
             negocio.FechaVencimiento   = maxVencimiento;
             negocio.FechaActualizacion = DateTime.UtcNow;
             await _db.SaveChangesAsync();
+
+            if (!await _audit.RegistrarNegocioObligatorioAsync(AccionesAuditoria.PagoEliminado, negocio.Id,
+                    $"{resumen}; Vence: {Fecha(vencimientoAntes)} → {Fecha(maxVencimiento)}"))
+                return AuditoriaAdmin.NoDisponible(this);
+            await tx.CommitAsync();
 
             return Ok();
         }
@@ -261,9 +301,12 @@ namespace AppointVaAPI.Controllers.V1
             var negocio = await _db.Negocios.FindAsync(id);
             if (negocio is null) return NotFound(new { mensaje = "Negocio no encontrado" });
 
+            var antes = negocio.ModuloPagosHabilitado;
             negocio.ModuloPagosHabilitado = dto.Habilitado;
             negocio.FechaActualizacion = DateTime.UtcNow;
             await _db.SaveChangesAsync();
+            await _audit.RegistrarNegocioAsync(AccionesAuditoria.ModuloPagosCambiado, id,
+                $"Habilitado: {AuditoriaAdmin.SiNo(antes)} → {AuditoriaAdmin.SiNo(negocio.ModuloPagosHabilitado)}");
 
             return Ok(new { negocioId = id, moduloPagosHabilitado = negocio.ModuloPagosHabilitado });
         }
@@ -281,9 +324,12 @@ namespace AppointVaAPI.Controllers.V1
 
             if (negocio == null) return NotFound();
 
+            var antes = negocio.EmpleadosExtra;
             negocio.EmpleadosExtra = dto.EmpleadosExtra;
             negocio.FechaActualizacion = DateTime.UtcNow;
             await _db.SaveChangesAsync();
+            await _audit.RegistrarNegocioAsync(AccionesAuditoria.EmpleadosExtraCambiado, id,
+                $"Empleados extra: {antes} → {negocio.EmpleadosExtra}");
 
             return Ok();
         }
@@ -300,9 +346,12 @@ namespace AppointVaAPI.Controllers.V1
             var negocio = await _db.Negocios.FindAsync(id);
             if (negocio == null) return NotFound();
 
+            var antes = negocio.Sector;
             negocio.Sector = dto.Sector;
             negocio.FechaActualizacion = DateTime.UtcNow;
             await _db.SaveChangesAsync();
+            await _audit.RegistrarNegocioAsync(AccionesAuditoria.SectorCambiado, id,
+                $"Sector: {antes} → {negocio.Sector}");
             return Ok();
         }
 
@@ -313,6 +362,12 @@ namespace AppointVaAPI.Controllers.V1
             var negocio = await _db.Negocios.FindAsync(id);
             if (negocio is null) return NotFound(new { mensaje = "Negocio no encontrado" });
 
+            var planAntes = negocio.PlanId.HasValue
+                ? await _db.Planes.Where(p => p.Id == negocio.PlanId.Value).Select(p => p.Nombre).FirstOrDefaultAsync()
+                : null;
+            var moduloAntes = negocio.ModuloPagosHabilitado;
+            string? planDespues = null;
+
             if (dto.PlanId.HasValue)
             {
                 var plan = await _db.Planes.FindAsync(dto.PlanId.Value);
@@ -320,6 +375,7 @@ namespace AppointVaAPI.Controllers.V1
 
                 negocio.PlanId = dto.PlanId;
                 negocio.ModuloPagosHabilitado = plan.Nombre.Contains("Pro", StringComparison.OrdinalIgnoreCase);
+                planDespues = plan.Nombre;
             }
             else
             {
@@ -329,6 +385,9 @@ namespace AppointVaAPI.Controllers.V1
 
             negocio.FechaActualizacion = DateTime.UtcNow;
             await _db.SaveChangesAsync();
+            await _audit.RegistrarNegocioAsync(AccionesAuditoria.PlanCambiado, id,
+                $"Plan: {planAntes ?? "sin plan"} → {planDespues ?? "sin plan"}; " +
+                $"Módulo de pagos: {AuditoriaAdmin.SiNo(moduloAntes)} → {AuditoriaAdmin.SiNo(negocio.ModuloPagosHabilitado)}");
             return Ok();
         }
 
@@ -343,6 +402,8 @@ namespace AppointVaAPI.Controllers.V1
             negocio.EsTester = !negocio.EsTester;
             negocio.FechaActualizacion = DateTime.UtcNow;
             await _db.SaveChangesAsync();
+            await _audit.RegistrarNegocioAsync(AccionesAuditoria.TesterCambiado, id,
+                $"Tester: {AuditoriaAdmin.SiNo(!negocio.EsTester)} → {AuditoriaAdmin.SiNo(negocio.EsTester)}");
 
             return Ok(new { esTester = negocio.EsTester });
         }
@@ -355,6 +416,18 @@ namespace AppointVaAPI.Controllers.V1
         {
             var negocio = await _db.Negocios.FindAsync(id);
             if (negocio is null) return NotFound(new { mensaje = "Negocio no encontrado" });
+
+            // Mandatory audit, written first and inside the transaction of the deletes: if it
+            // cannot be written nothing is touched (images included); if a delete fails, the
+            // rollback takes the entry with it. The name goes in the detail because the
+            // business row will no longer exist to resolve it.
+            await using var tx = await _db.Database.BeginTransactionAsync();
+            var citas = await _db.Citas.CountAsync(c => c.NegocioId == id);
+            var clientes = await _db.Clientes.IgnoreQueryFilters().CountAsync(c => c.NegocioId == id);
+            var pagos = await _db.PagosSuscripcion.CountAsync(p => p.NegocioId == id);
+            if (!await _audit.RegistrarNegocioObligatorioAsync(AccionesAuditoria.NegocioEliminado, id,
+                    $"Nombre: {negocio.Nombre}; Slug: {negocio.Slug}; Citas: {citas}; Clientes: {clientes}; Pagos: {pagos}"))
+                return AuditoriaAdmin.NoDisponible(this);
 
             // Recopilar todas las URLs de imágenes del negocio y sus entidades hijo
             var urls = new List<string?>();
@@ -464,6 +537,7 @@ namespace AppointVaAPI.Controllers.V1
             //     PagosSuscripcion, CierresCaja, NotificacionesDashboard, EncuestasNegocio
             _db.Negocios.Remove(negocio);
             await _db.SaveChangesAsync();
+            await tx.CommitAsync();
 
             return NoContent();
         }

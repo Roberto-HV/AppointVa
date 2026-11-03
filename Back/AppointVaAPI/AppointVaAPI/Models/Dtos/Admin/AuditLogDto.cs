@@ -11,5 +11,11 @@ namespace AppointVaAPI.Models.Dtos.Admin
         public string? Detalles { get; set; }
         public string? IpAddress { get; set; }
         public DateTime FechaEn { get; set; }
+
+        /// <summary>
+        /// Current name of the affected business when Entidad is "Negocio"; null when the
+        /// business no longer exists (a hard delete keeps its name in <see cref="Detalles"/>).
+        /// </summary>
+        public string? NegocioNombre { get; set; }
     }
 }
