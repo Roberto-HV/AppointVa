@@ -268,6 +268,65 @@ public class AuditoriaAdminTests : IntegrationTestBase
         (await EntradaAsync(negocio.Id, AccionesAuditoria.SectorCambiado, adminId)).Detalles.Should().Contain("belleza → salud");
     }
 
+    private async Task<bool> EsTesterAsync(Guid negocioId)
+    {
+        await using var scope = Factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        return await db.Negocios.Where(n => n.Id == negocioId).Select(n => n.EsTester).SingleAsync();
+    }
+
+    private static async Task<bool> PostTesterAsync(HttpClient cliente, Guid negocioId, string query = "")
+    {
+        var resp = await cliente.PostAsync($"/api/admin/negocios/{negocioId}/tester{query}", null);
+        resp.StatusCode.Should().Be(HttpStatusCode.OK, await resp.Content.ReadAsStringAsync());
+        return (await resp.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("esTester").GetBoolean();
+    }
+
+    [Fact]
+    public async Task Tester_ValorExplicito_EsIdempotente_YSoloAuditaElCambioReal()
+    {
+        var adminId = await CrearAdminAsync();
+        var negocio = await CrearNegocioAsync();
+        var cliente = ClienteAdmin(adminId);
+
+        (await PostTesterAsync(cliente, negocio.Id, "?esTester=true")).Should().BeTrue();
+        // A repeated request (a stale "Deshacer", a retry after a lost response) stays put.
+        (await PostTesterAsync(cliente, negocio.Id, "?esTester=true")).Should().BeTrue();
+        (await EsTesterAsync(negocio.Id)).Should().BeTrue();
+
+        // Only the real change is audited: the no-op second request writes no row.
+        (await EntradaAsync(negocio.Id, AccionesAuditoria.TesterCambiado, adminId)).Detalles.Should().Contain("No → Sí");
+
+        (await PostTesterAsync(cliente, negocio.Id, "?esTester=false")).Should().BeFalse();
+        (await EsTesterAsync(negocio.Id)).Should().BeFalse();
+        var entradas = (await EntradasAsync(negocio.Id)).Where(a => a.Accion == AccionesAuditoria.TesterCambiado).ToList();
+        entradas.Should().HaveCount(2);
+        entradas.Should().ContainSingle(e => e.Detalles!.Contains("Sí → No"));
+    }
+
+    [Fact]
+    public async Task Tester_SinValor_SigueAlternando()
+    {
+        var adminId = await CrearAdminAsync();
+        var negocio = await CrearNegocioAsync();
+        var cliente = ClienteAdmin(adminId);
+
+        (await PostTesterAsync(cliente, negocio.Id)).Should().BeTrue();
+        (await PostTesterAsync(cliente, negocio.Id)).Should().BeFalse();
+        (await EsTesterAsync(negocio.Id)).Should().BeFalse();
+        (await EntradasAsync(negocio.Id)).Count(a => a.Accion == AccionesAuditoria.TesterCambiado).Should().Be(2);
+    }
+
+    [Fact]
+    public async Task Tester_SoloParaSuperAdmin()
+    {
+        var negocio = await CrearNegocioAsync();
+
+        (await NewClient(TestTokenHelper.Propietario()).PostAsync($"/api/admin/negocios/{negocio.Id}/tester?esTester=true", null))
+            .StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await EsTesterAsync(negocio.Id)).Should().BeFalse();
+    }
+
     [Fact]
     public async Task CambiarPlan_QuedaAuditado_ConPlanAnteriorYNuevo()
     {

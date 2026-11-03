@@ -1,4 +1,4 @@
-import type { NegocioMetricasDto, PlanDto, SuscripcionResumenDto } from "../api/admin";
+import type { NegocioMetricasDto, SuscripcionResumenDto } from "../api/admin";
 import { esClavePlan, NOMBRES_PLANES } from "../lib/precios";
 
 // ── Cifras de facturación (lote 2, G3) ────────────────────────────────────────
@@ -45,15 +45,6 @@ export function nombrePlan(nombre: string | null | undefined): string {
   if (!nombre) return "";
   const clave = nombre.normalize("NFD").replace(/\p{M}/gu, "").trim().toLowerCase();
   return esClavePlan(clave) ? NOMBRES_PLANES[clave] : nombre;
-}
-
-/**
- * Mismo criterio que `SuscripcionAdminController.SetPlan`: al asignar un plan,
- * el módulo de pagos queda habilitado solo si su nombre contiene "Pro". Se usa
- * para avisarlo en la confirmación del cambio de plan.
- */
-export function planHabilitaModuloPagos(plan: Pick<PlanDto, "nombre">): boolean {
-  return plan.nombre.toLowerCase().includes("pro");
 }
 
 // ── Negocios pendientes de activación (AP-07) ─────────────────────────────────

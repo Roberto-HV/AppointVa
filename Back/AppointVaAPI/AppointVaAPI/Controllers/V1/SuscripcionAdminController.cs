@@ -107,7 +107,8 @@ namespace AppointVaAPI.Controllers.V1
                     MaxEmpleadosBase = n.MaxEmpleadosBase,
                     EmpleadosExtra   = n.EmpleadosExtra,
                     TotalMensual     = totalMensual,
-                    Sector           = n.Sector,
+                    PrecioEmpleadoExtra = FacturacionAdmin.PrecioEmpleadoExtra,
+                    Sector          = n.Sector,
                     EsTester           = n.EsTester,
                     SuscripcionVigente = FacturacionAdmin.EsVigente(estado),
                     AccesoPermanente   = FacturacionAdmin.EsAccesoPermanente(diasRestantes),
@@ -371,7 +372,7 @@ namespace AppointVaAPI.Controllers.V1
                 if (plan is null) return BadRequest(new { mensaje = "Plan no encontrado" });
 
                 negocio.PlanId = dto.PlanId;
-                negocio.ModuloPagosHabilitado = plan.Nombre.Contains("Pro", StringComparison.OrdinalIgnoreCase);
+                negocio.ModuloPagosHabilitado = FacturacionAdmin.PlanHabilitaModuloPagos(plan.Nombre);
                 planDespues = plan.Nombre;
             }
             else
@@ -388,19 +389,25 @@ namespace AppointVaAPI.Controllers.V1
             return Ok();
         }
 
-        // POST /api/admin/negocios/{id}/tester
-        // Toggle EsTester para un negocio
+        // POST /api/admin/negocios/{id}/tester[?esTester=true|false]
+        // With ?esTester the value is set explicitly (idempotent: undo and retries cannot land
+        // on the wrong state). Without it the current value is flipped, as before.
+        // A request that changes nothing writes no audit row.
         [HttpPost("negocios/{id:guid}/tester")]
-        public async Task<IActionResult> ToggleTester(Guid id)
+        public async Task<IActionResult> ToggleTester(Guid id, [FromQuery] bool? esTester = null)
         {
             var negocio = await _db.Negocios.FindAsync(id);
             if (negocio is null) return NotFound(new { mensaje = "Negocio no encontrado" });
 
-            negocio.EsTester = !negocio.EsTester;
+            var antes = negocio.EsTester;
+            var despues = esTester ?? !antes;
+            if (despues == antes) return Ok(new { esTester = negocio.EsTester });
+
+            negocio.EsTester = despues;
             negocio.FechaActualizacion = DateTime.UtcNow;
             await _db.SaveChangesAsync();
             await _audit.RegistrarNegocioAsync(AccionesAuditoria.TesterCambiado, id,
-                $"Tester: {AuditoriaAdmin.SiNo(!negocio.EsTester)} → {AuditoriaAdmin.SiNo(negocio.EsTester)}");
+                $"Tester: {AuditoriaAdmin.SiNo(antes)} → {AuditoriaAdmin.SiNo(negocio.EsTester)}");
 
             return Ok(new { esTester = negocio.EsTester });
         }

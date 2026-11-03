@@ -33,6 +33,8 @@ namespace AppointVaAPI.Models.Dtos.Admin
         public int EmpleadosExtra { get; set; }
         /// <summary>List price of the assigned plan plus extras, whether or not it is paid.</summary>
         public decimal TotalMensual { get; set; }
+        /// <summary>Monthly price of each extra employee, so the front never hard-codes it.</summary>
+        public decimal PrecioEmpleadoExtra { get; set; }
         public string Sector { get; set; } = "belleza";
 
         // Lote 2 (G3): see Helpers.FacturacionAdmin for the definitions.

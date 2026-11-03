@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using AppointVaAPI.Constants;
 using AppointVaAPI.Data;
+using AppointVaAPI.Helpers;
 using AppointVaAPI.Models;
 using AppointVaAPI.Models.Dtos.Admin;
 using FluentAssertions;
@@ -96,6 +97,8 @@ public class FacturacionAdminIntegrationTests : IntegrationTestBase
         // The list price is shown for every row with a plan, paid or not...
         filas[sinPago].TotalMensual.Should().Be(449m);
         filas[activa].TotalMensual.Should().Be(549m);
+        // The front prices extra employees with this value instead of its own constant.
+        filas.Values.Should().OnlyContain(f => f.PrecioEmpleadoExtra == FacturacionAdmin.PrecioEmpleadoExtra);
 
         // ...but only current, paying subscriptions bring money in.
         filas[sinPago].SuscripcionVigente.Should().BeFalse();

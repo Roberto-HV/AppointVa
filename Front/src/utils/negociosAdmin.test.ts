@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   validarEdicionPago, esColorHexValido, ordenarNegociosAdmin,
-  resumenFacturacion, motivoSinIngreso, nombrePlan, planHabilitaModuloPagos,
+  resumenFacturacion, motivoSinIngreso, nombrePlan,
 } from "./negociosAdmin";
 import type { NegocioMetricasDto, SuscripcionResumenDto } from "../api/admin";
 
@@ -9,7 +9,7 @@ function fila(extra: Partial<SuscripcionResumenDto>): SuscripcionResumenDto {
   return {
     negocioId: crypto.randomUUID(), negocioNombre: "N", negocioSlug: "n",
     fechaVencimiento: null, estado: "SinSuscripcion", diasRestantes: null, totalPagos: 0, ultimoPago: null,
-    planNombre: "Pro", precioBase: 449, maxEmpleadosBase: 4, empleadosExtra: 0, totalMensual: 449, sector: "belleza",
+    planNombre: "Pro", precioBase: 449, maxEmpleadosBase: 4, empleadosExtra: 0, totalMensual: 449, precioEmpleadoExtra: 50, sector: "belleza",
     esTester: false, suscripcionVigente: false, accesoPermanente: false, ingresoMensual: 0,
     ...extra,
   };
@@ -51,11 +51,6 @@ describe("nombrePlan (M6)", () => {
     expect(nombrePlan("PRO")).toBe("Pro");
     expect(nombrePlan("Empresarial")).toBe("Empresarial");
     expect(nombrePlan(null)).toBe("");
-  });
-
-  it("el módulo de pagos va con los planes que dicen Pro, como en el backend", () => {
-    expect(planHabilitaModuloPagos({ nombre: "Pro" })).toBe(true);
-    expect(planHabilitaModuloPagos({ nombre: "Premium" })).toBe(false);
   });
 });
 

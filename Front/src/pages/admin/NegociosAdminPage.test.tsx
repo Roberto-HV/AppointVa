@@ -17,7 +17,8 @@ vi.mock('../../api/admin', () => ({
     setSector: vi.fn(),
     setPlan: vi.fn(),
     toggleModuloPagos: vi.fn(),
-    toggleTester: vi.fn(),
+    setTester: vi.fn(),
+    registrarPago: vi.fn(),
     confirmarEmail: vi.fn(),
   },
 }));
@@ -61,6 +62,7 @@ const mockSuscripcion = {
   maxEmpleadosBase: 3,
   empleadosExtra: 0,
   totalMensual: 449,
+  precioEmpleadoExtra: 50,
   sector: 'belleza',
   esTester: false,
   suscripcionVigente: true,
@@ -545,15 +547,46 @@ describe('ModalSuscripcion — cambios con confirmación y aviso', () => {
     expect(screen.getByDisplayValue('449')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Registrar pago/ })).toBeEnabled();
   });
+
+  it('el monto sugerido sigue a los meses y a los empleados extra', async () => {
+    const user = userEvent.setup();
+    await abrirSuscripcion();
+    fireEvent.change(screen.getByRole('spinbutton'), { target: { value: '2' } });
+    await user.click(screen.getByRole('button', { name: 'Pagos' }));
+    expect(screen.getByLabelText('Monto (MXN)')).toHaveValue('549');
+    await user.click(screen.getByRole('button', { name: '3 meses' }));
+    expect(screen.getByLabelText('Monto (MXN)')).toHaveValue('1647');
+  });
+
+  it('un monto tecleado no se pisa al cambiar los meses; tras registrar vuelve al sugerido', async () => {
+    const user = userEvent.setup();
+    vi.mocked(adminModule.adminApi.registrarPago).mockReset().mockResolvedValue({} as never);
+    await abrirSuscripcion();
+    await user.click(screen.getByRole('button', { name: 'Pagos' }));
+    const monto = screen.getByLabelText('Monto (MXN)');
+
+    await user.clear(monto);
+    await user.type(monto, '1000');
+    await user.click(screen.getByRole('button', { name: '3 meses' }));
+    expect(monto).toHaveValue('1000');
+
+    await user.click(screen.getByRole('button', { name: /Registrar pago/ }));
+    await waitFor(() =>
+      expect(adminModule.adminApi.registrarPago).toHaveBeenCalledWith('neg-1', { mesesPagados: 3, monto: 1000, notas: undefined })
+    );
+    // "3 meses" sigue marcado: el monto vuelve a 3 × 449, no a vacío.
+    await waitFor(() => expect(monto).toHaveValue('1347'));
+    expect(screen.getByRole('button', { name: /Registrar pago/ })).toBeEnabled();
+  });
 });
 
 // ── Cambio de plan con confirmación (I2) ────────────────────────────────────
 
 describe('ModalSuscripcion — cambio de plan', () => {
   const planes = [
-    { id: 'plan-basico', nombre: 'Basico', precioMensual: 249, maxEmpleados: 2, maxCitasMes: 200 },
-    { id: 'plan-pro', nombre: 'Pro', precioMensual: 449, maxEmpleados: 3, maxCitasMes: 100 },
-    { id: 'plan-premium', nombre: 'Premium', precioMensual: 649, maxEmpleados: 8, maxCitasMes: 1000 },
+    { id: 'plan-basico', nombre: 'Basico', precioMensual: 249, maxEmpleados: 2, maxCitasMes: 200, habilitaModuloPagos: false },
+    { id: 'plan-pro', nombre: 'Pro', precioMensual: 449, maxEmpleados: 3, maxCitasMes: 100, habilitaModuloPagos: true },
+    { id: 'plan-premium', nombre: 'Premium', precioMensual: 649, maxEmpleados: 8, maxCitasMes: 1000, habilitaModuloPagos: false },
   ];
 
   beforeEach(() => {
@@ -585,12 +618,40 @@ describe('ModalSuscripcion — cambio de plan', () => {
     // Con 1 empleado extra: 449 + 50 → 649 + 50.
     expect(dialogo).toHaveTextContent('$499/mes → $699/mes');
     expect(dialogo).toHaveTextContent('3 → 8');
-    // Premium no lleva "Pro" en el nombre: el backend apaga el módulo de pagos.
+    // Premium llega con habilitaModuloPagos=false: el backend apaga el módulo de pagos.
     expect(dialogo).toHaveTextContent('El módulo de pagos quedará deshabilitado');
 
     await user.click(within(dialogo).getByRole('button', { name: 'Cambiar plan' }));
     await waitFor(() => expect(adminModule.adminApi.setPlan).toHaveBeenCalledWith('neg-1', 'plan-premium'));
     await waitFor(() => expect(toastMock).toHaveBeenCalledWith('Plan actualizado: Premium'));
+  });
+
+  it('el aviso del módulo sale del dato del backend, no del nombre del plan', async () => {
+    const user = userEvent.setup();
+    // Un plan sin "Pro" en el nombre pero que el backend marca como habilitante.
+    vi.mocked(adminModule.adminApi.obtenerPlanes).mockResolvedValue([
+      planes[1],
+      { ...planes[2], habilitaModuloPagos: true },
+    ]);
+    await user.click(await abrirSuscripcion());
+    const dialogo = await screen.findByRole('dialog', { name: /plan Premium/ });
+    expect(dialogo).not.toHaveTextContent('El módulo de pagos quedará');
+  });
+
+  it('tras cambiar de plan, el monto sugerido del pago usa el nuevo total', async () => {
+    const user = userEvent.setup();
+    await user.click(await abrirSuscripcion());
+    const dialogo = await screen.findByRole('dialog', { name: /plan Premium/ });
+    // Tras el cambio, la recarga trae el precio del nuevo plan.
+    vi.mocked(adminModule.adminApi.obtenerSuscripciones).mockResolvedValue([
+      { ...mockSuscripcion, empleadosExtra: 1, planNombre: 'Premium', precioBase: 649, totalMensual: 699 },
+    ]);
+    await user.click(within(dialogo).getByRole('button', { name: 'Cambiar plan' }));
+    await waitFor(() => expect(toastMock).toHaveBeenCalledWith('Plan actualizado: Premium'));
+
+    await user.click(screen.getByRole('button', { name: 'Pagos' }));
+    // 649 + 1 × 50; antes se quedaba en el 499 calculado al abrir el modal.
+    await waitFor(() => expect(screen.getByLabelText('Monto (MXN)')).toHaveValue('699'));
   });
 
   it('"Volver" cierra la confirmación sin cambiar el plan', async () => {
@@ -618,7 +679,9 @@ describe('NegociosAdminPage — interruptores y correo', () => {
     vi.mocked(adminModule.adminApi.obtenerPagos).mockResolvedValue([]);
     vi.mocked(adminModule.adminApi.obtenerMetricas).mockResolvedValue([mockNegocio]);
     vi.mocked(adminModule.adminApi.toggleModuloPagos).mockReset().mockResolvedValue(undefined);
-    vi.mocked(adminModule.adminApi.toggleTester).mockReset();
+    // El backend fija el valor pedido y lo devuelve.
+    vi.mocked(adminModule.adminApi.setTester).mockReset()
+      .mockImplementation(async (_id: string, esTester: boolean) => ({ esTester }));
     vi.mocked(adminModule.adminApi.confirmarEmail).mockReset().mockResolvedValue(undefined as never);
     toastMock.mockReset();
   });
@@ -649,22 +712,46 @@ describe('NegociosAdminPage — interruptores y correo', () => {
     expect(screen.getByRole('switch', { name: 'Módulo pagos' })).toHaveAttribute('aria-checked', 'true');
   });
 
-  it('el modo tester también se puede deshacer', async () => {
+  it('el modo tester también se puede deshacer, enviando el valor absoluto', async () => {
     const user = userEvent.setup();
-    vi.mocked(adminModule.adminApi.toggleTester)
-      .mockResolvedValueOnce({ esTester: true })
-      .mockResolvedValueOnce({ esTester: false });
     renderPage();
     await user.click(await screen.findByRole('switch', { name: 'Tester' }));
 
+    await waitFor(() => expect(adminModule.adminApi.setTester).toHaveBeenCalledWith('neg-1', true));
     await waitFor(() => expect(toastMock).toHaveBeenCalled());
     expect(toastMock.mock.calls.at(-1)![0]).toBe('Modo tester activado en Peluquería Test');
     accionDelUltimoToast()!.onClick();
 
-    await waitFor(() => expect(adminModule.adminApi.toggleTester).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(adminModule.adminApi.setTester).toHaveBeenLastCalledWith('neg-1', false));
     await waitFor(() =>
       expect(toastMock).toHaveBeenLastCalledWith('Cambio deshecho: modo tester desactivado en Peluquería Test')
     );
+    expect(screen.getByRole('switch', { name: 'Tester' })).toHaveAttribute('aria-checked', 'false');
+  });
+
+  it('"Deshacer" de un aviso viejo restaura el valor previo de ese aviso, no alterna', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    const interruptor = await screen.findByRole('switch', { name: 'Tester' });
+
+    // Aviso A: false → true.
+    await user.click(interruptor);
+    await waitFor(() => expect(interruptor).toHaveAttribute('aria-checked', 'true'));
+    const deshacerA = accionDelUltimoToast()!;
+
+    // Aviso B: true → false.
+    await user.click(interruptor);
+    await waitFor(() => expect(interruptor).toHaveAttribute('aria-checked', 'false'));
+    expect(adminModule.adminApi.setTester).toHaveBeenLastCalledWith('neg-1', false);
+
+    // Deshacer A vuelve al valor previo de A (false). Un "alternar" lo dejaría en true.
+    deshacerA.onClick();
+    await waitFor(() => expect(adminModule.adminApi.setTester).toHaveBeenCalledTimes(3));
+    expect(adminModule.adminApi.setTester).toHaveBeenLastCalledWith('neg-1', false);
+    await waitFor(() =>
+      expect(toastMock).toHaveBeenLastCalledWith('Cambio deshecho: modo tester desactivado en Peluquería Test')
+    );
+    expect(interruptor).toHaveAttribute('aria-checked', 'false');
   });
 
   it('"Confirmar correo" no aparece si el correo ya está verificado', async () => {

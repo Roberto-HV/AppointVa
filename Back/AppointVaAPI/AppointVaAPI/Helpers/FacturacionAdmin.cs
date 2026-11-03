@@ -33,6 +33,13 @@ namespace AppointVaAPI.Helpers
         public static decimal PrecioMensual(decimal precioPlan, int empleadosExtra) =>
             precioPlan + empleadosExtra * PrecioEmpleadoExtra;
 
+        /// <summary>
+        /// Assigning a plan turns the payments module on only when its name contains "Pro".
+        /// SetPlan applies it and /api/planes exposes it, so the front never re-derives it.
+        /// </summary>
+        public static bool PlanHabilitaModuloPagos(string? nombrePlan) =>
+            nombrePlan?.Contains("Pro", StringComparison.OrdinalIgnoreCase) ?? false;
+
         public static int? DiasRestantes(DateTime? fechaVencimiento, DateTime hoy) =>
             fechaVencimiento.HasValue ? (int)(fechaVencimiento.Value.Date - hoy.Date).TotalDays : null;
 

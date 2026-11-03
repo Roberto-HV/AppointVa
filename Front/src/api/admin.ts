@@ -37,6 +37,8 @@ export interface PlanDto {
   precioMensual: number;
   maxEmpleados: number;
   maxCitasMes: number;
+  /** Asignar este plan enciende el módulo de pagos (regla del backend, `FacturacionAdmin`). */
+  habilitaModuloPagos: boolean;
 }
 
 export interface CrearPropietarioAdminDto {
@@ -104,6 +106,8 @@ export interface SuscripcionResumenDto {
   empleadosExtra: number;
   /** Precio de lista del plan asignado más los empleados extra, se pague o no. */
   totalMensual: number;
+  /** Precio mensual de cada empleado extra (`FacturacionAdmin.PrecioEmpleadoExtra`). */
+  precioEmpleadoExtra: number;
   sector: string;
   // Lote 2 (G3): definidas en el backend (`FacturacionAdmin`).
   esTester: boolean;
@@ -258,8 +262,13 @@ export const adminApi = {
     await api.patch(`/admin/negocios/${negocioId}/plan`, { planId });
   },
 
-  toggleTester: async (id: string): Promise<{ esTester: boolean }> => {
-    const { data } = await api.post(`/admin/negocios/${id}/tester`);
+  /**
+   * Fija el modo tester al valor indicado. Con valor absoluto, un "Deshacer" de un
+   * aviso viejo o un reintento tras perder la respuesta no puede dejar el estado
+   * contrario (sin valor, el backend alterna el actual).
+   */
+  setTester: async (id: string, esTester: boolean): Promise<{ esTester: boolean }> => {
+    const { data } = await api.post(`/admin/negocios/${id}/tester`, null, { params: { esTester } });
     return data;
   },
 

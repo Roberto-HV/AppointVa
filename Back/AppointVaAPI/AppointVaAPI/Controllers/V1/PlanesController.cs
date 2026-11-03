@@ -1,5 +1,6 @@
 using AppointVaAPI.Constants;
 using AppointVaAPI.Data;
+using AppointVaAPI.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -32,7 +33,16 @@ namespace AppointVaAPI.Controllers.V1
                 })
                 .ToListAsync();
 
-            return Ok(planes);
+            // Same rule as SuscripcionAdminController.SetPlan, applied once here.
+            return Ok(planes.Select(p => new
+            {
+                p.Id,
+                p.Nombre,
+                p.PrecioMensual,
+                p.MaxEmpleados,
+                p.MaxCitasMes,
+                HabilitaModuloPagos = FacturacionAdmin.PlanHabilitaModuloPagos(p.Nombre)
+            }));
         }
     }
 }

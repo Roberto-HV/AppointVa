@@ -19,7 +19,7 @@ import ModalAcciones from "../../components/ui/ModalAcciones";
 import ConfirmarAccion from "../../components/ui/ConfirmarAccion";
 import {
   esPendienteActivacion, ordenarNegociosAdmin, validarEdicionPago, esColorHexValido,
-  resumenFacturacion, motivoSinIngreso, nombrePlan, planHabilitaModuloPagos,
+  resumenFacturacion, motivoSinIngreso, nombrePlan,
 } from "../../utils/negociosAdmin";
 import BarraProgreso from "../../components/ui/BarraProgreso";
 import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
@@ -51,7 +51,6 @@ const ESTADO_BADGE: Record<string, { label: string; className: string }> = {
   SinPago: { label: 'Sin pago registrado', className: 'bg-amber-50 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300' },
 };
 
-const PRECIO_EXTRA_EMP = 50;
 const LIFETIME_SENTINEL = 1200;
 
 /**
@@ -239,13 +238,21 @@ function ModalSuscripcion({
   const extraGuardado = suscripcion?.empleadosExtra ?? 0;
   const [empleadosExtra, setEmpleadosExtra] = useState(extraGuardado);
   const precioBase = suscripcion?.precioBase ?? 0;
-  const totalMensual = precioBase + empleadosExtra * PRECIO_EXTRA_EMP;
+  // El precio por empleado extra viene del backend; sin fila de suscripción
+  // tampoco hay precio base, así que el resumen queda en cero igual que antes.
+  const precioExtra = suscripcion?.precioEmpleadoExtra ?? 0;
+  const totalMensual = precioBase + empleadosExtra * precioExtra;
   const extraSinGuardar = empleadosExtra !== extraGuardado;
 
   const [meses, setMeses] = useState(1);
-  // "1 mes" ya viene marcado: el monto empieza en el total mensual (M4) en vez
-  // de vacío con el botón en "$0.00" y deshabilitado.
-  const [monto, setMonto] = useState(() => (totalMensual > 0 ? String(totalMensual) : ""));
+  // El monto sugerido se deriva siempre del total mensual vigente por los meses
+  // elegidos: sigue al plan (recargado tras cambiarlo), a los empleados extra y a
+  // los meses. "1 mes" ya viene marcado, así que arranca en el total mensual (M4).
+  // Si el admin teclea otro monto, ese manda hasta registrar el pago.
+  const montoSugerido =
+    meses === LIFETIME_SENTINEL || totalMensual * meses <= 0 ? "" : String(totalMensual * meses);
+  const [montoManual, setMontoManual] = useState<string | null>(null);
+  const monto = montoManual ?? montoSugerido;
   const [notas, setNotas] = useState("");
   const [tab, setTab] = useState<'cuenta' | 'pagos'>('cuenta');
 
@@ -266,7 +273,8 @@ function ModalSuscripcion({
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["pagos-negocio", negocio.id] });
       qc.invalidateQueries({ queryKey: ["admin-suscripciones"] });
-      setMonto("");
+      // Vuelve al monto sugerido para los meses que siguen marcados, no a vacío.
+      setMontoManual(null);
       setNotas("");
       toast("Pago registrado correctamente");
     },
@@ -279,7 +287,7 @@ function ModalSuscripcion({
     mutationFn: (val: number) => adminApi.setEmpleadosExtra(negocio.id, val),
     onSuccess: (_, val) => {
       qc.invalidateQueries({ queryKey: ['admin-suscripciones'] });
-      toast(`Empleados extra actualizados: ${val} · total ${formatPrecio(precioBase + val * PRECIO_EXTRA_EMP)}/mes`);
+      toast(`Empleados extra actualizados: ${val} · total ${formatPrecio(precioBase + val * precioExtra)}/mes`);
     },
     onError: (err: unknown) => {
       toast(mensajeError(err, "No se pudieron actualizar los empleados extra."), "error");
@@ -366,14 +374,8 @@ function ModalSuscripcion({
     }
   };
 
-  const handleMesesChange = (val: number) => {
-    setMeses(val);
-    if (val === LIFETIME_SENTINEL) {
-      setMonto('');
-    } else {
-      setMonto(String(totalMensual * val));
-    }
-  };
+  // El monto sugerido se recalcula solo; un monto tecleado se respeta.
+  const handleMesesChange = (val: number) => setMeses(val);
 
   const estado = suscripcion?.estado ?? "SinSuscripcion";
   const vencimiento = suscripcion?.fechaVencimiento;
@@ -517,15 +519,12 @@ function ModalSuscripcion({
                   onChange={e => {
                     const val = Math.max(0, Math.floor(Number(e.target.value) || 0));
                     setEmpleadosExtra(val);
-                    if (meses !== LIFETIME_SENTINEL) {
-                      setMonto(String((precioBase + val * PRECIO_EXTRA_EMP) * meses));
-                    }
                   }}
                   disabled={mutarEmpleadosExtra.isPending}
                   className="w-16 text-right tabular-nums rounded-lg border border-slate-300 dark:border-slate-600 px-2 py-0.5 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200"
                 />
                 {empleadosExtra > 0 && (
-                  <span className="text-xs text-slate-400 tabular-nums">+{formatPrecio(empleadosExtra * PRECIO_EXTRA_EMP)}/mes</span>
+                  <span className="text-xs text-slate-400 tabular-nums">+{formatPrecio(empleadosExtra * precioExtra)}/mes</span>
                 )}
               </div>
             </div>
@@ -540,10 +539,7 @@ function ModalSuscripcion({
               <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
                 <button
                   type="button"
-                  onClick={() => {
-                    setEmpleadosExtra(extraGuardado);
-                    if (meses !== LIFETIME_SENTINEL) setMonto(String((precioBase + extraGuardado * PRECIO_EXTRA_EMP) * meses));
-                  }}
+                  onClick={() => setEmpleadosExtra(extraGuardado)}
                   disabled={mutarEmpleadosExtra.isPending}
                   className="min-h-[44px] lg:min-h-[36px] px-3.5 rounded-lg border border-slate-300 dark:border-slate-600 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50"
                 >
@@ -605,8 +601,9 @@ function ModalSuscripcion({
                 <input
                   type="text"
                   inputMode="decimal"
+                  aria-label="Monto (MXN)"
                   value={monto}
-                  onChange={(e) => setMonto(e.target.value)}
+                  onChange={(e) => setMontoManual(e.target.value)}
                   className={`${CAMPO_MODAL} ${CAMPO_OK} tabular-nums`}
                 />
                 {meses === LIFETIME_SENTINEL && (
@@ -823,6 +820,7 @@ function ModalSuscripcion({
             antes={planActual}
             despues={planPorConfirmar}
             empleadosExtra={extraGuardado}
+            precioExtra={precioExtra}
             moduloPagosAntes={!!negocio.moduloPagosHabilitado}
           />
         )}
@@ -844,15 +842,18 @@ function DetalleCambioPlan({
   antes,
   despues,
   empleadosExtra,
+  precioExtra,
   moduloPagosAntes,
 }: {
   antes: PlanDto | undefined;
   despues: PlanDto;
   empleadosExtra: number;
+  precioExtra: number;
   moduloPagosAntes: boolean;
 }) {
-  const extra = empleadosExtra * PRECIO_EXTRA_EMP;
-  const moduloDespues = planHabilitaModuloPagos(despues);
+  const extra = empleadosExtra * precioExtra;
+  // El backend dice qué plan enciende el módulo (la misma regla que aplica SetPlan).
+  const moduloDespues = despues.habilitaModuloPagos;
   const filas: { etiqueta: string; antes: string; despues: string }[] = [
     {
       etiqueta: "Precio del plan",
@@ -1206,7 +1207,7 @@ function EmpleadosExtraFila({
     setValor(suscripcion.empleadosExtra);
   }
   const cambiado = valor !== suscripcion.empleadosExtra;
-  const nuevoTotal = suscripcion.precioBase + valor * PRECIO_EXTRA_EMP;
+  const nuevoTotal = suscripcion.precioBase + valor * suscripcion.precioEmpleadoExtra;
 
   return (
     <div className="flex items-center justify-center gap-1.5">
@@ -1441,9 +1442,12 @@ export default function NegociosAdminPage() {
     onError: () => toast("Error al actualizar el módulo de pagos", "error"),
   });
 
+  // Como togglePagos, se envía el valor absoluto (no "alternar"): deshacer desde
+  // un aviso viejo o reintentar tras perder la respuesta no invierte el estado.
   const { mutate: toggleTester } = useMutation({
-    mutationFn: ({ id }: { id: string; nombre: string; deshacer?: boolean }) => adminApi.toggleTester(id),
-    onSuccess: (data, { id, nombre, deshacer }) => {
+    mutationFn: ({ id, esTester }: { id: string; esTester: boolean; nombre: string; deshacer?: boolean }) =>
+      adminApi.setTester(id, esTester),
+    onSuccess: (data, { id, esTester, nombre, deshacer }) => {
       qc.setQueryData(
         ["admin-negocios-metricas"],
         (old: NegocioMetricasDto[] | undefined) =>
@@ -1457,7 +1461,7 @@ export default function NegociosAdminPage() {
         return;
       }
       toast(mensaje, "exito", {
-        accion: { etiqueta: "Deshacer", onClick: () => toggleTester({ id, nombre, deshacer: true }) },
+        accion: { etiqueta: "Deshacer", onClick: () => toggleTester({ id, esTester: !esTester, nombre, deshacer: true }) },
       });
     },
     onError: () => toast("Error al actualizar el modo tester", "error"),
@@ -1470,7 +1474,7 @@ export default function NegociosAdminPage() {
       adminApi.setEmpleadosExtra(s.negocioId, valor),
     onSuccess: (_, { s, valor }) => {
       qc.invalidateQueries({ queryKey: ["admin-suscripciones"] });
-      toast(`Empleados extra de ${s.negocioNombre}: ${valor} · total ${formatPrecio(s.precioBase + valor * PRECIO_EXTRA_EMP)}/mes`);
+      toast(`Empleados extra de ${s.negocioNombre}: ${valor} · total ${formatPrecio(s.precioBase + valor * s.precioEmpleadoExtra)}/mes`);
     },
     onError: (err: unknown) => toast(mensajeError(err, "No se pudieron actualizar los empleados extra."), "error"),
   });
@@ -1724,7 +1728,7 @@ export default function NegociosAdminPage() {
                     onColores={() => abrirColores(neg)}
                     onSuscripcion={() => abrirSuscripcion(neg)}
                     onTogglePagos={(habilitado) => togglePagos({ id: neg.id, habilitado, nombre: neg.nombre })}
-                    onToggleTester={() => toggleTester({ id: neg.id, nombre: neg.nombre })}
+                    onToggleTester={() => toggleTester({ id: neg.id, esTester: !neg.esTester, nombre: neg.nombre })}
                     onEliminar={() => abrirEliminar(neg)}
                     // Solo la tarjeta cuyo estado está cambiando queda en espera (AP-06).
                     isToggling={idsCambiandoEstado.has(neg.id)}

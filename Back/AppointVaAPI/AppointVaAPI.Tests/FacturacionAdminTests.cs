@@ -32,6 +32,15 @@ public class FacturacionAdminTests
     public void PrecioMensual_SumaLosEmpleadosExtra() =>
         FacturacionAdmin.PrecioMensual(449m, 2).Should().Be(549m);
 
+    [Theory]
+    [InlineData("Pro", true)]
+    [InlineData("pro", true)]
+    [InlineData("Basico", false)]
+    [InlineData("Premium", false)]
+    [InlineData(null, false)]
+    public void PlanHabilitaModuloPagos_SoloLosPlanesPro(string? nombre, bool esperado) =>
+        FacturacionAdmin.PlanHabilitaModuloPagos(nombre).Should().Be(esperado);
+
     [Fact]
     public void IngresoMensual_ConSuscripcionVigente_EsElPrecioMensual()
     {
