@@ -1,6 +1,63 @@
 import { describe, it, expect } from "vitest";
-import { validarEdicionPago, esColorHexValido, ordenarNegociosAdmin } from "./negociosAdmin";
-import type { NegocioMetricasDto } from "../api/admin";
+import {
+  validarEdicionPago, esColorHexValido, ordenarNegociosAdmin,
+  resumenFacturacion, motivoSinIngreso, nombrePlan, planHabilitaModuloPagos,
+} from "./negociosAdmin";
+import type { NegocioMetricasDto, SuscripcionResumenDto } from "../api/admin";
+
+function fila(extra: Partial<SuscripcionResumenDto>): SuscripcionResumenDto {
+  return {
+    negocioId: crypto.randomUUID(), negocioNombre: "N", negocioSlug: "n",
+    fechaVencimiento: null, estado: "SinSuscripcion", diasRestantes: null, totalPagos: 0, ultimoPago: null,
+    planNombre: "Pro", precioBase: 449, maxEmpleadosBase: 4, empleadosExtra: 0, totalMensual: 449, sector: "belleza",
+    esTester: false, suscripcionVigente: false, accesoPermanente: false, ingresoMensual: 0,
+    ...extra,
+  };
+}
+
+describe("resumenFacturacion (G3)", () => {
+  it("separa plan asignado de suscripción vigente y suma solo el ingreso", () => {
+    const filas = [
+      fila({}), // Pro sin pago: tiene plan, no ingresa
+      fila({ estado: "Activa", suscripcionVigente: true, ingresoMensual: 549, totalMensual: 549 }),
+      fila({ estado: "Vencida", ingresoMensual: 0 }),
+      fila({ estado: "Activa", suscripcionVigente: true, esTester: true, ingresoMensual: 0 }),
+      fila({ planNombre: null, precioBase: 0, totalMensual: 0 }),
+    ];
+    expect(resumenFacturacion(filas)).toEqual({ conPlanAsignado: 3, conSuscripcionVigente: 1, ingresoMensual: 549 });
+  });
+
+  it("el total es la suma de la columna de las filas, igual que el pie", () => {
+    const filas = [
+      fila({ estado: "Activa", suscripcionVigente: true, ingresoMensual: 449 }),
+      fila({ estado: "PorVencer", suscripcionVigente: true, ingresoMensual: 249 }),
+    ];
+    const sumaFilas = filas.reduce((s, f) => s + f.ingresoMensual, 0);
+    expect(resumenFacturacion(filas).ingresoMensual).toBe(sumaFilas);
+  });
+
+  it("explica por qué una fila no aporta", () => {
+    expect(motivoSinIngreso(fila({}))).toMatch(/Sin pago registrado/);
+    expect(motivoSinIngreso(fila({ estado: "Vencida" }))).toMatch(/vencida/);
+    expect(motivoSinIngreso(fila({ estado: "Activa", suscripcionVigente: true, accesoPermanente: true }))).toMatch(/de por vida/);
+    expect(motivoSinIngreso(fila({ planNombre: null }))).toBe("Sin plan asignado");
+    expect(motivoSinIngreso(fila({ ingresoMensual: 449 }))).toBeNull();
+  });
+});
+
+describe("nombrePlan (M6)", () => {
+  it("pone el acento a los planes conocidos y deja los demás como vienen", () => {
+    expect(nombrePlan("Basico")).toBe("Básico");
+    expect(nombrePlan("PRO")).toBe("Pro");
+    expect(nombrePlan("Empresarial")).toBe("Empresarial");
+    expect(nombrePlan(null)).toBe("");
+  });
+
+  it("el módulo de pagos va con los planes que dicen Pro, como en el backend", () => {
+    expect(planHabilitaModuloPagos({ nombre: "Pro" })).toBe(true);
+    expect(planHabilitaModuloPagos({ nombre: "Premium" })).toBe(false);
+  });
+});
 
 describe("validarEdicionPago (AP-23)", () => {
   const ok = { monto: "449", desde: "2026-01-01", hasta: "2026-01-31" };

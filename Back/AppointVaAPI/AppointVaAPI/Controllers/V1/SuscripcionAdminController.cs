@@ -56,6 +56,7 @@ namespace AppointVaAPI.Controllers.V1
                     n.FechaVencimiento,
                     n.EmpleadosExtra,
                     n.Sector,
+                    n.EsTester,
                     PlanNombre = n.Plan != null ? n.Plan.Nombre : null,
                     PrecioBase = n.Plan != null ? n.Plan.PrecioMensual : 0m,
                     MaxEmpleadosBase = n.Plan != null ? n.Plan.MaxEmpleados : 0
@@ -84,17 +85,9 @@ namespace AppointVaAPI.Controllers.V1
 
             var resultado = negocios.Select(n =>
             {
-                int? diasRestantes = n.FechaVencimiento.HasValue
-                    ? (int?)(n.FechaVencimiento.Value.Date - hoy).TotalDays
-                    : null;
-
-                string estado = diasRestantes switch
-                {
-                    null => "SinSuscripcion",
-                    > 7  => "Activa",
-                    >= 0 => "PorVencer",
-                    _    => "Vencida"
-                };
+                var diasRestantes = FacturacionAdmin.DiasRestantes(n.FechaVencimiento, hoy);
+                var estado = FacturacionAdmin.Estado(diasRestantes);
+                var totalMensual = FacturacionAdmin.PrecioMensual(n.PrecioBase, n.EmpleadosExtra);
 
                 var ultimoPago = ultimosPagos.FirstOrDefault(p => p.NegocioId == n.Id);
                 var totalPagos = conteosPagos.FirstOrDefault(c => c.NegocioId == n.Id)?.Total ?? 0;
@@ -113,8 +106,12 @@ namespace AppointVaAPI.Controllers.V1
                     PrecioBase       = n.PrecioBase,
                     MaxEmpleadosBase = n.MaxEmpleadosBase,
                     EmpleadosExtra   = n.EmpleadosExtra,
-                    TotalMensual     = n.PrecioBase + (n.EmpleadosExtra * 50m),
-                    Sector           = n.Sector
+                    TotalMensual     = totalMensual,
+                    Sector           = n.Sector,
+                    EsTester           = n.EsTester,
+                    SuscripcionVigente = FacturacionAdmin.EsVigente(estado),
+                    AccesoPermanente   = FacturacionAdmin.EsAccesoPermanente(diasRestantes),
+                    IngresoMensual     = FacturacionAdmin.IngresoMensual(estado, diasRestantes, n.EsTester, totalMensual)
                 };
             }).ToList();
 

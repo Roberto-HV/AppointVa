@@ -102,8 +102,17 @@ export interface SuscripcionResumenDto {
   precioBase: number;
   maxEmpleadosBase: number;
   empleadosExtra: number;
+  /** Precio de lista del plan asignado más los empleados extra, se pague o no. */
   totalMensual: number;
   sector: string;
+  // Lote 2 (G3): definidas en el backend (`FacturacionAdmin`).
+  esTester: boolean;
+  /** Hay un pago que cubre hoy (Activa o Por vencer). */
+  suscripcionVigente: boolean;
+  /** Acceso de por vida: vigente, pero sin cobro mensual. */
+  accesoPermanente: boolean;
+  /** Lo que el negocio aporta al ingreso mensual. Filas, pie y KPIs suman esto. */
+  ingresoMensual: number;
 }
 
 export interface RegistrarPagoDto {

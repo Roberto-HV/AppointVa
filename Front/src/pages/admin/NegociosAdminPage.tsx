@@ -17,7 +17,10 @@ import {
 import Modal from "../../components/ui/Modal";
 import ModalAcciones from "../../components/ui/ModalAcciones";
 import ConfirmarAccion from "../../components/ui/ConfirmarAccion";
-import { esPendienteActivacion, ordenarNegociosAdmin, validarEdicionPago, esColorHexValido } from "../../utils/negociosAdmin";
+import {
+  esPendienteActivacion, ordenarNegociosAdmin, validarEdicionPago, esColorHexValido,
+  resumenFacturacion, motivoSinIngreso, nombrePlan, planHabilitaModuloPagos,
+} from "../../utils/negociosAdmin";
 import BarraProgreso from "../../components/ui/BarraProgreso";
 import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
 import BotonAccion from "../../components/ui/BotonAccion";
@@ -44,6 +47,8 @@ const ESTADO_BADGE: Record<string, { label: string; className: string }> = {
   PorVencer: { label: 'Por vencer', className: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
   Vencida: { label: 'Vencida', className: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
   SinSuscripcion: { label: 'Sin suscripción', className: 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400' },
+  // Con plan asignado pero sin pago: no es lo mismo que no tener plan (G3).
+  SinPago: { label: 'Sin pago registrado', className: 'bg-amber-50 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300' },
 };
 
 const PRECIO_EXTRA_EMP = 50;
@@ -149,11 +154,17 @@ function BadgeSuscripcion({
   estado,
   dias,
   vence,
+  conPlan = false,
 }: {
   estado: SuscripcionResumenDto["estado"];
   dias: number | null;
   /** Fecha de vencimiento ISO; alimenta el `title` con el dato exacto. */
   vence?: string | null;
+  /**
+   * Tiene un plan asignado. Sin pago, "Pro" junto a "Sin suscripción" no dejaba
+   * claro si el negocio paga (G3): se dice "Sin pago registrado", en ámbar.
+   */
+  conPlan?: boolean;
 }) {
   const titulo = vence ? `Vence el ${formatFechaMx(vence)}` : undefined;
 
@@ -190,6 +201,16 @@ function BadgeSuscripcion({
       </span>
     );
   }
+  if (conPlan) {
+    return (
+      <span
+        title="Tiene un plan asignado, pero no hay un pago que lo cubra: no cuenta en el ingreso"
+        className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300"
+      >
+        <Clock size={10} aria-hidden="true" /> Sin pago registrado
+      </span>
+    );
+  }
   return (
     <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400">
       <Clock size={10} aria-hidden="true" /> Sin suscripción
@@ -215,12 +236,16 @@ function ModalSuscripcion({
   const [confirmandoEliminarId, setConfirmandoEliminarId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({ monto: "", notas: "", desde: "", hasta: "" });
 
-  const [empleadosExtra, setEmpleadosExtra] = useState(suscripcion?.empleadosExtra ?? 0);
+  const extraGuardado = suscripcion?.empleadosExtra ?? 0;
+  const [empleadosExtra, setEmpleadosExtra] = useState(extraGuardado);
   const precioBase = suscripcion?.precioBase ?? 0;
   const totalMensual = precioBase + empleadosExtra * PRECIO_EXTRA_EMP;
+  const extraSinGuardar = empleadosExtra !== extraGuardado;
 
   const [meses, setMeses] = useState(1);
-  const [monto, setMonto] = useState("");
+  // "1 mes" ya viene marcado: el monto empieza en el total mensual (M4) en vez
+  // de vacío con el botón en "$0.00" y deshabilitado.
+  const [monto, setMonto] = useState(() => (totalMensual > 0 ? String(totalMensual) : ""));
   const [notas, setNotas] = useState("");
   const [tab, setTab] = useState<'cuenta' | 'pagos'>('cuenta');
 
@@ -254,18 +279,12 @@ function ModalSuscripcion({
     mutationFn: (val: number) => adminApi.setEmpleadosExtra(negocio.id, val),
     onSuccess: (_, val) => {
       qc.invalidateQueries({ queryKey: ['admin-suscripciones'] });
-      toast(`Empleados extra actualizados: ${val}`);
+      toast(`Empleados extra actualizados: ${val} · total ${formatPrecio(precioBase + val * PRECIO_EXTRA_EMP)}/mes`);
     },
     onError: (err: unknown) => {
       toast(mensajeError(err, "No se pudieron actualizar los empleados extra."), "error");
     },
   });
-
-  // Solo se guarda al salir del campo si el valor cambió (antes se guardaba siempre, en silencio).
-  const guardarEmpleadosExtra = (val: number) => {
-    if (val === (suscripcion?.empleadosExtra ?? 0)) return;
-    mutarEmpleadosExtra.mutate(val);
-  };
 
   const mutarEditar = useMutation({
     mutationFn: ({ pagoId, dto }: { pagoId: string; dto: EditarPagoRequestDto }) =>
@@ -326,15 +345,20 @@ function ModalSuscripcion({
     }
   };
 
-  const handleSetPlan = async (planId: string | null) => {
-    if (guardandoPlan || planId === negocio.planId) return;
+  // El plan cambia límites y precio: un clic en la pastilla solo propone el
+  // cambio, y se aplica tras ver el antes y el después (I2).
+  const [planPorConfirmar, setPlanPorConfirmar] = useState<PlanDto | null>(null);
+  const planActual = planes.find(p => p.id === negocio.planId);
+
+  const handleSetPlan = async (plan: PlanDto) => {
+    if (guardandoPlan || plan.id === negocio.planId) return;
     setGuardandoPlan(true);
     try {
-      await adminApi.setPlan(negocio.id, planId);
+      await adminApi.setPlan(negocio.id, plan.id);
       await qc.invalidateQueries({ queryKey: ['admin-suscripciones'] });
       await qc.invalidateQueries({ queryKey: ['admin-negocios-metricas'] });
-      const nombre = planes.find(p => p.id === planId)?.nombre;
-      toast(nombre ? `Plan actualizado: ${nombre}` : "Plan actualizado");
+      toast(`Plan actualizado: ${nombrePlan(plan.nombre)}`);
+      setPlanPorConfirmar(null);
     } catch (err) {
       toast(mensajeError(err, "No se pudo actualizar el plan. Intenta de nuevo."), "error");
     } finally {
@@ -366,6 +390,7 @@ function ModalSuscripcion({
             estado={estado}
             dias={suscripcion?.diasRestantes ?? null}
             vence={vencimiento}
+            conPlan={!!suscripcion?.planNombre}
           />
         </div>
         {vencimiento && (
@@ -400,7 +425,7 @@ function ModalSuscripcion({
                 <button
                   key={p.id}
                   type="button"
-                  onClick={() => handleSetPlan(p.id)}
+                  onClick={() => { if (p.id !== negocio.planId) setPlanPorConfirmar(p); }}
                   disabled={guardandoPlan}
                   aria-pressed={negocio.planId === p.id}
                   className={`min-h-[44px] lg:min-h-[36px] px-3.5 rounded-full text-xs font-medium border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-brand/40 dark:focus-visible:ring-accent-brand/40 ${
@@ -409,7 +434,7 @@ function ModalSuscripcion({
                       : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-600 hover:border-slate-500'
                   }`}
                 >
-                  {p.nombre}
+                  {nombrePlan(p.nombre)}
                 </button>
               ))}
               {planes.length === 0 && (
@@ -471,8 +496,8 @@ function ModalSuscripcion({
           <div data-testid="billing-summary" className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-slate-500 dark:text-slate-400">Plan</span>
-              <span className="font-medium text-slate-800 dark:text-slate-200">
-                {suscripcion?.planNombre ?? '—'} · {formatPrecio(precioBase)}/mes
+              <span className="font-medium text-slate-800 dark:text-slate-200 tabular-nums">
+                {suscripcion?.planNombre ? nombrePlan(suscripcion.planNombre) : '—'} · {formatPrecio(precioBase)}/mes
               </span>
             </div>
             <div className="flex justify-between">
@@ -490,25 +515,50 @@ function ModalSuscripcion({
                   aria-label="Empleados extra"
                   value={empleadosExtra}
                   onChange={e => {
-                    const val = Math.max(0, Number(e.target.value));
+                    const val = Math.max(0, Math.floor(Number(e.target.value) || 0));
                     setEmpleadosExtra(val);
                     if (meses !== LIFETIME_SENTINEL) {
                       setMonto(String((precioBase + val * PRECIO_EXTRA_EMP) * meses));
                     }
                   }}
-                  onBlur={e => guardarEmpleadosExtra(Math.max(0, Number(e.target.value)))}
                   disabled={mutarEmpleadosExtra.isPending}
-                  className="w-16 text-right rounded-lg border border-slate-300 dark:border-slate-600 px-2 py-0.5 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200"
+                  className="w-16 text-right tabular-nums rounded-lg border border-slate-300 dark:border-slate-600 px-2 py-0.5 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200"
                 />
                 {empleadosExtra > 0 && (
-                  <span className="text-xs text-slate-400">+{formatPrecio(empleadosExtra * PRECIO_EXTRA_EMP)}/mes</span>
+                  <span className="text-xs text-slate-400 tabular-nums">+{formatPrecio(empleadosExtra * PRECIO_EXTRA_EMP)}/mes</span>
                 )}
               </div>
             </div>
             <div className="border-t border-slate-200 dark:border-slate-700 pt-2 flex justify-between font-semibold">
               <span className="text-slate-700 dark:text-slate-300">Total mensual</span>
-              <span className="text-slate-900 dark:text-slate-100">{formatPrecio(totalMensual)}/mes</span>
+              <span className="text-slate-900 dark:text-slate-100 tabular-nums">{formatPrecio(totalMensual)}/mes</span>
             </div>
+            {/* Antes se guardaba al salir del campo, sin ver el nuevo total (I2):
+                ahora el cambio queda pendiente hasta pulsar "Guardar", que lo
+                nombra con el precio que resultará. */}
+            {extraSinGuardar && (
+              <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEmpleadosExtra(extraGuardado);
+                    if (meses !== LIFETIME_SENTINEL) setMonto(String((precioBase + extraGuardado * PRECIO_EXTRA_EMP) * meses));
+                  }}
+                  disabled={mutarEmpleadosExtra.isPending}
+                  className="min-h-[44px] lg:min-h-[36px] px-3.5 rounded-lg border border-slate-300 dark:border-slate-600 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50"
+                >
+                  Descartar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => mutarEmpleadosExtra.mutate(empleadosExtra)}
+                  disabled={mutarEmpleadosExtra.isPending}
+                  className="min-h-[44px] lg:min-h-[36px] px-3.5 rounded-lg bg-slate-700 hover:bg-slate-800 text-white dark:bg-slate-600 dark:hover:bg-slate-500 text-xs font-semibold tabular-nums disabled:opacity-50"
+                >
+                  {mutarEmpleadosExtra.isPending ? "Guardando…" : `Guardar · ${formatPrecio(totalMensual)}/mes`}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -765,6 +815,92 @@ function ModalSuscripcion({
         </div>
       )}
 
+      <ConfirmarAccion
+        abierto={planPorConfirmar !== null}
+        titulo={`¿Cambiar ${negocio.nombre} al plan ${nombrePlan(planPorConfirmar?.nombre)}?`}
+        mensaje={planPorConfirmar && (
+          <DetalleCambioPlan
+            antes={planActual}
+            despues={planPorConfirmar}
+            empleadosExtra={extraGuardado}
+            moduloPagosAntes={!!negocio.moduloPagosHabilitado}
+          />
+        )}
+        etiquetaConfirmar="Cambiar plan"
+        pendiente={guardandoPlan}
+        onConfirmar={() => planPorConfirmar && handleSetPlan(planPorConfirmar)}
+        onCerrar={() => { if (!guardandoPlan) setPlanPorConfirmar(null); }}
+      />
+    </div>
+  );
+}
+
+/**
+ * El antes y el después de un cambio de plan: precio, total con los empleados
+ * extra, límites y el módulo de pagos, que el backend enciende o apaga según el
+ * plan. Con eso a la vista, el clic deja de ser un cambio de cobro a ciegas.
+ */
+function DetalleCambioPlan({
+  antes,
+  despues,
+  empleadosExtra,
+  moduloPagosAntes,
+}: {
+  antes: PlanDto | undefined;
+  despues: PlanDto;
+  empleadosExtra: number;
+  moduloPagosAntes: boolean;
+}) {
+  const extra = empleadosExtra * PRECIO_EXTRA_EMP;
+  const moduloDespues = planHabilitaModuloPagos(despues);
+  const filas: { etiqueta: string; antes: string; despues: string }[] = [
+    {
+      etiqueta: "Precio del plan",
+      antes: antes ? `${formatPrecio(antes.precioMensual)}/mes` : "—",
+      despues: `${formatPrecio(despues.precioMensual)}/mes`,
+    },
+    ...(empleadosExtra > 0 ? [{
+      etiqueta: `Total con ${empleadosExtra} empleado${empleadosExtra === 1 ? "" : "s"} extra`,
+      antes: antes ? `${formatPrecio(antes.precioMensual + extra)}/mes` : "—",
+      despues: `${formatPrecio(despues.precioMensual + extra)}/mes`,
+    }] : []),
+    {
+      etiqueta: "Empleados incluidos",
+      antes: antes ? String(antes.maxEmpleados) : "—",
+      despues: String(despues.maxEmpleados),
+    },
+    {
+      etiqueta: "Citas al mes",
+      antes: antes ? String(antes.maxCitasMes) : "—",
+      despues: String(despues.maxCitasMes),
+    },
+  ];
+
+  return (
+    <div className="space-y-3">
+      <dl className="rounded-lg border border-border divide-y divide-border">
+        <div className="flex items-center justify-between gap-3 px-3 py-2">
+          <dt>Plan</dt>
+          <dd className="font-medium text-foreground">
+            {antes ? nombrePlan(antes.nombre) : "Sin plan"} → {nombrePlan(despues.nombre)}
+          </dd>
+        </div>
+        {filas.map((f) => (
+          <div key={f.etiqueta} className="flex items-center justify-between gap-3 px-3 py-2">
+            <dt>{f.etiqueta}</dt>
+            {/* Sin plan previo no hay "antes": solo el valor que tendrá. */}
+            <dd className="font-medium text-foreground tabular-nums whitespace-nowrap">
+              {antes ? `${f.antes} → ${f.despues}` : f.despues}
+            </dd>
+          </div>
+        ))}
+      </dl>
+      {moduloDespues !== moduloPagosAntes && (
+        <p className="text-amber-800 dark:text-amber-300">
+          El módulo de pagos quedará {moduloDespues ? "habilitado" : "deshabilitado"} con este plan.
+        </p>
+      )}
+      <p>No registra ningún pago ni cambia la fecha de vencimiento. Los próximos pagos usarán el nuevo precio.</p>
     </div>
   );
 }
@@ -832,13 +968,14 @@ function TarjetaNegocio({
       {/* Plan + suscripción */}
       <div className="px-4 pb-3 flex items-center gap-2 flex-wrap">
         <span className="text-[11px] font-semibold bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-300 px-2 py-0.5 rounded-full">
-          {negocio.planNombre ?? "Sin plan"}
+          {negocio.planNombre ? nombrePlan(negocio.planNombre) : "Sin plan"}
         </span>
         {suscripcion && (
           <BadgeSuscripcion
             estado={suscripcion.estado}
             dias={suscripcion.diasRestantes}
             vence={suscripcion.fechaVencimiento}
+            conPlan={!!suscripcion.planNombre}
           />
         )}
         {suscripcion && (
@@ -916,7 +1053,9 @@ function TarjetaNegocio({
           a su propio renglón: es la única irreversible y no debe quedar a un
           dedo de distancia de las demás mientras se recorre la tarjeta. */}
       <div className="border-t border-slate-100 dark:border-slate-700 px-4 py-3 space-y-1.5">
-        <div className="grid grid-cols-2 gap-1.5">
+        {/* Sin "Confirmar correo" quedan cinco: la última ocupa el renglón
+            entero en vez de dejar un hueco a su lado. */}
+        <div className="grid grid-cols-2 gap-1.5 [&>*:last-child:nth-child(odd)]:col-span-2">
           <button
             onClick={onSuscripcion}
             className={`${ACCION_TARJETA} border-amber-300 bg-amber-50 text-amber-700 hover:border-amber-500 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-400 dark:hover:bg-amber-950`}
@@ -941,13 +1080,17 @@ function TarjetaNegocio({
           >
             <UserPlus size={12} aria-hidden="true" /> Propietario
           </button>
-          <button
-            onClick={onConfirmarEmail}
-            title="Confirmar manualmente el correo del propietario"
-            className={`${ACCION_TARJETA} border-sky-300 bg-sky-50 text-sky-600 hover:border-sky-500 hover:bg-sky-100 dark:border-sky-800 dark:bg-sky-950/40 dark:text-sky-400 dark:hover:bg-sky-950`}
-          >
-            <MailCheck size={12} aria-hidden="true" /> Confirmar correo
-          </button>
+          {/* Solo cuando hay un propietario con el correo sin verificar: con
+              "Correo verificado" al lado, el botón era un clic que no hacía nada. */}
+          {negocio.emailConfirmado === false && (
+            <button
+              onClick={onConfirmarEmail}
+              title="Confirmar manualmente el correo del propietario"
+              className={`${ACCION_TARJETA} border-sky-300 bg-sky-50 text-sky-600 hover:border-sky-500 hover:bg-sky-100 dark:border-sky-800 dark:bg-sky-950/40 dark:text-sky-400 dark:hover:bg-sky-950`}
+            >
+              <MailCheck size={12} aria-hidden="true" /> Confirmar correo
+            </button>
+          )}
           <button
             onClick={onColores}
             className={`${ACCION_TARJETA} border-violet-300 bg-violet-50 text-violet-600 hover:border-violet-500 hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-950/40 dark:text-violet-400 dark:hover:bg-violet-950`}
@@ -1041,6 +1184,57 @@ function InterruptorTarjeta({
   );
 }
 
+/**
+ * Empleados extra en una fila de Facturación. Ya no se guarda al salir del
+ * campo (I2): mientras el valor difiere del guardado aparece "Guardar" con el
+ * nuevo total, así el cambio de cobro se ve antes de aplicarse.
+ */
+function EmpleadosExtraFila({
+  suscripcion,
+  guardando,
+  onGuardar,
+}: {
+  suscripcion: SuscripcionResumenDto;
+  guardando: boolean;
+  onGuardar: (valor: number) => void;
+}) {
+  const [valor, setValor] = useState(suscripcion.empleadosExtra);
+  // Si el dato guardado cambia (otro guardado, una recarga), el borrador lo sigue.
+  const [guardadoPrevio, setGuardadoPrevio] = useState(suscripcion.empleadosExtra);
+  if (suscripcion.empleadosExtra !== guardadoPrevio) {
+    setGuardadoPrevio(suscripcion.empleadosExtra);
+    setValor(suscripcion.empleadosExtra);
+  }
+  const cambiado = valor !== suscripcion.empleadosExtra;
+  const nuevoTotal = suscripcion.precioBase + valor * PRECIO_EXTRA_EMP;
+
+  return (
+    <div className="flex items-center justify-center gap-1.5">
+      <input
+        type="number"
+        min={0}
+        aria-label={`Empleados extra de ${suscripcion.negocioNombre}`}
+        value={valor}
+        onChange={(e) => setValor(Math.max(0, Math.floor(Number(e.target.value) || 0)))}
+        onKeyDown={(e) => { if (e.key === "Escape") setValor(suscripcion.empleadosExtra); }}
+        disabled={guardando}
+        className="w-14 text-center tabular-nums rounded-lg border border-slate-200 dark:border-slate-600 px-1.5 py-0.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-sm"
+      />
+      {cambiado && (
+        <button
+          type="button"
+          onClick={() => onGuardar(valor)}
+          disabled={guardando}
+          aria-label={`Guardar ${valor} empleados extra de ${suscripcion.negocioNombre}: total ${formatPrecio(nuevoTotal)} al mes`}
+          className="min-h-[36px] px-2.5 rounded-lg bg-slate-700 hover:bg-slate-800 text-white dark:bg-slate-600 dark:hover:bg-slate-500 text-xs font-semibold tabular-nums whitespace-nowrap disabled:opacity-50"
+        >
+          {guardando ? "Guardando…" : `Guardar · ${formatPrecio(nuevoTotal)}`}
+        </button>
+      )}
+    </div>
+  );
+}
+
 // ── Page principal ─────────────────────────────────────────────────────────
 export default function NegociosAdminPage() {
   useTituloPagina("Negocios · Admin");
@@ -1066,7 +1260,6 @@ export default function NegociosAdminPage() {
   const [pasoEliminar, setPasoEliminar] = useState<1 | 2>(1);
   const [nombreConfirmacion, setNombreConfirmacion] = useState("");
 
-  const queryClient = qc;
   const [tab, setTab] = useState<'negocios' | 'facturacion'>('negocios');
 
   const {
@@ -1099,31 +1292,17 @@ export default function NegociosAdminPage() {
     [suscripciones]
   );
 
-  const testerIds = useMemo(
-    () => new Set(metricas.filter(m => m.esTester).map(m => m.id)),
-    [metricas]
-  );
-
+  // Los negocios de prueba no son clientes: fuera de la tabla y de las cifras.
   const sortedSuscripciones = useMemo(
     () => [...suscripciones]
-      .filter(s => !testerIds.has(s.negocioId))
+      .filter(s => !s.esTester)
       .sort((a, b) => (ESTADO_ORDER[a.estado] ?? 4) - (ESTADO_ORDER[b.estado] ?? 4)),
-    [suscripciones, testerIds]
+    [suscripciones]
   );
 
-  const totalEstimado = suscripciones
-    .filter(s => s.estado !== 'SinSuscripcion' && !testerIds.has(s.negocioId))
-    .reduce((sum, s) => sum + s.totalMensual, 0);
-
-  const negociosConPlan = suscripciones.filter(s => s.estado !== 'SinSuscripcion' && !testerIds.has(s.negocioId)).length;
-
-  // Los negocios de prueba no cuentan como clientes con plan: quedan fuera de
-  // "Ingresos est." y del total de Facturación, así que contarlos aquí hacía
-  // que la tira de KPIs y el pie de la tabla dieran cifras distintas de lo
-  // mismo en la misma pantalla.
-  const conPlan = suscripciones.filter(
-    s => s.planNombre !== null && !testerIds.has(s.negocioId)
-  ).length;
+  // Un solo resumen para la tira de KPIs y el pie de Facturación (G3): antes
+  // cada uno contaba a su manera y "Con plan 2" convivía con "$0/mes".
+  const resumen = useMemo(() => resumenFacturacion(suscripciones), [suscripciones]);
 
   const { data: planes = [] } = useQuery({
     queryKey: ["planes"],
@@ -1194,10 +1373,17 @@ export default function NegociosAdminPage() {
   const desactivar = (id: string) => { if (!idsCambiandoEstado.has(id)) mutarDesactivar(id); };
   const desactivandoSeleccionado = !!negocioADesactivar && idsCambiandoEstado.has(negocioADesactivar.id);
 
-  const { mutate: confirmarEmail } = useMutation({
+  // Marcar un correo como verificado sin que el dueño abra el enlace se
+  // confirma antes, y al terminar la tarjeta lo refleja (antes no se recargaba).
+  const [negocioCorreoPorConfirmar, setNegocioCorreoPorConfirmar] = useState<NegocioMetricasDto | null>(null);
+  const { mutate: confirmarEmail, isPending: confirmandoEmail } = useMutation({
     mutationFn: (id: string) => adminApi.confirmarEmail(id),
-    onSuccess: () => toast("Email del propietario confirmado"),
-    onError: () => toast("Error al confirmar el email. Intenta de nuevo.", "error"),
+    onSuccess: () => {
+      invalidar();
+      setNegocioCorreoPorConfirmar(null);
+      toast("Correo del propietario confirmado");
+    },
+    onError: () => toast("Error al confirmar el correo. Intenta de nuevo.", "error"),
   });
 
   const { mutate: actualizarColores, isPending: guardandoColores } = useMutation({
@@ -1231,31 +1417,62 @@ export default function NegociosAdminPage() {
     },
   });
 
+  // Los interruptores son reversibles: aplican al instante y el aviso ofrece
+  // "Deshacer" (I2). Deshacer es otro cambio normal, con su propia entrada en la
+  // auditoría, y su aviso ya no ofrece deshacer de nuevo.
   const { mutate: togglePagos } = useMutation({
-    mutationFn: ({ id, habilitado }: { id: string; habilitado: boolean }) =>
+    mutationFn: ({ id, habilitado }: { id: string; habilitado: boolean; nombre: string; deshacer?: boolean }) =>
       adminApi.toggleModuloPagos(id, habilitado),
-    onSuccess: (_, { id, habilitado }) => {
+    onSuccess: (_, { id, habilitado, nombre, deshacer }) => {
       qc.setQueryData(
         ["admin-negocios-metricas"],
         (old: NegocioMetricasDto[] | undefined) =>
           (old ?? []).map((n) => (n.id === id ? { ...n, moduloPagosHabilitado: habilitado } : n))
       );
-      toast(habilitado ? "Módulo de pagos habilitado" : "Módulo de pagos deshabilitado");
+      const mensaje = `Módulo de pagos ${habilitado ? "habilitado" : "deshabilitado"} en ${nombre}`;
+      if (deshacer) {
+        toast(`Cambio deshecho: ${mensaje.charAt(0).toLowerCase()}${mensaje.slice(1)}`);
+        return;
+      }
+      toast(mensaje, "exito", {
+        accion: { etiqueta: "Deshacer", onClick: () => togglePagos({ id, habilitado: !habilitado, nombre, deshacer: true }) },
+      });
     },
     onError: () => toast("Error al actualizar el módulo de pagos", "error"),
   });
 
   const { mutate: toggleTester } = useMutation({
-    mutationFn: (id: string) => adminApi.toggleTester(id),
-    onSuccess: (data, id) => {
+    mutationFn: ({ id }: { id: string; nombre: string; deshacer?: boolean }) => adminApi.toggleTester(id),
+    onSuccess: (data, { id, nombre, deshacer }) => {
       qc.setQueryData(
         ["admin-negocios-metricas"],
         (old: NegocioMetricasDto[] | undefined) =>
           (old ?? []).map((n) => (n.id === id ? { ...n, esTester: data.esTester } : n))
       );
-      toast(data.esTester ? "Modo tester activado" : "Modo tester desactivado");
+      // Un tester sale (o vuelve) de las cifras de facturación.
+      qc.invalidateQueries({ queryKey: ["admin-suscripciones"] });
+      const mensaje = `Modo tester ${data.esTester ? "activado" : "desactivado"} en ${nombre}`;
+      if (deshacer) {
+        toast(`Cambio deshecho: ${mensaje.charAt(0).toLowerCase()}${mensaje.slice(1)}`);
+        return;
+      }
+      toast(mensaje, "exito", {
+        accion: { etiqueta: "Deshacer", onClick: () => toggleTester({ id, nombre, deshacer: true }) },
+      });
     },
     onError: () => toast("Error al actualizar el modo tester", "error"),
+  });
+
+  // Empleados extra desde la tabla de Facturación: mismo guardado explícito que
+  // en el modal de suscripción.
+  const { mutate: guardarExtraFila, isPending: guardandoExtraFila, variables: extraFilaEnCurso } = useMutation({
+    mutationFn: ({ s, valor }: { s: SuscripcionResumenDto; valor: number }) =>
+      adminApi.setEmpleadosExtra(s.negocioId, valor),
+    onSuccess: (_, { s, valor }) => {
+      qc.invalidateQueries({ queryKey: ["admin-suscripciones"] });
+      toast(`Empleados extra de ${s.negocioNombre}: ${valor} · total ${formatPrecio(s.precioBase + valor * PRECIO_EXTRA_EMP)}/mes`);
+    },
+    onError: (err: unknown) => toast(mensajeError(err, "No se pudieron actualizar los empleados extra."), "error"),
   });
 
   const { mutate: eliminarNegocio, isPending: eliminandoNegocio } = useMutation({
@@ -1389,12 +1606,26 @@ export default function NegociosAdminPage() {
           {[
             { label: "Total", value: String(metricas.length), color: "text-slate-700 dark:text-slate-200" },
             { label: "Activos", value: String(metricas.filter(n => n.activo === 1).length), color: "text-emerald-600 dark:text-emerald-400" },
-            { label: "Con plan", value: String(conPlan), color: "text-amber-600 dark:text-amber-400" },
-            { label: "Ingresos est.", value: formatPrecio(totalEstimado) + "/mes", color: "text-slate-900 dark:text-slate-100" },
-          ].map(({ label, value, color }) => (
+            // Plan asignado ≠ suscripción pagada (G3): la cifra es la que paga, y
+            // el pie dice cuántos tienen plan, para que "Pro" sin pago no se
+            // lea como ingreso.
+            {
+              label: "Con suscripción vigente",
+              value: String(resumen.conSuscripcionVigente),
+              nota: `de ${resumen.conPlanAsignado} con plan asignado`,
+              color: "text-amber-600 dark:text-amber-400",
+            },
+            {
+              label: "Ingreso mensual",
+              value: formatPrecio(resumen.ingresoMensual) + "/mes",
+              nota: "solo suscripciones vigentes",
+              color: "text-slate-900 dark:text-slate-100",
+            },
+          ].map(({ label, value, nota, color }) => (
             <div key={label} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 px-4 py-3 min-w-0">
               <p className="text-xs text-slate-400 dark:text-slate-400 mb-0.5 truncate">{label}</p>
-              <p className={`text-lg font-bold truncate ${color}`}>{value}</p>
+              <p className={`text-lg font-bold truncate tabular-nums ${color}`}>{value}</p>
+              {nota && <p className="text-[11px] leading-snug text-slate-500 dark:text-slate-400 tabular-nums">{nota}</p>}
             </div>
           ))}
         </div>
@@ -1488,12 +1719,12 @@ export default function NegociosAdminPage() {
                     suscripcion={suscripcionMap[neg.id]}
                     onActivar={() => activar(neg.id)}
                     onDesactivar={() => setNegocioADesactivar(neg)}
-                    onConfirmarEmail={() => confirmarEmail(neg.id)}
+                    onConfirmarEmail={() => setNegocioCorreoPorConfirmar(neg)}
                     onCrearPropietario={() => abrirPropietario(neg)}
                     onColores={() => abrirColores(neg)}
                     onSuscripcion={() => abrirSuscripcion(neg)}
-                    onTogglePagos={(habilitado) => togglePagos({ id: neg.id, habilitado })}
-                    onToggleTester={() => toggleTester(neg.id)}
+                    onTogglePagos={(habilitado) => togglePagos({ id: neg.id, habilitado, nombre: neg.nombre })}
+                    onToggleTester={() => toggleTester({ id: neg.id, nombre: neg.nombre })}
                     onEliminar={() => abrirEliminar(neg)}
                     // Solo la tarjeta cuyo estado está cambiando queda en espera (AP-06).
                     isToggling={idsCambiandoEstado.has(neg.id)}
@@ -1532,7 +1763,7 @@ export default function NegociosAdminPage() {
               ) : (
                 <EmptyState
                   title="Sin facturación todavía"
-                  description="Ningún negocio tiene un plan activo."
+                  description="No hay negocios activos que facturar."
                 />
               )}
             </div>
@@ -1546,7 +1777,10 @@ export default function NegociosAdminPage() {
                     <th className="px-4 py-3 text-left">Plan</th>
                     <th className="px-4 py-3 text-center">Emp. base</th>
                     <th className="px-4 py-3 text-center">Emp. extra</th>
-                    <th className="px-4 py-3 text-right">Total/mes</th>
+                    {/* Dos cifras distintas con nombre propio (G3): lo que cuesta
+                        el plan asignado y lo que de verdad entra cada mes. */}
+                    <th className="px-4 py-3 text-right whitespace-nowrap">Precio del plan</th>
+                    <th className="px-4 py-3 text-right whitespace-nowrap">Ingreso mensual</th>
                     <th className="px-4 py-3 text-center">Vence</th>
                     <th className="px-4 py-3 text-center">Estado</th>
                     <th className="px-4 py-3"></th>
@@ -1554,7 +1788,10 @@ export default function NegociosAdminPage() {
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                   {paginaFacturacion.visibles.map(s => {
-                    const badge = ESTADO_BADGE[s.estado] ?? ESTADO_BADGE.SinSuscripcion;
+                    const badge = s.estado === 'SinSuscripcion' && s.planNombre
+                      ? ESTADO_BADGE.SinPago
+                      : ESTADO_BADGE[s.estado] ?? ESTADO_BADGE.SinSuscripcion;
+                    const sinIngreso = motivoSinIngreso(s);
                     return (
                       <tr key={s.negocioId} className="bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition">
                         {/* `whitespace-nowrap`: la tabla ya se desplaza en
@@ -1562,31 +1799,26 @@ export default function NegociosAdminPage() {
                             cuatro líneas y estira la fila en vez de aprovechar
                             el desplazamiento que ya existe. */}
                         <td className="px-4 py-3 font-medium text-slate-800 dark:text-slate-200 whitespace-nowrap">{s.negocioNombre}</td>
-                        <td className="px-4 py-3 text-slate-600 dark:text-slate-400 whitespace-nowrap">{s.planNombre ?? '—'}</td>
-                        <td className="px-4 py-3 text-center text-slate-600 dark:text-slate-400">{s.maxEmpleadosBase}</td>
+                        <td className="px-4 py-3 text-slate-600 dark:text-slate-400 whitespace-nowrap">{s.planNombre ? nombrePlan(s.planNombre) : '—'}</td>
+                        <td className="px-4 py-3 text-center text-slate-600 dark:text-slate-400 tabular-nums">{s.maxEmpleadosBase}</td>
                         <td className="px-4 py-3 text-center">
-                          <input
-                            type="number"
-                            min={0}
-                            aria-label={`Empleados extra de ${s.negocioNombre}`}
-                            defaultValue={s.empleadosExtra}
-                            onBlur={e => {
-                              const val = Math.max(0, Number(e.target.value));
-                              if (val === s.empleadosExtra) return;
-                              adminApi.setEmpleadosExtra(s.negocioId, val)
-                                .then(() => {
-                                  queryClient.invalidateQueries({ queryKey: ['admin-suscripciones'] });
-                                  toast(`Empleados extra de ${s.negocioNombre}: ${val}`);
-                                })
-                                .catch(() => {
-                                  toast('No se pudo actualizar los empleados extra', 'error');
-                                });
-                            }}
-                            className="w-14 text-center rounded-lg border border-slate-200 dark:border-slate-600 px-1.5 py-0.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-sm"
+                          <EmpleadosExtraFila
+                            suscripcion={s}
+                            guardando={guardandoExtraFila && extraFilaEnCurso?.s.negocioId === s.negocioId}
+                            onGuardar={(valor) => guardarExtraFila({ s, valor })}
                           />
                         </td>
-                        <td className="px-4 py-3 text-right font-semibold text-slate-900 dark:text-slate-100">
-                          {formatPrecio(s.totalMensual)}
+                        <td className="px-4 py-3 text-right text-slate-600 dark:text-slate-400 tabular-nums whitespace-nowrap">
+                          {s.planNombre ? formatPrecio(s.totalMensual) : '—'}
+                        </td>
+                        <td className="px-4 py-3 text-right font-semibold text-slate-900 dark:text-slate-100 tabular-nums whitespace-nowrap">
+                          {sinIngreso ? (
+                            <span title={sinIngreso} className="relative font-normal text-slate-400 dark:text-slate-500">
+                              —<span className="sr-only"> {sinIngreso}</span>
+                            </span>
+                          ) : (
+                            formatPrecio(s.ingresoMensual)
+                          )}
                         </td>
                         <td className="px-4 py-3 text-center text-slate-500 dark:text-slate-400 whitespace-nowrap">
                           {/* Un acceso de por vida vence el año 2126: la fecha
@@ -1618,16 +1850,18 @@ export default function NegociosAdminPage() {
                   })}
                 </tbody>
                 <tfoot>
-                  {/* El pie suma TODAS las suscripciones vigentes, no las de la
-                      página ni las que pasan el filtro: es el ingreso del mes,
-                      y recortarlo al filtro haría que el mismo rótulo
-                      significara cosas distintas según lo que esté escrito en
-                      el buscador. */}
+                  {/* El pie suma la columna "Ingreso mensual" de TODAS las filas,
+                      no las de la página ni las que pasan el filtro: es el
+                      ingreso del mes, y recortarlo al filtro haría que el mismo
+                      rótulo significara cosas distintas según lo que esté
+                      escrito en el buscador. Es la misma cifra del KPI. */}
                   <tr className="bg-slate-50 dark:bg-slate-800 font-semibold text-slate-700 dark:text-slate-300">
-                    <td colSpan={4} className="px-4 py-3 text-right text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500">
-                      Total estimado · {negociosConPlan} negocio{negociosConPlan !== 1 ? 's' : ''} con suscripción
+                    <td colSpan={5} className="px-4 py-3 text-right text-xs text-slate-500 dark:text-slate-400">
+                      Ingreso mensual · {resumen.conSuscripcionVigente} de {resumen.conPlanAsignado} con suscripción vigente
                     </td>
-                    <td className="px-4 py-3 text-right text-slate-900 dark:text-slate-100 whitespace-nowrap">{formatPrecio(totalEstimado)}</td>
+                    <td data-testid="total-ingreso-mensual" className="px-4 py-3 text-right text-slate-900 dark:text-slate-100 whitespace-nowrap tabular-nums">
+                      {formatPrecio(resumen.ingresoMensual)}
+                    </td>
                     <td colSpan={3}></td>
                   </tr>
                 </tfoot>
@@ -1669,6 +1903,27 @@ export default function NegociosAdminPage() {
         onCerrar={() => { if (!desactivandoSeleccionado) setNegocioADesactivar(null); }}
       />
 
+      {/* Confirmación: marcar el correo del propietario como verificado */}
+      <ConfirmarAccion
+        abierto={negocioCorreoPorConfirmar !== null}
+        titulo="¿Confirmar el correo del propietario?"
+        mensaje={
+          <>
+            <p>
+              {negocioCorreoPorConfirmar?.propietarioEmail
+                ? <>Marcarás <span className="font-medium text-foreground break-all">{negocioCorreoPorConfirmar.propietarioEmail}</span> como verificado</>
+                : "Marcarás el correo del propietario como verificado"}{" "}
+              sin que abra el enlace que le enviamos.
+            </p>
+            <p className="mt-2">Hazlo solo si ya comprobaste que el correo es suyo.</p>
+          </>
+        }
+        etiquetaConfirmar="Confirmar correo"
+        pendiente={confirmandoEmail}
+        onConfirmar={() => negocioCorreoPorConfirmar && confirmarEmail(negocioCorreoPorConfirmar.id)}
+        onCerrar={() => { if (!confirmandoEmail) setNegocioCorreoPorConfirmar(null); }}
+      />
+
       {/* Modal: suscripción */}
       <Modal
         abierto={modalSuscripcion}
@@ -1678,7 +1933,9 @@ export default function NegociosAdminPage() {
       >
         {negocioSel && (
           <ModalSuscripcion
-            negocio={negocioSel}
+            // La copia de `negocioSel` se tomó al abrir: tras cambiar el plan,
+            // la pastilla marcada debe salir de los datos recargados.
+            negocio={metricas.find((m) => m.id === negocioSel.id) ?? negocioSel}
             suscripcion={suscripcionMap[negocioSel.id]}
             planes={planes}
           />

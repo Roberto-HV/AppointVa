@@ -16,6 +16,9 @@ vi.mock('../../api/admin', () => ({
     desactivar: vi.fn(),
     setSector: vi.fn(),
     setPlan: vi.fn(),
+    toggleModuloPagos: vi.fn(),
+    toggleTester: vi.fn(),
+    confirmarEmail: vi.fn(),
   },
 }));
 
@@ -59,6 +62,10 @@ const mockSuscripcion = {
   empleadosExtra: 0,
   totalMensual: 449,
   sector: 'belleza',
+  esTester: false,
+  suscripcionVigente: true,
+  accesoPermanente: false,
+  ingresoMensual: 449,
 };
 
 function renderPage() {
@@ -138,7 +145,9 @@ describe('Facturación tab', () => {
     diasRestantes: 0,
     totalMensual: 249,
     precioBase: 249,
-    planNombre: 'Básico',
+    planNombre: 'Basico',
+    suscripcionVigente: false,
+    ingresoMensual: 0,
   };
 
   beforeEach(() => {
@@ -176,14 +185,48 @@ describe('Facturación tab', () => {
     expect(vencidaIdx).toBeLessThan(activaIdx);
   });
 
-  it('shows estimated monthly total in the summary footer', async () => {
+  it('el pie y el KPI suman lo mismo: el ingreso de las filas, no el precio de lista (G3)', async () => {
     renderPage();
-    fireEvent.click(screen.getByText('Facturación'));
+    fireEvent.click(await screen.findByText('Facturación'));
+    await screen.findByText('Barbería Vencida');
 
-    await waitFor(() => {
-      // 449 + 249 = 698 (may appear in metrics strip and table footer)
-      expect(screen.getAllByText(/\$698/).length).toBeGreaterThan(0);
-    });
+    // Cada fila muestra el precio de su plan aunque no se pague...
+    const vencida = screen.getByText('Barbería Vencida').closest('tr')!;
+    expect(within(vencida).getByText('$249')).toBeInTheDocument();
+    // ...pero la vencida no aporta al ingreso: "—" con el motivo.
+    expect(within(vencida).getByText(/Suscripción vencida/)).toBeInTheDocument();
+    // M6: el plan "Basico" de la BD se muestra con su acento.
+    expect(within(vencida).getByText('Básico')).toBeInTheDocument();
+
+    // Antes el pie decía $698 (449 + 249 de la vencida).
+    const pie = screen.getByTestId('total-ingreso-mensual');
+    expect(pie).toHaveTextContent('$449');
+    expect(screen.getByText(/1 de 2 con suscripción vigente/)).toBeInTheDocument();
+
+    const kpi = screen.getByText('Ingreso mensual', { selector: 'p' }).closest('div')!;
+    expect(within(kpi).getByText('$449/mes')).toBeInTheDocument();
+  });
+
+  it('un plan asignado sin pago no se lee como ingreso: "Sin pago registrado" y $0 en pie y KPI', async () => {
+    vi.mocked(adminModule.adminApi.obtenerSuscripciones).mockResolvedValue([
+      { ...mockSuscripcion, estado: 'SinSuscripcion', diasRestantes: null, fechaVencimiento: null,
+        suscripcionVigente: false, ingresoMensual: 0 },
+    ]);
+    renderPage();
+
+    // Tarjeta: "Pro" junto a "Sin pago registrado", no "Sin suscripción".
+    expect(await screen.findByText('Sin pago registrado')).toBeInTheDocument();
+    const kpiVigente = screen.getByText('Con suscripción vigente').closest('div')!;
+    expect(within(kpiVigente).getByText('0')).toBeInTheDocument();
+    expect(within(kpiVigente).getByText('de 1 con plan asignado')).toBeInTheDocument();
+    const kpi = screen.getByText('Ingreso mensual', { selector: 'p' }).closest('div')!;
+    expect(within(kpi).getByText('$0/mes')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Facturación'));
+    const fila = (await screen.findAllByText('Peluquería Test')).map(e => e.closest('tr')).find(Boolean)!;
+    expect(within(fila).getByText('$449')).toBeInTheDocument();
+    expect(within(fila).getByText('Sin pago registrado')).toBeInTheDocument();
+    expect(screen.getByTestId('total-ingreso-mensual')).toHaveTextContent('$0');
   });
 });
 
@@ -458,27 +501,193 @@ describe('ModalSuscripcion — cambios con confirmación y aviso', () => {
     await waitFor(() => expect(toastMock).toHaveBeenCalledWith('Sector actualizado: Salud'));
   });
 
-  it('los empleados extra avisan al guardar y no se guardan si no cambiaron', async () => {
+  it('los empleados extra no se guardan al salir del campo: "Guardar" muestra el nuevo total (I2)', async () => {
+    const user = userEvent.setup();
     await abrirSuscripcion();
     const input = screen.getByRole('spinbutton');
-    fireEvent.blur(input, { target: { value: '0' } });
-    expect(adminModule.adminApi.setEmpleadosExtra).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: /Guardar/ })).not.toBeInTheDocument();
 
     fireEvent.change(input, { target: { value: '2' } });
-    fireEvent.blur(input, { target: { value: '2' } });
+    fireEvent.blur(input);
+    expect(adminModule.adminApi.setEmpleadosExtra).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: 'Guardar · $549/mes' }));
     await waitFor(() => expect(adminModule.adminApi.setEmpleadosExtra).toHaveBeenCalledWith('neg-1', 2));
-    await waitFor(() => expect(toastMock).toHaveBeenCalledWith('Empleados extra actualizados: 2'));
+    await waitFor(() => expect(toastMock).toHaveBeenCalledWith('Empleados extra actualizados: 2 · total $549/mes'));
+  });
+
+  it('"Descartar" vuelve al valor guardado sin llamar al servidor', async () => {
+    const user = userEvent.setup();
+    await abrirSuscripcion();
+    const input = screen.getByRole('spinbutton');
+    fireEvent.change(input, { target: { value: '4' } });
+    await user.click(screen.getByRole('button', { name: 'Descartar' }));
+    expect(input).toHaveValue(0);
+    expect(screen.queryByRole('button', { name: /Guardar/ })).not.toBeInTheDocument();
+    expect(adminModule.adminApi.setEmpleadosExtra).not.toHaveBeenCalled();
   });
 
   it('un error al guardar empleados extra se muestra', async () => {
+    const user = userEvent.setup();
     vi.mocked(adminModule.adminApi.setEmpleadosExtra).mockRejectedValue(new Error('red'));
     await abrirSuscripcion();
-    const input = screen.getByRole('spinbutton');
-    fireEvent.change(input, { target: { value: '3' } });
-    fireEvent.blur(input, { target: { value: '3' } });
+    fireEvent.change(screen.getByRole('spinbutton'), { target: { value: '3' } });
+    await user.click(screen.getByRole('button', { name: 'Guardar · $599/mes' }));
     await waitFor(() =>
       expect(toastMock).toHaveBeenCalledWith('No se pudieron actualizar los empleados extra.', 'error')
     );
+  });
+
+  it('el monto del pago empieza en el total mensual (M4)', async () => {
+    const user = userEvent.setup();
+    await abrirSuscripcion();
+    await user.click(screen.getByRole('button', { name: 'Pagos' }));
+    expect(screen.getByDisplayValue('449')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Registrar pago/ })).toBeEnabled();
+  });
+});
+
+// ── Cambio de plan con confirmación (I2) ────────────────────────────────────
+
+describe('ModalSuscripcion — cambio de plan', () => {
+  const planes = [
+    { id: 'plan-basico', nombre: 'Basico', precioMensual: 249, maxEmpleados: 2, maxCitasMes: 200 },
+    { id: 'plan-pro', nombre: 'Pro', precioMensual: 449, maxEmpleados: 3, maxCitasMes: 100 },
+    { id: 'plan-premium', nombre: 'Premium', precioMensual: 649, maxEmpleados: 8, maxCitasMes: 1000 },
+  ];
+
+  beforeEach(() => {
+    vi.mocked(adminModule.adminApi.obtenerMetricas).mockResolvedValue([mockNegocio]);
+    vi.mocked(adminModule.adminApi.obtenerSuscripciones).mockResolvedValue([{ ...mockSuscripcion, empleadosExtra: 1 }]);
+    vi.mocked(adminModule.adminApi.obtenerPagos).mockResolvedValue([]);
+    vi.mocked(adminModule.adminApi.obtenerPlanes).mockResolvedValue(planes);
+    vi.mocked(adminModule.adminApi.setPlan).mockReset().mockResolvedValue(undefined as never);
+    toastMock.mockReset();
+  });
+
+  async function abrirSuscripcion() {
+    renderPage();
+    await waitFor(() => screen.getByText('Peluquería Test'));
+    const btn = screen.getAllByRole('button').find(b => /suscripci/i.test(b.textContent ?? ''));
+    fireEvent.click(btn!);
+    await screen.findByTestId('billing-summary');
+    return screen.findByRole('button', { name: 'Premium' });
+  }
+
+  it('un clic en otro plan no lo cambia: confirma con el antes y el después', async () => {
+    const user = userEvent.setup();
+    await user.click(await abrirSuscripcion());
+    expect(adminModule.adminApi.setPlan).not.toHaveBeenCalled();
+
+    const dialogo = await screen.findByRole('dialog', { name: /plan Premium/ });
+    expect(dialogo).toHaveTextContent('Pro → Premium');
+    expect(dialogo).toHaveTextContent('$449/mes → $649/mes');
+    // Con 1 empleado extra: 449 + 50 → 649 + 50.
+    expect(dialogo).toHaveTextContent('$499/mes → $699/mes');
+    expect(dialogo).toHaveTextContent('3 → 8');
+    // Premium no lleva "Pro" en el nombre: el backend apaga el módulo de pagos.
+    expect(dialogo).toHaveTextContent('El módulo de pagos quedará deshabilitado');
+
+    await user.click(within(dialogo).getByRole('button', { name: 'Cambiar plan' }));
+    await waitFor(() => expect(adminModule.adminApi.setPlan).toHaveBeenCalledWith('neg-1', 'plan-premium'));
+    await waitFor(() => expect(toastMock).toHaveBeenCalledWith('Plan actualizado: Premium'));
+  });
+
+  it('"Volver" cierra la confirmación sin cambiar el plan', async () => {
+    const user = userEvent.setup();
+    await user.click(await abrirSuscripcion());
+    const dialogo = await screen.findByRole('dialog', { name: /plan Premium/ });
+    await user.click(within(dialogo).getByRole('button', { name: 'Volver' }));
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: /plan Premium/ })).not.toBeInTheDocument());
+    expect(adminModule.adminApi.setPlan).not.toHaveBeenCalled();
+  });
+
+  it('muestra "Básico" con acento aunque la BD diga "Basico" (M6)', async () => {
+    await abrirSuscripcion();
+    expect(screen.getByRole('button', { name: 'Básico' })).toBeInTheDocument();
+  });
+});
+
+// ── Interruptores con "Deshacer" y Confirmar correo (I2) ───────────────────
+
+describe('NegociosAdminPage — interruptores y correo', () => {
+  type OpcionesToast = { accion?: { etiqueta: string; onClick: () => void } };
+
+  beforeEach(() => {
+    vi.mocked(adminModule.adminApi.obtenerSuscripciones).mockResolvedValue([mockSuscripcion]);
+    vi.mocked(adminModule.adminApi.obtenerPagos).mockResolvedValue([]);
+    vi.mocked(adminModule.adminApi.obtenerMetricas).mockResolvedValue([mockNegocio]);
+    vi.mocked(adminModule.adminApi.toggleModuloPagos).mockReset().mockResolvedValue(undefined);
+    vi.mocked(adminModule.adminApi.toggleTester).mockReset();
+    vi.mocked(adminModule.adminApi.confirmarEmail).mockReset().mockResolvedValue(undefined as never);
+    toastMock.mockReset();
+  });
+
+  function accionDelUltimoToast(): { etiqueta: string; onClick: () => void } | undefined {
+    const llamada = toastMock.mock.calls.at(-1)!;
+    return (llamada[2] as OpcionesToast | undefined)?.accion;
+  }
+
+  it('el módulo de pagos cambia al instante y ofrece "Deshacer", que también se guarda', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(await screen.findByRole('switch', { name: 'Módulo pagos' }));
+
+    await waitFor(() => expect(adminModule.adminApi.toggleModuloPagos).toHaveBeenCalledWith('neg-1', false));
+    await waitFor(() => expect(toastMock).toHaveBeenCalled());
+    expect(toastMock.mock.calls.at(-1)![0]).toBe('Módulo de pagos deshabilitado en Peluquería Test');
+    const accion = accionDelUltimoToast();
+    expect(accion?.etiqueta).toBe('Deshacer');
+
+    accion!.onClick();
+    await waitFor(() => expect(adminModule.adminApi.toggleModuloPagos).toHaveBeenLastCalledWith('neg-1', true));
+    await waitFor(() =>
+      expect(toastMock).toHaveBeenLastCalledWith('Cambio deshecho: módulo de pagos habilitado en Peluquería Test')
+    );
+    // Deshacer no ofrece otro "Deshacer".
+    expect(accionDelUltimoToast()).toBeUndefined();
+    expect(screen.getByRole('switch', { name: 'Módulo pagos' })).toHaveAttribute('aria-checked', 'true');
+  });
+
+  it('el modo tester también se puede deshacer', async () => {
+    const user = userEvent.setup();
+    vi.mocked(adminModule.adminApi.toggleTester)
+      .mockResolvedValueOnce({ esTester: true })
+      .mockResolvedValueOnce({ esTester: false });
+    renderPage();
+    await user.click(await screen.findByRole('switch', { name: 'Tester' }));
+
+    await waitFor(() => expect(toastMock).toHaveBeenCalled());
+    expect(toastMock.mock.calls.at(-1)![0]).toBe('Modo tester activado en Peluquería Test');
+    accionDelUltimoToast()!.onClick();
+
+    await waitFor(() => expect(adminModule.adminApi.toggleTester).toHaveBeenCalledTimes(2));
+    await waitFor(() =>
+      expect(toastMock).toHaveBeenLastCalledWith('Cambio deshecho: modo tester desactivado en Peluquería Test')
+    );
+  });
+
+  it('"Confirmar correo" no aparece si el correo ya está verificado', async () => {
+    vi.mocked(adminModule.adminApi.obtenerMetricas).mockResolvedValue([{ ...mockNegocio, emailConfirmado: true }]);
+    renderPage();
+    expect(await screen.findByText('Correo verificado')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Confirmar correo/ })).not.toBeInTheDocument();
+  });
+
+  it('con el correo sin verificar, "Confirmar correo" pide confirmación antes de marcarlo', async () => {
+    const user = userEvent.setup();
+    vi.mocked(adminModule.adminApi.obtenerMetricas).mockResolvedValue([
+      { ...mockNegocio, emailConfirmado: false, propietarioEmail: 'dueno@ejemplo.com' },
+    ]);
+    renderPage();
+    await user.click(await screen.findByRole('button', { name: /Confirmar correo/ }));
+    expect(adminModule.adminApi.confirmarEmail).not.toHaveBeenCalled();
+
+    const dialogo = await screen.findByRole('dialog', { name: '¿Confirmar el correo del propietario?' });
+    expect(dialogo).toHaveTextContent('dueno@ejemplo.com');
+    await user.click(within(dialogo).getByRole('button', { name: 'Confirmar correo' }));
+    await waitFor(() => expect(adminModule.adminApi.confirmarEmail).toHaveBeenCalledWith('neg-1'));
+    await waitFor(() => expect(toastMock).toHaveBeenCalledWith('Correo del propietario confirmado'));
   });
 });
 
@@ -543,23 +752,25 @@ describe('NegociosAdminPage — pendientes de activación', () => {
 
 // ── KPI "Con plan" ──────────────────────────────────────────────────────────
 
-describe('NegociosAdminPage — KPI "Con plan"', () => {
-  it('no cuenta los negocios de prueba, igual que "Ingresos est."', async () => {
+describe('NegociosAdminPage — KPI "Con suscripción vigente"', () => {
+  it('no cuenta los negocios de prueba, igual que "Ingreso mensual"', async () => {
     vi.mocked(adminModule.adminApi.obtenerMetricas).mockResolvedValue([
       { ...mockNegocio, id: 'neg-1', esTester: false },
       { ...mockNegocio, id: 'neg-tester', nombre: 'Tester SA', esTester: true },
     ]);
     vi.mocked(adminModule.adminApi.obtenerSuscripciones).mockResolvedValue([
       { ...mockSuscripcion, negocioId: 'neg-1' },
-      { ...mockSuscripcion, negocioId: 'neg-tester', negocioNombre: 'Tester SA' },
+      // El backend ya da 0 de ingreso a un tester.
+      { ...mockSuscripcion, negocioId: 'neg-tester', negocioNombre: 'Tester SA', esTester: true, ingresoMensual: 0 },
     ]);
     vi.mocked(adminModule.adminApi.obtenerPagos).mockResolvedValue([]);
 
     renderPage();
 
-    const tarjeta = (await screen.findByText('Con plan')).closest('div')!;
+    const tarjeta = (await screen.findByText('Con suscripción vigente')).closest('div')!;
     // Dos suscripciones con plan, pero una es de un negocio tester.
     expect(within(tarjeta).getByText('1')).toBeInTheDocument();
+    expect(within(tarjeta).getByText('de 1 con plan asignado')).toBeInTheDocument();
   });
 });
 
@@ -599,14 +810,14 @@ describe('NegociosAdminPage — error de métricas', () => {
 
     const alerta = await screen.findByRole('alert');
     expect(alerta).toHaveTextContent('No se pudieron cargar las métricas del panel.');
-    expect(screen.queryByText('Ingresos est.')).not.toBeInTheDocument();
+    expect(screen.queryByText('Ingreso mensual')).not.toBeInTheDocument();
     expect(screen.queryByText(/registrados? en total/)).not.toBeInTheDocument();
     expect(screen.queryByText('No hay negocios registrados')).not.toBeInTheDocument();
 
     await user.click(within(alerta).getByRole('button', { name: 'Reintentar' }));
 
     expect(await screen.findByText('Peluquería Test')).toBeInTheDocument();
-    expect(screen.getByText('Ingresos est.')).toBeInTheDocument();
+    expect(screen.getByText('Ingreso mensual')).toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     expect(adminModule.adminApi.obtenerMetricas).toHaveBeenCalledTimes(2);
   });
@@ -617,6 +828,6 @@ describe('NegociosAdminPage — error de métricas', () => {
     renderPage();
 
     expect(await screen.findByRole('alert')).toHaveTextContent('No se pudieron cargar las métricas del panel.');
-    expect(screen.queryByText('Ingresos est.')).not.toBeInTheDocument();
+    expect(screen.queryByText('Ingreso mensual')).not.toBeInTheDocument();
   });
 });

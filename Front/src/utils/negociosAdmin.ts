@@ -1,4 +1,60 @@
-import type { NegocioMetricasDto } from "../api/admin";
+import type { NegocioMetricasDto, PlanDto, SuscripcionResumenDto } from "../api/admin";
+import { esClavePlan, NOMBRES_PLANES } from "../lib/precios";
+
+// ── Cifras de facturación (lote 2, G3) ────────────────────────────────────────
+//
+// "Plan asignado" (lo que el negocio puede usar) no es dinero: solo una
+// suscripción vigente de un negocio que paga entra al ingreso. El backend fija
+// `ingresoMensual` por negocio; aquí solo se suma, y la tira de KPIs y el pie de
+// Facturación leen el mismo resumen para que no puedan contradecirse.
+
+export interface ResumenFacturacion {
+  /** Negocios activos con un plan asignado, se pague o no. */
+  conPlanAsignado: number;
+  /** De esos, los que tienen un pago que cubre hoy. */
+  conSuscripcionVigente: number;
+  /** Suma de `ingresoMensual`: lo que entra cada mes. */
+  ingresoMensual: number;
+}
+
+/** Los negocios de prueba no son clientes: no cuentan en ninguna cifra. */
+export function resumenFacturacion(suscripciones: SuscripcionResumenDto[]): ResumenFacturacion {
+  const clientes = suscripciones.filter((s) => !s.esTester);
+  return {
+    conPlanAsignado: clientes.filter((s) => s.planNombre !== null).length,
+    conSuscripcionVigente: clientes.filter((s) => s.planNombre !== null && s.suscripcionVigente).length,
+    ingresoMensual: clientes.reduce((suma, s) => suma + s.ingresoMensual, 0),
+  };
+}
+
+/** Por qué una fila no aporta al ingreso mensual, o `null` si aporta. */
+export function motivoSinIngreso(s: SuscripcionResumenDto): string | null {
+  if (s.ingresoMensual > 0) return null;
+  if (!s.planNombre) return "Sin plan asignado";
+  if (s.accesoPermanente) return "Acceso de por vida: no tiene cobro mensual";
+  if (s.estado === "Vencida") return "Suscripción vencida: no cuenta en el ingreso";
+  if (!s.suscripcionVigente) return "Sin pago registrado: no cuenta en el ingreso";
+  return "No cuenta en el ingreso";
+}
+
+/**
+ * Nombre del plan para mostrar (M6): en la BD el plan se llama "Basico", sin
+ * acento. Si coincide con un plan conocido se usa su nombre comercial.
+ */
+export function nombrePlan(nombre: string | null | undefined): string {
+  if (!nombre) return "";
+  const clave = nombre.normalize("NFD").replace(/\p{M}/gu, "").trim().toLowerCase();
+  return esClavePlan(clave) ? NOMBRES_PLANES[clave] : nombre;
+}
+
+/**
+ * Mismo criterio que `SuscripcionAdminController.SetPlan`: al asignar un plan,
+ * el módulo de pagos queda habilitado solo si su nombre contiene "Pro". Se usa
+ * para avisarlo en la confirmación del cambio de plan.
+ */
+export function planHabilitaModuloPagos(plan: Pick<PlanDto, "nombre">): boolean {
+  return plan.nombre.toLowerCase().includes("pro");
+}
 
 // ── Negocios pendientes de activación (AP-07) ─────────────────────────────────
 //
