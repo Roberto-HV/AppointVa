@@ -56,6 +56,8 @@ const ResenasPage = lazy(() => import("./pages/dashboard/ResenasPage"));
 
 // ── Admin ─────────────────────────────────────────────────────────────────
 const NegociosAdminPage = lazy(() => import("./pages/admin/NegociosAdminPage"));
+const NegocioDetalleAdminPage = lazy(() => import("./pages/admin/NegocioDetalleAdminPage"));
+const FacturacionAdminPage = lazy(() => import("./pages/admin/FacturacionAdminPage"));
 const AuditLogPage = lazy(() => import("./pages/admin/AuditLogPage"));
 const CuentaAdminPage = lazy(() => import("./pages/admin/CuentaAdminPage"));
 
@@ -150,6 +152,9 @@ export default function App() {
                 <Route element={<RutaProtegida roles={["SuperAdmin"]} />}>
                   <Route element={<AdminLayout />}>
                     <Route path="/admin" element={<NegociosAdminPage />} />
+                    {/* Lote 4: ficha de cada negocio y Facturación como entrada propia. */}
+                    <Route path="/admin/negocios/:id" element={<NegocioDetalleAdminPage />} />
+                    <Route path="/admin/facturacion" element={<FacturacionAdminPage />} />
                     <Route path="/admin/audit" element={<AuditLogPage />} />
                     {/* G1: la cuenta del SuperAdmin; Seguridad reutiliza la página del panel. */}
                     <Route path="/admin/cuenta" element={<CuentaAdminPage />} />

@@ -194,6 +194,8 @@ export const adminApi = {
     hasta?: string;
     /** Solo las acciones de un grupo del catálogo (p. ej. "administracion"). */
     grupo?: string;
+    /** Solo las entradas sobre este negocio (la Actividad de su ficha). */
+    negocioId?: string;
   }): Promise<AuditLogsRespuesta> => {
     const { data } = await api.get("/admin/audit", { params });
     return data;

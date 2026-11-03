@@ -33,6 +33,8 @@ namespace AppointVaAPI.Controllers.V1
         // B24 (AP-24): `email` matches part of the user's email (case-insensitive);
         // `desde` is inclusive and `hasta` exclusive, both instants (send UTC/ISO 8601).
         // `grupo` keeps only the actions of one catalog group (e.g. the admin's own actions).
+        // `negocioId` keeps only the entries about one business (Lote 4: the Actividad
+        // section of its detail page); every admin action is written with that target.
         [HttpGet]
         public async Task<IActionResult> ObtenerAuditLogs(
             [FromQuery] int pagina = 1,
@@ -42,7 +44,8 @@ namespace AppointVaAPI.Controllers.V1
             [FromQuery] string? email = null,
             [FromQuery] DateTime? desde = null,
             [FromQuery] DateTime? hasta = null,
-            [FromQuery] string? grupo = null)
+            [FromQuery] string? grupo = null,
+            [FromQuery] Guid? negocioId = null)
         {
             tamano = Math.Clamp(tamano, 1, 200);
             pagina = Math.Max(pagina, 1);
@@ -73,6 +76,12 @@ namespace AppointVaAPI.Controllers.V1
 
             if (usuarioId.HasValue)
                 query = query.Where(a => a.UsuarioId == usuarioId);
+
+            if (negocioId.HasValue)
+            {
+                var id = negocioId.Value.ToString();
+                query = query.Where(a => a.Entidad == AccionesAuditoria.EntidadNegocio && a.EntidadId == id);
+            }
 
             if (!string.IsNullOrEmpty(emailFiltro))
                 query = query.Where(a => a.Usuario != null && a.Usuario.Email != null

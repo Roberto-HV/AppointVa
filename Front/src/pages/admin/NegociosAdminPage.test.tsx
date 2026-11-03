@@ -2,6 +2,7 @@ import { render, screen, fireEvent, waitFor, within } from '@testing-library/rea
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
 import NegociosAdminPage from './NegociosAdminPage';
 import * as adminModule from '../../api/admin';
 
@@ -75,10 +76,19 @@ function renderPage() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
-      <NegociosAdminPage />
+      <MemoryRouter>
+        <NegociosAdminPage />
+      </MemoryRouter>
     </QueryClientProvider>
   );
 }
+
+// Lote 4: en escritorio la lista es una tabla por defecto. Estas pruebas cubren
+// las tarjetas y sus flujos (lotes 1–3), así que eligen esa vista como lo haría
+// el admin con el selector; la tabla tiene sus propias pruebas en
+// `NegociosAdminPage.tabla.test.tsx`.
+beforeEach(() => localStorage.setItem('admin-negocios-vista', 'tarjetas'));
+afterEach(() => localStorage.clear());
 
 describe('ModalSuscripcion billing header', () => {
   beforeEach(() => {
@@ -139,78 +149,12 @@ describe('ModalSuscripcion billing header', () => {
   });
 });
 
-describe('Facturación tab', () => {
-  const mockSuscripcionVencida = {
-    ...mockSuscripcion,
-    negocioId: 'neg-2',
-    negocioNombre: 'Barbería Vencida',
-    estado: 'Vencida' as const,
-    diasRestantes: 0,
-    totalMensual: 249,
-    precioBase: 249,
-    planNombre: 'Basico',
-    suscripcionVigente: false,
-    ingresoMensual: 0,
-  };
-
-  beforeEach(() => {
+// La tabla de Facturación y su pie se movieron con la página a
+// `FacturacionAdminPage.test.tsx` (lote 4); aquí queda lo que ve la tarjeta.
+describe('Plan asignado sin pago en la tarjeta y los KPIs (G3)', () => {
+  it('un plan asignado sin pago no se lee como ingreso: "Sin pago registrado" y $0 en el KPI', async () => {
     vi.mocked(adminModule.adminApi.obtenerMetricas).mockResolvedValue([mockNegocio]);
-    vi.mocked(adminModule.adminApi.obtenerSuscripciones).mockResolvedValue([
-      mockSuscripcion,
-      mockSuscripcionVencida,
-    ]);
     vi.mocked(adminModule.adminApi.obtenerPagos).mockResolvedValue([]);
-  });
-
-  it('renders Facturación tab when clicked', async () => {
-    renderPage();
-    await waitFor(() => screen.getByText('Negocios'));
-
-    fireEvent.click(screen.getByText('Facturación'));
-
-    await waitFor(() => {
-      expect(screen.getByText('Peluquería Test')).toBeInTheDocument();
-    });
-  });
-
-  it('shows Vencida rows before Activa in the billing table', async () => {
-    renderPage();
-    await waitFor(() => screen.getByText('Negocios'));
-
-    fireEvent.click(screen.getByText('Facturación'));
-
-    await waitFor(() => screen.getByText('Barbería Vencida'));
-
-    const rows = screen.getAllByRole('row');
-    const names = rows.map(r => r.textContent ?? '');
-    const vencidaIdx = names.findIndex(t => t.includes('Barbería Vencida'));
-    const activaIdx = names.findIndex(t => t.includes('Peluquería Test'));
-    expect(vencidaIdx).toBeLessThan(activaIdx);
-  });
-
-  it('el pie y el KPI suman lo mismo: el ingreso de las filas, no el precio de lista (G3)', async () => {
-    renderPage();
-    fireEvent.click(await screen.findByText('Facturación'));
-    await screen.findByText('Barbería Vencida');
-
-    // Cada fila muestra el precio de su plan aunque no se pague...
-    const vencida = screen.getByText('Barbería Vencida').closest('tr')!;
-    expect(within(vencida).getByText('$249')).toBeInTheDocument();
-    // ...pero la vencida no aporta al ingreso: "—" con el motivo.
-    expect(within(vencida).getByText(/Suscripción vencida/)).toBeInTheDocument();
-    // M6: el plan "Basico" de la BD se muestra con su acento.
-    expect(within(vencida).getByText('Básico')).toBeInTheDocument();
-
-    // Antes el pie decía $698 (449 + 249 de la vencida).
-    const pie = screen.getByTestId('total-ingreso-mensual');
-    expect(pie).toHaveTextContent('$449');
-    expect(screen.getByText(/1 de 2 con suscripción vigente/)).toBeInTheDocument();
-
-    const kpi = screen.getByText('Ingreso mensual', { selector: 'p' }).closest('div')!;
-    expect(within(kpi).getByText('$449/mes')).toBeInTheDocument();
-  });
-
-  it('un plan asignado sin pago no se lee como ingreso: "Sin pago registrado" y $0 en pie y KPI', async () => {
     vi.mocked(adminModule.adminApi.obtenerSuscripciones).mockResolvedValue([
       { ...mockSuscripcion, estado: 'SinSuscripcion', diasRestantes: null, fechaVencimiento: null,
         suscripcionVigente: false, ingresoMensual: 0 },
@@ -218,18 +162,13 @@ describe('Facturación tab', () => {
     renderPage();
 
     // Tarjeta: "Pro" junto a "Sin pago registrado", no "Sin suscripción".
-    expect(await screen.findByText('Sin pago registrado')).toBeInTheDocument();
+    const tarjeta = await screen.findByRole('article', { name: 'Peluquería Test' });
+    expect(await within(tarjeta).findByText('Sin pago registrado')).toBeInTheDocument();
     const kpiVigente = screen.getByText('Con suscripción vigente').closest('div')!;
     expect(within(kpiVigente).getByText('0')).toBeInTheDocument();
     expect(within(kpiVigente).getByText('de 1 con plan asignado')).toBeInTheDocument();
     const kpi = screen.getByText('Ingreso mensual', { selector: 'p' }).closest('div')!;
     expect(within(kpi).getByText('$0/mes')).toBeInTheDocument();
-
-    fireEvent.click(screen.getByText('Facturación'));
-    const fila = (await screen.findAllByText('Peluquería Test')).map(e => e.closest('tr')).find(Boolean)!;
-    expect(within(fila).getByText('$449')).toBeInTheDocument();
-    expect(within(fila).getByText('Sin pago registrado')).toBeInTheDocument();
-    expect(screen.getByTestId('total-ingreso-mensual')).toHaveTextContent('$0');
   });
 });
 
@@ -827,7 +766,8 @@ describe('NegociosAdminPage — pendientes de activación', () => {
 
     expect(screen.getByText(/Registrado el 20 de octubre de 2026/)).toBeInTheDocument();
     expect(screen.getByText('Correo verificado')).toBeInTheDocument();
-    expect(screen.getByText('Correo sin verificar')).toBeInTheDocument();
+    // En la tarjeta: "Requiere atención" (lote 4) también nombra el motivo.
+    expect(within(screen.getByRole('article', { name: 'Otro SA' })).getByText('Correo sin verificar')).toBeInTheDocument();
     expect(screen.getByText('Eligió el plan Pro')).toBeInTheDocument();
     // El registro más reciente va primero en la cola.
     const texto = document.body.textContent ?? '';
@@ -973,23 +913,14 @@ describe('NegociosAdminPage — Lote 3: carga, vacío y encabezado', () => {
     expect(screen.queryByText('No hay negocios registrados')).not.toBeInTheDocument();
   });
 
-  it('Facturación no dice "Sin facturación todavía" mientras carga', async () => {
-    vi.mocked(adminModule.adminApi.obtenerMetricas).mockResolvedValue([mockNegocio]);
-    vi.mocked(adminModule.adminApi.obtenerSuscripciones).mockReset().mockImplementation(() => new Promise(() => {}));
-    renderPage();
-
-    fireEvent.click(await screen.findByRole('button', { name: 'Facturación' }));
-    expect(await screen.findByRole('status', { name: 'Cargando facturación' })).toBeInTheDocument();
-    expect(screen.queryByText('Sin facturación todavía')).not.toBeInTheDocument();
-  });
-
-  it('el título es "Negocios", como el menú, y la pestaña ya no lo repite (M2)', async () => {
+  it('el título es "Negocios", como el menú, y Facturación ya no es una pestaña (M2, lote 4)', async () => {
     vi.mocked(adminModule.adminApi.obtenerMetricas).mockResolvedValue([mockNegocio]);
     vi.mocked(adminModule.adminApi.obtenerSuscripciones).mockResolvedValue([mockSuscripcion]);
     renderPage();
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Negocios' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'General' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'General' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Facturación' })).not.toBeInTheDocument();
     expect(screen.queryByText('Panel de negocios')).not.toBeInTheDocument();
   });
 
@@ -1072,43 +1003,30 @@ describe('NegociosAdminPage — Lote 3: acciones de la tarjeta en "⋯"', () => 
   });
 });
 
-describe('NegociosAdminPage — Lote 3: Facturación en el teléfono (I6)', () => {
+describe('NegociosAdminPage — lote 4: tarjetas en el teléfono', () => {
   beforeEach(() => {
     simularTelefono();
     vi.mocked(adminModule.adminApi.obtenerMetricas).mockResolvedValue([mockNegocio]);
-    vi.mocked(adminModule.adminApi.obtenerSuscripciones).mockResolvedValue([
-      mockSuscripcion,
-      { ...mockSuscripcion, negocioId: 'neg-2', negocioNombre: 'Barbería Vencida', estado: 'Vencida' as const,
-        suscripcionVigente: false, ingresoMensual: 0, fechaVencimiento: '2026-09-30T00:00:00' },
-    ]);
+    vi.mocked(adminModule.adminApi.obtenerSuscripciones).mockResolvedValue([mockSuscripcion]);
     vi.mocked(adminModule.adminApi.obtenerPagos).mockResolvedValue([]);
   });
   afterEach(() => vi.unstubAllGlobals());
 
-  it('son tarjetas con ingreso, estado y vencimiento a la vista, sin tabla', async () => {
+  it('en el teléfono siempre son tarjetas, aunque en escritorio se haya elegido la tabla', async () => {
+    localStorage.setItem('admin-negocios-vista', 'tabla');
     renderPage();
-    fireEvent.click(await screen.findByRole('button', { name: 'Facturación' }));
 
-    const lista = await screen.findByRole('list', { name: 'Suscripciones' });
+    expect(await screen.findByRole('article', { name: 'Peluquería Test' })).toBeInTheDocument();
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
-    const [vencida, activa] = within(lista).getAllByRole('listitem');
-    // Vencidas primero, como en la tabla.
-    expect(vencida).toHaveTextContent('Barbería Vencida');
-    expect(within(vencida).getByText('Vencida')).toBeInTheDocument();
-    expect(within(vencida).getByText('Sin ingreso')).toBeInTheDocument();
-    expect(within(vencida).getByText(/Vence: 30 sep 2026/)).toBeInTheDocument();
-    expect(activa).toHaveTextContent('$449/mes');
-    expect(within(activa).getByText('Activa')).toBeInTheDocument();
-    // El pie suma lo mismo que la tabla y el KPI.
-    expect(screen.getByTestId('total-ingreso-mensual')).toHaveTextContent('$449');
+    // Sin selector de vista: en 390px no hay tabla que elegir.
+    expect(screen.queryByRole('group', { name: 'Vista de la lista' })).not.toBeInTheDocument();
   });
 
-  it('"Ver suscripción" abre el modal del negocio', async () => {
-    const user = userEvent.setup();
+  it('la cabecera de la tarjeta lleva a la ficha del negocio', async () => {
     renderPage();
-    await user.click(await screen.findByRole('button', { name: 'Facturación' }));
-    await user.click(await screen.findByRole('button', { name: 'Ver suscripción de Peluquería Test' }));
-    expect(await screen.findByRole('dialog', { name: 'Suscripción — Peluquería Test' })).toBeInTheDocument();
+    const tarjeta = await screen.findByRole('article', { name: 'Peluquería Test' });
+    expect(within(tarjeta).getByRole('link', { name: /Ver ficha de Peluquería Test/ }))
+      .toHaveAttribute('href', '/admin/negocios/neg-1');
   });
 });
 

@@ -431,6 +431,45 @@ public class AuditoriaAdminTests : IntegrationTestBase
     }
 
     [Fact]
+    public async Task Listado_FiltraPorNegocio_SoloSusEntradas()
+    {
+        var adminId = await CrearAdminAsync();
+        var negocio = await CrearNegocioAsync();
+        var otro = await CrearNegocioAsync();
+        var cliente = ClienteAdmin(adminId);
+        (await cliente.PatchAsJsonAsync($"/api/admin/negocios/{negocio.Id}/empleados-extra", new { empleadosExtra = 1 })).EnsureSuccessStatusCode();
+        (await cliente.PatchAsJsonAsync($"/api/admin/negocios/{negocio.Id}/modulo-pagos", new { habilitado = true })).EnsureSuccessStatusCode();
+        (await cliente.PatchAsJsonAsync($"/api/admin/negocios/{otro.Id}/empleados-extra", new { empleadosExtra = 2 })).EnsureSuccessStatusCode();
+        // The admin's own logout is not about any business: it never shows up in a business's activity.
+        (await cliente.PostAsync("/api/auth/logout", JsonContent.Create(new { refreshToken = "x" }))).EnsureSuccessStatusCode();
+
+        var propias = await cliente.GetFromJsonAsync<JsonElement>($"/api/admin/audit?negocioId={negocio.Id}");
+        propias.GetProperty("total").GetInt32().Should().Be(2);
+        var filas = propias.GetProperty("datos").EnumerateArray().ToList();
+        filas.Select(f => f.GetProperty("entidadId").GetString()).Should().AllBe(negocio.Id.ToString());
+        filas.Select(f => f.GetProperty("accion").GetString()).Should().BeEquivalentTo(
+            [AccionesAuditoria.EmpleadosExtraCambiado, AccionesAuditoria.ModuloPagosCambiado]);
+        filas.Should().AllSatisfy(f => f.GetProperty("negocioNombre").GetString().Should().Be(negocio.Nombre));
+
+        var delOtro = await cliente.GetFromJsonAsync<JsonElement>($"/api/admin/audit?negocioId={otro.Id}");
+        delOtro.GetProperty("total").GetInt32().Should().Be(1);
+
+        // Combines with the other filters.
+        var porAccion = await cliente.GetFromJsonAsync<JsonElement>(
+            $"/api/admin/audit?negocioId={negocio.Id}&accion={AccionesAuditoria.ModuloPagosCambiado}");
+        porAccion.GetProperty("total").GetInt32().Should().Be(1);
+
+        (await cliente.GetAsync("/api/admin/audit?negocioId=no-es-guid")).StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task Listado_PorNegocio_SoloParaSuperAdmin()
+    {
+        (await NewClient(TestTokenHelper.Propietario()).GetAsync($"/api/admin/audit?negocioId={Guid.NewGuid()}"))
+            .StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
     public async Task Catalogo_DevuelveTodasLasAcciones_ConEtiquetaYGrupo()
     {
         var cuerpo = await ClienteAdmin(Guid.NewGuid()).GetFromJsonAsync<JsonElement>("/api/admin/audit/acciones");

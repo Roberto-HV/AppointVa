@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   validarEdicionPago, esColorHexValido, ordenarNegociosAdmin,
   resumenFacturacion, motivoSinIngreso, nombrePlan,
+  coincideBusquedaNegocio, requiereAtencion, conteosAtencion, ordenarPorColumna, esMotivoAtencion,
 } from "./negociosAdmin";
 import type { NegocioMetricasDto, SuscripcionResumenDto } from "../api/admin";
 
@@ -100,5 +101,113 @@ describe("ordenarNegociosAdmin (AP-07, B23)", () => {
     ];
     expect([...lista].sort(ordenarNegociosAdmin).map((x) => x.nombre))
       .toEqual(["Nuevo", "Viejo", "SinFecha", "Activo", "Desactivado"]);
+  });
+});
+// ── Lote 4: búsqueda, "Requiere atención" y orden de la tabla ────────────────
+
+function neg(extra: Partial<NegocioMetricasDto>): NegocioMetricasDto {
+  return {
+    id: crypto.randomUUID(), nombre: "Negocio", slug: "negocio", activo: 1,
+    maxCitasMes: 0, maxEmpleados: 0, citasMes: 0, empleadosActivos: 0, emailsMes: 0,
+    planNombre: "Pro", planId: "pro",
+    ...extra,
+  };
+}
+
+describe("coincideBusquedaNegocio (lote 4)", () => {
+  const n = neg({
+    nombre: "Peluquería Ámbar", slug: "ambar", email: "hola@ambar.mx",
+    propietarioEmail: "Sofia.Ruiz@Gmail.com", propietarioNombre: "Sofía Ruiz",
+  });
+
+  it("encuentra por nombre, slug, correo del negocio y del propietario, y nombre del propietario", () => {
+    for (const t of ["peluquer", "ambar", "hola@", "sofia.ruiz@gmail", "ruiz"]) {
+      expect(coincideBusquedaNegocio(n, t)).toBe(true);
+    }
+  });
+
+  it("no distingue mayúsculas ni acentos, e ignora espacios de más", () => {
+    expect(coincideBusquedaNegocio(n, "  PELUQUERIA ambar ")).toBe(true);
+    expect(coincideBusquedaNegocio(n, "sofía")).toBe(true);
+  });
+
+  it("sin término coincide todo; un término ajeno no coincide", () => {
+    expect(coincideBusquedaNegocio(n, "")).toBe(true);
+    expect(coincideBusquedaNegocio(n, "barbería")).toBe(false);
+  });
+});
+
+describe("requiereAtencion / conteosAtencion (lote 4, I7)", () => {
+  it("pendiente = inactivo y sin plan; un desactivado con plan no lo es", () => {
+    expect(requiereAtencion(neg({ activo: 0, planId: undefined, planNombre: undefined }), undefined, "pendientes")).toBe(true);
+    expect(requiereAtencion(neg({ activo: 0 }), undefined, "pendientes")).toBe(false);
+  });
+
+  it("los motivos de cobro solo cuentan negocios activos que no son de prueba", () => {
+    const vencida = fila({ estado: "Vencida" });
+    expect(requiereAtencion(neg({}), vencida, "vencidas")).toBe(true);
+    expect(requiereAtencion(neg({ esTester: true }), vencida, "vencidas")).toBe(false);
+    expect(requiereAtencion(neg({ activo: 0 }), vencida, "vencidas")).toBe(false);
+    expect(requiereAtencion(neg({}), fila({ estado: "PorVencer" }), "porVencer")).toBe(true);
+  });
+
+  it("plan sin pago: con plan y sin suscripción; sin plan no es un cobro pendiente", () => {
+    expect(requiereAtencion(neg({}), fila({ estado: "SinSuscripcion" }), "sinPago")).toBe(true);
+    expect(requiereAtencion(neg({}), fila({ estado: "SinSuscripcion", planNombre: null }), "sinPago")).toBe(false);
+    expect(requiereAtencion(neg({}), fila({ estado: "Activa" }), "sinPago")).toBe(false);
+  });
+
+  it("correo sin verificar solo cuando hay propietario y no lo confirmó", () => {
+    expect(requiereAtencion(neg({ emailConfirmado: false }), undefined, "correoSinVerificar")).toBe(true);
+    expect(requiereAtencion(neg({ emailConfirmado: null }), undefined, "correoSinVerificar")).toBe(false);
+  });
+
+  it("cuenta cada motivo por separado; un negocio puede estar en varios", () => {
+    const a = neg({ activo: 0, planId: undefined, planNombre: undefined, emailConfirmado: false });
+    const b = neg({});
+    const sus = { [b.id]: fila({ negocioId: b.id, estado: "Vencida" }) };
+    expect(conteosAtencion([a, b], (id) => sus[id])).toEqual({
+      pendientes: 1, sinPago: 0, porVencer: 0, vencidas: 1, correoSinVerificar: 1,
+    });
+  });
+
+  it("esMotivoAtencion solo acepta los motivos conocidos (llegan por la URL)", () => {
+    expect(esMotivoAtencion("vencidas")).toBe(true);
+    expect(esMotivoAtencion("inventado")).toBe(false);
+    expect(esMotivoAtencion(null)).toBe(false);
+  });
+});
+
+describe("ordenarPorColumna (lote 4, I1)", () => {
+  const nombres = (lista: NegocioMetricasDto[]) => lista.map((n) => n.nombre);
+
+  it("ordena texto sin acentos y cifras en las dos direcciones", () => {
+    const lista = [neg({ nombre: "Óptica", citasMes: 3 }), neg({ nombre: "Barbería", citasMes: 9 }), neg({ nombre: "Nails", citasMes: 1 })];
+    expect(nombres(ordenarPorColumna(lista, () => undefined, "nombre", "asc"))).toEqual(["Barbería", "Nails", "Óptica"]);
+    expect(nombres(ordenarPorColumna(lista, () => undefined, "citas", "desc"))).toEqual(["Barbería", "Óptica", "Nails"]);
+    expect(nombres(ordenarPorColumna(lista, () => undefined, "citas", "asc"))).toEqual(["Nails", "Óptica", "Barbería"]);
+  });
+
+  it("lo que no tiene el dato va al final en cualquier dirección", () => {
+    const lista = [neg({ nombre: "Sin dueño" }), neg({ nombre: "Zeta", propietarioEmail: "z@x.mx" }), neg({ nombre: "Alfa", propietarioEmail: "a@x.mx" })];
+    expect(nombres(ordenarPorColumna(lista, () => undefined, "propietario", "asc"))).toEqual(["Alfa", "Zeta", "Sin dueño"]);
+    expect(nombres(ordenarPorColumna(lista, () => undefined, "propietario", "desc"))).toEqual(["Zeta", "Alfa", "Sin dueño"]);
+  });
+
+  it("la suscripción va de lo más urgente a lo más tranquilo", () => {
+    const [v, p, s, a] = [neg({ nombre: "V" }), neg({ nombre: "P" }), neg({ nombre: "S" }), neg({ nombre: "A" })];
+    const sus: Record<string, SuscripcionResumenDto> = {
+      [v.id]: fila({ estado: "Vencida" }),
+      [p.id]: fila({ estado: "PorVencer" }),
+      [s.id]: fila({ estado: "SinSuscripcion" }),
+      [a.id]: fila({ estado: "Activa" }),
+    };
+    expect(nombres(ordenarPorColumna([a, s, p, v], (id) => sus[id], "suscripcion", "asc"))).toEqual(["V", "P", "S", "A"]);
+  });
+
+  it("no muta la lista que recibe", () => {
+    const lista = [neg({ nombre: "B" }), neg({ nombre: "A" })];
+    ordenarPorColumna(lista, () => undefined, "nombre", "asc");
+    expect(nombres(lista)).toEqual(["B", "A"]);
   });
 });

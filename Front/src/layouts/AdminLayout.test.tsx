@@ -25,7 +25,8 @@ const obtenerEstado2FA = vi.hoisted(() => vi.fn());
 vi.mock("../api/auth", () => ({ authApi: { logout: vi.fn(), obtenerEstado2FA } }));
 
 const emitirTicketHangfire = vi.hoisted(() => vi.fn());
-vi.mock("../api/admin", () => ({ adminApi: { emitirTicketHangfire } }));
+const obtenerMetricas = vi.hoisted(() => vi.fn());
+vi.mock("../api/admin", () => ({ adminApi: { emitirTicketHangfire, obtenerMetricas } }));
 
 import AdminLayout from "./AdminLayout";
 
@@ -39,6 +40,8 @@ function renderizar(ruta = "/admin") {
             <Route index element={<p>Contenido admin</p>} />
             <Route path="cuenta" element={<p>Pantalla Mi cuenta</p>} />
             <Route path="seguridad" element={<p>Pantalla Seguridad</p>} />
+            <Route path="facturacion" element={<p>Pantalla Facturación</p>} />
+            <Route path="negocios/:id" element={<p>Ficha del negocio</p>} />
           </Route>
           <Route path="/login" element={<p>Pantalla de login</p>} />
         </Routes>
@@ -54,6 +57,7 @@ beforeEach(() => {
   estadoInactividad.aviso = false;
   localStorage.removeItem(CLAVE_TEMA);
   obtenerEstado2FA.mockResolvedValue({ habilitado: true, tieneConfiguracion: true, codigosRecuperacionRestantes: 10 });
+  obtenerMetricas.mockResolvedValue([]);
 });
 
 afterEach(() => {
@@ -300,5 +304,40 @@ describe("AdminLayout — tareas programadas (Hangfire)", () => {
     expect(window.location.href).toBe(urlAntes);
     expect(screen.getByText("Contenido admin")).toBeInTheDocument();
     open.mockRestore();
+  });
+});
+
+describe("AdminLayout — navegación del lote 4", () => {
+  const nav = () => screen.getByRole("navigation", { hidden: true, name: "Secciones de administración" });
+
+  it("Facturación tiene su propia entrada en el menú", async () => {
+    renderizar("/admin/facturacion");
+    const enlace = within(nav()).getByRole("link", { hidden: true, name: "Facturación" });
+    expect(enlace).toHaveAttribute("href", "/admin/facturacion");
+    expect(enlace).toHaveAttribute("aria-current", "page");
+    expect(screen.getByText("Pantalla Facturación")).toBeInTheDocument();
+  });
+
+  it("'Negocios' sigue marcado en la ficha de un negocio", () => {
+    renderizar("/admin/negocios/neg-1");
+    expect(within(nav()).getByRole("link", { hidden: true, name: /^Negocios/ }).className).toContain("bg-amber-50");
+    expect(within(nav()).getByRole("link", { hidden: true, name: "Facturación" }).className).not.toContain("bg-amber-50");
+  });
+
+  it("muestra cuántos negocios esperan activación junto a 'Negocios'", async () => {
+    obtenerMetricas.mockResolvedValue([
+      { id: "a", nombre: "A", slug: "a", activo: 0, maxCitasMes: 0, maxEmpleados: 0, citasMes: 0, empleadosActivos: 0, emailsMes: 0 },
+      { id: "b", nombre: "B", slug: "b", activo: 0, maxCitasMes: 0, maxEmpleados: 0, citasMes: 0, empleadosActivos: 0, emailsMes: 0 },
+      // Desactivado después de tener plan: no es una alta pendiente.
+      { id: "c", nombre: "C", slug: "c", activo: 0, planId: "p", planNombre: "Pro", maxCitasMes: 0, maxEmpleados: 0, citasMes: 0, empleadosActivos: 0, emailsMes: 0 },
+    ]);
+    renderizar();
+    expect(await within(nav()).findByRole("link", { hidden: true, name: "Negocios, 2 pendientes de activación" })).toBeInTheDocument();
+  });
+
+  it("sin pendientes no hay contador", async () => {
+    renderizar();
+    await waitFor(() => expect(obtenerMetricas).toHaveBeenCalled());
+    expect(within(nav()).getByRole("link", { hidden: true, name: "Negocios" })).toBeInTheDocument();
   });
 });

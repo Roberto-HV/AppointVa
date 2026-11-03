@@ -80,6 +80,144 @@ export function ordenarNegociosAdmin(a: NegocioMetricasDto, b: NegocioMetricasDt
   return marcaTiempo(b.fechaCreacion) - marcaTiempo(a.fechaCreacion);
 }
 
+// ── Búsqueda en la lista de negocios (lote 4, I1) ─────────────────────────────
+//
+// Quien llama casi siempre da el correo o el nombre del dueño, no el slug: la
+// búsqueda cubre también al propietario y el correo del negocio. Sin distinguir
+// mayúsculas ni acentos ("peluqueria" encuentra "Peluquería").
+
+function normalizar(texto: string): string {
+  return texto.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
+}
+
+export function coincideBusquedaNegocio(
+  n: Pick<NegocioMetricasDto, "nombre" | "slug" | "email" | "propietarioEmail" | "propietarioNombre">,
+  termino: string,
+): boolean {
+  const t = normalizar(termino.trim());
+  if (!t) return true;
+  return [n.nombre, n.slug, n.email, n.propietarioEmail, n.propietarioNombre]
+    .some((campo) => !!campo && normalizar(campo).includes(t));
+}
+
+// ── Requiere atención (lote 4, I7) ────────────────────────────────────────────
+//
+// El trabajo diario del SuperAdmin: activar altas, cobrar y destrabar cuentas.
+// Cada motivo es un filtro de la lista. Los de cobro solo cuentan negocios
+// activos que no son de prueba: un tester no paga y uno desactivado ya no se
+// cobra.
+
+export type MotivoAtencion = "pendientes" | "sinPago" | "porVencer" | "vencidas" | "correoSinVerificar";
+
+export const MOTIVOS_ATENCION: { id: MotivoAtencion; etiqueta: string; descripcion: string }[] = [
+  // La descripción sirve igual para la franja (varios) y para la ficha (uno).
+  { id: "pendientes", etiqueta: "Pendientes de activación", descripcion: "Registro nuevo en espera de activación" },
+  { id: "vencidas", etiqueta: "Suscripción vencida", descripcion: "El último pago ya no cubre hoy" },
+  { id: "porVencer", etiqueta: "Por vencer", descripcion: "El pago vigente vence en los próximos días" },
+  { id: "sinPago", etiqueta: "Plan sin pago", descripcion: "Plan asignado sin ningún pago registrado" },
+  { id: "correoSinVerificar", etiqueta: "Correo sin verificar", descripcion: "El propietario no ha confirmado su correo" },
+];
+
+export function esMotivoAtencion(valor: string | null | undefined): valor is MotivoAtencion {
+  return MOTIVOS_ATENCION.some((m) => m.id === valor);
+}
+
+export function requiereAtencion(
+  n: NegocioMetricasDto,
+  s: SuscripcionResumenDto | undefined,
+  motivo: MotivoAtencion,
+): boolean {
+  const cobrable = n.activo === 1 && !n.esTester;
+  switch (motivo) {
+    case "pendientes":
+      return esPendienteActivacion(n);
+    case "sinPago":
+      return cobrable && !!s?.planNombre && s.estado === "SinSuscripcion";
+    case "porVencer":
+      return cobrable && s?.estado === "PorVencer";
+    case "vencidas":
+      return cobrable && s?.estado === "Vencida";
+    case "correoSinVerificar":
+      return n.emailConfirmado === false;
+  }
+}
+
+export function conteosAtencion(
+  negocios: NegocioMetricasDto[],
+  suscripcionDe: (id: string) => SuscripcionResumenDto | undefined,
+): Record<MotivoAtencion, number> {
+  const conteos = { pendientes: 0, sinPago: 0, porVencer: 0, vencidas: 0, correoSinVerificar: 0 };
+  for (const n of negocios) {
+    const s = suscripcionDe(n.id);
+    for (const { id } of MOTIVOS_ATENCION) if (requiereAtencion(n, s, id)) conteos[id]++;
+  }
+  return conteos;
+}
+
+// ── Orden de la tabla de negocios (lote 4, I1) ────────────────────────────────
+
+export type ColumnaNegocios =
+  | "nombre" | "propietario" | "plan" | "suscripcion" | "vence" | "citas" | "empleados" | "estado" | "alta";
+export type DireccionOrden = "asc" | "desc";
+
+/** Al pulsar una columna por primera vez: texto de la A a la Z; cifras y fechas, lo mayor o lo más reciente primero. */
+export const DIRECCION_INICIAL: Record<ColumnaNegocios, DireccionOrden> = {
+  nombre: "asc", propietario: "asc", plan: "asc", suscripcion: "asc", vence: "asc",
+  citas: "desc", empleados: "desc", estado: "asc", alta: "desc",
+};
+
+/** De lo más urgente a lo más tranquilo: un plan sin pago va antes que no tener plan. */
+const URGENCIA_SUSCRIPCION: Record<string, number> = {
+  Vencida: 0, PorVencer: 1, SinPago: 2, SinSuscripcion: 3, Activa: 4,
+};
+
+function valorOrden(
+  n: NegocioMetricasDto,
+  s: SuscripcionResumenDto | undefined,
+  columna: ColumnaNegocios,
+): string | number | null {
+  switch (columna) {
+    case "nombre": return normalizar(n.nombre);
+    case "propietario": return n.propietarioEmail ? n.propietarioEmail.toLowerCase() : null;
+    case "plan": return n.planNombre ? normalizar(nombrePlan(n.planNombre)) : null;
+    case "suscripcion":
+      if (!s) return null;
+      return URGENCIA_SUSCRIPCION[s.estado === "SinSuscripcion" && s.planNombre ? "SinPago" : s.estado] ?? null;
+    case "vence": return s?.fechaVencimiento ? marcaTiempo(s.fechaVencimiento) || null : null;
+    case "citas": return n.citasMes;
+    case "empleados": return n.empleadosActivos;
+    case "estado": return rango(n);
+    case "alta": return n.fechaCreacion ? marcaTiempo(n.fechaCreacion) || null : null;
+  }
+}
+
+/**
+ * Ordena por una columna. Los datos que faltan (sin propietario, sin
+ * vencimiento…) van siempre al final, en cualquier dirección: lo que se busca al
+ * ordenar es lo que sí tiene el dato. A igualdad, por nombre.
+ */
+export function ordenarPorColumna(
+  negocios: NegocioMetricasDto[],
+  suscripcionDe: (id: string) => SuscripcionResumenDto | undefined,
+  columna: ColumnaNegocios,
+  direccion: DireccionOrden,
+): NegocioMetricasDto[] {
+  const signo = direccion === "asc" ? 1 : -1;
+  const conValor = negocios.map((n) => ({ n, v: valorOrden(n, suscripcionDe(n.id), columna) }));
+  return conValor
+    .sort((a, b) => {
+      if (a.v === null || b.v === null) {
+        if (a.v === b.v) return a.n.nombre.localeCompare(b.n.nombre, "es");
+        return a.v === null ? 1 : -1;
+      }
+      const cmp = typeof a.v === "number" && typeof b.v === "number"
+        ? a.v - b.v
+        : String(a.v).localeCompare(String(b.v), "es");
+      return cmp !== 0 ? cmp * signo : a.n.nombre.localeCompare(b.n.nombre, "es");
+    })
+    .map(({ n }) => n);
+}
+
 // ── Edición de un pago de suscripción (AP-23) ─────────────────────────────────
 //
 // Antes se guardaba `parseFloat(monto) || 0`: un error al teclear registraba

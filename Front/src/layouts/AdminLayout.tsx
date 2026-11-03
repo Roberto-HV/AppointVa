@@ -12,7 +12,8 @@ import LogoMarca from "../components/LogoMarca";
 import AvisoInactividad from "../components/AvisoInactividad";
 import MenuUsuarioAdmin from "./MenuUsuarioAdmin";
 import { inicialesDe } from "../utils/iniciales";
-import { RUTA_CUENTA_ADMIN, RUTA_SEGURIDAD_ADMIN } from "./rutasAdmin";
+import { RUTA_CUENTA_ADMIN, RUTA_FACTURACION_ADMIN, RUTA_NEGOCIOS_ADMIN, RUTA_SEGURIDAD_ADMIN } from "./rutasAdmin";
+import { esPendienteActivacion } from "../utils/negociosAdmin";
 
 /** Desde `md` el sidebar es fijo; por debajo es un cajón modal. */
 const CONSULTA_ESCRITORIO = "(min-width: 768px)";
@@ -57,6 +58,15 @@ export default function AdminLayout() {
     staleTime: 1000 * 60,
   });
   const avisar2FA = estado2FA?.habilitado === false && pathname !== RUTA_SEGURIDAD_ADMIN;
+
+  // I7: cuántas altas esperan activación, junto a "Negocios". Misma consulta (y
+  // caché) que la lista, así que no cuesta una petición más.
+  const { data: metricas } = useQuery({
+    queryKey: ["admin-negocios-metricas"],
+    queryFn: adminApi.obtenerMetricas,
+    staleTime: 1000 * 60 * 2,
+  });
+  const pendientes = metricas?.filter(esPendienteActivacion).length ?? 0;
 
   const [errorHangfire, setErrorHangfire] = useState<string | null>(null);
 
@@ -259,8 +269,25 @@ export default function AdminLayout() {
 
         {/* Nav */}
         <nav aria-label="Secciones de administración" className="flex-1 py-4 px-3 space-y-1">
-          <NavLink to="/admin" end onClick={cerrarSidebar} className={claseEnlaceNav}>
+          {/* Activo también en la ficha de un negocio (/admin/negocios/:id). */}
+          <NavLink
+            to={RUTA_NEGOCIOS_ADMIN}
+            end
+            onClick={cerrarSidebar}
+            className={({ isActive }) => claseEnlaceNav({ isActive: isActive || pathname.startsWith("/admin/negocios/") })}
+          >
             Negocios
+            {pendientes > 0 && (
+              <>
+                <span aria-hidden="true" className="ml-auto min-w-[20px] h-5 px-1.5 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 text-[11px] font-bold tabular-nums inline-flex items-center justify-center">
+                  {pendientes}
+                </span>
+                <span className="sr-only">{`, ${pendientes} ${pendientes === 1 ? "pendiente" : "pendientes"} de activación`}</span>
+              </>
+            )}
+          </NavLink>
+          <NavLink to={RUTA_FACTURACION_ADMIN} onClick={cerrarSidebar} className={claseEnlaceNav}>
+            Facturación
           </NavLink>
           <NavLink to="/admin/audit" onClick={cerrarSidebar} className={claseEnlaceNav}>
             Registro de auditoría
