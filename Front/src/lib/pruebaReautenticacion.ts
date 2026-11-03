@@ -1,7 +1,7 @@
 // ── Prueba de reautenticación del SuperAdmin (lote 5, G1) ────────────────────
 //
 // Antes de una acción sensible del SuperAdmin (eliminar un negocio, mandar al
-// propietario el enlace de contraseña, registrar un pago de por vida) el backend
+// propietario el enlace de contraseña, un pago o edición que deja acceso permanente) el backend
 // pide una prueba reciente de identidad: contraseña + código de la app. La prueba
 // dura 5 minutos y vale solo para la cuenta que la pidió (ver ReautenticacionService).
 //

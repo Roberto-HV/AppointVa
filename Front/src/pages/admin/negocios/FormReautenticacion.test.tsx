@@ -69,6 +69,17 @@ describe("FormReautenticacion", () => {
     expect(onConfirmado).not.toHaveBeenCalled();
   });
 
+  it("con 429 dice que hay demasiados intentos, no que el código está mal", async () => {
+    const user = userEvent.setup();
+    authMock.reautenticar.mockRejectedValue({ response: { status: 429, data: { mensaje: "Demasiadas solicitudes. Intenta de nuevo en un momento." } } });
+    const { onConfirmado } = renderizar();
+    await user.type(screen.getByLabelText("Tu contraseña"), "Clave-1");
+    await user.type(screen.getByLabelText("Código de verificación"), "123456");
+    await user.click(screen.getByRole("button", { name: "Confirmar y continuar" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Demasiados intentos. Espera unos minutos");
+    expect(onConfirmado).not.toHaveBeenCalled();
+  });
+
   it("Cancelar avisa sin llamar al servidor", async () => {
     const user = userEvent.setup();
     const { onCancelar } = renderizar();

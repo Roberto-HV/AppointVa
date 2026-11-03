@@ -168,7 +168,9 @@ builder.Services.AddSingleton<IPanelJobsAccesoService, PanelJobsAccesoService>()
 builder.Services.AddSingleton<IKioscoSalidaLimitador, KioscoSalidaLimitador>();
 builder.Services.AddHttpClient("WhatsApp");
 builder.Services.AddHttpClient("WebPush");
-builder.Services.AddHttpClient("Brevo");
+// Explicit timeout: the default (100 s) would hold the admin's request (and anything waiting on
+// it) far too long when the provider hangs. EmailService treats the timeout as a failed send.
+builder.Services.AddHttpClient("Brevo", c => c.Timeout = TimeSpan.FromSeconds(15));
 
 // ── Hangfire ───────────────────────────────────────────────────────────────────
 builder.Services.AddHangfire(config => config
@@ -289,6 +291,20 @@ builder.Services.AddRateLimiter(options =>
         RateLimitPartition.GetFixedWindowLimiter(
             partitionKey: httpContext.User.FindFirst(AppointVaAPI.Constants.ClaimsTipos.UsuarioId)?.Value
                 ?? httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                Window = TimeSpan.FromMinutes(5),
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0
+            }));
+
+    // Lote 5: step-up del SuperAdmin (reautenticar), 5 cada 5 minutos por usuario. Cupo propio
+    // (no el de Gestion2FA) para que equivocarse aquí nunca bloquee la activación obligatoria del 2FA.
+    options.AddPolicy(Politicas.LimiteReautenticacion, httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: "reautenticacion:" + (httpContext.User.FindFirst(AppointVaAPI.Constants.ClaimsTipos.UsuarioId)?.Value
+                ?? httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown"),
             factory: _ => new FixedWindowRateLimiterOptions
             {
                 PermitLimit = 5,

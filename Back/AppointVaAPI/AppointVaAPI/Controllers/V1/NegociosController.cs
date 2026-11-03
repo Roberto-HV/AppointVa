@@ -31,6 +31,7 @@ namespace AppointVaAPI.Controllers.V1
         private readonly IAuditService _audit;
         private readonly IEmailService _email;
         private readonly IConfiguration _config;
+        private readonly ILogger<NegociosController> _logger;
 
         public NegociosController(
             INegocioRepository repo,
@@ -42,8 +43,10 @@ namespace AppointVaAPI.Controllers.V1
             IOutputCacheStore cacheStore,
             IAuditService audit,
             IEmailService email,
-            IConfiguration config)
+            IConfiguration config,
+            ILogger<NegociosController> logger)
         {
+            _logger = logger;
             _email = email;
             _config = config;
             _repo = repo;
@@ -176,6 +179,13 @@ namespace AppointVaAPI.Controllers.V1
             return Ok(lista.Select(MapearDto));
         }
 
+        // GET api/negocios/correo-disponible — lote 5 (I8)
+        // Whether owner invitations can go out now, so the create form does not offer an invite
+        // the server would refuse with 503.
+        [HttpGet("correo-disponible")]
+        [Authorize(Roles = Roles.SuperAdmin)]
+        public IActionResult CorreoDisponible() => Ok(new { envioDisponible = _email.EnvioDisponible });
+
         // POST api/negocios — super-admin crea un nuevo negocio
         [HttpPost]
         [Authorize(Roles = Roles.SuperAdmin)]
@@ -188,7 +198,7 @@ namespace AppointVaAPI.Controllers.V1
             // refused request never leaves a business without its owner behind.
             if (dto.Propietario is not null)
             {
-                if (!_email.EnvioDisponible) return CorreoNoDisponible();
+                if (!_email.EnvioDisponible) return CorreoNoDisponible(MensajeCrearSinCorreo);
                 if (await _userManager.FindByEmailAsync(dto.Propietario.Email) is not null)
                     return Conflict(new { mensaje = "El correo del propietario ya está registrado en el sistema" });
             }
@@ -229,7 +239,7 @@ namespace AppointVaAPI.Controllers.V1
 
             bool? invitacionEnviada = propietario is null
                 ? null
-                : await EnviarEnlaceAccesoAsync(propietario, esInvitacion: true, creado.Nombre);
+                : await EnviarInvitacionTrasCrearAsync(propietario, creado.Nombre);
 
             var respuesta = MapearDto<NegocioCreadoDto>(creado);
             respuesta.PropietarioEmail = propietario?.Email;
@@ -352,7 +362,7 @@ namespace AppointVaAPI.Controllers.V1
             if (error is not null) return error;
             await tx.CommitAsync();
 
-            var enviada = await EnviarEnlaceAccesoAsync(propietario!, esInvitacion: true, negocio.Nombre);
+            var enviada = await EnviarInvitacionTrasCrearAsync(propietario!, negocio.Nombre);
 
             return Ok(new
             {
@@ -368,8 +378,13 @@ namespace AppointVaAPI.Controllers.V1
         // POST api/negocios/{id}/propietario/enlace-contrasena — lote 5 (I4)
         // Replaces "the admin types a new password": the owner gets the same reset link as
         // /recuperar-contrasena and chooses the password. The current one keeps working until
-        // then. Needs the step-up proof. The audit row is written first, in a transaction that
-        // only commits once the provider accepted the email, so a failed send leaves no row.
+        // then. Needs the step-up proof.
+        //
+        // Order: send first, then the mandatory audit row, with no transaction open across the
+        // provider's HTTP call (it would hold a DB connection and locks for as long as the
+        // provider takes). A failed send writes nothing. If the row cannot be written after the
+        // link went out, the send cannot be undone: the Error log is the durable trace and the
+        // admin gets a clear 500 saying the link was sent but not recorded (fail loud, not silent).
         [HttpPost("{id:guid}/propietario/enlace-contrasena")]
         [Authorize(Roles = Roles.SuperAdmin)]
         [RequiereReautenticacion]
@@ -386,15 +401,24 @@ namespace AppointVaAPI.Controllers.V1
             // An invited owner who never chose a password gets the invitation wording again.
             var esInvitacion = !await _userManager.HasPasswordAsync(propietario);
 
-            await using var tx = await _db.Database.BeginTransactionAsync();
+            if (!await EnviarEnlaceAccesoAsync(propietario, esInvitacion, negocio.Nombre))
+                return CorreoNoEnviado();
+
             if (!await _audit.RegistrarNegocioObligatorioAsync(AccionesAuditoria.PasswordPropietarioRestablecido, id,
                     $"Usuario: {propietario.Id}; enlace enviado a {EmailService.MascarEmail(propietario.Email!)}; " +
                     (esInvitacion ? "invitación (aún sin contraseña)" : "la contraseña actual sigue hasta que la cambie")))
-                return AuditoriaAdmin.NoDisponible(this);
-
-            if (!await EnviarEnlaceAccesoAsync(propietario, esInvitacion, negocio.Nombre))
-                return CorreoNoEnviado();
-            await tx.CommitAsync();
+            {
+                _logger.LogError(
+                    "Enlace de contraseña ENVIADO sin registro en la bitácora: admin {AdminId}, negocio {NegocioId}, " +
+                    "propietario {PropietarioId}, destino {Destino}, invitación {EsInvitacion}, {Fecha:o}",
+                    User.FindFirst(ClaimsTipos.UsuarioId)?.Value, id, propietario.Id,
+                    EmailService.MascarEmail(propietario.Email!), esInvitacion, DateTime.UtcNow);
+                return StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    mensaje = "Enviamos el enlace, pero no pudimos registrarlo en la bitácora. No lo reenvíes; avisa a soporte técnico.",
+                    codigoError = CodigoEnlaceSinAuditoria
+                });
+            }
 
             return Ok(new
             {
@@ -408,13 +432,37 @@ namespace AppointVaAPI.Controllers.V1
 
         public const string CodigoCorreoNoDisponible = "CORREO_NO_DISPONIBLE";
         public const string CodigoCorreoNoEnviado = "CORREO_NO_ENVIADO";
+        public const string CodigoEnlaceSinAuditoria = "ENLACE_SIN_AUDITORIA";
 
         /// <summary>Email is switched off or has no key: say so instead of pretending a link went out.</summary>
-        private ObjectResult CorreoNoDisponible() => StatusCode(StatusCodes.Status503ServiceUnavailable, new
+        private ObjectResult CorreoNoDisponible(string? mensaje = null) => StatusCode(StatusCodes.Status503ServiceUnavailable, new
         {
-            mensaje = "El envío de correos está apagado o sin configurar, así que no podemos mandar el enlace. Revisa la configuración de correo e intenta de nuevo.",
+            mensaje = mensaje ?? "El envío de correos está apagado o sin configurar, así que no podemos mandar el enlace. Revisa la configuración de correo e intenta de nuevo.",
             codigoError = CodigoCorreoNoDisponible
         });
+
+        public const string MensajeCrearSinCorreo =
+            "El envío de correos está apagado o sin configurar, así que no podemos invitar al propietario. " +
+            "Puedes crear el negocio sin invitarlo y agregarlo después, cuando el correo esté configurado.";
+
+        /// <summary>
+        /// The invitation after a committed create (lote 5, I4/I8). The account already exists, so
+        /// any failure here (token generation included) must not turn into a 500: it reports
+        /// <c>false</c> and the UI offers "Enviar enlace" to retry.
+        /// </summary>
+        private async Task<bool> EnviarInvitacionTrasCrearAsync(ApplicationUser propietario, string? negocioNombre)
+        {
+            try
+            {
+                return await EnviarEnlaceAccesoAsync(propietario, esInvitacion: true, negocioNombre);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "No se pudo enviar la invitación al propietario {PropietarioId} del negocio {NegocioId}",
+                    propietario.Id, propietario.NegocioId);
+                return false;
+            }
+        }
 
         private ObjectResult CorreoNoEnviado() => StatusCode(StatusCodes.Status502BadGateway, new
         {

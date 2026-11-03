@@ -475,7 +475,7 @@ namespace AppointVaAPI.Controllers.V1
         // it up first, so this can never lock the account out. A wrong password counts toward
         // the normal lockout, like the login.
         [Authorize(Roles = Roles.SuperAdmin)]
-        [EnableRateLimiting(AppointVaAPI.Constants.Politicas.LimiteGestion2FA)]
+        [EnableRateLimiting(AppointVaAPI.Constants.Politicas.LimiteReautenticacion)]
         [HttpPost("reautenticar")]
         public async Task<IActionResult> Reautenticar([FromBody] ReautenticarDto dto)
         {

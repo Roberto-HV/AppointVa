@@ -8,7 +8,7 @@ import CodigosRecuperacion from "../../components/dashboard/CodigosRecuperacion"
 import { quedanPocosCodigos } from "../../utils/codigosRecuperacion";
 import { useToastStore } from "../../store/toastStore";
 import EncabezadoPagina from "../../components/ui/EncabezadoPagina";
-import { estadoHttp, mensajeError } from "../../utils/errores";
+import { estadoHttp, mensajeError, mensajeErrorIntentos } from "../../utils/errores";
 
 type Paso = "idle" | "configurando" | "activado";
 
@@ -46,7 +46,7 @@ export default function DosFactoresPage() {
     // Antes un fallo dejaba el botón en "Generando..." → "Activar" sin decir nada.
     onMutate: () => setErrorConfig(""),
     onError: (err: unknown) => {
-      const msg = mensajeError(err, "No se pudo iniciar la configuración de 2FA. Intenta de nuevo.");
+      const msg = mensajeErrorIntentos(err, "No se pudo iniciar la configuración de 2FA. Intenta de nuevo.");
       // 409: 2FA ya está activo (p. ej. se activó en otra pestaña). Refrescar el estado
       // muestra la vista de "activado"; cambiar de app requiere desactivar primero.
       if (estadoHttp(err) === 409) qc.invalidateQueries({ queryKey: ["2fa-estado"] });
@@ -64,7 +64,7 @@ export default function DosFactoresPage() {
       toast("Autenticación de dos factores activada");
     },
     onError: (err: unknown) => {
-      const msg = mensajeError(err, "Código incorrecto");
+      const msg = mensajeErrorIntentos(err, "Código incorrecto");
       if (estadoHttp(err) === 409) {
         // Ya estaba activo: volver a la vista normal con el estado real.
         qc.invalidateQueries({ queryKey: ["2fa-estado"] });
@@ -102,7 +102,7 @@ export default function DosFactoresPage() {
       toast("Autenticación de dos factores desactivada");
     },
     onError: (err: unknown) => {
-      setErrorCodigo(mensajeError(err, "Código incorrecto"));
+      setErrorCodigo(mensajeErrorIntentos(err, "Código incorrecto"));
     },
   });
 

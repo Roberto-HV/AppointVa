@@ -234,7 +234,7 @@ public class FlujosSensiblesAdminTests : CodigosRecuperacionTestBase
         await using (var scope = Factory.Services.CreateAsyncScope())
         {
             var um = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-            sello = JwtService.SelloKiosco((await um.FindByIdAsync(admin.Id.ToString()))!.SecurityStamp);
+            sello = JwtService.HashSello((await um.FindByIdAsync(admin.Id.ToString()))!.SecurityStamp);
         }
         var vencida = new JwtSecurityTokenHandler().WriteToken(new JwtSecurityToken(
             issuer: config["Jwt:Emisor"],
@@ -310,6 +310,78 @@ public class FlujosSensiblesAdminTests : CodigosRecuperacionTestBase
         cliente.DefaultRequestHeaders.Add(ReautenticacionService.Encabezado, await PruebaAsync(admin.Id));
         (await cliente.PostAsJsonAsync($"/api/admin/negocios/{negocio.Id}/pagos", new { mesesPagados = 1200, monto = 9999m }))
             .StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    private async Task<DateTime?> VencimientoAsync(Guid negocioId)
+    {
+        await using var scope = Factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        return await db.Negocios.Where(n => n.Id == negocioId).Select(n => n.FechaVencimiento).SingleAsync();
+    }
+
+    [Fact]
+    public async Task PagosAcumulados_QueLleganAAccesoPermanente_PidenPrueba()
+    {
+        var admin = await CrearAdminAsync();
+        var negocio = await CrearNegocioAsync();
+        var cliente = NewClient(TokenAdmin(admin));
+
+        // 599 months alone are not lifetime: no proof.
+        (await cliente.PostAsJsonAsync($"/api/admin/negocios/{negocio.Id}/pagos", new { mesesPagados = 599, monto = 1m }))
+            .StatusCode.Should().Be(HttpStatusCode.OK);
+        var tras599 = await VencimientoAsync(negocio.Id);
+
+        // Stacked on the first one they would reach permanent access: proof required, nothing written.
+        var segundo = await cliente.PostAsJsonAsync($"/api/admin/negocios/{negocio.Id}/pagos", new { mesesPagados = 599, monto = 1m });
+        segundo.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await CodigoErrorAsync(segundo)).Should().Be(RequiereReautenticacionAttribute.CodigoError);
+        (await VencimientoAsync(negocio.Id)).Should().Be(tras599);
+
+        // With the proof it goes through.
+        cliente.DefaultRequestHeaders.Add(ReautenticacionService.Encabezado, await PruebaAsync(admin.Id));
+        (await cliente.PostAsJsonAsync($"/api/admin/negocios/{negocio.Id}/pagos", new { mesesPagados = 599, monto = 1m }))
+            .StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task PagosMensualesNormales_NoPidenPrueba()
+    {
+        var admin = await CrearAdminAsync();
+        var negocio = await CrearNegocioAsync();
+        var cliente = NewClient(TokenAdmin(admin));
+
+        foreach (var meses in new[] { 1, 12, 24 })
+            (await cliente.PostAsJsonAsync($"/api/admin/negocios/{negocio.Id}/pagos", new { mesesPagados = meses, monto = 449m }))
+                .StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task EditarPago_QueLlevaAAccesoPermanente_PidePrueba_ElRestoNo()
+    {
+        var admin = await CrearAdminAsync();
+        var negocio = await CrearNegocioAsync();
+        var cliente = NewClient(TokenAdmin(admin));
+        var pago = await (await cliente.PostAsJsonAsync($"/api/admin/negocios/{negocio.Id}/pagos", new { mesesPagados = 1, monto = 449m }))
+            .Content.ReadFromJsonAsync<JsonElement>();
+        var pagoId = pago.GetProperty("id").GetGuid();
+        var desde = pago.GetProperty("periodoDesde").GetDateTime();
+        var hasta = pago.GetProperty("periodoHasta").GetDateTime();
+
+        // Amount and notes only: same due date, no proof.
+        (await cliente.PatchAsJsonAsync($"/api/admin/pagos/{pagoId}", new { monto = 500m, notas = "ajuste", periodoDesde = desde, periodoHasta = hasta }))
+            .StatusCode.Should().Be(HttpStatusCode.OK);
+
+        // Pushing the period a century out is lifetime access by another door.
+        var lejos = hasta.AddYears(100);
+        var sinPrueba = await cliente.PatchAsJsonAsync($"/api/admin/pagos/{pagoId}", new { monto = 500m, periodoDesde = desde, periodoHasta = lejos });
+        sinPrueba.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await CodigoErrorAsync(sinPrueba)).Should().Be(RequiereReautenticacionAttribute.CodigoError);
+        (await VencimientoAsync(negocio.Id))!.Value.Date.Should().Be(hasta.Date);
+
+        cliente.DefaultRequestHeaders.Add(ReautenticacionService.Encabezado, await PruebaAsync(admin.Id));
+        (await cliente.PatchAsJsonAsync($"/api/admin/pagos/{pagoId}", new { monto = 500m, periodoDesde = desde, periodoHasta = lejos }))
+            .StatusCode.Should().Be(HttpStatusCode.OK);
+        (await VencimientoAsync(negocio.Id))!.Value.Date.Should().Be(lejos.Date);
     }
 
     // ── Delete impact ───────────────────────────────────────────────────────
@@ -467,6 +539,27 @@ public class FlujosSensiblesAdminTests : CodigosRecuperacionTestBase
 
         resp.StatusCode.Should().Be(HttpStatusCode.BadGateway);
         (await CodigoErrorAsync(resp)).Should().Be(NegociosController.CodigoCorreoNoEnviado);
+        // Nothing went out, so nothing is recorded.
+        await using var scope = Factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        (await db.AuditLogs.AnyAsync(a => a.EntidadId == negocio.Id.ToString()
+            && a.Accion == AccionesAuditoria.PasswordPropietarioRestablecido)).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task CorreoDisponible_DiceSiSePuedeInvitar_SoloSuperAdmin()
+    {
+        var admin = await CrearAdminAsync();
+        var negocio = await CrearNegocioAsync();
+
+        foreach (var disponible in new[] { true, false })
+        {
+            var cuerpo = await ClienteConCorreo(Correo(disponible), TokenAdmin(admin))
+                .GetFromJsonAsync<JsonElement>("/api/negocios/correo-disponible");
+            cuerpo.GetProperty("envioDisponible").GetBoolean().Should().Be(disponible);
+        }
+        (await NewClient(TestTokenHelper.Propietario(negocio.Id)).GetAsync("/api/negocios/correo-disponible"))
+            .StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
     [Fact]
@@ -532,10 +625,57 @@ public class FlujosSensiblesAdminTests : CodigosRecuperacionTestBase
         });
 
         resp.StatusCode.Should().Be(HttpStatusCode.ServiceUnavailable);
-        (await CodigoErrorAsync(resp)).Should().Be(NegociosController.CodigoCorreoNoDisponible);
+        var cuerpo = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        cuerpo.GetProperty("codigoError").GetString().Should().Be(NegociosController.CodigoCorreoNoDisponible);
+        // Tells the admin the way out: create it without inviting.
+        cuerpo.GetProperty("mensaje").GetString().Should().Be(NegociosController.MensajeCrearSinCorreo).And.Contain("sin invitarlo");
         await using var scope = Factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         (await db.Negocios.AnyAsync(n => n.Slug == slug)).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task CrearNegocioConPropietario_SiLaInvitacionLanza_CreaYDevuelveInvitacionNoEnviada()
+    {
+        var admin = await CrearAdminAsync();
+        var email = Correo();
+        email.EnviarEnlaceAccesoAsync(default!, default!, default!, default, default)
+            .ReturnsForAnyArgs<Task<bool>>(_ => throw new HttpRequestException("proveedor caído"));
+        var correoDueno = $"lanza-{Guid.NewGuid():N}@ejemplo.com";
+        var slug = $"lanza-{Guid.NewGuid():N}"[..16];
+
+        var resp = await ClienteConCorreo(email, TokenAdmin(admin)).PostAsJsonAsync("/api/negocios", new
+        {
+            nombre = "Invitación Fallida", slug,
+            propietario = new { nombre = "Laura", email = correoDueno }
+        });
+
+        resp.StatusCode.Should().Be(HttpStatusCode.Created, await resp.Content.ReadAsStringAsync());
+        var cuerpo = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        cuerpo.GetProperty("invitacionEnviada").GetBoolean().Should().BeFalse();
+        cuerpo.GetProperty("propietarioEmail").GetString().Should().Be(correoDueno);
+        await using var scope = Factory.Services.CreateAsyncScope();
+        var um = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        (await um.FindByEmailAsync(correoDueno)).Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task CrearPropietario_SiLaInvitacionLanza_CreaYDevuelveInvitacionNoEnviada()
+    {
+        var admin = await CrearAdminAsync();
+        var negocio = await CrearNegocioAsync();
+        var email = Correo();
+        email.EnviarEnlaceAccesoAsync(default!, default!, default!, default, default)
+            .ReturnsForAnyArgs<Task<bool>>(_ => throw new TaskCanceledException("timeout"));
+        var correoDueno = $"lanza-{Guid.NewGuid():N}@ejemplo.com";
+
+        var resp = await ClienteConCorreo(email, TokenAdmin(admin))
+            .PostAsJsonAsync($"/api/negocios/{negocio.Id}/propietario", new { nombre = "Laura", email = correoDueno });
+
+        resp.StatusCode.Should().Be(HttpStatusCode.OK, await resp.Content.ReadAsStringAsync());
+        var cuerpo = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        cuerpo.GetProperty("invitacionEnviada").GetBoolean().Should().BeFalse();
+        cuerpo.GetProperty("mensaje").GetString().Should().Contain("Enviar enlace");
     }
 
     [Fact]

@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle, XCircle } from "lucide-react";
 import { adminApi, type PlanDto } from "../../../api/admin";
 import Modal from "../../../components/ui/Modal";
@@ -27,7 +27,8 @@ const schemaNegocio = z
     descripcion: z.string().optional(),
     planId: z.string().optional(),
     // Lote 5 (I8): el propietario en el mismo alta, invitado por correo.
-    invitarPropietario: z.boolean(),
+    // Opcional: deshabilitada (correo apagado) puede llegar sin valor, y eso es "no invitar".
+    invitarPropietario: z.boolean().optional(),
     propietarioNombre: z.string().optional(),
     propietarioApellido: z.string().optional(),
     propietarioEmail: z.string().optional(),
@@ -71,6 +72,20 @@ function FormNuevoNegocio({ planes, onCreado }: { planes: PlanDto[]; onCreado: (
   // Misma comprobación en vivo que el registro público (AP-23).
   const slugNuevo = useDisponibilidadSlug(formNegocio.watch("slug"));
   const invitar = formNegocio.watch("invitarPropietario");
+
+  // Con el correo apagado el servidor rechazaría la invitación (503): no se ofrece y el
+  // negocio se crea sin propietario, que se invita después desde su ficha. Si la consulta
+  // falla se deja la opción: el servidor sigue explicando el motivo.
+  const { data: correo } = useQuery({
+    queryKey: ["admin-correo-disponible"],
+    queryFn: adminApi.correoDisponible,
+    staleTime: 60_000,
+  });
+  const correoApagado = correo?.envioDisponible === false;
+  const { setValue } = formNegocio;
+  useEffect(() => {
+    if (correoApagado) setValue("invitarPropietario", false);
+  }, [correoApagado, setValue]);
 
   // I8: el slug se propone a partir del nombre hasta que el admin lo edita a mano.
   const [slugEditado, setSlugEditado] = useState(false);
@@ -203,16 +218,22 @@ function FormNuevoNegocio({ planes, onCreado }: { planes: PlanDto[]; onCreado: (
       {/* I8: antes había que buscar la tarjeta y abrir "Propietario" aparte. */}
       <fieldset className="rounded-xl border border-slate-200 dark:border-slate-700 p-4 space-y-3">
         <legend className="px-1 text-sm font-semibold text-slate-800 dark:text-slate-100">Propietario</legend>
-        <label className="flex items-start gap-2 text-sm text-slate-700 dark:text-slate-300 cursor-pointer">
+        <label
+          className={`flex items-start gap-2 text-sm text-slate-700 dark:text-slate-300 ${correoApagado ? "cursor-not-allowed opacity-70" : "cursor-pointer"}`}
+        >
           <input
             type="checkbox"
             {...formNegocio.register("invitarPropietario")}
+            disabled={correoApagado}
+            aria-describedby="nuevo-invitar-ayuda"
             className="mt-0.5 h-4 w-4 rounded border-slate-300 accent-slate-700"
           />
           <span>
             Invitar al propietario ahora
-            <span className="block text-xs text-muted-foreground">
-              Le enviaremos un enlace para crear su contraseña. Tú no la ves ni la defines.
+            <span id="nuevo-invitar-ayuda" className="block text-xs text-muted-foreground">
+              {correoApagado
+                ? "El envío de correos está apagado, así que no podemos mandar la invitación. Crea el negocio y agrega al propietario desde su ficha cuando el correo esté configurado."
+                : "Le enviaremos un enlace para crear su contraseña. Tú no la ves ni la defines."}
             </span>
           </span>
         </label>

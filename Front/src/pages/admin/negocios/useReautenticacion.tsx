@@ -46,6 +46,25 @@ export function useReautenticacion(accion: string) {
     [pedirPrueba],
   );
 
+  /**
+   * Para acciones que el servidor decide si piden la prueba (p. ej. un pago que,
+   * sumado a los anteriores, deja acceso permanente): se intenta con la prueba
+   * vigente, si la hay, y solo si el servidor responde que falta se pide y se
+   * reintenta una vez. Así el front no repite la regla del backend.
+   */
+  const siLaPide = useCallback(
+    async <T,>(ejecutar: (prueba?: string) => Promise<T>): Promise<T> => {
+      try {
+        return await ejecutar(pruebaVigente() ?? undefined);
+      } catch (err) {
+        if (!esReautenticacionRequerida(err)) throw err;
+        olvidarPrueba();
+        return ejecutar(await pedirPrueba());
+      }
+    },
+    [pedirPrueba],
+  );
+
   const terminar = (resultado: { prueba: string } | { cancelado: true }) => {
     const p = pendiente.current;
     pendiente.current = null;
@@ -62,5 +81,5 @@ export function useReautenticacion(accion: string) {
     />
   ) : null;
 
-  return { pidiendo, conReautenticacion, formulario };
+  return { pidiendo, conReautenticacion, siLaPide, formulario };
 }

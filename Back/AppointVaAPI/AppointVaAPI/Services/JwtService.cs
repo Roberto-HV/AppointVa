@@ -79,11 +79,15 @@ namespace AppointVaAPI.Services
         }
 
         /// <summary>
-        /// Hash of the security stamp carried by the kiosk token, so the stamp itself
-        /// never leaves the server. Identity rotates the stamp on password change/reset.
+        /// Hash of a user's security stamp, for tokens that must die when the stamp rotates
+        /// (password change/reset, 2FA on/off) without the stamp itself leaving the server.
+        /// Used by the kiosk token and the step-up proof (ReautenticacionService).
         /// </summary>
-        public static string SelloKiosco(string? securityStamp) =>
+        public static string HashSello(string? securityStamp) =>
             Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(securityStamp ?? string.Empty)));
+
+        /// <summary>Stamp hash carried by the kiosk token (see <see cref="HashSello"/>).</summary>
+        public static string SelloKiosco(string? securityStamp) => HashSello(securityStamp);
 
         public async Task<string> GenerarRefreshTokenAsync(Guid usuarioId)
         {

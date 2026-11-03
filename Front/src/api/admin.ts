@@ -183,6 +183,12 @@ export const adminApi = {
     return data;
   },
 
+  /** Lote 5 (I8): si ahora se pueden mandar invitaciones por correo (envío encendido y con llave). */
+  correoDisponible: async (): Promise<{ envioDisponible: boolean }> => {
+    const { data } = await api.get("/negocios/correo-disponible");
+    return data;
+  },
+
   activar: async (id: string): Promise<NegocioDto> => {
     const { data } = await api.patch(`/negocios/${id}/activar`);
     return data;
@@ -271,7 +277,10 @@ export const adminApi = {
     return data;
   },
 
-  /** Un pago "De por vida" pide la prueba de reautenticación; los mensuales no. */
+  /**
+   * Un pago que deja acceso permanente (el "De por vida", o varios que se acumulan
+   * hasta ahí) pide la prueba de reautenticación; los mensuales normales no.
+   */
   registrarPago: async (negocioId: string, dto: RegistrarPagoDto, prueba?: string): Promise<PagoSuscripcionDto> => {
     const { data } = await api.post(`/admin/negocios/${negocioId}/pagos`, dto, conPrueba(prueba));
     return data;
@@ -303,8 +312,9 @@ export const adminApi = {
     await api.patch(`/admin/negocios/${negocioId}/sector`, { sector });
   },
 
-  editarPago: async (pagoId: string, dto: EditarPagoRequestDto): Promise<PagoSuscripcionDto> => {
-    const { data } = await api.patch(`/admin/pagos/${pagoId}`, dto);
+  /** Pide la prueba de reautenticación solo si la edición deja acceso permanente. */
+  editarPago: async (pagoId: string, dto: EditarPagoRequestDto, prueba?: string): Promise<PagoSuscripcionDto> => {
+    const { data } = await api.patch(`/admin/pagos/${pagoId}`, dto, conPrueba(prueba));
     return data;
   },
 

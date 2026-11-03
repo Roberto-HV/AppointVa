@@ -21,8 +21,15 @@ namespace AppointVaAPI.Helpers
         /// <summary>
         /// "De por vida" is recorded as a 1200-month payment, so it ends a century later.
         /// Anything beyond fifty years is that one-off access, not a monthly subscription.
+        /// The day and month thresholds below both derive from this single figure.
         /// </summary>
-        public const int DiasAccesoPermanente = 365 * 50;
+        public const int AnosAccesoPermanente = 50;
+
+        /// <summary>Remaining days from which a business has permanent access.</summary>
+        public const int DiasAccesoPermanente = 365 * AnosAccesoPermanente;
+
+        /// <summary>Months a single payment needs to be the explicit lifetime option.</summary>
+        public const int MesesAccesoPermanente = 12 * AnosAccesoPermanente;
 
         public const string Activa = "Activa";
         public const string PorVencer = "PorVencer";
@@ -57,7 +64,23 @@ namespace AppointVaAPI.Helpers
         public static bool EsAccesoPermanente(int? diasRestantes) => diasRestantes >= DiasAccesoPermanente;
 
         /// <summary>A payment of fifty years or more is the lifetime access ("De por vida", 1200 months).</summary>
-        public static bool EsPagoDeAccesoPermanente(int mesesPagados) => mesesPagados >= 12 * 50;
+        public static bool EsPagoDeAccesoPermanente(int mesesPagados) => mesesPagados >= MesesAccesoPermanente;
+
+        /// <summary>
+        /// Whether a write to the subscription needs the SuperAdmin step-up proof (lote 5, G1):
+        /// the explicit lifetime option, or any change that moves the due date later and whose
+        /// RESULTING due date is permanent access. Payments stack on the current due date, so
+        /// judging each payment alone would let two 599-month payments (or many small ones, or an
+        /// edited period) reach it without the proof. Changes that do not extend the due date
+        /// (amount or notes edits, shortening, deleting) never grant access, so they do not ask.
+        /// </summary>
+        public static bool RequiereReautenticacion(int mesesPagados, DateTime? vencimientoAntes, DateTime? vencimientoResultante, DateTime hoy)
+        {
+            if (EsPagoDeAccesoPermanente(mesesPagados)) return true;
+            if (vencimientoResultante is null) return false;
+            var extiende = vencimientoAntes is null || vencimientoResultante.Value.Date > vencimientoAntes.Value.Date;
+            return extiende && EsAccesoPermanente(DiasRestantes(vencimientoResultante, hoy));
+        }
 
         /// <summary>
         /// What the business adds to the monthly recurring income: its monthly price while the

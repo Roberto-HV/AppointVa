@@ -11,7 +11,8 @@ namespace AppointVaAPI.Services
 {
     /// <summary>
     /// Step-up ("sudo mode") for sensitive SuperAdmin actions (lote 5, G1): deleting a business,
-    /// sending an owner a password link and recording a lifetime payment.
+    /// sending an owner a password link, and any payment or payment edit that leaves the business
+    /// with permanent access (<see cref="Helpers.FacturacionAdmin.RequiereReautenticacion"/>).
     ///
     /// How it works:
     /// <list type="number">
@@ -76,7 +77,7 @@ namespace AppointVaAPI.Services
                 [
                     new Claim(ClaimsTipos.UsuarioId, usuario.Id.ToString()),
                     new Claim(ClaimProposito, Proposito),
-                    new Claim(ClaimsTipos.ReautenticacionSello, JwtService.SelloKiosco(usuario.SecurityStamp)),
+                    new Claim(ClaimsTipos.ReautenticacionSello, JwtService.HashSello(usuario.SecurityStamp)),
                     new Claim("jti", Guid.NewGuid().ToString()),
                 ],
                 notBefore: ahora,
@@ -124,7 +125,7 @@ namespace AppointVaAPI.Services
             var usuario = await _userManager.FindByIdAsync(idSesion);
             if (usuario is null || !usuario.Activo) return false;
             var sello = jwt.Claims.FirstOrDefault(c => c.Type == ClaimsTipos.ReautenticacionSello)?.Value;
-            return sello == JwtService.SelloKiosco(usuario.SecurityStamp);
+            return sello == JwtService.HashSello(usuario.SecurityStamp);
         }
     }
 }

@@ -68,4 +68,41 @@ public class FacturacionAdminTests
         FacturacionAdmin.EsVigente(FacturacionAdmin.Estado(dias)).Should().BeTrue();
         FacturacionAdmin.IngresoMensual(FacturacionAdmin.Estado(dias), dias, esTester: false, 449m).Should().Be(0m);
     }
+
+    // ── Lote 5 (G1): step-up for permanent access, judged on the resulting due date ──
+
+    [Fact]
+    public void Umbrales_SalenDeUnaSolaCifra()
+    {
+        FacturacionAdmin.DiasAccesoPermanente.Should().Be(365 * FacturacionAdmin.AnosAccesoPermanente);
+        FacturacionAdmin.MesesAccesoPermanente.Should().Be(12 * FacturacionAdmin.AnosAccesoPermanente);
+    }
+
+    [Fact]
+    public void RequiereReautenticacion_DePorVida_Siempre() =>
+        FacturacionAdmin.RequiereReautenticacion(1200, null, Hoy.AddMonths(1200), Hoy).Should().BeTrue();
+
+    [Fact]
+    public void RequiereReautenticacion_PagoMensual_No() =>
+        FacturacionAdmin.RequiereReautenticacion(1, Hoy.AddDays(10), Hoy.AddDays(10).AddMonths(1), Hoy).Should().BeFalse();
+
+    [Fact]
+    public void RequiereReautenticacion_PagosAcumulados_QueLleganAlUmbral_Si()
+    {
+        // 599 months alone are not "lifetime", but on top of an earlier 599 they are.
+        FacturacionAdmin.EsPagoDeAccesoPermanente(599).Should().BeFalse();
+        var tras599 = Hoy.AddMonths(599).AddDays(-1);
+        FacturacionAdmin.RequiereReautenticacion(599, null, tras599, Hoy).Should().BeFalse();
+        FacturacionAdmin.RequiereReautenticacion(599, tras599, tras599.AddMonths(599), Hoy).Should().BeTrue();
+    }
+
+    [Fact]
+    public void RequiereReautenticacion_SinExtenderElVencimiento_No()
+    {
+        var permanente = Hoy.AddMonths(1200);
+        // Amount/notes edit (same due date) or shortening never grants access.
+        FacturacionAdmin.RequiereReautenticacion(0, permanente, permanente, Hoy).Should().BeFalse();
+        FacturacionAdmin.RequiereReautenticacion(0, permanente, permanente.AddYears(-1), Hoy).Should().BeFalse();
+        FacturacionAdmin.RequiereReautenticacion(0, permanente, permanente.AddDays(1), Hoy).Should().BeTrue();
+    }
 }

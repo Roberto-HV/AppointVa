@@ -397,7 +397,9 @@ public class AuditoriaAdminTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task EnlaceContrasena_SiLaBitacoraFalla_Responde503_YNoEnviaElCorreo()
+    // The email goes out first (no transaction held across the provider call). If the row then
+    // cannot be written the send cannot be recalled: a clear 500 that says so (plus an Error log).
+    public async Task EnlaceContrasena_SiLaBitacoraFallaTrasEnviar_Responde500_QueDiceQueSeEnvioSinRegistro()
     {
         var adminId = await CrearAdminAsync();
         var negocio = await CrearNegocioAsync();
@@ -417,10 +419,11 @@ public class AuditoriaAdminTests : IntegrationTestBase
 
         var resp = await cliente.PostAsync($"/api/negocios/{negocio.Id}/propietario/enlace-contrasena", null);
 
-        resp.StatusCode.Should().Be(HttpStatusCode.ServiceUnavailable);
-        (await resp.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("mensaje").GetString()
-            .Should().Contain("bitácora");
-        await email.DidNotReceiveWithAnyArgs().EnviarEnlaceAccesoAsync(default!, default!, default!, default, default);
+        resp.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
+        var cuerpo = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        cuerpo.GetProperty("mensaje").GetString().Should().Contain("Enviamos el enlace").And.Contain("bitácora");
+        cuerpo.GetProperty("codigoError").GetString().Should().Be(AppointVaAPI.Controllers.V1.NegociosController.CodigoEnlaceSinAuditoria);
+        await email.ReceivedWithAnyArgs(1).EnviarEnlaceAccesoAsync(default!, default!, default!, default, default);
     }
 
     // ── AuditAdminController ────────────────────────────────────────────────

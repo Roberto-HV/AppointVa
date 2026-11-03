@@ -49,6 +49,17 @@ export function estadoHttp(err: unknown): number | undefined {
   return typeof status === "number" ? status : undefined;
 }
 
+export const MENSAJE_DEMASIADOS_INTENTOS = "Demasiados intentos. Espera unos minutos e intenta de nuevo.";
+
+/**
+ * Como `mensajeError`, pero para formularios de código o contraseña limitados
+ * por intentos (2FA, "Confirma que eres tú"): un 429 dice claramente que hay
+ * que esperar, en lugar de parecer un código incorrecto.
+ */
+export function mensajeErrorIntentos(err: unknown, porDefecto: string): string {
+  return estadoHttp(err) === 429 ? MENSAJE_DEMASIADOS_INTENTOS : mensajeError(err, porDefecto);
+}
+
 /**
  * Fallo que puede resolverse solo con reintentar: sin respuesta (red caída),
  * error del servidor (5xx), tiempo agotado (408) o demasiadas peticiones (429).

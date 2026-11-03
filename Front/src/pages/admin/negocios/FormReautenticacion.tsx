@@ -6,7 +6,7 @@ import { authApi } from "../../../api/auth";
 import ModalAcciones from "../../../components/ui/ModalAcciones";
 import { esDosFactoresRequerido, guardarPrueba } from "../../../lib/pruebaReautenticacion";
 import { RUTA_SEGURIDAD_ADMIN } from "../../../layouts/rutasAdmin";
-import { mensajeError } from "../../../utils/errores";
+import { mensajeErrorIntentos } from "../../../utils/errores";
 import { BOTON_PIE_PRIMARIO, BOTON_PIE_SECUNDARIO, CAMPO_ERROR, CAMPO_MODAL, CAMPO_OK } from "./estilos";
 
 /**
@@ -53,7 +53,7 @@ export default function FormReautenticacion({
       onConfirmado(token);
     } catch (err) {
       if (esDosFactoresRequerido(err)) setFalta2FA(true);
-      setError(mensajeError(err, "No pudimos confirmar tu identidad. Intenta de nuevo."));
+      setError(mensajeErrorIntentos(err, "No pudimos confirmar tu identidad. Intenta de nuevo."));
       setCodigo("");
     } finally {
       setEnviando(false);

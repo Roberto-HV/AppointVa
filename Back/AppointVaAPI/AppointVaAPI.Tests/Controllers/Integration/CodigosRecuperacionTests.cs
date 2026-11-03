@@ -294,6 +294,8 @@ public class DosFactoresReautenticacionTests : CodigosRecuperacionTestBase
     [InlineData(nameof(AppointVaAPI.Controllers.V1.AutenticacionController.Activar2FA), AppointVaAPI.Constants.Politicas.LimiteGestion2FA)]
     [InlineData(nameof(AppointVaAPI.Controllers.V1.AutenticacionController.Desactivar2FA), AppointVaAPI.Constants.Politicas.LimiteGestion2FA)]
     [InlineData(nameof(AppointVaAPI.Controllers.V1.AutenticacionController.Configurar2FA), "Auth")]
+    // Its own bucket: step-up typos must never block the forced 2FA setup.
+    [InlineData(nameof(AppointVaAPI.Controllers.V1.AutenticacionController.Reautenticar), AppointVaAPI.Constants.Politicas.LimiteReautenticacion)]
     public void Endpoints2FA_EstanLimitados(string accion, string politica)
     {
         typeof(AppointVaAPI.Controllers.V1.AutenticacionController).GetMethod(accion)!

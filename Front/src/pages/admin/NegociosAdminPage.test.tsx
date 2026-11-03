@@ -5,6 +5,7 @@ import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import NegociosAdminPage from './NegociosAdminPage';
 import * as adminModule from '../../api/admin';
+import { olvidarPrueba } from '../../lib/pruebaReautenticacion';
 
 vi.mock('../../api/admin', () => ({
   adminApi: {
@@ -23,6 +24,7 @@ vi.mock('../../api/admin', () => ({
     confirmarEmail: vi.fn(),
     eliminarPago: vi.fn(),
     crearNegocio: vi.fn(),
+    correoDisponible: vi.fn(async () => ({ envioDisponible: true })),
     obtenerImpactoEliminacion: vi.fn(),
   },
 }));
@@ -518,7 +520,8 @@ describe('ModalSuscripcion — cambios con confirmación y aviso', () => {
 
     await user.click(screen.getByRole('button', { name: /Registrar pago/ }));
     await waitFor(() =>
-      expect(adminModule.adminApi.registrarPago).toHaveBeenCalledWith('neg-1', { mesesPagados: 3, monto: 1000, notas: undefined })
+      // Sin prueba: un pago mensual no la pide de entrada.
+      expect(adminModule.adminApi.registrarPago).toHaveBeenCalledWith('neg-1', { mesesPagados: 3, monto: 1000, notas: undefined }, undefined)
     );
     // "3 meses" sigue marcado: el monto vuelve a 3 × 449, no a vacío.
     await waitFor(() => expect(monto).toHaveValue('1347'));
@@ -545,6 +548,33 @@ describe('ModalSuscripcion — cambios con confirmación y aviso', () => {
 
     await waitFor(() => expect(adminModule.adminApi.registrarPago).toHaveBeenCalledWith(
       'neg-1', { mesesPagados: 1200, monto: 9999, notas: undefined }, 'prueba-vida'));
+  });
+
+  // Los pagos se acumulan: uno normal puede dejar acceso permanente. El servidor lo decide
+  // y responde REAUTENTICACION_REQUERIDA; el front pide la identidad y reintenta una vez.
+  it('si el servidor pide la prueba para un pago normal, la pide y reintenta', async () => {
+    const user = userEvent.setup();
+    olvidarPrueba();
+    vi.mocked(adminModule.adminApi.registrarPago).mockReset()
+      .mockRejectedValueOnce({ response: { status: 403, data: { codigoError: 'REAUTENTICACION_REQUERIDA' } } })
+      .mockResolvedValue({} as never);
+    authMock.obtenerEstado2FA.mockResolvedValue({ habilitado: true, tieneConfiguracion: true, codigosRecuperacionRestantes: 10 });
+    authMock.reautenticar.mockResolvedValue({ token: 'prueba-acumulada', expiracion: new Date(Date.now() + 5 * 60_000).toISOString() });
+    await abrirSuscripcion();
+    await user.click(screen.getByRole('button', { name: 'Pagos' }));
+    await user.click(screen.getByRole('button', { name: '3 meses' }));
+    await user.click(screen.getByRole('button', { name: /Registrar pago/ }));
+
+    expect(await screen.findByText('Confirma que eres tú')).toBeInTheDocument();
+    expect(adminModule.adminApi.registrarPago).toHaveBeenCalledTimes(1);
+    await user.type(screen.getByLabelText('Tu contraseña'), 'Admin-Clave-1');
+    await user.type(screen.getByLabelText('Código de verificación'), '654321');
+    await user.click(screen.getByRole('button', { name: 'Confirmar y continuar' }));
+
+    await waitFor(() => expect(adminModule.adminApi.registrarPago).toHaveBeenLastCalledWith(
+      'neg-1', expect.objectContaining({ mesesPagados: 3 }), 'prueba-acumulada'));
+    expect(adminModule.adminApi.registrarPago).toHaveBeenCalledTimes(2);
+    olvidarPrueba();
   });
 });
 
@@ -908,6 +938,56 @@ describe('NegociosAdminPage — Nuevo negocio (AP-23)', () => {
 
     await waitFor(() => expect(adminModule.adminApi.crearNegocio).toHaveBeenCalled());
     expect(vi.mocked(adminModule.adminApi.crearNegocio).mock.calls[0][0].propietario).toBeUndefined();
+  });
+
+  // Lote 5 (I8): con el correo apagado la invitación no se ofrece; el negocio se crea solo.
+  it('con el correo apagado desmarca y deshabilita la invitación, y crea sin propietario', async () => {
+    const user = userEvent.setup();
+    vi.mocked(adminModule.adminApi.obtenerMetricas).mockResolvedValue([]);
+    vi.mocked(adminModule.adminApi.obtenerSuscripciones).mockResolvedValue([]);
+    vi.mocked(adminModule.adminApi.obtenerPlanes).mockResolvedValue([]);
+    vi.mocked(adminModule.adminApi.correoDisponible).mockResolvedValue({ envioDisponible: false });
+    vi.mocked(verificarSlug).mockResolvedValue({ disponible: true });
+    vi.mocked(adminModule.adminApi.crearNegocio).mockReset().mockResolvedValue({ id: 'n', nombre: 'Spa', slug: 'spa-sin-correo' } as never);
+    renderPage();
+
+    await user.click(await screen.findByRole('button', { name: '+ Nuevo negocio' }));
+    const dialogo = await screen.findByRole('dialog', { name: 'Nuevo negocio' });
+    const casilla = within(dialogo).getByRole('checkbox', { name: /Invitar al propietario ahora/ });
+    await waitFor(() => expect(casilla).toBeDisabled());
+    expect(casilla).not.toBeChecked();
+    expect(within(dialogo).getByText(/El envío de correos está apagado/)).toBeInTheDocument();
+    expect(within(dialogo).queryByLabelText('Correo de acceso del propietario *')).not.toBeInTheDocument();
+
+    await user.type(within(dialogo).getByLabelText('Nombre *', { selector: '#nuevo-nombre' }), 'Spa Sin Correo');
+    expect(await within(dialogo).findByText('Disponible', {}, { timeout: 2000 })).toBeInTheDocument();
+    await user.click(within(dialogo).getByRole('button', { name: 'Crear negocio' }));
+
+    await waitFor(() => expect(adminModule.adminApi.crearNegocio).toHaveBeenCalled());
+    expect(vi.mocked(adminModule.adminApi.crearNegocio).mock.calls[0][0].propietario).toBeUndefined();
+    vi.mocked(adminModule.adminApi.correoDisponible).mockResolvedValue({ envioDisponible: true });
+  });
+
+  it('si la invitación no salió tras crear, avisa y sugiere "Enviar enlace"', async () => {
+    const user = userEvent.setup();
+    vi.mocked(adminModule.adminApi.obtenerMetricas).mockResolvedValue([]);
+    vi.mocked(adminModule.adminApi.obtenerSuscripciones).mockResolvedValue([]);
+    vi.mocked(adminModule.adminApi.obtenerPlanes).mockResolvedValue([]);
+    vi.mocked(verificarSlug).mockResolvedValue({ disponible: true });
+    vi.mocked(adminModule.adminApi.crearNegocio).mockReset().mockResolvedValue({
+      id: 'n', nombre: 'Spa', slug: 'spa-x', propietarioEmail: 'ana@spa.mx', invitacionEnviada: false,
+    } as never);
+    renderPage();
+
+    await user.click(await screen.findByRole('button', { name: '+ Nuevo negocio' }));
+    const dialogo = await screen.findByRole('dialog', { name: 'Nuevo negocio' });
+    await user.type(within(dialogo).getByLabelText('Nombre *', { selector: '#nuevo-nombre' }), 'Spa X');
+    await user.type(within(dialogo).getByLabelText('Nombre *', { selector: '#nuevo-prop-nombre' }), 'Ana');
+    await user.type(within(dialogo).getByLabelText('Correo de acceso del propietario *'), 'ana@spa.mx');
+    expect(await within(dialogo).findByText('Disponible', {}, { timeout: 2000 })).toBeInTheDocument();
+    await user.click(within(dialogo).getByRole('button', { name: 'Crear negocio e invitar' }));
+
+    await waitFor(() => expect(toastMock).toHaveBeenCalledWith(expect.stringContaining('Enviar enlace'), 'error'));
   });
 });
 

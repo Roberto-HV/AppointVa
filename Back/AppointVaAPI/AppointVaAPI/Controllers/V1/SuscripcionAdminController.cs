@@ -43,6 +43,10 @@ namespace AppointVaAPI.Controllers.V1
 
         private static string Monto(decimal monto) => monto.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
 
+        /// <summary>The step-up proof sent with this request (X-Reautenticacion) is valid for this admin.</summary>
+        private Task<bool> PruebaValidaAsync() =>
+            _reautenticacion.ValidarAsync(User, Request.Headers[ReautenticacionService.Encabezado].FirstOrDefault());
+
         // GET /api/admin/suscripciones
         // Resumen de todos los negocios con estado de suscripción
         [HttpGet("suscripciones")]
@@ -132,14 +136,6 @@ namespace AppointVaAPI.Controllers.V1
             var negocio = await _db.Negocios.FindAsync(id);
             if (negocio == null) return NotFound();
 
-            // Lote 5 (G1): a lifetime payment grants a century of access in one click, so it
-            // needs the step-up proof; ordinary monthly payments do not.
-            if (FacturacionAdmin.EsPagoDeAccesoPermanente(dto.MesesPagados) &&
-                !await _reautenticacion.ValidarAsync(User, Request.Headers[ReautenticacionService.Encabezado].FirstOrDefault()))
-                return RequiereReautenticacionAttribute.Rechazo();
-
-            var adminId = Guid.Parse(User.FindFirstValue("sub")!);
-
             var hoy = DateTime.UtcNow.Date;
 
             // Si ya hay vencimiento futuro, se extiende desde ahí; si no, desde hoy
@@ -148,6 +144,15 @@ namespace AppointVaAPI.Controllers.V1
                 : hoy;
 
             var periodoHasta = periodoDesde.AddMonths(dto.MesesPagados).AddDays(-1);
+
+            // Lote 5 (G1): reaching permanent access needs the step-up proof. Judged on the
+            // RESULTING due date (payments stack), not on this payment alone; ordinary monthly
+            // payments do not ask. The front prompts and retries on the 403.
+            if (FacturacionAdmin.RequiereReautenticacion(dto.MesesPagados, negocio.FechaVencimiento, periodoHasta, hoy) &&
+                !await PruebaValidaAsync())
+                return RequiereReautenticacionAttribute.Rechazo();
+
+            var adminId = Guid.Parse(User.FindFirstValue("sub")!);
 
             var numeroPago = await _db.PagosSuscripcion.CountAsync(p => p.NegocioId == id) + 1;
 
@@ -235,19 +240,25 @@ namespace AppointVaAPI.Controllers.V1
             var notasCambiaron = (pago.Notas ?? "") != (dto.Notas?.Trim() ?? "");
             var vencimientoAntes = negocio.FechaVencimiento;
 
+            // Recalculate vencimiento from all payments (other payments + the edited period)
+            var otrosHasta = await _db.PagosSuscripcion
+                .Where(p => p.NegocioId == negocio.Id && p.Id != pagoId)
+                .Select(p => p.PeriodoHasta)
+                .ToListAsync();
+            var vencimientoNuevo = otrosHasta.Append(dto.PeriodoHasta.Date).Max();
+
+            // Lote 5 (G1): editing the period can grant permanent access just like a payment can,
+            // so the same rule applies, judged on the resulting due date before anything changes.
+            if (FacturacionAdmin.RequiereReautenticacion(0, vencimientoAntes, vencimientoNuevo, DateTime.UtcNow.Date) &&
+                !await PruebaValidaAsync())
+                return RequiereReautenticacionAttribute.Rechazo();
+
             pago.Monto        = dto.Monto;
             pago.Notas        = dto.Notas?.Trim();
             pago.PeriodoDesde = dto.PeriodoDesde.Date;
             pago.PeriodoHasta = dto.PeriodoHasta.Date;
 
-            // Recalculate vencimiento from all payments (other payments + updated one in memory)
-            var otrosHasta = await _db.PagosSuscripcion
-                .Where(p => p.NegocioId == negocio.Id && p.Id != pagoId)
-                .Select(p => (DateTime?)p.PeriodoHasta)
-                .ToListAsync();
-
-            var todasHasta = otrosHasta.Append((DateTime?)pago.PeriodoHasta).Where(d => d.HasValue).Select(d => d!.Value);
-            negocio.FechaVencimiento   = todasHasta.Any() ? todasHasta.Max() : null;
+            negocio.FechaVencimiento   = vencimientoNuevo;
             negocio.FechaActualizacion = DateTime.UtcNow;
 
             await using (var tx = await _db.Database.BeginTransactionAsync())
@@ -423,9 +434,6 @@ namespace AppointVaAPI.Controllers.V1
             return Ok(new { esTester = negocio.EsTester });
         }
 
-        // DELETE /api/admin/negocios/{id}
-        // Hard delete — elimina imágenes en Cloudinary, luego el negocio con sus dependencias
-        // en el orden correcto para evitar violaciones de FK (NoAction en varias relaciones).
         // GET /api/admin/negocios/{id}/impacto — lote 5 (I3)
         // What a hard delete would erase, counted the same way the delete removes it, so the
         // admin sees concrete figures (and the "deactivate instead" option) before confirming.
@@ -466,6 +474,9 @@ namespace AppointVaAPI.Controllers.V1
             return urls.Where(u => !string.IsNullOrWhiteSpace(u)).Select(u => u!).ToList();
         }
 
+        // DELETE /api/admin/negocios/{id}
+        // Hard delete — elimina imágenes en Cloudinary, luego el negocio con sus dependencias
+        // en el orden correcto para evitar violaciones de FK (NoAction en varias relaciones).
         // Lote 5 (G1): needs the step-up proof (X-Reautenticacion), checked before anything runs.
         [HttpDelete("negocios/{id:guid}")]
         [RequiereReautenticacion]

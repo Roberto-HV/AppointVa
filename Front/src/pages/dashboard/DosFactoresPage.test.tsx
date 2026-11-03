@@ -183,6 +183,30 @@ describe("DosFactoresPage — flujo activación: código incorrecto", () => {
     fireEvent.click(screen.getByRole("button", { name: "Confirmar activación" }));
     await screen.findByText("Código incorrecto");
   });
+
+  it("con 429 dice que hay demasiados intentos y que espere", async () => {
+    vi.mocked(authApi.obtenerEstado2FA).mockResolvedValue({
+      habilitado: false,
+      tieneConfiguracion: false,
+      codigosRecuperacionRestantes: 0,
+    });
+    vi.mocked(authApi.configurar2FA).mockResolvedValue({
+      uri: "otpauth://totp/test?secret=ABCD1234",
+      llave: "ABCD1234",
+    });
+    vi.mocked(authApi.activar2FA).mockRejectedValue({
+      response: { status: 429, data: { mensaje: "Demasiadas solicitudes. Intenta de nuevo en un momento." } },
+    });
+    renderConQuery();
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Activar autenticación en dos pasos" })
+    );
+    fireEvent.change(await screen.findByPlaceholderText("000000"), {
+      target: { value: "000000" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Confirmar activación" }));
+    await screen.findByText("Demasiados intentos. Espera unos minutos e intenta de nuevo.");
+  });
 });
 
 describe("DosFactoresPage — flujo desactivación", () => {

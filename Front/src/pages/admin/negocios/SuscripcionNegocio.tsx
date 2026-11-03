@@ -103,15 +103,18 @@ export default function SuscripcionNegocio({
 
   const paginaHistorial = usePaginacionLocal(historial);
 
-  // Lote 5 (G1): un acceso de por vida pide reautenticación; los pagos mensuales no.
-  const reautenticacion = useReautenticacion(`registrar un acceso de por vida para ${negocio.nombre}`);
+  // Lote 5 (G1): dejar al negocio con acceso permanente pide reautenticación. "De por vida"
+  // la pide de entrada; cualquier otro pago o edición la pide solo si el servidor responde
+  // que el vencimiento resultante llega a acceso permanente (los pagos se acumulan), así el
+  // front no duplica la regla del backend.
+  const reautenticacion = useReautenticacion(`dar acceso permanente a ${negocio.nombre}`);
 
   const { mutate: registrar, isPending: registrando } = useMutation({
     mutationFn: () => {
       const dto = { mesesPagados: meses, monto: parseFloat(monto) || 0, notas: notas.trim() || undefined };
       return meses === LIFETIME_SENTINEL
         ? reautenticacion.conReautenticacion((prueba) => adminApi.registrarPago(negocio.id, dto, prueba))
-        : adminApi.registrarPago(negocio.id, dto);
+        : reautenticacion.siLaPide((prueba) => adminApi.registrarPago(negocio.id, dto, prueba));
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["pagos-negocio", negocio.id] });
@@ -140,14 +143,17 @@ export default function SuscripcionNegocio({
 
   const mutarEditar = useMutation({
     mutationFn: ({ pagoId, dto }: { pagoId: string; dto: EditarPagoRequestDto }) =>
-        adminApi.editarPago(pagoId, dto),
+        reautenticacion.siLaPide((prueba) => adminApi.editarPago(pagoId, dto, prueba)),
     onSuccess: () => {
         qc.invalidateQueries({ queryKey: ["pagos-negocio", negocio.id] });
         qc.invalidateQueries({ queryKey: ["admin-suscripciones"] });
         setEditandoId(null);
         toast("Pago actualizado");
     },
-    onError: (err: unknown) => toast(mensajeError(err, "No se pudo actualizar el pago"), "error"),
+    onError: (err: unknown) => {
+      if (esCancelacion(err)) return;
+      toast(mensajeError(err, "No se pudo actualizar el pago"), "error");
+    },
   });
 
   // Monto > 0 y período en orden, antes de enviar (AP-23).
@@ -599,7 +605,7 @@ export default function SuscripcionNegocio({
     </div>
   );
 
-  // Pago de por vida: "Confirma que eres tú" en lugar del contenido, hasta confirmar o cancelar.
+  // Acceso permanente: "Confirma que eres tú" en lugar del contenido, hasta confirmar o cancelar.
   if (reautenticacion.formulario) {
     return <div className="max-w-md">{reautenticacion.formulario}</div>;
   }

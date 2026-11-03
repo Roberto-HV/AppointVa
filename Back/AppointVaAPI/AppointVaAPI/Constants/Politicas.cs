@@ -30,5 +30,11 @@ namespace AppointVaAPI.Constants
         /// does not share the per-IP login-verification bucket ("TwoFA") with other staff on the same network.
         /// </summary>
         public const string LimiteGestion2FA = "Gestion2FA";
+
+        /// <summary>
+        /// Rate limit policy for the SuperAdmin step-up (POST api/auth/reautenticar), per user. Its own
+        /// bucket so password/code typos there can never block the forced 2FA setup, and vice versa.
+        /// </summary>
+        public const string LimiteReautenticacion = "Reautenticacion";
     }
 }
