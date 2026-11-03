@@ -1,7 +1,7 @@
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import NegociosAdminPage from './NegociosAdminPage';
 import * as adminModule from '../../api/admin';
 
@@ -20,6 +20,7 @@ vi.mock('../../api/admin', () => ({
     setTester: vi.fn(),
     registrarPago: vi.fn(),
     confirmarEmail: vi.fn(),
+    eliminarPago: vi.fn(),
   },
 }));
 
@@ -496,9 +497,11 @@ describe('ModalSuscripcion — cambios con confirmación y aviso', () => {
     await abrirSuscripcion();
     await user.click(screen.getByRole('button', { name: 'Salud' }));
     expect(adminModule.adminApi.setSector).not.toHaveBeenCalled();
-    expect(screen.getByRole('alert')).toHaveTextContent('cambia el vocabulario');
+    // Lote 3: la misma `ConfirmarAccion` que el plan, no un aviso en línea.
+    const dialogo = await screen.findByRole('dialog', { name: '¿Cambiar Peluquería Test a Salud?' });
+    expect(dialogo).toHaveTextContent('Cambia el vocabulario');
 
-    await user.click(screen.getByRole('button', { name: 'Cambiar sector' }));
+    await user.click(within(dialogo).getByRole('button', { name: 'Cambiar sector' }));
     await waitFor(() => expect(adminModule.adminApi.setSector).toHaveBeenCalledWith('neg-1', 'salud'));
     await waitFor(() => expect(toastMock).toHaveBeenCalledWith('Sector actualizado: Salud'));
   });
@@ -755,9 +758,14 @@ describe('NegociosAdminPage — interruptores y correo', () => {
   });
 
   it('"Confirmar correo" no aparece si el correo ya está verificado', async () => {
+    const user = userEvent.setup();
     vi.mocked(adminModule.adminApi.obtenerMetricas).mockResolvedValue([{ ...mockNegocio, emailConfirmado: true }]);
     renderPage();
     expect(await screen.findByText('Correo verificado')).toBeInTheDocument();
+    // Ni en la tarjeta ni dentro de "⋯".
+    await user.click(screen.getByRole('button', { name: 'Más acciones de Peluquería Test' }));
+    const menu = await screen.findByRole('dialog', { name: 'Más acciones de Peluquería Test' });
+    expect(within(menu).getByRole('button', { name: 'Colores' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Confirmar correo/ })).not.toBeInTheDocument();
   });
 
@@ -767,6 +775,8 @@ describe('NegociosAdminPage — interruptores y correo', () => {
       { ...mockNegocio, emailConfirmado: false, propietarioEmail: 'dueno@ejemplo.com' },
     ]);
     renderPage();
+    // Lote 3: es una acción ocasional, vive en "⋯".
+    await user.click(await screen.findByRole('button', { name: 'Más acciones de Peluquería Test' }));
     await user.click(await screen.findByRole('button', { name: /Confirmar correo/ }));
     expect(adminModule.adminApi.confirmarEmail).not.toHaveBeenCalled();
 
@@ -916,5 +926,295 @@ describe('NegociosAdminPage — error de métricas', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('No se pudieron cargar las métricas del panel.');
     expect(screen.queryByText('Ingreso mensual')).not.toBeInTheDocument();
+  });
+});
+
+// ── Lote 3: patrones compartidos ────────────────────────────────────────────
+
+const pagoDe = (extra: Partial<adminModule.PagoSuscripcionDto> = {}): adminModule.PagoSuscripcionDto => ({
+  id: 'pago-1',
+  negocioId: 'neg-1',
+  negocioNombre: 'Peluquería Test',
+  registradoPorEmail: 'admin@appointva.com',
+  fechaPago: '2026-10-01T12:00:00',
+  periodoDesde: '2026-10-01T00:00:00',
+  periodoHasta: '2026-11-01T00:00:00',
+  mesesPagados: 1,
+  monto: 449,
+  notas: 'Transferencia',
+  numeroPago: 3,
+  ...extra,
+});
+
+function simularTelefono() {
+  vi.stubGlobal('matchMedia', (q: string) => ({
+    matches: q.includes('max-width: 639.98px'),
+    media: q,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  }));
+}
+
+describe('NegociosAdminPage — Lote 3: carga, vacío y encabezado', () => {
+  beforeEach(() => {
+    vi.mocked(adminModule.adminApi.obtenerPagos).mockResolvedValue([]);
+    vi.mocked(adminModule.adminApi.obtenerPlanes).mockResolvedValue([]);
+  });
+
+  it('mientras carga muestra el skeleton de KPIs y de tarjetas, no "Cargando negocios..." (I5)', async () => {
+    vi.mocked(adminModule.adminApi.obtenerMetricas).mockReset().mockImplementation(() => new Promise(() => {}));
+    vi.mocked(adminModule.adminApi.obtenerSuscripciones).mockResolvedValue([mockSuscripcion]);
+    renderPage();
+
+    expect(await screen.findByRole('status', { name: 'Cargando métricas' })).toBeInTheDocument();
+    const tarjetas = screen.getByRole('status', { name: 'Cargando negocios' });
+    expect(tarjetas.querySelectorAll('[data-variante="tarjeta-negocio"]').length).toBeGreaterThan(0);
+    expect(screen.queryByText(/Cargando negocios\.\.\./)).not.toBeInTheDocument();
+    expect(screen.queryByText('No hay negocios registrados')).not.toBeInTheDocument();
+  });
+
+  it('Facturación no dice "Sin facturación todavía" mientras carga', async () => {
+    vi.mocked(adminModule.adminApi.obtenerMetricas).mockResolvedValue([mockNegocio]);
+    vi.mocked(adminModule.adminApi.obtenerSuscripciones).mockReset().mockImplementation(() => new Promise(() => {}));
+    renderPage();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Facturación' }));
+    expect(await screen.findByRole('status', { name: 'Cargando facturación' })).toBeInTheDocument();
+    expect(screen.queryByText('Sin facturación todavía')).not.toBeInTheDocument();
+  });
+
+  it('el título es "Negocios", como el menú, y la pestaña ya no lo repite (M2)', async () => {
+    vi.mocked(adminModule.adminApi.obtenerMetricas).mockResolvedValue([mockNegocio]);
+    vi.mocked(adminModule.adminApi.obtenerSuscripciones).mockResolvedValue([mockSuscripcion]);
+    renderPage();
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Negocios' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'General' })).toBeInTheDocument();
+    expect(screen.queryByText('Panel de negocios')).not.toBeInTheDocument();
+  });
+
+  it('sin negocios, el vacío trae su propio botón para crear el primero (M10)', async () => {
+    const user = userEvent.setup();
+    vi.mocked(adminModule.adminApi.obtenerMetricas).mockResolvedValue([]);
+    vi.mocked(adminModule.adminApi.obtenerSuscripciones).mockResolvedValue([]);
+    renderPage();
+
+    expect(await screen.findByText('No hay negocios registrados')).toBeInTheDocument();
+    expect(screen.queryByText(/Crea el primero con/)).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Crear el primer negocio' }));
+    expect(await screen.findByRole('dialog', { name: 'Nuevo negocio' })).toBeInTheDocument();
+  });
+});
+
+describe('NegociosAdminPage — Lote 3: acciones de la tarjeta en "⋯"', () => {
+  beforeEach(() => {
+    vi.mocked(adminModule.adminApi.obtenerMetricas).mockResolvedValue([{ ...mockNegocio, emailConfirmado: false }]);
+    vi.mocked(adminModule.adminApi.obtenerSuscripciones).mockResolvedValue([mockSuscripcion]);
+    vi.mocked(adminModule.adminApi.obtenerPagos).mockResolvedValue([]);
+  });
+
+  it('a la vista quedan Suscripción, Desactivar y Propietario; lo ocasional va al menú', async () => {
+    renderPage();
+    const tarjeta = await screen.findByRole('article', { name: 'Peluquería Test' });
+
+    expect(within(tarjeta).getByRole('button', { name: 'Suscripción' })).toBeInTheDocument();
+    expect(within(tarjeta).getByRole('button', { name: 'Desactivar' })).toBeInTheDocument();
+    expect(within(tarjeta).getByRole('button', { name: 'Propietario' })).toBeInTheDocument();
+    // Antes eran botones sueltos en la tarjeta.
+    expect(within(tarjeta).queryByRole('button', { name: /Colores/ })).not.toBeInTheDocument();
+    expect(within(tarjeta).queryByRole('link', { name: /Ver booking/ })).not.toBeInTheDocument();
+    expect(within(tarjeta).queryByRole('button', { name: /Eliminar/ })).not.toBeInTheDocument();
+    expect(within(tarjeta).queryByRole('button', { name: /Confirmar correo/ })).not.toBeInTheDocument();
+  });
+
+  it('el menú lista las secundarias y deja "Eliminar negocio" al final, en rojo y tras una línea', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(await screen.findByRole('button', { name: 'Más acciones de Peluquería Test' }));
+
+    const menu = await screen.findByRole('dialog', { name: 'Más acciones de Peluquería Test' });
+    const nombres = within(menu).getAllByRole('button').map((b) => b.textContent?.trim()).filter((t) => t);
+    expect(nombres).toEqual(['Confirmar correo', 'Colores', 'Ver página de reservas', 'Eliminar negocio']);
+    const eliminar = within(menu).getByRole('button', { name: 'Eliminar negocio' });
+    expect(eliminar.className).toContain('text-red-700');
+    expect(within(menu).getByRole('separator')).toBeInTheDocument();
+  });
+
+  it('"Eliminar negocio" abre la misma confirmación de dos pasos que pide el nombre', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(await screen.findByRole('button', { name: 'Más acciones de Peluquería Test' }));
+    await user.click(await screen.findByRole('button', { name: 'Eliminar negocio' }));
+
+    const dialogo = await screen.findByRole('dialog', { name: 'Eliminar negocio' });
+    expect(within(dialogo).getByRole('button', { name: 'Continuar' })).toBeDisabled();
+    await user.type(within(dialogo).getByPlaceholderText('Peluquería Test'), 'Peluquería Test');
+    expect(within(dialogo).getByRole('button', { name: 'Continuar' })).toBeEnabled();
+  });
+
+  it('"Ver página de reservas" abre /b/:slug en otra pestaña', async () => {
+    const user = userEvent.setup();
+    const abrir = vi.spyOn(window, 'open').mockReturnValue(null);
+    renderPage();
+    await user.click(await screen.findByRole('button', { name: 'Más acciones de Peluquería Test' }));
+    await user.click(await screen.findByRole('button', { name: 'Ver página de reservas' }));
+    expect(abrir).toHaveBeenCalledWith('/b/peluqueria-test', '_blank', 'noopener,noreferrer');
+    abrir.mockRestore();
+  });
+
+  it('"Colores" abre su modal con el pie compartido', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(await screen.findByRole('button', { name: 'Más acciones de Peluquería Test' }));
+    await user.click(await screen.findByRole('button', { name: 'Colores' }));
+    const dialogo = await screen.findByRole('dialog', { name: 'Colores del negocio' });
+    expect(within(dialogo).getByRole('button', { name: 'Guardar colores' }).parentElement).toHaveClass('flex-col-reverse');
+  });
+});
+
+describe('NegociosAdminPage — Lote 3: Facturación en el teléfono (I6)', () => {
+  beforeEach(() => {
+    simularTelefono();
+    vi.mocked(adminModule.adminApi.obtenerMetricas).mockResolvedValue([mockNegocio]);
+    vi.mocked(adminModule.adminApi.obtenerSuscripciones).mockResolvedValue([
+      mockSuscripcion,
+      { ...mockSuscripcion, negocioId: 'neg-2', negocioNombre: 'Barbería Vencida', estado: 'Vencida' as const,
+        suscripcionVigente: false, ingresoMensual: 0, fechaVencimiento: '2026-09-30T00:00:00' },
+    ]);
+    vi.mocked(adminModule.adminApi.obtenerPagos).mockResolvedValue([]);
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('son tarjetas con ingreso, estado y vencimiento a la vista, sin tabla', async () => {
+    renderPage();
+    fireEvent.click(await screen.findByRole('button', { name: 'Facturación' }));
+
+    const lista = await screen.findByRole('list', { name: 'Suscripciones' });
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+    const [vencida, activa] = within(lista).getAllByRole('listitem');
+    // Vencidas primero, como en la tabla.
+    expect(vencida).toHaveTextContent('Barbería Vencida');
+    expect(within(vencida).getByText('Vencida')).toBeInTheDocument();
+    expect(within(vencida).getByText('Sin ingreso')).toBeInTheDocument();
+    expect(within(vencida).getByText(/Vence: 30 sep 2026/)).toBeInTheDocument();
+    expect(activa).toHaveTextContent('$449/mes');
+    expect(within(activa).getByText('Activa')).toBeInTheDocument();
+    // El pie suma lo mismo que la tabla y el KPI.
+    expect(screen.getByTestId('total-ingreso-mensual')).toHaveTextContent('$449');
+  });
+
+  it('"Ver suscripción" abre el modal del negocio', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(await screen.findByRole('button', { name: 'Facturación' }));
+    await user.click(await screen.findByRole('button', { name: 'Ver suscripción de Peluquería Test' }));
+    expect(await screen.findByRole('dialog', { name: 'Suscripción — Peluquería Test' })).toBeInTheDocument();
+  });
+});
+
+describe('ModalSuscripcion — Lote 3: historial y planes', () => {
+  beforeEach(() => {
+    vi.mocked(adminModule.adminApi.obtenerMetricas).mockResolvedValue([mockNegocio]);
+    vi.mocked(adminModule.adminApi.obtenerSuscripciones).mockResolvedValue([mockSuscripcion]);
+    vi.mocked(adminModule.adminApi.obtenerPlanes).mockResolvedValue([]);
+    vi.mocked(adminModule.adminApi.eliminarPago).mockReset().mockResolvedValue(undefined as never);
+    toastMock.mockReset();
+  });
+
+  async function abrirModal(user: ReturnType<typeof userEvent.setup>) {
+    renderPage();
+    const tarjeta = await screen.findByRole('article', { name: 'Peluquería Test' });
+    await user.click(within(tarjeta).getByRole('button', { name: 'Suscripción' }));
+  }
+
+  async function abrirPagos() {
+    const user = userEvent.setup();
+    await abrirModal(user);
+    const dialogo = await screen.findByRole('dialog', { name: 'Suscripción — Peluquería Test' });
+    await user.click(within(dialogo).getByRole('button', { name: 'Pagos' }));
+    return { user, dialogo };
+  }
+
+  it('sin pagos, el historial usa EmptyState en vez de texto suelto', async () => {
+    vi.mocked(adminModule.adminApi.obtenerPagos).mockResolvedValue([]);
+    const { dialogo } = await abrirPagos();
+    expect(await within(dialogo).findByText('Sin pagos registrados')).toBeInTheDocument();
+    expect(within(dialogo).getByText(/Cuando registres el primero/)).toBeInTheDocument();
+  });
+
+  it('mientras carga, el historial muestra filas en gris', async () => {
+    vi.mocked(adminModule.adminApi.obtenerPagos).mockImplementation(() => new Promise(() => {}));
+    const { dialogo } = await abrirPagos();
+    expect(within(dialogo).getByRole('status', { name: 'Cargando historial de pagos' })).toBeInTheDocument();
+    expect(within(dialogo).queryByText('Cargando historial…')).not.toBeInTheDocument();
+  });
+
+  it('si el historial falla, ErrorCarga con Reintentar', async () => {
+    vi.mocked(adminModule.adminApi.obtenerPagos).mockRejectedValueOnce(new Error('500')).mockResolvedValue([pagoDe()]);
+    const { user, dialogo } = await abrirPagos();
+    const alerta = await within(dialogo).findByRole('alert');
+    expect(alerta).toHaveTextContent('No se pudo cargar el historial de pagos.');
+    await user.click(within(alerta).getByRole('button', { name: 'Reintentar' }));
+    expect(await within(dialogo).findByText('$449')).toBeInTheDocument();
+  });
+
+  it('cada pago muestra monto y período con los formatos compartidos, y sus acciones van en "⋯"', async () => {
+    vi.mocked(adminModule.adminApi.obtenerPagos).mockResolvedValue([pagoDe()]);
+    const { user, dialogo } = await abrirPagos();
+
+    expect(await within(dialogo).findByText('$449')).toBeInTheDocument();
+    expect(within(dialogo).getByText(/01 oct 2026 – 01 nov 2026/)).toBeInTheDocument();
+    expect(within(dialogo).queryByText(/MXN \$|449\.00/)).not.toBeInTheDocument();
+
+    await user.click(within(dialogo).getByRole('button', { name: 'Acciones del pago 003' }));
+    const menu = await screen.findByRole('dialog', { name: 'Acciones del pago 003' });
+    expect(within(menu).getAllByRole('button').map((b) => b.textContent?.trim()).filter(Boolean))
+      .toEqual(['Imprimir comprobante', 'Editar pago', 'Eliminar pago']);
+  });
+
+  it('eliminar un pago pide confirmación con el monto antes de borrarlo', async () => {
+    vi.mocked(adminModule.adminApi.obtenerPagos).mockResolvedValue([pagoDe()]);
+    const { user, dialogo } = await abrirPagos();
+
+    await user.click(await within(dialogo).findByRole('button', { name: 'Acciones del pago 003' }));
+    await user.click(await screen.findByRole('button', { name: 'Eliminar pago' }));
+    expect(adminModule.adminApi.eliminarPago).not.toHaveBeenCalled();
+
+    const confirmar = await screen.findByRole('dialog', { name: '¿Eliminar el pago #003?' });
+    expect(confirmar).toHaveTextContent('$449');
+    await user.click(within(confirmar).getByRole('button', { name: 'Eliminar pago' }));
+    await waitFor(() => expect(adminModule.adminApi.eliminarPago).toHaveBeenCalledWith('pago-1'));
+    await waitFor(() => expect(toastMock).toHaveBeenCalledWith('Pago eliminado'));
+  });
+
+  it('la edición de un pago usa campos de 44px con su etiqueta asociada (M5)', async () => {
+    vi.mocked(adminModule.adminApi.obtenerPagos).mockResolvedValue([pagoDe()]);
+    const { user, dialogo } = await abrirPagos();
+
+    await user.click(await within(dialogo).findByRole('button', { name: 'Acciones del pago 003' }));
+    await user.click(await screen.findByRole('button', { name: 'Editar pago' }));
+    const monto = within(dialogo).getAllByLabelText('Monto (MXN)').find((el) => el.id.startsWith('pago-pago-1'))!;
+    expect(monto).toHaveValue('449');
+    expect(monto.className).toContain('min-h-[44px]');
+    expect(within(dialogo).getByLabelText('Período desde')).toHaveValue('2026-10-01');
+  });
+
+  it('mientras llegan los planes, pastillas en gris en vez de "Cargando planes…"', async () => {
+    vi.mocked(adminModule.adminApi.obtenerPlanes).mockImplementation(() => new Promise(() => {}));
+    vi.mocked(adminModule.adminApi.obtenerPagos).mockResolvedValue([]);
+    const user = userEvent.setup();
+    await abrirModal(user);
+    const dialogo = await screen.findByRole('dialog', { name: 'Suscripción — Peluquería Test' });
+    expect(within(dialogo).getByRole('status', { name: 'Cargando planes' })).toBeInTheDocument();
+    expect(within(dialogo).queryByText('Cargando planes…')).not.toBeInTheDocument();
+  });
+
+  it('si los planes no llegan, se dice y se reintenta', async () => {
+    vi.mocked(adminModule.adminApi.obtenerPlanes).mockReset().mockRejectedValue(new Error('500'));
+    vi.mocked(adminModule.adminApi.obtenerPagos).mockResolvedValue([]);
+    const user = userEvent.setup();
+    await abrirModal(user);
+    const dialogo = await screen.findByRole('dialog', { name: 'Suscripción — Peluquería Test' });
+    expect(await within(dialogo).findByRole('alert')).toHaveTextContent('No se pudieron cargar los planes.');
   });
 });

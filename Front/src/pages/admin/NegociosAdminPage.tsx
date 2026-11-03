@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useDisponibilidadSlug } from "../../hooks/useDisponibilidadSlug";
 import { useQuery, useMutation, useMutationState, useQueryClient } from "@tanstack/react-query";
 import Select from "../../components/ui/Select";
@@ -27,11 +27,14 @@ import BotonAccion from "../../components/ui/BotonAccion";
 import Tabs from "../../components/ui/Tabs";
 import EmptyState from "../../components/ui/EmptyState";
 import ErrorCarga from "../../components/ui/ErrorCarga";
+import MenuAcciones from "../../components/ui/MenuAcciones";
 import Pagination from "../../components/ui/Pagination";
+import { Skeleton, SkeletonKpis, SkeletonLista, SkeletonTarjetasNegocio } from "../../components/ui/Skeleton";
 import { FiltroBarra } from "../../components/ui/filtros";
 import { usePaginacionLocal } from "../../hooks/usePaginacionLocal";
+import { useMediaQuery, CONSULTA_MOVIL } from "../../hooks/useMediaQuery";
 import { useToastStore } from "../../store/toastStore";
-import { formatFecha, formatFechaMx, formatPrecio } from "../../utils/formatters";
+import { formatFecha, formatFechaCorta, formatPrecio } from "../../utils/formatters";
 import { esClavePlan, NOMBRES_PLANES } from "../../lib/precios";
 import { generarHTMLComprobante } from "../../utils/comprobanteSuscripcion";
 import { mensajeError } from "../../utils/errores";
@@ -95,7 +98,7 @@ const CAMPO_ERROR = "border-red-400 bg-red-50 dark:bg-red-950/30";
 /** Par de botones al pie de los modales. El primario es el mismo `slate-700`
  *  que `BotonAccion`, para que el panel no mantenga su propio negro. */
 const BOTON_PIE =
-  "flex-1 min-h-[44px] rounded-xl text-sm transition-colors disabled:opacity-50 " +
+  "flex-1 min-h-[44px] lg:min-h-[36px] px-4 rounded-xl text-sm transition-colors disabled:opacity-50 " +
   "disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 " +
   "focus-visible:ring-accent-brand/40 dark:focus-visible:ring-accent-brand/40";
 const BOTON_PIE_SECUNDARIO =
@@ -165,7 +168,7 @@ function BadgeSuscripcion({
    */
   conPlan?: boolean;
 }) {
-  const titulo = vence ? `Vence el ${formatFechaMx(vence)}` : undefined;
+  const titulo = vence ? `Vence el ${formatFecha(vence)}` : undefined;
 
   if (estado === "Activa") {
     const permanente = dias !== null && dias >= DIAS_DE_POR_VIDA;
@@ -223,16 +226,23 @@ function ModalSuscripcion({
   negocio,
   suscripcion,
   planes,
+  errorPlanes = false,
+  onReintentarPlanes,
 }: {
   negocio: NegocioMetricasDto;
   suscripcion: SuscripcionResumenDto | undefined;
   planes: PlanDto[];
+  /** Falló la consulta de planes: en vez de "cargando" para siempre, se dice y se reintenta. */
+  errorPlanes?: boolean;
+  onReintentarPlanes?: () => void;
 }) {
   const qc = useQueryClient();
   const { toast } = useToastStore();
 
   const [editandoId, setEditandoId] = useState<string | null>(null);
-  const [confirmandoEliminarId, setConfirmandoEliminarId] = useState<string | null>(null);
+  // Borrar un pago se confirma con `ConfirmarAccion`, como el resto de las
+  // acciones con consecuencias; antes era un "¿Eliminar este pago?" en línea.
+  const [pagoAEliminar, setPagoAEliminar] = useState<PagoSuscripcionDto | null>(null);
   const [editForm, setEditForm] = useState({ monto: "", notas: "", desde: "", hasta: "" });
 
   const extraGuardado = suscripcion?.empleadosExtra ?? 0;
@@ -256,7 +266,10 @@ function ModalSuscripcion({
   const [notas, setNotas] = useState("");
   const [tab, setTab] = useState<'cuenta' | 'pagos'>('cuenta');
 
-  const { data: historial = [], isLoading: cargandoHistorial } = useQuery({
+  const {
+    data: historial = [], isLoading: cargandoHistorial, isError: errorHistorial,
+    refetch: recargarHistorial, isFetching: recargandoHistorial,
+  } = useQuery({
     queryKey: ["pagos-negocio", negocio.id],
     queryFn: () => adminApi.obtenerPagos(negocio.id),
   });
@@ -314,7 +327,7 @@ function ModalSuscripcion({
     onSuccess: () => {
         qc.invalidateQueries({ queryKey: ["pagos-negocio", negocio.id] });
         qc.invalidateQueries({ queryKey: ["admin-suscripciones"] });
-        setConfirmandoEliminarId(null);
+        setPagoAEliminar(null);
         toast("Pago eliminado");
     },
     onError: () => toast("No se pudo eliminar el pago", "error"),
@@ -322,7 +335,6 @@ function ModalSuscripcion({
 
   const iniciarEdicion = (pago: PagoSuscripcionDto) => {
     setEditandoId(pago.id);
-    setConfirmandoEliminarId(null);
     setEditForm({
         monto: String(pago.monto),
         notas: pago.notas ?? "",
@@ -399,7 +411,7 @@ function ModalSuscripcion({
           <div className="text-right">
             <p className="text-xs text-slate-400">Vence</p>
             <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-              {esPermanente ? "Sin vencimiento" : formatFechaMx(vencimiento)}
+              {esPermanente ? "Sin vencimiento" : formatFecha(vencimiento)}
             </p>
           </div>
         )}
@@ -439,10 +451,21 @@ function ModalSuscripcion({
                   {nombrePlan(p.nombre)}
                 </button>
               ))}
-              {planes.length === 0 && (
-                <span className="text-xs text-slate-400">Cargando planes…</span>
+              {/* Mientras llegan, pastillas en gris del mismo tamaño (I5); si
+                  fallan, el error con "Reintentar" en vez de esperar para siempre. */}
+              {planes.length === 0 && !errorPlanes && (
+                <div role="status" aria-label="Cargando planes" className="flex gap-2">
+                  {[0, 1, 2].map((i) => <Skeleton key={i} className="h-11 lg:h-9 w-20 rounded-full" />)}
+                </div>
               )}
             </div>
+            {planes.length === 0 && errorPlanes && onReintentarPlanes && (
+              <ErrorCarga
+                className="py-5"
+                mensaje="No se pudieron cargar los planes."
+                onReintentar={onReintentarPlanes}
+              />
+            )}
           </div>
 
           {/* Sector selector */}
@@ -466,32 +489,6 @@ function ModalSuscripcion({
                 </button>
               ))}
             </div>
-            {sectorPorConfirmar && (
-              <div role="alert" className="mt-2 rounded-xl border border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40 p-3 text-xs text-amber-900 dark:text-amber-200">
-                <p>
-                  Cambiar {negocio.nombre} a {sectorPorConfirmar === 'salud' ? 'Salud' : 'Belleza'} cambia el vocabulario
-                  y los módulos de su panel.
-                </p>
-                <div className="mt-2 flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleSetSector(sectorPorConfirmar)}
-                    disabled={guardandoSector}
-                    className="min-h-[44px] lg:min-h-[36px] px-3.5 rounded-lg bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 font-semibold disabled:opacity-50"
-                  >
-                    {guardandoSector ? 'Guardando…' : 'Cambiar sector'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSectorPorConfirmar(null)}
-                    disabled={guardandoSector}
-                    className="min-h-[44px] lg:min-h-[36px] px-3.5 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300"
-                  >
-                    Volver
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Billing summary */}
@@ -597,11 +594,11 @@ function ModalSuscripcion({
 
             <div className="grid grid-cols-2 gap-3 mb-3">
               <div>
-                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Monto (MXN)</label>
+                <label htmlFor="pago-monto" className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Monto (MXN)</label>
                 <input
+                  id="pago-monto"
                   type="text"
                   inputMode="decimal"
-                  aria-label="Monto (MXN)"
                   value={monto}
                   onChange={(e) => setMontoManual(e.target.value)}
                   className={`${CAMPO_MODAL} ${CAMPO_OK} tabular-nums`}
@@ -611,8 +608,9 @@ function ModalSuscripcion({
                 )}
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Método / Notas</label>
+                <label htmlFor="pago-notas" className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Método / Notas</label>
                 <input
+                  id="pago-notas"
                   type="text"
                   value={notas}
                   onChange={(e) => setNotas(e.target.value)}
@@ -632,7 +630,7 @@ function ModalSuscripcion({
                 ? "Registrando..."
                 : meses === LIFETIME_SENTINEL
                 ? "Registrar acceso de por vida"
-                : `Registrar pago · $${parseFloat(monto || "0").toLocaleString("es-MX", { minimumFractionDigits: 2 })} MXN`}
+                : `Registrar pago · ${formatPrecio(parseFloat(monto || "0") || 0)}`}
             </button>
           </div>
 
@@ -640,57 +638,88 @@ function ModalSuscripcion({
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2">Historial de pagos</p>
             {cargandoHistorial ? (
-              <p className="text-xs text-slate-400 py-4 text-center">Cargando historial…</p>
+              // Filas en gris con la altura de un pago (I5), no "Cargando historial…".
+              <div role="status" aria-label="Cargando historial de pagos" className="border border-slate-100 dark:border-slate-700 rounded-xl divide-y divide-slate-100 dark:divide-slate-700">
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="flex items-center gap-3 px-4 py-3">
+                    <div className="flex-1 space-y-1.5">
+                      <Skeleton className="h-4 w-1/2" />
+                      <Skeleton className="h-3 w-2/3" />
+                    </div>
+                    <Skeleton className="h-11 w-11 lg:h-9 lg:w-9 rounded-xl shrink-0" />
+                  </div>
+                ))}
+              </div>
+            ) : errorHistorial ? (
+              <ErrorCarga
+                className="py-6"
+                mensaje="No se pudo cargar el historial de pagos."
+                onReintentar={() => recargarHistorial()}
+                reintentando={recargandoHistorial}
+              />
             ) : historial.length === 0 ? (
-              <p className="text-xs text-slate-400 py-4 text-center">Sin pagos registrados</p>
+              <div className="border border-slate-100 dark:border-slate-700 rounded-xl">
+                <EmptyState
+                  className="!py-8"
+                  icon={<CreditCard size={32} strokeWidth={1.5} />}
+                  title="Sin pagos registrados"
+                  description="Cuando registres el primero, aquí verás su comprobante y su período."
+                />
+              </div>
             ) : (
               <div className="divide-y divide-slate-100 dark:divide-slate-700 border border-slate-100 dark:border-slate-700 rounded-xl overflow-hidden">
                 {paginaHistorial.visibles.map((pago) => {
                   const enEdicion = editandoId === pago.id;
-                  const enConfirmar = confirmandoEliminarId === pago.id;
 
                   if (enEdicion) {
+                    // Mismos campos que el resto del modal (M5): 44px de alto,
+                    // etiqueta de 12px asociada con `htmlFor`.
+                    const id = (campo: string) => `pago-${pago.id}-${campo}`;
                     return (
-                      <div key={pago.id} className="px-4 py-3 bg-slate-50 dark:bg-slate-800/60 space-y-2">
-                        <div className="grid grid-cols-2 gap-2">
+                      <div key={pago.id} className="px-4 py-3 bg-slate-50 dark:bg-slate-800/60 space-y-3">
+                        <div className="grid grid-cols-2 gap-3">
                           <div>
-                            <label className="block text-[10px] font-medium text-slate-500 dark:text-slate-400 mb-0.5">Monto (MXN)</label>
+                            <label htmlFor={id("monto")} className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Monto (MXN)</label>
                             <input
+                              id={id("monto")}
                               type="text"
                               inputMode="decimal"
                               value={editForm.monto}
                               onChange={e => setEditForm(f => ({ ...f, monto: e.target.value }))}
-                              className="w-full px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs outline-none focus:border-slate-400"
+                              className={`${CAMPO_MODAL} ${CAMPO_OK} tabular-nums`}
                             />
                           </div>
                           <div>
-                            <label className="block text-[10px] font-medium text-slate-500 dark:text-slate-400 mb-0.5">Notas</label>
+                            <label htmlFor={id("notas")} className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Notas</label>
                             <input
+                              id={id("notas")}
                               type="text"
                               value={editForm.notas}
                               onChange={e => setEditForm(f => ({ ...f, notas: e.target.value }))}
                               placeholder="Efectivo, transferencia…"
-                              className="w-full px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs outline-none focus:border-slate-400"
+                              className={`${CAMPO_MODAL} ${CAMPO_OK}`}
                             />
                           </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-2 gap-3">
                           <div>
-                            <label className="block text-[10px] font-medium text-slate-500 dark:text-slate-400 mb-0.5">Período desde</label>
+                            <label htmlFor={id("desde")} className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Período desde</label>
                             <input
+                              id={id("desde")}
                               type="date"
                               value={editForm.desde}
                               onChange={e => setEditForm(f => ({ ...f, desde: e.target.value }))}
-                              className="w-full px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs outline-none focus:border-slate-400"
+                              className={`${CAMPO_MODAL} ${CAMPO_OK}`}
                             />
                           </div>
                           <div>
-                            <label className="block text-[10px] font-medium text-slate-500 dark:text-slate-400 mb-0.5">Período hasta</label>
+                            <label htmlFor={id("hasta")} className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Período hasta</label>
                             <input
+                              id={id("hasta")}
                               type="date"
                               value={editForm.hasta}
                               onChange={e => setEditForm(f => ({ ...f, hasta: e.target.value }))}
-                              className="w-full px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs outline-none focus:border-slate-400"
+                              className={`${CAMPO_MODAL} ${CAMPO_OK}`}
                             />
                           </div>
                         </div>
@@ -698,6 +727,12 @@ function ModalSuscripcion({
                           <p role="alert" className="text-xs text-red-700 dark:text-red-400">{errorEdicion}</p>
                         )}
                         <div className="flex gap-2 pt-1">
+                          <button
+                            onClick={() => setEditandoId(null)}
+                            className={BOTON_PIE_SECUNDARIO}
+                          >
+                            Cancelar
+                          </button>
                           <button
                             onClick={() => !errorEdicion && mutarEditar.mutate({
                               pagoId: pago.id,
@@ -709,15 +744,9 @@ function ModalSuscripcion({
                               },
                             })}
                             disabled={mutarEditar.isPending || !!errorEdicion}
-                            className="flex-1 py-1.5 rounded-lg bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-xs font-semibold hover:bg-slate-700 dark:hover:bg-slate-200 disabled:opacity-50 transition"
+                            className={BOTON_PIE_PRIMARIO}
                           >
                             {mutarEditar.isPending ? "Guardando…" : "Guardar cambios"}
-                          </button>
-                          <button
-                            onClick={() => setEditandoId(null)}
-                            className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-400 text-xs hover:bg-slate-50 dark:hover:bg-slate-700 transition"
-                          >
-                            Cancelar
                           </button>
                         </div>
                       </div>
@@ -727,73 +756,36 @@ function ModalSuscripcion({
                   return (
                     <div key={pago.id} className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-bold font-mono bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-[11px] font-bold font-mono bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded">
                             #{String(pago.numeroPago).padStart(3, "0")}
                           </span>
-                          <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
-                            ${pago.monto.toLocaleString("es-MX", { minimumFractionDigits: 2 })} MXN
+                          <span className="text-sm font-semibold text-slate-800 dark:text-slate-200 tabular-nums">
+                            {formatPrecio(pago.monto)}
                           </span>
-                          <span className="text-[10px] text-slate-400">
+                          <span className="text-xs text-slate-500 dark:text-slate-400">
                             · {pago.mesesPagados >= 600 ? "De por vida" : pago.mesesPagados === 1 ? "1 mes" : `${pago.mesesPagados} meses`}
                           </span>
                         </div>
-                        <p className="text-[11px] text-slate-400 mt-0.5">
-                          {formatFechaMx(pago.periodoDesde)} – {formatFechaMx(pago.periodoHasta)}
-                          {pago.notas && <span className="ml-2 text-slate-400">· {pago.notas}</span>}
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums">
+                          {formatFechaCorta(pago.periodoDesde)} – {formatFechaCorta(pago.periodoHasta)}
+                          {pago.notas && <span className="ml-1">· {pago.notas}</span>}
                         </p>
-                        {enConfirmar && (
-                          <div className="flex items-center gap-2 mt-2">
-                            <span className="text-[11px] text-red-600 dark:text-red-400 font-medium">¿Eliminar este pago?</span>
-                            <button
-                              onClick={() => mutarEliminar.mutate(pago.id)}
-                              disabled={mutarEliminar.isPending}
-                              className="text-[11px] font-semibold text-red-600 dark:text-red-400 hover:underline disabled:opacity-50"
-                            >
-                              {mutarEliminar.isPending ? "Eliminando…" : "Confirmar"}
-                            </button>
-                            <button
-                              onClick={() => setConfirmandoEliminarId(null)}
-                              className="text-[11px] text-slate-400 hover:underline"
-                            >
-                              Cancelar
-                            </button>
-                          </div>
-                        )}
                       </div>
-                      <div className="flex items-center gap-1 shrink-0">
-                        <button
-                          onClick={() => imprimirComprobante(pago)}
-                          aria-label={`Imprimir comprobante del pago ${pago.numeroPago}`}
-                          title="Imprimir comprobante"
-                          className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
-                        >
-                          <Printer size={14} />
-                        </button>
-                        <button
-                          onClick={() => iniciarEdicion(pago)}
-                          aria-label={`Editar el pago ${pago.numeroPago}`}
-                          title="Editar pago"
-                          className="text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
-                        >
-                          <Pencil size={14} />
-                        </button>
-                        <button
-                          onClick={() => {
-                            setConfirmandoEliminarId(enConfirmar ? null : pago.id);
-                            setEditandoId(null);
-                          }}
-                          aria-label={`Eliminar el pago ${pago.numeroPago}`}
-                          title="Eliminar pago"
-                          className={`transition p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 ${
-                            enConfirmar
-                              ? "text-red-500 dark:text-red-400"
-                              : "text-slate-400 hover:text-red-500 dark:hover:text-red-400"
-                          }`}
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
+                      {/* Imprimir, editar y eliminar detrás de "⋯" (M5): tres
+                          iconos de 26px eran difíciles de acertar en el teléfono. */}
+                      <MenuAcciones
+                        etiqueta={`Acciones del pago ${String(pago.numeroPago).padStart(3, "0")}`}
+                        className="shrink-0"
+                        acciones={[
+                          { id: "imprimir", etiqueta: "Imprimir comprobante", Icono: Printer, onSelect: () => imprimirComprobante(pago) },
+                          { id: "editar", etiqueta: "Editar pago", Icono: Pencil, onSelect: () => iniciarEdicion(pago) },
+                          {
+                            id: "eliminar", etiqueta: "Eliminar pago", Icono: Trash2, destructiva: true,
+                            onSelect: () => { setEditandoId(null); setPagoAEliminar(pago); },
+                          },
+                        ]}
+                      />
                     </div>
                   );
                 })}
@@ -828,6 +820,37 @@ function ModalSuscripcion({
         pendiente={guardandoPlan}
         onConfirmar={() => planPorConfirmar && handleSetPlan(planPorConfirmar)}
         onCerrar={() => { if (!guardandoPlan) setPlanPorConfirmar(null); }}
+      />
+
+      {/* El sector se confirmaba con un aviso en línea: ahora con el mismo
+          `ConfirmarAccion` que el plan, como el resto de la consola. */}
+      <ConfirmarAccion
+        abierto={sectorPorConfirmar !== null}
+        titulo={`¿Cambiar ${negocio.nombre} a ${sectorPorConfirmar === 'salud' ? 'Salud' : 'Belleza'}?`}
+        mensaje={<p>Cambia el vocabulario y los módulos de su panel.</p>}
+        etiquetaConfirmar="Cambiar sector"
+        pendiente={guardandoSector}
+        onConfirmar={() => sectorPorConfirmar && handleSetSector(sectorPorConfirmar)}
+        onCerrar={() => { if (!guardandoSector) setSectorPorConfirmar(null); }}
+      />
+
+      <ConfirmarAccion
+        abierto={pagoAEliminar !== null}
+        titulo={`¿Eliminar el pago #${String(pagoAEliminar?.numeroPago ?? 0).padStart(3, "0")}?`}
+        mensaje={pagoAEliminar && (
+          <>
+            <p>
+              Se borrará el pago de <span className="font-medium text-foreground tabular-nums">{formatPrecio(pagoAEliminar.monto)}</span>{" "}
+              del {formatFechaCorta(pagoAEliminar.periodoDesde)} al {formatFechaCorta(pagoAEliminar.periodoHasta)}.
+            </p>
+            <p className="mt-2">El vencimiento de la suscripción se recalcula con los pagos que queden.</p>
+          </>
+        )}
+        etiquetaConfirmar="Eliminar pago"
+        destructiva
+        pendiente={mutarEliminar.isPending}
+        onConfirmar={() => pagoAEliminar && mutarEliminar.mutate(pagoAEliminar.id)}
+        onCerrar={() => { if (!mutarEliminar.isPending) setPagoAEliminar(null); }}
       />
     </div>
   );
@@ -939,7 +962,8 @@ function TarjetaNegocio({
   const iniciales = negocio.nombre.split(" ").slice(0, 2).map((p) => p[0]).join("").toUpperCase();
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col">
+    // Borde y sin sombra, como `.tarjeta`: elevación por borde O sombra, no ambas.
+    <article aria-label={negocio.nombre} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 overflow-hidden flex flex-col">
       {/* Header */}
       <div className="p-4 flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center overflow-hidden shrink-0">
@@ -1048,15 +1072,16 @@ function TarjetaNegocio({
       </div>
 
       {/* Acciones
-          Siete acciones no pesan lo mismo. Las seis reversibles comparten una
-          rejilla de dos columnas ordenada por frecuencia de uso —suscripción y
-          alta/baja arriba, lo cosmético abajo— y "Eliminar" sale de la rejilla
-          a su propio renglón: es la única irreversible y no debe quedar a un
-          dedo de distancia de las demás mientras se recorre la tarjeta. */}
-      <div className="border-t border-slate-100 dark:border-slate-700 px-4 py-3 space-y-1.5">
-        {/* Sin "Confirmar correo" quedan cinco: la última ocupa el renglón
-            entero en vez de dejar un hueco a su lado. */}
-        <div className="grid grid-cols-2 gap-1.5 [&>*:last-child:nth-child(odd)]:col-span-2">
+          Siete acciones no pesan lo mismo. Las tres del trabajo diario
+          —suscripción, alta/baja y propietario— quedan a la vista; lo ocasional
+          (confirmar correo, colores, ver la página) y "Eliminar", la única
+          irreversible, van detrás de "⋯", como en las tarjetas de Empleados.
+          Eliminar queda al final del menú, en rojo y tras una línea, y sigue
+          pidiendo el nombre del negocio antes de borrar.
+          Dos renglones y no uno: con tres botones y "⋯" en una sola fila, una
+          tarjeta de la rejilla de tres columnas (unos 290px) los recortaba. */}
+      <div className="border-t border-slate-100 dark:border-slate-700 px-4 py-3">
+        <div className="grid grid-cols-2 gap-1.5">
           <button
             onClick={onSuscripcion}
             className={`${ACCION_TARJETA} border-amber-300 bg-amber-50 text-amber-700 hover:border-amber-500 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-400 dark:hover:bg-amber-950`}
@@ -1075,48 +1100,32 @@ function TarjetaNegocio({
             <Power size={12} aria-hidden="true" />
             {isToggling ? "Guardando…" : esActivo ? "Desactivar" : "Activar"}
           </button>
-          <button
-            onClick={onCrearPropietario}
-            className={`${ACCION_TARJETA} border-blue-300 bg-blue-50 text-blue-600 hover:border-blue-500 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-400 dark:hover:bg-blue-950`}
-          >
-            <UserPlus size={12} aria-hidden="true" /> Propietario
-          </button>
-          {/* Solo cuando hay un propietario con el correo sin verificar: con
-              "Correo verificado" al lado, el botón era un clic que no hacía nada. */}
-          {negocio.emailConfirmado === false && (
+          <div className="col-span-2 flex gap-1.5">
             <button
-              onClick={onConfirmarEmail}
-              title="Confirmar manualmente el correo del propietario"
-              className={`${ACCION_TARJETA} border-sky-300 bg-sky-50 text-sky-600 hover:border-sky-500 hover:bg-sky-100 dark:border-sky-800 dark:bg-sky-950/40 dark:text-sky-400 dark:hover:bg-sky-950`}
+              onClick={onCrearPropietario}
+              className={`${ACCION_TARJETA} flex-1 border-blue-300 bg-blue-50 text-blue-600 hover:border-blue-500 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-400 dark:hover:bg-blue-950`}
             >
-              <MailCheck size={12} aria-hidden="true" /> Confirmar correo
+              <UserPlus size={12} aria-hidden="true" /> Propietario
             </button>
-          )}
-          <button
-            onClick={onColores}
-            className={`${ACCION_TARJETA} border-violet-300 bg-violet-50 text-violet-600 hover:border-violet-500 hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-950/40 dark:text-violet-400 dark:hover:bg-violet-950`}
-          >
-            <Palette size={12} aria-hidden="true" /> Colores
-          </button>
-          <a
-            href={`/b/${negocio.slug}`}
-            target="_blank"
-            rel="noreferrer"
-            className={`${ACCION_TARJETA} border-slate-300 bg-slate-50 text-slate-600 hover:border-slate-500 hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-700/40 dark:text-slate-300 dark:hover:bg-slate-700`}
-          >
-            <ExternalLink size={12} aria-hidden="true" /> Ver booking
-          </a>
+            <MenuAcciones
+              className="shrink-0"
+              etiqueta={`Más acciones de ${negocio.nombre}`}
+              acciones={[
+                // Solo cuando hay un propietario con el correo sin verificar: con
+                // "Correo verificado" al lado, la acción era un clic que no hacía nada.
+                ...(negocio.emailConfirmado === false
+                  ? [{ id: "confirmar-correo", etiqueta: "Confirmar correo", Icono: MailCheck, onSelect: onConfirmarEmail }]
+                  : []),
+                { id: "colores", etiqueta: "Colores", Icono: Palette, onSelect: onColores },
+                {
+                  id: "ver-pagina", etiqueta: "Ver página de reservas", Icono: ExternalLink,
+                  onSelect: () => window.open(`/b/${negocio.slug}`, "_blank", "noopener,noreferrer"),
+                },
+                { id: "eliminar", etiqueta: "Eliminar negocio", Icono: Trash2, destructiva: true, onSelect: onEliminar },
+              ]}
+            />
+          </div>
         </div>
-        <button
-          onClick={onEliminar}
-          title="Eliminar negocio"
-          // Tinte muy tenue en reposo y relleno sólido al apuntar. En oscuro el
-          // `destructive/5` quedaba casi negro sobre la tarjeta y la etiqueta no
-          // se leía, así que ahí el reposo usa el mismo `950/40` que el resto.
-          className={`${ACCION_TARJETA} w-full border-destructive/40 bg-destructive/5 text-destructive hover:bg-destructive hover:border-destructive hover:text-white dark:border-red-900 dark:bg-red-950/40 dark:text-red-400 dark:hover:bg-red-600 dark:hover:border-red-600 dark:hover:text-white`}
-        >
-          <Trash2 size={12} aria-hidden="true" /> Eliminar
-        </button>
       </div>
 
       {/* Interruptores: una sola fila en vez de dos renglones con borde cada uno. */}
@@ -1136,7 +1145,7 @@ function TarjetaNegocio({
           anillo="focus-visible:ring-purple-500"
         />
       </div>
-    </div>
+    </article>
   );
 }
 
@@ -1236,6 +1245,94 @@ function EmpleadosExtraFila({
   );
 }
 
+/** Insignia de una fila de Facturación: un plan sin pago no es "Sin suscripción" (G3). */
+function badgeFacturacion(s: SuscripcionResumenDto) {
+  return s.estado === 'SinSuscripcion' && s.planNombre
+    ? ESTADO_BADGE.SinPago
+    : ESTADO_BADGE[s.estado] ?? ESTADO_BADGE.SinSuscripcion;
+}
+
+/** Vencimiento legible: un acceso de por vida vence el año 2126, la fecha es cierta y no dice nada. */
+function textoVence(s: SuscripcionResumenDto): string {
+  if ((s.diasRestantes ?? 0) >= DIAS_DE_POR_VIDA) return 'De por vida';
+  return s.fechaVencimiento ? formatFechaCorta(s.fechaVencimiento) : '—';
+}
+
+/**
+ * Facturación en el teléfono (I6): una tarjeta por negocio con lo que el admin
+ * busca primero —nombre e ingreso arriba, estado y vencimiento debajo— y "Ver
+ * suscripción" como acción. Los empleados extra se editan dentro del modal.
+ * El pie es el mismo de la tabla: el ingreso de todas las filas, no el de la página.
+ */
+function TarjetasFacturacion({
+  filas,
+  resumen,
+  onVerSuscripcion,
+  paginacion,
+}: {
+  filas: SuscripcionResumenDto[];
+  resumen: ReturnType<typeof resumenFacturacion>;
+  onVerSuscripcion: (s: SuscripcionResumenDto) => void;
+  paginacion: ReactNode;
+}) {
+  return (
+    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 overflow-hidden">
+      <ul aria-label="Suscripciones" className="divide-y divide-slate-100 dark:divide-slate-700">
+        {filas.map((s) => {
+          const badge = badgeFacturacion(s);
+          const sinIngreso = motivoSinIngreso(s);
+          return (
+            <li key={s.negocioId} className="px-4 py-3">
+              <div className="flex items-start justify-between gap-3">
+                <p className="min-w-0 font-medium text-slate-800 dark:text-slate-200 truncate">{s.negocioNombre}</p>
+                <p className="shrink-0 text-right tabular-nums">
+                  {sinIngreso ? (
+                    <span title={sinIngreso} className="text-sm text-slate-500 dark:text-slate-400">Sin ingreso</span>
+                  ) : (
+                    <span className="font-semibold text-slate-900 dark:text-slate-100">
+                      {formatPrecio(s.ingresoMensual)}<span className="text-xs font-normal text-slate-500 dark:text-slate-400">/mes</span>
+                    </span>
+                  )}
+                </p>
+              </div>
+              <div className="mt-1 flex items-center gap-2 flex-wrap text-xs">
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-full font-medium ${badge.className}`}>{badge.label}</span>
+                {textoVence(s) !== '—' && (
+                  <span className="text-slate-500 dark:text-slate-400 tabular-nums">Vence: {textoVence(s)}</span>
+                )}
+              </div>
+              <div className="mt-1 flex items-center justify-between gap-3">
+                {/* El motivo de "Sin ingreso" ya lo dice la insignia; aquí, el plan. */}
+                <p className="min-w-0 text-xs text-slate-500 dark:text-slate-400 tabular-nums">
+                  {s.planNombre ? `${nombrePlan(s.planNombre)} · ${formatPrecio(s.totalMensual)}/mes de lista` : 'Sin plan'}
+                  {s.empleadosExtra > 0 && ` · +${s.empleadosExtra} emp. extra`}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => onVerSuscripcion(s)}
+                  aria-label={`Ver suscripción de ${s.negocioNombre}`}
+                  className="shrink-0 min-h-[44px] px-3 -mr-1 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300 underline underline-offset-2 hover:bg-slate-50 dark:hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-brand/40"
+                >
+                  Ver suscripción
+                </button>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+      <div className="flex items-center justify-between gap-3 px-4 py-3 bg-slate-50 dark:bg-slate-900/40 border-t border-slate-100 dark:border-slate-700">
+        <p className="text-xs text-slate-500 dark:text-slate-400">
+          Ingreso mensual · {resumen.conSuscripcionVigente} de {resumen.conPlanAsignado} con suscripción vigente
+        </p>
+        <p data-testid="total-ingreso-mensual" className="shrink-0 font-semibold text-slate-900 dark:text-slate-100 tabular-nums">
+          {formatPrecio(resumen.ingresoMensual)}
+        </p>
+      </div>
+      {paginacion}
+    </div>
+  );
+}
+
 // ── Page principal ─────────────────────────────────────────────────────────
 export default function NegociosAdminPage() {
   useTituloPagina("Negocios · Admin");
@@ -1305,10 +1402,14 @@ export default function NegociosAdminPage() {
   // cada uno contaba a su manera y "Con plan 2" convivía con "$0/mes".
   const resumen = useMemo(() => resumenFacturacion(suscripciones), [suscripciones]);
 
-  const { data: planes = [] } = useQuery({
+  const { data: planes = [], isError: errorPlanes, refetch: recargarPlanes } = useQuery({
     queryKey: ["planes"],
     queryFn: adminApi.obtenerPlanes,
   });
+
+  // Debajo de `sm` Facturación es una lista de tarjetas (I6): en la tabla, a
+  // 390px quedaban fuera justo el ingreso, el vencimiento y el estado.
+  const esMovil = useMediaQuery(CONSULTA_MOVIL);
 
   const formNegocio = useForm<NegocioForm>({ resolver: zodResolver(schemaNegocio) });
   // Misma comprobación en vivo que el registro público (AP-23).
@@ -1584,20 +1685,30 @@ export default function NegociosAdminPage() {
     setFiltroSuscripcion("");
   };
 
+  const abrirNuevoNegocio = () => { formNegocio.reset(); setModalNegocio(true); };
+  const cargandoPanel = isLoading || cargandoSuscripciones;
+
   return (
     <div className="p-4 sm:p-8">
+      {/* "Negocios", como en el menú (M2): antes eran "Negocios" en el menú,
+          "Panel de negocios" aquí y otra vez "Negocios" en la pestaña. */}
       <EncabezadoPagina
         className="mb-5"
-        titulo="Panel de negocios"
-        subtitulo={isLoading || errorMetricas ? undefined : `${metricas.length} ${metricas.length === 1 ? "registrado" : "registrados"} en total`}
+        titulo="Negocios"
+        subtitulo={
+          errorMetricas ? undefined
+            : isLoading ? <span aria-hidden="true" className="inline-block align-middle h-3.5 w-36 rounded-md bg-muted animate-pulse" />
+            : `${metricas.length} ${metricas.length === 1 ? "registrado" : "registrados"} en total`
+        }
         acciones={
-          <BotonAccion onClick={() => { formNegocio.reset(); setModalNegocio(true); }}>
+          <BotonAccion onClick={abrirNuevoNegocio}>
             + Nuevo negocio
           </BotonAccion>
         }
       />
 
-      {/* Metrics strip */}
+      {/* Metrics strip: mientras carga, el skeleton ocupa su lugar para que la
+          página no salte al llegar los datos (I5). */}
       {errorPanel ? (
         <ErrorCarga
           className="mb-5 py-6"
@@ -1605,7 +1716,9 @@ export default function NegociosAdminPage() {
           onReintentar={reintentarPanel}
           reintentando={recargandoMetricas || recargandoSuscripciones}
         />
-      ) : !isLoading && !cargandoSuscripciones && (
+      ) : cargandoPanel ? (
+        <div className="mb-5"><SkeletonKpis /></div>
+      ) : (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
           {[
             { label: "Total", value: String(metricas.length), color: "text-slate-700 dark:text-slate-200" },
@@ -1640,8 +1753,9 @@ export default function NegociosAdminPage() {
         etiqueta="Secciones del panel"
         valor={tab}
         onChange={setTab}
+        // "General" y no otra vez "Negocios": la página ya se llama así (M2).
         opciones={[
-          { id: 'negocios', label: 'Negocios' },
+          { id: 'negocios', label: 'General' },
           { id: 'facturacion', label: 'Facturación' },
         ]}
       />
@@ -1691,8 +1805,8 @@ export default function NegociosAdminPage() {
       {tab === 'negocios' && (
         <>
           {/* Grid de tarjetas */}
-          {isLoading ? (
-            <p className="text-slate-400 dark:text-slate-500">Cargando negocios...</p>
+          {cargandoPanel && !errorPanel ? (
+            <SkeletonTarjetasNegocio />
           ) : errorMetricas ? null : metricasFiltradas.length === 0 ? (
             <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700">
               {hayFiltros ? (
@@ -1707,9 +1821,13 @@ export default function NegociosAdminPage() {
                   labelLimpiarFiltros="Ver todos los negocios"
                 />
               ) : (
+                // La acción va en el propio vacío (M10), no nombrada en el texto.
+                // Otro nombre que el del encabezado: dos botones iguales no se
+                // distinguen al recorrer la página con un lector.
                 <EmptyState
                   title="No hay negocios registrados"
-                  description="Crea el primero con “+ Nuevo negocio”."
+                  description="Cuando des de alta el primero, aquí verás su estado, su plan y su uso."
+                  action={<BotonAccion onClick={abrirNuevoNegocio}>Crear el primer negocio</BotonAccion>}
                 />
               )}
             </div>
@@ -1754,7 +1872,10 @@ export default function NegociosAdminPage() {
 
       {tab === 'facturacion' && !errorSuscripciones && (
         <div>
-          {suscripcionesFiltradas.length === 0 ? (
+          {cargandoSuscripciones ? (
+            // Antes, mientras cargaba, se leía "Sin facturación todavía".
+            <SkeletonLista filas={6} columnas={8} etiqueta="Cargando facturación" />
+          ) : suscripcionesFiltradas.length === 0 ? (
             <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700">
               {hayFiltros ? (
                 <EmptyState
@@ -1771,6 +1892,24 @@ export default function NegociosAdminPage() {
                 />
               )}
             </div>
+          ) : esMovil ? (
+            <TarjetasFacturacion
+              filas={paginaFacturacion.visibles}
+              resumen={resumen}
+              onVerSuscripcion={(s) => {
+                const neg = metricas?.find(m => m.id === s.negocioId);
+                if (neg) abrirSuscripcion(neg);
+              }}
+              paginacion={paginaFacturacion.totalPaginas > 1 && (
+                <Pagination
+                  pagina={paginaFacturacion.pagina}
+                  totalPaginas={paginaFacturacion.totalPaginas}
+                  total={paginaFacturacion.total}
+                  labelTotal="suscripciones"
+                  onCambiar={paginaFacturacion.setPagina}
+                />
+              )}
+            />
           ) : (
             <div className="rounded-xl border border-slate-100 dark:border-slate-700 overflow-hidden">
             <div className="overflow-x-auto">
@@ -1792,9 +1931,7 @@ export default function NegociosAdminPage() {
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                   {paginaFacturacion.visibles.map(s => {
-                    const badge = s.estado === 'SinSuscripcion' && s.planNombre
-                      ? ESTADO_BADGE.SinPago
-                      : ESTADO_BADGE[s.estado] ?? ESTADO_BADGE.SinSuscripcion;
+                    const badge = badgeFacturacion(s);
                     const sinIngreso = motivoSinIngreso(s);
                     return (
                       <tr key={s.negocioId} className="bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition">
@@ -1827,14 +1964,10 @@ export default function NegociosAdminPage() {
                         <td className="px-4 py-3 text-center text-slate-500 dark:text-slate-400 whitespace-nowrap">
                           {/* Un acceso de por vida vence el año 2126: la fecha
                               es cierta y no dice nada. */}
-                          {(s.diasRestantes ?? 0) >= DIAS_DE_POR_VIDA
-                            ? 'De por vida'
-                            : s.fechaVencimiento
-                            ? formatFechaMx(s.fechaVencimiento)
-                            : '—'}
+                          {textoVence(s)}
                         </td>
                         <td className="px-4 py-3 text-center">
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${badge.className}`}>
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${badge.className}`}>
                             {badge.label}
                           </span>
                         </td>
@@ -1942,6 +2075,8 @@ export default function NegociosAdminPage() {
             negocio={metricas.find((m) => m.id === negocioSel.id) ?? negocioSel}
             suscripcion={suscripcionMap[negocioSel.id]}
             planes={planes}
+            errorPlanes={errorPlanes}
+            onReintentarPlanes={() => recargarPlanes()}
           />
         )}
       </Modal>
@@ -2125,13 +2260,15 @@ export default function NegociosAdminPage() {
                       {errorPropietario}
                     </div>
                   )}
-                  <button
-                    onClick={handleRestablecerPassword}
-                    disabled={resetandoPassword || nuevaPasswordProp.length < 6 || confirmarPasswordProp.length < 6}
-                    className={`${BOTON_PIE_PRIMARIO} w-full`}
-                  >
-                    {resetandoPassword ? "Restableciendo…" : "Restablecer contraseña"}
-                  </button>
+                  <ModalAcciones apilado>
+                    <button
+                      onClick={handleRestablecerPassword}
+                      disabled={resetandoPassword || nuevaPasswordProp.length < 6 || confirmarPasswordProp.length < 6}
+                      className={BOTON_PIE_PRIMARIO}
+                    >
+                      {resetandoPassword ? "Restableciendo…" : "Restablecer contraseña"}
+                    </button>
+                  </ModalAcciones>
                 </div>
               </>
             ) : (
@@ -2239,7 +2376,8 @@ export default function NegociosAdminPage() {
                 className={`${CAMPO_MODAL} ${CAMPO_OK}`}
               />
             </div>
-            <div className="flex gap-3">
+            {/* Pie compartido de los modales: en el teléfono, apilado y fijo abajo. */}
+            <ModalAcciones>
               <button
                 onClick={() => { setModalEliminar(false); setPasoEliminar(1); setNombreConfirmacion(""); }}
                 className={BOTON_PIE_SECUNDARIO}
@@ -2253,7 +2391,7 @@ export default function NegociosAdminPage() {
               >
                 Continuar
               </button>
-            </div>
+            </ModalAcciones>
           </div>
         )}
         {negocioSel && pasoEliminar === 2 && (
@@ -2267,7 +2405,7 @@ export default function NegociosAdminPage() {
               <strong className="text-slate-900 dark:text-white">"{negocioSel.nombre}"</strong>.{" "}
               Esta acción <strong>NO se puede deshacer</strong>.
             </p>
-            <div className="flex gap-3">
+            <ModalAcciones>
               <button
                 onClick={() => setPasoEliminar(1)}
                 className={BOTON_PIE_SECUNDARIO}
@@ -2277,11 +2415,11 @@ export default function NegociosAdminPage() {
               <button
                 onClick={() => eliminarNegocio(negocioSel.id)}
                 disabled={eliminandoNegocio}
-                className={`${BOTON_PIE} font-semibold bg-red-600 hover:bg-red-700 text-white`}
+                className={`${BOTON_PIE} font-semibold bg-red-700 hover:bg-red-800 text-white`}
               >
                 {eliminandoNegocio ? "Eliminando…" : "Eliminar definitivamente"}
               </button>
-            </div>
+            </ModalAcciones>
           </div>
         )}
       </Modal>
@@ -2327,14 +2465,14 @@ export default function NegociosAdminPage() {
                 ))}
               </div>
             </div>
-            <div className="flex gap-3">
+            <ModalAcciones>
               <button onClick={() => setModalColores(false)} className={BOTON_PIE_SECUNDARIO}>
                 Cancelar
               </button>
               <button onClick={() => actualizarColores()} disabled={guardandoColores || !esColorHexValido(colorPrimario)} className={BOTON_PIE_PRIMARIO}>
-                {guardandoColores ? "Guardando..." : "Guardar colores"}
+                {guardandoColores ? "Guardando…" : "Guardar colores"}
               </button>
-            </div>
+            </ModalAcciones>
           </div>
         )}
       </Modal>

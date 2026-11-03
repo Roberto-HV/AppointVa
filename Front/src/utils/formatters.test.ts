@@ -5,6 +5,7 @@ import {
   formatFecha,
   formatFechaLarga,
   formatFechaHoraCorta,
+  formatFechaHoraExacta,
   formatFechaHora,
   formatFechaHoraResumen,
   formatFechaHoraCompleta,
@@ -132,6 +133,20 @@ describe("formatFechaHoraCorta", () => {
   it("contiene la hora", () => {
     const result = formatFechaHoraCorta("2026-06-15T10:30:00");
     expect(result).toMatch(/\d{1,2}:\d{2}/);
+  });
+});
+
+describe("formatFechaHoraExacta", () => {
+  it("retorna — para fecha inválida", () => {
+    expect(formatFechaHoraExacta("xyz")).toBe("—");
+  });
+
+  it("es la fecha corta con la hora y sus segundos", () => {
+    const result = formatFechaHoraExacta("2026-06-15T10:30:07");
+    expect(result).toContain("2026");
+    expect(result).toMatch(/10:30:07/);
+    // Misma hora sin cero a la izquierda que el resto de la app.
+    expect(formatFechaHoraExacta("2026-06-15T09:05:07")).not.toMatch(/09:05/);
   });
 });
 

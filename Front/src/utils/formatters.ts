@@ -78,6 +78,20 @@ export function formatFechaHoraCorta(iso: string): string {
   });
 }
 
+/**
+ * `formatFechaHoraCorta` con segundos: "15 jun 2026, 10:00:31 a. m.". Solo para
+ * el detalle de un evento de auditoría, donde el orden exacto importa; las filas
+ * usan la versión sin segundos.
+ */
+export function formatFechaHoraExacta(iso: string): string {
+  const d = toUtcDate(iso);
+  if (isNaN(d.getTime())) return "—";
+  return d.toLocaleString("es-MX", {
+    day: "2-digit", month: "short", year: "numeric",
+    ...OPCIONES_HORA, second: "2-digit",
+  });
+}
+
 /** Solo la parte de fecha corta: "14 sep 2026" */
 export function formatFechaCorta(iso: string): string {
   const d = toUtcDate(iso);

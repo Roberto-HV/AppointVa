@@ -12,6 +12,8 @@ import {
   SkeletonServicios,
   SkeletonInicio,
   SkeletonJornada,
+  SkeletonKpis,
+  SkeletonTarjetasNegocio,
 } from "./Skeleton";
 
 // I14: un skeleton por variante, con la forma real de cada pantalla.
@@ -32,6 +34,25 @@ describe("Skeletons por variante (I14)", () => {
     expect(tarjeta().querySelectorAll(".rounded-xl")).toHaveLength(2);
     rerender(<SkeletonLista filas={1} tarjeta="cliente" />);
     expect(tarjeta().querySelector(".rounded-full")).not.toBeNull();
+  });
+
+  it("SkeletonKpis repite el mosaico del admin y se anuncia como una sola carga", () => {
+    render(<SkeletonKpis />);
+    const carga = screen.getByRole("status", { name: "Cargando métricas" });
+    expect(carga.querySelectorAll('[data-variante="kpi"]')).toHaveLength(4);
+    expect(carga.className).toContain("sm:grid-cols-4");
+  });
+
+  it("SkeletonTarjetasNegocio copia la tarjeta del admin: tres acciones y el botón ⋯ en dos renglones", () => {
+    const { container } = render(<SkeletonTarjetasNegocio cantidad={2} />);
+    expect(screen.getByRole("status", { name: "Cargando negocios" })).toBeInTheDocument();
+    const tarjetas = container.querySelectorAll('[data-variante="tarjeta-negocio"]');
+    expect(tarjetas).toHaveLength(2);
+    const acciones = tarjetas[0].querySelector('[data-variante="acciones"]')!;
+    expect(acciones.className).toContain("grid-cols-2");
+    // Dos botones arriba; abajo uno ancho y el cuadrado de "⋯".
+    expect(acciones.querySelectorAll(".animate-pulse")).toHaveLength(4);
+    expect(acciones.querySelector(".w-11")).not.toBeNull();
   });
 
   it("SkeletonTarjetasEmpleado repite la tarjeta con foto y la fila de cuatro acciones", () => {

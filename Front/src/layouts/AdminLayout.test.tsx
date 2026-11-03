@@ -147,6 +147,28 @@ describe("AdminLayout — logo", () => {
   });
 });
 
+// Lote 3, M1: una sola marca y "Admin" con el dorado de la marca.
+describe("AdminLayout — marca", () => {
+  it("'Admin' va junto al logo con el dorado de la marca, no con yellow-400", () => {
+    renderizar();
+    // Barra móvil y sidebar; la barra de escritorio ya no repite la marca.
+    const chips = screen.getAllByText("Admin", { selector: "span" });
+    expect(chips).toHaveLength(2);
+    for (const chip of chips) {
+      expect(chip.className).toContain("bg-[#C8A961]");
+      expect(chip.className).not.toContain("yellow-400");
+    }
+    expect(within(cajon()).getByText("Admin")).toBeInTheDocument();
+  });
+
+  it("el texto 'AppointVa' solo aparece en la barra móvil, donde no hay sidebar", () => {
+    renderizar();
+    const marcas = screen.getAllByText((_, el) => el?.tagName === "SPAN" && el.textContent === "AppointVa");
+    expect(marcas).toHaveLength(1);
+    expect(marcas[0].closest("header")).toHaveClass("md:hidden");
+  });
+});
+
 // Lote 1, G1: el admin tiene menú de usuario con Mi cuenta y Seguridad.
 describe("AdminLayout — menú de usuario", () => {
   // jsdom no aplica `md:hidden`: están el avatar de la barra móvil (primero) y el de escritorio.

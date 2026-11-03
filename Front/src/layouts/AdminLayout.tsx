@@ -24,6 +24,13 @@ const ENLACE_NAV_ACTIVO = "bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:
 const ENLACE_NAV_INACTIVO =
   "text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200";
 
+/**
+ * "Admin" junto a la marca (M1). Es parte de la marca, así que lleva su dorado
+ * y no el `yellow-400` de antes, que no es de la paleta; el texto oscuro sobre
+ * el dorado pasa de 7:1.
+ */
+const CHIP_ADMIN = "text-xs bg-[#C8A961] text-slate-900 font-bold px-2 py-0.5 rounded-full shrink-0";
+
 const claseEnlaceNav = ({ isActive }: { isActive: boolean }) =>
   `${ENLACE_NAV} ${isActive ? ENLACE_NAV_ACTIVO : ENLACE_NAV_INACTIVO}`;
 
@@ -183,9 +190,7 @@ export default function AdminLayout() {
         <span className="font-bold text-slate-900 dark:text-white">
           Appoint<span className="text-[#C8A961]">Va</span>
         </span>
-        <span className="text-xs bg-yellow-400 text-slate-900 font-bold px-2 py-0.5 rounded-full">
-          Admin
-        </span>
+        <span className={CHIP_ADMIN}>Admin</span>
         {/* Menú de usuario (cuenta, seguridad, tema y salir), como en el panel.
             El tema está dentro: antes era un botón suelto en cada cabecera. */}
         <div ref={menuMovilRef} className="ml-auto -mr-2 relative">
@@ -235,8 +240,13 @@ export default function AdminLayout() {
         `}
       >
         {/* Logo + cerrar */}
-        <div className="px-5 py-5 flex items-center justify-between">
-          <LogoMarca prioridad variante={theme === "dark" ? "oscuro" : "normal"} className="h-10 mx-auto" />
+        <div className="px-5 py-5 flex items-center justify-between gap-2">
+          {/* Una sola marca en escritorio (M1): el logo con "Admin" al lado. La
+              barra superior ya no la repite. */}
+          <div className="flex items-center justify-center gap-2 flex-1 min-w-0">
+            <LogoMarca prioridad variante={theme === "dark" ? "oscuro" : "normal"} className="h-10 min-w-0" />
+            <span className={CHIP_ADMIN}>Admin</span>
+          </div>
           <button
             ref={botonCerrarRef}
             onClick={cerrarSidebar}
@@ -292,15 +302,9 @@ export default function AdminLayout() {
 
       {/* ── Contenido principal ── */}
       <main className="flex-1 overflow-y-auto min-h-0 flex flex-col">
-        <div className="hidden md:flex px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 items-center justify-between shrink-0">
-          <div className="flex items-center gap-2">
-            <span className="text-xl font-bold text-slate-900 dark:text-white">
-              Appoint<span className="text-[#C8A961]">Va</span>
-            </span>
-            <span className="text-xs bg-yellow-400 text-slate-900 font-bold px-2 py-0.5 rounded-full">
-              Admin
-            </span>
-          </div>
+        {/* Como la barra del panel: solo el menú de usuario a la derecha. La
+            marca ya está en el sidebar; repetirla costaba 68px de alto (M1). */}
+        <div className="hidden md:flex px-6 py-2.5 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 items-center justify-end shrink-0">
           <div ref={menuEscritorioRef} className="relative flex items-center">
             <button
               ref={botonUsuarioEscritorioRef}

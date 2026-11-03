@@ -131,13 +131,82 @@ describe("AuditLogPage — encabezados de tabla", () => {
   });
 });
 
-describe("AuditLogPage — estado de carga", () => {
-  it("muestra 'Cargando…' mientras la consulta está pendiente", async () => {
+describe("AuditLogPage — estado de carga (Lote 3, I5)", () => {
+  it("muestra el skeleton de la lista, no un 'Cargando…' en texto", async () => {
     vi.mocked(adminApi.obtenerAuditLogs).mockImplementation(
       () => new Promise(() => {})
     );
     renderAuditLog();
-    expect(await screen.findByText("Cargando…")).toBeInTheDocument();
+    const carga = await screen.findByRole("status", { name: "Cargando registro de auditoría" });
+    // Tarjetas en el teléfono y filas en escritorio, como las listas del panel.
+    expect(carga.querySelector('[data-variante="tarjetas"]')).not.toBeNull();
+    expect(carga.querySelector('[data-variante="filas"]')).not.toBeNull();
+    expect(screen.queryByText("Cargando…")).not.toBeInTheDocument();
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+  });
+});
+
+describe("AuditLogPage — error de carga (Lote 3, I5)", () => {
+  it("usa ErrorCarga con su mensaje y 'Reintentar' vuelve a pedir el registro", async () => {
+    vi.mocked(adminApi.obtenerAuditLogs).mockRejectedValue(new Error("boom"));
+    renderAuditLog();
+    const alerta = await screen.findByRole("alert");
+    expect(alerta).toHaveTextContent("No se pudo cargar el registro de auditoría.");
+    expect(alerta).toHaveTextContent("Revisa tu conexión e intenta de nuevo.");
+    // Sin tabla vacía detrás del error: un fallo no se lee como "sin registros".
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+
+    vi.mocked(adminApi.obtenerAuditLogs).mockResolvedValue({ datos: [makeLog()], total: 1, pagina: 1, tamano: 15 });
+    fireEvent.click(within(alerta).getByRole("button", { name: "Reintentar" }));
+    expect(await screen.findByText("user@test.com")).toBeInTheDocument();
+  });
+});
+
+describe("AuditLogPage — tarjetas en el teléfono (Lote 3, I6)", () => {
+  function simularTelefono() {
+    vi.stubGlobal("matchMedia", (q: string) => ({
+      matches: q.includes("max-width: 639.98px"),
+      media: q,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }));
+  }
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("debajo de sm cada evento es una tarjeta con acción, fecha, usuario y negocio a la vista", async () => {
+    simularTelefono();
+    vi.mocked(adminApi.obtenerAuditLogs).mockResolvedValue({
+      datos: [makeLog({ accion: "PlanCambiado", entidad: "Negocio", negocioNombre: "Estética Luna", usuarioEmail: "un.correo.bastante.largo@appointva.com" })],
+      total: 1, pagina: 1, tamano: 15,
+    });
+    renderAuditLog();
+
+    const lista = await screen.findByRole("list", { name: "Eventos" });
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+    const [tarjeta] = within(lista).getAllByRole("listitem");
+    expect(await within(tarjeta).findByText("Plan cambiado")).toBeInTheDocument();
+    expect(within(tarjeta).getByText("un.correo.bastante.largo@appointva.com")).toBeInTheDocument();
+    expect(within(tarjeta).getByText("Estética Luna")).toBeInTheDocument();
+    expect(within(tarjeta).getByText(/15 jun 2024/)).toBeInTheDocument();
+  });
+
+  it("el detalle se abre dentro de la tarjeta, con la fecha exacta y la IP", async () => {
+    simularTelefono();
+    vi.mocked(adminApi.obtenerAuditLogs).mockResolvedValue({
+      datos: [makeLog({ ipAddress: "::1", fechaEn: "2024-06-15T10:00:42" })], total: 1, pagina: 1, tamano: 15,
+    });
+    renderAuditLog();
+    fireEvent.click(await screen.findByRole("button", { name: /Ver detalle/ }));
+    const detalle = document.getElementById("detalle-log-1")!;
+    expect(detalle).toHaveTextContent("::1");
+    expect(detalle).toHaveTextContent(/10:00:42/);
+  });
+
+  it("sin eventos, la tarjeta muestra el vacío", async () => {
+    simularTelefono();
+    renderAuditLog();
+    expect(await screen.findByText("Sin registros")).toBeInTheDocument();
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
   });
 });
 
@@ -167,7 +236,26 @@ describe("AuditLogPage — fila de datos", () => {
     });
     renderAuditLog();
     await screen.findByText("user@test.com");
-    expect(screen.getByText("127.0.0.1")).toBeInTheDocument();
+    // M8: la IP del propio equipo se lee "Local"; la dirección queda en el title.
+    expect(screen.getByText("Local")).toHaveAttribute("title", "127.0.0.1");
+  });
+
+  it("una IP externa se muestra tal cual", async () => {
+    vi.mocked(adminApi.obtenerAuditLogs).mockResolvedValue({
+      datos: [makeLog({ ipAddress: "189.203.10.4" })], total: 1, pagina: 1, tamano: 15,
+    });
+    renderAuditLog();
+    expect(await screen.findByText("189.203.10.4")).toBeInTheDocument();
+  });
+
+  it("la fecha usa el formato corto compartido, sin segundos (M3)", async () => {
+    vi.mocked(adminApi.obtenerAuditLogs).mockResolvedValue({
+      datos: [makeLog({ fechaEn: "2024-06-15T10:00:42" })], total: 1, pagina: 1, tamano: 15,
+    });
+    renderAuditLog();
+    const celda = await screen.findByText(/15 jun 2024/);
+    expect(celda.textContent).toMatch(/10:00/);
+    expect(celda.textContent).not.toMatch(/10:00:42/);
   });
 });
 
