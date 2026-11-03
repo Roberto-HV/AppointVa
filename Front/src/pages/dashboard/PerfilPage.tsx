@@ -1454,19 +1454,21 @@ export default function PerfilPage() {
           portadaUrl={negocio?.portadaUrl}
           portadaObjectPosition={portadaObjectPosition}
         />
-        <ModalAcciones>
-          <button type="button" onClick={() => setPanelPortada(false)} className={BOTON_MODAL_SECUNDARIO}>
-            Cancelar
-          </button>
-          <button
-            type="button"
-            onClick={() => { setPortadaPreset(borradorPreset); setPanelPortada(false); }}
-            className={BOTON_MODAL_PRIMARIO}
-          >
-            Usar esta portada
-          </button>
-        </ModalAcciones>
       </div>
+      {/* Hijo directo del cuerpo del modal: dentro de otro contenedor el pie fijo
+          se queda al final de ese contenedor y deja ver la cuadrícula por debajo. */}
+      <ModalAcciones fijo className="mt-5">
+        <button type="button" onClick={() => setPanelPortada(false)} className={BOTON_MODAL_SECUNDARIO}>
+          Cancelar
+        </button>
+        <button
+          type="button"
+          onClick={() => { setPortadaPreset(borradorPreset); setPanelPortada(false); }}
+          className={BOTON_MODAL_PRIMARIO}
+        >
+          Usar esta portada
+        </button>
+      </ModalAcciones>
     </Modal>
 
     {/* ── Modal de posicionamiento de portada ─────────────────────────────── */}

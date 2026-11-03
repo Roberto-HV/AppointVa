@@ -59,7 +59,9 @@ describe("Modal — hoja inferior en el teléfono y diálogo en escritorio (I13)
     const pie = within(hoja).getByRole("button", { name: "Crear categoría" }).parentElement!;
     expect(pie).toHaveAttribute("data-pie-modal", "fijo");
     expect(pie.className).toContain("sticky");
-    expect(pie.className).toContain("bottom-0");
+    // Bottom negativo igual al padding inferior del cuerpo: si no, el pie se
+    // detiene 20 px arriba del borde y deja ver el contenido debajo.
+    expect(pie.className).toContain("bottom-[calc(-1.25rem-env(safe-area-inset-bottom))]");
     expect(pie.className).toContain("safe-area-inset-bottom");
     expect(pie.parentElement!.closest(".overflow-y-auto")).not.toBeNull();
   });
