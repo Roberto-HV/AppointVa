@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
@@ -92,7 +92,7 @@ function Ubicacion() {
 
 function renderFicha(ruta = '/admin/negocios/neg-1') {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(
+  return { qc, ...render(
     <QueryClientProvider client={qc}>
       <MemoryRouter initialEntries={[ruta]}>
         <Routes>
@@ -101,7 +101,7 @@ function renderFicha(ruta = '/admin/negocios/neg-1') {
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>
-  );
+  ) };
 }
 
 async function abrirSeccion(user: ReturnType<typeof userEvent.setup>, nombre: string) {
@@ -180,6 +180,31 @@ describe('Ficha del negocio — encabezado y secciones', () => {
     vi.mocked(adminModule.adminApi.obtenerMetricas).mockRejectedValue(new Error('500'));
     renderFicha();
     expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo cargar el negocio.');
+  });
+
+  it('si falla una recarga con datos en caché, la ficha y el modal abierto siguen en pie', async () => {
+    const user = userEvent.setup();
+    const { qc } = renderFicha('/admin/negocios/neg-1?seccion=configuracion');
+    await user.click(await screen.findByRole('button', { name: 'Editar colores' }));
+    expect(await screen.findByRole('dialog', { name: 'Colores del negocio' })).toBeInTheDocument();
+
+    // Lo mismo que hace `invalidar()` tras cada acción, pero con la red caída.
+    vi.mocked(adminModule.adminApi.obtenerMetricas).mockRejectedValue(new Error('500'));
+    await act(() => qc.invalidateQueries({ queryKey: ['admin-negocios-metricas'] }));
+
+    expect(await screen.findByText(/No se pudieron actualizar los datos/)).toBeInTheDocument();
+    expect(screen.queryByText('No se pudo cargar el negocio.')).not.toBeInTheDocument();
+    // Con el modal abierto el fondo queda oculto a la accesibilidad, pero montado.
+    expect(screen.getByRole('heading', { level: 1, name: 'Barbería Luis', hidden: true })).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'Colores del negocio' })).toBeInTheDocument();
+
+    // Cerrado el modal, "Reintentar" del aviso vuelve a pedir las métricas; al
+    // responder, el aviso se va.
+    await user.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Colores del negocio' })).not.toBeInTheDocument());
+    vi.mocked(adminModule.adminApi.obtenerMetricas).mockResolvedValue([negocio]);
+    await user.click(screen.getByRole('button', { name: 'Reintentar' }));
+    await waitFor(() => expect(screen.queryByText(/No se pudieron actualizar los datos/)).not.toBeInTheDocument());
   });
 });
 

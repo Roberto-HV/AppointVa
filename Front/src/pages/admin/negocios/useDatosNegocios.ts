@@ -11,13 +11,18 @@ import { resumenFacturacion } from "../../../utils/negociosAdmin";
  */
 export function useDatosNegocios() {
   const {
-    data: metricas = [], isLoading: cargandoMetricas, isError: errorMetricas,
+    data: datosMetricas, isLoading: cargandoMetricas, isError: errorMetricas,
     refetch: recargarMetricas, isFetching: recargandoMetricas,
   } = useQuery({
     queryKey: ["admin-negocios-metricas"],
     queryFn: adminApi.obtenerMetricas,
     staleTime: 1000 * 60 * 2,
   });
+  const metricas = useMemo(() => datosMetricas ?? [], [datosMetricas]);
+  // TanStack conserva los datos cuando falla una recarga en segundo plano (cada
+  // acción invalida esta consulta): `errorMetricas` puede ser true con datos
+  // válidos en caché. Quien quiera distinguirlo mira esta bandera.
+  const hayMetricas = datosMetricas !== undefined;
 
   const {
     data: suscripciones = [], isLoading: cargandoSuscripciones, isError: errorSuscripciones,
@@ -51,7 +56,7 @@ export function useDatosNegocios() {
   };
 
   return {
-    metricas, cargandoMetricas, errorMetricas, recargarMetricas, recargandoMetricas,
+    metricas, hayMetricas, cargandoMetricas, errorMetricas, recargarMetricas, recargandoMetricas,
     suscripciones, cargandoSuscripciones, errorSuscripciones, recargarSuscripciones, recargandoSuscripciones,
     planes, errorPlanes, recargarPlanes,
     suscripcionMap, resumen,

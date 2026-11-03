@@ -115,6 +115,17 @@ export default function NegociosAdminPage() {
 
   const paginaNegocios = usePaginacionLocal(metricasFiltradas);
 
+  // Otra búsqueda, filtro u orden es otra lista: se vuelve a la página 1 en vez
+  // de quedarse en la 3 de algo distinto. Se compara contra la clave anterior
+  // durante el render (no en un efecto) para no dibujar un cuadro con la página
+  // vieja; cubre también `?atencion=` cuando cambia desde un enlace del menú.
+  const claveLista = JSON.stringify([busqueda, filtroActivo, filtroSuscripcion, atencion, orden.columna, orden.direccion]);
+  const [claveListaAnterior, setClaveListaAnterior] = useState(claveLista);
+  if (claveListaAnterior !== claveLista) {
+    setClaveListaAnterior(claveLista);
+    paginaNegocios.setPagina(1);
+  }
+
   const hayFiltros = Boolean(busqueda.trim() || filtroActivo || filtroSuscripcion || atencion);
   const limpiarFiltros = () => {
     setBusqueda("");

@@ -80,11 +80,15 @@ export default function NegocioDetalleAdminPage() {
           <Skeleton className="h-11 w-full rounded-lg" />
           <Skeleton className="h-48 w-full rounded-xl" />
         </div>
+        {acciones.modales}
       </div>
     );
   }
 
-  if (datos.errorMetricas) {
+  // Solo sin datos es un error de página completa. Si falla la recarga que
+  // dispara cada acción (invalidar), TanStack conserva la caché: la ficha y
+  // cualquier modal abierto siguen en pie, con un aviso que no bloquea.
+  if (datos.errorMetricas && !datos.hayMetricas) {
     return (
       <div className="p-4 sm:p-8">
         {volver}
@@ -94,14 +98,33 @@ export default function NegocioDetalleAdminPage() {
           onReintentar={() => datos.recargarMetricas()}
           reintentando={datos.recargandoMetricas}
         />
+        {acciones.modales}
       </div>
     );
   }
+
+  const avisoRecarga = datos.errorMetricas && (
+    <div
+      role="status"
+      className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200"
+    >
+      <span>No se pudieron actualizar los datos; se muestra la última versión cargada.</span>
+      <button
+        type="button"
+        onClick={() => datos.recargarMetricas()}
+        disabled={datos.recargandoMetricas}
+        className="font-medium underline underline-offset-2 disabled:opacity-60"
+      >
+        {datos.recargandoMetricas ? "Reintentando…" : "Reintentar"}
+      </button>
+    </div>
+  );
 
   if (!negocio) {
     return (
       <div className="p-4 sm:p-8">
         {volver}
+        {avisoRecarga}
         <div className={SUPERFICIE}>
           <EmptyState
             icon={<Store size={32} strokeWidth={1.5} />}
@@ -121,6 +144,7 @@ export default function NegocioDetalleAdminPage() {
   return (
     <div className="p-4 sm:p-8">
       {volver}
+      {avisoRecarga}
 
       {/* Encabezado: quién es, en qué estado está y las dos acciones del día. */}
       <div className="flex flex-col sm:flex-row sm:items-start gap-3 mb-5">

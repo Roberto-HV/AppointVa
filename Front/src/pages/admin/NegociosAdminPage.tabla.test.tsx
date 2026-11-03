@@ -223,6 +223,36 @@ describe('Negocios — tabla densa en escritorio', () => {
     expect(nombresEnTabla()).toEqual(['Negocio 03', 'Negocio 02', 'Negocio 01']);
   });
 
+  it('cambiar el orden estando en la página 2 vuelve a la página 1', async () => {
+    const user = userEvent.setup();
+    vi.mocked(adminModule.adminApi.obtenerMetricas).mockResolvedValue(
+      Array.from({ length: 18 }, (_, i) => negocio(i + 1, { citasMes: i + 1 }))
+    );
+    renderPage();
+    await screen.findByRole('table');
+    await user.click(screen.getByRole('button', { name: 'Página siguiente' }));
+    expect(screen.getByRole('navigation', { name: 'Paginación' })).toHaveTextContent('página 2 de 2');
+
+    await user.click(within(screen.getByRole('columnheader', { name: /Citas del mes/ })).getByRole('button'));
+    expect(screen.getByRole('navigation', { name: 'Paginación' })).toHaveTextContent('página 1 de 2');
+    expect(nombresEnTabla()[0]).toBe('Negocio 18');
+  });
+
+  it('escribir en la búsqueda estando en la página 2 vuelve a la página 1', async () => {
+    const user = userEvent.setup();
+    vi.mocked(adminModule.adminApi.obtenerMetricas).mockResolvedValue(
+      Array.from({ length: 35 }, (_, i) => negocio(i + 1))
+    );
+    renderPage();
+    await screen.findByRole('table');
+    await user.click(screen.getByRole('button', { name: 'Página siguiente' }));
+    expect(screen.getByRole('navigation', { name: 'Paginación' })).toHaveTextContent('página 2 de 3');
+
+    // "negocio" coincide con los 35: la lista no se encoge y aun así se vuelve a la 1.
+    await user.type(screen.getByRole('searchbox', { name: 'Buscar negocio' }), 'negocio');
+    await waitFor(() => expect(screen.getByRole('navigation', { name: 'Paginación' })).toHaveTextContent('35 negocios · página 1 de 3'));
+  });
+
   it('el nombre y la fila llevan a la ficha del negocio', async () => {
     const user = userEvent.setup();
     vi.mocked(adminModule.adminApi.obtenerMetricas).mockResolvedValue([negocio(1, { nombre: 'Barbería Luis' })]);
@@ -360,6 +390,25 @@ describe('Negocios — franja "Requiere atención"', () => {
     expect(await screen.findByText('Ningún negocio coincide con los filtros actuales.')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Ver todos los negocios' }));
     await waitFor(() => expect(nombresEnTabla()).toHaveLength(7));
+  });
+
+  it('pulsar un contador estando en la página 2 vuelve a la página 1', async () => {
+    const user = userEvent.setup();
+    // 35 negocios; 20 por vencer: el filtro sigue teniendo dos páginas, así que
+    // el acotado del hook no basta para volver a la 1.
+    vi.mocked(adminModule.adminApi.obtenerMetricas).mockResolvedValue(
+      Array.from({ length: 35 }, (_, i) => negocio(i + 1))
+    );
+    vi.mocked(adminModule.adminApi.obtenerSuscripciones).mockResolvedValue(
+      Array.from({ length: 35 }, (_, i) => suscripcion(`neg-${i + 1}`, i < 20 ? { estado: 'PorVencer', diasRestantes: 4 } : {}))
+    );
+    renderPage();
+    const f = await franja();
+    await user.click(screen.getByRole('button', { name: 'Página siguiente' }));
+    expect(screen.getByRole('navigation', { name: 'Paginación' })).toHaveTextContent('página 2 de 3');
+
+    await user.click(within(f).getByRole('button', { name: '20 Por vencer' }));
+    expect(screen.getByRole('navigation', { name: 'Paginación' })).toHaveTextContent('20 negocios · página 1 de 2');
   });
 
   it('sin nada pendiente, la franja no aparece', async () => {
