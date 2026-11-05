@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { ahoraEnZona, cierreDelDia, estadoDeHoy, type CalendarioNegocio } from "./calendarioNegocio";
 
 const calendario: CalendarioNegocio = {
@@ -76,5 +76,56 @@ describe("estadoDeHoy", () => {
   it("un día sin turnos o bloqueado no tiene intervalos", () => {
     expect(estadoDeHoy(calendario, new Date(2026, 9, 21, 12)).intervalos).toEqual([]);
     expect(estadoDeHoy(calendario, new Date(2026, 9, 22, 12)).intervalos).toEqual([]);
+  });
+});
+
+describe("estadoDeHoy con la zona horaria del negocio", () => {
+  // Instantes en UTC: el resultado no depende de la zona de la máquina que corre la prueba.
+  const cdmx: CalendarioNegocio = { ...calendario, zonaHoraria: "America/Mexico_City" };
+  const tokio: CalendarioNegocio = { ...calendario, zonaHoraria: "Asia/Tokyo" };
+
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  it("abierto en pleno turno, con su hora de cierre", () => {
+    // 18:00 UTC = 12:00 del martes 20 en Ciudad de México (UTC-6).
+    vi.setSystemTime(new Date(Date.UTC(2026, 9, 20, 18)));
+    expect(estadoDeHoy(cdmx)).toMatchObject({ diaSemana: 2, abiertoAhora: true, cierraA: "14:00", abreA: null });
+  });
+
+  it("entre dos turnos está cerrado y dice a qué hora abre", () => {
+    vi.setSystemTime(new Date(Date.UTC(2026, 9, 20, 20, 30))); // 14:30 en CDMX
+    expect(estadoDeHoy(cdmx)).toMatchObject({ abiertoAhora: false, cierraA: null, abreA: "15:00" });
+  });
+
+  it("tras el último turno queda cerrado por hoy, aunque en UTC ya sea otro día", () => {
+    vi.setSystemTime(new Date(Date.UTC(2026, 9, 21, 1, 30))); // 19:30 del martes en CDMX
+    const estado = estadoDeHoy(cdmx);
+    expect(estado).toMatchObject({ diaSemana: 2, abiertoAhora: false, cierraA: null, abreA: null });
+    expect(estado.intervalos).toHaveLength(2);
+  });
+
+  it("un día bloqueado en la zona del negocio no abre", () => {
+    vi.setSystemTime(new Date(Date.UTC(2026, 9, 22, 18))); // jueves 22 al mediodía en CDMX
+    expect(estadoDeHoy(cdmx)).toMatchObject({ diaSemana: 4, intervalos: [], abiertoAhora: false, abreA: null });
+  });
+
+  it("el día de la semana sale de la fecha en la zona, no de la del navegador", () => {
+    // 00:30 UTC del martes 20 = 09:30 del martes en Tokio (lunes 19 por la tarde en América).
+    vi.setSystemTime(new Date(Date.UTC(2026, 9, 20, 0, 30)));
+    expect(estadoDeHoy(tokio)).toMatchObject({ diaSemana: 2, abiertoAhora: false, abreA: "10:00" });
+
+    // 15:30 UTC del martes 20 = 00:30 del miércoles 21 en Tokio: ya no es martes.
+    vi.setSystemTime(new Date(Date.UTC(2026, 9, 20, 15, 30)));
+    expect(estadoDeHoy(tokio)).toMatchObject({ diaSemana: 3, intervalos: [], abiertoAhora: false });
+  });
+
+  it("con una zona inválida usa la hora local", () => {
+    vi.setSystemTime(new Date(2026, 9, 20, 12));
+    expect(estadoDeHoy({ ...calendario, zonaHoraria: "Zona/Inexistente" })).toMatchObject({
+      diaSemana: 2,
+      abiertoAhora: true,
+      cierraA: "14:00",
+    });
   });
 });

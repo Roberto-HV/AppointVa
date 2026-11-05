@@ -1,7 +1,8 @@
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Star, MapPin, Phone, Clock, ChevronDown } from "lucide-react";
 import { SiWhatsapp } from "react-icons/si";
 import type { NegocioPublico } from "../../types";
+import { DIAS_SEMANA } from "../../lib/horario";
 import { estadoDeHoy } from "../../utils/calendarioNegocio";
 import { telefonoWhatsApp } from "../../utils/whatsapp";
 
@@ -18,7 +19,6 @@ interface Props {
   ahora?: Date;
 }
 
-const DIAS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 /** La semana empieza en lunes, como en el calendario del paso de fecha. */
 const ORDEN_SEMANA = [1, 2, 3, 4, 5, 6, 0];
 
@@ -35,11 +35,20 @@ function turnos(intervalos: { horaInicio: string; horaFin: string }[]): string {
  * página pública del negocio; un dato que no esté simplemente no se muestra.
  */
 export default function TarjetaNegocio({ negocio, acciones, ahora }: Props) {
+  // Una pestaña que se queda abierta no debe mostrar un «Abierto ahora» viejo:
+  // se recalcula cada minuto mientras la tarjeta está montada.
+  const [reloj, setReloj] = useState(() => new Date());
+  useEffect(() => {
+    if (ahora) return;
+    const id = setInterval(() => setReloj(new Date()), 60_000);
+    return () => clearInterval(id);
+  }, [ahora]);
+
   const totalResenas = negocio.totalResenas ?? 0;
   // Sin horario publicado (API antigua o negocio sin configurar) no se afirma nada.
   const horario = negocio.horario?.length ? negocio.horario : null;
   const hoy = horario
-    ? estadoDeHoy({ horario, diasCerrados: negocio.diasCerrados, zonaHoraria: negocio.zonaHoraria }, ahora)
+    ? estadoDeHoy({ horario, diasCerrados: negocio.diasCerrados, zonaHoraria: negocio.zonaHoraria }, ahora ?? reloj)
     : null;
   const mapa = negocio.direccion
     ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(negocio.direccion)}`
@@ -92,7 +101,7 @@ export default function TarjetaNegocio({ negocio, acciones, ahora }: Props) {
                 const esHoy = dia === hoy.diaSemana;
                 return (
                   <div key={dia} className={`flex justify-between gap-3 ${esHoy ? "font-semibold text-slate-900" : "text-slate-600"}`}>
-                    <dt>{DIAS[dia]}</dt>
+                    <dt>{DIAS_SEMANA[dia]}</dt>
                     <dd className="text-right tabular-nums">{delDia.length ? turnos(delDia) : "Cerrado"}</dd>
                   </div>
                 );

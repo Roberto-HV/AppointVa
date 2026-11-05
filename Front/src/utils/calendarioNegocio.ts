@@ -55,16 +55,25 @@ export interface EstadoHoy {
   abreA: string | null;
 }
 
+/** Día de la semana de una fecha "YYYY-MM-DD" (0=domingo, igual que el backend). */
+function diaSemanaDe(fecha: string): number {
+  const [a, m, d] = fecha.split("-").map(Number);
+  return new Date(a, m - 1, d).getDay();
+}
+
+/** Turnos de esa fecha, en orden; vacío si ese día de la semana no abre o está bloqueado. */
+function intervalosDelDia(fecha: string, calendario: CalendarioNegocio): IntervaloHorarioPublico[] {
+  if (calendario.diasCerrados?.includes(fecha)) return [];
+  const diaSemana = diaSemanaDe(fecha);
+  return calendario.horario
+    .filter((h) => h.diaSemana === diaSemana)
+    .sort((x, y) => minutos(x.horaInicio) - minutos(y.horaInicio));
+}
+
 export function estadoDeHoy(calendario: CalendarioNegocio, ahora: Date = new Date()): EstadoHoy {
   const actual = ahoraEnZona(ahora, calendario.zonaHoraria);
-  const bloqueado = calendario.diasCerrados?.includes(actual.fecha) ?? false;
-  const [a, m, d] = actual.fecha.split("-").map(Number);
-  const diaSemana = new Date(a, m - 1, d).getDay();
-  const intervalos = bloqueado
-    ? []
-    : calendario.horario
-        .filter((h) => h.diaSemana === diaSemana)
-        .sort((x, y) => minutos(x.horaInicio) - minutos(y.horaInicio));
+  const diaSemana = diaSemanaDe(actual.fecha);
+  const intervalos = intervalosDelDia(actual.fecha, calendario);
 
   const enCurso = intervalos.find(
     (h) => actual.minutos >= minutos(h.horaInicio) && actual.minutos < minutos(h.horaFin),
@@ -81,11 +90,7 @@ export function estadoDeHoy(calendario: CalendarioNegocio, ahora: Date = new Dat
 
 /** null cuando el negocio abre ese día (aunque luego no queden horarios libres). */
 export function cierreDelDia(fecha: string, calendario: CalendarioNegocio, ahora: Date = new Date()): CierreDia | null {
-  if (calendario.diasCerrados?.includes(fecha)) return "cerrado";
-
-  const [a, m, d] = fecha.split("-").map(Number);
-  const diaSemana = new Date(a, m - 1, d).getDay(); // 0=domingo, igual que el backend
-  const intervalos = calendario.horario.filter((h) => h.diaSemana === diaSemana);
+  const intervalos = intervalosDelDia(fecha, calendario);
   if (intervalos.length === 0) return "cerrado";
 
   const actual = ahoraEnZona(ahora, calendario.zonaHoraria);

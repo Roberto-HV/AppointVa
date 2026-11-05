@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { act, render, screen } from "@testing-library/react";
 import TarjetaNegocio from "./TarjetaNegocio";
 
 const base = {
@@ -46,6 +46,39 @@ describe("TarjetaNegocio", () => {
     expect(screen.getByText("Cerrado hoy")).toBeInTheDocument();
     expect(screen.getByText("Horario de la semana")).toBeInTheDocument();
     expect(screen.getAllByText("Cerrado")).toHaveLength(6);
+  });
+
+  it("entre turnos dice «Cerrado ahora» y a qué hora vuelve a abrir", () => {
+    render(<TarjetaNegocio negocio={base} ahora={new Date(2026, 9, 20, 14, 30)} />);
+    expect(screen.getByText("Cerrado ahora")).toBeInTheDocument();
+    expect(screen.getByText("Abre a las 15:00")).toBeInTheDocument();
+    expect(screen.queryByText(/Cierra a las/)).not.toBeInTheDocument();
+  });
+
+  it("tras el último turno dice «Cerrado por hoy» sin hora de apertura", () => {
+    render(<TarjetaNegocio negocio={base} ahora={new Date(2026, 9, 20, 19, 30)} />);
+    expect(screen.getByText("Cerrado por hoy")).toBeInTheDocument();
+    expect(screen.queryByText(/Abre a las/)).not.toBeInTheDocument();
+    expect(screen.getByText("Hoy: 10:00 – 14:00 · 15:00 – 19:00")).toBeInTheDocument();
+  });
+
+  describe("con el reloj real", () => {
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => vi.useRealTimers());
+
+    it("recalcula el estado cada minuto mientras está montada", () => {
+      vi.setSystemTime(new Date(2026, 9, 20, 13, 59));
+      const { unmount } = render(<TarjetaNegocio negocio={base} />);
+      expect(screen.getByText("Abierto ahora")).toBeInTheDocument();
+
+      act(() => vi.advanceTimersByTime(60_000));
+      expect(screen.queryByText("Abierto ahora")).not.toBeInTheDocument();
+      expect(screen.getByText("Cerrado ahora")).toBeInTheDocument();
+      expect(screen.getByText("Abre a las 15:00")).toBeInTheDocument();
+
+      unmount();
+      expect(vi.getTimerCount()).toBe(0);
+    });
   });
 
   it("sin datos opcionales no inventa nada: ni estrellas, ni horario, ni contacto", () => {
