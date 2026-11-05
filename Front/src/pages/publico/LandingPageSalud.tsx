@@ -10,7 +10,8 @@ import { FeatureCard } from "../../components/landing/FeatureCard";
 import { PricingCard } from "../../components/landing/PricingCard";
 import { Ico } from "../../components/landing/Ico";
 import { dArrow, dBell, dCalendar, dShield, dUsers } from "../../components/landing/iconos";
-import { ACENTO, GOLD, TINTA } from "../../components/landing/constantes";
+import { ACENTO, TINTA } from "../../components/landing/constantes";
+import LogoMarca from "../../components/LogoMarca";
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 export function LandingPageSalud() {
@@ -259,10 +260,7 @@ export function LandingPageSalud() {
           <div className="max-w-6xl mx-auto px-6 py-12">
             <div className="grid md:grid-cols-4 gap-10 mb-10">
               <div className="md:col-span-2">
-                <span className="text-xl font-bold">
-                  <span className="text-white">Appoint</span>
-                  <span style={{ color: GOLD }}>Va</span>
-                </span>
+                <LogoMarca variante="oscuro" className="h-14 -ml-1" />
                 <p className="text-sm text-slate-400 mt-3 max-w-xs leading-relaxed">
                   Agenda online para negocios de servicios en México. Sin llamadas, sin WhatsApps, sin complicaciones.
                 </p>

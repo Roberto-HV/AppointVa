@@ -32,6 +32,13 @@ describe("LandingPageSalud (decisiones 1, 5, 16, 18)", () => {
     expect(screen.getByRole("link", { name: /Empezar ahora/ })).toHaveAttribute("href", "/registro?sector=salud");
   });
 
+  it("su hero es claro: la barra lleva el logo de texto oscuro y el pie el de texto blanco", () => {
+    renderSalud();
+    const inicio = screen.getByRole("link", { name: "AppointVa" });
+    expect(within(inicio).getByRole("img", { name: "AppointVa" })).toHaveAttribute("src", "/logo-appointva.png");
+    expect(screen.getAllByAltText("AppointVa").map((img) => img.getAttribute("src"))).toContain("/logo-appointva-oscuro.png");
+  });
+
   it("cada plan lleva su clave al registro de salud (B20)", () => {
     renderSalud();
     expect(screen.getByRole("link", { name: "Empezar con Básico" })).toHaveAttribute("href", "/registro?sector=salud&plan=basico");

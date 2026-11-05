@@ -15,7 +15,8 @@ import { FeatureCard } from "../../components/landing/FeatureCard";
 import { PricingCard } from "../../components/landing/PricingCard";
 import { Ico } from "../../components/landing/Ico";
 import { dArrow, dBell, dCalendar, dChart, dShield, dStar, dTag, dUsers } from "../../components/landing/iconos";
-import { GOLD, TINTA } from "../../components/landing/constantes";
+import { ORO_LOGO, ORO_LOGO_RGB, TINTA } from "../../components/landing/constantes";
+import LogoMarca from "../../components/LogoMarca";
 
 // Sombra de tarjeta de la landing: desplazada y difusa, sin borde (elevación única).
 const SOMBRA_TARJETA = "shadow-[0_1px_2px_rgb(15_23_42/0.06),0_8px_24px_-6px_rgb(15_23_42/0.10)]";
@@ -65,7 +66,7 @@ function PhoneMockup() {
             <div className="relative w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 bg-gradient-to-br from-rose-500 to-rose-700 shadow-[0_2px_6px_-1px_rgb(190_18_60/0.45)]">
               <Scissors size={15} strokeWidth={2.25} className="text-white -rotate-45" aria-hidden="true" />
               <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-white ring-2 ring-white flex items-center justify-center">
-                <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
+                <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: ORO_LOGO }} />
               </span>
             </div>
             <div className="min-w-0">
@@ -284,11 +285,12 @@ export default function LandingPage() {
 
         {/* ── HERO (oscuro, con las cifras al pie) ──────────────────────────── */}
         <section ref={heroRef} className="relative overflow-hidden bg-slate-900 text-white">
-          {/* Luz azul detrás del teléfono y otra tenue arriba a la izquierda. */}
+          {/* Luz dorada (la de la marca) detrás del teléfono y una azul marino más
+              clara arriba a la izquierda para dar profundidad sin ensuciar el fondo. */}
           <div
             aria-hidden="true"
             className="absolute inset-0 pointer-events-none"
-            style={{ background: "radial-gradient(42% 55% at 78% 42%, rgb(56 189 248 / 0.20), transparent 70%), radial-gradient(45% 50% at 8% 0%, rgb(99 102 241 / 0.20), transparent 70%), linear-gradient(180deg, rgb(15 23 42) 0%, rgb(var(--color-ink)) 100%)" }}
+            style={{ background: `radial-gradient(40% 52% at 78% 44%, rgb(${ORO_LOGO_RGB} / 0.13), transparent 70%), radial-gradient(45% 50% at 8% 0%, rgb(71 85 105 / 0.35), transparent 70%), linear-gradient(180deg, rgb(15 23 42) 0%, rgb(var(--color-ink)) 100%)` }}
           />
           <div
             aria-hidden="true"
@@ -309,7 +311,7 @@ export default function LandingPage() {
                   <br />
                   online.
                   <br />
-                  <span className="text-sky-300">Sin llamadas.</span>
+                  <span style={{ color: ORO_LOGO }}>Sin llamadas.</span>
                 </h1>
 
                 <p className="text-lg text-slate-300 leading-relaxed max-w-[460px] mb-10">
@@ -321,7 +323,7 @@ export default function LandingPage() {
                 <div className="flex flex-wrap gap-3 mb-8">
                   <Link
                     to="/registro"
-                    className="inline-flex items-center justify-center min-w-[180px] px-7 py-3.5 text-sm font-bold rounded-xl bg-white text-slate-900 transition-[transform,box-shadow,background-color] duration-200 ease-calma hover:-translate-y-0.5 hover:bg-slate-100 shadow-[0_10px_30px_-10px_rgb(56_189_248/0.55)] active:scale-95"
+                    className="inline-flex items-center justify-center min-w-[180px] px-7 py-3.5 text-sm font-bold rounded-xl bg-white text-slate-900 transition-[transform,box-shadow,background-color] duration-200 ease-calma hover:-translate-y-0.5 hover:bg-slate-100 shadow-[0_10px_30px_-10px_rgb(238_177_20/0.45)] active:scale-95"
                   >
                     Crear mi cuenta
                   </Link>
@@ -340,7 +342,7 @@ export default function LandingPage() {
               </div>
 
               <div className="relative flex justify-center md:justify-end">
-                <div aria-hidden="true" className="absolute top-1/2 left-1/2 md:left-auto md:right-0 -translate-y-1/2 -translate-x-1/2 md:translate-x-[10%] w-[340px] h-[460px] rounded-full bg-sky-400/20 blur-3xl pointer-events-none" />
+                <div aria-hidden="true" className="absolute top-1/2 left-1/2 md:left-auto md:right-0 -translate-y-1/2 -translate-x-1/2 md:translate-x-[10%] w-[340px] h-[460px] rounded-full blur-3xl pointer-events-none" style={{ backgroundColor: `rgb(${ORO_LOGO_RGB} / 0.14)` }} />
                 <div className="relative av-float"><PhoneMockup /></div>
               </div>
             </div>
@@ -405,7 +407,7 @@ export default function LandingPage() {
           <div
             aria-hidden="true"
             className="absolute inset-0 pointer-events-none"
-            style={{ background: "radial-gradient(50% 60% at 50% 0%, rgb(99 102 241 / 0.16), transparent 70%)" }}
+            style={{ background: `radial-gradient(50% 60% at 50% 0%, rgb(${ORO_LOGO_RGB} / 0.08), transparent 70%)` }}
           />
           <div className="relative max-w-6xl mx-auto px-6">
             <div className="text-center mb-14 md:mb-16">
@@ -503,7 +505,7 @@ export default function LandingPage() {
                 <div
                   aria-hidden="true"
                   className="absolute inset-0 pointer-events-none"
-                  style={{ background: "radial-gradient(70% 80% at 100% 0%, rgb(56 189 248 / 0.18), transparent 70%), radial-gradient(60% 70% at 0% 100%, rgb(99 102 241 / 0.16), transparent 70%)" }}
+                  style={{ background: `radial-gradient(70% 80% at 100% 0%, rgb(${ORO_LOGO_RGB} / 0.10), transparent 70%), radial-gradient(60% 70% at 0% 100%, rgb(71 85 105 / 0.35), transparent 70%)` }}
                 />
                 <div className="relative flex flex-col gap-3 sm:gap-4">
                   <NegocioCard
@@ -572,10 +574,7 @@ export default function LandingPage() {
           <div className="max-w-6xl mx-auto px-6 py-12">
             <div className="grid md:grid-cols-4 gap-10 mb-10">
               <div className="md:col-span-2">
-                <span className="text-xl font-bold">
-                  <span className="text-white">Appoint</span>
-                  <span style={{ color: GOLD }}>Va</span>
-                </span>
+                <LogoMarca variante="oscuro" className="h-14 -ml-1" />
                 <p className="text-sm text-slate-400 mt-3 max-w-xs leading-relaxed">
                   Agenda online para negocios de servicios en México. Sin llamadas, sin WhatsApps, sin complicaciones.
                 </p>

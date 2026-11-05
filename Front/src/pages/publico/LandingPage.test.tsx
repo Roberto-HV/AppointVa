@@ -158,11 +158,19 @@ describe("LandingPage — copy honesto y precios (decisiones 1, 5, 16, 18)", () 
     expect(screen.getByText(/Las notificaciones se envían por correo/)).toBeInTheDocument();
   });
 
-  it("el dorado de la marca solo queda en el logo", () => {
-    const { container } = renderLanding();
-    const conDorado = [...container.querySelectorAll<HTMLElement>("[style]")]
-      .filter((el) => /c8a961|200,\s*169,\s*97/i.test(el.getAttribute("style") ?? ""));
-    expect(conDorado.length).toBeGreaterThan(0);
-    expect(conDorado.every((el) => el.textContent === "Va")).toBe(true);
+  it("el dorado de la marca es el acento del hero y del plan destacado, y el logo es la imagen de AppointVa", () => {
+    renderLanding();
+    // Mismo dorado que el "Va" del logo (ORO_LOGO, #EEB114).
+    const dorado = /^rgb\(238, 177, 20\)$/;
+    expect(screen.getByText("Sin llamadas.").style.color).toMatch(dorado);
+    expect(screen.getByText("Más popular").style.backgroundColor).toMatch(dorado);
+
+    // Sin el wordmark de texto: el enlace al inicio es el logo real.
+    const inicio = screen.getAllByRole("link", { name: "AppointVa" })[0];
+    expect(inicio).toHaveAttribute("href", "/");
+    expect(within(inicio).getByRole("img", { name: "AppointVa" }).getAttribute("src")).toMatch(/^\/logo-appointva/);
+    // Pie oscuro: la variante de texto blanco.
+    expect(screen.getAllByAltText("AppointVa").some((img) => img.getAttribute("src") === "/logo-appointva-oscuro.png")).toBe(true);
+    expect(screen.queryByText("Appoint")).not.toBeInTheDocument();
   });
 });

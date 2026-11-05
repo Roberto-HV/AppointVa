@@ -1,7 +1,7 @@
 import { forwardRef } from "react";
 import { Link } from "react-router-dom";
 
-import { TINTA } from "./constantes";
+import { ORO_LOGO_RGB, TINTA } from "./constantes";
 
 interface CtaFinalProps {
   titulo: string;
@@ -12,8 +12,8 @@ interface CtaFinalProps {
 }
 
 /**
- * Bloque oscuro de cierre de las landings. Acentos en slate: el dorado de la
- * marca queda solo para el logo (AP-09).
+ * Bloque oscuro de cierre de las landings. La luz del fondo usa el dorado de la
+ * marca, igual que el hero, sobre el azul marino.
  */
 export const CtaFinal = forwardRef<HTMLElement, CtaFinalProps>(function CtaFinal(
   { titulo, subtitulo, to, etiqueta = "Empezar ahora" },
@@ -21,7 +21,7 @@ export const CtaFinal = forwardRef<HTMLElement, CtaFinalProps>(function CtaFinal
 ) {
   return (
     <section ref={ref} style={{ backgroundColor: TINTA }} className="py-28 relative overflow-hidden">
-      <div aria-hidden="true" className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(60% 70% at 50% 0%, rgb(56 189 248 / 0.16), transparent 70%), radial-gradient(40% 50% at 85% 100%, rgb(99 102 241 / 0.14), transparent 70%)" }} />
+      <div aria-hidden="true" className="absolute inset-0 pointer-events-none" style={{ background: `radial-gradient(60% 70% at 50% 0%, rgb(${ORO_LOGO_RGB} / 0.12), transparent 70%), radial-gradient(40% 50% at 85% 100%, rgb(71 85 105 / 0.35), transparent 70%)` }} />
       <div className="relative max-w-2xl mx-auto px-6 text-center">
         <h2 className="font-display text-4xl md:text-5xl font-semibold text-white mb-6 leading-tight text-balance">{titulo}</h2>
         <p className="text-slate-300 mb-10 text-lg">{subtitulo}</p>

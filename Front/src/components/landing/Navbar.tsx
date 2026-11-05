@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Ico } from "./Ico";
 import { dClose, dMenu } from "./iconos";
-import { GOLD, TINTA } from "./constantes";
+import { TINTA } from "./constantes";
+import LogoMarca from "../LogoMarca";
 
 interface Props {
   /** Anclas de la propia página (p. ej. `#precios`). */
@@ -39,9 +40,9 @@ export function Navbar({ secciones, otraLanding, registro, sobreOscuro = false }
       }`}
     >
       <div className="max-w-6xl mx-auto px-6 h-[68px] flex items-center justify-between">
-        <Link to="/" className="text-xl font-bold tracking-tight select-none">
-          <span className={`transition-colors ${claro ? "text-white" : "text-slate-900"}`}>Appoint</span>
-          <span style={{ color: GOLD }}>Va</span>
+        {/* Sobre el hero oscuro va el logo de texto blanco; sobre la barra blanca, el normal. */}
+        <Link to="/" className="flex items-center select-none -ml-1">
+          <LogoMarca variante={claro ? "oscuro" : "normal"} prioridad className="h-12" />
         </Link>
 
         <div className={`hidden md:flex items-center gap-8 text-sm font-medium transition-colors ${claro ? "text-slate-300" : "text-slate-500"}`}>
