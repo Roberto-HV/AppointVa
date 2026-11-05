@@ -39,7 +39,9 @@ interface FilaProps {
 
 /**
  * Mide si la descripción recortada a 3 renglones esconde texto. Se vuelve a medir
- * cuando cambia el ancho (giro del teléfono, rejilla de 2 columnas en 2xl).
+ * cuando cambia el ancho (giro del teléfono, rejilla de 2 columnas en 2xl) y cuando
+ * terminan de cargar las fuentes: el texto puede pasar de 3 a 4 renglones sin que
+ * la caja recortada cambie de tamaño, y el ResizeObserver no se enteraría.
  */
 function useDesborda(ref: RefObject<HTMLElement | null>, texto: string | undefined, expandido: boolean) {
   const [desborda, setDesborda] = useState(false);
@@ -48,12 +50,14 @@ function useDesborda(ref: RefObject<HTMLElement | null>, texto: string | undefin
     // Desplegada no hay recorte que medir: se conserva el último resultado
     // para que «Ver menos» no desaparezca.
     if (!el || expandido) return;
-    const medir = () => setDesborda(el.scrollHeight > el.clientHeight + 1);
+    let vigente = true;
+    const medir = () => { if (vigente) setDesborda(el.scrollHeight > el.clientHeight + 1); };
     medir();
-    if (typeof ResizeObserver === "undefined") return;
+    document.fonts?.ready.then(medir).catch(() => {});
+    if (typeof ResizeObserver === "undefined") return () => { vigente = false; };
     const observador = new ResizeObserver(medir);
     observador.observe(el);
-    return () => observador.disconnect();
+    return () => { vigente = false; observador.disconnect(); };
   }, [ref, texto, expandido]);
   return desborda;
 }
