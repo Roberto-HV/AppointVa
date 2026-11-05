@@ -21,10 +21,10 @@ export const CtaFinal = forwardRef<HTMLElement, CtaFinalProps>(function CtaFinal
 ) {
   return (
     <section ref={ref} style={{ backgroundColor: TINTA }} className="py-28 relative overflow-hidden">
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] blur-3xl opacity-10 pointer-events-none bg-slate-400" />
-      <div className="relative max-w-2xl mx-auto px-6 text-center">
-        <h2 className="text-4xl md:text-5xl font-bold text-white mb-6 leading-tight">{titulo}</h2>
-        <p className="text-slate-400 mb-10 text-lg">{subtitulo}</p>
+      <div aria-hidden="true" className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(60% 70% at 50% 0%, rgb(56 189 248 / 0.16), transparent 70%), radial-gradient(40% 50% at 85% 100%, rgb(99 102 241 / 0.14), transparent 70%)" }} />
+      <div className="relative max-w-2xl mx-auto px-6 text-center">
+        <h2 className="font-display text-4xl md:text-5xl font-semibold text-white mb-6 leading-tight text-balance">{titulo}</h2>
+        <p className="text-slate-300 mb-10 text-lg">{subtitulo}</p>
         <Link
           to={to}
           className="inline-flex items-center gap-2.5 px-8 py-4 rounded-2xl font-bold text-base bg-white text-slate-900 transition-all hover:scale-105 hover:bg-slate-100 active:scale-95 shadow-2xl"

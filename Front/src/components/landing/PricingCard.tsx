@@ -32,10 +32,10 @@ export function PricingCard({
     <div
       ref={fade.ref}
       style={{ ...fade.style, backgroundColor: highlighted ? TINTA : "white", transform: `${fade.style.transform} ${highlighted ? "scale(1.04)" : ""}` }}
-      className={`relative flex flex-col p-7 rounded-2xl border transition-all duration-300 ${highlighted ? "border-transparent shadow-2xl" : "border-slate-200 hover:border-slate-300 hover:shadow-md"}`}
+      className={`relative flex flex-col p-7 rounded-2xl transition-shadow duration-300 ${highlighted ? "shadow-[0_24px_60px_-16px_rgb(15_23_42/0.55)]" : "shadow-[0_1px_2px_rgb(15_23_42/0.06),0_8px_24px_-6px_rgb(15_23_42/0.10)] hover:shadow-[0_2px_4px_rgb(15_23_42/0.06),0_18px_40px_-10px_rgb(15_23_42/0.18)]"}`}
     >
       {highlighted && (
-        <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-[11px] font-semibold text-slate-900 whitespace-nowrap" style={{ backgroundColor: "rgb(var(--neutral-200))" }}>
+        <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-[11px] font-bold text-slate-900 whitespace-nowrap bg-sky-200 shadow-sm">
           Más popular
         </div>
       )}
@@ -66,7 +66,7 @@ export function PricingCard({
       <ul className="flex flex-col gap-3 mb-8 flex-1">
         {features.map(f => (
           <li key={f} className="flex items-start gap-2.5">
-            <span className={`mt-0.5 flex-shrink-0 ${highlighted ? "text-slate-300" : "text-slate-500"}`}><Ico d={dCheck} className="w-3.5 h-3.5" /></span>
+            <span className={`mt-0.5 flex-shrink-0 ${highlighted ? "text-sky-300" : "text-emerald-600"}`}><Ico d={dCheck} className="w-3.5 h-3.5" /></span>
             <span className={`text-sm leading-snug ${highlighted ? "text-slate-300" : "text-slate-600"}`}>{f}</span>
           </li>
         ))}

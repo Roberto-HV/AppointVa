@@ -2,12 +2,15 @@ import { useId, useState } from "react";
 
 import { TINTA } from "./constantes";
 
-/** Pregunta frecuente plegable de las landings (`/` y `/salud`). */
+/**
+ * Pregunta frecuente plegable de las landings (`/` y `/salud`). Cada pregunta es
+ * su propia tarjeta: el contenedor solo las apila con espacio entre ellas.
+ */
 export function FaqItem({ q, a, defaultOpen = false }: { q: string; a: string; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
   const idRespuesta = useId();
   return (
-    <div className="border-b border-slate-100 last:border-0">
+    <div className={`rounded-2xl bg-white px-6 transition-shadow duration-300 ${open ? "shadow-[0_2px_4px_rgb(15_23_42/0.06),0_14px_32px_-10px_rgb(15_23_42/0.16)]" : "shadow-[0_1px_2px_rgb(15_23_42/0.06),0_6px_18px_-8px_rgb(15_23_42/0.10)]"}`}>
       <button
         type="button"
         onClick={() => setOpen(v => !v)}
@@ -23,7 +26,7 @@ export function FaqItem({ q, a, defaultOpen = false }: { q: string; a: string; d
         </span>
       </button>
       {open && (
-        <p id={idRespuesta} className="text-sm text-slate-500 leading-relaxed pb-5 pr-10">{a}</p>
+        <p id={idRespuesta} className="text-sm text-slate-600 leading-relaxed pb-5 pr-10">{a}</p>
       )}
     </div>
   );

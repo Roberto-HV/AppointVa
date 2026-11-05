@@ -225,7 +225,7 @@ export function LandingPageSalud() {
               <h2 className="text-4xl md:text-5xl font-bold text-slate-900 leading-tight">Lo que más nos preguntan</h2>
             </div>
 
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm px-8">
+            <div className="flex flex-col gap-3">
               <FaqItem
                 defaultOpen
                 q="¿Mis pacientes necesitan descargar una app o crear una cuenta?"

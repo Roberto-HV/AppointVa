@@ -10,6 +10,7 @@
 
 import type { CitaDto, NegocioDto } from "../types";
 import { escapeHtml } from "./html";
+import { urlImagenSegura } from "./urlImagenSegura";
 import { formatFechaMx, formatHora } from "./formatters";
 import { getSectorTerms } from "../hooks/useSectorTerms";
 
@@ -175,11 +176,6 @@ export function resumirTicket(cita: CitaDto, sector?: string | null): ResumenTic
 /** El enlace público de reservas del negocio, o null si aún no hay slug. */
 export function urlReservas(slug: string | null | undefined, origen: string): string | null {
   return slug ? `${origen}/b/${slug}` : null;
-}
-
-/** Solo URLs http(s) pueden ir en el `src` del logo. */
-function urlImagenSegura(url: string | null | undefined): string | null {
-  return url && /^https?:\/\//i.test(url) ? url : null;
 }
 
 export interface OpcionesTicket {

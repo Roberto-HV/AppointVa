@@ -1,6 +1,9 @@
 import { Bell, Scissors, Check } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState, useEffect, useRef, type RefObject } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { publicoApi } from "../../api/publico";
+import { urlImagenSegura } from "../../utils/urlImagenSegura";
 import { PRECIOS_PLANES, MONEDA } from "../../lib/precios";
 import { ACTIVACION_FAQ, ACTIVACION_PLAZO, ACTIVACION_PLAZO_HORAS } from "../../lib/activacion";
 import { AVISO_NOTIFICACIONES } from "../../lib/notificaciones";
@@ -12,7 +15,11 @@ import { FeatureCard } from "../../components/landing/FeatureCard";
 import { PricingCard } from "../../components/landing/PricingCard";
 import { Ico } from "../../components/landing/Ico";
 import { dArrow, dBell, dCalendar, dChart, dShield, dStar, dTag, dUsers } from "../../components/landing/iconos";
-import { ACENTO, GOLD, TINTA } from "../../components/landing/constantes";
+import { GOLD, TINTA } from "../../components/landing/constantes";
+
+// Sombra de tarjeta de la landing: desplazada y difusa, sin borde (elevación única).
+const SOMBRA_TARJETA = "shadow-[0_1px_2px_rgb(15_23_42/0.06),0_8px_24px_-6px_rgb(15_23_42/0.10)]";
+const SOMBRA_TARJETA_HOVER = "hover:shadow-[0_2px_4px_rgb(15_23_42/0.06),0_18px_40px_-10px_rgb(15_23_42/0.18)]";
 
 // ─── Phone mockup ─────────────────────────────────────────────────────────────
 function PhoneMockup() {
@@ -20,16 +27,16 @@ function PhoneMockup() {
   const days = [{ d: "Sa", n: 5 }, { d: "Do", n: 6 }, { d: "Lu", n: 7 }, { d: "Ma", n: 8 }];
 
   return (
-    <div className="relative select-none pointer-events-none">
-      <div className="absolute -top-5 -right-4 z-20 bg-white rounded-2xl shadow-2xl shadow-slate-200 px-3.5 py-2.5 flex items-center gap-2.5 min-w-max">
+    <div className="relative select-none pointer-events-none" aria-hidden="true">
+      <div className="absolute -top-5 -right-4 z-20 bg-white rounded-2xl shadow-[0_18px_40px_-12px_rgb(0_0_0/0.5)] px-3.5 py-2.5 flex items-center gap-2.5 min-w-max">
         <div className="w-7 h-7 rounded-full bg-emerald-50 flex items-center justify-center"><Bell size={14} className="text-emerald-700" aria-hidden="true" /></div>
         <div>
           <p className="text-[11px] font-bold text-slate-800 leading-none mb-0.5">Nueva cita confirmada</p>
-          <p className="text-[10px] text-slate-400">Hace 2 minutos</p>
+          <p className="text-[10px] text-slate-500">Hace 2 minutos</p>
         </div>
       </div>
 
-      <div className="relative w-[255px] rounded-[2.8rem] bg-[#0A0A0A] p-[11px] shadow-2xl ring-1 ring-white/5">
+      <div className="relative w-[255px] rounded-[2.8rem] bg-[#0A0A0A] p-[11px] ring-1 ring-white/15 shadow-[0_40px_80px_-24px_rgb(0_0_0/0.7)]">
         <div className="absolute -left-[3px] top-[76px] w-[3px] h-8 rounded-l-full bg-[#1a1a1a]" />
         <div className="absolute -left-[3px] top-[120px] w-[3px] h-6 rounded-l-full bg-[#1a1a1a]" />
         <div className="absolute -right-[3px] top-[100px] w-[3px] h-12 rounded-r-full bg-[#1a1a1a]" />
@@ -53,11 +60,17 @@ function PhoneMockup() {
             </div>
           </div>
 
-          <div className="mx-3 mt-2 mb-1 px-3 py-2.5 bg-white rounded-2xl border border-slate-100 flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl flex items-center justify-center text-[11px] font-bold text-white flex-shrink-0" style={{ background: "linear-gradient(135deg, rgb(var(--neutral-600)), rgb(var(--neutral-800)))" }}>BL</div>
+          <div className="mx-3 mt-2 mb-1 px-3 py-2.5 bg-white rounded-2xl shadow-sm flex items-center gap-2.5">
+            {/* Logo ilustrado del negocio de ejemplo, como lo vería el cliente. */}
+            <div className="relative w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 bg-gradient-to-br from-rose-500 to-rose-700 shadow-[0_2px_6px_-1px_rgb(190_18_60/0.45)]">
+              <Scissors size={15} strokeWidth={2.25} className="text-white -rotate-45" aria-hidden="true" />
+              <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-white ring-2 ring-white flex items-center justify-center">
+                <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
+              </span>
+            </div>
             <div className="min-w-0">
               <p className="text-[11px] font-bold text-slate-900 leading-none mb-0.5">Barbería Luis</p>
-              <p className="text-[9px] text-slate-400 truncate">appointva.com/b/barberia-luis</p>
+              <p className="text-[9px] text-slate-500 truncate">appointva.com/b/barberia-luis</p>
             </div>
           </div>
 
@@ -69,8 +82,8 @@ function PhoneMockup() {
 
           <div className="flex-1 px-4 flex flex-col min-h-0">
             <p className="text-[10px] font-semibold text-slate-500 mb-2">Elige tu horario</p>
-            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl mb-3 self-start" style={{ backgroundColor: "rgb(var(--neutral-100))", border: "1px solid rgb(var(--neutral-200))" }}>
-              <Scissors size={11} aria-hidden="true" style={{ color: TINTA }} />
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl mb-3 self-start bg-rose-50 ring-1 ring-rose-100">
+              <Scissors size={11} aria-hidden="true" className="text-rose-700" />
               <span className="text-[10px] font-bold" style={{ color: TINTA }}>{`Corte · 45 min · $250 ${MONEDA}`}</span>
             </div>
 
@@ -95,13 +108,13 @@ function PhoneMockup() {
               })}
             </div>
 
-            <div className="flex items-center gap-2 px-2 py-2 bg-white rounded-xl border border-slate-100">
-              <div className="w-7 h-7 rounded-full bg-slate-200 flex items-center justify-center text-[9px] font-bold text-slate-500 flex-shrink-0">LG</div>
+            <div className="flex items-center gap-2 px-2 py-2 bg-white rounded-xl shadow-sm">
+              <div className="w-7 h-7 rounded-full bg-indigo-100 flex items-center justify-center text-[9px] font-bold text-indigo-700 flex-shrink-0">LG</div>
               <div>
                 <p className="text-[10px] font-bold text-slate-800 leading-none mb-0.5">Luis García</p>
-                <p className="text-[9px] text-slate-400">Tu barbero favorito</p>
+                <p className="text-[9px] text-slate-500">Tu barbero favorito</p>
               </div>
-              <div className="ml-auto"><span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600"><Check size={10} strokeWidth={3} aria-hidden="true" /></span></div>
+              <span className="ml-auto w-5 h-5 rounded-full flex items-center justify-center bg-emerald-50 text-emerald-600"><Check size={11} strokeWidth={3} aria-hidden="true" /></span>
             </div>
           </div>
 
@@ -115,15 +128,54 @@ function PhoneMockup() {
 }
 
 // ─── Step card ────────────────────────────────────────────────────────────────
+// Va sobre la banda oscura de "Cómo funciona": tarjeta translúcida, texto claro.
 function StepCard({ number, title, desc, delay }: { number: string; title: string; desc: string; delay: number }) {
   const fade = useFadeInUp(delay);
   return (
-    <div ref={fade.ref} style={fade.style} className="text-center">
-      <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-white font-bold text-lg mb-6 mx-auto relative z-10 shadow-lg" style={{ backgroundColor: TINTA, boxShadow: `0 8px 24px -4px rgb(var(--color-ink) / 0.33)` }}>
-        {number}
+    <div ref={fade.ref} style={fade.style} className="relative h-full">
+      <div className="h-full rounded-2xl bg-white/[0.05] ring-1 ring-white/10 px-7 pt-8 pb-9 text-center">
+        <div className="w-14 h-14 rounded-2xl flex items-center justify-center font-bold text-lg mb-6 mx-auto bg-white text-slate-900 shadow-[0_10px_24px_-8px_rgb(0_0_0/0.6)] tabular-nums">
+          {number}
+        </div>
+        <h3 className="text-lg font-bold text-white mb-3">{title}</h3>
+        <p className="text-sm text-slate-300 leading-relaxed max-w-xs mx-auto">{desc}</p>
       </div>
-      <h3 className="text-lg font-bold text-slate-900 mb-3">{title}</h3>
-      <p className="text-sm text-slate-500 leading-relaxed max-w-xs mx-auto">{desc}</p>
+    </div>
+  );
+}
+
+// ─── Logo de un negocio real ──────────────────────────────────────────────────
+// Toma el logo de la página pública del negocio. Las iniciales quedan debajo:
+// se ven mientras carga la consulta o la imagen, si no hay logo o si falla.
+export function LogoNegocio({ slug, initials }: { slug: string; initials: string }) {
+  const { data } = useQuery({
+    queryKey: ["negocio", slug],
+    queryFn: () => publicoApi.obtenerNegocio(slug),
+    staleTime: 30 * 60 * 1000,
+    retry: false,
+  });
+  const [cargada, setCargada] = useState(false);
+  const [fallo, setFallo] = useState(false);
+  const logo = fallo ? null : urlImagenSegura(data?.logoUrl);
+
+  return (
+    <div className="relative w-16 h-16 flex-shrink-0">
+      <div
+        className="absolute inset-0 rounded-2xl flex items-center justify-center text-base font-bold text-white bg-gradient-to-br from-slate-600 to-slate-900"
+        aria-hidden={logo && cargada ? true : undefined}
+      >
+        {initials}
+      </div>
+      {logo && (
+        <img
+          src={logo}
+          alt=""
+          loading="lazy"
+          onLoad={() => setCargada(true)}
+          onError={() => setFallo(true)}
+          className={`absolute inset-0 w-full h-full rounded-2xl object-cover bg-white ring-1 ring-slate-900/10 transition-opacity duration-300 ${cargada ? "opacity-100" : "opacity-0"}`}
+        />
+      )}
     </div>
   );
 }
@@ -140,21 +192,21 @@ function NegocioCard({ nombre, tipo, slug, initials, delay = 0 }: {
       <Link
         to={`/b/${slug}`}
         aria-label={`Abrir la página de reservas de ${nombre}`}
-        className="group flex items-center gap-4 p-5 rounded-2xl border border-slate-200 bg-white hover:border-slate-300 hover:shadow-lg hover:shadow-slate-100/50 transition-all duration-300"
+        className={`group flex items-center gap-4 p-5 rounded-2xl bg-white ${SOMBRA_TARJETA} ${SOMBRA_TARJETA_HOVER} hover:-translate-y-0.5 transition-[box-shadow,transform] duration-300 ease-calma`}
       >
-        <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-sm font-bold text-white flex-shrink-0" style={{ background: "linear-gradient(135deg, rgb(var(--neutral-600)), rgb(var(--neutral-800)))" }}>
-          {initials}
-        </div>
+        <LogoNegocio slug={slug} initials={initials} />
 
         <div className="min-w-0 flex-1">
           <p className="font-bold text-slate-900 leading-tight">{nombre}</p>
-          <p className="text-xs text-slate-400 mt-1 leading-snug">{tipo}</p>
-          <p className="text-xs text-slate-400 mt-1.5 truncate">appointva.com/b/{slug}</p>
+          <p className="text-xs text-slate-600 mt-1 leading-snug">{tipo}</p>
+          <p className="text-xs text-slate-500 mt-1.5 truncate">appointva.com/b/{slug}</p>
         </div>
 
         <span className="shrink-0 inline-flex items-center gap-1.5 text-sm font-bold text-slate-700 group-hover:text-slate-900 transition-colors">
           <span className="hidden sm:inline">Ver su página</span>
-          <Ico d={dArrow} className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-0.5" />
+          <span className="w-9 h-9 rounded-full flex items-center justify-center bg-slate-100 group-hover:bg-slate-900 group-hover:text-white transition-colors duration-300">
+            <Ico d={dArrow} className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-0.5" />
+          </span>
         </span>
       </Link>
     </div>
@@ -227,30 +279,40 @@ export default function LandingPage() {
           ]}
           otraLanding={{ to: "/salud", etiqueta: "¿Tienes un consultorio?" }}
           registro="/registro"
+          sobreOscuro
         />
 
-        {/* ── HERO ──────────────────────────────────────────────────────────── */}
-        <section ref={heroRef} className="relative pt-36 pb-24 md:pt-44 md:pb-32 overflow-hidden">
-          <div className="absolute inset-0 -z-10" style={{ backgroundImage: "radial-gradient(rgb(var(--neutral-700) / 0.12) 1px, transparent 1px)", backgroundSize: "32px 32px" }} />
-          <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-white to-transparent -z-10" />
+        {/* ── HERO (oscuro, con las cifras al pie) ──────────────────────────── */}
+        <section ref={heroRef} className="relative overflow-hidden bg-slate-900 text-white">
+          {/* Luz azul detrás del teléfono y otra tenue arriba a la izquierda. */}
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 pointer-events-none"
+            style={{ background: "radial-gradient(42% 55% at 78% 42%, rgb(56 189 248 / 0.20), transparent 70%), radial-gradient(45% 50% at 8% 0%, rgb(99 102 241 / 0.20), transparent 70%), linear-gradient(180deg, rgb(15 23 42) 0%, rgb(var(--color-ink)) 100%)" }}
+          />
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 pointer-events-none"
+            style={{ backgroundImage: "radial-gradient(rgb(255 255 255 / 0.07) 1px, transparent 1px)", backgroundSize: "32px 32px", maskImage: "linear-gradient(180deg, black 0%, transparent 85%)", WebkitMaskImage: "linear-gradient(180deg, black 0%, transparent 85%)" }}
+          />
 
-          <div className="max-w-6xl mx-auto px-6">
-            <div className="grid md:grid-cols-2 gap-12 lg:gap-20 items-center">
+          <div className="relative max-w-6xl mx-auto px-6 pt-36 pb-20 md:pt-44 md:pb-28">
+            <div className="grid md:grid-cols-2 gap-14 lg:gap-20 items-center">
               <div>
-                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold mb-8" style={{ backgroundColor: "rgb(var(--neutral-100))", color: "rgb(var(--neutral-700))", border: "1px solid rgb(var(--neutral-200))" }}>
-                  <span className="w-1.5 h-1.5 rounded-full bg-slate-500" />
+                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold mb-8 bg-white/[0.07] text-slate-200 ring-1 ring-white/15">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                   Para negocios de servicios · México
                 </div>
 
-                <h1 className="font-display font-semibold leading-[1.04] tracking-[-0.02em] mb-7" style={{ fontSize: "clamp(3rem, 6vw, 4.25rem)" }}>
+                <h1 className="font-display font-semibold leading-[1.04] tracking-[-0.02em] mb-7 text-white" style={{ fontSize: "clamp(3rem, 6vw, 4.5rem)" }}>
                   Tu agenda
                   <br />
                   online.
                   <br />
-                  <span style={{ color: ACENTO }}>Sin llamadas.</span>
+                  <span className="text-sky-300">Sin llamadas.</span>
                 </h1>
 
-                <p className="text-lg text-slate-500 leading-relaxed max-w-[440px] mb-10">
+                <p className="text-lg text-slate-300 leading-relaxed max-w-[460px] mb-10">
                   AppointVa crea una página de reservas propia para tu negocio. Tus clientes agendan
                   cuando quieran — tú recibes notificaciones y gestionas todo desde un panel limpio.
                 </p>
@@ -259,96 +321,99 @@ export default function LandingPage() {
                 <div className="flex flex-wrap gap-3 mb-8">
                   <Link
                     to="/registro"
-                    className="inline-flex items-center justify-center min-w-[180px] px-7 py-3.5 text-sm font-bold text-white rounded-xl border border-transparent transition-all hover:-translate-y-0.5 hover:shadow-lg active:scale-95"
-                    style={{ backgroundColor: TINTA, boxShadow: `0 4px 16px -2px rgb(var(--color-ink) / 0.27)` }}
+                    className="inline-flex items-center justify-center min-w-[180px] px-7 py-3.5 text-sm font-bold rounded-xl bg-white text-slate-900 transition-[transform,box-shadow,background-color] duration-200 ease-calma hover:-translate-y-0.5 hover:bg-slate-100 shadow-[0_10px_30px_-10px_rgb(56_189_248/0.55)] active:scale-95"
                   >
                     Crear mi cuenta
                   </Link>
-                  <a href="#precios" className="inline-flex items-center justify-center min-w-[180px] px-7 py-3.5 text-sm font-semibold text-slate-700 rounded-xl border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-95">
+                  <a href="#precios" className="inline-flex items-center justify-center min-w-[180px] px-7 py-3.5 text-sm font-semibold text-white rounded-xl ring-1 ring-inset ring-white/25 hover:bg-white/10 hover:ring-white/40 transition-colors active:scale-95">
                     Ver precios
                   </a>
                 </div>
 
                 {/* Trust strip — sin calificación: el producto aún no tiene reseñas que la respalden. */}
                 <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-                  <p className="flex items-center gap-1.5 text-xs text-slate-400">
-                    <Ico d={dShield} className="w-3 h-3 text-emerald-400 shrink-0" />
+                  <p className="flex items-center gap-1.5 text-xs text-slate-300">
+                    <Ico d={dShield} className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                     Sin tarjeta · Sin comisiones · Cancela cuando quieras
                   </p>
                 </div>
               </div>
 
-              <div className="flex justify-center md:justify-end">
-                <div className="av-float"><PhoneMockup /></div>
+              <div className="relative flex justify-center md:justify-end">
+                <div aria-hidden="true" className="absolute top-1/2 left-1/2 md:left-auto md:right-0 -translate-y-1/2 -translate-x-1/2 md:translate-x-[10%] w-[340px] h-[460px] rounded-full bg-sky-400/20 blur-3xl pointer-events-none" />
+                <div className="relative av-float"><PhoneMockup /></div>
               </div>
+            </div>
+          </div>
+
+          {/* ── STATS ───────────────────────────────────────────────────────── */}
+          <div className="relative border-t border-white/10 bg-slate-950/30">
+            <div className="max-w-6xl mx-auto px-6 py-10 md:py-12 grid grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-10">
+              {[
+                { val: `< ${ACTIVACION_PLAZO_HORAS} h`, label: "Hábiles para activar tu negocio" },
+                { val: "24/7",    label: "Tu booking disponible para clientes" },
+                { val: "$0",      label: "Comisión por cada cita agendada" },
+                { val: `$${PRECIOS_PLANES.basico.mensual}`, label: `${MONEDA} al mes, todo incluido` },
+              ].map(({ val, label }) => (
+                <div key={label} className="text-center md:text-left md:border-l md:border-white/10 md:pl-6 md:first:border-l-0 md:first:pl-0">
+                  <p className="text-3xl md:text-4xl font-semibold text-white mb-1.5 tabular-nums tracking-tight">{val}</p>
+                  <p className="text-sm text-slate-400 leading-snug">{label}</p>
+                </div>
+              ))}
             </div>
           </div>
         </section>
 
-        {/* ── STATS ─────────────────────────────────────────────────────────── */}
-        <section className="border-t border-slate-100 bg-white">
-          <div className="max-w-6xl mx-auto px-6 py-12 grid grid-cols-2 md:grid-cols-4 gap-8">
-            {[
-              { val: `< ${ACTIVACION_PLAZO_HORAS} h`, label: "Hábiles para activar tu negocio" },
-              { val: "24/7",    label: "Tu booking disponible para clientes" },
-              { val: "$0",      label: "Comisión por cada cita agendada" },
-              { val: `$${PRECIOS_PLANES.basico.mensual}`, label: `${MONEDA} al mes, todo incluido` },
-            ].map(({ val, label }) => (
-              <div key={label} className="text-center md:text-left">
-                <p className="text-3xl font-semibold text-slate-900 mb-1 tabular-nums">{val}</p>
-                <p className="text-sm text-slate-500 leading-snug">{label}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
         {/* ── INDUSTRIAS ────────────────────────────────────────────────────── */}
-        <section className="border-y border-slate-100 bg-slate-50/60 py-5">
+        <section className="bg-white py-6 border-b border-slate-100">
           <div className="max-w-6xl mx-auto px-6">
-            <div className="flex flex-wrap items-center gap-x-6 gap-y-3 justify-center md:justify-between">
-              <div className="flex flex-wrap gap-2 justify-center">
-                {["Barberías", "Salones de belleza", "Clínicas", "Spas", "Talleres de uñas"].map(cat => (
-                  <span key={cat} className="px-3 py-1.5 rounded-full text-xs font-medium bg-white text-slate-600 border border-slate-200">
-                    {cat}
-                  </span>
-                ))}
-              </div>
+            <div className="flex flex-wrap gap-2.5 justify-center">
+              {["Barberías", "Salones de belleza", "Clínicas", "Spas", "Talleres de uñas"].map((cat, i) => (
+                <span key={cat} className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-slate-50 text-slate-700 ring-1 ring-inset ring-slate-200">
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: `var(--categoria-${[1, 6, 3, 8, 7][i]})` }} />
+                  {cat}
+                </span>
+              ))}
             </div>
           </div>
         </section>
 
         {/* ── FEATURES ──────────────────────────────────────────────────────── */}
-        <section id="caracteristicas" className="py-28 scroll-mt-20">
+        <section id="caracteristicas" className="py-24 md:py-28 scroll-mt-20 bg-gradient-to-b from-slate-100 to-slate-50">
           <div className="max-w-6xl mx-auto px-6">
-            <div className="text-center mb-16">
+            <div className="text-center mb-14 md:mb-16">
               <h2 className="font-display text-4xl md:text-5xl font-semibold text-slate-900 mb-5 leading-tight">
                 Tu agenda llena,
                 <br />sin contestar el teléfono.
               </h2>
-              <p className="text-slate-500 max-w-lg mx-auto text-base">Un sistema completo para gestionar tu negocio de servicios, sin complejidad innecesaria.</p>
+              <p className="text-slate-600 max-w-lg mx-auto text-base">Un sistema completo para gestionar tu negocio de servicios, sin complejidad innecesaria.</p>
             </div>
 
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              <FeatureCard delay={0}   icon={<Ico d={dCalendar} />} title="Booking público 24/7" desc="Tu página en /b/tu-negocio, siempre activa. Clientes reservan en cualquier momento sin llamadas ni mensajes." />
-              <FeatureCard delay={80}  icon={<Ico d={dBell} />}     title="Notificaciones automáticas" desc="Confirmaciones y recordatorios por email. Campana en el dashboard con historial de nuevas citas y cancelaciones en tiempo real." />
-              <FeatureCard delay={160} icon={<Ico d={dUsers} />}    title="Equipo con horarios propios" desc="Cada empleado tiene su agenda independiente. Los clientes eligen servicio, profesional y horario." />
-              <FeatureCard delay={0}   icon={<Ico d={dTag} />}      title="Descuentos y códigos" desc="Crea promociones para nuevos clientes o temporadas. Fideliza con un código y sin complejidad extra." />
-              <FeatureCard delay={80}  icon={<Ico d={dStar} />}     title="Reseñas automáticas" desc="Solicita opiniones tras cada cita completada. Construye tu reputación en piloto automático." />
-              <FeatureCard delay={160} icon={<Ico d={dChart} />}    title="Reportes en tiempo real" desc="Citas, ingresos y clientes de este mes. Visualiza el crecimiento y exporta a Excel con un clic." />
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              <FeatureCard delay={0}   tono={1} icon={<Ico d={dCalendar} />} title="Booking público 24/7" desc="Tu página en /b/tu-negocio, siempre activa. Clientes reservan en cualquier momento sin llamadas ni mensajes." />
+              <FeatureCard delay={80}  tono={3} icon={<Ico d={dBell} />}     title="Notificaciones automáticas" desc="Confirmaciones y recordatorios por email. Campana en el dashboard con historial de nuevas citas y cancelaciones en tiempo real." />
+              <FeatureCard delay={160} tono={4} icon={<Ico d={dUsers} />}    title="Equipo con horarios propios" desc="Cada empleado tiene su agenda independiente. Los clientes eligen servicio, profesional y horario." />
+              <FeatureCard delay={0}   tono={6} icon={<Ico d={dTag} />}      title="Descuentos y códigos" desc="Crea promociones para nuevos clientes o temporadas. Fideliza con un código y sin complejidad extra." />
+              <FeatureCard delay={80}  tono={5} icon={<Ico d={dStar} />}     title="Reseñas automáticas" desc="Solicita opiniones tras cada cita completada. Construye tu reputación en piloto automático." />
+              <FeatureCard delay={160} tono={2} icon={<Ico d={dChart} />}    title="Reportes en tiempo real" desc="Citas, ingresos y clientes de este mes. Visualiza el crecimiento y exporta a Excel con un clic." />
             </div>
           </div>
         </section>
 
-        {/* ── HOW IT WORKS ─────────────────────────────────────────────────── */}
-        <section id="como-funciona" className="py-28 scroll-mt-20">
-          <div className="max-w-6xl mx-auto px-6">
-            <div className="text-center mb-20">
-              <h2 className="font-display text-4xl md:text-5xl font-semibold text-slate-900 mb-5">Listo en 3 pasos</h2>
-              <p className="text-slate-500 text-base">Sin técnicos, sin contratos, sin complicaciones.</p>
+        {/* ── HOW IT WORKS (banda oscura) ──────────────────────────────────── */}
+        <section id="como-funciona" className="relative py-24 md:py-28 scroll-mt-20 overflow-hidden" style={{ backgroundColor: TINTA }}>
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 pointer-events-none"
+            style={{ background: "radial-gradient(50% 60% at 50% 0%, rgb(99 102 241 / 0.16), transparent 70%)" }}
+          />
+          <div className="relative max-w-6xl mx-auto px-6">
+            <div className="text-center mb-14 md:mb-16">
+              <h2 className="font-display text-4xl md:text-5xl font-semibold text-white mb-5">Listo en 3 pasos</h2>
+              <p className="text-slate-300 text-base">Sin técnicos, sin contratos, sin complicaciones.</p>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-12 md:gap-8 relative">
-              <div className="hidden md:block absolute top-7 left-[calc(16.67%+3.5rem)] right-[calc(16.67%+3.5rem)] h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
+            <div className="grid md:grid-cols-3 gap-5 relative">
               <StepCard delay={0}   number="01" title="Crea tu cuenta" desc={`Registra tu negocio y agrega servicios, empleados y horarios. Sin tarjeta de crédito; activamos tu negocio ${ACTIVACION_PLAZO}.`} />
               <StepCard delay={120} number="02" title="Comparte tu link" desc="Publica appointva.com/b/tu-negocio en tu Instagram, WhatsApp o Bio. Cuando tu negocio esté activo, tus clientes reservan desde ahí." />
               <StepCard delay={240} number="03" title="Gestiona tu agenda" desc="Recibe notificaciones de cada cita. Dashboard limpio con calendario, historial y reportes en tiempo real." />
@@ -357,16 +422,16 @@ export default function LandingPage() {
         </section>
 
         {/* ── PRICING ───────────────────────────────────────────────────────── */}
-        <section id="precios" className="py-28 bg-slate-50 scroll-mt-20">
+        <section id="precios" className="py-24 md:py-28 bg-slate-100 scroll-mt-20">
           <div className="max-w-6xl mx-auto px-6">
             <div className="text-center mb-10">
               <h2 className="font-display text-4xl md:text-5xl font-semibold text-slate-900 mb-5">Sin sorpresas al final del mes</h2>
-              <p className="text-slate-500 text-base max-w-md mx-auto">Un precio fijo, todo incluido. Sin comisiones por cita, sin módulos extras.</p>
+              <p className="text-slate-600 text-base max-w-md mx-auto">Un precio fijo, todo incluido. Sin comisiones por cita, sin módulos extras.</p>
             </div>
 
             {/* Billing toggle */}
-            <div className="flex items-center justify-center mb-12">
-              <div className="inline-flex items-center gap-1 bg-white border border-slate-200 rounded-2xl p-1.5 shadow-sm">
+            <div className="flex items-center justify-center mb-14">
+              <div className="inline-flex items-center gap-1 bg-white rounded-2xl p-1.5 shadow-[0_1px_2px_rgb(15_23_42/0.06),0_6px_18px_-8px_rgb(15_23_42/0.14)]">
                 <button
                   type="button"
                   aria-pressed={!billedAnnually}
@@ -382,7 +447,7 @@ export default function LandingPage() {
                   className={`flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-bold transition-all duration-200 ${billedAnnually ? "bg-slate-900 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
                 >
                   Anual
-                  <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full transition-colors ${billedAnnually ? "bg-white/15 text-slate-200" : "bg-emerald-100 text-emerald-600"}`}>
+                  <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full transition-colors ${billedAnnually ? "bg-white/15 text-slate-200" : "bg-emerald-100 text-emerald-700"}`}>
                     Hasta −20%
                   </span>
                 </button>
@@ -410,9 +475,9 @@ export default function LandingPage() {
               />
             </div>
 
-            <p className="text-center text-sm text-slate-400 mt-10">
+            <p className="text-center text-sm text-slate-500 mt-10">
               ¿Necesitas algo personalizado?{" "}
-              <a href="mailto:hola@appointva.com" className="font-semibold text-slate-600 hover:text-slate-900 transition-colors underline underline-offset-2">
+              <a href="mailto:hola@appointva.com" className="font-semibold text-slate-700 hover:text-slate-900 transition-colors underline underline-offset-2">
                 hola@appointva.com
               </a>
             </p>
@@ -420,47 +485,55 @@ export default function LandingPage() {
         </section>
 
         {/* ── NEGOCIOS REALES ───────────────────────────────────────────────── */}
-        <section className="py-24 bg-white">
-          <div className="max-w-5xl mx-auto px-6">
-            <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+        <section className="py-24 md:py-28 bg-white">
+          <div className="max-w-6xl mx-auto px-6">
+            <div className="grid lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] gap-10 lg:gap-16 items-center">
               <div className="text-center lg:text-left">
                 <h2 className="font-display text-4xl md:text-5xl font-semibold text-slate-900 mb-5 leading-tight">
                   Negocios que ya reservan con AppointVa
                 </h2>
-                <p className="text-slate-500 text-base max-w-sm mx-auto lg:mx-0">
+                <p className="text-slate-600 text-base max-w-sm mx-auto lg:mx-0">
                   Abre su página y reserva como lo haría tu cliente.
                 </p>
               </div>
 
-              {/* min-w-0: sin esto el ítem de grid toma el ancho de su contenido y se sale del padding. */}
-              <div className="flex flex-col gap-4 min-w-0">
-                <NegocioCard
-                  delay={0}
-                  nombre="Aramis Manzo Salón"
-                  tipo="Salón de belleza"
-                  slug="aramis-manzo-salon"
-                  initials="AM"
+              {/* min-w-0: sin esto el ítem de grid toma el ancho de su contenido y se sale del padding.
+                  El panel azul marino da fondo a las tarjetas, que siguen separadas. */}
+              <div className="relative min-w-0 overflow-hidden rounded-3xl p-3 sm:p-6 shadow-[0_24px_60px_-20px_rgb(15_23_42/0.45)]" style={{ backgroundColor: TINTA }}>
+                <div
+                  aria-hidden="true"
+                  className="absolute inset-0 pointer-events-none"
+                  style={{ background: "radial-gradient(70% 80% at 100% 0%, rgb(56 189 248 / 0.18), transparent 70%), radial-gradient(60% 70% at 0% 100%, rgb(99 102 241 / 0.16), transparent 70%)" }}
                 />
-                <NegocioCard
-                  delay={120}
-                  nombre="Lashes_crisantemo"
-                  tipo="Estudio de pestañas · Zacatepec, Tejupilco"
-                  slug="lashescrisantemo"
-                  initials="LC"
-                />
+                <div className="relative flex flex-col gap-3 sm:gap-4">
+                  <NegocioCard
+                    delay={0}
+                    nombre="Aramis Manzo Salón"
+                    tipo="Salón de belleza"
+                    slug="aramis-manzo-salon"
+                    initials="AM"
+                  />
+                  <NegocioCard
+                    delay={120}
+                    nombre="Lashes_crisantemo"
+                    tipo="Estudio de pestañas · Zacatepec, Tejupilco"
+                    slug="lashescrisantemo"
+                    initials="LC"
+                  />
+                </div>
               </div>
             </div>
           </div>
         </section>
 
         {/* ── FAQ ───────────────────────────────────────────────────────────── */}
-        <section className="py-28 bg-slate-50 scroll-mt-20">
+        <section className="py-24 md:py-28 bg-slate-100 scroll-mt-20">
           <div className="max-w-3xl mx-auto px-6">
-            <div className="text-center mb-16">
+            <div className="text-center mb-14">
               <h2 className="font-display text-4xl md:text-5xl font-semibold text-slate-900 leading-tight">Lo que más nos preguntan</h2>
             </div>
 
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm px-8">
+            <div className="flex flex-col gap-3">
               <FaqItem
                 defaultOpen
                 q="¿Necesito saber programar o tener experiencia técnica?"
@@ -547,7 +620,7 @@ export default function LandingPage() {
               Crear mi cuenta
               <Ico d={dArrow} className="w-4 h-4" />
             </Link>
-            <p className="mt-2 text-center text-[11px] text-slate-400">Sin tarjeta · Cancela cuando quieras</p>
+            <p className="mt-2 text-center text-[11px] text-slate-500">Sin tarjeta · Cancela cuando quieras</p>
           </div>
         )}
       </div>

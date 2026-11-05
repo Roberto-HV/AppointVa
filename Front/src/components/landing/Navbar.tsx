@@ -11,9 +11,15 @@ interface Props {
   otraLanding: { to: string; etiqueta: string };
   /** Destino de "Crear mi cuenta". */
   registro: string;
+  /**
+   * El hero de la página es oscuro: mientras la barra es transparente (arriba del
+   * todo y con el menú cerrado) el texto va en claro. Al hacer scroll vuelve al
+   * fondo blanco de siempre.
+   */
+  sobreOscuro?: boolean;
 }
 
-export function Navbar({ secciones, otraLanding, registro }: Props) {
+export function Navbar({ secciones, otraLanding, registro, sobreOscuro = false }: Props) {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -23,36 +29,39 @@ export function Navbar({ secciones, otraLanding, registro }: Props) {
     return () => window.removeEventListener("scroll", fn);
   }, []);
 
+  const solida = scrolled || open;
+  const claro = sobreOscuro && !solida;
+
   return (
     <nav
       className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${
-        scrolled || open ? "bg-white/95 backdrop-blur-lg shadow-sm" : "bg-transparent"
+        solida ? "bg-white/95 backdrop-blur-lg shadow-sm" : "bg-transparent"
       }`}
     >
       <div className="max-w-6xl mx-auto px-6 h-[68px] flex items-center justify-between">
         <Link to="/" className="text-xl font-bold tracking-tight select-none">
-          <span className="text-slate-900">Appoint</span>
+          <span className={`transition-colors ${claro ? "text-white" : "text-slate-900"}`}>Appoint</span>
           <span style={{ color: GOLD }}>Va</span>
         </Link>
 
-        <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-500">
+        <div className={`hidden md:flex items-center gap-8 text-sm font-medium transition-colors ${claro ? "text-slate-300" : "text-slate-500"}`}>
           {secciones.map((s) => (
-            <a key={s.href} href={s.href} className="hover:text-slate-900 transition-colors">{s.etiqueta}</a>
+            <a key={s.href} href={s.href} className={`transition-colors ${claro ? "hover:text-white" : "hover:text-slate-900"}`}>{s.etiqueta}</a>
           ))}
-          <span className="text-slate-200">·</span>
-          <Link to={otraLanding.to} className="text-sm text-slate-500 hover:text-slate-700 transition-colors">
+          <span className={claro ? "text-white/25" : "text-slate-200"} aria-hidden="true">·</span>
+          <Link to={otraLanding.to} className={`text-sm transition-colors ${claro ? "text-slate-300 hover:text-white" : "text-slate-500 hover:text-slate-700"}`}>
             {otraLanding.etiqueta}
           </Link>
         </div>
 
         <div className="hidden md:flex items-center gap-2">
-          <Link to="/login" className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors rounded-lg">
+          <Link to="/login" className={`px-4 py-2 text-sm font-medium transition-colors rounded-lg ${claro ? "text-slate-200 hover:text-white" : "text-slate-600 hover:text-slate-900"}`}>
             Iniciar sesión
           </Link>
           <Link
             to={registro}
-            className="px-5 py-2 text-sm font-bold text-white rounded-xl transition-colors"
-            style={{ backgroundColor: TINTA }}
+            className="px-5 py-2 text-sm font-bold rounded-xl transition-colors"
+            style={claro ? { backgroundColor: "#FFFFFF", color: TINTA } : { backgroundColor: TINTA, color: "#FFFFFF" }}
           >
             Crear mi cuenta
           </Link>
@@ -60,7 +69,7 @@ export function Navbar({ secciones, otraLanding, registro }: Props) {
 
         <button
           type="button"
-          className="md:hidden p-2 -mr-2 text-slate-600 hover:text-slate-900 transition-colors"
+          className={`md:hidden p-2 -mr-2 transition-colors ${claro ? "text-slate-200 hover:text-white" : "text-slate-600 hover:text-slate-900"}`}
           onClick={() => setOpen(v => !v)}
           aria-label={open ? "Cerrar menú" : "Abrir menú"}
           aria-expanded={open}
