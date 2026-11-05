@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, within } from "@testing-library/react";
 import PasoServicio from "./PasoServicio";
 import type { ServicioPublico } from "../../types";
@@ -216,8 +216,9 @@ describe("PasoServicio — tarjetas separadas", () => {
     expect(lista).toHaveClass("space-y-2");
     expect(lista).not.toHaveClass("divide-y");
     for (const item of items) {
+      // Sin descripción larga no hay «Ver más»: un solo botón, el que elige la tarjeta.
       expect(within(item).getAllByRole("button")).toHaveLength(1);
-      expect(within(item).getByRole("button")).toHaveClass("rounded-2xl");
+      expect(item.firstElementChild).toHaveClass("rounded-2xl");
     }
     expect(document.querySelector(".border-dotted")).toBeNull();
   });
@@ -235,9 +236,11 @@ describe("PasoServicio — tarjetas separadas", () => {
 
   it("muestra la duración y el precio dentro de la tarjeta del servicio", () => {
     render(<PasoServicio servicios={mockServicios} seleccionado={null} onSeleccionar={vi.fn()} />);
-    const tarjeta = screen.getByRole("button", { name: /Corte de cabello/ });
+    const tarjeta = screen.getAllByRole("listitem")[0];
     expect(within(tarjeta).getByText("30 min")).toHaveClass("text-slate-500");
     expect(within(tarjeta).getByText("$150")).toHaveClass("tabular-nums");
+    // El botón de selección anuncia duración y precio como descripción.
+    expect(within(tarjeta).getByRole("button", { name: "Corte de cabello" })).toHaveAccessibleDescription(/30 min.*\$150/);
   });
 
   it("los encabezados de categoría usan Inter (sin cara display), también en salud", () => {
@@ -256,8 +259,77 @@ describe("PasoServicio — tarjetas separadas", () => {
 
   it("la palomita del seleccionado se rellena con el color sólido del negocio", () => {
     render(<PasoServicio servicios={mockServicios} seleccionado={mockServicios[0]} onSeleccionar={vi.fn()} color="#1F6F43" />);
-    const fila = screen.getByRole("button", { name: /Corte de cabello/ });
+    const fila = screen.getAllByRole("listitem")[0];
     const palomita = fila.querySelector("span[aria-hidden='true'].rounded-full") as HTMLElement;
     expect(palomita.style.background).toBe("rgb(31, 111, 67)");
+  });
+});
+
+describe("PasoServicio — descripción larga", () => {
+  const LARGA =
+    "Corte moderno o clásico adaptado a tu tipo de rostro. Incluye diagnóstico capilar, lavado profesional, masaje en el cuero cabelludo, corte personalizado y secado con acabado de styling.";
+  const conDescripcion: ServicioPublico[] = [{ ...mockServicios[0], descripcion: LARGA }, mockServicios[1]];
+
+  // jsdom no maqueta: se simula que el texto recortado a 3 renglones no cabe.
+  // Se definen en HTMLElement.prototype y se borran al terminar: así vuelve a
+  // valer el getter original, que jsdom tiene en Element.prototype.
+  beforeEach(() => {
+    Object.defineProperty(HTMLElement.prototype, "scrollHeight", { configurable: true, get: () => 120 });
+    Object.defineProperty(HTMLElement.prototype, "clientHeight", { configurable: true, get: () => 60 });
+  });
+  afterEach(() => {
+    delete (HTMLElement.prototype as { scrollHeight?: number }).scrollHeight;
+    delete (HTMLElement.prototype as { clientHeight?: number }).clientHeight;
+  });
+
+  it("la descripción completa está en la tarjeta y en la descripción accesible del botón", () => {
+    render(<PasoServicio servicios={conDescripcion} seleccionado={null} onSeleccionar={vi.fn()} />);
+    const texto = screen.getByText(LARGA);
+    // Ya no se corta a 2 renglones: 3 y con «Ver más».
+    expect(texto).toHaveClass("line-clamp-3");
+    expect(texto).not.toHaveClass("line-clamp-2");
+    expect(screen.getByRole("button", { name: "Corte de cabello" })).toHaveAccessibleDescription(new RegExp(`^${LARGA}`));
+  });
+
+  it("«Ver más» despliega el texto completo y «Ver menos» lo recoge, sin elegir el servicio", () => {
+    const onSeleccionar = vi.fn();
+    render(<PasoServicio servicios={conDescripcion} seleccionado={null} onSeleccionar={onSeleccionar} />);
+    const texto = screen.getByText(LARGA);
+
+    const verMas = screen.getByRole("button", { name: "Ver más" });
+    expect(verMas).toHaveAttribute("aria-expanded", "false");
+    expect(verMas).toHaveAttribute("aria-controls", texto.id);
+    fireEvent.click(verMas);
+    expect(texto).not.toHaveClass("line-clamp-3");
+    const verMenos = screen.getByRole("button", { name: "Ver menos" });
+    expect(verMenos).toHaveAttribute("aria-expanded", "true");
+
+    fireEvent.click(verMenos);
+    expect(texto).toHaveClass("line-clamp-3");
+    expect(onSeleccionar).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Corte de cabello" })).toHaveAttribute("aria-pressed", "false");
+
+    // La tarjeta se sigue eligiendo con su propio botón.
+    fireEvent.click(screen.getByRole("button", { name: "Corte de cabello" }));
+    expect(onSeleccionar).toHaveBeenCalledWith(conDescripcion[0]);
+  });
+
+  it("sin descripción no hay «Ver más»", () => {
+    render(<PasoServicio servicios={mockServicios} seleccionado={null} onSeleccionar={vi.fn()} />);
+    expect(screen.queryByRole("button", { name: "Ver más" })).not.toBeInTheDocument();
+  });
+});
+
+describe("PasoServicio — descripción corta", () => {
+  it("si la descripción cabe en 3 renglones no aparece «Ver más»", () => {
+    render(
+      <PasoServicio
+        servicios={[{ ...mockServicios[0], descripcion: "Con lavado y secado." }]}
+        seleccionado={null}
+        onSeleccionar={vi.fn()}
+      />
+    );
+    expect(screen.getByText("Con lavado y secado.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Ver más" })).not.toBeInTheDocument();
   });
 });

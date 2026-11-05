@@ -372,60 +372,34 @@ function GaleriaSection({ imagenes }: { imagenes: ImagenGaleria[] }) {
   );
 }
 
-/** Cuántas fotos caben en el mosaico de escritorio: una grande y dos chicas. */
-const FOTOS_MOSAICO = 3;
-
 /**
- * Galería de escritorio en mosaico, como Fresha o Booksy: una foto grande y dos
- * chicas en ~240px de alto, para que los servicios sigan a la vista sin bajar.
- * Cada foto es un botón que abre el visor en esa imagen; la última avisa cuántas
- * más hay. Con una o dos fotos el mosaico se reparte entre las que haya.
+ * Galería desplegada en escritorio: miniaturas en rejilla de 3 columnas (4 en xl)
+ * en vez del carrusel de una sola foto grande del móvil, que a lo ancho de la
+ * columna quedaba enorme. Cada miniatura abre el visor de la galería en esa imagen.
  */
-function MosaicoGaleria({ imagenes, onOpen }: { imagenes: ImagenGaleria[]; onOpen: (idx: number) => void }) {
+function GaleriaCuadricula({ imagenes, onOpen }: { imagenes: ImagenGaleria[]; onOpen: (idx: number) => void }) {
   const total = imagenes.length;
-  const visibles = imagenes.slice(0, FOTOS_MOSAICO);
-  const restantes = total - visibles.length;
-  const rejilla =
-    visibles.length === 1 ? "grid-cols-1"
-    : visibles.length === 2 ? "grid-cols-[3fr_2fr]"
-    : "grid-cols-[2fr_1fr] grid-rows-2";
-
   return (
-    <section aria-label="Galería de fotos" className={`grid ${rejilla} gap-2 h-[220px] xl:h-[240px] 2xl:h-[260px]`}>
-      {visibles.map((img, i) => {
-        const conResto = restantes > 0 && i === visibles.length - 1;
-        return (
+    <ul aria-label="Galería de fotos" className="grid grid-cols-3 xl:grid-cols-4 gap-3 mt-2">
+      {imagenes.map((img, i) => (
+        <li key={img.id}>
           <button
-            key={i}
             type="button"
             onClick={() => onOpen(i)}
-            aria-label={
-              conResto
-                ? `Ver las ${total} fotos de la galería`
-                : img.descripcion || `Ver imagen ${i + 1} de ${total} en pantalla completa`
-            }
-            className={`group relative overflow-hidden rounded-2xl bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900 ${
-              i === 0 && visibles.length > 2 ? "row-span-2" : ""
-            }`}
+            aria-label={img.descripcion || `Ver imagen ${i + 1} de ${total} en pantalla completa`}
+            className="group block w-full aspect-[4/3] overflow-hidden rounded-2xl bg-slate-100 shadow-sm hover:shadow-md transition-shadow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
           >
             <img
               src={img.url}
               alt=""
+              loading="lazy"
               className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
               draggable={false}
             />
-            {conResto && (
-              <span
-                aria-hidden="true"
-                className="absolute inset-0 flex items-center justify-center bg-black/45 text-lg font-semibold text-white"
-              >
-                {`+${restantes} ${restantes === 1 ? "foto" : "fotos"}`}
-              </span>
-            )}
           </button>
-        );
-      })}
-    </section>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -1390,7 +1364,7 @@ export default function BookingPage() {
 
       {/* Contenido. En escritorio, dos columnas: el paso a la izquierda y el
           resumen fijo a la derecha, con el botón para seguir siempre a la vista.
-          La galería pasa arriba de los servicios (paso 1) como un mosaico bajo:
+          La galería va plegada bajo los servicios (paso 1), como en móvil:
           una tercera columna dejaba los servicios en ~220px. En 2xl el contenedor
           crece a 7xl; más ancho, las tarjetas y los renglones se estiran de más. */}
       <div className="lg:max-w-6xl 2xl:max-w-7xl lg:mx-auto lg:px-8 lg:flex lg:gap-8 xl:gap-10 2xl:gap-12 lg:items-start lg:pt-8 lg:pb-12">
@@ -1442,13 +1416,6 @@ export default function BookingPage() {
         {/* Paso 1 */}
         {paso === 1 && (
           <>
-            {/* Mosaico de fotos — solo escritorio, arriba de los servicios */}
-            {esEscritorio && negocio.galeria?.length > 0 && (
-              <div className="mb-6">
-                <MosaicoGaleria imagenes={negocio.galeria} onOpen={setGaleriaViewerIdx} />
-              </div>
-            )}
-
             <PasoServicio
               servicios={negocio.servicios}
               seleccionado={servicio}
@@ -1457,10 +1424,14 @@ export default function BookingPage() {
               sector={negocio.sector}
             />
 
-            {/* Galería colapsable — solo móvil */}
+            {/* Galería plegable bajo los servicios, igual en móvil y escritorio.
+                Desplegada, el móvil usa el carrusel y el escritorio una rejilla
+                de miniaturas que abre el visor. */}
             {negocio.galeria?.length > 0 && (
-              <div className="lg:hidden mt-4">
+              <div className="mt-4">
                 <button
+                  type="button"
+                  aria-expanded={galeriaVisible}
                   onClick={() => setGaleriaVisible(v => !v)}
                   className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-medium text-slate-500 hover:text-slate-700 transition"
                 >
@@ -1471,7 +1442,9 @@ export default function BookingPage() {
                     style={{ transform: galeriaVisible ? "rotate(90deg)" : "rotate(0deg)" }}
                   />
                 </button>
-                {galeriaVisible && <GaleriaSection imagenes={negocio.galeria} />}
+                {galeriaVisible && (esEscritorio
+                  ? <GaleriaCuadricula imagenes={negocio.galeria} onOpen={setGaleriaViewerIdx} />
+                  : <GaleriaSection imagenes={negocio.galeria} />)}
               </div>
             )}
 

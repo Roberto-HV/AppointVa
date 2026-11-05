@@ -1013,15 +1013,15 @@ describe("BookingPage — resumen de escritorio", () => {
   });
 });
 
-// ── Escritorio: mosaico de fotos sobre los servicios ──────────────────────────
-describe("BookingPage — galería en mosaico", () => {
+// ── Galería plegada bajo los servicios, en escritorio y en móvil ──────────────
+describe("BookingPage — galería plegada", () => {
   const galeria = [1, 2, 3, 4, 5].map((n) => ({ id: `img-${n}`, url: `https://img.test/${n}.jpg`, orden: n }));
 
   afterEach(() => {
     vi.unstubAllGlobals();
   });
 
-  it("en escritorio muestra tres fotos como botones y la última avisa cuántas faltan", async () => {
+  it("en escritorio no hay fotos sobre los servicios: el botón plegable va después", async () => {
     vi.stubGlobal("matchMedia", (consulta: string) => ({
       matches: consulta === "(min-width: 1024px)",
       media: consulta,
@@ -1030,28 +1030,55 @@ describe("BookingPage — galería en mosaico", () => {
     }));
     vi.mocked(publicoApi.obtenerNegocio).mockResolvedValue({ ...mockNegocio, galeria } as NegocioPublico);
     renderConQuery();
+    const pasoServicio = await screen.findByTestId("paso-servicio");
 
-    const mosaico = await screen.findByRole("region", { name: "Galería de fotos" });
-    const fotos = within(mosaico).getAllByRole("button");
-    expect(fotos).toHaveLength(3);
-    expect(fotos[2]).toHaveAccessibleName("Ver las 5 fotos de la galería");
-    expect(within(mosaico).getByText("+2 fotos")).toBeInTheDocument();
-    // El mosaico va antes que los servicios en el orden de lectura y de foco.
-    expect(mosaico.compareDocumentPosition(screen.getByTestId("paso-servicio")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-
-    // Cada foto abre el visor de la galería en esa imagen.
-    fireEvent.click(fotos[1]);
-    expect(await screen.findByRole("dialog", { name: "Galería: imagen 2 de 5" })).toBeInTheDocument();
+    // Plegada de inicio: ninguna foto en pantalla.
+    expect(screen.queryByRole("list", { name: "Galería de fotos" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^Ver imagen/ })).not.toBeInTheDocument();
+    const alternar = screen.getByRole("button", { name: "Ver galería de fotos" });
+    expect(alternar).toHaveAttribute("aria-expanded", "false");
+    // El botón va después de los servicios en el orden de lectura y de foco.
+    expect(pasoServicio.compareDocumentPosition(alternar) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it("en móvil no hay mosaico: sigue el botón plegable de la galería y la barra de abajo", async () => {
+  it("en escritorio, al desplegarla muestra la rejilla de miniaturas y cada una abre el visor", async () => {
+    vi.stubGlobal("matchMedia", (consulta: string) => ({
+      matches: consulta === "(min-width: 1024px)",
+      media: consulta,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }));
     vi.mocked(publicoApi.obtenerNegocio).mockResolvedValue({ ...mockNegocio, galeria } as NegocioPublico);
     renderConQuery();
     await screen.findByTestId("paso-servicio");
 
-    expect(screen.queryByRole("region", { name: "Galería de fotos" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Ver galería de fotos" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Ver galería de fotos" }));
+    const ocultar = screen.getByRole("button", { name: "Ocultar galería" });
+    expect(ocultar).toHaveAttribute("aria-expanded", "true");
+
+    const rejilla = screen.getByRole("list", { name: "Galería de fotos" });
+    const fotos = within(rejilla).getAllByRole("button");
+    expect(fotos).toHaveLength(5);
+    expect(fotos[1]).toHaveAccessibleName("Ver imagen 2 de 5 en pantalla completa");
+    // Sin el carrusel del móvil.
+    expect(screen.queryByRole("button", { name: "Imagen siguiente" })).not.toBeInTheDocument();
+
+    fireEvent.click(fotos[1]);
+    expect(await screen.findByRole("dialog", { name: "Galería: imagen 2 de 5" })).toBeInTheDocument();
+  });
+
+  it("en móvil sigue igual: el botón plegable abre el carrusel, sin rejilla, con la barra de abajo", async () => {
+    vi.mocked(publicoApi.obtenerNegocio).mockResolvedValue({ ...mockNegocio, galeria } as NegocioPublico);
+    renderConQuery();
+    const pasoServicio = await screen.findByTestId("paso-servicio");
+
+    const alternar = screen.getByRole("button", { name: "Ver galería de fotos" });
+    expect(pasoServicio.compareDocumentPosition(alternar) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.queryByRole("complementary")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Continuar" })).toBeDisabled();
+
+    fireEvent.click(alternar);
+    expect(screen.queryByRole("list", { name: "Galería de fotos" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Imagen siguiente" })).toBeInTheDocument();
   });
 });

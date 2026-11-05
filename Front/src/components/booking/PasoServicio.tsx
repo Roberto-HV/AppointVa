@@ -83,8 +83,10 @@ export default function PasoServicio({ servicios, seleccionado, onSeleccionar, c
               )}
               {/* Cada servicio es su propia tarjeta: separadas se leen y se tocan como opciones distintas.
                   Desde 2xl van en dos columnas, cada una a la altura de su vecina (li flex); antes,
-                  a ~330px por tarjeta, la miniatura y el precio dejaban la descripción en dos palabras. */}
-              <ul className="space-y-2 2xl:space-y-0 2xl:grid 2xl:grid-cols-2 2xl:gap-3">
+                  a ~330px por tarjeta, la miniatura y el precio dejaban la descripción en dos palabras.
+                  Con una descripción desplegada («Ver más») el grupo deja la altura pareja: si no,
+                  la vecina se estiraba hasta quedar como una tarjeta vacía. */}
+              <ul className="space-y-2 2xl:space-y-0 2xl:grid 2xl:grid-cols-2 2xl:gap-3 2xl:has-[[aria-expanded=true]]:items-start">
                 {grupo.servicios.map((servicio) => (
                   <li key={servicio.id} className="2xl:flex">
                     <FilaSeleccion
