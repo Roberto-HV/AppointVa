@@ -262,7 +262,7 @@ export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, on
 
   return (
     <div>
-      <h2 tabIndex={-1} className="text-xl font-bold text-slate-900 mb-1 outline-none">Elige fecha y hora</h2>
+      <h2 tabIndex={-1} className="text-xl lg:text-2xl font-bold text-slate-900 mb-1 outline-none">Elige fecha y hora</h2>
       <p className="text-sm text-slate-500 mb-5">Selecciona el día y horario que prefieras</p>
 
       {/* Encabezado de semana */}
@@ -289,8 +289,8 @@ export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, on
         </div>
       </div>
 
-      {/* Tarjetas de días — 7 columnas */}
-      <div className="grid grid-cols-7 gap-1 mb-5">
+      {/* Tarjetas de días — 7 columnas; en escritorio más altas y con más aire */}
+      <div className="grid grid-cols-7 gap-1 lg:gap-2 mb-5">
         {diasSemana.map((dia) => {
           const iso = fechaLocal(dia);
           const pasado = dia < fechaMinima;
@@ -316,7 +316,7 @@ export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, on
               aria-current={esHoy ? "date" : undefined}
               data-fecha={iso}
               data-disponibilidad={disponibilidad}
-              className={`flex flex-col items-center py-2.5 rounded-2xl transition-all duration-150
+              className={`flex flex-col items-center py-2.5 lg:py-3.5 rounded-2xl transition-all duration-150
                 ${pasado
                   ? "opacity-30 cursor-not-allowed bg-white border border-slate-100"
                   : esHoy && !seleccionada
@@ -338,7 +338,7 @@ export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, on
                 ${seleccionada ? "text-white/90" : "text-slate-500"}`}>
                 {DIAS_CORTOS[dia.getDay()]}
               </span>
-              <span className={`text-sm font-bold leading-none
+              <span className={`text-sm lg:text-lg font-bold leading-none
                 ${seleccionada ? "text-white" : esHoy ? "text-slate-700" : "text-slate-800"}`}>
                 {dia.getDate()}
               </span>
@@ -460,7 +460,8 @@ export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, on
                     <Icon size={12} className="text-slate-400" />
                     <p className="text-sm font-medium text-slate-500">{label}</p>
                   </div>
-                  <div className="grid grid-cols-4 gap-1.5">
+                  {/* Cuatro por fila en móvil; en escritorio caben más sin que cada píldora se estire. */}
+                  <div className="grid grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-1.5 lg:gap-2">
                     {slotsFranja.map((slot) => {
                       const activo = seleccionado?.inicio === slot.inicio;
                       return (
@@ -469,7 +470,7 @@ export default function PasoFechaHora({ servicioId, empleadoId, seleccionado, on
                           type="button"
                           onClick={() => onSeleccionar(slot)}
                           aria-pressed={activo}
-                          className={`min-h-[44px] px-1 rounded-xl text-xs font-semibold border-2 transition-all flex items-center justify-center ${
+                          className={`min-h-[44px] lg:min-h-[48px] px-1 rounded-xl text-xs lg:text-sm font-semibold border-2 transition-all flex items-center justify-center ${
                             activo ? "text-white" : "border-slate-100 bg-white text-slate-600 hover:border-slate-300"
                           }`}
                           style={activo

@@ -58,7 +58,7 @@ export default function PasoEmpleado({ empleados, servicioId, seleccionado, onSe
 
   return (
     <div>
-      <h2 tabIndex={-1} className="text-xl font-bold text-slate-900 mb-1 outline-none">¿Con quién?</h2>
+      <h2 tabIndex={-1} className="text-xl lg:text-2xl font-bold text-slate-900 mb-1 outline-none">¿Con quién?</h2>
       <p className="text-sm text-slate-500 mb-5">{`Elige un ${terms.empleado.toLowerCase()} o deja que asignemos el más disponible`}</p>
 
       {disponibles.length === 0 ? (
@@ -66,7 +66,8 @@ export default function PasoEmpleado({ empleados, servicioId, seleccionado, onSe
           {`No hay ${terms.empleados.toLowerCase()} asignados a este ${terms.servicio.toLowerCase()}.`}
         </p>
       ) : (
-        <div className="space-y-2">
+        // Desde 2xl, dos columnas de tarjetas sueltas, como los servicios.
+        <div className="space-y-2 2xl:space-y-0 2xl:grid 2xl:grid-cols-2 2xl:gap-3">
           <FilaSeleccion
             activo={seleccionado?.id === SIN_PREFERENCIA_ID}
             onSeleccionar={() => onSeleccionar(SIN_PREFERENCIA)}

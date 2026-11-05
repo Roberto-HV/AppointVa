@@ -53,7 +53,7 @@ export default function FilaSeleccion({
       type="button"
       onClick={onSeleccionar}
       aria-pressed={activo}
-      className="w-full text-left flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-white transition-[background,box-shadow] duration-200
+      className="w-full text-left flex items-center gap-3 lg:gap-4 px-4 py-3.5 lg:px-5 lg:py-4 rounded-2xl bg-white transition-[background,box-shadow] duration-200
         hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-slate-900"
       style={{
         background: activo ? tinte : undefined,
@@ -65,9 +65,10 @@ export default function FilaSeleccion({
       {inicio}
 
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-slate-900">{titulo}</p>
+        {/* En escritorio el texto sube un punto: a 14px/12px se veía diminuto en pantallas grandes. */}
+        <p className="text-sm lg:text-base font-semibold text-slate-900">{titulo}</p>
         {/* Clamp fijo: si creciera al seleccionar empujaría todo lo de abajo justo al tocar. */}
-        {descripcion && <p className="mt-0.5 text-xs text-slate-500 line-clamp-2">{descripcion}</p>}
+        {descripcion && <p className="mt-0.5 text-xs lg:text-sm text-slate-500 line-clamp-2">{descripcion}</p>}
         {meta && <div className="mt-1.5">{meta}</div>}
       </div>
 

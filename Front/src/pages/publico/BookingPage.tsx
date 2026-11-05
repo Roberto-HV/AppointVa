@@ -17,6 +17,7 @@ import PasoEmpleado, { SIN_PREFERENCIA_ID } from "../../components/booking/PasoE
 import PasoFechaHora from "../../components/booking/PasoFechaHora";
 import PasoDatosCliente, { type DatosClienteForm } from "../../components/booking/PasoDatosCliente";
 import ResumenReserva from "../../components/booking/ResumenReserva";
+import TarjetaNegocio from "../../components/booking/TarjetaNegocio";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
 import { Star, X, Tag, AlertCircle, ChevronLeft, ChevronRight, MapPin } from "lucide-react";
 import PublicFooter from "../../components/PublicFooter";
@@ -371,85 +372,60 @@ function GaleriaSection({ imagenes }: { imagenes: ImagenGaleria[] }) {
   );
 }
 
-function GaleriaDesktop({ imagenes, onOpen }: { imagenes: ImagenGaleria[]; onOpen: (idx: number) => void }) {
-  const [idx, setIdx] = useState(0);
-  const thumbsRef = useRef<HTMLDivElement>(null);
+/** Cuántas fotos caben en el mosaico de escritorio: una grande y dos chicas. */
+const FOTOS_MOSAICO = 3;
+
+/**
+ * Galería de escritorio en mosaico, como Fresha o Booksy: una foto grande y dos
+ * chicas en ~240px de alto, para que los servicios sigan a la vista sin bajar.
+ * Cada foto es un botón que abre el visor en esa imagen; la última avisa cuántas
+ * más hay. Con una o dos fotos el mosaico se reparte entre las que haya.
+ */
+function MosaicoGaleria({ imagenes, onOpen }: { imagenes: ImagenGaleria[]; onOpen: (idx: number) => void }) {
   const total = imagenes.length;
-
-  const goPrev = () => setIdx(i => (i - 1 + total) % total);
-  const goNext = () => setIdx(i => (i + 1) % total);
-
-  useEffect(() => {
-    const el = thumbsRef.current?.children[idx] as HTMLElement | undefined;
-    el?.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" });
-  }, [idx]);
+  const visibles = imagenes.slice(0, FOTOS_MOSAICO);
+  const restantes = total - visibles.length;
+  const rejilla =
+    visibles.length === 1 ? "grid-cols-1"
+    : visibles.length === 2 ? "grid-cols-[3fr_2fr]"
+    : "grid-cols-[2fr_1fr] grid-rows-2";
 
   return (
-    <div className="space-y-2">
-      <div className="relative">
-        <div className="rounded-2xl overflow-hidden shadow-sm">
+    <section aria-label="Galería de fotos" className={`grid ${rejilla} gap-2 h-[220px] xl:h-[240px] 2xl:h-[260px]`}>
+      {visibles.map((img, i) => {
+        const conResto = restantes > 0 && i === visibles.length - 1;
+        return (
           <button
-            onClick={() => onOpen(idx)}
-            aria-label={`Ver imagen ${idx + 1} en pantalla completa`}
-            className="block w-full focus:outline-none"
+            key={i}
+            type="button"
+            onClick={() => onOpen(i)}
+            aria-label={
+              conResto
+                ? `Ver las ${total} fotos de la galería`
+                : img.descripcion || `Ver imagen ${i + 1} de ${total} en pantalla completa`
+            }
+            className={`group relative overflow-hidden rounded-2xl bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900 ${
+              i === 0 && visibles.length > 2 ? "row-span-2" : ""
+            }`}
           >
             <img
-              src={imagenes[idx].url}
-              alt={imagenes[idx].descripcion ?? ""}
-              className="w-full h-[300px] xl:h-[360px] object-cover"
+              src={img.url}
+              alt=""
+              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
               draggable={false}
             />
+            {conResto && (
+              <span
+                aria-hidden="true"
+                className="absolute inset-0 flex items-center justify-center bg-black/45 text-lg font-semibold text-white"
+              >
+                {`+${restantes} ${restantes === 1 ? "foto" : "fotos"}`}
+              </span>
+            )}
           </button>
-        </div>
-        {total > 1 && (
-          <>
-            <button
-              aria-label="Imagen anterior"
-              onPointerDown={e => e.stopPropagation()}
-              onClick={goPrev}
-              style={{ touchAction: "manipulation" }}
-              className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-11 h-11 rounded-full bg-white/90 shadow-md flex items-center justify-center text-gray-600 hover:bg-white transition select-none"
-            >
-              <ChevronLeft size={18} />
-            </button>
-            <button
-              aria-label="Imagen siguiente"
-              onPointerDown={e => e.stopPropagation()}
-              onClick={goNext}
-              style={{ touchAction: "manipulation" }}
-              className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-11 h-11 rounded-full bg-white/90 shadow-md flex items-center justify-center text-gray-600 hover:bg-white transition select-none"
-            >
-              <ChevronRight size={18} />
-            </button>
-            <div className="absolute bottom-2 right-2 bg-black/50 text-white text-xs tabular-nums px-2 py-0.5 rounded-full select-none pointer-events-none">
-              {idx + 1} de {total}
-            </div>
-          </>
-        )}
-      </div>
-      {total > 1 && (
-        <div
-          ref={thumbsRef}
-          className="flex gap-1.5 overflow-x-auto"
-          style={{ scrollbarWidth: "none" }}
-        >
-          {imagenes.map((img, i) => (
-            <button
-              key={i}
-              onClick={() => setIdx(i)}
-              aria-label={`Mostrar imagen ${i + 1}`}
-              aria-current={i === idx ? "true" : undefined}
-              className={`shrink-0 rounded-lg overflow-hidden transition-opacity ${
-                i === idx ? "ring-2 ring-slate-700 opacity-100" : "opacity-50 hover:opacity-80"
-              }`}
-              style={{ width: 90, height: 68 }}
-            >
-              <img src={img.url} alt="" className="w-full h-full object-cover" draggable={false} />
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
+        );
+      })}
+    </section>
   );
 }
 
@@ -519,7 +495,8 @@ function ResenasSection({ resenas, promedio, total }: { resenas: ResenaPublica[]
         <span className="text-sm font-semibold text-gray-700">{promedio.toFixed(1)}</span>
         <span className="text-xs text-gray-400">({total} reseñas)</span>
       </div>
-      <div className="space-y-3">
+      {/* En pantallas anchas, dos columnas: una sola dejaba renglones de 700px. */}
+      <div className="space-y-3 xl:space-y-0 xl:grid xl:grid-cols-2 xl:gap-3 xl:items-start">
         {resenas.slice(0, 5).map((r, i) => (
           <div key={i} className="bg-white rounded-xl border border-gray-100 p-4">
             <div className="flex items-center justify-between mb-1">
@@ -1283,10 +1260,11 @@ export default function BookingPage() {
 
   return (
     <div data-sector={negocio.sector === "salud" ? "salud" : undefined} className="min-h-screen bg-slate-50">
-      {/* Header oscuro del negocio */}
+      {/* Header oscuro del negocio. En escritorio es más bajo: el mosaico de fotos
+          ya da la imagen del negocio y los servicios deben verse sin bajar. */}
       <div
         data-testid="portada-negocio"
-        className={`relative overflow-hidden min-h-[180px] sm:min-h-[260px] lg:min-h-[300px] xl:min-h-[340px] flex flex-col justify-end ${mostrarFoto ? "bg-ink" : ""}`}
+        className={`relative overflow-hidden min-h-[180px] sm:min-h-[260px] lg:min-h-[220px] xl:min-h-[240px] 2xl:min-h-[260px] flex flex-col justify-end ${mostrarFoto ? "bg-ink" : ""}`}
         style={mostrarFoto ? undefined : fondoDePortada}
       >
         {/* Portada visible, a opacidad completa: el contraste lo sostiene el velo de abajo */}
@@ -1324,7 +1302,7 @@ export default function BookingPage() {
         >
           {/* Fila: logo + nombre alineados arriba. En escritorio va en el mismo
               contenedor centrado que la reserva; el velo sigue a todo lo ancho. */}
-          <div className="flex items-start gap-3.5 sm:gap-5 lg:max-w-6xl lg:mx-auto lg:px-8">
+          <div className="flex items-start gap-3.5 sm:gap-5 lg:max-w-6xl 2xl:max-w-7xl lg:mx-auto lg:px-8">
             {/* Logo */}
             <div className="shrink-0">
               {negocio.logoUrl ? (
@@ -1368,7 +1346,7 @@ export default function BookingPage() {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h1
-                  className={`${tinta.titulo.className} font-bold text-xl sm:text-3xl leading-tight`}
+                  className={`${tinta.titulo.className} font-bold text-xl sm:text-3xl 2xl:text-4xl leading-tight`}
                   style={tinta.titulo.style}
                 >
                   {negocio.nombre}
@@ -1412,9 +1390,10 @@ export default function BookingPage() {
 
       {/* Contenido. En escritorio, dos columnas: el paso a la izquierda y el
           resumen fijo a la derecha, con el botón para seguir siempre a la vista.
-          La galería pasa arriba de los servicios (paso 1), como portada del negocio:
-          una tercera columna dejaba los servicios en ~220px. */}
-      <div className="lg:max-w-6xl lg:mx-auto lg:px-8 lg:flex lg:gap-8 xl:gap-10 lg:items-start lg:pt-8 lg:pb-12">
+          La galería pasa arriba de los servicios (paso 1) como un mosaico bajo:
+          una tercera columna dejaba los servicios en ~220px. En 2xl el contenedor
+          crece a 7xl; más ancho, las tarjetas y los renglones se estiran de más. */}
+      <div className="lg:max-w-6xl 2xl:max-w-7xl lg:mx-auto lg:px-8 lg:flex lg:gap-8 xl:gap-10 2xl:gap-12 lg:items-start lg:pt-8 lg:pb-12">
 
         {/* Columna del flujo de reserva */}
         {/* pb-32: deja aire bajo el contenido para que la barra fija no tape el final */}
@@ -1463,10 +1442,10 @@ export default function BookingPage() {
         {/* Paso 1 */}
         {paso === 1 && (
           <>
-            {/* Galería — solo escritorio, arriba de los servicios */}
-            {negocio.galeria?.length > 0 && (
-              <div className="hidden lg:block mb-8">
-                <GaleriaDesktop imagenes={negocio.galeria} onOpen={setGaleriaViewerIdx} />
+            {/* Mosaico de fotos — solo escritorio, arriba de los servicios */}
+            {esEscritorio && negocio.galeria?.length > 0 && (
+              <div className="mb-6">
+                <MosaicoGaleria imagenes={negocio.galeria} onOpen={setGaleriaViewerIdx} />
               </div>
             )}
 
@@ -1583,10 +1562,11 @@ export default function BookingPage() {
         )}
 
         {/* Paso 3 — Intake (sub-paso entre hora y datos) */}
+        {/* En escritorio los formularios no pasan de 576px: más anchos, los campos se estiran sin necesidad. */}
         {paso === 3 && mostrarIntake && camposIntake.length > 0 && (
-          <>
+          <div className="lg:max-w-xl">
             <div className="mb-5">
-              <h2 tabIndex={-1} className="text-xl font-bold text-slate-900 outline-none">Unas preguntas rápidas</h2>
+              <h2 tabIndex={-1} className="text-xl lg:text-2xl font-bold text-slate-900 outline-none">Unas preguntas rápidas</h2>
               <p className="text-sm text-slate-500 mt-1">
                 {`Nos ayudan a preparar tu ${textos.cita}.`}
               </p>
@@ -1607,12 +1587,12 @@ export default function BookingPage() {
             {intentoContinuar && faltanCamposIntake && (
               <p className="text-xs text-red-500 text-center mt-4">Completa los campos obligatorios para continuar</p>
             )}
-          </>
+          </div>
         )}
 
         {/* Paso 4 — formulario */}
         {paso === 4 && servicio && empleado && slot && (
-          <>
+          <div className="lg:max-w-xl">
             {/* Confirmación pendiente */}
             {negocio && !negocio.autoConfirmar && (
               <p className="mb-4 text-xs text-slate-600 flex items-center gap-1.5">
@@ -1641,7 +1621,7 @@ export default function BookingPage() {
               descuento={descuentoAplicado}
               bloqueDescuento={bloqueDescuento}
             />
-          </>
+          </div>
         )}
 
         </motion.div>
@@ -1654,22 +1634,28 @@ export default function BookingPage() {
           <PublicFooter />
         </div>
 
+        {/* Antes de elegir servicio la columna es la ficha del negocio (horario,
+            dirección, contacto); con un servicio elegido pasa a ser el resumen. */}
         {esEscritorio && (
-          <div className="w-[340px] xl:w-[380px] shrink-0 sticky top-6">
-            <ResumenReserva
-              negocioNombre={negocio.nombre}
-              servicio={servicio}
-              profesional={nombreProfesional ? { etiqueta: terms.empleado, nombre: nombreProfesional } : null}
-              fechaHora={slot ? `${formatFechaCorta(slot.inicio)} · ${slot.horaTexto}` : null}
-              total={
-                servicio
-                  ? descuentoAplicado
-                    ? precioConDescuento(servicio.precio, descuentoAplicado)
-                    : servicio.precio
-                  : null
-              }
-              acciones={accionesResumen}
-            />
+          <div className="w-[340px] xl:w-[380px] 2xl:w-[400px] shrink-0 sticky top-6">
+            {paso === 1 && !servicio ? (
+              <TarjetaNegocio negocio={negocio} acciones={accionesResumen} />
+            ) : (
+              <ResumenReserva
+                negocioNombre={negocio.nombre}
+                servicio={servicio}
+                profesional={nombreProfesional ? { etiqueta: terms.empleado, nombre: nombreProfesional } : null}
+                fechaHora={slot ? `${formatFechaCorta(slot.inicio)} · ${slot.horaTexto}` : null}
+                total={
+                  servicio
+                    ? descuentoAplicado
+                      ? precioConDescuento(servicio.precio, descuentoAplicado)
+                      : servicio.precio
+                    : null
+                }
+                acciones={accionesResumen}
+              />
+            )}
           </div>
         )}
       </div>

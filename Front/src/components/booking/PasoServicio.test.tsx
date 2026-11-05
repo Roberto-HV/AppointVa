@@ -222,6 +222,17 @@ describe("PasoServicio — tarjetas separadas", () => {
     expect(document.querySelector(".border-dotted")).toBeNull();
   });
 
+  it("solo desde 2xl pasa a dos columnas, y cada servicio sigue siendo su propia tarjeta", () => {
+    render(<PasoServicio servicios={mockServicios} seleccionado={null} onSeleccionar={vi.fn()} />);
+    const lista = screen.getByRole("list");
+    // Móvil, tablet y escritorio normal: la pila de siempre. La rejilla va solo con prefijo 2xl.
+    expect(lista).toHaveClass("space-y-2", "2xl:grid", "2xl:grid-cols-2", "2xl:space-y-0");
+    expect(lista).not.toHaveClass("grid");
+    for (const item of screen.getAllByRole("listitem")) {
+      expect(item.className.split(" ").every((c) => c.startsWith("2xl:"))).toBe(true);
+    }
+  });
+
   it("muestra la duración y el precio dentro de la tarjeta del servicio", () => {
     render(<PasoServicio servicios={mockServicios} seleccionado={null} onSeleccionar={vi.fn()} />);
     const tarjeta = screen.getByRole("button", { name: /Corte de cabello/ });

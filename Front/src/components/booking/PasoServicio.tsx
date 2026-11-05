@@ -71,7 +71,7 @@ export default function PasoServicio({ servicios, seleccionado, onSeleccionar, c
 
   return (
     <div>
-      <h2 tabIndex={-1} className="text-xl font-bold text-slate-900 mb-5 outline-none">{sector === "salud" ? "¿Qué tipo de consulta necesitas?" : "¿Qué te hacemos hoy?"}</h2>
+      <h2 tabIndex={-1} className="text-xl lg:text-2xl font-bold text-slate-900 mb-5 outline-none">{sector === "salud" ? "¿Qué tipo de consulta necesitas?" : "¿Qué te hacemos hoy?"}</h2>
 
       <div className="space-y-5">
         {grupos.map((grupo, i) => {
@@ -81,10 +81,12 @@ export default function PasoServicio({ servicios, seleccionado, onSeleccionar, c
               {grupo.titulo && (
                 <h3 id={idTitulo} className={`mb-2.5 ${claseEncabezado}`}>{grupo.titulo}</h3>
               )}
-              {/* Cada servicio es su propia tarjeta: separadas se leen y se tocan como opciones distintas. */}
-              <ul className="space-y-2">
+              {/* Cada servicio es su propia tarjeta: separadas se leen y se tocan como opciones distintas.
+                  Desde 2xl van en dos columnas, cada una a la altura de su vecina (li flex); antes,
+                  a ~330px por tarjeta, la miniatura y el precio dejaban la descripción en dos palabras. */}
+              <ul className="space-y-2 2xl:space-y-0 2xl:grid 2xl:grid-cols-2 2xl:gap-3">
                 {grupo.servicios.map((servicio) => (
-                  <li key={servicio.id}>
+                  <li key={servicio.id} className="2xl:flex">
                     <FilaSeleccion
                       activo={seleccionado?.id === servicio.id}
                       onSeleccionar={() => onSeleccionar(servicio)}

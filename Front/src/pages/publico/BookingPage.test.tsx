@@ -952,14 +952,20 @@ describe("BookingPage — resumen de escritorio", () => {
     renderConQuery();
     await screen.findByTestId("paso-servicio");
 
-    expect(within(resumen()).getByText("Salón Test")).toBeInTheDocument();
-    expect(within(resumen()).getByText("Elige un servicio para continuar.")).toBeInTheDocument();
+    // Sin servicio elegido la columna es la ficha del negocio, con el botón ya en su sitio.
+    const ficha = screen.getByRole("complementary", { name: "Información del negocio" });
+    expect(within(ficha).getByText("Salón Test")).toBeInTheDocument();
+    expect(within(ficha).getByText("Elige un servicio para continuar.")).toBeInTheDocument();
+    expect(screen.queryByRole("complementary", { name: "Resumen de tu reserva" })).not.toBeInTheDocument();
     // Un solo «Continuar» en pantalla: el de la barra móvil no se monta a la vez.
     const continuar = screen.getByRole("button", { name: "Continuar" });
-    expect(resumen()).toContainElement(continuar);
+    expect(ficha).toContainElement(continuar);
     expect(continuar).toBeDisabled();
 
     fireEvent.click(screen.getByRole("button", { name: "Corte de cabello" }));
+    // Al elegir, la ficha cede el sitio al resumen de la reserva.
+    expect(screen.queryByRole("complementary", { name: "Información del negocio" })).not.toBeInTheDocument();
+    expect(within(resumen()).getByText("Salón Test")).toBeInTheDocument();
     expect(within(resumen()).getByText("Corte de cabello")).toBeInTheDocument();
     expect(within(resumen()).getByText("30 min")).toBeInTheDocument();
     expect(within(resumen()).getByText("Total")).toBeInTheDocument();
@@ -985,5 +991,67 @@ describe("BookingPage — resumen de escritorio", () => {
     vi.mocked(publicoApi.crearCita).mockResolvedValueOnce({ codigoConfirmacion: "ABC123" } as never);
     fireEvent.click(confirmar);
     await waitFor(() => expect(publicoApi.crearCita).toHaveBeenCalledTimes(1));
+  });
+
+  it("la ficha del negocio muestra el horario, la dirección y el contacto que trae la página", async () => {
+    comoEscritorio();
+    vi.mocked(publicoApi.obtenerNegocio).mockResolvedValue({
+      ...mockNegocio,
+      totalResenas: 8,
+      promedioResenas: 4.5,
+      direccion: "Av. Juárez 10",
+      telefono: "5512345678",
+      horario: [0, 1, 2, 3, 4, 5, 6].map((d) => ({ diaSemana: d, horaInicio: "00:00", horaFin: "23:59" })),
+    });
+    renderConQuery();
+    const ficha = await screen.findByRole("complementary", { name: "Información del negocio" });
+    expect(ficha).toHaveTextContent("(8 reseñas)");
+    expect(ficha).toHaveTextContent("Av. Juárez 10");
+    expect(within(ficha).getByRole("link", { name: /Ver en el mapa/ })).toBeInTheDocument();
+    expect(within(ficha).getByRole("link", { name: /Llamar al/ })).toHaveAttribute("href", "tel:5512345678");
+    expect(within(ficha).getByText("Horario de la semana")).toBeInTheDocument();
+  });
+});
+
+// ── Escritorio: mosaico de fotos sobre los servicios ──────────────────────────
+describe("BookingPage — galería en mosaico", () => {
+  const galeria = [1, 2, 3, 4, 5].map((n) => ({ id: `img-${n}`, url: `https://img.test/${n}.jpg`, orden: n }));
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("en escritorio muestra tres fotos como botones y la última avisa cuántas faltan", async () => {
+    vi.stubGlobal("matchMedia", (consulta: string) => ({
+      matches: consulta === "(min-width: 1024px)",
+      media: consulta,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }));
+    vi.mocked(publicoApi.obtenerNegocio).mockResolvedValue({ ...mockNegocio, galeria } as NegocioPublico);
+    renderConQuery();
+
+    const mosaico = await screen.findByRole("region", { name: "Galería de fotos" });
+    const fotos = within(mosaico).getAllByRole("button");
+    expect(fotos).toHaveLength(3);
+    expect(fotos[2]).toHaveAccessibleName("Ver las 5 fotos de la galería");
+    expect(within(mosaico).getByText("+2 fotos")).toBeInTheDocument();
+    // El mosaico va antes que los servicios en el orden de lectura y de foco.
+    expect(mosaico.compareDocumentPosition(screen.getByTestId("paso-servicio")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    // Cada foto abre el visor de la galería en esa imagen.
+    fireEvent.click(fotos[1]);
+    expect(await screen.findByRole("dialog", { name: "Galería: imagen 2 de 5" })).toBeInTheDocument();
+  });
+
+  it("en móvil no hay mosaico: sigue el botón plegable de la galería y la barra de abajo", async () => {
+    vi.mocked(publicoApi.obtenerNegocio).mockResolvedValue({ ...mockNegocio, galeria } as NegocioPublico);
+    renderConQuery();
+    await screen.findByTestId("paso-servicio");
+
+    expect(screen.queryByRole("region", { name: "Galería de fotos" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Ver galería de fotos" })).toBeInTheDocument();
+    expect(screen.queryByRole("complementary")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Continuar" })).toBeDisabled();
   });
 });

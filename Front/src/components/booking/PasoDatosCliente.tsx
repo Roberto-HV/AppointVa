@@ -194,7 +194,7 @@ export default function PasoDatosCliente({ servicio, empleado, slot, formId, slu
 
   return (
     <div>
-      <h2 tabIndex={-1} className="text-xl font-bold text-slate-900 mb-5 outline-none">Tus datos</h2>
+      <h2 tabIndex={-1} className="text-xl lg:text-2xl font-bold text-slate-900 mb-5 outline-none">Tus datos</h2>
 
       {/* handleSubmit pasa el evento como 2º argumento; se descarta para no filtrarlo al padre. */}
       <form id={formId} onSubmit={enviar} className="space-y-4">
@@ -391,8 +391,8 @@ export default function PasoDatosCliente({ servicio, empleado, slot, formId, slu
 
         {bloqueDescuento}
 
-        {/* Resumen visual de la cita */}
-        <div className="bg-ink text-white rounded-2xl p-4">
+        {/* Resumen visual de la cita. En escritorio lo muestra el resumen fijo de la derecha. */}
+        <div className="bg-ink text-white rounded-2xl p-4 lg:hidden">
           <p className="text-sm font-semibold text-white/80 mb-3">Resumen de tu cita</p>
           <div className="space-y-2.5">
             <div className="flex items-start gap-3">

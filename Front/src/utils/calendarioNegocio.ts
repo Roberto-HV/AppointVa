@@ -42,6 +42,43 @@ export function ahoraEnZona(ahora: Date, zonaHoraria?: string | null): { fecha: 
   return { fecha: `${ahora.getFullYear()}-${mes}-${dia}`, minutos: ahora.getHours() * 60 + ahora.getMinutes() };
 }
 
+/** Cómo está el negocio hoy, en su zona: qué turnos tiene y si está atendiendo ahora. */
+export interface EstadoHoy {
+  /** Día de la semana de hoy en la zona del negocio (0=domingo). */
+  diaSemana: number;
+  /** Turnos de hoy, en orden; vacío si hoy no abre (o es un día bloqueado). */
+  intervalos: IntervaloHorarioPublico[];
+  abiertoAhora: boolean;
+  /** Cierre del turno en curso, si está abierto. */
+  cierraA: string | null;
+  /** Apertura del siguiente turno de hoy, si está cerrado pero aún abre más tarde. */
+  abreA: string | null;
+}
+
+export function estadoDeHoy(calendario: CalendarioNegocio, ahora: Date = new Date()): EstadoHoy {
+  const actual = ahoraEnZona(ahora, calendario.zonaHoraria);
+  const bloqueado = calendario.diasCerrados?.includes(actual.fecha) ?? false;
+  const [a, m, d] = actual.fecha.split("-").map(Number);
+  const diaSemana = new Date(a, m - 1, d).getDay();
+  const intervalos = bloqueado
+    ? []
+    : calendario.horario
+        .filter((h) => h.diaSemana === diaSemana)
+        .sort((x, y) => minutos(x.horaInicio) - minutos(y.horaInicio));
+
+  const enCurso = intervalos.find(
+    (h) => actual.minutos >= minutos(h.horaInicio) && actual.minutos < minutos(h.horaFin),
+  );
+  const siguiente = enCurso ? undefined : intervalos.find((h) => minutos(h.horaInicio) > actual.minutos);
+  return {
+    diaSemana,
+    intervalos,
+    abiertoAhora: !!enCurso,
+    cierraA: enCurso?.horaFin ?? null,
+    abreA: siguiente?.horaInicio ?? null,
+  };
+}
+
 /** null cuando el negocio abre ese día (aunque luego no queden horarios libres). */
 export function cierreDelDia(fecha: string, calendario: CalendarioNegocio, ahora: Date = new Date()): CierreDia | null {
   if (calendario.diasCerrados?.includes(fecha)) return "cerrado";

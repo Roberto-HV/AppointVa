@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { ahoraEnZona, cierreDelDia, type CalendarioNegocio } from "./calendarioNegocio";
+import { ahoraEnZona, cierreDelDia, estadoDeHoy, type CalendarioNegocio } from "./calendarioNegocio";
 
 const calendario: CalendarioNegocio = {
   // Martes: 10–14 y 15–19. Miércoles: sin intervalos (cerrado).
@@ -51,5 +51,30 @@ describe("ahoraEnZona", () => {
   it("con una zona desconocida usa la hora local", () => {
     const ahora = new Date(2026, 9, 20, 8, 15);
     expect(ahoraEnZona(ahora, "Zona/Inexistente")).toEqual({ fecha: "2026-10-20", minutos: 8 * 60 + 15 });
+  });
+});
+
+describe("estadoDeHoy", () => {
+  it("en pleno turno está abierto y dice a qué hora cierra", () => {
+    const estado = estadoDeHoy(calendario, new Date(2026, 9, 20, 12));
+    expect(estado).toMatchObject({ abiertoAhora: true, cierraA: "14:00", abreA: null });
+    expect(estado.intervalos).toHaveLength(2);
+  });
+
+  it("entre turnos está cerrado y dice a qué hora vuelve a abrir", () => {
+    expect(estadoDeHoy(calendario, new Date(2026, 9, 20, 14, 30))).toMatchObject({
+      abiertoAhora: false,
+      cierraA: null,
+      abreA: "15:00",
+    });
+  });
+
+  it("tras el último turno ya no abre más hoy", () => {
+    expect(estadoDeHoy(calendario, new Date(2026, 9, 20, 19))).toMatchObject({ abiertoAhora: false, abreA: null });
+  });
+
+  it("un día sin turnos o bloqueado no tiene intervalos", () => {
+    expect(estadoDeHoy(calendario, new Date(2026, 9, 21, 12)).intervalos).toEqual([]);
+    expect(estadoDeHoy(calendario, new Date(2026, 9, 22, 12)).intervalos).toEqual([]);
   });
 });
