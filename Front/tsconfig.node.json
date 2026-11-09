@@ -23,6 +23,8 @@
   "include": [
     "vite.config.ts",
     "src/test/serviceWorkerBuild.test.ts",
-    "src/test/cspHashScriptTema.test.ts"
+    "src/test/cspHashScriptTema.test.ts",
+    "src/test/construirDist.ts",
+    "src/test/globalSetup.ts"
   ]
 }

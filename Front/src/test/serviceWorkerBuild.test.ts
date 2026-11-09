@@ -1,4 +1,3 @@
-import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
@@ -16,16 +15,16 @@ const dist = path.join(raizFront, "dist");
 const swGenerado = path.join(dist, "sw.js");
 const scriptPush = path.join(dist, "push-sw.js");
 
-function construirSiFalta(): void {
-  if (existsSync(swGenerado) && existsSync(scriptPush)) return;
-  // Vitest deja NODE_ENV=test y con eso Vite no minifica: se fuerza production
-  // para revisar el mismo artefacto que se despliega.
-  execFileSync("npx", ["vite", "build", "--mode", "production"], {
-    cwd: raizFront,
-    stdio: "ignore",
-    shell: true,
-    env: { ...process.env, NODE_ENV: "production" },
-  });
+// El build que deja dist/ al día lo corre el globalSetup de Vitest una sola vez
+// por ejecución (src/test/globalSetup.ts → src/test/construirDist.ts); aquí solo
+// se lee. Si el archivo no está, conviene decirlo en vez de dejar salir un
+// ENOENT pelado que no apunta a ninguna parte.
+function leerArtefacto(ruta: string): string {
+  expect(
+    existsSync(ruta),
+    `Falta ${path.relative(raizFront, ruta).replace(/\\/g, "/")}: lo emite el build que prepara el globalSetup de Vitest (src/test/globalSetup.ts). Revisa la salida de ese paso en vez de construir dist/ a mano.`,
+  ).toBe(true);
+  return readFileSync(ruta, "utf8");
 }
 
 describe("service worker emitido por el build", () => {
@@ -33,10 +32,9 @@ describe("service worker emitido por el build", () => {
   let push = "";
 
   beforeAll(() => {
-    construirSiFalta();
-    sw = readFileSync(swGenerado, "utf8");
-    push = readFileSync(scriptPush, "utf8");
-  }, 180_000);
+    sw = leerArtefacto(swGenerado);
+    push = leerArtefacto(scriptPush);
+  });
 
   it("importa el script de push desde el worker generado", () => {
     expect(sw).toMatch(/importScripts\(\s*"\/push-sw\.js"\s*\)/);

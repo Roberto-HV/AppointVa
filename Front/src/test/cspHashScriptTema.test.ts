@@ -1,5 +1,4 @@
 import { createHash } from "node:crypto";
-import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
@@ -22,18 +21,6 @@ const dist = path.join(raizFront, "dist");
 const indexGenerado = path.join(dist, "index.html");
 const configVercel = path.join(raizFront, "vercel.json");
 
-function construirSiFalta(): void {
-  if (existsSync(indexGenerado)) return;
-  // Vitest deja NODE_ENV=test y con eso Vite no minifica: se fuerza production
-  // para revisar el mismo artefacto que se despliega.
-  execFileSync("npx", ["vite", "build", "--mode", "production"], {
-    cwd: raizFront,
-    stdio: "ignore",
-    shell: true,
-    env: { ...process.env, NODE_ENV: "production" },
-  });
-}
-
 const COMO_REGENERAR =
   "Para regenerarlo: `npm run build` y luego " +
   '`node -e "const c=require(\'crypto\'),f=require(\'fs\');' +
@@ -46,7 +33,13 @@ describe("hash CSP del script de tema inline", () => {
   let scriptSrc = "";
 
   beforeAll(() => {
-    construirSiFalta();
+    // El build que deja dist/ al día lo corre el globalSetup de Vitest una sola
+    // vez por ejecución (src/test/globalSetup.ts → src/test/construirDist.ts);
+    // aquí solo se lee.
+    expect(
+      existsSync(indexGenerado),
+      "Falta dist/index.html: lo emite el build que prepara el globalSetup de Vitest (src/test/globalSetup.ts). Revisa la salida de ese paso en vez de construir dist/ a mano.",
+    ).toBe(true);
 
     const html = readFileSync(indexGenerado, "utf8");
     const encontrado = html.match(/<script>([\s\S]*?)<\/script>/);

@@ -78,6 +78,10 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     setupFiles: ["./src/test/setup.ts"],
+    // Un único `vite build` para los tests que revisan el artefacto emitido:
+    // corre una vez por corrida, antes de los workers, y solo si cambiaron sus
+    // entradas. Ver src/test/construirDist.ts.
+    globalSetup: ["./src/test/globalSetup.ts"],
     exclude: ["node_modules/**", "e2e/**"],
     // Under parallel jsdom load a test that runs in ~300ms alone can exceed the
     // 5s default; the higher limit tolerates slowness without hiding failures.
