@@ -74,7 +74,6 @@ export default async function handler(req: any, res: any) {
   <meta name="twitter:title" content="${esc(title)}" />
   <meta name="twitter:description" content="${esc(description)}" />
   <meta http-equiv="refresh" content="0; url=${esc(redirectUrl)}" />
-  <script>window.location.replace(${JSON.stringify(redirectUrl)});</script>
 </head>
 <body></body>
 </html>`;

@@ -88,6 +88,29 @@ describe("useAuthStore — cerrarSesion", () => {
     useAuthStore.getState().cerrarSesion();
     expect(queryClient.clear).toHaveBeenCalledOnce();
   });
+
+  it("borra solo la caché `images` del service worker", () => {
+    const borrar = vi.fn().mockResolvedValue(true);
+    vi.stubGlobal("caches", { delete: borrar });
+
+    useAuthStore.getState().cerrarSesion();
+
+    // Vaciar todo Cache Storage se llevaría el precaché y rompería el offline.
+    expect(borrar).toHaveBeenCalledExactlyOnceWith("images");
+    vi.unstubAllGlobals();
+  });
+
+  it("no lanza cuando Cache Storage no está disponible", () => {
+    vi.stubGlobal("caches", {
+      delete: () => {
+        throw new Error("no disponible en navegación privada");
+      },
+    });
+
+    expect(() => useAuthStore.getState().cerrarSesion()).not.toThrow();
+    expect(useAuthStore.getState().token).toBeNull();
+    vi.unstubAllGlobals();
+  });
 });
 
 describe("useAuthStore — actualizarFoto", () => {

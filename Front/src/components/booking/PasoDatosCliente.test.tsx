@@ -75,10 +75,15 @@ function escribirTelefono(valor = "55 1234 5678") {
   return input;
 }
 
-function clienteEncontrado(nombre = "María López", email: string | null = "maria@ejemplo.com") {
+/**
+ * Respuesta real de la búsqueda por teléfono: nombre y si hay un correo en archivo, nunca
+ * la dirección — un número ajeno bastaba para obtenerla y tomar las citas de su dueño.
+ */
+function clienteEncontrado(nombre = "María López", tieneEmail = true) {
   vi.mocked(publicoApi.buscarClienteDatos).mockResolvedValue({
     nombreCliente: nombre,
-    emailCliente: email,
+    tieneEmail,
+    emailCliente: null,
     telefonoCliente: "5512345678",
   });
 }
@@ -192,8 +197,8 @@ describe("PasoDatosCliente — cliente que ya reservó", () => {
     expect(screen.getByRole("button", { name: "No, no soy yo" })).toBeInTheDocument();
   });
 
-  it("llena nombre y correo al confirmar, y avisa al padre", async () => {
-    clienteEncontrado("María López", "maria@ejemplo.com");
+  it("llena el nombre al confirmar, sin prellenar ningún correo, y avisa al padre", async () => {
+    clienteEncontrado("María López", true);
     const onClienteReconocidoChange = vi.fn();
     renderComponente({ onClienteReconocidoChange });
     escribirTelefono();
@@ -201,11 +206,57 @@ describe("PasoDatosCliente — cliente que ya reservó", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Sí, soy yo" }));
 
     expect(inputNombre().value).toBe("María López");
-    expect(inputEmail().value).toBe("maria@ejemplo.com");
+    // Propiedad de seguridad: la búsqueda por teléfono no entrega ninguna dirección, así
+    // que no hay nada que prellenar aquí.
+    expect(inputEmail().value).toBe("");
     expect(inputNombre()).not.toBeDisabled();
     expect(inputEmail()).not.toBeDisabled();
     expect(onClienteReconocidoChange).toHaveBeenLastCalledWith(true);
-    expect(screen.getByText(/llenamos tu nombre y tu correo/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/^Listo, María López\..*correo que ya tenemos registrado/i)
+    ).toBeInTheDocument();
+  });
+
+  // Red de seguridad del lado del cliente: aunque una respuesta traiga una dirección —un
+  // servidor viejo, un proxy, una regresión—, el camino del teléfono no la prellena.
+  it("no prellena el correo aunque la respuesta de la búsqueda por teléfono traiga uno", async () => {
+    vi.mocked(publicoApi.buscarClienteDatos).mockResolvedValue({
+      nombreCliente: "María López",
+      tieneEmail: true,
+      emailCliente: "maria@ejemplo.com",
+      telefonoCliente: "5512345678",
+    });
+    renderComponente();
+    escribirTelefono();
+
+    fireEvent.click(await screen.findByRole("button", { name: "Sí, soy yo" }));
+
+    expect(inputEmail().value).toBe("");
+  });
+
+  it("no muestra el aviso de «sin correo» cuando hay uno en archivo", async () => {
+    clienteEncontrado("María López", true);
+    renderComponente();
+    escribirTelefono();
+    fireEvent.click(await screen.findByRole("button", { name: "Sí, soy yo" }));
+
+    fireEvent.blur(inputEmail());
+
+    expect(screen.queryByText(/sin correo no recibirás confirmación/i)).not.toBeInTheDocument();
+    expect(
+      screen.getByText(/déjalo vacío para recibir la confirmación en el correo que ya tenemos registrado/i)
+    ).toBeInTheDocument();
+  });
+
+  it("mantiene el aviso de «sin correo» cuando el cliente conocido no tiene uno en archivo", async () => {
+    clienteEncontrado("María López", false);
+    renderComponente();
+    escribirTelefono();
+    fireEvent.click(await screen.findByRole("button", { name: "Sí, soy yo" }));
+
+    fireEvent.blur(inputEmail());
+
+    expect(screen.getByText(/sin correo no recibirás confirmación/i)).toBeInTheDocument();
   });
 
   it("deja los campos en blanco al rechazar la sugerencia", async () => {

@@ -29,5 +29,8 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src"]
+  "include": ["src"],
+  // Revisa el artefacto del build con APIs de Node; se comprueba en
+  // tsconfig.node.json para no exponer los globales de Node al código de la app.
+  "exclude": ["src/test/serviceWorkerBuild.test.ts", "src/test/cspHashScriptTema.test.ts"]
 }

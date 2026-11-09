@@ -455,11 +455,12 @@ namespace AppointVaAPI.Controllers.V1
                     if (resolucionCliente.Resultado == ResultadoResolucionCliente.ConflictoNombre)
                     {
                         await tx.RollbackAsync();
+                        // Sin el nombre en archivo: devolverlo haría de este 409 un segundo
+                        // oráculo de teléfono → nombre legal, abierto y sin autenticar.
                         return Conflict(new
                         {
                             codigo = CodigosError.ClienteNombreDistinto,
-                            mensaje = "Ese teléfono ya está registrado a nombre de otra persona.",
-                            nombreExistente = resolucionCliente.Cliente.NombreCompleto
+                            mensaje = "Ese teléfono ya está registrado a nombre de otra persona."
                         });
                     }
 
@@ -590,20 +591,27 @@ namespace AppointVaAPI.Controllers.V1
                 PoliticaCancelacionAnticipo = negocio.PoliticaCancelacionAnticipo
             };
 
+            // El cliente conocido ya no teclea su correo —la búsqueda por teléfono dejó de
+            // devolverlo—, así que la confirmación sale al que el negocio tiene en archivo.
+            // Es el mismo correo con el que después podrá cancelar o reagendar.
+            var emailNotificacion = !string.IsNullOrWhiteSpace(dto.EmailCliente)
+                ? dto.EmailCliente.Trim()
+                : cliente.Email;
+
             // Enviar email de confirmación si el cliente tiene correo
-            if (!string.IsNullOrWhiteSpace(dto.EmailCliente))
+            if (!string.IsNullOrWhiteSpace(emailNotificacion))
             {
                 var frontendUrl = _config["FrontendUrl"] ?? "https://appointva.com";
                 var urlCita = $"{frontendUrl}/b/{negocio.Slug}/confirmacion/{codigo}";
                 var urlCancelacion = $"{frontendUrl}/cancelar/{codigo}";
-                _jobClient.Enqueue<NotificacionJob>(j => j.EnviarConfirmacionAsync(cita.Id, dto.EmailCliente ?? string.Empty, cliente.NombreCompleto));
+                _jobClient.Enqueue<NotificacionJob>(j => j.EnviarConfirmacionAsync(cita.Id, emailNotificacion, cliente.NombreCompleto));
             }
 
             // Notificación push al empleado asignado (Hangfire crea su propio scope/DbContext)
             _jobClient.Enqueue<IPushService>(s => s.EnviarNuevaCitaEmpleadoAsync(cita.Id));
 
             // Agendar recordatorio y capturar el job ID antes de SaveChangesAsync
-            if (!string.IsNullOrWhiteSpace(dto.EmailCliente))
+            if (!string.IsNullOrWhiteSpace(emailNotificacion))
             {
                 var horas = negocio.HorasRecordatorio > 0 ? negocio.HorasRecordatorio : 24;
                 var tz = AppointVaAPI.Helpers.ZonaHorariaHelper.Resolver(negocio.ZonaHoraria);
@@ -915,6 +923,12 @@ namespace AppointVaAPI.Controllers.V1
             var emailNorm = email?.ToLower().Trim();
             var telefonoNorm = telefono?.Trim();
 
+            // El código de confirmación es lo que autoriza cancelar y reagendar, y esas dos
+            // acciones exigen el correo del cliente. Entregarlo a quien ya trajo ese correo no
+            // le da nada que no tuviera; entregarlo a quien sólo trajo un teléfono convertiría
+            // un número ajeno en control sobre las citas de otra persona.
+            var consultaPorEmail = !string.IsNullOrWhiteSpace(emailNorm);
+
             // "Mis citas" matches the client by email/phone over _db.Clientes, whose
             // soft-delete filter applies on purpose: once a client is deleted, typing their
             // email or phone no longer lists their history (that data is gone). The match
@@ -945,7 +959,7 @@ namespace AppointVaAPI.Controllers.V1
             return Ok(citas.Select(c => new
             {
                 id = c.Id,
-                codigoConfirmacion = c.CodigoConfirmacion,
+                codigoConfirmacion = consultaPorEmail ? c.CodigoConfirmacion : null,
                 nombreNegocio = negocio.Nombre,
                 negocioSlug = negocio.Slug,
                 nombreServicio = c.Servicio?.Nombre ?? string.Empty,
@@ -1171,6 +1185,10 @@ namespace AppointVaAPI.Controllers.V1
                 return NotFound();
 
             Cliente? cliente = null;
+            // Sólo cuenta como «consulta por correo» cuando el correo recibido fue la llave
+            // que encontró al cliente: si falla y el teléfono es el que acierta, el correo
+            // en archivo sigue siendo un dato que quien consulta no tenía.
+            var coincidioPorEmail = false;
 
             if (!string.IsNullOrWhiteSpace(email))
             {
@@ -1179,6 +1197,7 @@ namespace AppointVaAPI.Controllers.V1
                     .AsNoTracking()
                     .Where(c => c.NegocioId == negocio.Id && c.Email == emailNorm && c.FechaEliminacion == null)
                     .FirstOrDefaultAsync();
+                coincidioPorEmail = cliente is not null;
             }
 
             if (cliente is null && !string.IsNullOrWhiteSpace(telefono))
@@ -1196,10 +1215,14 @@ namespace AppointVaAPI.Controllers.V1
             return Ok(new
             {
                 nombreCliente = cliente.NombreCompleto,
-                // El correo se devuelve siempre: la reserva pública lo usa para no pedirle
-                // al cliente conocido que vuelva a teclearlo. El teléfono se sigue devolviendo
-                // sólo como eco de lo que ya trajo la consulta.
-                emailCliente = cliente.Email,
+                // El correo en archivo nunca viaja hacia quien sólo trajo el teléfono: junto
+                // con el código de confirmación es lo que autoriza cancelar o reagendar, así
+                // que un número bastaría para tomar las citas de un desconocido. La reserva
+                // pública sólo necesita saber que hay un correo al que mandar la confirmación.
+                tieneEmail = !string.IsNullOrWhiteSpace(cliente.Email),
+                // Eco de la llave con la que se consultó: devolver lo que quien pregunta ya
+                // tenía en la mano no revela nada nuevo.
+                emailCliente = coincidioPorEmail ? cliente.Email : null,
                 telefonoCliente = !string.IsNullOrWhiteSpace(telefono) ? cliente.Telefono : null,
             });
         }

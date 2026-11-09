@@ -90,12 +90,10 @@ const BARRA_ACCION =
   "lg:static lg:z-auto lg:mt-6 lg:rounded-none lg:border-0 lg:bg-transparent lg:backdrop-blur-none lg:p-0 lg:shadow-none";
 
 function HojaClienteExistente({
-  nombreExistente,
   color,
   onConfirmar,
   onCorregir,
 }: {
-  nombreExistente: string;
   color: string;
   onConfirmar: () => void;
   onCorregir: () => void;
@@ -144,15 +142,18 @@ function HojaClienteExistente({
         className="relative w-full max-w-lg rounded-t-3xl bg-white px-5 pt-4 shadow-2xl pb-[calc(1.25rem+env(safe-area-inset-bottom))]"
       >
         <div className="mx-auto mb-5 h-1 w-10 rounded-full bg-slate-200" aria-hidden="true" />
+        {/* No se muestra de quién es la cuenta: el nombre en archivo convertía este aviso
+            en una consulta abierta de teléfono → nombre legal de cualquier persona. */}
         <h2 id={ID_TITULO_CONFLICTO} className="text-lg font-bold text-slate-900">
-          Encontramos una cuenta con ese teléfono
+          Ese teléfono ya está registrado
         </h2>
-        <p className="mt-1 text-sm text-slate-500">Ese número ya está registrado a nombre de:</p>
-        <p className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-center text-xl font-bold text-slate-900">
-          {nombreExistente}
+        <p className="mt-2 text-sm text-slate-500">
+          El número que escribiste pertenece a una cuenta con otro nombre. Por privacidad no
+          mostramos de quién es.
         </p>
         <p className="mt-3 text-sm text-slate-500">
-          Si eres tú, agendaremos la cita con ese nombre.
+          Si la cuenta es tuya, agendamos la cita con el nombre que ya está registrado. Si te
+          equivocaste de número, corrígelo.
         </p>
         <button
           ref={confirmarRef}
@@ -161,7 +162,7 @@ function HojaClienteExistente({
           className={`${BTN_PRIMARIO} mt-5 w-full`}
           style={{ background: color }}
         >
-          Sí, soy yo
+          Sí, es mi teléfono
         </button>
         <button
           type="button"
@@ -630,8 +631,9 @@ export default function BookingPage() {
   // Políticas del negocio — vive aquí porque el submit está en la barra de acción
   const [politicasAceptadas, setPoliticasAceptadas] = useState(false);
 
-  // Conflicto: el teléfono ya pertenece a otro cliente del negocio
-  const [nombreEnConflicto, setNombreEnConflicto] = useState<string | null>(null);
+  // Conflicto: el teléfono ya pertenece a otro cliente del negocio. Sólo un interruptor:
+  // la respuesta ya no trae el nombre en archivo y la hoja no lo muestra.
+  const [telefonoEnConflicto, setTelefonoEnConflicto] = useState(false);
   // El visitante ya se identificó en el paso 4 ("Sí, soy yo"): no hace falta volver
   // a preguntárselo con la hoja de conflicto al enviar.
   const [clienteReconocido, setClienteReconocido] = useState(false);
@@ -876,7 +878,7 @@ export default function BookingPage() {
     } catch (err: unknown) {
       if (!mountedRef.current) return;
       const respuesta = (err as {
-        response?: { status?: number; data?: { mensaje?: string; codigo?: string; nombreExistente?: string } };
+        response?: { status?: number; data?: { mensaje?: string; codigo?: string } };
       })?.response;
       const status = respuesta?.status;
       const codigo = respuesta?.data?.codigo;
@@ -884,7 +886,7 @@ export default function BookingPage() {
       // El código manda: el sniffing por mensaje es solo respaldo para respuestas viejas.
       if (codigo === CODIGO_CLIENTE_DISTINTO) {
         datosPendientesRef.current = datos;
-        setNombreEnConflicto(respuesta?.data?.nombreExistente ?? "");
+        setTelefonoEnConflicto(true);
       } else if (
         codigo === CODIGO_HORARIO_NO_DISPONIBLE ||
         status === 409 ||
@@ -905,14 +907,14 @@ export default function BookingPage() {
 
   const aceptarClienteExistente = () => {
     const datos = datosPendientesRef.current;
-    setNombreEnConflicto(null);
+    setTelefonoEnConflicto(false);
     datosPendientesRef.current = null;
     if (datos) confirmarCita(datos, true);
   };
 
   // Estable: la hoja la usa como dependencia de su efecto de foco/teclado.
   const corregirTelefono = useCallback(() => {
-    setNombreEnConflicto(null);
+    setTelefonoEnConflicto(false);
     datosPendientesRef.current = null;
     document.querySelector<HTMLInputElement>(`#${ID_FORM_DATOS} [name="telefonoCliente"]`)?.focus();
   }, []);
@@ -1633,9 +1635,8 @@ export default function BookingPage() {
         )}
       </div>
 
-      {nombreEnConflicto !== null && (
+      {telefonoEnConflicto && (
         <HojaClienteExistente
-          nombreExistente={nombreEnConflicto}
           color={colorCta}
           onConfirmar={aceptarClienteExistente}
           onCorregir={corregirTelefono}

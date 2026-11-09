@@ -37,6 +37,21 @@ const ROL_KIOSCO = "Kiosco";
  * fallando el refresh; ese `cerrarSesion` automático no debe borrar la sesión de
  * kiosco compartida en localStorage o la pantalla de recepción se cierra al recargar.
  */
+/**
+ * Borra solo la caché `images` del service worker: en una tablet compartida las
+ * portadas y logos del negocio anterior sobreviven al cambio de usuario y
+ * delatan con quién se trabajó. Nunca se vacía todo Cache Storage porque ahí
+ * también vive el precaché que sostiene el modo offline.
+ */
+function limpiarCacheDeImagenes(): void {
+  try {
+    if (typeof caches === "undefined") return;
+    void caches.delete("images").catch(() => {});
+  } catch {
+    // Safari lanza al tocar Cache Storage en navegación privada.
+  }
+}
+
 function haySesionKioscoAjena(tokenEnMemoria: string | null): boolean {
   try {
     const crudo = localStorage.getItem(CLAVE_AUTH);
@@ -67,6 +82,7 @@ export const useAuthStore = create<AuthState>()(
           void useAuthStore.persist.rehydrate();
           return;
         }
+        limpiarCacheDeImagenes();
         set({ token: null, refreshToken: null, usuario: null });
       },
       estaAutenticado: () => get().token !== null,

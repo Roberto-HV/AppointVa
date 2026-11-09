@@ -100,15 +100,6 @@ namespace AppointVaAPI.Controllers.V1
             return Ok(new { empleadoId = empleado.Id, nombre = empleado.Nombre });
         }
 
-        // POST api/me/sw-ping  — llamado desde el service worker cuando el push event dispara
-        [HttpPost("sw-ping")]
-        [AllowAnonymous]
-        public IActionResult SwPing()
-        {
-            _logger.LogWarning("SW-PUSH-EVENT: el push event disparó en el service worker del dispositivo");
-            return Ok();
-        }
-
         // POST api/me/push-test-empty  — push sin payload para aislar si es problema de cifrado
         [HttpPost("push-test-empty")]
         public async Task<IActionResult> ProbarPushVacio()

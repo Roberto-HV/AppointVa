@@ -39,6 +39,9 @@ export interface DisponibilidadDia {
 /** Datos de un cliente ya registrado en el negocio, devueltos por la búsqueda por teléfono. */
 export interface ClienteConocido {
   nombreCliente: string;
+  /** Hay un correo en archivo al que mandar la confirmación; la dirección no viaja. */
+  tieneEmail: boolean;
+  /** Eco de la llave consultada: sólo viene cuando la consulta fue por correo. */
   emailCliente: string | null;
   telefonoCliente: string | null;
 }

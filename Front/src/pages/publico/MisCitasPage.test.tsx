@@ -194,8 +194,9 @@ describe("MisCitasPage", () => {
 
   it("sin correo explica por qué no hay Reagendar/Cancelar y cómo obtenerlos (AP-04)", async () => {
     localStorage.setItem(SESSION_KEY, JSON.stringify({ telefono: "5511223344" }));
+    // Lo que el servidor responde a una búsqueda por teléfono: sin código de confirmación.
     vi.mocked(api.get).mockResolvedValue({
-      data: [futureCita],
+      data: [{ ...futureCita, codigoConfirmacion: null }],
       headers: { "x-total-count": "1" },
     });
     renderConQuery();
@@ -206,6 +207,27 @@ describe("MisCitasPage", () => {
     expect(screen.getByText(/busca tus citas con el correo que usaste al reservar/i)).toBeInTheDocument();
     expect(screen.getByText(/contacta directamente al negocio/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Buscar con mi correo" })).toBeInTheDocument();
+  });
+
+  // Sin código no hay petición posible contra /citas/{codigo}: ni "Ver cita" ni las
+  // acciones de gestión deben dibujarse apuntando a un código inexistente.
+  it("sin código de confirmación no ofrece acciones que no pueden funcionar", async () => {
+    localStorage.setItem(SESSION_KEY, JSON.stringify({ telefono: "5511223344" }));
+    vi.mocked(api.get).mockResolvedValue({
+      data: [
+        { ...futureCita, codigoConfirmacion: null },
+        { ...pastCita, codigoConfirmacion: null },
+      ],
+      headers: { "x-total-count": "2" },
+    });
+    renderConQuery();
+    await waitFor(() => expect(screen.getByText("Corte de cabello")).toBeInTheDocument());
+
+    expect(screen.queryByRole("button", { name: "Ver cita" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Reagendar" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Cancelar" })).not.toBeInTheDocument();
+    // "Repetir" no necesita el código: sigue disponible en ambas listas.
+    expect(screen.getAllByRole("button", { name: "Repetir" })).toHaveLength(2);
   });
 
   it("con correo muestra las acciones y no la explicación", async () => {

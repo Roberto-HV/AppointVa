@@ -16,9 +16,20 @@ export default defineConfig({
         // en total casi 1 MB y cada negocio usa una sola; las cachea la regla de
         // imágenes de abajo cuando de verdad se piden.
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        // Los handlers de push viven fuera del worker generado porque Workbox
+        // reescribe sw.js en cada build. La ruta se emite tal cual en el
+        // importScripts() del worker, así que apunta a public/push-sw.js.
+        importScripts: ['/push-sw.js'],
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/api/],
+        // Workbox evalúa las rutas en orden de registro: /api/ va primero para
+        // que una respuesta de API que termine en extensión de imagen no acabe
+        // guardada en la caché `images`.
         runtimeCaching: [
+          {
+            urlPattern: /^https?:\/\/.*\/api\//,
+            handler: 'NetworkOnly',
+          },
           {
             urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/,
             handler: 'StaleWhileRevalidate',
@@ -29,10 +40,6 @@ export default defineConfig({
                 maxAgeSeconds: 30 * 24 * 60 * 60,
               },
             },
-          },
-          {
-            urlPattern: /^https?:\/\/.*\/api\//,
-            handler: 'NetworkOnly',
           },
         ],
       },

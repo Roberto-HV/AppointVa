@@ -124,8 +124,14 @@ export default function PasoDatosCliente({ servicio, empleado, slot, formId, slu
 
   // ── Cliente conocido ──────────────────────────────────────────────────────
   const [buscando, setBuscando] = useState(false);
-  const [sugerencia, setSugerencia] = useState<{ nombre: string; email: string | null } | null>(null);
+  // La búsqueda por teléfono ya no devuelve la dirección de correo: un número ajeno bastaba
+  // para obtenerla y, con ella, cancelar o mover las citas de un desconocido. Sólo llega si
+  // hay una en archivo, que es lo único que el formulario necesita saber.
+  const [sugerencia, setSugerencia] = useState<{ nombre: string; tieneEmail: boolean } | null>(null);
   const [nombreConfirmado, setNombreConfirmado] = useState<string | null>(null);
+  // Propiedad del teléfono, no del nombre: se limpia al consultar otro número, no al
+  // reescribir el nombre.
+  const [correoEnArchivo, setCorreoEnArchivo] = useState(false);
   // Evita repetir la consulta cuando el campo se desenfoca varias veces con el mismo número.
   const ultimoTelefonoRef = useRef<string | null>(null);
   // Descarta respuestas de consultas que quedaron atrás si el visitante corrigió el número.
@@ -158,12 +164,13 @@ export default function PasoDatosCliente({ servicio, empleado, slot, formId, slu
     const consulta = ++consultaVigenteRef.current;
     setSugerencia(null);
     setNombreConfirmado(null);
+    setCorreoEnArchivo(false);
     onClienteReconocidoChange?.(false);
     setBuscando(true);
     try {
       const cliente = await publicoApi.buscarClienteDatos(slug, digitos);
       if (!montadoRef.current || consulta !== consultaVigenteRef.current) return;
-      setSugerencia({ nombre: cliente.nombreCliente, email: cliente.emailCliente ?? null });
+      setSugerencia({ nombre: cliente.nombreCliente, tieneEmail: !!cliente.tieneEmail });
     } catch {
       // 404 (teléfono nuevo) o fallo de red: se degrada en silencio y el visitante
       // llena el formulario a mano. Nunca es motivo para bloquear la reserva.
@@ -176,8 +183,8 @@ export default function PasoDatosCliente({ servicio, empleado, slot, formId, slu
   const aceptarSugerencia = () => {
     if (!sugerencia) return;
     setValue("nombreCliente", sugerencia.nombre, { shouldValidate: true });
-    if (sugerencia.email) setValue("emailCliente", sugerencia.email, { shouldValidate: true });
     setNombreConfirmado(sugerencia.nombre);
+    setCorreoEnArchivo(sugerencia.tieneEmail);
     setSugerencia(null);
     onClienteReconocidoChange?.(true);
   };
@@ -185,6 +192,7 @@ export default function PasoDatosCliente({ servicio, empleado, slot, formId, slu
   const rechazarSugerencia = () => {
     setSugerencia(null);
     setNombreConfirmado(null);
+    setCorreoEnArchivo(false);
     onClienteReconocidoChange?.(false);
   };
 
@@ -259,7 +267,9 @@ export default function PasoDatosCliente({ servicio, empleado, slot, formId, slu
               <p className="mt-2 flex items-start gap-2 text-xs text-emerald-700">
                 <Check size={14} className="shrink-0 mt-0.5" />
                 <span>
-                  Listo, {nombreConfirmado}. Llenamos tu nombre y tu correo; puedes corregirlos si cambiaron.
+                  {correoEnArchivo
+                    ? `Listo, ${nombreConfirmado}. Llenamos tu nombre y enviaremos la confirmación al correo que ya tenemos registrado. Si quieres recibirla en otro, escríbelo abajo.`
+                    : `Listo, ${nombreConfirmado}. Llenamos tu nombre; puedes corregirlo si cambió.`}
                 </span>
               </p>
             )}
@@ -294,7 +304,11 @@ export default function PasoDatosCliente({ servicio, empleado, slot, formId, slu
             {...emailReg}
             id={ids.email}
             aria-invalid={!!errors.emailCliente}
-            aria-describedby={errors.emailCliente || (emailTocado && !emailValue) ? ids.emailMensaje : undefined}
+            aria-describedby={
+              errors.emailCliente || ((correoEnArchivo || emailTocado) && !emailValue)
+                ? ids.emailMensaje
+                : undefined
+            }
             onBlur={(e) => {
               emailReg.onBlur(e);
               setEmailTocado(true);
@@ -306,6 +320,13 @@ export default function PasoDatosCliente({ servicio, empleado, slot, formId, slu
           />
           {errors.emailCliente ? (
             <p id={ids.emailMensaje} className="text-red-600 text-xs mt-1.5">{errors.emailCliente.message}</p>
+          ) : correoEnArchivo && !emailValue ? (
+            // Con un correo en archivo el aviso de «sin correo» sería falso: el servidor
+            // manda la confirmación a esa dirección aunque este campo quede vacío.
+            <p id={ids.emailMensaje} className="text-slate-500 text-xs mt-1.5 flex items-start gap-1">
+              <Info size={16} className="shrink-0 mt-px" />
+              Déjalo vacío para recibir la confirmación en el correo que ya tenemos registrado.
+            </p>
           ) : emailTocado && !emailValue ? (
             <p id={ids.emailMensaje} className="text-amber-700 text-xs mt-1.5 flex items-center gap-1">
               <Info size={16} className="shrink-0" />

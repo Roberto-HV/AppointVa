@@ -21,7 +21,11 @@ const SESSION_KEY = "mcs_session";
 
 interface MiCita {
   id: string;
-  codigoConfirmacion: string;
+  /**
+   * Null cuando la búsqueda fue por teléfono: el código autoriza cancelar y reagendar, así
+   * que un número ajeno ya no lo obtiene. Sin código no se ofrece ninguna de esas acciones.
+   */
+  codigoConfirmacion: string | null;
   nombreNegocio: string;
   negocioSlug: string;
   nombreServicio: string;
@@ -162,7 +166,7 @@ export default function MisCitasPage() {
   };
 
   const confirmarReagenda = async () => {
-    if (!reagendando || !slotNuevo || !buscado?.email) return;
+    if (!reagendando?.codigoConfirmacion || !slotNuevo || !buscado?.email) return;
     setGuardandoReagenda(true);
     setErrorReagenda("");
     try {
@@ -334,7 +338,9 @@ export default function MisCitasPage() {
                     {proximas.map((c) => {
                       const minRestantes = (new Date(c.inicioEn).getTime() - Date.now()) / 60000;
                       const puedeModificar = minRestantes > 0 && (!c.horasCancelacion || minRestantes > c.horasCancelacion * 60);
-                      const tieneEmail = !!buscado?.email;
+                      // Sin código no hay nada que mandarle al servidor: reagendar y cancelar
+                      // se dirigen a /citas/{codigo}, así que los botones no se dibujan.
+                      const codigo = c.codigoConfirmacion;
                       return (
                       <div key={c.id} className="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm hover:shadow-md transition-shadow">
                         <div className="flex items-start justify-between gap-3 mb-3">
@@ -350,21 +356,23 @@ export default function MisCitasPage() {
                           <p className="text-sm font-bold text-slate-800">{formatPrecio(c.precio)}</p>
                         </div>
 
-                        <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
-                          <span className="font-mono text-xs text-slate-500 bg-slate-50 px-2 py-1 rounded-lg tracking-wider">
-                            {c.codigoConfirmacion}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => navigate(`/cita/${c.codigoConfirmacion}`)}
-                            className="min-h-[44px] px-4 rounded-xl bg-slate-700 hover:bg-slate-800 text-white text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40"
-                          >
-                            Ver cita
-                          </button>
-                        </div>
+                        {codigo && (
+                          <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                            <span className="font-mono text-xs text-slate-500 bg-slate-50 px-2 py-1 rounded-lg tracking-wider">
+                              {codigo}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => navigate(`/cita/${codigo}`)}
+                              className="min-h-[44px] px-4 rounded-xl bg-slate-700 hover:bg-slate-800 text-white text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/40"
+                            >
+                              Ver cita
+                            </button>
+                          </div>
+                        )}
 
                         <div className="mt-2 flex flex-wrap gap-2">
-                          {(c.estadoTexto === "Pendiente" || c.estadoTexto === "Confirmada") && puedeModificar && tieneEmail && (
+                          {(c.estadoTexto === "Pendiente" || c.estadoTexto === "Confirmada") && puedeModificar && codigo && (
                             <>
                               <button
                                 type="button"
@@ -376,10 +384,10 @@ export default function MisCitasPage() {
                               <button
                                 type="button"
                                 onClick={() => setCancelandoId(c.id)}
-                                disabled={cancelando === c.codigoConfirmacion}
+                                disabled={cancelando === codigo}
                                 className={`${BOTON_SECUNDARIO} text-red-700 border-red-200 hover:bg-red-50`}
                               >
-                                {cancelando === c.codigoConfirmacion ? "Cancelando…" : "Cancelar"}
+                                {cancelando === codigo ? "Cancelando…" : "Cancelar"}
                               </button>
                             </>
                           )}
@@ -400,7 +408,7 @@ export default function MisCitasPage() {
                         )}
 
                         {/* AP-04: sin correo el servidor no permite cambios; decirlo en vez de ocultar las acciones. */}
-                        {(c.estadoTexto === "Pendiente" || c.estadoTexto === "Confirmada") && puedeModificar && !tieneEmail && (
+                        {(c.estadoTexto === "Pendiente" || c.estadoTexto === "Confirmada") && puedeModificar && !codigo && (
                           <p className="mt-3 text-xs text-slate-600 bg-slate-50 rounded-lg px-3 py-2">
                             Para reagendar o cancelar, busca tus citas con el correo que usaste al reservar.
                             Si reservaste sin correo, contacta directamente al negocio.{" "}
@@ -418,7 +426,7 @@ export default function MisCitasPage() {
                           <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
                             <p className="text-xs text-red-700 mb-2">¿Confirmas la cancelación? Esta acción no se puede deshacer.</p>
                             <div className="flex gap-2">
-                              <button type="button" onClick={() => { cancelarCita(c.id, c.codigoConfirmacion); setCancelandoId(null); }} className="min-h-[44px] text-sm bg-red-600 text-white px-4 rounded-lg hover:bg-red-700 transition">Sí, cancelar</button>
+                              <button type="button" onClick={() => { if (codigo) cancelarCita(c.id, codigo); setCancelandoId(null); }} className="min-h-[44px] text-sm bg-red-600 text-white px-4 rounded-lg hover:bg-red-700 transition">Sí, cancelar</button>
                               <button type="button" onClick={() => setCancelandoId(null)} className="min-h-[44px] text-sm text-slate-600 px-4 hover:text-slate-800 transition">No, volver</button>
                             </div>
                           </div>
@@ -462,9 +470,11 @@ export default function MisCitasPage() {
                         </div>
 
                         <div className="mt-3 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
-                          <span className="font-mono text-xs text-slate-500 bg-slate-50 px-2 py-1 rounded-lg tracking-wider">
-                            {c.codigoConfirmacion}
-                          </span>
+                          {c.codigoConfirmacion && (
+                            <span className="font-mono text-xs text-slate-500 bg-slate-50 px-2 py-1 rounded-lg tracking-wider">
+                              {c.codigoConfirmacion}
+                            </span>
+                          )}
                           <div className="flex flex-wrap items-center gap-2">
                             {c.estadoTexto === "Completada" && (
                               <span className="text-xs text-slate-500 italic">
@@ -480,13 +490,15 @@ export default function MisCitasPage() {
                             >
                               Repetir
                             </button>
-                            <button
-                              type="button"
-                              onClick={() => navigate(`/cita/${c.codigoConfirmacion}`)}
-                              className={BOTON_SECUNDARIO}
-                            >
-                              Ver cita
-                            </button>
+                            {c.codigoConfirmacion && (
+                              <button
+                                type="button"
+                                onClick={() => navigate(`/cita/${c.codigoConfirmacion}`)}
+                                className={BOTON_SECUNDARIO}
+                              >
+                                Ver cita
+                              </button>
+                            )}
                           </div>
                         </div>
                       </div>

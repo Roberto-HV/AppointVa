@@ -295,10 +295,10 @@ public class PublicoControllerCrearCitaTests
     // ── Conflicto de nombre del cliente ───────────────────────────────────────
 
     [Fact]
-    public async Task RetornaConflict_ConCodigoYNombreEnArchivo_CuandoTelefonoEstaAOtroNombre()
+    public async Task RetornaConflict_SoloConElCodigo_CuandoTelefonoEstaAOtroNombre()
     {
         var (controller, negocioRepo, citaRepo, clienteRepo, _, _, db) = CrearComponentes(
-            nameof(RetornaConflict_ConCodigoYNombreEnArchivo_CuandoTelefonoEstaAOtroNombre));
+            nameof(RetornaConflict_SoloConElCodigo_CuandoTelefonoEstaAOtroNombre));
         var negocio = NegocioActivo(autoConfirmar: true);
         negocioRepo.ObtenerPorSlugAsync(negocio.Slug).Returns(negocio);
 
@@ -319,11 +319,12 @@ public class PublicoControllerCrearCitaTests
         var result = await controller.CrearCita(dto);
 
         var conflict = result.Should().BeOfType<ConflictObjectResult>().Subject;
+        // Sin `nombreExistente`: ver PublicoDatosClienteExpuestosTests — el 409 era un
+        // segundo oráculo de teléfono → nombre legal, abierto y sin autenticar.
         conflict.Value.Should().BeEquivalentTo(new
         {
             codigo = CodigosError.ClienteNombreDistinto,
             mensaje = "Ese teléfono ya está registrado a nombre de otra persona.",
-            nombreExistente = "Elena López",
         });
         await citaRepo.DidNotReceive().CrearAsync(Arg.Any<Cita>());
     }

@@ -347,38 +347,40 @@ describe("BookingPage — barra de acción", () => {
 
 // ── Hoja de conflicto de cliente ──────────────────────────────────────────────
 function rechazarPorNombreDistinto() {
+  // El 409 ya no lleva `nombreExistente`: era una consulta abierta de teléfono → nombre legal.
   vi.mocked(publicoApi.crearCita).mockRejectedValueOnce({
     response: {
       status: 409,
       data: {
         codigo: "CLIENTE_NOMBRE_DISTINTO",
         mensaje: "Ese teléfono ya está registrado a nombre de otra persona.",
-        nombreExistente: "Elena López",
       },
     },
   });
 }
 
 describe("BookingPage — hoja «¿eres tú?»", () => {
-  it("abre la hoja con el nombre registrado cuando la API responde CLIENTE_NOMBRE_DISTINTO", async () => {
+  it("abre la hoja sin revelar a quién pertenece el teléfono", async () => {
     const form = await avanzarHastaPaso4();
     rechazarPorNombreDistinto();
     fireEvent.submit(form);
 
     const hoja = await screen.findByRole("dialog");
     expect(hoja).toHaveAttribute("aria-modal", "true");
-    expect(within(hoja).getByText("Elena López")).toBeInTheDocument();
+    expect(within(hoja).getByText(/ese teléfono ya está registrado/i)).toBeInTheDocument();
+    expect(within(hoja).getByText(/por privacidad no mostramos de quién es/i)).toBeInTheDocument();
+    expect(hoja).not.toHaveTextContent("Elena López");
     // No debe caer en la rama de horario ocupado
     expect(screen.queryByText(/ya no está disponible/i)).not.toBeInTheDocument();
     expect(screen.getByTestId("indicador-pasos")).toHaveAttribute("data-paso", "4");
   });
 
-  it("reenvía con confirmarClienteExistente al confirmar que sí es la persona", async () => {
+  it("reenvía con confirmarClienteExistente al confirmar que el teléfono es suyo", async () => {
     const form = await avanzarHastaPaso4();
     rechazarPorNombreDistinto();
     fireEvent.submit(form);
 
-    fireEvent.click(await screen.findByRole("button", { name: "Sí, soy yo" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Sí, es mi teléfono" }));
 
     await waitFor(() => expect(publicoApi.crearCita).toHaveBeenCalledTimes(2));
     expect(vi.mocked(publicoApi.crearCita).mock.calls[0][0].confirmarClienteExistente).toBeUndefined();
