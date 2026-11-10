@@ -123,7 +123,25 @@ export interface ConfirmacionCita {
   nombreServicio: string;
   nombreEmpleado: string;
   nombreCliente: string;
-  emailCliente?: string;
+  /**
+   * Sólo viene cuando quien pregunta ya traía la dirección: es el eco de lo que se
+   * tecleó al reservar (POST /publico/citas). La consulta por código lo deja en
+   * `null` aunque el cliente sí tenga correo en archivo —el servidor no entrega la
+   * dirección que autoriza cancelar y reagendar—, así que `null` aquí NO significa
+   * «sin correo»: para eso está `tieneEmail`.
+   */
+  emailCliente?: string | null;
+  /**
+   * Hay un correo en archivo al que salió la confirmación y con el que el servidor
+   * autoriza cancelar y reagendar; la dirección no viaja. Es el campo por el que se
+   * decide si se ofrece autogestión.
+   *
+   * Opcional a propósito: el front y el API salen del mismo push pero a plataformas
+   * distintas, así que durante el despliegue un API viejo responde sin este campo.
+   * Quien lo lea debe respaldarlo con la presencia de `emailCliente`, que es donde el
+   * API viejo mandaba la dirección.
+   */
+  tieneEmail?: boolean;
   telefonoCliente?: string;
   inicioEn: string;
   finEn: string;

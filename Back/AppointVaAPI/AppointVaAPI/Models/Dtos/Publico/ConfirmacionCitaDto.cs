@@ -11,7 +11,19 @@ namespace AppointVaAPI.Models.Dtos.Publico
         public string NombreServicio { get; set; } = string.Empty;
         public string NombreEmpleado { get; set; } = string.Empty;
         public string NombreCliente { get; set; } = string.Empty;
+        /// <summary>
+        /// Eco del correo que trajo quien reserva: sólo viaja en la respuesta de POST
+        /// /publico/citas, donde es su propio dato de vuelta. La consulta por código lo
+        /// deja en null aunque el cliente sí tenga correo en archivo; para saber si lo
+        /// tiene está <see cref="TieneEmail"/>.
+        /// </summary>
         public string? EmailCliente { get; set; }
+        /// <summary>
+        /// Hay un correo en archivo al que salió la confirmación y con el que se autoriza
+        /// cancelar o reagendar; la dirección no viaja. Es el campo por el que la página
+        /// decide si ofrece autogestión, nunca <see cref="EmailCliente"/>.
+        /// </summary>
+        public bool TieneEmail { get; set; }
         public DateTime InicioEn { get; set; }
         public DateTime FinEn { get; set; }
         public decimal Precio { get; set; }

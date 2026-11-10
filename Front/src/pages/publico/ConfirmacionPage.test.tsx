@@ -84,14 +84,26 @@ const mockCitaBase = {
   horasCancelacion: 0,
   requiereAnticipo: false,
   montoAnticipo: 0,
+  // Como responde GET /publico/citas/{codigo}: dice que hay correo en archivo sin
+  // devolver la dirección, que es lo que autoriza cancelar y reagendar.
+  tieneEmail: true,
 };
 
-function renderConQuery() {
+/**
+ * `estadoNavegacion` imita lo que BookingPage deja al navegar tras reservar: el correo
+ * que el cliente acaba de teclear. Sin él la página está como al abrir el enlace más
+ * tarde o en otro dispositivo, que es cuando tiene que pedirlo.
+ */
+function renderConQuery(estadoNavegacion?: { emailCliente?: string }) {
   const qc = new QueryClient({
     defaultOptions: { queries: { retry: false, retryDelay: 0 } },
   });
   return render(
-    <MemoryRouter>
+    <MemoryRouter
+      initialEntries={[
+        { pathname: "/b/salon-test/confirmacion/ABC123", state: estadoNavegacion },
+      ]}
+    >
       <QueryClientProvider client={qc}>
         <ConfirmacionPage />
       </QueryClientProvider>
@@ -110,10 +122,9 @@ beforeEach(() => {
 });
 
 describe("ConfirmacionPage — banner sin email", () => {
-  it("no muestra el banner cuando emailCliente está presente", async () => {
+  it("no muestra el banner cuando la cita tiene correo en archivo", async () => {
     vi.mocked(publicoApi.obtenerCita).mockResolvedValue({
       ...mockCitaBase,
-      emailCliente: "juan@test.com",
     } as never);
 
     renderConQuery();
@@ -127,10 +138,10 @@ describe("ConfirmacionPage — banner sin email", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("muestra el banner cuando emailCliente está ausente", async () => {
+  it("muestra el banner cuando la cita no tiene correo en archivo", async () => {
     vi.mocked(publicoApi.obtenerCita).mockResolvedValue({
       ...mockCitaBase,
-      emailCliente: undefined,
+      tieneEmail: false,
     } as never);
 
     renderConQuery();
@@ -143,7 +154,7 @@ describe("ConfirmacionPage — banner sin email", () => {
   it("el botón Copiar enlace llama a clipboard.writeText", async () => {
     vi.mocked(publicoApi.obtenerCita).mockResolvedValue({
       ...mockCitaBase,
-      emailCliente: undefined,
+      tieneEmail: false,
     } as never);
 
     renderConQuery();
@@ -172,7 +183,7 @@ describe("ConfirmacionPage — banner sin email", () => {
   it("los dos botones de copiado tienen nombres accesibles distintos y copian enlaces distintos", async () => {
     vi.mocked(publicoApi.obtenerCita).mockResolvedValue({
       ...mockCitaBase,
-      emailCliente: undefined,
+      tieneEmail: false,
     } as never);
 
     renderConQuery();
@@ -198,7 +209,7 @@ describe("ConfirmacionPage — banner sin email", () => {
 
   it("si el portapapeles falla muestra el enlace para copiarlo a mano (BF-27)", async () => {
     vi.mocked(navigator.clipboard.writeText).mockRejectedValue(new Error("denegado"));
-    vi.mocked(publicoApi.obtenerCita).mockResolvedValue({ ...mockCitaBase, emailCliente: undefined } as never);
+    vi.mocked(publicoApi.obtenerCita).mockResolvedValue({ ...mockCitaBase, tieneEmail: false } as never);
     renderConQuery();
 
     fireEvent.click(await screen.findByRole("button", { name: "Copiar enlace de la cita" }));
@@ -210,14 +221,14 @@ describe("ConfirmacionPage — banner sin email", () => {
   });
 
   it("el título de la pestaña nombra al negocio con el formato común", async () => {
-    vi.mocked(publicoApi.obtenerCita).mockResolvedValue({ ...mockCitaBase, emailCliente: "juan@test.com" } as never);
+    vi.mocked(publicoApi.obtenerCita).mockResolvedValue({ ...mockCitaBase } as never);
     renderConQuery();
     await waitFor(() => expect(document.title).toBe("Tu cita en Salón Test · AppointVa"));
   });
 
   it("usa el término del sector para quien atiende (BF-25)", async () => {
     vi.mocked(publicoApi.obtenerNegocio).mockResolvedValue({ sector: "salud" } as never);
-    vi.mocked(publicoApi.obtenerCita).mockResolvedValue({ ...mockCitaBase, emailCliente: "juan@test.com" } as never);
+    vi.mocked(publicoApi.obtenerCita).mockResolvedValue({ ...mockCitaBase } as never);
     renderConQuery();
     expect(await screen.findByText("Profesional")).toBeInTheDocument();
   });
@@ -225,7 +236,7 @@ describe("ConfirmacionPage — banner sin email", () => {
   it("toma el sector de la propia cita cuando la consulta del negocio falla (B4)", async () => {
     vi.mocked(publicoApi.obtenerNegocio).mockRejectedValue(new Error("sin negocio"));
     vi.mocked(publicoApi.obtenerCita).mockResolvedValue({
-      ...mockCitaBase, emailCliente: "juan@test.com", sector: "salud",
+      ...mockCitaBase,sector: "salud",
     } as never);
     const { container } = renderConQuery();
     expect(await screen.findByText("Profesional")).toBeInTheDocument();
@@ -235,7 +246,7 @@ describe("ConfirmacionPage — banner sin email", () => {
   it("el enlace Ver mis citas apunta a /b/salon-test/mis-citas", async () => {
     vi.mocked(publicoApi.obtenerCita).mockResolvedValue({
       ...mockCitaBase,
-      emailCliente: undefined,
+      tieneEmail: false,
     } as never);
 
     renderConQuery();
@@ -254,7 +265,6 @@ describe("ConfirmacionPage — estado de la cita", () => {
   async function renderCita(cambios: Record<string, unknown>) {
     vi.mocked(publicoApi.obtenerCita).mockResolvedValue({
       ...mockCitaBase,
-      emailCliente: "juan@test.com",
       ...cambios,
     } as never);
     renderConQuery();
@@ -355,7 +365,7 @@ describe("ConfirmacionPage — estado de la cita", () => {
   });
 
   it("sin correo no promete recordatorio por correo", async () => {
-    await renderCita({ estadoTexto: "Confirmada", emailCliente: undefined });
+    await renderCita({ estadoTexto: "Confirmada", tieneEmail: false });
     expect(screen.queryByText(/recordatorio por correo/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/whatsapp o correo/i)).not.toBeInTheDocument();
   });
@@ -364,7 +374,7 @@ describe("ConfirmacionPage — estado de la cita", () => {
 // ── BF-16: el sello usa los tokens semánticos y vive en el talón ──────────────
 describe("ConfirmacionPage — sello de estado", () => {
   it("confirmada usa los tokens de estado confirmado", async () => {
-    vi.mocked(publicoApi.obtenerCita).mockResolvedValue({ ...mockCitaBase, emailCliente: "juan@test.com" } as never);
+    vi.mocked(publicoApi.obtenerCita).mockResolvedValue({ ...mockCitaBase } as never);
     renderConQuery();
     const sello = await screen.findByText("Confirmada");
     expect(sello.textContent).not.toMatch(/[✓⏳]/);
@@ -375,7 +385,7 @@ describe("ConfirmacionPage — sello de estado", () => {
 
   it("pendiente usa los tokens de estado pendiente", async () => {
     vi.mocked(publicoApi.obtenerCita).mockResolvedValue({
-      ...mockCitaBase, emailCliente: "juan@test.com", estadoTexto: "Pendiente", estado: 0,
+      ...mockCitaBase,estadoTexto: "Pendiente", estado: 0,
     } as never);
     renderConQuery();
     const sello = await screen.findByText("Por confirmar");
@@ -383,7 +393,7 @@ describe("ConfirmacionPage — sello de estado", () => {
   });
 
   it("el código va en el talón, antes del borde perforado y del detalle", async () => {
-    vi.mocked(publicoApi.obtenerCita).mockResolvedValue({ ...mockCitaBase, emailCliente: "juan@test.com" } as never);
+    vi.mocked(publicoApi.obtenerCita).mockResolvedValue({ ...mockCitaBase } as never);
     const { container } = renderConQuery();
     const codigo = await screen.findByText("ABC123");
     const perforado = container.querySelector(".talon-perforado")!;
@@ -396,7 +406,7 @@ describe("ConfirmacionPage — sello de estado", () => {
     vi.mocked(publicoApi.obtenerNegocio).mockResolvedValue({
       sector: "belleza", portadaUrl: "https://cdn.test/portada.jpg", logoUrl: "https://cdn.test/logo.png",
     } as never);
-    vi.mocked(publicoApi.obtenerCita).mockResolvedValue({ ...mockCitaBase, emailCliente: "juan@test.com" } as never);
+    vi.mocked(publicoApi.obtenerCita).mockResolvedValue({ ...mockCitaBase } as never);
     const { container } = renderConQuery();
     await screen.findByText("ABC123");
     await waitFor(() =>
@@ -409,7 +419,7 @@ describe("ConfirmacionPage — sello de estado", () => {
     vi.mocked(publicoApi.obtenerNegocio).mockResolvedValue({
       sector: "belleza", portadaUrl: "https://cdn.test/portada.jpg", logoUrl: "https://cdn.test/logo.png",
     } as never);
-    vi.mocked(publicoApi.obtenerCita).mockResolvedValue({ ...mockCitaBase, emailCliente: "juan@test.com", colorPrimario: "#2F7D4F" } as never);
+    vi.mocked(publicoApi.obtenerCita).mockResolvedValue({ ...mockCitaBase,colorPrimario: "#2F7D4F" } as never);
     const { container } = renderConQuery();
     await screen.findByText("ABC123");
     const banda = container.querySelector('[data-testid="banda-negocio"]') as HTMLElement;
@@ -429,7 +439,6 @@ describe("ConfirmacionPage — sello de estado", () => {
 describe("ConfirmacionPage — acciones", () => {
   const conCalendario = {
     ...mockCitaBase,
-    emailCliente: "juan@test.com",
     icalUrl: "https://api.test/cita.ics",
     googleCalUrl: "https://calendar.google.com/x",
   };
@@ -475,7 +484,7 @@ describe("ConfirmacionPage — acciones", () => {
   });
 
   it("sin correo no ofrece Reagendar ni Cancelar y remite al negocio", async () => {
-    vi.mocked(publicoApi.obtenerCita).mockResolvedValue({ ...conCalendario, emailCliente: undefined } as never);
+    vi.mocked(publicoApi.obtenerCita).mockResolvedValue({ ...conCalendario, tieneEmail: false } as never);
     renderConQuery();
 
     expect(await screen.findByText(/para reagendar o cancelar, comunícate con el negocio/i)).toBeInTheDocument();
@@ -484,11 +493,124 @@ describe("ConfirmacionPage — acciones", () => {
   });
 });
 
+// ── El correo lo pone el cliente, no el servidor ──────────────────────────────
+// GET /publico/citas/{codigo} dejó de devolver el correo en archivo: era la prueba
+// de titularidad que piden cancelar y reagendar, así que entregarlo a cambio de un
+// código era entregar la credencial de la propia autorización. La página lo trae de
+// la sesión en que se reservó o lo pide.
+describe("ConfirmacionPage — prueba de titularidad", () => {
+  const LABEL_CORREO = /correo con el que reservaste/i;
+
+  it("no imprime la dirección ni cuando la respuesta trae una", async () => {
+    // Defensa de fondo: aunque un servidor viejo —o una respuesta en caché— devuelva
+    // la dirección, el talón es lo que el cliente comparte e imprime.
+    vi.mocked(publicoApi.obtenerCita).mockResolvedValue({
+      ...mockCitaBase, emailCliente: "juan@test.com",
+    } as never);
+    const { container } = renderConQuery();
+
+    await screen.findByText("ABC123");
+    expect(container.textContent).not.toContain("juan@test.com");
+    expect(screen.getByText(/recordatorio por correo/i)).toBeInTheDocument();
+  });
+
+  it("recién reservada, cancela con el correo de la sesión y no pide nada", async () => {
+    vi.mocked(publicoApi.obtenerCita).mockResolvedValue({ ...mockCitaBase } as never);
+    vi.mocked(publicoApi.cancelarCita).mockResolvedValue(undefined);
+    renderConQuery({ emailCliente: "juan@test.com" });
+
+    fireEvent.click(await screen.findByRole("button", { name: "Cancelar cita" }));
+    expect(screen.queryByLabelText(LABEL_CORREO)).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Sí, cancelar" }));
+
+    await waitFor(() =>
+      expect(publicoApi.cancelarCita).toHaveBeenCalledWith("ABC123", "juan@test.com")
+    );
+  });
+
+  it("al abrir el enlace más tarde, pide el correo y lo manda como prueba", async () => {
+    vi.mocked(publicoApi.obtenerCita).mockResolvedValue({ ...mockCitaBase } as never);
+    vi.mocked(publicoApi.cancelarCita).mockResolvedValue(undefined);
+    renderConQuery();
+
+    fireEvent.click(await screen.findByRole("button", { name: "Cancelar cita" }));
+
+    const campo = screen.getByLabelText(LABEL_CORREO);
+    // Sin correo no hay prueba que mandar: el botón no deja intentarlo en vano.
+    expect(screen.getByRole("button", { name: "Sí, cancelar" })).toBeDisabled();
+
+    fireEvent.change(campo, { target: { value: " juan@test.com " } });
+    fireEvent.click(screen.getByRole("button", { name: "Sí, cancelar" }));
+
+    await waitFor(() =>
+      expect(publicoApi.cancelarCita).toHaveBeenCalledWith("ABC123", "juan@test.com")
+    );
+  });
+
+  it("un correo que no es el de la reserva dice qué corregir, no «no se pudo»", async () => {
+    vi.mocked(publicoApi.obtenerCita).mockResolvedValue({ ...mockCitaBase } as never);
+    vi.mocked(publicoApi.cancelarCita).mockRejectedValue({ response: { status: 403 } });
+    renderConQuery();
+
+    fireEvent.click(await screen.findByRole("button", { name: "Cancelar cita" }));
+    fireEvent.change(screen.getByLabelText(LABEL_CORREO), {
+      target: { value: "otro@test.com" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Sí, cancelar" }));
+
+    expect(await screen.findByText(/ese correo no es el de la reserva/i)).toBeInTheDocument();
+    expect(screen.queryByText(/no se pudo cancelar la cita/i)).toBeNull();
+  });
+
+  it("si el correo de la sesión no es el de archivo, lo pide en vez de dejar sin salida", async () => {
+    // Quien reservó pudo teclear un correo y estar registrado con otro: el servidor
+    // autoriza contra el de archivo, así que el de la sesión puede no servir.
+    vi.mocked(publicoApi.obtenerCita).mockResolvedValue({ ...mockCitaBase } as never);
+    vi.mocked(publicoApi.cancelarCita).mockRejectedValueOnce({ response: { status: 403 } });
+    renderConQuery({ emailCliente: "tecleado@test.com" });
+
+    fireEvent.click(await screen.findByRole("button", { name: "Cancelar cita" }));
+    fireEvent.click(screen.getByRole("button", { name: "Sí, cancelar" }));
+
+    expect(await screen.findByText(/ese correo no es el de la reserva/i)).toBeInTheDocument();
+    const campo = await screen.findByLabelText(LABEL_CORREO);
+
+    vi.mocked(publicoApi.cancelarCita).mockResolvedValue(undefined);
+    fireEvent.change(campo, { target: { value: "archivo@test.com" } });
+    fireEvent.click(screen.getByRole("button", { name: "Sí, cancelar" }));
+
+    await waitFor(() =>
+      expect(publicoApi.cancelarCita).toHaveBeenLastCalledWith("ABC123", "archivo@test.com")
+    );
+  });
+
+  it("reagendar también pide el correo y lo manda con el nuevo horario", async () => {
+    vi.mocked(publicoApi.obtenerCita).mockResolvedValue({ ...mockCitaBase } as never);
+    vi.mocked(publicoApi.reagendarCita).mockResolvedValue({ mensaje: "ok" });
+    renderConQuery();
+
+    fireEvent.click(await screen.findByRole("button", { name: "Reagendar" }));
+    expect(screen.getByLabelText(LABEL_CORREO)).toBeInTheDocument();
+  });
+
+  it("sin correo en archivo no pide nada: no hay autogestión que probar", async () => {
+    vi.mocked(publicoApi.obtenerCita).mockResolvedValue({
+      ...mockCitaBase, tieneEmail: false,
+    } as never);
+    renderConQuery();
+
+    await screen.findByText(/sin correo registrado/i);
+    expect(screen.queryByLabelText(LABEL_CORREO)).toBeNull();
+    expect(screen.queryByRole("button", { name: "Cancelar cita" })).toBeNull();
+  });
+});
+
 // ── BF-19: reagendar respeta la anticipación mínima ───────────────────────────
 describe("ConfirmacionPage — reagendar", () => {
   it("pasa la anticipación mínima al selector y muestra la política de cancelación", async () => {
     vi.mocked(publicoApi.obtenerCita).mockResolvedValue({
-      ...mockCitaBase, emailCliente: "juan@test.com", diasAnticipacionMinima: 2, horasCancelacion: 24,
+      ...mockCitaBase, diasAnticipacionMinima: 2, horasCancelacion: 24,
     } as never);
     renderConQuery();
 
@@ -524,7 +646,7 @@ describe("ConfirmacionPage — carga y errores", () => {
     expect(await screen.findByRole("heading", { name: "No pudimos cargar tu cita" })).toBeInTheDocument();
     expect(screen.queryByText("Cita no encontrada")).not.toBeInTheDocument();
 
-    vi.mocked(publicoApi.obtenerCita).mockResolvedValue({ ...mockCitaBase, emailCliente: "juan@test.com" } as never);
+    vi.mocked(publicoApi.obtenerCita).mockResolvedValue({ ...mockCitaBase } as never);
     fireEvent.click(screen.getByRole("button", { name: "Reintentar" }));
 
     expect(await screen.findByText("ABC123")).toBeInTheDocument();

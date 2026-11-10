@@ -874,7 +874,13 @@ export default function BookingPage() {
         respuestasIntake: respuestasIntakeList.length > 0 ? respuestasIntakeList : undefined,
         confirmarClienteExistente: confirmarClienteExistente || undefined,
       });
-      navigate(`/b/${slug}/confirmacion/${cita.codigoConfirmacion}`);
+      // El correo viaja en el estado de la navegación, no en la URL ni en la respuesta
+      // de la consulta por código: la confirmación lo necesita para cancelar o reagendar
+      // y el servidor ya no lo devuelve. Así quien acaba de reservar no lo teclea otra
+      // vez, y el enlace que comparta no lleva su correo a nadie más.
+      navigate(`/b/${slug}/confirmacion/${cita.codigoConfirmacion}`, {
+        state: { emailCliente: cita.emailCliente ?? datos.emailCliente ?? undefined },
+      });
     } catch (err: unknown) {
       if (!mountedRef.current) return;
       const respuesta = (err as {

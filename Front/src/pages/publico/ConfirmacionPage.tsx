@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate, useLocation, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { publicoApi } from "../../api/publico";
 import { comprobantesApi } from "../../api/comprobantes";
@@ -92,6 +92,49 @@ const TEXTOS_ESTADO: Record<Exclude<EstadoVisibleCita, "otro">, TextosEstado> = 
  * queda a la vista, seleccionado al enfocarlo, para copiarlo a mano. Importa
  * sobre todo a quien reservó sin correo y solo tiene este enlace.
  */
+/**
+ * El servidor contesta 403 sin cuerpo cuando el correo no coincide con el de la
+ * reserva. Sin este texto el intento moriría en un «no se pudo» que no dice qué
+ * corregir, y el cliente no tiene cómo saber que el dato equivocado es el correo.
+ */
+const CORREO_NO_COINCIDE = "Ese correo no es el de la reserva. Revísalo e intenta de nuevo.";
+
+/**
+ * Pide el correo de la reserva cuando la página no lo trae de la sesión en que se
+ * reservó. Es la prueba de titularidad que el servidor exige para cancelar o
+ * reagendar: desde que dejó de devolver la dirección, tiene que ponerla el cliente.
+ */
+function CampoCorreoTitular({
+  id,
+  valor,
+  onCambiar,
+}: {
+  id: string;
+  valor: string;
+  onCambiar: (valor: string) => void;
+}) {
+  return (
+    <div className="text-left">
+      <label htmlFor={id} className="block text-sm font-medium text-slate-700 mb-1">
+        Correo con el que reservaste
+      </label>
+      <input
+        id={id}
+        type="email"
+        autoComplete="email"
+        inputMode="email"
+        value={valor}
+        onChange={(e) => onCambiar(e.target.value)}
+        placeholder="tucorreo@ejemplo.com"
+        className="w-full min-h-[44px] rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400"
+      />
+      <p className="mt-1 text-xs text-slate-500">
+        Lo usamos para comprobar que la cita es tuya; no se muestra en esta página.
+      </p>
+    </div>
+  );
+}
+
 function EnlaceParaCopiar({ url }: { url: string }) {
   return (
     <div role="alert" className="w-full mt-2 text-left">
@@ -112,7 +155,27 @@ function EnlaceParaCopiar({ url }: { url: string }) {
 export default function ConfirmacionPage() {
   const { slug, codigo } = useParams<{ slug?: string; codigo: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const queryClient = useQueryClient();
+  /**
+   * El correo que se tecleó al reservar, traído por el estado de la navegación: sólo
+   * existe mientras dure esa visita. La consulta por código ya no devuelve la dirección
+   * en archivo —es la que autoriza cancelar y reagendar—, así que al abrir el enlace en
+   * otro momento o en otro dispositivo hay que pedirla.
+   */
+  const emailDeLaSesion = ((): string | null => {
+    const traido = (location.state as { emailCliente?: unknown } | null)?.emailCliente;
+    return typeof traido === "string" && traido.trim() ? traido.trim() : null;
+  })();
+  const [emailTecleado, setEmailTecleado] = useState("");
+  /**
+   * El correo de la sesión no siempre es el que el negocio tiene en archivo: quien
+   * reservó pudo teclear uno y estar registrado con otro. Si el servidor lo rechaza,
+   * se deja de confiar en él y se pide, o no habría forma de corregirlo.
+   */
+  const [correoRechazado, setCorreoRechazado] = useState(false);
+  const emailDeLaSesionVigente = correoRechazado ? null : emailDeLaSesion;
+  const emailTitular = emailDeLaSesionVigente ?? emailTecleado.trim();
   const [confirmandoCancelar, setConfirmandoCancelar] = useState(false);
   const [errorCancelar, setErrorCancelar] = useState("");
   const [reagendando, setReagendando] = useState(false);
@@ -146,18 +209,25 @@ export default function ConfirmacionPage() {
   });
 
   const { mutate: cancelar, isPending: cancelando } = useMutation({
-    mutationFn: () => publicoApi.cancelarCita(codigo!, cita?.emailCliente),
+    mutationFn: () => publicoApi.cancelarCita(codigo!, emailTitular || undefined),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cita", codigo] });
       setConfirmandoCancelar(false);
     },
-    onError: () => {
-      setErrorCancelar("No se pudo cancelar la cita. Intenta de nuevo.");
+    onError: (err) => {
+      const noCoincide = estadoHttp(err) === 403;
+      if (noCoincide) setCorreoRechazado(true);
+      setErrorCancelar(
+        noCoincide ? CORREO_NO_COINCIDE : "No se pudo cancelar la cita. Intenta de nuevo."
+      );
     },
   });
 
   const { mutate: reagendar, isPending: confirmandoReag, error: errorReag } = useMutation({
-    mutationFn: () => publicoApi.reagendarCita(codigo!, slotReag!.inicio, cita?.emailCliente),
+    mutationFn: () => publicoApi.reagendarCita(codigo!, slotReag!.inicio, emailTitular || undefined),
+    onError: (err) => {
+      if (estadoHttp(err) === 403) setCorreoRechazado(true);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cita", codigo] });
       setReagendando(false);
@@ -274,8 +344,18 @@ export default function ConfirmacionPage() {
   const horasCancelacion = cita.horasCancelacion ?? 0;
   const minutosRestantes = (new Date(cita.inicioEn).getTime() - Date.now()) / 60000;
   const puedeCancel = cancelable && minutosRestantes > 0 && (horasCancelacion === 0 || minutosRestantes > horasCancelacion * 60);
-  // El backend rechaza reagendar o cancelar sin el correo de la reserva: sin él no se ofrece.
-  const autogestion = cancelable && !!cita.emailCliente;
+  // El backend rechaza reagendar o cancelar sin el correo de la reserva: si la cita no
+  // tiene correo en archivo no hay prueba de titularidad posible y no se ofrece. Se mira
+  // `tieneEmail` y no `emailCliente`, que viene vacío salvo en la vuelta de la reserva.
+  //
+  // El `??` cubre la ventana de despliegue: el front (Vercel) y el API (Render) salen del
+  // mismo push pero no terminan a la vez, así que un API viejo responde sin `tieneEmail` y
+  // con la dirección en `emailCliente`. Sin este respaldo la página le diría «no hay correo
+  // registrado» —y le quitaría cancelar y reagendar— a quien sí lo tiene.
+  const tieneCorreoEnArchivo = cita.tieneEmail ?? !!cita.emailCliente;
+  const autogestion = cancelable && tieneCorreoEnArchivo;
+  // Quien acaba de reservar ya trajo su correo; a quien abre el enlace después se le pide.
+  const pedirCorreo = !emailDeLaSesionVigente;
 
   // ── Cita cancelada ──────────────────────────────────────────────────────────
   if (cancelada) {
@@ -471,7 +551,7 @@ export default function ConfirmacionPage() {
 
       <div className="max-w-md mx-auto px-4 py-6">
 
-        {!cita.emailCliente && (
+        {!tieneCorreoEnArchivo && (
           <div className="mb-4 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex flex-col gap-2.5 print:hidden">
             <div className="flex items-start gap-2">
               <Info size={16} className="text-amber-500 shrink-0 mt-0.5" />
@@ -673,7 +753,7 @@ export default function ConfirmacionPage() {
                 <p className="text-sm font-semibold text-slate-700">Recordatorio</p>
                 {/* Solo se promete el canal que existe: sin correo no hay recordatorio por email. */}
                 <p className="text-xs text-slate-500 mt-0.5">
-                  {cita.emailCliente
+                  {tieneCorreoEnArchivo
                     ? "Te enviaremos un recordatorio por correo antes de tu cita"
                     : "Guarda el enlace de tu cita: sin correo no podemos enviarte recordatorios por email"}
                 </p>
@@ -790,9 +870,14 @@ export default function ConfirmacionPage() {
                   Este ya es el horario actual de tu cita. Elige una fecha u hora diferente.
                 </p>
               )}
+              {pedirCorreo && (
+                <CampoCorreoTitular id="correo-titular-reagendar" valor={emailTecleado} onCambiar={setEmailTecleado} />
+              )}
               {errorReag && (
                 <p className="text-xs text-red-500 text-center">
-                  {(errorReag as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje ?? "No se pudo reagendar"}
+                  {estadoHttp(errorReag) === 403
+                    ? CORREO_NO_COINCIDE
+                    : (errorReag as { response?: { data?: { mensaje?: string } } })?.response?.data?.mensaje ?? "No se pudo reagendar"}
                 </p>
               )}
               <div className="flex gap-2 pt-1">
@@ -804,7 +889,7 @@ export default function ConfirmacionPage() {
                 </button>
                 <button
                   onClick={() => reagendar()}
-                  disabled={!slotReag || confirmandoReag || (!!slotReag && new Date(slotReag.inicio).getTime() === new Date(cita.inicioEn).getTime())}
+                  disabled={!slotReag || confirmandoReag || !emailTitular || (!!slotReag && new Date(slotReag.inicio).getTime() === new Date(cita.inicioEn).getTime())}
                   className="flex-1 py-2.5 rounded-xl bg-slate-700 hover:bg-slate-800 text-white text-sm font-bold disabled:opacity-50 transition"
                 >
                   {confirmandoReag ? "Reagendando…" : "Confirmar"}
@@ -816,6 +901,11 @@ export default function ConfirmacionPage() {
           {confirmandoCancelar && (
             <div className="bg-red-50 border border-red-100 rounded-2xl p-4 text-center">
               <p className="text-sm text-slate-700 mb-3 font-medium">¿Seguro que deseas cancelar tu cita?</p>
+              {pedirCorreo && (
+                <div className="mb-3">
+                  <CampoCorreoTitular id="correo-titular-cancelar" valor={emailTecleado} onCambiar={setEmailTecleado} />
+                </div>
+              )}
               {errorCancelar && (
                 <p className="text-xs text-red-600 mb-3 bg-red-100 rounded-xl px-3 py-2">{errorCancelar}</p>
               )}
@@ -828,7 +918,7 @@ export default function ConfirmacionPage() {
                 </button>
                 <button
                   onClick={() => { setErrorCancelar(""); cancelar(); }}
-                  disabled={cancelando}
+                  disabled={cancelando || !emailTitular}
                   className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-bold disabled:opacity-60 transition"
                 >
                   {cancelando ? "Cancelando…" : "Sí, cancelar"}

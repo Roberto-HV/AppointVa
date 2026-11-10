@@ -191,13 +191,16 @@ const mockNegocio: NegocioPublico = {
   resenas: [],
 };
 
-/** Expone la URL actual del MemoryRouter y un «atrás» de navegador. */
+/** Expone la URL actual del MemoryRouter, su estado y un «atrás» de navegador. */
 function UbicacionActual() {
-  const { pathname, search } = useLocation();
+  const { pathname, search, state } = useLocation();
   const navigate = useNavigate();
   return (
     <>
-      <span data-testid="ubicacion">{`${pathname}${search}`}</span>
+      <span
+        data-testid="ubicacion"
+        data-email={(state as { emailCliente?: string } | null)?.emailCliente ?? ""}
+      >{`${pathname}${search}`}</span>
       <button type="button" onClick={() => navigate(-1)}>atras-navegador</button>
     </>
   );
@@ -993,6 +996,24 @@ describe("BookingPage — resumen de escritorio", () => {
     vi.mocked(publicoApi.crearCita).mockResolvedValueOnce({ codigoConfirmacion: "ABC123" } as never);
     fireEvent.click(confirmar);
     await waitFor(() => expect(publicoApi.crearCita).toHaveBeenCalledTimes(1));
+  });
+
+  it("lleva el correo recién tecleado a la confirmación, fuera de la URL", async () => {
+    comoEscritorio();
+    const form = await avanzarHastaPaso4();
+
+    // La confirmación ya no recibe el correo del servidor: es la prueba con la que
+    // cancela y reagenda, así que viaja en el estado de esta navegación.
+    vi.mocked(publicoApi.crearCita).mockResolvedValueOnce({
+      codigoConfirmacion: "ABC123", emailCliente: "ana@test.com",
+    } as never);
+    fireEvent.submit(form);
+
+    await waitFor(() =>
+      expect(screen.getByTestId("ubicacion")).toHaveTextContent("/b/salon-test/confirmacion/ABC123")
+    );
+    expect(screen.getByTestId("ubicacion")).toHaveAttribute("data-email", "ana@test.com");
+    expect(screen.getByTestId("ubicacion").textContent).not.toContain("ana@test.com");
   });
 
   it("la ficha del negocio muestra el horario, la dirección y el contacto que trae la página", async () => {

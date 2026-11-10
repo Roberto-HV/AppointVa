@@ -574,7 +574,12 @@ namespace AppointVaAPI.Controllers.V1
                 NombreServicio = servicio.Nombre,
                 NombreEmpleado = empleado?.Nombre ?? string.Empty,
                 NombreCliente = cliente.NombreCompleto,
+                // Eco del correo que acaba de teclear quien reserva: devolverle su propio
+                // dato no revela nada, y es lo que deja a la página de confirmación cancelar
+                // o reagendar sin volver a pedírselo.
                 EmailCliente = dto.EmailCliente,
+                TieneEmail = !string.IsNullOrWhiteSpace(dto.EmailCliente)
+                             || !string.IsNullOrWhiteSpace(cliente.Email),
                 InicioEn = cita.InicioEn,
                 FinEn = cita.FinEn,
                 Precio = cita.Precio,
@@ -661,7 +666,15 @@ namespace AppointVaAPI.Controllers.V1
                 NombreServicio = cita.Servicio?.Nombre ?? string.Empty,
                 NombreEmpleado = cita.Empleado?.Nombre ?? string.Empty,
                 NombreCliente = cita.Cliente?.NombreCompleto ?? string.Empty,
-                EmailCliente = cita.Cliente?.Email,
+                // El correo en archivo nunca sale por aquí: es justo lo que autoriza cancelar
+                // y reagendar esta misma cita, así que devolverlo a cambio de un código sería
+                // entregar la credencial de la propia autorización. Y el código no basta como
+                // prueba de que quien pregunta es el cliente: con un teléfono ajeno y
+                // ConfirmarClienteExistente se obtiene un código propio colgado del registro de
+                // otra persona. La página sólo necesita saber que hay un correo al que salió la
+                // confirmación; la dirección la pone quien reserva, no el servidor.
+                EmailCliente = null,
+                TieneEmail = !string.IsNullOrWhiteSpace(cita.Cliente?.Email),
                 InicioEn = cita.InicioEn,
                 FinEn = cita.FinEn,
                 Precio = cita.Precio,

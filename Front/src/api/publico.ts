@@ -85,20 +85,33 @@ export const publicoApi = {
     return data;
   },
 
+  /**
+   * Única respuesta que trae `emailCliente`: es el eco del correo que se acaba de
+   * teclear, así que quien reservó puede cancelar o reagendar sin volver a darlo.
+   */
   crearCita: async (dto: CrearCitaDto): Promise<ConfirmacionCita> => {
     const { data } = await api.post("/publico/citas", dto);
     return data;
   },
 
+  /**
+   * El código de confirmación es lo único que pide este endpoint, así que la
+   * respuesta trae `emailCliente: null` incluso cuando hay correo en archivo: esa
+   * dirección es la que autoriza cancelar y reagendar, y devolverla a cambio del
+   * código entregaría la credencial de su propia autorización. `tieneEmail` dice si
+   * existe; la dirección tiene que ponerla el cliente.
+   */
   obtenerCita: async (codigo: string): Promise<ConfirmacionCita> => {
     const { data } = await api.get(`/publico/citas/${codigo}`);
     return data;
   },
 
+  /** 403 cuando el correo no es el de la reserva: es la prueba de titularidad. */
   cancelarCita: async (codigo: string, email?: string): Promise<void> => {
     await api.delete(`/publico/citas/${codigo}`, { params: email ? { email } : undefined });
   },
 
+  /** 403 cuando el correo no es el de la reserva: es la prueba de titularidad. */
   reagendarCita: async (codigo: string, inicioEn: string, email?: string): Promise<{ mensaje: string }> => {
     const { data } = await api.patch(
       `/publico/citas/${codigo}/reagendar`,

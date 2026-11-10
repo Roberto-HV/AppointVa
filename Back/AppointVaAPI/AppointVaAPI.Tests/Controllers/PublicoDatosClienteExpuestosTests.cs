@@ -93,9 +93,12 @@ public class PublicoDatosClienteExpuestosTests
 
     // Sin el codificador relajado, System.Text.Json escapa los acentos («López» →
     // «López») y una aserción sobre el texto crudo nunca encontraría el dato filtrado.
+    // La política camelCase es la de ASP.NET Core: así las respuestas con DTO tipado se
+    // inspeccionan con los mismos nombres que ve el cliente HTTP, igual que las anónimas.
     private static readonly JsonSerializerOptions SinEscaparAcentos = new()
     {
         Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
     };
 
     /// <summary>Serializa la respuesta anónima para inspeccionarla como la ve el cliente HTTP.</summary>
@@ -334,6 +337,105 @@ public class PublicoDatosClienteExpuestosTests
         confirmacion.Should().NotBeNull(
             "un cliente que ya dejó su correo debe recibir la confirmación sin volver a teclearlo");
         confirmacion!.Args.Should().Contain(EmailEnArchivo);
+    }
+
+    // ── GET api/publico/citas/{codigo} ────────────────────────────────────────
+
+    /// <summary>
+    /// Una cita que el repositorio devuelve ya resuelta, como la consulta por código.
+    /// </summary>
+    private static Cita CitaConCliente(Negocio negocio, Cliente cliente) => new()
+    {
+        Id = Guid.NewGuid(),
+        NegocioId = negocio.Id,
+        CodigoConfirmacion = "ABC123",
+        ClienteId = cliente.Id,
+        EmpleadoId = Guid.NewGuid(),
+        ServicioId = Guid.NewGuid(),
+        InicioEn = DateTime.UtcNow.AddDays(3),
+        FinEn = DateTime.UtcNow.AddDays(3).AddHours(1),
+        Estado = EstadosCitas.Confirmada,
+        Precio = 150m,
+        FechaCreacion = DateTime.UtcNow,
+        FechaActualizacion = DateTime.UtcNow,
+        Negocio = negocio,
+        Cliente = cliente,
+    };
+
+    [Fact]
+    public async Task ConsultaPorCodigo_NoDevuelveElCorreoEnArchivo_PeroDiceQueExiste()
+    {
+        var (controller, _, citaRepo, _, _, _) = CrearComponentes(
+            nameof(ConsultaPorCodigo_NoDevuelveElCorreoEnArchivo_PeroDiceQueExiste));
+        var negocio = NegocioActivo();
+        var cita = CitaConCliente(negocio, ClienteEnArchivo(negocio.Id));
+        citaRepo.ObtenerPorCodigoAsync(cita.CodigoConfirmacion).Returns(cita);
+
+        var result = await controller.ObtenerCita(cita.CodigoConfirmacion);
+
+        var ok = result.Should().BeOfType<OkObjectResult>().Subject;
+        var json = ComoJson(ok.Value);
+        json.GetProperty("emailCliente").ValueKind.Should().Be(JsonValueKind.Null,
+            "el correo en archivo es lo que autoriza cancelar y reagendar: entregarlo a " +
+            "cambio del código sería dar la credencial de la propia autorización");
+        json.GetRawText().Should().NotContain(EmailEnArchivo);
+        json.GetProperty("tieneEmail").GetBoolean().Should().BeTrue(
+            "la página sólo necesita saber que hay un correo al que salió la confirmación");
+    }
+
+    [Fact]
+    public async Task ConsultaPorCodigo_DiceQueNoHayCorreo_CuandoElClienteNoTieneUno()
+    {
+        var (controller, _, citaRepo, _, _, _) = CrearComponentes(
+            nameof(ConsultaPorCodigo_DiceQueNoHayCorreo_CuandoElClienteNoTieneUno));
+        var negocio = NegocioActivo();
+        var cliente = ClienteEnArchivo(negocio.Id);
+        cliente.Email = null;
+        var cita = CitaConCliente(negocio, cliente);
+        citaRepo.ObtenerPorCodigoAsync(cita.CodigoConfirmacion).Returns(cita);
+
+        var result = await controller.ObtenerCita(cita.CodigoConfirmacion);
+
+        var ok = result.Should().BeOfType<OkObjectResult>().Subject;
+        var json = ComoJson(ok.Value);
+        json.GetProperty("tieneEmail").GetBoolean().Should().BeFalse(
+            "sin correo en archivo no hay autogestión posible y la página lo avisa");
+        json.GetProperty("emailCliente").ValueKind.Should().Be(JsonValueKind.Null);
+    }
+
+    [Fact]
+    public async Task Reserva_DevuelveElCorreoQueTecleoQuienReserva()
+    {
+        var (controller, negocioRepo, citaRepo, clienteRepo, _, db) = CrearComponentes(
+            nameof(Reserva_DevuelveElCorreoQueTecleoQuienReserva));
+        var negocio = NegocioActivo();
+        negocioRepo.ObtenerPorSlugAsync(negocio.Slug).Returns(negocio);
+        var (servicio, empleado) = await SembrarCatalogoAsync(db, negocio);
+        citaRepo.ExisteSolapamientoAsync(
+            Arg.Any<Guid>(), Arg.Any<DateTime>(), Arg.Any<DateTime>(), Arg.Any<Guid?>())
+            .Returns(false);
+        clienteRepo.ObtenerOCrearAsync(
+            Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<bool>())
+            .Returns(new ResolucionCliente(
+                ResultadoResolucionCliente.Creado, ClienteEnArchivo(negocio.Id)));
+
+        var result = await controller.CrearCita(new CrearCitaPublicaDto
+        {
+            NegocioSlug = negocio.Slug,
+            ServicioId = servicio.Id,
+            EmpleadoId = empleado.Id,
+            InicioEn = DateTime.UtcNow.AddDays(3),
+            NombreCliente = NombreEnArchivo,
+            TelefonoCliente = Telefono,
+            EmailCliente = EmailEnArchivo,
+        });
+
+        var creado = result.Should().BeOfType<CreatedAtActionResult>().Subject;
+        var json = ComoJson(creado.Value);
+        json.GetProperty("emailCliente").GetString().Should().Be(EmailEnArchivo,
+            "devolver el correo que se acaba de teclear no revela nada, y es lo que deja " +
+            "cancelar o reagendar sin volver a pedirlo");
+        json.GetProperty("tieneEmail").GetBoolean().Should().BeTrue();
     }
 
     private static async Task<(Servicio servicio, Empleado empleado)> SembrarCatalogoAsync(
