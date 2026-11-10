@@ -260,7 +260,14 @@ button:not([disabled]) {
   transition-duration: 80ms;
   transition-timing-function: ease;
 }
-button:not([disabled]):active {
+/* `.zona-clic-estirada` marca los botones que estiran su zona de clic con un
+   `::after` absoluto medido contra un ancestro (FilaSeleccion). Quedan fuera del
+   encogido: un `transform` convierte al botón en bloque contenedor, así que al
+   apretar, el `::after` se encogía de la tarjeta entera al tamaño del botón. El
+   mousedown caía en el botón y el mouseup ya no, de modo que el click se
+   disparaba en la tarjeta y la selección nunca ocurría: la tarjeta respondía a
+   la vista pero había que pulsar dos veces, apuntando al título. */
+button:not([disabled]):not(.zona-clic-estirada):active {
   transform: scale(0.97);
 }
 

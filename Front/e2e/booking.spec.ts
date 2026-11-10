@@ -44,7 +44,7 @@ const NEGOCIO_MOCK = {
       categoriaNombre: 'Servicios',
       orden: 1,
       imagenUrl: null,
-      descripcion: null,
+      descripcion: 'Corte moderno o clásico con lavado y peinado incluidos.',
     },
   ],
   empleados: [
@@ -219,5 +219,70 @@ test.describe('Booking flow', () => {
 
     // The confirmation code is rendered in a monospace span
     await expect(page.getByText(CONFIRM_CODE)).toBeVisible({ timeout: 10_000 });
+  });
+
+  // Regression guard for the dead hit area in FilaSeleccion. The selection button
+  // stretches over the whole card with an `::after` measured against the card, but
+  // the global `button:not([disabled]):active { transform: scale(.97) }` in
+  // index.css turned the button into a containing block while it was pressed, so
+  // the `::after` collapsed from the card to the button's own box mid-click: the
+  // mousedown landed on the button, the mouseup no longer did, and the resulting
+  // click fired on the card instead. Only the title line selected, so the owner
+  // had to click twice. The golden path above never caught it because it clicks
+  // the title text, which always worked.
+  //
+  // This has to run in a real browser: the bug lives between mousedown and mouseup
+  // and depends on layout and hit testing, neither of which jsdom has, so a unit
+  // test could not tell the two cases apart. Every assertion below clicks by
+  // COORDINATE and never by role or text: resolving the button by name would make
+  // Playwright click its centre, which is exactly the spot that always worked.
+  test('the whole service card selects, not only its title', async ({ page }) => {
+    await setupRoutes(page, tomorrowISO());
+    await page.goto('/b/salon-test');
+
+    const boton = page.getByRole('button', { name: 'Corte de cabello' });
+    await expect(boton).toBeVisible({ timeout: 10_000 });
+    await expect(boton).toHaveAttribute('aria-pressed', 'false');
+
+    // The visible card is the INNERMOST div.relative holding the button: `has:`
+    // also matches the wrappers above it, so `.last()` (last in document order)
+    // is the one that actually wraps the row.
+    const tarjeta = page.locator('div.relative', { has: boton }).last();
+    const caja = await tarjeta.boundingBox();
+    if (!caja) throw new Error('could not measure the service card');
+
+    // Deliberately away from the title: low and to the right, over the
+    // description and the price — the area that used to be dead.
+    await page.mouse.click(
+      Math.round(caja.x + caja.width * 0.75),
+      Math.round(caja.y + caja.height * 0.75),
+    );
+
+    await expect(boton).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByRole('button', { name: 'Continuar' })).toBeEnabled();
+  });
+
+  test('the whole employee card selects, not only its title', async ({ page }) => {
+    await setupRoutes(page, tomorrowISO());
+    await page.goto('/b/salon-test');
+
+    await page.getByRole('button', { name: 'Corte de cabello' }).click();
+    await page.getByRole('button', { name: 'Continuar' }).click();
+
+    const boton = page.getByRole('button', { name: 'María' });
+    await expect(boton).toBeVisible({ timeout: 10_000 });
+    await expect(boton).toHaveAttribute('aria-pressed', 'false');
+
+    const tarjeta = page.locator('div.relative', { has: boton }).last();
+    const caja = await tarjeta.boundingBox();
+    if (!caja) throw new Error('could not measure the employee card');
+
+    // Same idea as above: away from the title, over the area that used to be dead.
+    await page.mouse.click(
+      Math.round(caja.x + caja.width * 0.75),
+      Math.round(caja.y + caja.height * 0.75),
+    );
+
+    await expect(boton).toHaveAttribute('aria-pressed', 'true');
   });
 });

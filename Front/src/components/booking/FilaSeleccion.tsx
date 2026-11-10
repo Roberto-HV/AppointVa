@@ -66,6 +66,13 @@ function useDesborda(ref: RefObject<HTMLElement | null>, texto: string | undefin
  * Tarjeta seleccionable. La tarjeta es un `div` y el botón de selección se estira
  * sobre toda ella con un `::after`: así cualquier parte de la tarjeta la elige y,
  * a la vez, «Ver más» puede ser un botón propio (un botón no puede ir dentro de otro).
+ *
+ * El `::after` se mide contra la tarjeta porque es el ancestro posicionado más
+ * cercano, así que el botón NO puede recibir un `transform`: cualquiera lo
+ * convierte en bloque contenedor y el `::after` se encoge al tamaño del botón.
+ * De ahí `zona-clic-estirada`, que lo exceptúa del `:active` global de index.css
+ * (ver el comentario allí). Ver la prueba «toda la tarjeta selecciona» en
+ * e2e/booking.spec.ts.
  */
 export default function FilaSeleccion({
   activo,
@@ -107,7 +114,7 @@ export default function FilaSeleccion({
           onClick={onSeleccionar}
           aria-pressed={activo}
           aria-describedby={describedBy || undefined}
-          className="block w-full text-left text-sm lg:text-base font-semibold text-slate-900 rounded-2xl outline-none
+          className="zona-clic-estirada block w-full text-left text-sm lg:text-base font-semibold text-slate-900 rounded-2xl outline-none
             after:absolute after:inset-0 after:rounded-2xl after:content-['']
             focus-visible:after:outline focus-visible:after:outline-2 focus-visible:after:outline-offset-[-3px] focus-visible:after:outline-slate-900"
         >
