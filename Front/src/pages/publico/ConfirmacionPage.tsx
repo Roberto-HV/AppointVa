@@ -88,16 +88,18 @@ const TEXTOS_ESTADO: Record<Exclude<EstadoVisibleCita, "otro">, TextosEstado> = 
 };
 
 /**
- * Respaldo cuando el portapapeles no está disponible o falla (BF-27): el enlace
- * queda a la vista, seleccionado al enfocarlo, para copiarlo a mano. Importa
- * sobre todo a quien reservó sin correo y solo tiene este enlace.
- */
-/**
  * El servidor contesta 403 sin cuerpo cuando el correo no coincide con el de la
  * reserva. Sin este texto el intento moriría en un «no se pudo» que no dice qué
  * corregir, y el cliente no tiene cómo saber que el dato equivocado es el correo.
+ *
+ * La segunda frase existe porque hay un caso sin salida: la confirmación sale al
+ * correo que se tecleó al reservar, pero cancelar se autoriza contra el que el
+ * negocio tiene en archivo. Quien reservó con uno distinto recibe el aviso en una
+ * dirección que no sirve para cancelar y no tiene cómo adivinar la otra, así que
+ * se le manda con el negocio en vez de dejarlo reintentando.
  */
-const CORREO_NO_COINCIDE = "Ese correo no es el de la reserva. Revísalo e intenta de nuevo.";
+const CORREO_NO_COINCIDE =
+  "Ese correo no es el de la reserva. Revísalo e intenta de nuevo, o comunícate con el negocio si no reconoces cuál usaste.";
 
 /**
  * Pide el correo de la reserva cuando la página no lo trae de la sesión en que se
@@ -135,6 +137,11 @@ function CampoCorreoTitular({
   );
 }
 
+/**
+ * Respaldo cuando el portapapeles no está disponible o falla (BF-27): el enlace
+ * queda a la vista, seleccionado al enfocarlo, para copiarlo a mano. Importa
+ * sobre todo a quien reservó sin correo y solo tiene este enlace.
+ */
 function EnlaceParaCopiar({ url }: { url: string }) {
   return (
     <div role="alert" className="w-full mt-2 text-left">

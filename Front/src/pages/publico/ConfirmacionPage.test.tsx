@@ -40,9 +40,28 @@ vi.mock("../../components/icons/SocialLinks", () => ({
   default: () => <div data-testid="social-links" />,
 }));
 
+// El horario que el mock de abajo deja elegir. Distinto al de `mockCitaBase`, que
+// es lo que el botón Confirmar exige para habilitarse.
+const slotNuevo = vi.hoisted(() => ({
+  inicio: "2026-07-23T15:00:00",
+  fin: "2026-07-23T15:30:00",
+}));
+
 vi.mock("../../components/booking/PasoFechaHora", () => ({
-  default: ({ diasAnticipacionMinima }: { diasAnticipacionMinima?: number }) => (
-    <div data-testid="paso-fecha-hora" data-dias-minimos={String(diasAnticipacionMinima)} />
+  default: ({
+    diasAnticipacionMinima,
+    onSeleccionar,
+  }: {
+    diasAnticipacionMinima?: number;
+    onSeleccionar?: (slot: unknown) => void;
+  }) => (
+    <div data-testid="paso-fecha-hora" data-dias-minimos={String(diasAnticipacionMinima)}>
+      {/* Sin esto ninguna prueba puede elegir horario y el reagendado queda sin cubrir
+          más allá de que el panel abra. */}
+      <button type="button" onClick={() => onSeleccionar?.(slotNuevo)}>
+        elegir horario
+      </button>
+    </div>
   ),
 }));
 
@@ -592,6 +611,49 @@ describe("ConfirmacionPage — prueba de titularidad", () => {
 
     fireEvent.click(await screen.findByRole("button", { name: "Reagendar" }));
     expect(screen.getByLabelText(LABEL_CORREO)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "elegir horario" }));
+    // Con horario pero sin correo no hay prueba que mandar.
+    expect(screen.getByRole("button", { name: "Confirmar" })).toBeDisabled();
+
+    fireEvent.change(screen.getByLabelText(LABEL_CORREO), {
+      target: { value: " juan@test.com " },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Confirmar" }));
+
+    await waitFor(() =>
+      expect(publicoApi.reagendarCita).toHaveBeenCalledWith(
+        "ABC123",
+        slotNuevo.inicio,
+        "juan@test.com",
+      )
+    );
+  });
+
+  // El front (Vercel) y el API (Render) salen del mismo push y no terminan a la vez,
+  // así que durante la ventana un API viejo contesta sin `tieneEmail` y con la
+  // dirección en `emailCliente`. Sin el respaldo `tieneEmail ?? !!emailCliente` la
+  // página le niega cancelar y reagendar a quien sí tiene correo en archivo.
+  it("un API todavía sin `tieneEmail` no le quita la autogestión a quien sí tiene correo", async () => {
+    const respuestaDeApiViejo: Record<string, unknown> = { ...mockCitaBase };
+    delete respuestaDeApiViejo.tieneEmail;
+    vi.mocked(publicoApi.obtenerCita).mockResolvedValue({
+      ...respuestaDeApiViejo, emailCliente: "juan@test.com",
+    } as never);
+    renderConQuery();
+
+    expect(await screen.findByRole("button", { name: "Cancelar cita" })).toBeInTheDocument();
+    expect(screen.queryByText(/sin correo registrado/i)).toBeNull();
+  });
+
+  it("un API todavía sin `tieneEmail` y sin dirección sigue sin ofrecer autogestión", async () => {
+    const respuestaDeApiViejo: Record<string, unknown> = { ...mockCitaBase };
+    delete respuestaDeApiViejo.tieneEmail;
+    vi.mocked(publicoApi.obtenerCita).mockResolvedValue({ ...respuestaDeApiViejo } as never);
+    renderConQuery();
+
+    await screen.findByText(/sin correo registrado/i);
+    expect(screen.queryByRole("button", { name: "Cancelar cita" })).toBeNull();
   });
 
   it("sin correo en archivo no pide nada: no hay autogestión que probar", async () => {
