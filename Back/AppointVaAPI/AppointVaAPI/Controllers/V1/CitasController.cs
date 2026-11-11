@@ -247,6 +247,16 @@ namespace AppointVaAPI.Controllers.V1
                 }
             }
 
+            // La cita nace Confirmada, así que nunca pasa por la transición
+            // Pendiente → Confirmada que dispara el correo: hay que encolarlo aquí,
+            // ya cerrada la transacción, para que el job encuentre la cita en BD.
+            var emailNotificacion = !string.IsNullOrWhiteSpace(dto.EmailCliente)
+                ? dto.EmailCliente.Trim()
+                : cliente.Email;
+
+            if (!string.IsNullOrWhiteSpace(emailNotificacion))
+                _jobClient.Enqueue<NotificacionJob>(j => j.EnviarConfirmacionAsync(cita.Id, emailNotificacion, cliente.NombreCompleto));
+
             // Programar recordatorio usando el setting del negocio (no hardcodeado)
             if (!string.IsNullOrWhiteSpace(cliente.Email))
             {

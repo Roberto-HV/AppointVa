@@ -366,12 +366,16 @@ namespace AppointVaAPI.Services
                 return;
             }
 
-            // Guard: if the appointment was rescheduled the job is stale — InicioEn should be ~15 min from now
+            // El aviso dice que la cita está por empezar, así que la ventana solo mira hacia
+            // adelante: el inicio tiene que caer entre ahora y 20 minutos más. La guarda
+            // simétrica anterior también dejaba pasar citas ya empezadas, y un reagendado que
+            // adelanta la hora deja vivo el job viejo, que avisaba "en 15 minutos" tarde.
             var tzGuard = AppointVaAPI.Helpers.ZonaHorariaHelper.Resolver(cita.Negocio?.ZonaHoraria);
             var inicioUtc = AppointVaAPI.Helpers.ZonaHorariaHelper.ToDateTimeOffset(cita.InicioEn, tzGuard).UtcDateTime;
-            if (Math.Abs((inicioUtc - DateTime.UtcNow).TotalMinutes) > 20)
+            var minutosParaElInicio = (inicioUtc - DateTime.UtcNow).TotalMinutes;
+            if (minutosParaElInicio < 0 || minutosParaElInicio > 20)
             {
-                _logger.LogInformation("Push Recordatorio15Min: cita {CitaId} reagendada (InicioEn={InicioEn}), job obsoleto, omitiendo",
+                _logger.LogInformation("Push Recordatorio15Min: cita {CitaId} fuera de ventana (InicioEn={InicioEn}): ya comenzó o el job quedó obsoleto por un reagendado, omitiendo",
                     citaId, cita.InicioEn);
                 return;
             }

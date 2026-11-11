@@ -606,9 +606,6 @@ namespace AppointVaAPI.Controllers.V1
             // Enviar email de confirmación si el cliente tiene correo
             if (!string.IsNullOrWhiteSpace(emailNotificacion))
             {
-                var frontendUrl = _config["FrontendUrl"] ?? "https://appointva.com";
-                var urlCita = $"{frontendUrl}/b/{negocio.Slug}/confirmacion/{codigo}";
-                var urlCancelacion = $"{frontendUrl}/cancelar/{codigo}";
                 _jobClient.Enqueue<NotificacionJob>(j => j.EnviarConfirmacionAsync(cita.Id, emailNotificacion, cliente.NombreCompleto));
             }
 
@@ -626,10 +623,14 @@ namespace AppointVaAPI.Controllers.V1
                     cita.HangfireJobId = _jobClient.Schedule<IRecordatorioService>(s => s.EnviarRecordatorioCitaAsync(cita.Id), horaRecordatorio);
             }
 
-            if (cita.InicioEn.AddMinutes(-15) > DateTime.UtcNow)
+            // InicioEn es hora local del negocio: sin convertir a UTC el push se agendaba
+            // con el desfase de la zona y la guarda de vigencia del job lo descartaba.
+            var tz15 = AppointVaAPI.Helpers.ZonaHorariaHelper.Resolver(negocio.ZonaHoraria);
+            var inicio15Utc = AppointVaAPI.Helpers.ZonaHorariaHelper.ToDateTimeOffset(cita.InicioEn, tz15);
+            if (inicio15Utc.AddMinutes(-15) > DateTimeOffset.UtcNow)
                 _jobClient.Schedule<IPushService>(
                     s => s.EnviarRecordatorio15MinAsync(cita.Id),
-                    cita.InicioEn.AddMinutes(-15));
+                    inicio15Utc.AddMinutes(-15));
 
             _db.NotificacionesDashboard.Add(new NotificacionDashboard
             {
@@ -909,6 +910,22 @@ namespace AppointVaAPI.Controllers.V1
                 await _citaRepo.ActualizarAsync(cita);
                 _jobClient.Enqueue<NotificacionJob>(j => j.EnviarReagendaAsync(cita.Id, emailCliente, cita.Cliente!.NombreCompleto, fechaOriginal));
             }
+
+            // Avisar al personal en el momento en que la cita se mueve. Sin esto el negocio
+            // solo se entera por el push de 15 minutos, es decir el día nuevo. No se agrega
+            // fila al dashboard porque la campana solo distingue "NuevaCita" y "Cancelacion":
+            // cualquier otro tipo se pintaría con el icono de cancelada.
+            _jobClient.Enqueue<IPushService>(s => s.EnviarReagendarEmpleadoAsync(cita.Id));
+
+            // El push de 15 minutos que se agendó al reservar apunta a la hora anterior y se
+            // descarta solo por vigencia, así que hay que rearmarlo con el nuevo inicio: sin
+            // esto nadie en el negocio queda avisado de la cita movida. Va fuera del bloque
+            // del correo porque avisa al personal, no al cliente.
+            var inicio15UtcReag = AppointVaAPI.Helpers.ZonaHorariaHelper.ToDateTimeOffset(cita.InicioEn, tzReag);
+            if (inicio15UtcReag.AddMinutes(-15) > DateTimeOffset.UtcNow)
+                _jobClient.Schedule<IPushService>(
+                    s => s.EnviarRecordatorio15MinAsync(cita.Id),
+                    inicio15UtcReag.AddMinutes(-15));
 
             return Ok(new { mensaje = "¡Cita reagendada exitosamente!" });
         }
