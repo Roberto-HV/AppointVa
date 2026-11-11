@@ -454,6 +454,11 @@ namespace AppointVaAPI.Controllers.V1
                 && dto.MontoPago2 >= dto.MontoCobrado)
                 return BadRequest("MontoPago2 debe ser menor que MontoCobrado.");
 
+            // El dinero cuenta el día que se cobra, así que corregir una venta ya
+            // registrada (el método de pago, el monto) no puede volver a fecharla:
+            // la restaría del día en que entró a caja y la sumaría al de hoy.
+            var yaEstabaPagada = cita.Pagada;
+
             cita.Pagada        = dto.Pagada;
             cita.MetodoPago    = dto.Pagada ? dto.MetodoPago    : null;
             cita.MetodoPago2   = dto.Pagada ? dto.MetodoPago2   : null;
@@ -462,8 +467,20 @@ namespace AppointVaAPI.Controllers.V1
             cita.MontoRecibido = dto.Pagada ? dto.MontoRecibido : null;
             cita.Cambio        = dto.Pagada ? dto.Cambio        : null;
             cita.Propina       = dto.Pagada ? dto.Propina       : null;
-            cita.FechaPago     = dto.Pagada ? DateTime.UtcNow   : null;
-            cita.RegistradoPorId = dto.Pagada ? _contexto.UsuarioId : null;
+            // Solo se sella al registrar el pago por primera vez. Al despagar se
+            // limpia, de modo que un cobro posterior sí estrena fecha. Una fila
+            // antigua ya pagada con FechaPago nula se queda nula a propósito: la
+            // venta ocurrió hace tiempo y sin fecha sigue contando en su día de
+            // InicioEn, que se acerca más que sellarla con la de hoy.
+            cita.FechaPago     = dto.Pagada
+                ? (yaEstabaPagada ? cita.FechaPago : DateTime.UtcNow)
+                : null;
+            // Mismo criterio que FechaPago: quien cobró la venta sigue siendo quien la
+            // cobró. Sin esta guarda, que el propietario corrigiera el cobro de una
+            // empleada le transfería el crédito del registro.
+            cita.RegistradoPorId = dto.Pagada
+                ? (yaEstabaPagada ? cita.RegistradoPorId : _contexto.UsuarioId)
+                : null;
             cita.FechaActualizacion = DateTime.UtcNow;
 
             await _citaRepo.ActualizarAsync(cita);
@@ -689,13 +706,38 @@ namespace AppointVaAPI.Controllers.V1
                 query = query.Where(c => c.EmpleadoId == empleado.Id);
             }
 
-            if (desde.HasValue)
-                query = query.Where(c => c.FechaPago >= desde.Value);
-            if (hasta.HasValue)
-                query = query.Where(c => c.FechaPago < hasta.Value.Date.AddDays(1));
+            // El historial se filtra por el día en que se cobró. FechaPago está en UTC
+            // y el rango que manda el panel viene en hora local del negocio, así que se
+            // convierte antes de comparar; si no, un cobro de la noche aparecía en el
+            // día siguiente y el Historial no cuadraba con el total de Cobro.
+            // Las filas antiguas sin FechaPago se ubican por su InicioEn, que ya está
+            // en hora local: cada campo se compara contra su propio límite.
+            var zonaHistorial = await _db.Negocios
+                .Where(n => n.Id == _contexto.NegocioId.Value)
+                .Select(n => n.ZonaHoraria)
+                .AsNoTracking()
+                .FirstOrDefaultAsync();
+            var tzHistorial = AppointVaAPI.Helpers.ZonaHorariaHelper.Resolver(zonaHistorial);
+
+            // Sin desde/hasta no hay límite de ese lado.
+            var desdeLocalHist = desde ?? DateTime.MinValue;
+            var hastaLocalHist = hasta.HasValue ? hasta.Value.Date.AddDays(1) : DateTime.MaxValue;
+            var desdeUtcHist = desde.HasValue
+                ? AppointVaAPI.Helpers.ZonaHorariaHelper.ToDateTimeOffset(desdeLocalHist, tzHistorial).UtcDateTime
+                : DateTime.MinValue;
+            var hastaUtcHist = hasta.HasValue
+                ? AppointVaAPI.Helpers.ZonaHorariaHelper.ToDateTimeOffset(hastaLocalHist, tzHistorial).UtcDateTime
+                : DateTime.MaxValue;
+
+            query = query.Where(c =>
+                (c.FechaPago != null && c.FechaPago >= desdeUtcHist && c.FechaPago < hastaUtcHist) ||
+                (c.FechaPago == null && c.InicioEn >= desdeLocalHist && c.InicioEn < hastaLocalHist));
 
             var citas = await query
-                .OrderByDescending(c => c.FechaPago)
+                // Las filas antiguas sin FechaPago se ordenan por su InicioEn: en
+                // Postgres los nulos encabezan un ORDER BY DESC, así que ordenar solo
+                // por FechaPago las pondría arriba del historial sin importar su edad.
+                .OrderByDescending(c => c.FechaPago ?? c.InicioEn)
                 .AsNoTracking()
                 .ToListAsync();
             await ClientesDeCitasHelper.AdjuntarAsync(_db, citas);
@@ -745,12 +787,55 @@ namespace AppointVaAPI.Controllers.V1
             var totalPendiente = await vigentes.Where(c => !c.Pagada).SumAsync(c => (decimal?)c.Precio) ?? 0m;
             var citasPagadas = await vigentes.CountAsync(c => c.Pagada);
 
+            // El dinero cuenta el día que se cobra, no el día del servicio, así que
+            // "Total cobrado" y el desglose se consultan aparte: la agenda se filtra
+            // por InicioEn y la caja por la fecha del pago. Filtrar también la agenda
+            // por FechaPago dejaría "Por cobrar" siempre en cero, porque una cita sin
+            // pagar no tiene FechaPago.
+            // Los dos campos viven en relojes distintos (FechaPago en UTC, InicioEn en
+            // hora local del negocio), así que cada rama se compara contra su propio
+            // límite en vez de mezclarlos en un COALESCE. Las filas antiguas quedaron
+            // con FechaPago nula y se siguen contando por su InicioEn: el dinero no
+            // puede desaparecer del total por una columna que nunca se llenó.
+            var zonaNegocio = await _db.Negocios
+                .Where(n => n.Id == _contexto.NegocioId.Value)
+                .Select(n => n.ZonaHoraria)
+                .AsNoTracking()
+                .FirstOrDefaultAsync();
+            var tzCobros = AppointVaAPI.Helpers.ZonaHorariaHelper.Resolver(zonaNegocio);
+
+            // Sin desde/hasta no hay límite de ese lado: los extremos de DateTime
+            // dejan pasar todo sin necesidad de armar la consulta por ramas.
+            var desdeLocal = desde ?? DateTime.MinValue;
+            var hastaLocal = hasta ?? DateTime.MaxValue;
+            var desdeUtc = desde.HasValue
+                ? AppointVaAPI.Helpers.ZonaHorariaHelper.ToDateTimeOffset(desde.Value, tzCobros).UtcDateTime
+                : DateTime.MinValue;
+            // El fin del dinero es exclusivo y el de la agenda inclusivo, a
+            // propósito. El front manda hasta=...T23:59:59 y FechaPago guarda
+            // milisegundos: un cobro a las 23:59:59.400 no entraba en ningún día.
+            // Sumar un segundo y comparar con < deja el corte en la medianoche
+            // local siguiente, el mismo que ya usan Historial y Cierre de caja,
+            // así que las tres pantallas cuadran para el mismo día. InicioEn, en
+            // cambio, está alineado al minuto y su rama se queda inclusiva para
+            // no alterar la semántica de la agenda.
+            var finUtcCobros = hasta.HasValue
+                ? AppointVaAPI.Helpers.ZonaHorariaHelper.ToDateTimeOffset(hasta.Value.AddSeconds(1), tzCobros).UtcDateTime
+                : DateTime.MaxValue;
+
+            var queryCobros = _db.Citas
+                .Where(c => c.NegocioId == _contexto.NegocioId.Value && c.Pagada);
+            if (filtroEmpleado.HasValue)
+                queryCobros = queryCobros.Where(c => c.EmpleadoId == filtroEmpleado.Value);
+            queryCobros = queryCobros.Where(c =>
+                (c.FechaPago != null && c.FechaPago >= desdeUtc && c.FechaPago < finUtcCobros) ||
+                (c.FechaPago == null && c.InicioEn >= desdeLocal && c.InicioEn <= hastaLocal));
+
             // Solo las columnas del cobro: el reparto de un pago mixto no se puede
             // expresar en SQL sin duplicar la lógica en cada motor soportado.
             // "Total cobrado" sí incluye cualquier cita pagada: es dinero que
             // ya entró a caja aunque la cita se haya cancelado después.
-            var pagos = await query
-                .Where(c => c.Pagada)
+            var pagos = await queryCobros
                 .Select(c => new
                 {
                     c.MontoCobrado,

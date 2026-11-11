@@ -39,7 +39,7 @@ public class CierreCajaController : ControllerBase
         var cierre = await _db.CierresCaja
             .FirstOrDefaultAsync(c => c.NegocioId == negocioId && c.Fecha == fechaUtc);
 
-        var efectivoCobrado = await ComputarEfectivoCobradoAsync(negocioId, fechaUtc);
+        var efectivoCobrado = await ComputarEfectivoCobradoAsync(negocioId, fechaDate);
 
         if (cierre is null)
         {
@@ -98,19 +98,37 @@ public class CierreCajaController : ControllerBase
 
         await _db.SaveChangesAsync();
 
-        var efectivoCobrado = await ComputarEfectivoCobradoAsync(negocioId, fechaUtc);
+        var efectivoCobrado = await ComputarEfectivoCobradoAsync(negocioId, fechaDate);
         return Ok(MapearDto(cierre, efectivoCobrado));
     }
 
-    private async Task<decimal> ComputarEfectivoCobradoAsync(Guid negocioId, DateTime fecha)
+    private async Task<decimal> ComputarEfectivoCobradoAsync(Guid negocioId, DateOnly fecha)
     {
+        // El pago se guarda en UTC pero el corte es del día natural del negocio.
+        // Comparando el UTC crudo contra medianoche UTC, en una zona UTC-6 todo lo
+        // cobrado después de las 18:00 locales caía en el corte del día siguiente.
+        var zona = await _db.Negocios
+            .Where(n => n.Id == negocioId)
+            .Select(n => n.ZonaHoraria)
+            .AsNoTracking()
+            .FirstOrDefaultAsync();
+        var tz = AppointVaAPI.Helpers.ZonaHorariaHelper.Resolver(zona);
+
+        var inicioLocal = fecha.ToDateTime(TimeOnly.MinValue);
+        var finLocal    = inicioLocal.AddDays(1);
+        var inicioUtc   = AppointVaAPI.Helpers.ZonaHorariaHelper.ToDateTimeOffset(inicioLocal, tz).UtcDateTime;
+        var finUtc      = AppointVaAPI.Helpers.ZonaHorariaHelper.ToDateTimeOffset(finLocal, tz).UtcDateTime;
+
+        // Las filas antiguas quedaron con FechaPago nula: cuentan en el día de su
+        // cita (hora local del negocio) para que ningún corte viejo pierda efectivo.
+        // InicioEn y FechaPago no se mezclan en un COALESCE porque cada uno vive en
+        // un reloj distinto.
         var citas = await _db.Citas
             .Where(c =>
                 c.NegocioId == negocioId &&
                 c.Pagada &&
-                c.FechaPago.HasValue &&
-                c.FechaPago.Value >= fecha &&
-                c.FechaPago.Value < fecha.AddDays(1))
+                ((c.FechaPago != null && c.FechaPago >= inicioUtc && c.FechaPago < finUtc) ||
+                 (c.FechaPago == null && c.InicioEn >= inicioLocal && c.InicioEn < finLocal)))
             .ToListAsync();
 
         return citas.Sum(c =>
