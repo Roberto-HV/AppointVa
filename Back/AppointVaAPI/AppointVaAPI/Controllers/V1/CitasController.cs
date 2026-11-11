@@ -769,7 +769,12 @@ namespace AppointVaAPI.Controllers.V1
                 filtroEmpleado = registroEmpleado.Id;
             }
 
-            // Mismos predicados que ObtenerTodas para que los totales cuadren con el listado
+            // Bloque de agenda: mismos predicados que ObtenerTodas, para que "Por cobrar",
+            // "Citas pagadas x/y" y el total de citas cuadren con el listado paginado.
+            // Las cifras de dinero ya no cuadran con ese listado, y es deliberado: un
+            // cobro de ayer por una cita de hoy aparece en el listado de hoy pero no en
+            // "Total cobrado" de hoy, porque el dinero cuenta el día que entró a caja
+            // (ver queryCobros más abajo).
             var query = _db.Citas.Where(c => c.NegocioId == _contexto.NegocioId.Value);
             if (desde.HasValue)
                 query = query.Where(c => c.InicioEn >= desde.Value);
@@ -807,20 +812,20 @@ namespace AppointVaAPI.Controllers.V1
             // Sin desde/hasta no hay límite de ese lado: los extremos de DateTime
             // dejan pasar todo sin necesidad de armar la consulta por ramas.
             var desdeLocal = desde ?? DateTime.MinValue;
-            var hastaLocal = hasta ?? DateTime.MaxValue;
             var desdeUtc = desde.HasValue
                 ? AppointVaAPI.Helpers.ZonaHorariaHelper.ToDateTimeOffset(desde.Value, tzCobros).UtcDateTime
                 : DateTime.MinValue;
-            // El fin del dinero es exclusivo y el de la agenda inclusivo, a
-            // propósito. El front manda hasta=...T23:59:59 y FechaPago guarda
-            // milisegundos: un cobro a las 23:59:59.400 no entraba en ningún día.
-            // Sumar un segundo y comparar con < deja el corte en la medianoche
-            // local siguiente, el mismo que ya usan Historial y Cierre de caja,
-            // así que las tres pantallas cuadran para el mismo día. InicioEn, en
-            // cambio, está alineado al minuto y su rama se queda inclusiva para
-            // no alterar la semántica de la agenda.
+            // La ventana del dinero es un día natural del negocio medio abierto: va de la
+            // medianoche local de "desde" hasta la medianoche local del día siguiente a
+            // "hasta", exclusiva. El corte se normaliza aquí y no se confía en cómo venga
+            // formateado "hasta": el panel manda hasta=...T23:59:59, pero la firma
+            // documentada arriba acepta la fecha en seco, y tomarla al pie de la letra
+            // abría una ventana de un segundo. Las dos ramas comparten ese mismo corte,
+            // cada una en su reloj, así que el día queda igual al de Historial y Cierre
+            // de caja. La agenda, más arriba, mantiene aparte su propio límite inclusivo.
+            var finLocalCobros = hasta.HasValue ? hasta.Value.Date.AddDays(1) : DateTime.MaxValue;
             var finUtcCobros = hasta.HasValue
-                ? AppointVaAPI.Helpers.ZonaHorariaHelper.ToDateTimeOffset(hasta.Value.AddSeconds(1), tzCobros).UtcDateTime
+                ? AppointVaAPI.Helpers.ZonaHorariaHelper.ToDateTimeOffset(finLocalCobros, tzCobros).UtcDateTime
                 : DateTime.MaxValue;
 
             var queryCobros = _db.Citas
@@ -829,7 +834,7 @@ namespace AppointVaAPI.Controllers.V1
                 queryCobros = queryCobros.Where(c => c.EmpleadoId == filtroEmpleado.Value);
             queryCobros = queryCobros.Where(c =>
                 (c.FechaPago != null && c.FechaPago >= desdeUtc && c.FechaPago < finUtcCobros) ||
-                (c.FechaPago == null && c.InicioEn >= desdeLocal && c.InicioEn <= hastaLocal));
+                (c.FechaPago == null && c.InicioEn >= desdeLocal && c.InicioEn < finLocalCobros));
 
             // Solo las columnas del cobro: el reparto de un pago mixto no se puede
             // expresar en SQL sin duplicar la lógica en cada motor soportado.
