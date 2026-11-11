@@ -108,8 +108,18 @@ vi.mock("../../store/authStore", () => ({
 }));
 
 vi.mock("../../components/dashboard/TicketRecibo", () => ({
-  default: ({ cita }: { cita: { nombreCliente: string } }) => (
-    <div data-testid="ticket-recibo">{cita.nombreCliente}</div>
+  default: ({ cita, onEnviarEmail, errorEnvio }: {
+    cita: { nombreCliente: string };
+    onEnviarEmail: () => void;
+    errorEnvio: string | null;
+  }) => (
+    <div data-testid="ticket-recibo">
+      {cita.nombreCliente}
+      {/* El mock expone el envío para poder comprobar desde aquí que el éxito
+          cierra el ticket y que el fallo lo deja abierto con su motivo. */}
+      <button type="button" onClick={onEnviarEmail}>enviar por correo</button>
+      {errorEnvio && <span data-testid="error-envio">{errorEnvio}</span>}
+    </div>
   ),
 }));
 
@@ -525,5 +535,58 @@ describe("Empleado: rol restringido (DC-14, decisión 2)", () => {
     rolActual.rol = "Propietario";
     renderPage();
     expect(await screen.findByRole("button", { name: "Corte del día" })).toBeInTheDocument();
+  });
+});
+
+// El fallo al enviar el ticket no puede cerrar el modal: el recibo solo existe en
+// ese momento —el historial no da forma de volver a abrirlo—, así que cerrarlo deja
+// al negocio sin comprobante y sin manera de compartirlo. El aviso flotante lo
+// cerraba, porque se dibuja fuera del modal y Radix lo toma por un clic afuera.
+describe("ticket: envío por correo", () => {
+  // Describes anteriores dejan `obtenerTodas` devolviendo una cita ya pagada, que
+  // no ofrece botón de cobrar. Aquí se repone una pendiente.
+  beforeEach(() => {
+    vi.mocked(citasApi.obtenerTodas).mockResolvedValue({
+      datos: [{
+        id: "cita-1", codigoConfirmacion: "ABC", clienteId: "c1", empleadoId: "e1",
+        servicioId: "s1", nombreCliente: "Ana García", telefonoCliente: "555-0000",
+        nombreEmpleado: "Sofía Hernández", nombreServicio: "Corte de dama",
+        duracionMinutos: 30, precio: 280, pagada: false, estado: 2,
+        estadoTexto: "Confirmada", inicioEn: "2026-07-31T11:30:00Z",
+        finEn: "2026-07-31T12:00:00Z",
+      }],
+      total: 1, pagina: 1, tamano: 15,
+    } as never);
+    vi.mocked(pagosApi.enviarTicketEmail).mockResolvedValue(undefined as never);
+  });
+
+  async function cobrarHastaElTicket() {
+    renderPage();
+    await waitFor(() => screen.getByText("Ana García"));
+    await userEvent.click(screen.getByRole("button", { name: /cobrar/i }));
+    await userEvent.click(screen.getByRole("button", { name: /tarjeta/i }));
+    await userEvent.click(screen.getByRole("button", { name: /confirmar pago/i }));
+    await screen.findByTestId("ticket-recibo");
+  }
+
+  it("cuando el envío sale bien, cierra el ticket", async () => {
+    await cobrarHastaElTicket();
+
+    await userEvent.click(screen.getByRole("button", { name: /enviar por correo/i }));
+
+    await waitFor(() => expect(screen.queryByTestId("ticket-recibo")).toBeNull());
+  });
+
+  it("cuando el envío falla, el ticket sigue abierto y dice por qué", async () => {
+    vi.mocked(pagosApi.enviarTicketEmail).mockRejectedValueOnce({
+      response: { data: { mensaje: "El cliente no tiene correo registrado" } },
+    });
+    await cobrarHastaElTicket();
+
+    await userEvent.click(screen.getByRole("button", { name: /enviar por correo/i }));
+
+    expect(await screen.findByTestId("error-envio"))
+      .toHaveTextContent("El cliente no tiene correo registrado");
+    expect(screen.getByTestId("ticket-recibo")).toBeInTheDocument();
   });
 });

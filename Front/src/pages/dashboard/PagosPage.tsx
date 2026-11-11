@@ -94,6 +94,15 @@ export default function PagosPage() {
   const [montoPago2Input, setMontoPago2Input] = useState<string>('');
   const [montoCobradoInput, setMontoCobradoInput] = useState<string>('');
   const [citaPagada,    setCitaPagada]    = useState<CitaDto | null>(null);
+  // Vive aquí y no como aviso flotante: el toast se dibuja fuera del modal y
+  // Radix lo interpreta como un clic afuera, así que cerraba el ticket justo
+  // cuando el envío falló y dejaba al negocio sin recibo y sin otra salida.
+  //
+  // Lleva el id de la cita a propósito: un envío lento puede responder cuando el
+  // negocio ya cerró ese ticket y abrió el de otro cobro, y el aviso de una cita
+  // no tiene por qué aparecer sobre el recibo de otra. Un solo aviso para correo
+  // e impresión: con dos, el segundo quedaba invisible bajo el primero.
+  const [errorTicket, setErrorTicket] = useState<{ citaId: string; mensaje: string } | null>(null);
   const [enviandoEmail, setEnviandoEmail] = useState(false);
   const [errorPago,     setErrorPago]     = useState("");
   // Revertir un pago cambia el corte del día: siempre pasa por confirmación.
@@ -379,6 +388,10 @@ export default function PagosPage() {
       setMetodoPago2('Tarjeta');
       setMontoPago2Input('');
       setErrorPago("");
+      // Un ticket nuevo nace sin el aviso del anterior: si el negocio cerró el
+      // ticket mientras el correo iba en camino, el fallo llega después de que
+      // el cierre ya limpió el estado y se quedaría pegado al siguiente cobro.
+      setErrorTicket(null);
       setCitaPagada(citaActualizada);
     },
     // Antes un fallo devolvía el botón a "Confirmar pago" sin decir nada: el
@@ -439,12 +452,26 @@ export default function PagosPage() {
 
   const handleEnviarEmail = async () => {
     if (!citaPagada) return;
+    const citaId = citaPagada.id;
+    setErrorTicket(null);
     setEnviandoEmail(true);
     try {
-      await pagosApi.enviarTicketEmail(citaPagada.id);
-      toast("Ticket enviado al correo del cliente");
+      await pagosApi.enviarTicketEmail(citaId);
+      toast("Envío de ticket correcto");
+      // Sólo cierra si el ticket a la vista sigue siendo éste: una respuesta
+      // lenta no puede cerrar el recibo de un cobro posterior, que sería la
+      // única copia de ese otro comprobante.
+      setCitaPagada(abierta => (abierta?.id === citaId ? null : abierta));
     } catch (err: unknown) {
-      toast(mensajeError(err, "El cliente no tiene correo registrado"), "error");
+      // Sin cerrar y sin aviso flotante: el ticket sigue a la vista para
+      // imprimirlo o compartirlo de otra forma, que es la única salida cuando
+      // el cliente no tiene correo registrado.
+      // No pisa el aviso de otro ticket: si el negocio ya cerró éste y abrió el de
+      // otro cobro, un fallo tardío no tiene por qué borrarle un mensaje que sí es
+      // suyo. Para su propio ticket el aviso entra normal.
+      setErrorTicket(previo => (previo && previo.citaId !== citaId
+        ? previo
+        : { citaId, mensaje: mensajeError(err, "El cliente no tiene correo registrado") }));
     } finally {
       setEnviandoEmail(false);
     }
@@ -892,7 +919,7 @@ export default function PagosPage() {
                 <label htmlFor="cierre-inicio" className="block text-xs text-slate-500 dark:text-slate-400 mb-1">Efectivo inicial</label>
                 <input
                   id="cierre-inicio"
-                  type="number"
+                  type="number" inputMode="decimal"
                   min="0"
                   step="0.01"
                   value={cierreInicio}
@@ -914,7 +941,7 @@ export default function PagosPage() {
                 <label htmlFor="cierre-contado" className="block text-xs text-slate-500 dark:text-slate-400 mb-1">Efectivo contado</label>
                 <input
                   id="cierre-contado"
-                  type="number"
+                  type="number" inputMode="decimal"
                   min="0"
                   step="0.01"
                   value={cierreContado}
@@ -952,7 +979,7 @@ export default function PagosPage() {
                   className="flex-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm"
                 />
                 <input
-                  type="number"
+                  type="number" inputMode="decimal"
                   min="0.01"
                   step="0.01"
                   value={retiroMonto}
@@ -1069,7 +1096,7 @@ export default function PagosPage() {
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm" aria-hidden="true">$</span>
                   <input
                     id="pago-total"
-                    type="number"
+                    type="number" inputMode="decimal"
                     min={0}
                     step={0.01}
                     value={montoCobradoInput}
@@ -1146,7 +1173,7 @@ export default function PagosPage() {
                   <label htmlFor="pago-monto2" className="block text-xs text-slate-500 dark:text-slate-400 mb-1">Monto en {metodoPago2}</label>
                   <input
                     id="pago-monto2"
-                    type="number"
+                    type="number" inputMode="decimal"
                     min="0.01"
                     step="0.01"
                     value={montoPago2Input}
@@ -1163,7 +1190,7 @@ export default function PagosPage() {
                 <label htmlFor="pago-recibido" className="text-sm font-medium text-slate-700 dark:text-slate-300">Monto recibido</label>
                 <input
                   id="pago-recibido"
-                  type="number"
+                  type="number" inputMode="decimal"
                   aria-invalid={(!!montoRecibido && montoRecibidoDec < porcionEfectivo) || undefined}
                   aria-describedby={montoRecibido && montoRecibidoDec < porcionEfectivo ? "pago-recibido-error" : undefined}
                   step="0.01"
@@ -1189,7 +1216,7 @@ export default function PagosPage() {
                 <label htmlFor="pago-propina" className="text-sm font-medium text-slate-700 dark:text-slate-300">Propina (opcional)</label>
                 <input
                   id="pago-propina"
-                  type="number"
+                  type="number" inputMode="decimal"
                   step="0.01"
                   min="0"
                   placeholder="0.00"
@@ -1241,7 +1268,7 @@ export default function PagosPage() {
       {/* Modal: ticket de recibo */}
       <Modal
         abierto={!!citaPagada}
-        onCerrar={() => setCitaPagada(null)}
+        onCerrar={() => { setCitaPagada(null); setErrorTicket(null); }}
         titulo="Pago registrado"
         ancho="sm"
       >
@@ -1249,9 +1276,12 @@ export default function PagosPage() {
           <TicketRecibo
             cita={citaPagada}
             negocio={negocio ?? { nombre: "" }}
-            onClose={() => setCitaPagada(null)}
+            onClose={() => { setCitaPagada(null); setErrorTicket(null); }}
             onEnviarEmail={handleEnviarEmail}
             enviandoEmail={enviandoEmail}
+            errorEnvio={errorTicket?.citaId === citaPagada.id ? errorTicket.mensaje : null}
+            onDescartarError={() => setErrorTicket(null)}
+            onErrorImpresion={(mensaje) => setErrorTicket({ citaId: citaPagada.id, mensaje })}
           />
         )}
       </Modal>

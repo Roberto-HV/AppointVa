@@ -2,9 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { createRoot } from "react-dom/client";
 import { QRCodeSVG } from "qrcode.react";
-import { Printer, Mail } from "lucide-react";
+import { Printer, Mail, X } from "lucide-react";
 import type { CitaDto } from "../../types";
-import { useToastStore } from "../../store/toastStore";
 import {
   htmlTicket, leerPapelGuardado, guardarPapel, urlReservas, MEDIDAS_PAPEL,
   type NegocioTicket, type PapelTicket,
@@ -16,6 +15,16 @@ interface Props {
   onClose: () => void;
   onEnviarEmail: () => void;
   enviandoEmail: boolean;
+  /**
+   * Por qué falló el envío, para mostrarlo aquí dentro y no como aviso flotante.
+   * El aviso se dibuja fuera del modal y Radix lo toma por un clic afuera, así
+   * que cerraba el ticket y dejaba al negocio sin recibo y sin otra salida.
+   * Mostrarlo aquí deja el ticket abierto para imprimirlo o compartirlo de otro modo.
+   */
+  errorEnvio: string | null;
+  onDescartarError: () => void;
+  /** El fallo al abrir la ventana de impresión comparte el aviso del correo. */
+  onErrorImpresion: (mensaje: string) => void;
 }
 
 /**
@@ -63,8 +72,10 @@ const OPCIONES_PAPEL: { valor: PapelTicket; etiqueta: string }[] = [
   { valor: "58", etiqueta: "58 mm" },
 ];
 
-export default function TicketRecibo({ cita, negocio, onClose, onEnviarEmail, enviandoEmail }: Props) {
-  const { toast } = useToastStore();
+export default function TicketRecibo({
+  cita, negocio, onClose, onEnviarEmail, enviandoEmail, errorEnvio, onDescartarError,
+  onErrorImpresion,
+}: Props) {
   const [papel, setPapel] = useState<PapelTicket>(leerPapelGuardado);
   const [qr, setQr] = useState<{ url: string; svg: string } | null>(null);
   const [altoVista, setAltoVista] = useState(480);
@@ -100,9 +111,14 @@ export default function TicketRecibo({ cita, negocio, onClose, onEnviarEmail, en
   };
 
   const handlePrint = () => {
+    onDescartarError();
     const ventana = window.open("", "_blank", "width=360,height=640");
     if (!ventana) {
-      toast("El navegador bloqueó la ventana de impresión. Permite popups para este sitio.", "error");
+      // Aquí dentro y no como aviso flotante, por lo mismo que el fallo del correo:
+      // el toast se dibuja fuera del modal y Radix lo toma por un clic afuera, así
+      // que cerraba el ticket justo cuando no se pudo imprimir. En iPhone el bloqueo
+      // de ventanas emergentes es común, así que es un camino que se recorre.
+      onErrorImpresion("El navegador bloqueó la ventana de impresión. Permite ventanas emergentes para este sitio.");
       return;
     }
     ventana.document.write(html);
@@ -125,12 +141,32 @@ export default function TicketRecibo({ cita, negocio, onClose, onEnviarEmail, en
         />
       </div>
 
-      {/* Action buttons — hidden on print */}
-      <div className="print:hidden flex flex-wrap items-center gap-2 mt-4 justify-end">
+      {errorEnvio && (
+        <div
+          role="alert"
+          className="print:hidden mt-4 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300"
+        >
+          <span className="flex-1">{errorEnvio}</span>
+          <button
+            type="button"
+            onClick={onDescartarError}
+            aria-label="Descartar el aviso"
+            className="shrink-0 rounded p-0.5 text-red-500 hover:bg-red-100 hover:text-red-700 dark:hover:bg-red-900/50"
+          >
+            <X size={15} />
+          </button>
+        </div>
+      )}
+
+      {/* Action buttons — hidden on print.
+          En pantalla angosta van apilados y a todo lo ancho: en una sola fila con
+          flex-wrap, el selector de papel empujado por mr-auto dejaba los tres
+          botones envueltos y desalineados dentro del modal. */}
+      <div className="print:hidden mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
         <div
           role="radiogroup"
           aria-label="Papel"
-          className="flex items-center gap-1 mr-auto text-xs text-slate-500 dark:text-slate-400"
+          className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 sm:mr-auto"
         >
           <span aria-hidden="true">Papel:</span>
           {OPCIONES_PAPEL.map((o) => (
@@ -153,7 +189,7 @@ export default function TicketRecibo({ cita, negocio, onClose, onEnviarEmail, en
         <button
           type="button"
           onClick={handlePrint}
-          className="flex items-center gap-2 px-3 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50 transition"
+          className="flex w-full items-center justify-center gap-2 px-3 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50 transition sm:w-auto"
         >
           <Printer size={15} /> Imprimir ticket
         </button>
@@ -161,14 +197,14 @@ export default function TicketRecibo({ cita, negocio, onClose, onEnviarEmail, en
           type="button"
           onClick={onEnviarEmail}
           disabled={enviandoEmail}
-          className="flex items-center gap-2 px-3 py-2 text-sm bg-slate-700 text-white rounded-lg hover:opacity-90 disabled:opacity-50 transition"
+          className="flex w-full items-center justify-center gap-2 px-3 py-2 text-sm bg-slate-700 text-white rounded-lg hover:opacity-90 disabled:opacity-50 transition sm:w-auto"
         >
           <Mail size={15} /> {enviandoEmail ? "Enviando…" : "Enviar por email"}
         </button>
         <button
           type="button"
           onClick={onClose}
-          className="px-3 py-2 text-sm text-slate-500 hover:text-slate-700 transition"
+          className="w-full px-3 py-2 text-sm text-slate-500 hover:text-slate-700 transition sm:w-auto"
         >
           Cerrar
         </button>

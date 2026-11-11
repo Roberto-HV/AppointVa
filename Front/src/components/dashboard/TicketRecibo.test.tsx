@@ -46,7 +46,16 @@ const negocioBase: NegocioTicket = {
   sector: "belleza",
 };
 
-function renderTicket(cita: Partial<CitaDto> = {}, negocio: Partial<NegocioTicket> = {}, onEnviarEmail = vi.fn()) {
+function renderTicket(
+  cita: Partial<CitaDto> = {},
+  negocio: Partial<NegocioTicket> = {},
+  onEnviarEmail = vi.fn(),
+  extra: {
+    errorEnvio?: string | null;
+    onDescartarError?: () => void;
+    onErrorImpresion?: (mensaje: string) => void;
+  } = {},
+) {
   return render(
     <TicketRecibo
       cita={{ ...citaBase, ...cita }}
@@ -54,6 +63,9 @@ function renderTicket(cita: Partial<CitaDto> = {}, negocio: Partial<NegocioTicke
       onClose={vi.fn()}
       onEnviarEmail={onEnviarEmail}
       enviandoEmail={false}
+      errorEnvio={extra.errorEnvio ?? null}
+      onDescartarError={extra.onDescartarError ?? vi.fn()}
+      onErrorImpresion={extra.onErrorImpresion ?? vi.fn()}
     />,
   );
 }
@@ -268,11 +280,20 @@ describe("TicketRecibo — acciones", () => {
     expect(onEnviarEmail).toHaveBeenCalledOnce();
   });
 
-  it("avisa si el navegador bloquea la ventana de impresión", async () => {
+  // El aviso va aquí dentro y no como toast flotante: el toast se dibuja fuera del
+  // modal y Radix lo toma por un clic afuera, así que cerraba el ticket justo cuando
+  // no se pudo imprimir. En iPhone el bloqueo de ventanas emergentes es común.
+  it("avisa dentro del ticket si el navegador bloquea la ventana de impresión", async () => {
     vi.spyOn(window, "open").mockReturnValue(null);
-    renderTicket();
+    const onErrorImpresion = vi.fn();
+    renderTicket({}, {}, vi.fn(), { onErrorImpresion });
+
     await userEvent.click(screen.getByRole("button", { name: /imprimir/i }));
-    expect(toast).toHaveBeenCalledWith(expect.stringMatching(/bloqueó/), "error");
+
+    expect(onErrorImpresion).toHaveBeenCalledWith(expect.stringMatching(/bloqueó/));
+    expect(toast).not.toHaveBeenCalled();
+    // El ticket sigue a la vista: es la única copia del comprobante.
+    expect(vistaPrevia()).toBeInTheDocument();
   });
 
   it("imprime el mismo documento que muestra la vista previa", async () => {
@@ -317,5 +338,45 @@ describe("TicketRecibo — escapado", () => {
     expect(doc.querySelectorAll("img")).toHaveLength(2);
     expect(doc.body.textContent).toContain(ataque);
     expect(doc.body.textContent).toContain("<script>alert(1)</script>");
+  });
+});
+
+// El fallo del envío se muestra aquí dentro y no como aviso flotante: el toast se
+// dibuja fuera del modal y Radix lo toma por un clic afuera, así que cerraba el
+// ticket justo cuando falló el correo y dejaba al negocio sin recibo que imprimir.
+describe("TicketRecibo — fallo al enviar por correo", () => {
+  it("muestra el motivo sin perder el ticket ni el botón de imprimir", () => {
+    renderTicket({}, {}, vi.fn(), { errorEnvio: "El cliente no tiene correo registrado" });
+
+    expect(screen.getByRole("alert")).toHaveTextContent("El cliente no tiene correo registrado");
+    expect(screen.getByRole("button", { name: /imprimir/i })).toBeInTheDocument();
+    expect(vistaPrevia()).toBeInTheDocument();
+  });
+
+  it("el tache descarta el aviso y no cierra el ticket", async () => {
+    const onDescartarError = vi.fn();
+    const onClose = vi.fn();
+    render(
+      <TicketRecibo
+        cita={citaBase}
+        negocio={negocioBase}
+        onClose={onClose}
+        onEnviarEmail={vi.fn()}
+        enviandoEmail={false}
+        errorEnvio="El cliente no tiene correo registrado"
+        onDescartarError={onDescartarError}
+        onErrorImpresion={vi.fn()}
+      />,
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: /descartar el aviso/i }));
+
+    expect(onDescartarError).toHaveBeenCalledTimes(1);
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("sin error no dibuja ningún aviso", () => {
+    renderTicket();
+    expect(screen.queryByRole("alert")).toBeNull();
   });
 });
