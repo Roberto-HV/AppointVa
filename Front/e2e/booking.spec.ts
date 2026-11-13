@@ -70,6 +70,27 @@ function buildSlotsMock(fecha: string) {
   ];
 }
 
+// Seven days starting at `desde`, the shape GET /publico/disponibilidad/semana returns.
+// Only `fechaConHorarios` carries slots: the rest answer "sin-horarios", so the calendar
+// has exactly one bookable day and the test cannot pass by landing on the wrong one.
+function buildSemanaMock(desde: string, fechaConHorarios: string) {
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(`${desde}T12:00:00`);
+    d.setDate(d.getDate() + i);
+    const iso = [
+      d.getFullYear(),
+      String(d.getMonth() + 1).padStart(2, '0'),
+      String(d.getDate()).padStart(2, '0'),
+    ].join('-');
+    const abierto = iso === fechaConHorarios;
+    return {
+      fecha: iso,
+      estado: abierto ? 'con-horarios' : 'sin-horarios',
+      horarios: abierto ? buildSlotsMock(iso) : [],
+    };
+  });
+}
+
 function buildCitaDetalleMock(fecha: string) {
   return {
     id: 'cita-1',
@@ -112,10 +133,31 @@ async function setupRoutes(page: Page, fecha: string) {
     route.fulfill({ contentType: 'application/json', body: '[]' })
   );
 
-  // Availability slots
-  // Actual URL: GET /api/publico/disponibilidad?servicioId=...&fecha=...&empleadoId=...
-  await page.route(/\/api\/publico\/disponibilidad/, (route) =>
+  // Weekly availability — GET /api/publico/disponibilidad/semana?servicioId=...&desde=...&dias=7
+  // This answers a DIFFERENT shape from the per-day endpoint: one object per day, with
+  // that day's slots nested inside. It must be registered as its own route, because the
+  // per-day pattern below used to match this URL too and answered it with a flat slot
+  // array — the calendar then read slot objects as days, found no `fecha` on any of them
+  // and marked the whole week empty.
+  await page.route(/\/api\/publico\/disponibilidad\/semana/, (route) => {
+    const desde = new URL(route.request().url()).searchParams.get('desde');
+    return route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify(buildSemanaMock(desde ?? fecha, fecha)),
+    });
+  });
+
+  // Per-day availability — GET /api/publico/disponibilidad?servicioId=...&fecha=...&empleadoId=...
+  // The literal '?' belongs to the pattern: without it this also matches /semana.
+  await page.route(/\/api\/publico\/disponibilidad\?/, (route) =>
     route.fulfill({ contentType: 'application/json', body: JSON.stringify(buildSlotsMock(fecha)) })
+  );
+
+  // GET /api/publico/cliente?slug=...&telefono=... — the phone field looks the client up.
+  // 404 is the real answer for a number the business has never seen, which is this test's
+  // case; without it the request would fall through to a backend that is not running.
+  await page.route(/\/api\/publico\/cliente/, (route) =>
+    route.fulfill({ status: 404, contentType: 'application/json', body: '{}' })
   );
 
   // POST /api/publico/citas  →  create appointment
@@ -198,13 +240,10 @@ test.describe('Booking flow', () => {
     // Advance to step 4
     await page.getByRole('button', { name: 'Continuar' }).click();
 
-    // ── Step 4a: Choose client mode ────────────────────────────────────────
-    await expect(page.getByText('¿Ya has reservado antes?')).toBeVisible({ timeout: 5_000 });
-
-    // Pick "guest" flow — fills data manually
-    await page.getByText('Continuar como invitado').click();
-
-    // ── Step 4b: Contact form ──────────────────────────────────────────────
+    // ── Step 4: Contact form ───────────────────────────────────────────────
+    // The booking used to ask "¿Ya has reservado antes?" first and branch into a
+    // guest flow. It no longer does: the phone field itself looks the client up,
+    // so step 4 goes straight to the form.
     await expect(page.getByRole('heading', { name: 'Tus datos' })).toBeVisible({ timeout: 5_000 });
 
     await page.getByPlaceholder('Tu nombre completo').fill('Juan Pérez');
