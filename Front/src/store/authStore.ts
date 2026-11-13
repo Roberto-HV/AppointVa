@@ -3,6 +3,16 @@ import { persist } from "zustand/middleware";
 import { queryClient } from "../lib/queryClient";
 import { useToastStore } from "./toastStore";
 
+/** Lee la cuenta y el rol del envoltorio que `persist` guarda; null si no se puede. */
+function usuarioGuardadoEn(valor: string | null): { id: string; rol: string } | null {
+  try {
+    const guardado = JSON.parse(valor ?? "null")?.state?.usuario;
+    return guardado?.id && guardado?.rol ? { id: guardado.id, rol: guardado.rol } : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Los avisos se montan fuera del árbol de rutas, así que sobreviven a un cambio
  * de sesión sin recargar la página. El de confirmación lleva dentro el teléfono y
@@ -19,18 +29,9 @@ import { useToastStore } from "./toastStore";
  * "Quién" es la cuenta **y** el rol, no solo la cuenta: al entrar al modo
  * recepción el servidor devuelve el mismo `Id` del dueño y solo cambia el `Rol`
  * a Kiosco (`KioscoController`), y es justo ahí donde la pantalla se vuelve
- * pública. Comparar solo el id dejaría el aviso vivo en ese caso.
+ * pública. Comparar solo el id —y no los dos campos de la línea de abajo—
+ * dejaría el aviso vivo en ese caso.
  */
-/** Lee la cuenta y el rol del envoltorio que `persist` guarda; null si no se puede. */
-function usuarioGuardadoEn(valor: string | null): { id: string; rol: string } | null {
-  try {
-    const guardado = JSON.parse(valor ?? "null")?.state?.usuario;
-    return guardado?.id && guardado?.rol ? { id: guardado.id, rol: guardado.rol } : null;
-  } catch {
-    return null;
-  }
-}
-
 function descartarAvisosSiCambiaLaPersona(entrante: { id: string; rol: string } | null) {
   const actual = useAuthStore.getState().usuario;
   if (actual?.id === entrante?.id && actual?.rol === entrante?.rol) return;
@@ -144,8 +145,9 @@ if (typeof window !== "undefined") {
       // La rehidratación no pasa por las acciones del store, así que los avisos
       // se revisan aquí a mano. Solo se mira quién quedó guardado: la otra
       // pestaña también escribe esta clave al renovar su token o al cambiar la
-      // foto, y eso no es otra persona. Si el dato no se puede leer se descarta
-      // por precaución, que es el lado barato de equivocarse.
+      // foto, y eso no es otra persona. Un dato ilegible cuenta como «nadie»:
+      // descarta los avisos si había sesión y no hace nada si tampoco la había,
+      // que es el caso en el que no queda nada que proteger.
       descartarAvisosSiCambiaLaPersona(usuarioGuardadoEn(evento.newValue));
       void useAuthStore.persist.rehydrate();
     }
