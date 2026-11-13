@@ -4,10 +4,16 @@ import { test, expect } from '@playwright/test';
 // Helpers
 // ---------------------------------------------------------------------------
 
+// Tomorrow as the app renders it: a LOCAL date. toISOString() converts to UTC
+// first, so at UTC-6 any run from 18:00 onwards returned the day after tomorrow.
 function tomorrowISO(): string {
   const d = new Date();
   d.setDate(d.getDate() + 1);
-  return d.toISOString().slice(0, 10);
+  return [
+    d.getFullYear(),
+    String(d.getMonth() + 1).padStart(2, '0'),
+    String(d.getDate()).padStart(2, '0'),
+  ].join('-');
 }
 
 // ---------------------------------------------------------------------------

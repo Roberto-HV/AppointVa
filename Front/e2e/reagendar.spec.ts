@@ -4,10 +4,17 @@ import { test, expect } from '@playwright/test';
 // Helpers
 // ---------------------------------------------------------------------------
 
+// Tomorrow as the calendar renders it: a LOCAL date. toISOString() converts to UTC
+// first, so at UTC-6 any run from 18:00 onwards returned the day after tomorrow —
+// on a Saturday evening that is Monday of next week, outside the displayed grid.
 function tomorrowISO(): string {
   const d = new Date();
   d.setDate(d.getDate() + 1);
-  return d.toISOString().slice(0, 10);
+  return [
+    d.getFullYear(),
+    String(d.getMonth() + 1).padStart(2, '0'),
+    String(d.getDate()).padStart(2, '0'),
+  ].join('-');
 }
 
 // ---------------------------------------------------------------------------
@@ -108,13 +115,10 @@ test.describe('Reagendar flow', () => {
       await page.getByLabel('Semana siguiente').click();
     }
 
-    const tomorrowDate = new Date(`${fecha}T12:00:00`);
-    const tomorrowDay = String(tomorrowDate.getDate()); // e.g. "25"
-
-    // Scope to the 7-column grid inside the modal to avoid collision with
-    // any other numeric text on the page.
-    const calendarGrid = page.locator('.grid-cols-7');
-    await calendarGrid.locator('button').filter({ hasText: tomorrowDay }).click();
+    // Click tomorrow by its exact date. Matching the day NUMBER as text is
+    // ambiguous: in a week like 29,30,31,1,2,3,4 the button "3" also matches
+    // "31" and Playwright aborts on the two hits. Each day exposes data-fecha.
+    await page.locator(`.grid-cols-7 button[data-fecha="${fecha}"]`).click();
 
     // ── 8. Click the 10:00 slot ────────────────────────────────────────────
     const slot1000 = page.getByRole('button', { name: '10:00' });

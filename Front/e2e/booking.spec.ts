@@ -4,10 +4,18 @@ import { test, expect, type Page } from '@playwright/test';
 // Helpers
 // ---------------------------------------------------------------------------
 
+// Tomorrow as the calendar renders it: a LOCAL date. toISOString() converts to UTC
+// first, so at UTC-6 any run from 18:00 onwards returned the day after tomorrow —
+// on a Saturday evening that is Monday of next week, outside the displayed grid,
+// and the day button is simply not there.
 function tomorrowISO(): string {
   const d = new Date();
   d.setDate(d.getDate() + 1);
-  return d.toISOString().slice(0, 10);
+  return [
+    d.getFullYear(),
+    String(d.getMonth() + 1).padStart(2, '0'),
+    String(d.getDate()).padStart(2, '0'),
+  ].join('-');
 }
 
 // ---------------------------------------------------------------------------
@@ -223,14 +231,10 @@ test.describe('Booking flow', () => {
       await page.getByLabel('Semana siguiente').click();
     }
 
-    // Click tomorrow's date. The weekly calendar shows 7 buttons (Mon–Sun).
-    // Each button contains a short day name + the numeric date.
-    const tomorrowDate = new Date(fecha + 'T12:00:00');
-    const tomorrowDay = String(tomorrowDate.getDate()); // e.g. "25"
-
-    // Scope to the 7-column calendar grid to avoid collisions with prices/times
-    const calendarGrid = page.locator('.grid-cols-7');
-    await calendarGrid.locator('button').filter({ hasText: tomorrowDay }).click();
+    // Click tomorrow by its exact date. Matching the day NUMBER as text is
+    // ambiguous: in a week like 29,30,31,1,2,3,4 the button "3" also matches
+    // "31" and Playwright aborts on the two hits. Each day exposes data-fecha.
+    await page.locator(`.grid-cols-7 button[data-fecha="${fecha}"]`).click();
 
     // Wait for slots to appear and select 09:00
     const slot0900 = page.getByRole('button', { name: '09:00' });
