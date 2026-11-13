@@ -65,6 +65,90 @@ describe("useAuthStore — iniciarSesion", () => {
   });
 });
 
+// El aviso de confirmación lleva el teléfono y los datos de la clienta, y su
+// botón abre WhatsApp sin consultar al servidor. Vive fuera del árbol de rutas,
+// así que sobrevive a un cambio de sesión que no recarga la página.
+describe("useAuthStore — los avisos no cruzan de una sesión a otra", () => {
+  async function conUnAviso() {
+    const { useToastStore } = await import("./toastStore");
+    useToastStore.getState().toast("Cita confirmada", "exito", {
+      accion: { etiqueta: "Avisar por WhatsApp", onClick: vi.fn() },
+    });
+    expect(useToastStore.getState().toasts).toHaveLength(1);
+    return useToastStore;
+  }
+
+  // El servidor manda el MISMO id del dueño y solo cambia el rol a Kiosco, así
+  // que comparar cuentas no alcanza: hay que mirar también el rol.
+  const kioscoMock = { ...usuarioMock, rol: "Kiosco" };
+
+  it("entrar a modo recepción los descarta: la pantalla queda a la vista de cualquiera", async () => {
+    useAuthStore.getState().iniciarSesion("tok-123", "refresh-abc", usuarioMock);
+    const useToastStore = await conUnAviso();
+
+    useAuthStore.getState().iniciarSesionKiosco("tok-kiosco", kioscoMock);
+
+    expect(useToastStore.getState().toasts).toHaveLength(0);
+  });
+
+  it("entrar a recepción desde otra pestaña también los descarta", async () => {
+    useAuthStore.getState().iniciarSesion("tok-123", "refresh-abc", usuarioMock);
+    const useToastStore = await conUnAviso();
+
+    window.dispatchEvent(
+      new StorageEvent("storage", {
+        key: "appointva-auth",
+        storageArea: localStorage,
+        newValue: JSON.stringify({ state: { token: "tok-kiosco", usuario: kioscoMock } }),
+      }),
+    );
+
+    expect(useToastStore.getState().toasts).toHaveLength(0);
+  });
+
+  it("una renovación de token en otra pestaña NO los descarta", async () => {
+    useAuthStore.getState().iniciarSesion("tok-123", "refresh-abc", usuarioMock);
+    const useToastStore = await conUnAviso();
+
+    window.dispatchEvent(
+      new StorageEvent("storage", {
+        key: "appointva-auth",
+        storageArea: localStorage,
+        newValue: JSON.stringify({ state: { token: "tok-renovado", usuario: usuarioMock } }),
+      }),
+    );
+
+    expect(useToastStore.getState().toasts).toHaveLength(1);
+    useToastStore.setState({ toasts: [] });
+  });
+
+  it("entrar con otra cuenta los descarta: no hereda nada de quien usó el equipo antes", async () => {
+    // Con sesión previa de otra persona, que es el caso real: dos empleadas que
+    // se turnan el mismo equipo.
+    useAuthStore.getState().iniciarSesion("tok-123", "refresh-abc", usuarioMock);
+    const useToastStore = await conUnAviso();
+
+    useAuthStore
+      .getState()
+      .iniciarSesion("tok-456", "refresh-def", { ...usuarioMock, id: "usr-2", email: "otra@test.com" });
+
+    expect(useToastStore.getState().toasts).toHaveLength(0);
+  });
+
+  it("renovar el token NO los descarta: es la misma persona a media tarea", async () => {
+    // El interceptor llama a iniciarSesion en cada 401, y confirmar una cita
+    // dispara refetches justo mientras el aviso está en pantalla: borrarlo ahí
+    // le quitaría de las manos el único mensaje que esa clienta iba a recibir.
+    useAuthStore.getState().iniciarSesion("tok-viejo", "refresh-viejo", usuarioMock);
+    const useToastStore = await conUnAviso();
+
+    useAuthStore.getState().iniciarSesion("tok-nuevo", "refresh-nuevo", usuarioMock);
+
+    expect(useToastStore.getState().toasts).toHaveLength(1);
+    useToastStore.setState({ toasts: [] });
+  });
+});
+
 describe("useAuthStore — cerrarSesion", () => {
   beforeEach(() => {
     useAuthStore.getState().iniciarSesion("tok-123", "refresh-abc", usuarioMock);
@@ -87,6 +171,22 @@ describe("useAuthStore — cerrarSesion", () => {
   it("llama a queryClient.clear()", () => {
     useAuthStore.getState().cerrarSesion();
     expect(queryClient.clear).toHaveBeenCalledOnce();
+  });
+
+  it("cierra los avisos: el de confirmación lleva datos de la clienta y se abre sin servidor", async () => {
+    // Los avisos viven fuera del árbol de rutas y se verían en la pantalla de
+    // login. En una tablet compartida, el siguiente en entrar podría tocarlos.
+    const { useToastStore } = await import("./toastStore");
+    const abrir = vi.fn();
+    useToastStore.getState().toast("Cita confirmada", "exito", {
+      accion: { etiqueta: "Avisar por WhatsApp", onClick: abrir },
+    });
+    expect(useToastStore.getState().toasts).toHaveLength(1);
+
+    useAuthStore.getState().cerrarSesion();
+
+    expect(useToastStore.getState().toasts).toHaveLength(0);
+    expect(abrir).not.toHaveBeenCalled();
   });
 
   it("borra solo la caché `images` del service worker", () => {

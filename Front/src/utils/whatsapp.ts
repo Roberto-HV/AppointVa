@@ -26,6 +26,25 @@ export function urlRecordatorioWhatsApp(cita: CitaDto, nombreNegocio?: string | 
   return `https://wa.me/${telefonoWhatsApp(cita.telefonoCliente)}?text=${encodeURIComponent(msg)}`;
 }
 
+/**
+ * Aviso de que la cita quedó confirmada. Es el único que recibe quien reservó
+ * solo con teléfono: las notificaciones del servidor salen por correo, así que
+ * sin dirección el cliente no se entera de nada. Lleva el enlace a /cita/<código>,
+ * que muestra el estado al día sin pedir correo.
+ */
+export function urlConfirmacionWhatsApp(cita: CitaDto, nombreNegocio?: string | null): string {
+  const negocio = nombreNegocio ? ` en *${nombreNegocio}*` : "";
+  const msg =
+    `Hola ${cita.nombreCliente} 👋, tu cita${negocio} quedó *confirmada*:\n\n` +
+    `📌 *Servicio:* ${cita.nombreServicio}\n` +
+    `👤 *Con:* ${cita.nombreEmpleado}\n` +
+    `📅 *Fecha:* ${formatFechaHoraCorta(cita.inicioEn)}\n` +
+    `🔖 *Código:* ${cita.codigoConfirmacion}\n\n` +
+    `🔗 Ver tu cita: ${window.location.origin}/cita/${cita.codigoConfirmacion}\n\n` +
+    `¡Te esperamos!`;
+  return `https://wa.me/${telefonoWhatsApp(cita.telefonoCliente)}?text=${encodeURIComponent(msg)}`;
+}
+
 /** Solicitud de reseña tras una cita completada. */
 export function urlResenaWhatsApp(cita: CitaDto, nombreNegocio?: string | null, slug?: string | null): string {
   const negocio = nombreNegocio ? `*${nombreNegocio}*` : "nuestro negocio";

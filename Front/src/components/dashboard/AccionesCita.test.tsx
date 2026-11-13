@@ -76,6 +76,13 @@ beforeEach(() => {
   window.innerWidth = 375;
 });
 
+// `clearAllMocks` borra las llamadas pero no deshace un spy: si una prueba falla
+// antes de su `mockRestore`, `window.open` se queda falseado para todas las que
+// siguen y una falla real se convierte en varias que no significan nada.
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
 describe("AccionesCita — botones de la fila", () => {
   it("nombra cada botón con la acción y el cliente", () => {
     renderizar(<AccionesCita cita={cita()} />);
@@ -257,6 +264,236 @@ describe("AccionesCita — deshacer (DC-17)", () => {
     await userEvent.click(screen.getByRole("button", { name: "Cancelar cita" }));
     await waitFor(() => expect(useToastStore.getState().toasts).toHaveLength(1));
     expect(useToastStore.getState().toasts[0].accion).toBeUndefined();
+    useToastStore.setState({ toasts: [] });
+  });
+});
+
+// Quien reserva solo con teléfono no recibe ningún correo del servidor: el aviso
+// de que su cita quedó confirmada se lo manda el negocio por WhatsApp.
+describe("AccionesCita — aviso de confirmación por WhatsApp", () => {
+  const confirmada = () => cita({ estadoTexto: "Confirmada", estado: 2, emailCliente: null });
+
+  async function limpiarToasts() {
+    const { useToastStore } = await import("../../store/toastStore");
+    useToastStore.setState({ toasts: [] });
+    return useToastStore;
+  }
+
+  it("al confirmar ofrece 'Avisar por WhatsApp', y no abre nada por su cuenta", async () => {
+    const useToastStore = await limpiarToasts();
+    const abrir = vi.spyOn(window, "open").mockReturnValue(null);
+    renderizar(<AccionesCita cita={cita({ emailCliente: null })} nombreNegocio="Salón Aramis" />);
+
+    await userEvent.click(screen.getByRole("button", { name: "Confirmar cita de Ana López" }));
+    await waitFor(() =>
+      expect(citasApi.cambiarEstado).toHaveBeenCalledWith("cita-1", { nuevoEstado: 2, motivo: undefined })
+    );
+
+    const aviso = await waitFor(() => {
+      const t = useToastStore.getState().toasts.find((x) => x.accion);
+      expect(t?.accion?.etiqueta).toBe("Avisar por WhatsApp");
+      return t!;
+    });
+    // El navegador bloquea lo que se abre sin un toque: nadie abre WhatsApp solo.
+    expect(abrir).not.toHaveBeenCalled();
+
+    useToastStore.getState().ejecutarAccion(aviso.id);
+    expect(abrir).toHaveBeenCalledTimes(1);
+    const url = abrir.mock.calls[0][0] as string;
+    expect(url).toContain("https://wa.me/525511223344");
+    expect(decodeURIComponent(url)).toContain("/cita/ABC123");
+
+    abrir.mockRestore();
+    useToastStore.setState({ toasts: [] });
+  });
+
+  it("si el navegador bloquea WhatsApp, lo dice y señala dónde volver a encontrarlo", async () => {
+    // El aviso ya se cerró al tocar el botón: sin este error, el único mensaje que
+    // esa clienta iba a recibir se perdería sin que nadie se entere.
+    const useToastStore = await limpiarToasts();
+    const abrir = vi.spyOn(window, "open").mockReturnValue(null);
+    renderizar(<AccionesCita cita={cita({ emailCliente: null })} nombreNegocio="Salón Aramis" />);
+
+    await userEvent.click(screen.getByRole("button", { name: "Confirmar cita de Ana López" }));
+    const aviso = await waitFor(() => {
+      const t = useToastStore.getState().toasts.find((x) => x.accion);
+      expect(t?.accion?.etiqueta).toBe("Avisar por WhatsApp");
+      return t!;
+    });
+
+    useToastStore.getState().ejecutarAccion(aviso.id);
+
+    const error = useToastStore.getState().toasts.find((t) => t.tipo === "error");
+    expect(error?.mensaje).toContain("bloqueó WhatsApp");
+    // El reintento viaja en el aviso: no depende de que la lista ya se haya
+    // refrescado para que el botón de la hoja exista.
+    expect(error?.accion?.etiqueta).toBe("Reintentar");
+    useToastStore.getState().ejecutarAccion(error!.id);
+    expect(abrir).toHaveBeenCalledTimes(2);
+
+    // Y queda registrado como el original: si la cita se cancela mientras el
+    // reintento sigue en pantalla, también se retira.
+    const reintento = useToastStore.getState().toasts.find((t) => t.accion);
+    expect(reintento?.accion?.etiqueta).toBe("Reintentar");
+    await userEvent.click(screen.getByRole("button", { name: "Acciones de la cita de Ana López" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Cancelar cita" }));
+    // Igual que arriba: que no pase por expiración del aviso.
+    expect(useToastStore.getState().toasts.some((t) => t.id === reintento!.id)).toBe(true);
+    await userEvent.click(screen.getByRole("button", { name: "Cancelar cita" }));
+    await waitFor(() =>
+      expect(useToastStore.getState().toasts.some((t) => t.id === reintento!.id)).toBe(false),
+    );
+
+    abrir.mockRestore();
+    useToastStore.setState({ toasts: [] });
+  });
+
+  it("si WhatsApp sí abre, no molesta con un error y corta el vínculo con la pestaña", async () => {
+    const useToastStore = await limpiarToasts();
+    const ventana = { opener: window } as unknown as Window;
+    const abrir = vi.spyOn(window, "open").mockReturnValue(ventana);
+    renderizar(<AccionesCita cita={cita({ emailCliente: null })} nombreNegocio="Salón Aramis" />);
+
+    await userEvent.click(screen.getByRole("button", { name: "Confirmar cita de Ana López" }));
+    const aviso = await waitFor(() => {
+      const t = useToastStore.getState().toasts.find((x) => x.accion);
+      expect(t?.accion?.etiqueta).toBe("Avisar por WhatsApp");
+      return t!;
+    });
+
+    useToastStore.getState().ejecutarAccion(aviso.id);
+
+    // Primero que la acción corrió: si el aviso expirara antes, `ejecutarAccion`
+    // no haría nada y el opener seguiría puesto — el mismo síntoma que el bug.
+    expect(abrir).toHaveBeenCalledTimes(1);
+    expect(useToastStore.getState().toasts.some((t) => t.tipo === "error")).toBe(false);
+    expect(ventana.opener).toBeNull();
+
+    abrir.mockRestore();
+    useToastStore.setState({ toasts: [] });
+  });
+
+  it("completar no ofrece el aviso: solo lo ofrece la confirmación", async () => {
+    const useToastStore = await limpiarToasts();
+    renderizar(<HojaAccionesCita cita={confirmada()} onCerrar={vi.fn()} />);
+    await userEvent.click(await screen.findByRole("button", { name: "Marcar como completada" }));
+    await userEvent.click(screen.getByRole("button", { name: "Marcar como completada" }));
+    await waitFor(() => expect(useToastStore.getState().toasts).toHaveLength(1));
+    expect(useToastStore.getState().toasts[0].accion).toBeUndefined();
+    useToastStore.setState({ toasts: [] });
+  });
+
+  it("sin correo, el aviso es la acción destacada de la hoja y explica por qué", async () => {
+    renderizar(<HojaAccionesCita cita={confirmada()} onCerrar={vi.fn()} nombreNegocio="Salón Aramis" />);
+    const enlace = await screen.findByRole("link", { name: "Avisar la confirmación por WhatsApp" });
+    expect(enlace.className).toContain("font-semibold");
+    expect(enlace.className).toContain("min-h-[44px]");
+    expect(enlace).toHaveAttribute("href", expect.stringContaining("https://wa.me/525511223344"));
+    expect(screen.getByText(/Sin correo registrado/)).toBeInTheDocument();
+    // Va por encima de "Marcar como completada": es lo único que recibirá.
+    const completar = screen.getByRole("button", { name: "Marcar como completada" });
+    expect(enlace.compareDocumentPosition(completar) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("con correo el aviso sigue disponible, pero sin destacar ni explicación", async () => {
+    renderizar(
+      <HojaAccionesCita
+        cita={cita({ estadoTexto: "Confirmada", estado: 2, emailCliente: "ana@test.com" })}
+        onCerrar={vi.fn()}
+      />
+    );
+    const enlace = await screen.findByRole("link", { name: "Reenviar confirmación por WhatsApp" });
+    expect(enlace.className).not.toContain("font-semibold");
+    expect(screen.queryByText(/Sin correo registrado/)).toBeNull();
+    expect(screen.queryByRole("link", { name: "Avisar la confirmación por WhatsApp" })).toBeNull();
+  });
+
+  it("una cita pendiente todavía no tiene nada que avisar", async () => {
+    renderizar(<HojaAccionesCita cita={cita({ emailCliente: null })} onCerrar={vi.fn()} />);
+    expect(await screen.findByRole("button", { name: "Confirmar cita" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /confirmación por WhatsApp/ })).toBeNull();
+  });
+
+  /** Espera al aviso de confirmación en pantalla y lo devuelve. */
+  async function esperarAviso(store: Awaited<ReturnType<typeof limpiarToasts>>) {
+    return waitFor(() => {
+      const t = store.getState().toasts.find((x) => x.accion?.etiqueta === "Avisar por WhatsApp");
+      expect(t).toBeTruthy();
+      return t!;
+    });
+  }
+
+  // El texto del aviso es lo único que le dice al negocio que el cliente no va a
+  // enterarse por correo. Si la condición se invirtiera, la advertencia saldría al revés.
+  it("sin correo, el aviso dice que nadie más le avisará", async () => {
+    const useToastStore = await limpiarToasts();
+    renderizar(<AccionesCita cita={cita({ emailCliente: null })} nombreNegocio="Salón Aramis" />);
+    await userEvent.click(screen.getByRole("button", { name: "Confirmar cita de Ana López" }));
+    const aviso = await esperarAviso(useToastStore);
+    expect(aviso.mensaje).toBe("Cita confirmada. Sin correo: avísale tú.");
+    useToastStore.setState({ toasts: [] });
+  });
+
+  it("con correo el aviso sigue ofreciéndose, pero sin la advertencia", async () => {
+    const useToastStore = await limpiarToasts();
+    renderizar(<AccionesCita cita={cita({ emailCliente: "ana@test.com" })} nombreNegocio="Salón Aramis" />);
+    await userEvent.click(screen.getByRole("button", { name: "Confirmar cita de Ana López" }));
+    const aviso = await esperarAviso(useToastStore);
+    expect(aviso.mensaje).toBe("Cita confirmada");
+    expect(aviso.mensaje).not.toMatch(/correo/i);
+    useToastStore.setState({ toasts: [] });
+  });
+
+  // El Inicio del empleado no pasa `nombreNegocio` ni monta consulta de perfil:
+  // sin respaldo, el cliente recibía el aviso sin saber de qué negocio viene.
+  it("sin la prop, el mensaje firma con el negocio en sesión", async () => {
+    const useToastStore = await limpiarToasts();
+    const abrir = vi.spyOn(window, "open").mockReturnValue(null);
+    renderizar(<AccionesCita cita={cita({ emailCliente: null })} />);
+
+    await waitFor(() =>
+      expect(
+        decodeURIComponent(
+          screen.getByRole("link", { name: "Enviar recordatorio por WhatsApp a Ana López" }).getAttribute("href") ?? "",
+        ),
+      ).toContain("Salón Test"),
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: "Confirmar cita de Ana López" }));
+    const aviso = await esperarAviso(useToastStore);
+    useToastStore.getState().ejecutarAccion(aviso.id);
+    expect(decodeURIComponent(abrir.mock.calls[0][0] as string)).toContain("Salón Test");
+
+    abrir.mockRestore();
+    useToastStore.setState({ toasts: [] });
+  });
+
+  // El aviso dura 8 s y se pausa con el puntero encima: puede seguir en pantalla
+  // cuando la cita ya se canceló. Su enlace no vuelve al servidor, así que el
+  // mensaje saldría igual.
+  it("cancelar después retira el aviso: no se manda 'confirmada' de una cita cancelada", async () => {
+    const useToastStore = await limpiarToasts();
+    renderizar(<AccionesCita cita={cita({ emailCliente: null })} nombreNegocio="Salón Aramis" />);
+
+    await userEvent.click(screen.getByRole("button", { name: "Confirmar cita de Ana López" }));
+    const aviso = await esperarAviso(useToastStore);
+
+    // La misma cita se cancela desde la hoja (otra instancia del hook) con el aviso aún visible.
+    await userEvent.click(screen.getByRole("button", { name: "Acciones de la cita de Ana López" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Cancelar cita" }));
+
+    // El aviso dura 8 s de reloj real: si la corrida se alarga podría cerrarse
+    // solo y la aserción de abajo pasaría sin que nada lo haya retirado. Se
+    // comprueba que sigue vivo justo antes de cancelar.
+    expect(useToastStore.getState().toasts.some((t) => t.id === aviso.id)).toBe(true);
+
+    await userEvent.click(screen.getByRole("button", { name: "Cancelar cita" }));
+    await waitFor(() =>
+      expect(citasApi.cambiarEstado).toHaveBeenLastCalledWith("cita-1", { nuevoEstado: 4, motivo: undefined }),
+    );
+
+    expect(useToastStore.getState().toasts.some((t) => t.id === aviso.id)).toBe(false);
+    expect(useToastStore.getState().toasts.some((t) => t.accion?.etiqueta === "Avisar por WhatsApp")).toBe(false);
     useToastStore.setState({ toasts: [] });
   });
 });

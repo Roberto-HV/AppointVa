@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { useSectorTerms, useSector } from "../../hooks/useSectorTerms";
+import { useSectorTerms, useSector, useNombreNegocio } from "../../hooks/useSectorTerms";
 import { tonoDeSector } from "../../lib/vozVacia";
 
 import { hoy, inicioSemana, finSemana, inicioMes, finMes, NOMBRE_PERIODO } from "../../utils/fechas";
@@ -51,6 +51,7 @@ export default function CitasPage() {
   const { toast } = useToastStore();
   const terms = useSectorTerms();
   const sector = useSector();
+  const nombreEnSesion = useNombreNegocio();
   const esMovil = useMediaQuery(CONSULTA_MOVIL);
   const permisos = usePermisos();
   const recepcion = useConfirmarRecepcion();
@@ -176,7 +177,9 @@ export default function CitasPage() {
     queryFn: negociosApi.obtenerPerfil,
     staleTime: 1000 * 60 * 5,
   });
-  const nombreNegocio = perfil?.nombre ?? "";
+  // Mientras `negocio-perfil-layout` carga, el nombre sale del perfil en sesión
+  // (ya montado por el layout): si no, los mensajes de WhatsApp salían sin negocio.
+  const nombreNegocio = perfil?.nombre || nombreEnSesion;
   const tienePagos = perfil?.moduloPagosHabilitado ?? false;
 
   const { data: empleados = [] } = useQuery({

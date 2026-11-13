@@ -14,12 +14,12 @@ import { DatePicker } from "../ui/DateTimePicker";
 import { api } from "../../api/axios";
 import { ESTADOS } from "../../api/citas";
 import { intakeApi } from "../../api/intake";
-import { useSectorTerms } from "../../hooks/useSectorTerms";
+import { useSectorTerms, useNombreNegocio } from "../../hooks/useSectorTerms";
 import { useCambiarEstadoCita, useReagendarCita } from "../../hooks/useMutacionesCita";
 import { citaAbierta } from "../../lib/estadoCita";
 import { hoy } from "../../utils/fechas";
 import { formatFechaHoraCorta } from "../../utils/formatters";
-import { urlRecordatorioWhatsApp } from "../../utils/whatsapp";
+import { urlConfirmacionWhatsApp, urlRecordatorioWhatsApp } from "../../utils/whatsapp";
 import type { CitaDto, SlotDisponible } from "../../types";
 
 // ── Acciones de una cita ──────────────────────────────────────────────────────
@@ -65,6 +65,10 @@ interface HojaProps {
   onCerrar: () => void;
   vistaInicial?: VistaHoja;
   accionesExtra?: AccionExtraCita[];
+  /**
+   * Negocio que firma los mensajes de WhatsApp. Opcional: si falta (o todavía no
+   * llegó el perfil de la pantalla), se toma del perfil en sesión. Ver `useNombreNegocio`.
+   */
   nombreNegocio?: string | null;
   /** Enlace "Ver detalle". Falso en la propia página de detalle. */
   mostrarDetalle?: boolean;
@@ -76,11 +80,17 @@ interface HojaProps {
   ancla?: HTMLElement | null;
 }
 
-const ITEM =
-  "w-full min-h-[44px] flex items-center gap-3 px-3 rounded-xl text-left text-sm font-medium transition " +
-  "hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50";
+const ITEM_BASE =
+  "w-full min-h-[44px] flex items-center gap-3 px-3 rounded-xl text-left text-sm transition " +
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50";
+const ITEM = `${ITEM_BASE} font-medium hover:bg-muted`;
 const ITEM_NORMAL = `${ITEM} text-foreground`;
 const ITEM_DESTRUCTIVO = `${ITEM} text-red-700 dark:text-red-400`;
+// Acción destacada: solo la usa el aviso de confirmación de un cliente sin correo,
+// que es lo único que esa persona va a recibir. Sin `font-medium` ni `hover:bg-muted`
+// del resto: dos utilidades del mismo grupo compiten por el orden del CSS, no del `class`.
+const ITEM_DESTACADO =
+  `${ITEM_BASE} font-semibold text-[#128C7E] dark:text-[#25D366] bg-[#25D366]/15 hover:bg-[#25D366]/25`;
 
 const BOTON_SECUNDARIO =
   "min-h-[44px] lg:min-h-[36px] flex-1 px-4 rounded-xl border border-border dark:border-slate-600 text-sm font-medium text-foreground " +
@@ -138,9 +148,14 @@ export function HojaAccionesCita({ cita, ...resto }: HojaProps) {
 }
 
 function HojaAbierta({
-  cita, onCerrar, vistaInicial = "menu", accionesExtra = [], nombreNegocio, mostrarDetalle = true, ancla,
+  cita, onCerrar, vistaInicial = "menu", accionesExtra = [], nombreNegocio: nombreProp, mostrarDetalle = true, ancla,
 }: HojaProps & { cita: CitaDto }) {
   const terms = useSectorTerms();
+  const nombreEnSesion = useNombreNegocio();
+  // `||`, no `??`: la pantalla de Inicio del empleado no pasa la prop y un mensaje
+  // sin negocio no dice quién lo manda. `||` además absorbe un "" si alguna
+  // pantalla vuelve a pasarlo mientras su propio perfil carga.
+  const nombreNegocio = nombreProp || nombreEnSesion;
   const esMovil = useMediaQuery(CONSULTA_MOVIL);
   // El estado (vista, motivo, fecha) vive aquí, fuera del contenedor: al cruzar
   // los 640px cambia popover ↔ Modal sin perder lo escrito.
@@ -173,7 +188,7 @@ function HojaAbierta({
 
   const aplicarEstado = (estado: number, conMotivo = false) =>
     cambiarEstado.mutate(
-      { id: cita.id, estado, motivo: conMotivo ? motivo.trim() : undefined, anterior: cita.estado },
+      { id: cita.id, estado, motivo: conMotivo ? motivo.trim() : undefined, anterior: cita.estado, cita, nombreNegocio },
       { onSuccess: onCerrar },
     );
 
@@ -204,6 +219,30 @@ function HojaAbierta({
   const pendiente = cita.estadoTexto === "Pendiente";
   const confirmada = cita.estadoTexto === "Confirmada";
   const abierta = citaAbierta(cita.estadoTexto);
+
+  // Aviso de confirmación por WhatsApp. El aviso que sale al confirmar se va solo,
+  // así que la acción vive también aquí para mandarla (o remandarla) cuando sea.
+  // Sin correo en archivo nadie le dijo nada al cliente: sube al primer grupo y va
+  // destacada. Con correo el servidor ya le escribió, así que queda con las demás
+  // acciones de comunicación, sin llamar la atención.
+  const sinCorreo = !cita.emailCliente;
+  const avisoConfirmacion =
+    confirmada && cita.telefonoCliente ? (
+      <a
+        key="confirmacion-whatsapp"
+        href={urlConfirmacionWhatsApp(cita, nombreNegocio)}
+        target="_blank"
+        rel="noreferrer"
+        className={sinCorreo ? ITEM_DESTACADO : ITEM_NORMAL}
+      >
+        <SiWhatsapp
+          size={17}
+          className={`${sinCorreo ? "" : "text-[#128C7E] dark:text-[#25D366]"} shrink-0`}
+          aria-hidden="true"
+        />
+        {sinCorreo ? "Avisar la confirmación por WhatsApp" : "Reenviar confirmación por WhatsApp"}
+      </a>
+    ) : null;
 
   const contenido = (
     <>
@@ -244,6 +283,12 @@ function HojaAbierta({
                     {cambiarEstado.isPending ? "Confirmando…" : `Confirmar ${cita1}`}
                   </button>
                 ),
+                sinCorreo && avisoConfirmacion,
+                sinCorreo && avisoConfirmacion && (
+                  <p key="nota-sin-correo" className="px-3 pb-1 text-xs text-muted-foreground">
+                    Sin correo registrado: este es el único aviso que recibirá.
+                  </p>
+                ),
                 confirmada && (
                   <button key="completar" type="button" className={ITEM_NORMAL} onClick={() => setVista("completar")}>
                     <CheckCheck size={18} className="text-status-completed-fg shrink-0" aria-hidden="true" />
@@ -275,6 +320,7 @@ function HojaAbierta({
                     Enviar recordatorio por WhatsApp
                   </a>
                 ),
+                !sinCorreo && avisoConfirmacion,
                 ...extrasDe("comunicacion"),
               ],
               [
@@ -432,6 +478,7 @@ function HojaAbierta({
 interface Props {
   cita: CitaDto;
   accionesExtra?: AccionExtraCita[];
+  /** Ver `HojaProps.nombreNegocio`: si falta, se toma del perfil en sesión. */
   nombreNegocio?: string | null;
   mostrarDetalle?: boolean;
   /** Botón de WhatsApp visible en la fila (además de dentro de la hoja). */
@@ -455,10 +502,12 @@ const BOTON_ICONO =
   "text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40";
 
 export default function AccionesCita({
-  cita, accionesExtra, nombreNegocio, mostrarDetalle = true, whatsapp = true, primaria = true,
+  cita, accionesExtra, nombreNegocio: nombreProp, mostrarDetalle = true, whatsapp = true, primaria = true,
   conEtiqueta = false, className = "", onAbrirHoja,
 }: Props) {
   const terms = useSectorTerms();
+  const nombreEnSesion = useNombreNegocio();
+  const nombreNegocio = nombreProp || nombreEnSesion;
   const cita1 = terms.cita.toLowerCase();
   const [vistaAbierta, setVistaAbierta] = useState<VistaHoja | null>(null);
   const [ancla, setAncla] = useState<HTMLElement | null>(null);
@@ -476,7 +525,7 @@ export default function AccionesCita({
           type="button"
           aria-label={`Confirmar ${cita1} de ${cita.nombreCliente}`}
           disabled={cambiarEstado.isPending}
-          onClick={() => cambiarEstado.mutate({ id: cita.id, estado: ESTADOS.Confirmada })}
+          onClick={() => cambiarEstado.mutate({ id: cita.id, estado: ESTADOS.Confirmada, cita, nombreNegocio })}
           className={`${BOTON_ICONO} px-2.5 bg-status-confirmed-bg text-status-confirmed-fg hover:opacity-80`}
         >
           <CheckCircle2 size={16} aria-hidden="true" />

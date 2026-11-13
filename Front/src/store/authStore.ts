@@ -1,6 +1,41 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { queryClient } from "../lib/queryClient";
+import { useToastStore } from "./toastStore";
+
+/**
+ * Los avisos se montan fuera del árbol de rutas, así que sobreviven a un cambio
+ * de sesión sin recargar la página. El de confirmación lleva dentro el teléfono y
+ * los datos de la clienta y su botón abre WhatsApp sin consultar al servidor: en
+ * una tablet compartida quien entre después —o quien pase frente al modo
+ * recepción, que justamente abrevia los nombres— podría tocarlo.
+ *
+ * Se descartan solo cuando cambia **quién** está usando el equipo. Renovar el
+ * token es la misma persona: el interceptor de axios llama a `iniciarSesion` en
+ * cada 401, y confirmar una cita dispara refetches justo mientras el aviso está
+ * en pantalla, así que borrarlos ahí le quitaría de las manos el único mensaje
+ * que esa clienta iba a recibir.
+ *
+ * "Quién" es la cuenta **y** el rol, no solo la cuenta: al entrar al modo
+ * recepción el servidor devuelve el mismo `Id` del dueño y solo cambia el `Rol`
+ * a Kiosco (`KioscoController`), y es justo ahí donde la pantalla se vuelve
+ * pública. Comparar solo el id dejaría el aviso vivo en ese caso.
+ */
+/** Lee la cuenta y el rol del envoltorio que `persist` guarda; null si no se puede. */
+function usuarioGuardadoEn(valor: string | null): { id: string; rol: string } | null {
+  try {
+    const guardado = JSON.parse(valor ?? "null")?.state?.usuario;
+    return guardado?.id && guardado?.rol ? { id: guardado.id, rol: guardado.rol } : null;
+  } catch {
+    return null;
+  }
+}
+
+function descartarAvisosSiCambiaLaPersona(entrante: { id: string; rol: string } | null) {
+  const actual = useAuthStore.getState().usuario;
+  if (actual?.id === entrante?.id && actual?.rol === entrante?.rol) return;
+  useToastStore.getState().quitarTodos();
+}
 
 interface UsuarioInfo {
   id: string;
@@ -71,12 +106,19 @@ export const useAuthStore = create<AuthState>()(
       token: null,
       refreshToken: null,
       usuario: null,
-      iniciarSesion: (token, refreshToken, usuario) =>
-        set({ token, refreshToken, usuario }),
-      iniciarSesionKiosco: (token, usuario) =>
-        set({ token, refreshToken: null, usuario }),
+      iniciarSesion: (token, refreshToken, usuario) => {
+        descartarAvisosSiCambiaLaPersona(usuario);
+        set({ token, refreshToken, usuario });
+      },
+      iniciarSesionKiosco: (token, usuario) => {
+        // Aquí lo que cambia es el rol, no la cuenta: el servidor manda el mismo
+        // id del dueño con Rol = Kiosco. La comparación lo cubre.
+        descartarAvisosSiCambiaLaPersona(usuario);
+        set({ token, refreshToken: null, usuario });
+      },
       cerrarSesion: (opciones) => {
         queryClient.clear();
+        descartarAvisosSiCambiaLaPersona(null);
         if (opciones?.porRefreshFallido && haySesionKioscoAjena(get().token)) {
           // Adoptar la sesión de kiosco guardada en vez de pisarla con null.
           void useAuthStore.persist.rehydrate();
@@ -99,6 +141,12 @@ export const useAuthStore = create<AuthState>()(
 if (typeof window !== "undefined") {
   window.addEventListener("storage", (evento) => {
     if (evento.key === CLAVE_AUTH && evento.storageArea === localStorage) {
+      // La rehidratación no pasa por las acciones del store, así que los avisos
+      // se revisan aquí a mano. Solo se mira quién quedó guardado: la otra
+      // pestaña también escribe esta clave al renovar su token o al cambiar la
+      // foto, y eso no es otra persona. Si el dato no se puede leer se descarta
+      // por precaución, que es el lado barato de equivocarse.
+      descartarAvisosSiCambiaLaPersona(usuarioGuardadoEn(evento.newValue));
       void useAuthStore.persist.rehydrate();
     }
   });

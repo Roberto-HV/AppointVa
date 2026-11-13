@@ -34,6 +34,13 @@ interface ToastStore {
   /** Devuelve el id del toast. */
   toast: (mensaje: string, tipo?: TipoToast, opciones?: OpcionesToast) => string;
   quitar: (id: string) => void;
+  /**
+   * Cierra todos los avisos. Lo llama `authStore` en cada cambio de quién está
+   * usando el equipo —login, modo recepción, cierre de sesión y el aviso de otra
+   * pestaña—, porque un aviso puede llevar una acción con datos de la sesión
+   * anterior y sigue en pantalla aunque la ruta cambie.
+   */
+  quitarTodos: () => void;
   /** Ejecuta la acción del toast (una sola vez) y lo cierra. */
   ejecutarAccion: (id: string) => void;
   /** Detiene el cierre automático (puntero o foco encima). */
@@ -75,6 +82,10 @@ export const useToastStore = create<ToastStore>((set, get) => {
     quitar: (id) => {
       limpiar(id);
       set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) }));
+    },
+    quitarTodos: () => {
+      for (const t of get().toasts) limpiar(t.id);
+      set({ toasts: [] });
     },
     ejecutarAccion: (id) => {
       const toast = get().toasts.find((t) => t.id === id);

@@ -42,12 +42,31 @@ export function useSectorTerms(): SectorTerms {
   return getSectorTerms(useSector());
 }
 
-/** Sector del negocio en sesión (mismo query que el perfil; `undefined` mientras carga). */
-export function useSector(): string | undefined {
+/**
+ * Perfil del negocio en sesión. Una sola consulta para el sector y el nombre:
+ * TanStack la deduplica entre filas y pantallas, así que leerla desde cualquier
+ * componente no añade peticiones.
+ */
+function usePerfilNegocio() {
   const { data } = useQuery({
     queryKey: ["negocio-perfil"],
     queryFn: negociosApi.obtenerPerfil,
     staleTime: 5 * 60 * 1000,
   });
-  return data?.sector;
+  return data;
+}
+
+/** Sector del negocio en sesión (mismo query que el perfil; `undefined` mientras carga). */
+export function useSector(): string | undefined {
+  return usePerfilNegocio()?.sector;
+}
+
+/**
+ * Nombre del negocio en sesión (`undefined` mientras carga). Lo usan los mensajes
+ * de WhatsApp como respaldo cuando la pantalla no pasa `nombreNegocio`: el Inicio
+ * del empleado no monta ninguna consulta de perfil propia, y sin esto el cliente
+ * recibía el aviso sin saber quién se lo manda.
+ */
+export function useNombreNegocio(): string | undefined {
+  return usePerfilNegocio()?.nombre;
 }
